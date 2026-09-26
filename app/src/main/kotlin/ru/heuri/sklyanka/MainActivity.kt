@@ -3,6 +3,8 @@ package ru.heuri.sklyanka
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -10,7 +12,9 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
-import ru.heuri.sklyanka.feature.today.TodayScreen
+import ru.heuri.sklyanka.feature.today.TodayNavigation
+import ru.heuri.sklyanka.feature.today.TodayRoute
+import ru.heuri.sklyanka.feature.today.TodayViewModel
 import ru.heuri.sklyanka.platform.startup.StartupRouter
 import ru.heuri.sklyanka.startup.SplashScreen
 import ru.heuri.sklyanka.startup.StartDestination
@@ -41,6 +45,8 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var startupRouter: StartupRouter
 
+    private val today: TodayViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         val splash = installSplashScreen()
         super.onCreate(savedInstanceState)
@@ -61,11 +67,24 @@ class MainActivity : ComponentActivity() {
                     // Экран настройки разрешений — SKL-14; до него заставка уходит
                     // на «Сегодня», а решение и его причина уже пишутся в журнал
                     // запуска, чтобы подмена была видна, а не растворилась.
-                    StartDestination.Onboarding -> TodayScreen()
+                    StartDestination.Onboarding -> Today()
 
-                    StartDestination.Today -> TodayScreen()
+                    StartDestination.Today -> Today()
                 }
             }
         }
+    }
+
+    /**
+     * Экран «Сегодня» (SKL-08).
+     *
+     * Переходы пока никуда не ведут: карточка лекарства (SKL-10) и граф навигации
+     * приложения ещё не существуют, а маршруты собираются здесь и только здесь —
+     * `feature-today` от других экранных модулей не зависит. Точка расширения
+     * задана типом [TodayNavigation]: подключение маршрута не потребует правок экрана.
+     */
+    @Composable
+    private fun Today() {
+        TodayRoute(viewModel = today, navigation = TodayNavigation())
     }
 }

@@ -92,7 +92,7 @@ private fun TodayContent(state: TodayUiState.Content, onIntent: (TodayIntent) ->
     Column(modifier = modifier.fillMaxWidth()) {
         TodayHeader(state, onIntent)
         LazyColumn(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().weight(1f),
             contentPadding = PaddingValues(
                 start = SklyankaSpacing.Section,
                 end = SklyankaSpacing.Section,

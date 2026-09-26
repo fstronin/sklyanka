@@ -18,4 +18,14 @@ dependencies {
     implementation(project(":core-domain"))
     implementation(project(":core-ui"))
     implementation(project(":core-data"))
+
+    // Домен отдаёт сутки потоком, состояние экрана собирается из него.
+    implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.androidx.lifecycle.viewmodel.ktx)
+
+    // Состояние экрана и разбор намерений проверяются на JVM: эмулятора в среде задачи
+    // нет, а поведению ViewModel он и не нужен.
+    testImplementation(libs.junit4)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.turbine)
 }

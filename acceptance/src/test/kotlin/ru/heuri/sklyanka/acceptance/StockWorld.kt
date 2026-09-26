@@ -2,10 +2,8 @@ package ru.heuri.sklyanka.acceptance
 
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
-import ru.heuri.sklyanka.domain.model.Intake
 import ru.heuri.sklyanka.domain.model.Medication
 import ru.heuri.sklyanka.domain.model.ScheduleMode
-import ru.heuri.sklyanka.domain.stock.RefillOutcome
 import ru.heuri.sklyanka.domain.stock.RefillStockUseCase
 import ru.heuri.sklyanka.domain.stock.StockForecast
 import ru.heuri.sklyanka.domain.stock.StockPanel
@@ -43,13 +41,6 @@ internal class StockWorld(
     /** Профиль, открытый на телефоне: предупреждения показываются только по его лекарствам (ПР-10). */
     var activeProfile: String = SELF_PROFILE
         private set
-
-    /** Последнее пополнение — по нему сверяется исход действия «Пополнить». */
-    var lastRefill: RefillOutcome? = null
-        private set
-
-    /** Снимок приёмов до пополнения: история приёмов пополнением не трогается. */
-    private var intakesBeforeRefill: Map<String, Intake> = emptyMap()
 
     // --- Предыстория -----------------------------------------------------------------------
 
@@ -118,13 +109,15 @@ internal class StockWorld(
      */
     fun refill(name: String, units: BigDecimal, at: LocalDateTime, asAction: Boolean = true) {
         if (asAction) {
+            // Снимок приёмов до действия берут оба мира: «пополнение не меняет историю
+            // приёмов» — утверждение о том, чего действие не сделало, и проверяется оно
+            // сравнением с состоянием до (шаг проверки принадлежит приёмке SKL-06).
             intakes.rememberState()
             planning.rememberState()
         }
-        intakesBeforeRefill = snapshotIntakes(name)
         intakes.moveTo(at)
         val useCase = RefillStockUseCase(intakes.medicationStore, intakes.log)
-        lastRefill = runBlocking { useCase(intakes.medication(name).id, units) }
+        runBlocking { useCase(intakes.medication(name).id, units) }
     }
 
     // --- Проверки --------------------------------------------------------------------------
@@ -154,11 +147,6 @@ internal class StockWorld(
     fun medication(name: String): Medication = intakes.medication(name)
 
     fun stockOf(name: String): BigDecimal? = intakes.stockOf(name)
-
-    fun intakesUnchangedSinceRefill(name: String): Boolean =
-        intakesBeforeRefill.isNotEmpty() && snapshotIntakes(name) == intakesBeforeRefill
-
-    fun markedIntakesBeforeRefill(): Int = intakesBeforeRefill.values.count { !it.isPending }
 
     /**
      * Лекарства профиля, у которых остаток действительно ведётся.
@@ -201,12 +189,6 @@ internal class StockWorld(
             maxPerDay = source.maxPerDay,
         )
     }
-
-    private fun snapshotIntakes(name: String): Map<String, Intake> =
-        (intakes.intakesOf(name) + planningIntakesOf(name)).associateBy { it.id }
-
-    private fun planningIntakesOf(name: String): List<Intake> =
-        if (planning.hasMedication(name)) planning.intakesOf(name) else emptyList()
 
     private fun moveToDate(date: LocalDate) {
         intakes.moveTo(date.atTime(intakes.clock.nowLocal().toLocalTime()))

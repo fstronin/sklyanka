@@ -44,6 +44,11 @@ import ru.heuri.sklyanka.ui.token.SklyankaType
  *
  * Статус никогда не передаётся одним лишь цветом (НФТ-33): у принятого приёма есть
  * галочка и время отметки, у пропущенного — подпись.
+ *
+ * [actionEnabled] добавлен задачей SKL-08 и относится только к состоянию
+ * [IntakeCardState.AsNeeded]: у лекарства «по потребности» бывает выбранный суточный
+ * предел (ПР-7), и тогда «Принять» обязано быть недоступным, а не просто не работать.
+ * Причину недоступности подписывает экран — она зависит от предела, а не от карточки.
  */
 @Composable
 fun IntakeCard(
@@ -52,6 +57,7 @@ fun IntakeCard(
     modifier: Modifier = Modifier,
     markedByYou: Boolean = false,
     actions: IntakeCardActions = IntakeCardActions(),
+    actionEnabled: Boolean = true,
 ) {
     val colors = SklyankaTheme.colors
     val shape = SklyankaShapes.Card
@@ -79,7 +85,7 @@ fun IntakeCard(
         IntakeRow(
             icon = { IconPlate(state) },
             text = { IntakeText(state, labels, markedByYou) },
-            action = { IntakeAction(state, labels, actions) },
+            action = { IntakeAction(state, labels, actions, actionEnabled) },
         )
         if (state == IntakeCardState.DueNow) {
             // Ряд действий раскрывается только когда время наступило: карточка
@@ -148,7 +154,12 @@ private fun IntakeText(state: IntakeCardState, labels: IntakeCardLabels, markedB
 }
 
 @Composable
-private fun IntakeAction(state: IntakeCardState, labels: IntakeCardLabels, actions: IntakeCardActions) {
+private fun IntakeAction(
+    state: IntakeCardState,
+    labels: IntakeCardLabels,
+    actions: IntakeCardActions,
+    actionEnabled: Boolean,
+) {
     val colors = SklyankaTheme.colors
     when (state) {
         IntakeCardState.Pending -> MarkButton(labels.medication, actions.onMark)
@@ -172,6 +183,9 @@ private fun IntakeAction(state: IntakeCardState, labels: IntakeCardLabels, actio
         IntakeCardState.AsNeeded -> SecondaryButton(
             text = stringResource(R.string.action_take),
             onClick = { actions.onMark?.invoke() },
+            // Выбранное суточное ограничение «по потребности» (ПР-7) закрывает действие:
+            // кнопка, которая выглядит доступной и не срабатывает, хуже недоступной.
+            state = if (actionEnabled) ButtonState.Normal else ButtonState.Disabled,
         )
 
         // Ряд действий у наступившего времени раскрывается под содержимым, а не

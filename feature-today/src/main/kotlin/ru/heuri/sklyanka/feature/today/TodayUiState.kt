@@ -1,8 +1,8 @@
 package ru.heuri.sklyanka.feature.today
 
 import androidx.compose.runtime.Immutable
-import ru.heuri.sklyanka.domain.today.DaySection
 import ru.heuri.sklyanka.domain.today.DayProgress
+import ru.heuri.sklyanka.domain.today.DaySection
 import ru.heuri.sklyanka.domain.today.PartOfDay
 import ru.heuri.sklyanka.domain.today.PrnEntry
 import ru.heuri.sklyanka.domain.today.StockNotice

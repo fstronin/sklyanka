@@ -90,8 +90,10 @@ class RefillStockUseCaseTest {
         assertEquals("9", record.before)
         assertEquals("60", record.after)
         assertEquals(Fixtures.PROFILE_ID, record.profileId)
-        // Названий лекарств и дозировок в журнале нет — только идентификаторы (НФТ-19).
         assertNull(record.detail)
+        // Названий лекарств и дозировок в журнале нет — только идентификаторы (НФТ-19).
+        val fields = listOf(record.profileId, record.medicationId, record.intakeId, record.before, record.after)
+        assertTrue(fields.none { it?.contains(Fixtures.scheduledMedication().name) == true }, "fields: $fields")
     }
 
     @Test
