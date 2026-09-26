@@ -22,6 +22,11 @@ coroutines = "1.9.0"
 # Формат файла переноса данных (SKL-19): один файл JSON, разбираемый строго
 # по обязательным полям и терпимо к незнакомым ключам.
 kotlinxSerialization = "1.7.3"
+# Фоновая работа (SKL-13, ОВ-79): перепланирование будильников обязано переживать смерть
+# процесса, поэтому оно идёт задачей WorkManager, а не работой приёмника.
+# Артефакт -ktx с версии 2.7 — заглушка: CoroutineWorker и Operation.await() лежат
+# в самом work-runtime.
+work = "2.9.1"
 turbine = "1.2.0"
 junit5 = "5.11.3"
 junit4 = "4.13.2"
@@ -73,6 +78,14 @@ room-testing = { module = "androidx.room:room-testing", version.ref = "room" }
 
 # --- Постоянные настройки: активный профиль переживает перезапуск (ПРФ-17, ПРФ-18) ---
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
+
+# --- Фоновая работа: задача перепланирования будильников (SKL-13, НАП-13) ---
+#
+# Библиотека объявляет в своём манифесте ACCESS_NETWORK_STATE, FOREGROUND_SERVICE и WAKE_LOCK.
+# Первое снимается в манифесте app через tools:node="remove": продукт обещает «сеть
+# не требуется» (ПЛ-3, НФТ-15), сетевых ограничений у задач нет, и проверка состава
+# собранного артефакта это подтверждает.
+androidx-work-runtime = { module = "androidx.work:work-runtime", version.ref = "work" }
 
 # --- Инструментальные тесты ---
 junit4 = { module = "junit:junit", version.ref = "junit4" }

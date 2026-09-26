@@ -3,6 +3,7 @@ package ru.heuri.sklyanka.reminder
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import androidx.work.await
 import kotlinx.coroutines.launch
 import ru.heuri.sklyanka.di.ReminderEntryPoint
 import ru.heuri.sklyanka.domain.reminder.RescheduleReason
@@ -11,11 +12,13 @@ import ru.heuri.sklyanka.domain.reminder.RescheduleReason
  * Системные события, после которых будильников больше нет (НАП-11).
  *
  * Перезагрузка стирает будильники, обновление приложения — снимает, смена пояса и перевод
- * часов ломают соответствие плана реальному времени. Приёмник ничего не решает сам: он
- * переводит событие в причину и отдаёт работу планировщику (НАП-13).
+ * часов ломают соответствие плана реальному времени. Приёмник ничего не решает сам и ничего
+ * сам не пересчитывает (НАП-13): он переводит событие в причину и ставит задачу.
  *
- * Приёмник не полагается на то, что приложение запущено: доступ к графу поднимает граф,
- * а граф поднимает базу.
+ * Постановка задачи дожидается записи в очередь, а не возвращается сразу: запись идёт
+ * в фоновом потоке `WorkManager`, и процесс, убитый между вызовом и записью, оставил бы
+ * событие без последствий. Дальше работа уже не зависит от жизни процесса — в этом и смысл
+ * перехода с работы приёмника на задачу (`ОВ-79`).
  */
 class SystemEventReceiver : BroadcastReceiver() {
 
@@ -25,7 +28,7 @@ class SystemEventReceiver : BroadcastReceiver() {
         val pending = goAsync()
         graph.reminderScope().launch {
             try {
-                graph.reminderPlanning().planAll(reason)
+                ReminderWork.enqueueReschedule(context, reason).await()
             } finally {
                 pending.finish()
             }

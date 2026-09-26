@@ -34,6 +34,8 @@ dependencies {
     // Заставка — штатным механизмом платформы, а не собственной Activity (TDD §6).
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    // Перепланирование будильников задачей, переживающей смерть процесса (SKL-13, ОВ-79).
+    implementation(libs.androidx.work.runtime)
     implementation(libs.androidx.activity.compose)
 
     // Правило выбора экрана после заставки — арифметика по трём признакам,
