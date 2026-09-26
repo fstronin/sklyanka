@@ -269,8 +269,13 @@ class PlanIntakesUseCaseTest {
         assertEquals(history, intakes.stored["history"])
     }
 
+    /**
+     * Возврат из архива в 10:00 восстанавливает и сегодняшний приём 09:00: курс начался
+     * пять дней назад, правило дня начала курса к нему не применяется, а отметить его
+     * человек успеет до конца суток (ОВ-4).
+     */
     @Test
-    fun `returning from the archive resumes planning from the next time ahead`() = runTest {
+    fun `returning from the archive restores the whole window including today`() = runTest {
         val medication = Planning.medication(
             times = listOf(LocalTime.of(9, 0)),
             startDate = Planning.TODAY.minusDays(5),
@@ -282,8 +287,8 @@ class PlanIntakesUseCaseTest {
         medications.put(medication.copy(archivedAt = null, archiveReason = null))
         plan()
 
-        assertEquals(6, pendingOf().size)
-        assertEquals(Planning.TODAY.plusDays(1).atTime(9, 0), pendingOf().first().scheduledAt)
+        assertEquals(7, pendingOf().size)
+        assertEquals(Planning.TODAY.atTime(9, 0), pendingOf().first().scheduledAt)
     }
 
     /** ПР-10, ПРФ-8: приёмы подопечного рождаются, пока на экране открыт профиль владельца. */

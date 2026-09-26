@@ -86,6 +86,12 @@ fun runCucumber(target: File, extraArgs: List<String>): String {
  * Реализованных шагов на этом этапе почти нет — это ожидаемо и правильно.
  * Сценарий без реализации отмечается нереализованным и НЕ засчитывается как пройденный:
  * иначе зелёный прогон означал бы «шагов нет», а не «поведение верно» (TDD §6.2).
+ *
+ * Упавший сценарий и нереализованный — разные вещи, и обходятся по-разному.
+ * «Шаг не написан» — нормальное состояние задачи, до которой ещё не дошли: прогон печатает
+ * UNDEFINED и сборку не валит (строгий режим для этого есть отдельным флагом).
+ * «Проверка не прошла» — либо поведение неверно, либо неверно ожидание, и работой
+ * в процессе это не бывает: прогон печатает FAILED и валит сборку немедленно.
  */
 val acceptanceRun by tasks.registering {
     group = "verification"
@@ -100,6 +106,7 @@ val acceptanceRun by tasks.registering {
         val lines = mutableListOf<String>()
         val broken = mutableListOf<String>()
         val quarantined = mutableListOf<String>()
+        val failed = mutableListOf<String>()
         var undefinedSeen = false
 
         featureTargets().forEach { target ->
@@ -129,9 +136,18 @@ val acceptanceRun by tasks.registering {
                     lines += "  BROKEN     ${target.name}: Cucumber could not run, see ${target.name}.txt"
                 }
                 else -> {
-                    if (output.contains("undefined")) undefinedSeen = true
-                    lines +=
-                        "  ${if (output.contains("undefined")) "UNDEFINED " else "PASSED    "}${target.name}: $summary"
+                    // Число падений берётся из строки со сценариями, а не из строки с шагами:
+                    // ниже Cucumber печатает второй такой же итог по шагам, и он не в счёт.
+                    val failures = scenarioFailures.find(summary)?.groupValues?.get(1)?.toInt() ?: 0
+                    val undefined = output.contains("undefined")
+                    if (undefined) undefinedSeen = true
+                    if (failures > 0) failed += "${target.name} ($failures)"
+                    val status = when {
+                        failures > 0 -> "FAILED    "
+                        undefined -> "UNDEFINED "
+                        else -> "PASSED    "
+                    }
+                    lines += "  $status${target.name}: $summary"
                 }
             }
         }
@@ -148,6 +164,13 @@ val acceptanceRun by tasks.registering {
                 "Cucumber could not parse or run these feature files: ${broken.joinToString()}. " +
                     "Fix the file, or quarantine it explicitly with " +
                     "-Psklyanka.acceptance.quarantine=... and open a task for it.",
+            )
+        }
+        if (failed.isNotEmpty()) {
+            throw GradleException(
+                "Acceptance scenarios failed: ${failed.joinToString()}. A failing scenario is not work " +
+                    "in progress: either the behaviour is wrong or the expectation is wrong, and both " +
+                    "have to be resolved before the build goes green. See ${reportDir.path}.",
             )
         }
         if (quarantined.isNotEmpty()) {
@@ -216,4 +239,7 @@ tasks.test {
 
 val ansiCodes = Regex("\u001B\\[[;\\d]*m")
 val cucumberSummary = Regex("""\d+ Scenarios?( \([^)]*\))?""")
+
+/** «32 Scenarios (2 failed, 30 passed)» — сколько сценариев не прошло. */
+val scenarioFailures = Regex("""(\d+) failed""")
 val scenarioLine = Regex("""(?m)^\s*(?:Сценарий|Структура сценария|Scenario|Scenario Outline):\s*(.+?)\s*(?:#.*)?$""")

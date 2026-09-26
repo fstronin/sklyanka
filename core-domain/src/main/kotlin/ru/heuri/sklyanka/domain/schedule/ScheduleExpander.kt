@@ -3,6 +3,7 @@ package ru.heuri.sklyanka.domain.schedule
 import ru.heuri.sklyanka.domain.model.Medication
 import ru.heuri.sklyanka.domain.model.ScheduleMode
 import ru.heuri.sklyanka.domain.time.TimeSource
+import java.time.LocalDate
 import java.time.LocalDateTime
 
 /**
@@ -34,11 +35,22 @@ class ScheduleExpander(private val time: TimeSource, private val policy: IntakeG
         return generateSequence(first) { it.plusDays(1) }
             .takeWhile { !it.isAfter(last) }
             .flatMap { date -> times.asSequence().map(date::atTime) }
-            // Окно начинается сегодняшними сутками, поэтому «раньше сейчас» бывает
-            // только у времён текущих суток — отдельная проверка даты не нужна.
-            .filterNot { moment -> policy.skipPastTimesToday && moment.isBefore(nowLocal) }
+            .filterNot { moment -> bornInThePast(moment, medication.startDate, nowLocal) }
             .toList()
     }
+
+    /**
+     * Приём, которого не было в природе: время дня начала курса, уже прошедшее к моменту,
+     * когда курс завели.
+     *
+     * Человек, заводящий лекарство в 14:30, в 08:00 его не принимал и принять не мог.
+     * Только про день начала курса это и верно: в любой другой день прошедшее время —
+     * настоящий приём, который человек мог принять и не отметить либо честно пропустить,
+     * и снимать его нельзя, иначе перегенерация в середине дня стирала бы сегодняшнюю
+     * историю. Решение обратимо настройкой [IntakeGenerationPolicy.skipPastTimesOnCourseStart].
+     */
+    private fun bornInThePast(moment: LocalDateTime, startDate: LocalDate, nowLocal: LocalDateTime): Boolean =
+        policy.skipPastTimesOnCourseStart && moment.toLocalDate() == startDate && moment.isBefore(nowLocal)
 
     /**
      * Порождает ли курс приёмы по расписанию вообще.

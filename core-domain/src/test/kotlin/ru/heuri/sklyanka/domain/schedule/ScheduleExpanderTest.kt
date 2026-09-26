@@ -60,10 +60,11 @@ class ScheduleExpanderTest {
     }
 
     /**
-     * Строка «06:00, 12:00, 18:00, 23:30 → 28» из `Примеров` здесь отсутствует намеренно:
-     * в 07:00 время 06:00 текущих суток уже прошло, и по правилу `TDD.md §5.3` приём на
-     * него не порождается. Ожидание сценария и правило дизайна противоречат друг другу —
-     * расхождение вынесено в отчёт задачи, а не подогнано здесь.
+     * Числа `Примеров` из `acceptance.feature`.
+     *
+     * Курс начат раньше текущих суток — ровно как в сценарии: правило дня начала курса
+     * тогда не вмешивается, и строка «06:00, 12:00, 18:00, 23:30» честно даёт 28, хотя
+     * время 06:00 текущих суток по часам уже прошло.
      */
     @ParameterizedTest(name = "{0} over a course until {1} gives {2} moments")
     @CsvSource(
@@ -72,12 +73,29 @@ class ScheduleExpanderTest {
         "08:00|14:00|20:00,2026-10-01,21",
         "08:00|20:00,2026-09-27,6",
         "08:00|14:00|20:00,2026-09-25,3",
-        "06:00|12:00|18:00|23:30,2026-10-01,27",
+        "06:00|12:00|18:00|23:30,2026-10-01,28",
     )
     fun `the number of moments follows the schedule and the course end`(times: String, end: String, expected: Int) {
-        val moments = expand(times = times.split("|").map(LocalTime::parse), endDate = LocalDate.parse(end))
+        val moments = expand(
+            times = times.split("|").map(LocalTime::parse),
+            startDate = Planning.TODAY.minusDays(5),
+            endDate = LocalDate.parse(end),
+        )
 
         assertEquals(expected, moments.size)
+    }
+
+    /** То же расписание, но курс начинается сегодня: утренние 06:00 задним числом не порождаются. */
+    @Test
+    fun `the same schedule started today loses the times that the course never had`() {
+        val moments = expand(
+            times = listOf(LocalTime.of(6, 0), NOON_SHARP, LocalTime.of(18, 0), LocalTime.of(23, 30)),
+            startDate = Planning.TODAY,
+            endDate = Planning.WINDOW_END,
+        )
+
+        assertEquals(27, moments.size)
+        assertEquals(3, moments.count { it.toLocalDate() == Planning.TODAY })
     }
 
     // --- Окно вперёд, а не весь курс ---------------------------------------------------
@@ -207,7 +225,7 @@ class ScheduleExpanderTest {
     // --- День начала курса и времена, которые уже прошли --------------------------------
 
     @Test
-    fun `times of today that already passed are not produced`() {
+    fun `times of the course start day that already passed are not produced`() {
         clock.setLocal(Planning.TODAY.atTime(14, 30))
 
         val moments = expand(times = listOf(Planning.MORNING, Planning.NOON, Planning.EVENING))
@@ -217,8 +235,40 @@ class ScheduleExpanderTest {
         assertEquals(3, moments.count { it.toLocalDate() == Planning.TODAY.plusDays(1) })
     }
 
+    /**
+     * Обычный день курса — не день его начала: прошедший приём человек мог принять
+     * и не отметить либо честно пропустить, и снимать его нельзя.
+     */
     @Test
-    fun `a time exactly equal to now is still produced`() {
+    fun `a passed time of an ordinary day of the course is still produced`() {
+        clock.setLocal(Planning.TODAY.atTime(14, 30))
+
+        val moments = expand(
+            times = listOf(Planning.MORNING, Planning.NOON, Planning.EVENING),
+            startDate = Planning.TODAY.minusDays(5),
+        )
+
+        assertEquals(
+            listOf(Planning.MORNING, Planning.NOON, Planning.EVENING),
+            moments.filter { it.toLocalDate() == Planning.TODAY }.map { it.toLocalTime() },
+        )
+    }
+
+    /** Перегенерация в середине дня не стирает сегодняшнюю историю курса, начатого раньше. */
+    @Test
+    fun `regenerating in the middle of the day keeps the whole day of a running course`() {
+        clock.setLocal(Planning.TODAY.atTime(23, 0))
+
+        val moments = expand(
+            times = listOf(Planning.MORNING, Planning.NOON, Planning.EVENING),
+            startDate = Planning.TODAY.minusDays(1),
+        )
+
+        assertEquals(3, moments.count { it.toLocalDate() == Planning.TODAY })
+    }
+
+    @Test
+    fun `a time exactly equal to now is still produced on the course start day`() {
         clock.setLocal(Planning.TODAY.atTime(Planning.MORNING))
 
         val moments = expand(times = listOf(Planning.MORNING))
@@ -231,9 +281,9 @@ class ScheduleExpanderTest {
      * Оно параметр, а не развилка в коде: заказчик меняет значение, а не планировщик.
      */
     @Test
-    fun `keeping past times of today is a policy switch and not a rewrite`() {
+    fun `keeping past times of the course start day is a policy switch and not a rewrite`() {
         clock.setLocal(Planning.TODAY.atTime(14, 30))
-        val keeping = ScheduleExpander(clock, Planning.POLICY.copy(skipPastTimesToday = false))
+        val keeping = ScheduleExpander(clock, Planning.POLICY.copy(skipPastTimesOnCourseStart = false))
 
         val moments = keeping.expand(
             Planning.medication(times = listOf(Planning.MORNING, Planning.NOON, Planning.EVENING)),
@@ -248,10 +298,9 @@ class ScheduleExpanderTest {
 
     @Test
     fun `intakes on both sides of midnight belong to different dates`() {
-        clock.setLocal(Planning.TODAY.atStartOfDay())
-
         val moments = expand(
             times = listOf(LocalTime.of(23, 55), LocalTime.of(0, 5)),
+            startDate = Planning.TODAY.minusDays(1),
             endDate = Planning.TODAY.plusDays(1),
         )
 
@@ -313,6 +362,8 @@ class ScheduleExpanderTest {
     }
 
     private companion object {
+        val NOON_SHARP: LocalTime = LocalTime.of(12, 0)
+
         /** Пояс на три часа восточнее Москвы и на три часа западнее — перелёт из сценариев @timezone. */
         val EAST_OF_MOSCOW: ZoneId = ZoneId.of("+06:00")
         val WEST_OF_MOSCOW: ZoneId = ZoneId.of("+00:00")
