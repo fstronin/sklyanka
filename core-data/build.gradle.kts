@@ -1,7 +1,6 @@
 // core-data — Room, DAO, миграции, репозитории, мапперы, файл переноса.
 //
-// Схема и сущности появляются в SKL-04. Здесь подключается Room и проверяется,
-// что тест с базой в памяти поднимается.
+// Схема данных «Склянки» (SKL-04): профили, лекарства, приёмы и журнал критичных операций.
 
 plugins {
     id("sklyanka.android.library")
@@ -10,8 +9,16 @@ plugins {
 
 android {
     namespace = "ru.heuri.sklyanka.data"
+
+    sourceSets {
+        // Экспортированные схемы Room нужны инструментальному тесту миграций как ресурсы:
+        // MigrationTestHelper поднимает базу предыдущей версии именно из этих файлов (МГ-3).
+        getByName("androidTest").assets.srcDir("$projectDir/schemas")
+    }
 }
 
+// МГ-1: JSON-схемы лежат в репозитории и входят в ревью. Изменение сущности
+// без нового файла схемы — не принимается.
 ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
 }
@@ -19,9 +26,19 @@ ksp {
 dependencies {
     implementation(project(":core-domain"))
 
+    // Домен отдаёт наружу Flow, и core-data обязан видеть корутины на своём classpath:
+    // в core-domain они подключены как implementation и транзитивно не приходят.
+    implementation(libs.kotlinx.coroutines.core)
+
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
     ksp(libs.room.compiler)
 
+    implementation(libs.androidx.datastore.preferences)
+
+    testImplementation(libs.junit4)
+    testImplementation(libs.kotlinx.coroutines.test)
+
     androidTestImplementation(libs.room.testing)
+    androidTestImplementation(libs.kotlinx.coroutines.test)
 }

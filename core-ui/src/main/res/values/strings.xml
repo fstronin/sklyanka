@@ -1,5 +1,83 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Общие строки интерфейса. Все тексты живут здесь, а не в Kotlin (НФТ-42). -->
+<!--
+  Общие строки интерфейса. Все тексты живут здесь, а не в Kotlin (НФТ-42).
+
+  Раздел «Подписи компонентов» — то, что компонент показывает сам и о чём экран
+  не должен помнить. Раздел «Заглушки превью» — тексты каталога и превью: они тоже
+  ресурсы, иначе русский текст просочится в код именно там, где его никто не ищет.
+  Правдоподобных названий лекарств и имён людей среди заглушек нет намеренно:
+  снимок экрана разработчика не должен превращаться в медицинские данные (НФТ-19).
+-->
 <resources>
     <string name="app_name">Склянка</string>
+
+    <!-- Подписи компонентов -->
+    <string name="action_taken">Принято</string>
+    <string name="action_skip">Пропустить</string>
+    <string name="action_take">Принять</string>
+    <string name="action_back">Назад</string>
+    <string name="action_cancel">Отмена</string>
+    <string name="status_missed">Пропущено</string>
+    <string name="status_marked_by_you">отметили вы</string>
+    <string name="label_as_needed">По потребности</string>
+    <string name="profile_label">Профиль · %1$s</string>
+
+    <!-- Описания для чтения с экрана (НФТ-30); формулировки — из aria-label макетов -->
+    <string name="cd_mark_intake">Отметить приём: %1$s</string>
+    <string name="cd_back">Назад</string>
+    <string name="cd_app_mark">Знак Склянка</string>
+    <string name="cd_warning">Предупреждение</string>
+    <string name="cd_profile">Чужой профиль</string>
+
+    <!-- Числа с единицами — через plurals, а не конкатенацией (НФТ-44) -->
+    <plurals name="intakes_taken_of_total">
+        <item quantity="one">Принято %1$d из %2$d приёма</item>
+        <item quantity="few">Принято %1$d из %2$d приёмов</item>
+        <item quantity="many">Принято %1$d из %2$d приёмов</item>
+        <item quantity="other">Принято %1$d из %2$d приёма</item>
+    </plurals>
+    <plurals name="pills_left">
+        <item quantity="one">осталась %1$d таблетка</item>
+        <item quantity="few">осталось %1$d таблетки</item>
+        <item quantity="many">осталось %1$d таблеток</item>
+        <item quantity="other">осталось %1$d таблетки</item>
+    </plurals>
+
+    <!-- Заглушки превью и каталога компонентов -->
+    <string name="preview_date">Пятница, 25 сентября</string>
+    <string name="preview_screen_title">Сегодня</string>
+    <string name="preview_section_title">Расписание</string>
+    <string name="preview_medication">Лекарство</string>
+    <string name="preview_dose">1 единица · дозировка</string>
+    <string name="preview_time">08:00</string>
+    <string name="preview_marked_time">08:05</string>
+    <string name="preview_profile_name">Образец</string>
+    <string name="preview_primary_action">Добавить лекарство</string>
+    <string name="preview_secondary_action">В архив</string>
+    <string name="preview_quiet_action">Изменить</string>
+    <string name="preview_field_label">Название</string>
+    <string name="preview_field_value">Значение</string>
+    <string name="preview_field_unit">мг</string>
+    <string name="preview_chip_label">Таблетка</string>
+    <string name="preview_switch_label">Настойчивое напоминание</string>
+    <string name="preview_switch_caption">Повторить, если не отметили</string>
+    <string name="preview_banner_warning">Упаковка заканчивается, пора пополнить</string>
+    <string name="preview_banner_profile">Это не ваши приёмы. Отметки сохранятся в чужой профиль.</string>
+    <string name="preview_banner_neutral">Пояснение к разделу настроек</string>
+    <string name="preview_empty_title">Пока ничего не запланировано</string>
+    <string name="preview_empty_text">Добавьте лекарство — и его приёмы появятся здесь по часам.</string>
+
+    <!-- Разделы каталога компонентов (только отладочная сборка) -->
+    <string name="catalog_title">Каталог компонентов</string>
+    <string name="catalog_typography">Типографика</string>
+    <string name="catalog_intake_card">Карточка приёма</string>
+    <string name="catalog_chip">Чип</string>
+    <string name="catalog_buttons">Кнопки</string>
+    <string name="catalog_text_field">Поле ввода</string>
+    <string name="catalog_switch">Переключатель</string>
+    <string name="catalog_banner">Баннер</string>
+    <string name="catalog_progress">Полоса прогресса</string>
+    <string name="catalog_empty_state">Пустое состояние</string>
+    <string name="catalog_screen_header">Шапка экрана</string>
+    <string name="catalog_profile_stripe">Полоса профиля</string>
 </resources>

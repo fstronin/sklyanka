@@ -117,6 +117,7 @@ class ProjectChecksConventionPlugin : Plugin<Project> {
         val ANDROID_MODULES = listOf(":app", ":core-ui", ":core-data", ":feature-today")
         val PROJECT_RULES = listOf(
             "HardcodedDesignToken",
+            "HardcodedTextStyle",
             "RussianTextInCode",
             "DirectSystemClockAccess",
             "DestructiveRoomMigration",

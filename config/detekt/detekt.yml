@@ -31,6 +31,12 @@ sklyanka:
     allowedPackages: 'ru.heuri.sklyanka.ui.token'
     allowedFiles: ''
 
+  HardcodedTextStyle:
+    active: true
+    # Шкала типографики — единственное место, где TextStyle собирается из значений.
+    allowedPackages: 'ru.heuri.sklyanka.ui.token'
+    allowedFiles: ''
+
   RussianTextInCode:
     active: true
     # Шаги приёмки обязаны дословно совпадать с русским Gherkin из docs/tasks:

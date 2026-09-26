@@ -8,7 +8,8 @@ import io.gitlab.arturbosch.detekt.api.RuleSetProvider
  * Набор правил проекта «Склянка».
  *
  * Здесь живут запреты, которые нельзя выразить стандартными правилами detekt:
- * дизайн-токены, русский текст в коде, прямое обращение к часам, разрушающая
+ * дизайн-токены, начертание мимо шкалы, русский текст в коде, прямое обращение к часам,
+ * разрушающая
  * миграция Room и Android в доменном модуле (TDD §5.3).
  */
 class SklyankaRuleSetProvider : RuleSetProvider {
@@ -19,6 +20,7 @@ class SklyankaRuleSetProvider : RuleSetProvider {
         ruleSetId,
         listOf(
             HardcodedDesignToken(config),
+            HardcodedTextStyle(config),
             RussianTextInCode(config),
             DirectSystemClockAccess(config),
             DestructiveRoomMigration(config),

@@ -21,6 +21,7 @@ dependencies {
     implementation(project(":core-data"))
     implementation(project(":feature-today"))
 
+    implementation(libs.kotlinx.coroutines.core)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)

@@ -154,6 +154,41 @@ class SklyankaRulesTest {
         assertTrue(findings.isEmpty())
     }
 
+    @Test
+    fun `text style rule rejects a style built outside the token package`() {
+        val findings = HardcodedTextStyle(TOKEN_CONFIG).lint(
+            """
+            package ru.heuri.sklyanka.feature.today
+
+            val title = TextStyle(fontSize = 20.sp)
+            val caption = SpanStyle(fontWeight = FontWeight.Medium)
+            """.trimIndent(),
+        )
+
+        assertEquals(2, findings.size, findings.joinToString { it.message })
+    }
+
+    @Test
+    fun `text style rule allows the scale itself and edits of a scale style`() {
+        val insideScale = HardcodedTextStyle(TOKEN_CONFIG).lint(
+            """
+            package ru.heuri.sklyanka.ui.token
+
+            val title = TextStyle(fontSize = 20.sp)
+            """.trimIndent(),
+        )
+        val editOfScale = HardcodedTextStyle(TOKEN_CONFIG).lint(
+            """
+            package ru.heuri.sklyanka.feature.today
+
+            val title = SklyankaType.Body.copy(color = colors.text)
+            """.trimIndent(),
+        )
+
+        assertTrue(insideScale.isEmpty(), insideScale.joinToString { it.message })
+        assertTrue(editOfScale.isEmpty(), editOfScale.joinToString { it.message })
+    }
+
     private companion object {
         val TOKEN_CONFIG = TestConfig("allowedPackages" to "ru.heuri.sklyanka.ui.token")
     }

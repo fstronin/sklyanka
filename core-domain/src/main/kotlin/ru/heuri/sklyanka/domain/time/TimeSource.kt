@@ -1,6 +1,8 @@
 package ru.heuri.sklyanka.domain.time
 
 import java.time.Instant
+import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.ZoneId
 
 /**
@@ -25,4 +27,15 @@ interface TimeSource {
      * в 08:00 после перелёта, поэтому пояс нужен отдельно от момента.
      */
     fun zone(): ZoneId
+
+    /**
+     * Сегодняшняя дата в поясе профиля.
+     *
+     * Граница суток — локальная полночь (НФТ-37), а не «минус 24 часа от момента»:
+     * в сутках с переводом времени их 23 или 25.
+     */
+    fun today(): LocalDate = now().atZone(zone()).toLocalDate()
+
+    /** Текущие местные дата и время — то, с чем сравнивается назначенное время приёма. */
+    fun nowLocal(): LocalDateTime = now().atZone(zone()).toLocalDateTime()
 }

@@ -10,6 +10,7 @@ kotlin = "2.0.21"
 ksp = "2.0.21-1.0.28"
 hilt = "2.52"
 room = "2.6.1"
+datastore = "1.1.1"
 detekt = "1.23.7"
 ktlint-plugin = "12.1.2"
 coreKtx = "1.13.1"
@@ -60,6 +61,9 @@ room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
 room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 room-testing = { module = "androidx.room:room-testing", version.ref = "room" }
+
+# --- Постоянные настройки: активный профиль переживает перезапуск (ПРФ-17, ПРФ-18) ---
+androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
 
 # --- Инструментальные тесты ---
 junit4 = { module = "junit:junit", version.ref = "junit4" }
