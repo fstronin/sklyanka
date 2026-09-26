@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Новое лекарство</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&amp;family=Literata:opsz,wght@7..72,400;7..72,600&amp;display=swap">
+<style>
+body{margin:0;font-family:'Golos Text',system-ui,sans-serif;background:#FBF7F1;-webkit-font-smoothing:antialiased}
+a{color:#B4512F;text-decoration:none}a:hover{color:#8F3E23}
+</style>
+</helmet>
+<div style="width: 390px; height: 1560px; box-sizing: border-box; background: #FBF7F1; color: #241F1B; display: flex; flex-direction: column; overflow: hidden">
+
+<div style="padding: 26px 20px 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px">
+<a href="Meds.dc.html" style="font-size: 15px; color: #5F564D">Отмена</a>
+<div style="font-size: 15px; font-weight: 600">Новое лекарство</div>
+<button type="button" style="border: none; background: transparent; font-family: inherit; font-size: 15px; font-weight: 600; color: {{accent}}; cursor: pointer; padding: 0">Готово</button>
+</div>
+
+<div style="flex-grow: 1; padding: 6px 20px 0; display: flex; flex-direction: column; gap: 22px; overflow: hidden">
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<label for="med-name" style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #5F564D">Название</label>
+<input id="med-name" type="text" value="Магний B6" style="height: 50px; box-sizing: border-box; padding: 0 14px; background: #FFFFFF; border: 1px solid #E6DED2; border-radius: 14px; font-family: inherit; font-size: 16px; color: #241F1B">
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #5F564D">Форма выпуска</div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px">
+<button type="button" aria-pressed="true" style="height: 78px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; background: #F6E7DF; border: 1.5px solid {{accent}}; border-radius: 15px; font-family: inherit; font-size: 12px; font-weight: 600; color: #241F1B; cursor: pointer">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#B4512F" stroke-width="1.6"><circle cx="12" cy="12" r="8"></circle><path d="M5.6 12h12.8"></path></svg>
+Таблетка
+</button>
+<button type="button" aria-pressed="false" style="height: 78px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; background: #FFFFFF; border: 1px solid #E6DED2; border-radius: 15px; font-family: inherit; font-size: 12px; font-weight: 500; color: #3B342E; cursor: pointer">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5F564D" stroke-width="1.6"><rect x="3" y="8.5" width="18" height="7" rx="3.5"></rect><path d="M12 8.5v7"></path></svg>
+Капсула
+</button>
+<button type="button" aria-pressed="false" style="height: 78px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; background: #FFFFFF; border: 1px solid #E6DED2; border-radius: 15px; font-family: inherit; font-size: 12px; font-weight: 500; color: #3B342E; cursor: pointer">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5F564D" stroke-width="1.6" stroke-linecap="round"><path d="M9.5 9h5v10.5a1.5 1.5 0 0 1-1.5 1.5h-2a1.5 1.5 0 0 1-1.5-1.5z"></path><path d="M10.5 9V5.5h3V9"></path><path d="M16.5 4h2.5M16.5 6.8h2.5"></path></svg>
+Спрей
+</button>
+<button type="button" aria-pressed="false" style="height: 78px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; background: #FFFFFF; border: 1px solid #E6DED2; border-radius: 15px; font-family: inherit; font-size: 12px; font-weight: 500; color: #3B342E; cursor: pointer">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5F564D" stroke-width="1.6" stroke-linecap="round"><path d="M8 4h8M9.5 4v3.5L6.5 13v6a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2v-6l-3-5.5V4"></path><path d="M6.5 15h11"></path></svg>
+Сироп
+</button>
+<button type="button" aria-pressed="false" style="height: 78px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; background: #FFFFFF; border: 1px solid #E6DED2; border-radius: 15px; font-family: inherit; font-size: 12px; font-weight: 500; color: #3B342E; cursor: pointer">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5F564D" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5c3 4.2 5 7 5 9.3A5 5 0 0 1 7 12.8c0-2.3 2-5.1 5-9.3z"></path></svg>
+Капли
+</button>
+<button type="button" aria-pressed="false" style="height: 78px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; background: #FFFFFF; border: 1px solid #E6DED2; border-radius: 15px; font-family: inherit; font-size: 12px; font-weight: 500; color: #3B342E; cursor: pointer">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5F564D" stroke-width="1.6" stroke-linecap="round"><path d="M14.5 3.5 20.5 9.5"></path><path d="M17.5 6.5 9 15l-3.5 1 1-3.5 8.5-8.5"></path><path d="M4 20h6"></path></svg>
+Инъекция
+</button>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #5F564D">Вид таблетки</div>
+<div style="display: flex; gap: 10px">
+<button type="button" aria-label="Круглая" aria-pressed="true" style="width: 60px; height: 60px; border: 1.5px solid {{accent}}; background: #F6E7DF; border-radius: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer">
+<svg width="30" height="30" viewBox="0 0 32 32" fill="none" stroke="#B4512F" stroke-width="1.6"><circle cx="16" cy="16" r="11"></circle></svg>
+</button>
+<button type="button" aria-label="Круглая с риской" aria-pressed="false" style="width: 60px; height: 60px; border: 1px solid #E6DED2; background: #FFFFFF; border-radius: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer">
+<svg width="30" height="30" viewBox="0 0 32 32" fill="none" stroke="#5F564D" stroke-width="1.6"><circle cx="16" cy="16" r="11"></circle><path d="M16 5v22"></path></svg>
+</button>
+<button type="button" aria-label="Овальная" aria-pressed="false" style="width: 60px; height: 60px; border: 1px solid #E6DED2; background: #FFFFFF; border-radius: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer">
+<svg width="30" height="30" viewBox="0 0 32 32" fill="none" stroke="#5F564D" stroke-width="1.6"><ellipse cx="16" cy="16" rx="13" ry="8"></ellipse></svg>
+</button>
+<button type="button" aria-label="Продолговатая" aria-pressed="false" style="width: 60px; height: 60px; border: 1px solid #E6DED2; background: #FFFFFF; border-radius: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer">
+<svg width="30" height="30" viewBox="0 0 32 32" fill="none" stroke="#5F564D" stroke-width="1.6"><rect x="3" y="10" width="26" height="12" rx="6"></rect></svg>
+</button>
+<button type="button" aria-label="Треугольная" aria-pressed="false" style="width: 60px; height: 60px; border: 1px solid #E6DED2; background: #FFFFFF; border-radius: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer">
+<svg width="30" height="30" viewBox="0 0 32 32" fill="none" stroke="#5F564D" stroke-width="1.6" stroke-linejoin="round"><path d="M16 5.5 28 25H4z"></path></svg>
+</button>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #5F564D">Доза на один приём</div>
+<div style="display: flex; gap: 10px">
+<div style="width: 120px; display: flex; align-items: center; height: 50px; box-sizing: border-box; padding: 0 14px; background: #FFFFFF; border: 1px solid #E6DED2; border-radius: 14px; gap: 8px">
+<input id="dose-count" type="text" value="2" aria-label="Количество" style="width: 100%; border: none; outline: none; background: transparent; font-family: inherit; font-size: 16px; font-weight: 600; color: #241F1B">
+<span style="font-size: 14px; color: #5F564D; white-space: nowrap">шт</span>
+</div>
+<div style="flex-grow: 1; display: flex; align-items: center; height: 50px; box-sizing: border-box; padding: 0 14px; background: #FFFFFF; border: 1px solid #E6DED2; border-radius: 14px; gap: 8px">
+<input id="dose-strength" type="text" value="48" aria-label="Дозировка" style="width: 100%; border: none; outline: none; background: transparent; font-family: inherit; font-size: 16px; color: #241F1B">
+<span style="font-size: 14px; color: #5F564D; white-space: nowrap">мг</span>
+</div>
+</div>
+</div>
+
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px; background: #FFFFFF; border: 1px solid #E6DED2; border-radius: 16px">
+<div style="display: flex; flex-direction: column; gap: 2px">
+<div style="font-size: 15px; font-weight: 600">Приёмов в сутки</div>
+<div style="font-size: 12px; color: #5F564D">Время задаётся ниже</div>
+</div>
+<div style="display: flex; align-items: center; gap: 12px">
+<button type="button" aria-label="Уменьшить" style="width: 44px; height: 44px; border: 1px solid #E6DED2; background: #FBF7F1; border-radius: 999px; display: flex; align-items: center; justify-content: center; cursor: pointer">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5F564D" stroke-width="2.2" stroke-linecap="round"><path d="M5 12h14"></path></svg>
+</button>
+<div style="min-width: 22px; text-align: center; font-size: 18px; font-weight: 600">2</div>
+<button type="button" aria-label="Увеличить" style="width: 44px; height: 44px; border: 1px solid #E6DED2; background: #FBF7F1; border-radius: 999px; display: flex; align-items: center; justify-content: center; cursor: pointer">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5F564D" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+</button>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #5F564D">Время приёма</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: #FFFFFF; border: 1px solid #E6DED2; border-radius: 14px">
+<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#8C8177" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3 2"></path></svg>
+<div style="flex-grow: 1; font-size: 17px; font-weight: 600; letter-spacing: 0.01em">08:00</div>
+<button type="button" aria-label="Удалить время 08:00" style="width: 34px; height: 34px; border: none; background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer">
+<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#B0A597" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"></path></svg>
+</button>
+</div>
+<div style="display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: #FFFFFF; border: 1px solid #E6DED2; border-radius: 14px">
+<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#8C8177" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3 2"></path></svg>
+<div style="flex-grow: 1; font-size: 17px; font-weight: 600; letter-spacing: 0.01em">20:00</div>
+<button type="button" aria-label="Удалить время 20:00" style="width: 34px; height: 34px; border: none; background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer">
+<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#B0A597" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"></path></svg>
+</button>
+</div>
+<button type="button" style="height: 46px; border: 1px dashed #CFC2B1; background: transparent; border-radius: 14px; font-family: inherit; font-size: 14px; font-weight: 500; color: {{accent}}; cursor: pointer">Добавить время</button>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #5F564D">Режим приёма</div>
+<div style="display: flex; padding: 4px; background: #EFE7DB; border-radius: 13px; gap: 4px">
+<button type="button" style="flex-grow: 1; height: 40px; border: none; border-radius: 10px; background: #FFFFFF; color: #241F1B; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer">По расписанию</button>
+<button type="button" style="flex-grow: 1; height: 40px; border: none; border-radius: 10px; background: transparent; color: #5F564D; font-family: inherit; font-size: 14px; font-weight: 500; cursor: pointer">По потребности</button>
+</div>
+<div style="font-size: 12px; color: #5F564D; line-height: 1.45; padding-left: 2px">По потребности — без напоминаний: приём отмечается вручную, когда понадобилось.</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #5F564D">Связь с едой</div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px">
+<button type="button" aria-pressed="false" style="height: 44px; border: 1px solid #E6DED2; border-radius: 13px; background: #FFFFFF; font-family: inherit; font-size: 13px; font-weight: 500; color: #3B342E; cursor: pointer">Неважно</button>
+<button type="button" aria-pressed="true" style="height: 44px; border: 1.5px solid {{accent}}; border-radius: 13px; background: #F6E7DF; font-family: inherit; font-size: 13px; font-weight: 600; color: #241F1B; cursor: pointer">До еды</button>
+<button type="button" aria-pressed="false" style="height: 44px; border: 1px solid #E6DED2; border-radius: 13px; background: #FFFFFF; font-family: inherit; font-size: 13px; font-weight: 500; color: #3B342E; cursor: pointer">Во время</button>
+<button type="button" aria-pressed="false" style="height: 44px; border: 1px solid #E6DED2; border-radius: 13px; background: #FFFFFF; font-family: inherit; font-size: 13px; font-weight: 500; color: #3B342E; cursor: pointer">После</button>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #5F564D">Остаток в упаковке</div>
+<div style="background: #FFFFFF; border: 1px solid #E6DED2; border-radius: 16px; overflow: hidden">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px">
+<label for="stock-left" style="font-size: 15px">Сейчас есть</label>
+<div style="display: flex; align-items: center; gap: 8px">
+<input id="stock-left" type="text" value="60" style="width: 54px; height: 42px; box-sizing: border-box; padding: 0 12px; background: #FBF7F1; border: 1px solid #E6DED2; border-radius: 12px; font-family: inherit; font-size: 16px; font-weight: 600; color: #241F1B; text-align: center">
+<span style="font-size: 14px; color: #5F564D">таблеток</span>
+</div>
+</div>
+<div style="height: 1px; background: #EFE7DB; margin: 0 16px"></div>
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px">
+<div style="display: flex; flex-direction: column; gap: 2px">
+<div style="font-size: 15px">Напомнить о покупке</div>
+<div style="font-size: 12px; color: #5F564D">Когда останется на 5 дней</div>
+</div>
+<button type="button" role="switch" aria-checked="true" aria-label="Напомнить о покупке" style="width: 52px; height: 32px; flex-shrink: 0; border: none; border-radius: 999px; background: {{accent}}; padding: 3px; display: flex; justify-content: flex-end; align-items: center; cursor: pointer"><span style="width: 26px; height: 26px; border-radius: 999px; background: #FFFFFF; display: block"></span></button>
+</div>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #5F564D">Период приёма</div>
+<div style="background: #FFFFFF; border: 1px solid #E6DED2; border-radius: 16px; overflow: hidden">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px">
+<div style="font-size: 15px">Начало</div>
+<div style="font-size: 15px; font-weight: 600">25 сентября 2026</div>
+</div>
+<div style="height: 1px; background: #EFE7DB"></div>
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px">
+<div style="display: flex; flex-direction: column; gap: 2px">
+<div style="font-size: 15px">Принимать бессрочно</div>
+<div style="font-size: 12px; color: #5F564D">Дата окончания не задана</div>
+</div>
+<button type="button" role="switch" aria-checked="true" aria-label="Принимать бессрочно" style="width: 52px; height: 32px; flex-shrink: 0; border: none; border-radius: 999px; background: {{accent}}; padding: 3px; display: flex; justify-content: flex-end; align-items: center; cursor: pointer">
+<span style="width: 26px; height: 26px; border-radius: 999px; background: #FFFFFF; display: block"></span>
+</button>
+</div>
+<div style="height: 1px; background: #EFE7DB"></div>
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px">
+<div style="font-size: 15px; color: #A79C90">Окончание</div>
+<div style="font-size: 15px; color: #A79C90">—</div>
+</div>
+</div>
+</div>
+
+</div>
+
+<div style="padding: 14px 20px 26px; background: #FBF7F1">
+<button type="button" style="width: 100%; height: 54px; border: none; border-radius: 16px; background: {{accent}}; color: #FFFFFF; font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer">Сохранить лекарство</button>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#B4512F","options":["#B4512F","#1F5F6B","#7A5B2E","#6B4A6B"]},"$preview":{"width":390,"height":1560}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { accent: this.props.accent ?? '#B4512F' };
+  }
+}
+</script>
+</body>
+</html>

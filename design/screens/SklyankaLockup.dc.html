@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Логотип с названием</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500&amp;family=Literata:opsz,wght@7..72,400;7..72,600&amp;display=swap">
+<style>
+body{margin:0;font-family:'Golos Text',system-ui,sans-serif;background:#FBF7F1;-webkit-font-smoothing:antialiased}
+a{color:#B4512F;text-decoration:none}a:hover{color:#8F3E23}
+</style>
+</helmet>
+<div style="width: 660px; height: 280px; box-sizing: border-box; background: #191512; display: flex; align-items: center; justify-content: center; gap: 34px">
+<svg width="128" height="128" viewBox="0 0 200 200" fill="none" role="img" aria-label="Знак Склянка">
+<defs>
+<radialGradient id="gbK" cx="34%" cy="28%" r="78%">
+<stop offset="0%" stop-color="#FBF7F1" stop-opacity="0.24"></stop>
+<stop offset="52%" stop-color="#FBF7F1" stop-opacity="0.07"></stop>
+<stop offset="100%" stop-color="#FBF7F1" stop-opacity="0.015"></stop>
+</radialGradient>
+<radialGradient id="caK" cx="50%" cy="50%" r="50%">
+<stop offset="0%" stop-color="{{accent}}" stop-opacity="0.62"></stop>
+<stop offset="100%" stop-color="{{accent}}" stop-opacity="0"></stop>
+</radialGradient>
+<linearGradient id="rlK" x1="18%" y1="8%" x2="86%" y2="94%">
+<stop offset="0%" stop-color="#FBF7F1" stop-opacity="0.85"></stop>
+<stop offset="46%" stop-color="#FBF7F1" stop-opacity="0.16"></stop>
+<stop offset="100%" stop-color="#FBF7F1" stop-opacity="0.42"></stop>
+</linearGradient>
+</defs>
+<ellipse cx="100" cy="163" rx="58" ry="19" fill="url(#caK)"></ellipse>
+<circle cx="100" cy="100" r="86" fill="url(#gbK)"></circle>
+<circle cx="100" cy="100" r="86" stroke="url(#rlK)" stroke-width="3.5"></circle>
+<circle cx="100" cy="100" r="66" stroke="#FBF7F1" stroke-opacity="0.13" stroke-width="7"></circle>
+<circle cx="100" cy="100" r="47" stroke="#FBF7F1" stroke-opacity="0.26" stroke-width="2"></circle>
+<circle cx="100" cy="100" r="28" stroke="#FBF7F1" stroke-opacity="0.5" stroke-width="2.5"></circle>
+<path d="M25.1 86.8A76 76 0 0 1 86.8 25.1L88.4 34A67 67 0 0 0 34 88.4Z" fill="#FBF7F1" fill-opacity="0.82"></path>
+<path d="M180.8 129.4A86 86 0 0 1 114.9 184.7" stroke="{{accent}}" stroke-width="4.5" stroke-linecap="round"></path>
+<circle cx="100" cy="100" r="8" fill="#FBF7F1" fill-opacity="0.92"></circle>
+</svg>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="font-family: 'Literata', Georgia, serif; font-size: 62px; font-weight: 600; letter-spacing: -0.02em; color: #FBF7F1; line-height: 1">Склянка</div>
+<div style="font-size: 14px; letter-spacing: 0.2em; text-transform: uppercase; color: #9A9086">приём лекарств</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#C9633D","options":["#C9633D","#2E8296","#C79A3B","#8E6BA8"]},"$preview":{"width":660,"height":280}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { accent: this.props.accent ?? '#C9633D' };
+  }
+}
+</script>
+</body>
+</html>

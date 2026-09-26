@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Разрешения EMUI</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&amp;family=Literata:opsz,wght@7..72,400;7..72,600&amp;display=swap">
+<style>
+body{margin:0;font-family:'Golos Text',system-ui,sans-serif;background:#FBF7F1;-webkit-font-smoothing:antialiased}
+a{color:#B4512F;text-decoration:none}a:hover{color:#8F3E23}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #FBF7F1; color: #241F1B; display: flex; flex-direction: column; overflow: hidden">
+
+<div style="padding: 46px 24px 10px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; gap: 6px">
+<div style="width: 34px; height: 4px; border-radius: 999px; background: {{accent}}"></div>
+<div style="width: 34px; height: 4px; border-radius: 999px; background: {{accent}}"></div>
+<div style="width: 34px; height: 4px; border-radius: 999px; background: #E0D5C6"></div>
+</div>
+<h1 style="margin: 6px 0 0; font-family: 'Literata', Georgia, serif; font-size: 28px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.2">Чтобы напоминания приходили вовремя</h1>
+<div style="font-size: 15px; color: #5F564D; line-height: 1.45">На прошивке EMUI система агрессивно выгружает фоновые приложения. Без трёх разрешений ниже приёмы будут приходить с опозданием или не приходить совсем.</div>
+</div>
+
+<div style="flex-grow: 1; padding: 20px 24px 0; display: flex; flex-direction: column; gap: 12px; overflow: hidden">
+
+<div style="display: flex; align-items: flex-start; gap: 13px; padding: 16px; background: #FFFFFF; border: 1px solid #EFE7DB; border-radius: 18px">
+<div style="width: 38px; height: 38px; flex-shrink: 0; border-radius: 12px; background: #E2EEF0; display: flex; align-items: center; justify-content: center">
+<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#1F5F6B" stroke-width="1.7" stroke-linecap="round"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"></path><path d="M10 19a2 2 0 0 0 4 0"></path></svg>
+</div>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0">
+<div style="font-size: 15px; font-weight: 600">Уведомления</div>
+<div style="font-size: 13px; color: #5F564D; line-height: 1.4">Карточка приёма на экране и на часах</div>
+</div>
+<div style="display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: #1F5F6B; padding-top: 3px">
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#1F5F6B" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg>
+Есть
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 13px; padding: 16px; background: #FFFFFF; border: 1.5px solid #E7CEC2; border-radius: 18px">
+<div style="display: flex; align-items: flex-start; gap: 13px">
+<div style="width: 38px; height: 38px; flex-shrink: 0; border-radius: 12px; background: #F6E7DF; display: flex; align-items: center; justify-content: center">
+<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#B4512F" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="13" r="8"></circle><path d="M12 9v4l2.5 1.8"></path><path d="M5 4 8 2M19 4l-3-2"></path></svg>
+</div>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0">
+<div style="font-size: 15px; font-weight: 600">Точные будильники</div>
+<div style="font-size: 13px; color: #5F564D; line-height: 1.4">Иначе Android сдвинет приём на удобное себе время — до получаса</div>
+</div>
+</div>
+<button type="button" style="height: 44px; border: none; border-radius: 13px; background: {{accent}}; color: #FFFFFF; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer">Разрешить</button>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 13px; padding: 16px; background: #FFFFFF; border: 1.5px solid #E7CEC2; border-radius: 18px">
+<div style="display: flex; align-items: flex-start; gap: 13px">
+<div style="width: 38px; height: 38px; flex-shrink: 0; border-radius: 12px; background: #F6E7DF; display: flex; align-items: center; justify-content: center">
+<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#B4512F" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3 5.5 13.5H11L10 21l7.5-10.5H12z"></path></svg>
+</div>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0">
+<div style="font-size: 15px; font-weight: 600">Автозапуск без ограничений</div>
+<div style="font-size: 13px; color: #5F564D; line-height: 1.4">Настройки → Батарея → Запуск приложений → Склянка → вручную</div>
+</div>
+</div>
+<button type="button" style="height: 44px; border: none; border-radius: 13px; background: {{accent}}; color: #FFFFFF; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer">Открыть настройки</button>
+</div>
+
+<div style="display: flex; align-items: flex-start; gap: 10px; padding: 14px 16px; background: #F3EDE3; border-radius: 16px">
+<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#5F564D" stroke-width="1.7" stroke-linecap="round" style="flex-shrink: 0; margin-top: 1px"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5.5M12 7.8v0.2"></path></svg>
+<div style="font-size: 13px; color: #5F564D; line-height: 1.45">Проверить можно сразу: пришлём тестовое напоминание через минуту.</div>
+</div>
+
+</div>
+
+<div style="padding: 16px 24px 30px; display: flex; flex-direction: column; gap: 10px">
+<a href="WatchSetup.dc.html" style="height: 54px; border-radius: 16px; background: #241F1B; color: #FBF7F1; font-size: 16px; font-weight: 600; display: flex; align-items: center; justify-content: center">Дальше</a>
+<button type="button" style="height: 44px; border: none; background: transparent; font-family: inherit; font-size: 14px; color: #5F564D; cursor: pointer">Пропустить, настрою позже</button>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#B4512F","options":["#B4512F","#1F5F6B","#7A5B2E","#6B4A6B"]},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { accent: this.props.accent ?? '#B4512F' };
+  }
+}
+</script>
+</body>
+</html>

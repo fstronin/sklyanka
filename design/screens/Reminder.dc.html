@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Напоминание о приёме</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&amp;family=Literata:opsz,wght@7..72,400;7..72,600&amp;display=swap">
+<style>
+body{margin:0;font-family:'Golos Text',system-ui,sans-serif;background:#241F1B;-webkit-font-smoothing:antialiased}
+a{color:#E8B9A5;text-decoration:none}a:hover{color:#F3D4C6}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #241F1B; color: #FBF7F1; display: flex; flex-direction: column; overflow: hidden; padding: 0 24px">
+
+<div style="padding-top: 84px; display: flex; flex-direction: column; align-items: center; gap: 8px">
+<div style="font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: #A79C90">Приём по расписанию</div>
+<div style="font-family: 'Literata', Georgia, serif; font-size: 64px; font-weight: 600; letter-spacing: -0.02em; line-height: 1">14:00</div>
+</div>
+
+<div style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; padding-bottom: 20px">
+<div style="width: 128px; height: 128px; border-radius: 999px; background: #342D26; display: flex; align-items: center; justify-content: center">
+<svg width="64" height="64" viewBox="0 0 32 32" fill="none" stroke="#E8B9A5" stroke-width="1.5"><circle cx="16" cy="16" r="11.5"></circle><path d="M4.5 16h23"></path></svg>
+</div>
+<div style="display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center">
+<div style="font-family: 'Literata', Georgia, serif; font-size: 32px; font-weight: 600; letter-spacing: -0.01em">Магний B6</div>
+<div style="font-size: 17px; color: #C9BFB1">2 таблетки · 48 мг</div>
+</div>
+<div style="display: flex; align-items: center; gap: 8px; padding: 9px 14px; background: #342D26; border-radius: 999px">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A79C90" stroke-width="1.7" stroke-linecap="round"><rect x="5" y="3.5" width="14" height="17" rx="4"></rect><path d="M9.5 3.5h5"></path></svg>
+<span style="font-size: 13px; color: #C9BFB1">Продублировано на часы</span>
+</div>
+</div>
+
+<div style="padding-bottom: 44px; display: flex; flex-direction: column; gap: 12px">
+<a href="Main.dc.html" style="height: 58px; border-radius: 18px; background: {{accent}}; color: #FFFFFF; font-size: 17px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 10px">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg>
+Принято
+</a>
+<div style="display: flex; gap: 12px">
+<button type="button" style="flex-grow: 1; height: 54px; border: 1px solid #4A4139; border-radius: 18px; background: transparent; color: #E5DCD1; font-family: inherit; font-size: 15px; font-weight: 500; cursor: pointer">Отложить 15 мин</button>
+<button type="button" style="flex-grow: 1; height: 54px; border: 1px solid #4A4139; border-radius: 18px; background: transparent; color: #E5DCD1; font-family: inherit; font-size: 15px; font-weight: 500; cursor: pointer">Пропустить</button>
+</div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#B4512F","options":["#B4512F","#1F5F6B","#7A5B2E","#6B4A6B"]},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { accent: this.props.accent ?? '#B4512F' };
+  }
+}
+</script>
+</body>
+</html>

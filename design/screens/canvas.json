@@ -1,0 +1,243 @@
+{
+  "v": 3,
+  "createdOnFiles": {
+    "v": 1,
+    "at": "2026-09-25T12:00:00Z"
+  },
+  "title": "Склянка — фирменный стиль и экраны",
+  "launch": {
+    "view": "canvas"
+  },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 1010,
+      "title": "Сегодня",
+      "is_interactive": true,
+      "radius": 34
+    },
+    "Meds.dc.html": {
+      "x": 470,
+      "y": 0,
+      "w": 390,
+      "h": 980,
+      "title": "Лекарства",
+      "is_interactive": true,
+      "radius": 34
+    },
+    "AddMed.dc.html": {
+      "x": 940,
+      "y": 0,
+      "w": 390,
+      "h": 1560,
+      "title": "Новое лекарство",
+      "is_interactive": true,
+      "radius": 34
+    },
+    "MedCard.dc.html": {
+      "x": 1410,
+      "y": 0,
+      "w": 390,
+      "h": 1010,
+      "title": "Карточка лекарства",
+      "is_interactive": true,
+      "radius": 34
+    },
+    "Reminder.dc.html": {
+      "x": 1880,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Напоминание",
+      "is_interactive": true,
+      "radius": 34
+    },
+    "Watch.dc.html": {
+      "x": 2350,
+      "y": 242,
+      "w": 360,
+      "h": 360,
+      "title": "Часы — шаблон Wear Engine"
+    },
+    "SklyankaMark.dc.html": {
+      "x": 0,
+      "y": 2000,
+      "w": 460,
+      "h": 460,
+      "title": "Знак — донце склянки",
+      "radius": 24
+    },
+    "SklyankaIcon.dc.html": {
+      "x": 540,
+      "y": 2000,
+      "w": 460,
+      "h": 460,
+      "title": "Иконка — тёмная и светлая",
+      "radius": 24
+    },
+    "SklyankaLockup.dc.html": {
+      "x": 1080,
+      "y": 2090,
+      "w": 660,
+      "h": 280,
+      "title": "Логотип с названием",
+      "radius": 24
+    },
+    "SklyankaScale.dc.html": {
+      "x": 1820,
+      "y": 2090,
+      "w": 660,
+      "h": 280,
+      "title": "Плоская редукция для мелких размеров",
+      "radius": 24
+    },
+    "Splash.dc.html": {
+      "x": 0,
+      "y": 2910,
+      "w": 390,
+      "h": 844,
+      "title": "Заставка",
+      "radius": 34
+    },
+    "Onboarding.dc.html": {
+      "x": 470,
+      "y": 2910,
+      "w": 390,
+      "h": 844,
+      "title": "Разрешения EMUI",
+      "is_interactive": true,
+      "radius": 34
+    },
+    "WatchSetup.dc.html": {
+      "x": 940,
+      "y": 2910,
+      "w": 390,
+      "h": 844,
+      "title": "Подключение часов",
+      "is_interactive": true,
+      "radius": 34
+    },
+    "Archive.dc.html": {
+      "x": 1410,
+      "y": 2910,
+      "w": 390,
+      "h": 844,
+      "title": "Архив",
+      "is_interactive": true,
+      "radius": 34
+    },
+    "History.dc.html": {
+      "x": 1880,
+      "y": 2910,
+      "w": 390,
+      "h": 844,
+      "title": "История приёмов",
+      "is_interactive": true,
+      "radius": 34
+    },
+    "Settings.dc.html": {
+      "x": 2350,
+      "y": 2910,
+      "w": 390,
+      "h": 1010,
+      "title": "Настройки",
+      "is_interactive": true,
+      "radius": 34
+    },
+    "Empty.dc.html": {
+      "x": 2820,
+      "y": 2910,
+      "w": 390,
+      "h": 844,
+      "title": "Пустое состояние",
+      "is_interactive": true,
+      "radius": 34
+    },
+    "SoundPicker.dc.html": {
+      "x": 3290,
+      "y": 2910,
+      "w": 390,
+      "h": 1010,
+      "title": "Звук напоминания — отложено",
+      "is_interactive": true,
+      "radius": 34
+    },
+    "DataTransfer.dc.html": {
+      "x": 3760,
+      "y": 2910,
+      "w": 390,
+      "h": 1010,
+      "title": "Перенос данных",
+      "is_interactive": true,
+      "radius": 34
+    },
+    "MainProfile.dc.html": {
+      "x": 4230,
+      "y": 2910,
+      "w": 390,
+      "h": 900,
+      "title": "Сегодня — профиль «Мама»",
+      "is_interactive": true,
+      "radius": 34
+    },
+    "MainDense.dc.html": {
+      "x": 4700,
+      "y": 2910,
+      "w": 390,
+      "h": 900,
+      "title": "Сегодня — плотный день",
+      "is_interactive": true,
+      "radius": 34
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "Meds.dc.html",
+    "AddMed.dc.html",
+    "MedCard.dc.html",
+    "Reminder.dc.html",
+    "Watch.dc.html",
+    "SklyankaMark.dc.html",
+    "SklyankaIcon.dc.html",
+    "SklyankaLockup.dc.html",
+    "SklyankaScale.dc.html",
+    "Splash.dc.html",
+    "Onboarding.dc.html",
+    "WatchSetup.dc.html",
+    "Archive.dc.html",
+    "History.dc.html",
+    "Settings.dc.html",
+    "Empty.dc.html",
+    "SoundPicker.dc.html",
+    "DataTransfer.dc.html",
+    "MainProfile.dc.html",
+    "MainDense.dc.html"
+  ],
+  "notes": {
+    "t1": {
+      "x": 0,
+      "y": -330,
+      "text": "Учёт лекарств — ключевые экраны",
+      "kind": "title1",
+      "maxW": 2710
+    },
+    "t2": {
+      "x": 0,
+      "y": 1670,
+      "text": "Склянка — знак в стекле",
+      "kind": "title1",
+      "maxW": 2480
+    },
+    "t3": {
+      "x": 0,
+      "y": 2580,
+      "text": "Остальные экраны и состояния",
+      "kind": "title1",
+      "maxW": 5090
+    }
+  },
+  "designSystems": []
+}

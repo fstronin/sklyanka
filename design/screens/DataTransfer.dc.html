@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Перенос данных</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&amp;family=Literata:opsz,wght@7..72,400;7..72,600&amp;display=swap">
+<style>
+body{margin:0;font-family:'Golos Text',system-ui,sans-serif;background:#FBF7F1;-webkit-font-smoothing:antialiased}
+a{color:#B4512F;text-decoration:none}a:hover{color:#8F3E23}
+</style>
+</helmet>
+<div style="width: 390px; height: 1010px; box-sizing: border-box; background: #FBF7F1; color: #241F1B; display: flex; flex-direction: column; overflow: hidden">
+
+<div style="padding: 26px 20px 8px; display: flex; align-items: center">
+<a href="Settings.dc.html" aria-label="Назад" style="width: 44px; height: 44px; margin-left: -10px; display: flex; align-items: center; justify-content: center">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3B342E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7"></path></svg>
+</a>
+</div>
+
+<div style="padding: 4px 20px 16px; display: flex; flex-direction: column; gap: 8px">
+<h1 style="margin: 0; font-family: 'Literata', Georgia, serif; font-size: 28px; font-weight: 600; letter-spacing: -0.01em">Перенос данных</h1>
+<div style="font-size: 15px; color: #5F564D; line-height: 1.45">Один файл со всеми лекарствами, расписаниями и историей. Облака нет — файл остаётся у вас.</div>
+</div>
+
+<div style="flex-grow: 1; padding: 0 20px; display: flex; flex-direction: column; gap: 14px; overflow: hidden">
+
+<div style="padding: 18px 16px; background: #FFFFFF; border: 1px solid #EFE7DB; border-radius: 18px; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; align-items: center; gap: 13px">
+<div style="width: 42px; height: 42px; flex-shrink: 0; border-radius: 13px; background: #E2EEF0; display: flex; align-items: center; justify-content: center">
+<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#1F5F6B" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15.5V4"></path><path d="m7.5 9.5 4.5-5 4.5 5"></path><path d="M4.5 15v3.5a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V15"></path></svg>
+</div>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px">
+<div style="font-size: 16px; font-weight: 600">Выгрузить</div>
+<div style="font-size: 12px; color: #5F564D">Файл sklyanka-2026-09-25.json</div>
+</div>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 7px">
+<span style="padding: 6px 11px; background: #F3EDE3; border-radius: 999px; font-size: 12px; color: #5F564D">5 лекарств</span>
+<span style="padding: 6px 11px; background: #F3EDE3; border-radius: 999px; font-size: 12px; color: #5F564D">12 в архиве</span>
+<span style="padding: 6px 11px; background: #F3EDE3; border-radius: 999px; font-size: 12px; color: #5F564D">история за 8 месяцев</span>
+<span style="padding: 6px 11px; background: #F3EDE3; border-radius: 999px; font-size: 12px; color: #5F564D">2 профиля</span>
+<span style="padding: 6px 11px; background: #F3EDE3; border-radius: 999px; font-size: 12px; color: #5F564D">звуки</span>
+</div>
+<button type="button" style="height: 50px; border: none; border-radius: 15px; background: {{accent}}; color: #FFFFFF; font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer">Сохранить файл</button>
+<div style="font-size: 12px; color: #5F564D">Последняя выгрузка — 2 сентября</div>
+</div>
+
+<div style="padding: 18px 16px; background: #FFFFFF; border: 1px solid #EFE7DB; border-radius: 18px; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; align-items: center; gap: 13px">
+<div style="width: 42px; height: 42px; flex-shrink: 0; border-radius: 13px; background: #F6E7DF; display: flex; align-items: center; justify-content: center">
+<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#B4512F" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11.5"></path><path d="m7.5 11 4.5 5 4.5-5"></path><path d="M4.5 15v3.5a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V15"></path></svg>
+</div>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px">
+<div style="font-size: 16px; font-weight: 600">Загрузить</div>
+<div style="font-size: 12px; color: #5F564D">Из файла на этом устройстве</div>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<button type="button" aria-pressed="true" style="display: flex; align-items: flex-start; gap: 11px; padding: 13px 14px; background: #FBF7F1; border: 1.5px solid {{accent}}; border-radius: 14px; font-family: inherit; cursor: pointer; text-align: left">
+<span style="width: 20px; height: 20px; flex-shrink: 0; margin-top: 1px; border-radius: 999px; border: 6px solid {{accent}}; box-sizing: border-box; background: #FFFFFF; display: block"></span>
+<span style="display: flex; flex-direction: column; gap: 3px">
+<span style="font-size: 14px; font-weight: 600; color: #241F1B">Добавить к текущим</span>
+<span style="font-size: 12px; color: #5F564D; line-height: 1.4">Совпадения по названию и дозировке будут показаны отдельно</span>
+</span>
+</button>
+<button type="button" aria-pressed="false" style="display: flex; align-items: flex-start; gap: 11px; padding: 13px 14px; background: #FFFFFF; border: 1px solid #E6DED2; border-radius: 14px; font-family: inherit; cursor: pointer; text-align: left">
+<span style="width: 20px; height: 20px; flex-shrink: 0; margin-top: 1px; border-radius: 999px; border: 1.5px solid #CFC2B1; box-sizing: border-box; display: block"></span>
+<span style="display: flex; flex-direction: column; gap: 3px">
+<span style="font-size: 14px; font-weight: 500; color: #241F1B">Заменить всё</span>
+<span style="font-size: 12px; color: #5F564D; line-height: 1.4">Текущие данные на этом устройстве будут стёрты</span>
+</span>
+</button>
+</div>
+
+<button type="button" style="height: 50px; border: 1px solid #D9CDBD; border-radius: 15px; background: transparent; font-family: inherit; font-size: 15px; font-weight: 600; color: #3B342E; cursor: pointer">Выбрать файл</button>
+</div>
+
+<div style="display: flex; align-items: flex-start; gap: 10px; padding: 14px 16px; background: #F3EDE3; border-radius: 16px">
+<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#5F564D" stroke-width="1.7" stroke-linecap="round" style="flex-shrink: 0; margin-top: 1px"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5.5M12 7.8v0.2"></path></svg>
+<div style="font-size: 13px; color: #5F564D; line-height: 1.45">На новом устройстве разрешения и автозапуск придётся выдать заново — они принадлежат системе, а не файлу. После загрузки откроется тот же экран настройки.</div>
+</div>
+
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#B4512F","options":["#B4512F","#1F5F6B","#7A5B2E","#6B4A6B"]},"$preview":{"width":390,"height":1010}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { accent: this.props.accent ?? '#B4512F' };
+  }
+}
+</script>
+</body>
+</html>

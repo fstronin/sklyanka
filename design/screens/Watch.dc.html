@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Напоминание на часах</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;font-family:'Golos Text',system-ui,sans-serif;background:#FBF7F1;-webkit-font-smoothing:antialiased}
+a{color:#B4512F;text-decoration:none}a:hover{color:#8F3E23}
+</style>
+</helmet>
+<div style="width: 360px; height: 360px; box-sizing: border-box; background: #FBF7F1; display: flex; align-items: center; justify-content: center">
+<div style="width: 320px; height: 320px; box-sizing: border-box; border-radius: 999px; background: #0C0C0D; border: 5px solid #2A2724; color: #FFFFFF; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 13px; padding: 0 52px; text-align: center">
+<div style="font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: #9A9490">14:00 · Приём</div>
+<div style="font-size: 19px; font-weight: 600; line-height: 1.2">Магний B6</div>
+<div style="font-size: 13px; color: #B5AFAA; margin-top: -6px">2 таблетки</div>
+<div style="display: flex; flex-direction: column; gap: 8px; width: 100%; margin-top: 4px">
+<button type="button" style="height: 40px; border: none; border-radius: 999px; background: {{accent}}; color: #FFFFFF; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer">Принято</button>
+<button type="button" style="height: 40px; border: none; border-radius: 999px; background: #272423; color: #E5DCD1; font-family: inherit; font-size: 14px; font-weight: 500; cursor: pointer">Пропустить</button>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#B4512F","options":["#B4512F","#1F5F6B","#7A5B2E","#6B4A6B"]},"$preview":{"width":360,"height":360}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { accent: this.props.accent ?? '#B4512F' };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Сегодня — плотный день</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&amp;family=Literata:opsz,wght@7..72,400;7..72,600&amp;display=swap">
+<style>
+body{margin:0;font-family:'Golos Text',system-ui,sans-serif;background:#FBF7F1;-webkit-font-smoothing:antialiased}
+a{color:#B4512F;text-decoration:none}a:hover{color:#8F3E23}
+</style>
+</helmet>
+<div style="width: 390px; height: 900px; box-sizing: border-box; background: #FBF7F1; color: #241F1B; display: flex; flex-direction: column; overflow: hidden">
+
+<div style="padding: 30px 20px 14px; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 3px">
+<div style="font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: #5F564D">Пятница, 25 сентября</div>
+<h1 style="margin: 0; font-family: 'Literata', Georgia, serif; font-size: 30px; font-weight: 600; letter-spacing: -0.01em">Сегодня</h1>
+</div>
+<button type="button" style="height: 44px; padding: 0 6px; flex-shrink: 0; border: 1px solid #E6DED2; background: #FFFFFF; border-radius: 999px; display: flex; align-items: center; gap: 7px; font-family: inherit; cursor: pointer">
+<span style="width: 30px; height: 30px; border-radius: 999px; background: #E2EEF0; color: #1F5F6B; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center">Я</span>
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8C8177" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px"><path d="m6 9 6 6 6-6"></path></svg>
+</button>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div style="height: 8px; border-radius: 999px; background: #EDE3D6; overflow: hidden">
+<div style="width: 37%; height: 8px; border-radius: 999px; background: {{accent}}"></div>
+</div>
+<div style="font-size: 13px; color: #5F564D">Принято 11 из 30 приёмов · 12 лекарств</div>
+</div>
+</div>
+
+<div style="flex-grow: 1; padding: 6px 20px 0; display: flex; flex-direction: column; gap: 10px; overflow: hidden">
+
+<button type="button" style="display: flex; align-items: center; gap: 12px; padding: 14px; background: #F6F1E8; border: 1px solid #E9E0D2; border-radius: 18px; font-family: inherit; cursor: pointer; text-align: left; width: 100%; box-sizing: border-box">
+<div style="width: 38px; height: 38px; flex-shrink: 0; border-radius: 999px; background: #E2EEF0; display: flex; align-items: center; justify-content: center">
+<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#1F5F6B" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg>
+</div>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0">
+<div style="font-size: 15px; font-weight: 600; color: #4A433C">Утро · 07:00 — 11:00</div>
+<div style="font-size: 12px; color: #6E655C">8 приёмов, все отмечены</div>
+</div>
+<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#B0A597" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0"><path d="m6 9 6 6 6-6"></path></svg>
+</button>
+
+<div style="display: flex; align-items: center; gap: 10px; padding-top: 4px">
+<div style="font-size: 14px; font-weight: 600">День · 12:00 — 17:00</div>
+<div style="flex-grow: 1; height: 1px; background: #E6DED2"></div>
+<div style="font-size: 12px; color: #B4512F; font-weight: 600">3 из 9</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 14px; padding: 14px; background: #FFFFFF; border: 1.5px solid #E7CEC2; border-radius: 18px">
+<div style="display: flex; align-items: center; gap: 12px">
+<div style="width: 40px; height: 40px; flex-shrink: 0; border-radius: 13px; background: #F6E7DF; display: flex; align-items: center; justify-content: center">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#B4512F" stroke-width="1.6"><circle cx="12" cy="12" r="8"></circle><path d="M5.6 12h12.8"></path></svg>
+</div>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0">
+<div style="display: flex; align-items: baseline; gap: 8px"><span style="font-size: 15px; font-weight: 600">14:00</span><span style="font-size: 12px; color: #B4512F; font-weight: 600">сейчас</span></div>
+<div style="font-size: 13px; color: #5F564D">Магний B6 · Панангин · Омез</div>
+</div>
+</div>
+<div style="display: flex; gap: 10px">
+<button type="button" style="flex-grow: 1; height: 44px; border: none; border-radius: 13px; background: {{accent}}; color: #FFFFFF; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer">Отметить все три</button>
+<button type="button" style="width: 110px; height: 44px; border: 1px solid #D9CDBD; border-radius: 13px; background: transparent; color: #5F564D; font-family: inherit; font-size: 14px; font-weight: 500; cursor: pointer">По одному</button>
+</div>
+</div>
+
+<div style="display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: #FFFFFF; border: 1px solid #EFE7DB; border-radius: 18px">
+<div style="width: 44px; flex-shrink: 0; font-size: 14px; font-weight: 600; color: #5F564D">15:30</div>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0">
+<div style="font-size: 15px; font-weight: 600">Креон</div>
+<div style="font-size: 13px; color: #5F564D">2 капсулы · во время еды</div>
+</div>
+<button type="button" aria-label="Отметить приём Креона" style="width: 44px; height: 44px; flex-shrink: 0; border: 1.5px solid #D9CDBD; border-radius: 999px; background: #FBF7F1; display: flex; align-items: center; justify-content: center; cursor: pointer">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8C8177" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg>
+</button>
+</div>
+
+<div style="display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: #FFFFFF; border: 1px solid #EFE7DB; border-radius: 18px">
+<div style="width: 44px; flex-shrink: 0; font-size: 14px; font-weight: 600; color: #5F564D">16:00</div>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0">
+<div style="font-size: 15px; font-weight: 600">Фолиевая кислота</div>
+<div style="font-size: 13px; color: #5F564D">1 таблетка · 1 мг</div>
+</div>
+<button type="button" aria-label="Отметить приём фолиевой кислоты" style="width: 44px; height: 44px; flex-shrink: 0; border: 1.5px solid #D9CDBD; border-radius: 999px; background: #FBF7F1; display: flex; align-items: center; justify-content: center; cursor: pointer">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8C8177" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg>
+</button>
+</div>
+
+<button type="button" style="display: flex; align-items: center; gap: 12px; padding: 14px; background: #F6F1E8; border: 1px solid #E9E0D2; border-radius: 18px; font-family: inherit; cursor: pointer; text-align: left; width: 100%; box-sizing: border-box">
+<div style="width: 38px; height: 38px; flex-shrink: 0; border-radius: 999px; background: #EAE1D3; display: flex; align-items: center; justify-content: center">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8C8177" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3 2"></path></svg>
+</div>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0">
+<div style="font-size: 15px; font-weight: 600; color: #4A433C">Вечер · 18:00 — 23:00</div>
+<div style="font-size: 12px; color: #6E655C">13 приёмов впереди</div>
+</div>
+<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#B0A597" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0"><path d="m6 9 6 6 6-6"></path></svg>
+</button>
+
+</div>
+
+<div style="border-top: 1px solid #E6DED2; background: #FFFFFF; padding: 10px 24px 24px; display: flex; justify-content: space-between; align-items: flex-start">
+<a href="Main.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 5px; width: 88px; color: {{accent}}">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="3.5" y="5" width="17" height="15.5" rx="3"></rect><path d="M8 3v4M16 3v4M3.5 10h17"></path></svg>
+<span style="font-size: 11px; font-weight: 600">Сегодня</span>
+</a>
+<a href="Meds.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 5px; width: 88px; color: #8C8177">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="2.6" y="8.6" width="18.8" height="6.8" rx="3.4"></rect><path d="M12 8.6v6.8"></path></svg>
+<span style="font-size: 11px; font-weight: 500">Лекарства</span>
+</a>
+<a href="Settings.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 5px; width: 88px; color: #8C8177">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="3.2"></circle><path d="M12 3v2.2M12 18.8V21M21 12h-2.2M5.2 12H3M18.4 5.6l-1.6 1.6M7.2 16.8l-1.6 1.6M18.4 18.4l-1.6-1.6M7.2 7.2 5.6 5.6"></path></svg>
+<span style="font-size: 11px; font-weight: 500">Настройки</span>
+</a>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#B4512F","options":["#B4512F","#1F5F6B","#7A5B2E","#6B4A6B"]},"$preview":{"width":390,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { accent: this.props.accent ?? '#B4512F' };
+  }
+}
+</script>
+</body>
+</html>

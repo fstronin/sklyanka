@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Подключение часов</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&amp;family=Literata:opsz,wght@7..72,400;7..72,600&amp;display=swap">
+<style>
+body{margin:0;font-family:'Golos Text',system-ui,sans-serif;background:#FBF7F1;-webkit-font-smoothing:antialiased}
+a{color:#B4512F;text-decoration:none}a:hover{color:#8F3E23}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #FBF7F1; color: #241F1B; display: flex; flex-direction: column; overflow: hidden">
+
+<div style="padding: 26px 20px 8px; display: flex; align-items: center">
+<a href="Onboarding.dc.html" aria-label="Назад" style="width: 44px; height: 44px; margin-left: -10px; display: flex; align-items: center; justify-content: center">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3B342E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7"></path></svg>
+</a>
+</div>
+
+<div style="padding: 4px 24px 18px; display: flex; flex-direction: column; gap: 10px">
+<h1 style="margin: 0; font-family: 'Literata', Georgia, serif; font-size: 28px; font-weight: 600; letter-spacing: -0.01em">Часы Huawei</h1>
+<div style="font-size: 15px; color: #5F564D; line-height: 1.45">Напоминание придёт на часы карточкой с кнопками «Принято» и «Пропустить» — отмечать можно, не доставая телефон.</div>
+</div>
+
+<div style="flex-grow: 1; padding: 0 24px; display: flex; flex-direction: column; gap: 12px; overflow: hidden">
+
+<div style="display: flex; align-items: center; gap: 14px; padding: 16px; background: #FFFFFF; border: 1px solid #EFE7DB; border-radius: 18px">
+<div style="width: 48px; height: 48px; flex-shrink: 0; border-radius: 999px; background: #0C0C0D; border: 3px solid #2A2724; box-sizing: border-box"></div>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0">
+<div style="font-size: 15px; font-weight: 600">HUAWEI Watch GT 6 Pro</div>
+<div style="font-size: 13px; color: #1F5F6B; font-weight: 500">Подключены через Huawei Health</div>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 2px; background: #FFFFFF; border: 1px solid #EFE7DB; border-radius: 18px; overflow: hidden">
+<div style="display: flex; align-items: center; gap: 13px; padding: 15px 16px">
+<div style="width: 26px; height: 26px; flex-shrink: 0; border-radius: 999px; background: #E2EEF0; display: flex; align-items: center; justify-content: center">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1F5F6B" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg>
+</div>
+<div style="flex-grow: 1; font-size: 14px">Приложение Huawei Health установлено</div>
+</div>
+<div style="height: 1px; background: #F1E9DD; margin: 0 16px"></div>
+<div style="display: flex; align-items: center; gap: 13px; padding: 15px 16px">
+<div style="width: 26px; height: 26px; flex-shrink: 0; border-radius: 999px; background: #E2EEF0; display: flex; align-items: center; justify-content: center">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1F5F6B" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg>
+</div>
+<div style="flex-grow: 1; font-size: 14px">Часы в сети</div>
+</div>
+<div style="height: 1px; background: #F1E9DD; margin: 0 16px"></div>
+<div style="display: flex; align-items: center; gap: 13px; padding: 15px 16px">
+<div style="width: 26px; height: 26px; flex-shrink: 0; border-radius: 999px; border: 2px solid #D9CDBD; box-sizing: border-box"></div>
+<div style="flex-grow: 1; font-size: 14px">Доступ к уведомлениям на часах</div>
+<button type="button" style="height: 34px; padding: 0 14px; border: none; border-radius: 10px; background: {{accent}}; color: #FFFFFF; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer">Выдать</button>
+</div>
+</div>
+
+<div style="padding: 16px; background: #FFFFFF; border: 1px solid #EFE7DB; border-radius: 18px; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 3px">
+<div style="font-size: 15px; font-weight: 600">Кнопки на часах</div>
+<div style="font-size: 13px; color: #5F564D">Принято · Пропустить</div>
+</div>
+<button type="button" role="switch" aria-checked="true" aria-label="Кнопки на часах" style="width: 52px; height: 32px; flex-shrink: 0; border: none; border-radius: 999px; background: {{accent}}; padding: 3px; display: flex; justify-content: flex-end; align-items: center; cursor: pointer">
+<span style="width: 26px; height: 26px; border-radius: 999px; background: #FFFFFF; display: block"></span>
+</button>
+</div>
+<div style="height: 1px; background: #F1E9DD"></div>
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 3px">
+<div style="font-size: 15px; font-weight: 600">Третья кнопка «Отложить»</div>
+<div style="font-size: 13px; color: #5F564D">На мелком экране тесно</div>
+</div>
+<button type="button" role="switch" aria-checked="false" aria-label="Третья кнопка Отложить" style="width: 52px; height: 32px; flex-shrink: 0; border: none; border-radius: 999px; background: #DCD1C2; padding: 3px; display: flex; justify-content: flex-start; align-items: center; cursor: pointer">
+<span style="width: 26px; height: 26px; border-radius: 999px; background: #FFFFFF; display: block"></span>
+</button>
+</div>
+</div>
+
+<div style="display: flex; align-items: flex-start; gap: 10px; padding: 14px 16px; background: #F3EDE3; border-radius: 16px">
+<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#5F564D" stroke-width="1.7" stroke-linecap="round" style="flex-shrink: 0; margin-top: 1px"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5.5M12 7.8v0.2"></path></svg>
+<div style="font-size: 13px; color: #5F564D; line-height: 1.45">Если часы недоступны, приём всё равно можно отметить в телефоне — данные не разойдутся.</div>
+</div>
+
+</div>
+
+<div style="padding: 16px 24px 30px; display: flex; flex-direction: column; gap: 10px">
+<button type="button" style="height: 54px; border: 1px solid #D9CDBD; border-radius: 16px; background: transparent; font-family: inherit; font-size: 15px; font-weight: 600; color: #3B342E; cursor: pointer">Отправить пробную карточку</button>
+<a href="Main.dc.html" style="height: 54px; border-radius: 16px; background: #241F1B; color: #FBF7F1; font-size: 16px; font-weight: 600; display: flex; align-items: center; justify-content: center">Готово</a>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#B4512F","options":["#B4512F","#1F5F6B","#7A5B2E","#6B4A6B"]},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { accent: this.props.accent ?? '#B4512F' };
+  }
+}
+</script>
+</body>
+</html>

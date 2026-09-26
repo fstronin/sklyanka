@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Настройки</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&amp;family=Literata:opsz,wght@7..72,400;7..72,600&amp;display=swap">
+<style>
+body{margin:0;font-family:'Golos Text',system-ui,sans-serif;background:#FBF7F1;-webkit-font-smoothing:antialiased}
+a{color:#B4512F;text-decoration:none}a:hover{color:#8F3E23}
+</style>
+</helmet>
+<div style="width: 390px; height: 1010px; box-sizing: border-box; background: #FBF7F1; color: #241F1B; display: flex; flex-direction: column; overflow: hidden">
+
+<div style="padding: 30px 20px 16px">
+<h1 style="margin: 0; font-family: 'Literata', Georgia, serif; font-size: 30px; font-weight: 600; letter-spacing: -0.01em">Настройки</h1>
+</div>
+
+<div style="flex-grow: 1; padding: 0 20px; display: flex; flex-direction: column; gap: 18px; overflow: hidden">
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #5F564D; padding-left: 4px">Профили</div>
+<div style="background: #FFFFFF; border: 1px solid #EFE7DB; border-radius: 18px; overflow: hidden">
+<div style="display: flex; align-items: center; gap: 12px; padding: 14px 16px">
+<span style="width: 34px; height: 34px; flex-shrink: 0; border-radius: 999px; background: #E2EEF0; color: #1F5F6B; font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center">Я</span>
+<div style="flex-grow: 1; font-size: 15px; font-weight: 600">Мои лекарства</div>
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1F5F6B" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg>
+</div>
+<div style="height: 1px; background: #F1E9DD; margin: 0 16px"></div>
+<div style="display: flex; align-items: center; gap: 12px; padding: 14px 16px">
+<span style="width: 34px; height: 34px; flex-shrink: 0; border-radius: 999px; background: #F6E7DF; color: #8F3E23; font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center">М</span>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px">
+<div style="font-size: 15px">Мама</div>
+<div style="font-size: 12px; color: #5F564D">4 лекарства · напоминания дублируются мне</div>
+</div>
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#B0A597" stroke-width="2" stroke-linecap="round"><path d="m9 5 7 7-7 7"></path></svg>
+</div>
+<div style="height: 1px; background: #F1E9DD; margin: 0 16px"></div>
+<button type="button" style="width: 100%; box-sizing: border-box; display: flex; align-items: center; gap: 12px; padding: 14px 16px; border: none; background: transparent; font-family: inherit; cursor: pointer; text-align: left">
+<span style="width: 34px; height: 34px; flex-shrink: 0; border-radius: 999px; border: 1px dashed #CFC2B1; box-sizing: border-box; display: flex; align-items: center; justify-content: center">
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8C8177" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+</span>
+<span style="font-size: 15px; color: {{accent}}; font-weight: 500">Добавить профиль</span>
+</button>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #5F564D; padding-left: 4px">Напоминания</div>
+<div style="background: #FFFFFF; border: 1px solid #EFE7DB; border-radius: 18px; overflow: hidden">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px">
+<div style="font-size: 15px">Звук</div>
+<div style="display: flex; align-items: center; gap: 8px; font-size: 14px; color: #5F564D">Мягкий сигнал
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#B0A597" stroke-width="2" stroke-linecap="round"><path d="m9 5 7 7-7 7"></path></svg>
+</div>
+</div>
+<div style="height: 1px; background: #F1E9DD; margin: 0 16px"></div>
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px">
+<div style="display: flex; flex-direction: column; gap: 2px">
+<div style="font-size: 15px">Настойчивое напоминание</div>
+<div style="font-size: 12px; color: #5F564D">Повторить, если не отметили</div>
+</div>
+<button type="button" role="switch" aria-checked="true" aria-label="Настойчивое напоминание" style="width: 52px; height: 32px; flex-shrink: 0; border: none; border-radius: 999px; background: {{accent}}; padding: 3px; display: flex; justify-content: flex-end; align-items: center; cursor: pointer">
+<span style="width: 26px; height: 26px; border-radius: 999px; background: #FFFFFF; display: block"></span>
+</button>
+</div>
+<div style="height: 1px; background: #F1E9DD; margin: 0 16px"></div>
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px">
+<div style="font-size: 15px">Отложить на</div>
+<div style="display: flex; align-items: center; gap: 8px; font-size: 14px; color: #5F564D">15 минут
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#B0A597" stroke-width="2" stroke-linecap="round"><path d="m9 5 7 7-7 7"></path></svg>
+</div>
+</div>
+<div style="height: 1px; background: #F1E9DD; margin: 0 16px"></div>
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px">
+<div style="display: flex; flex-direction: column; gap: 2px">
+<div style="font-size: 15px">Тихие часы</div>
+<div style="font-size: 12px; color: #5F564D">23:30 — 07:00, только вибрация</div>
+</div>
+<button type="button" role="switch" aria-checked="false" aria-label="Тихие часы" style="width: 52px; height: 32px; flex-shrink: 0; border: none; border-radius: 999px; background: #DCD1C2; padding: 3px; display: flex; justify-content: flex-start; align-items: center; cursor: pointer">
+<span style="width: 26px; height: 26px; border-radius: 999px; background: #FFFFFF; display: block"></span>
+</button>
+</div>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #5F564D; padding-left: 4px">Часы и система</div>
+<div style="background: #FFFFFF; border: 1px solid #EFE7DB; border-radius: 18px; overflow: hidden">
+<a href="WatchSetup.dc.html" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; color: inherit">
+<div style="display: flex; flex-direction: column; gap: 2px">
+<div style="font-size: 15px">Часы Huawei</div>
+<div style="font-size: 12px; color: #1F5F6B; font-weight: 500">GT 6 Pro · подключены</div>
+</div>
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#B0A597" stroke-width="2" stroke-linecap="round"><path d="m9 5 7 7-7 7"></path></svg>
+</a>
+<div style="height: 1px; background: #F1E9DD; margin: 0 16px"></div>
+<a href="Onboarding.dc.html" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; color: inherit">
+<div style="display: flex; flex-direction: column; gap: 2px">
+<div style="font-size: 15px">Разрешения и автозапуск</div>
+<div style="font-size: 12px; color: #B4512F; font-weight: 500">Одно не выдано</div>
+</div>
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#B0A597" stroke-width="2" stroke-linecap="round"><path d="m9 5 7 7-7 7"></path></svg>
+</a>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #5F564D; padding-left: 4px">Данные</div>
+<div style="background: #FFFFFF; border: 1px solid #EFE7DB; border-radius: 18px; overflow: hidden">
+<a href="History.dc.html" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; color: inherit">
+<div style="font-size: 15px">История приёмов</div>
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#B0A597" stroke-width="2" stroke-linecap="round"><path d="m9 5 7 7-7 7"></path></svg>
+</a>
+<div style="height: 1px; background: #F1E9DD; margin: 0 16px"></div>
+<a href="DataTransfer.dc.html" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; color: inherit">
+<div style="display: flex; flex-direction: column; gap: 2px">
+<div style="font-size: 15px">Перенос данных</div>
+<div style="font-size: 12px; color: #5F564D">Выгрузка и загрузка файлом, без облака</div>
+</div>
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#B0A597" stroke-width="2" stroke-linecap="round"><path d="m9 5 7 7-7 7"></path></svg>
+</a>
+</div>
+</div>
+
+<div style="display: flex; align-items: center; gap: 13px; padding: 16px; background: #F3EDE3; border-radius: 18px">
+<svg width="40" height="40" viewBox="0 0 200 200" fill="none" role="img" aria-label="Знак Склянка">
+<circle cx="100" cy="100" r="86" stroke="#8C8177" stroke-width="9"></circle>
+<circle cx="100" cy="100" r="50" stroke="#8C8177" stroke-width="7"></circle>
+<circle cx="100" cy="100" r="15" fill="#8C8177"></circle>
+</svg>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px">
+<div style="font-size: 15px; font-weight: 600">Склянка 1.0</div>
+<div style="font-size: 12px; color: #5F564D">Heuri · не является медицинским изделием</div>
+</div>
+</div>
+
+</div>
+
+<div style="border-top: 1px solid #E6DED2; background: #FFFFFF; padding: 10px 24px 24px; display: flex; justify-content: space-between; align-items: flex-start">
+<a href="Main.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 5px; width: 88px; color: #8C8177">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="3.5" y="5" width="17" height="15.5" rx="3"></rect><path d="M8 3v4M16 3v4M3.5 10h17"></path></svg>
+<span style="font-size: 11px; font-weight: 500">Сегодня</span>
+</a>
+<a href="Meds.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 5px; width: 88px; color: #8C8177">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="2.6" y="8.6" width="18.8" height="6.8" rx="3.4"></rect><path d="M12 8.6v6.8"></path></svg>
+<span style="font-size: 11px; font-weight: 500">Лекарства</span>
+</a>
+<a href="Settings.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 5px; width: 88px; color: {{accent}}">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="3.2"></circle><path d="M12 3v2.2M12 18.8V21M21 12h-2.2M5.2 12H3M18.4 5.6l-1.6 1.6M7.2 16.8l-1.6 1.6M18.4 18.4l-1.6-1.6M7.2 7.2 5.6 5.6"></path></svg>
+<span style="font-size: 11px; font-weight: 600">Настройки</span>
+</a>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#B4512F","options":["#B4512F","#1F5F6B","#7A5B2E","#6B4A6B"]},"$preview":{"width":390,"height":1010}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { accent: this.props.accent ?? '#B4512F' };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Карточка лекарства</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&amp;family=Literata:opsz,wght@7..72,400;7..72,600&amp;display=swap">
+<style>
+body{margin:0;font-family:'Golos Text',system-ui,sans-serif;background:#FBF7F1;-webkit-font-smoothing:antialiased}
+a{color:#B4512F;text-decoration:none}a:hover{color:#8F3E23}
+</style>
+</helmet>
+<div style="width: 390px; height: 1010px; box-sizing: border-box; background: #FBF7F1; color: #241F1B; display: flex; flex-direction: column; overflow: hidden">
+
+<div style="padding: 26px 20px 8px; display: flex; align-items: center; justify-content: space-between; gap: 12px">
+<a href="Meds.dc.html" aria-label="Назад" style="width: 44px; height: 44px; margin-left: -10px; display: flex; align-items: center; justify-content: center">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3B342E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7"></path></svg>
+</a>
+<button type="button" style="border: none; background: transparent; font-family: inherit; font-size: 15px; font-weight: 600; color: {{accent}}; cursor: pointer; padding: 0">Изменить</button>
+</div>
+
+<div style="padding: 4px 20px 18px; display: flex; align-items: center; gap: 14px">
+<div style="width: 62px; height: 62px; flex-shrink: 0; border-radius: 20px; background: #F6E7DF; display: flex; align-items: center; justify-content: center">
+<svg width="30" height="30" viewBox="0 0 32 32" fill="none" stroke="#B4512F" stroke-width="1.7"><circle cx="16" cy="16" r="11"></circle><path d="M5 16h22"></path></svg>
+</div>
+<div style="display: flex; flex-direction: column; gap: 4px; min-width: 0">
+<h1 style="margin: 0; font-family: 'Literata', Georgia, serif; font-size: 27px; font-weight: 600; letter-spacing: -0.01em">Магний B6</h1>
+<div style="font-size: 13px; color: #5F564D">Таблетка круглая с риской · 48 мг · до еды</div>
+</div>
+</div>
+
+<div style="flex-grow: 1; padding: 0 20px; display: flex; flex-direction: column; gap: 14px; overflow: hidden">
+
+<div style="padding: 16px; background: #FFFFFF; border: 1px solid #EFE7DB; border-radius: 18px; display: flex; flex-direction: column; gap: 12px">
+<div style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #5F564D">Расписание</div>
+<div style="font-size: 16px; font-weight: 600">2 приёма в сутки · по 2 таблетки</div>
+<div style="display: flex; gap: 8px">
+<div style="display: flex; align-items: center; gap: 7px; padding: 8px 12px; background: #F3EDE3; border-radius: 999px; font-size: 14px; font-weight: 600">
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8C8177" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3 2"></path></svg>
+08:00
+</div>
+<div style="display: flex; align-items: center; gap: 7px; padding: 8px 12px; background: #F3EDE3; border-radius: 999px; font-size: 14px; font-weight: 600">
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8C8177" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3 2"></path></svg>
+20:00
+</div>
+</div>
+</div>
+
+<div style="padding: 16px; background: #FFFFFF; border: 1px solid #EFE7DB; border-radius: 18px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: baseline; justify-content: space-between; gap: 10px">
+<div style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #5F564D">Курс</div>
+<div style="font-size: 12px; color: #5F564D">осталось 17 дней</div>
+</div>
+<div style="font-size: 16px; font-weight: 600">12 сентября — 12 октября</div>
+<div style="height: 8px; border-radius: 999px; background: #EDE3D6; overflow: hidden">
+<div style="width: 43%; height: 8px; border-radius: 999px; background: {{accent}}"></div>
+</div>
+</div>
+
+<div style="padding: 16px; background: #FFFFFF; border: 1px solid #EFE7DB; border-radius: 18px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: baseline; justify-content: space-between; gap: 10px">
+<div style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #5F564D">Остаток</div>
+<div style="font-size: 12px; color: #8F3E23; font-weight: 600">хватит на 4 дня</div>
+</div>
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px">
+<div style="font-size: 16px; font-weight: 600">9 таблеток из 60</div>
+<button type="button" style="height: 38px; padding: 0 14px; border: 1px solid #D9CDBD; border-radius: 12px; background: transparent; font-family: inherit; font-size: 13px; font-weight: 600; color: #3B342E; cursor: pointer">Пополнить</button>
+</div>
+<div style="height: 8px; border-radius: 999px; background: #EDE3D6; overflow: hidden">
+<div style="width: 15%; height: 8px; border-radius: 999px; background: #8F3E23"></div>
+</div>
+</div>
+
+<div style="padding: 16px; background: #FFFFFF; border: 1px solid #EFE7DB; border-radius: 18px; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; align-items: baseline; justify-content: space-between; gap: 10px">
+<div style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #5F564D">Последние 7 дней</div>
+<div style="font-size: 12px; color: #5F564D">12 из 14 приёмов</div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 7px"><span style="font-size: 11px; color: #8C8177">Сб</span><span style="width: 26px; height: 26px; border-radius: 999px; background: #1F5F6B; display: block"></span></div>
+<div style="display: flex; flex-direction: column; align-items: center; gap: 7px"><span style="font-size: 11px; color: #8C8177">Вс</span><span style="width: 26px; height: 26px; border-radius: 999px; background: #1F5F6B; display: block"></span></div>
+<div style="display: flex; flex-direction: column; align-items: center; gap: 7px"><span style="font-size: 11px; color: #8C8177">Пн</span><span style="width: 26px; height: 26px; border-radius: 999px; background: #C9BFB1; display: block"></span></div>
+<div style="display: flex; flex-direction: column; align-items: center; gap: 7px"><span style="font-size: 11px; color: #8C8177">Вт</span><span style="width: 26px; height: 26px; border-radius: 999px; background: #1F5F6B; display: block"></span></div>
+<div style="display: flex; flex-direction: column; align-items: center; gap: 7px"><span style="font-size: 11px; color: #8C8177">Ср</span><span style="width: 26px; height: 26px; border-radius: 999px; background: #1F5F6B; display: block"></span></div>
+<div style="display: flex; flex-direction: column; align-items: center; gap: 7px"><span style="font-size: 11px; color: #8C8177">Чт</span><span style="width: 26px; height: 26px; border-radius: 999px; background: #1F5F6B; display: block"></span></div>
+<div style="display: flex; flex-direction: column; align-items: center; gap: 7px"><span style="font-size: 11px; color: #241F1B; font-weight: 600">Пт</span><span style="width: 26px; height: 26px; border-radius: 999px; border: 2px solid #C9BFB1; box-sizing: border-box; background: transparent; display: block"></span></div>
+</div>
+<div style="display: flex; gap: 16px; font-size: 11px; color: #5F564D">
+<span style="display: flex; align-items: center; gap: 6px"><span style="width: 10px; height: 10px; border-radius: 999px; background: #1F5F6B; display: block"></span>Принято</span>
+<span style="display: flex; align-items: center; gap: 6px"><span style="width: 10px; height: 10px; border-radius: 999px; background: #C9BFB1; display: block"></span>Пропущено</span>
+<span style="display: flex; align-items: center; gap: 6px"><span style="width: 10px; height: 10px; border-radius: 999px; border: 2px solid #C9BFB1; box-sizing: border-box; display: block"></span>Сегодня</span>
+</div>
+</div>
+
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; background: #FFFFFF; border: 1px solid #EFE7DB; border-radius: 18px">
+<div style="display: flex; align-items: center; gap: 12px">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5F564D" stroke-width="1.6" stroke-linecap="round"><rect x="5" y="3.5" width="14" height="17" rx="4"></rect><path d="M9.5 3.5h5"></path><path d="M12 9v4.5"></path></svg>
+<div style="font-size: 15px">Напоминать на часах</div>
+</div>
+<button type="button" role="switch" aria-checked="true" aria-label="Напоминать на часах" style="width: 52px; height: 32px; flex-shrink: 0; border: none; border-radius: 999px; background: {{accent}}; padding: 3px; display: flex; justify-content: flex-end; align-items: center; cursor: pointer">
+<span style="width: 26px; height: 26px; border-radius: 999px; background: #FFFFFF; display: block"></span>
+</button>
+</div>
+
+</div>
+
+<div style="padding: 16px 20px 26px; display: flex; gap: 10px">
+<button type="button" style="flex-grow: 1; height: 52px; border: 1px solid #D9CDBD; border-radius: 16px; background: transparent; font-family: inherit; font-size: 15px; font-weight: 600; color: #3B342E; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 9px">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3B342E" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 6.5h17v3h-17z"></path><path d="M5 9.5v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-9"></path><path d="M10 14h4"></path></svg>
+В архив
+</button>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#B4512F","options":["#B4512F","#1F5F6B","#7A5B2E","#6B4A6B"]},"$preview":{"width":390,"height":1010}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { accent: this.props.accent ?? '#B4512F' };
+  }
+}
+</script>
+</body>
+</html>
