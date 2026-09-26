@@ -106,7 +106,13 @@ class ProjectChecksConventionPlugin : Plugin<Project> {
             dependsOn(ANDROID_MODULES.map { "$it:assembleDebugAndroidTest" })
             dependsOn(moduleGraph, moduleGraphRule, rulesFire)
             dependsOn(gradle.includedBuild("detekt-rules").task(":test"))
-            dependsOn(":acceptance:acceptanceRun", ":acceptance:acceptanceChecklist")
+            // Проверка словаря шагов приёмки — часть единого прогона, а не отдельная
+            // команда, которую никто не запускает (SKL-23, НФТ-49).
+            dependsOn(
+                ":acceptance:acceptanceRun",
+                ":acceptance:acceptanceChecklist",
+                ":acceptance:verifyAcceptanceSteps",
+            )
         }
         }
     }
@@ -114,7 +120,15 @@ class ProjectChecksConventionPlugin : Plugin<Project> {
     private companion object {
         const val VERIFICATION_GROUP = "verification"
         const val VIOLATION_SAMPLES = "tools/violations/kotlin"
-        val ANDROID_MODULES = listOf(":app", ":core-ui", ":core-data", ":feature-today", ":feature-meds")
+        val ANDROID_MODULES = listOf(
+            ":app",
+            ":core-ui",
+            ":core-data",
+            ":feature-today",
+            ":feature-meds",
+            ":feature-reminder",
+            ":feature-settings",
+        )
         val PROJECT_RULES = listOf(
             "HardcodedDesignToken",
             "HardcodedTextStyle",
@@ -122,6 +136,7 @@ class ProjectChecksConventionPlugin : Plugin<Project> {
             "DirectSystemClockAccess",
             "DestructiveRoomMigration",
             "AndroidImportInDomain",
+            "MedicalDataInJournal",
         )
     }
 }

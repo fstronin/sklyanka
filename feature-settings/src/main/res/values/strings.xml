@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Тексты экрана «Перенос данных» (SKL-19).
+
+  Формулировки карточек, режимов загрузки и плашки о разрешениях взяты дословно из макета
+  design/screens/DataTransfer.dc.html; сообщения об отказах — дословно из ПЕР-28 и ПЕР-29.
+  Русского текста в Kotlin-коде нет вообще (НФТ-42).
+-->
+<resources>
+
+    <!-- ===== Экран переноса ===== -->
+    <string name="transfer_title">Перенос данных</string>
+    <string name="transfer_principle">Один файл со всеми лекарствами, расписаниями и историей. Облака нет — файл остаётся у вас.</string>
+
+    <!-- ===== Выгрузка ===== -->
+    <string name="transfer_export_title">Выгрузить</string>
+    <string name="transfer_export_file">Файл %1$s</string>
+    <string name="transfer_export_action">Сохранить файл</string>
+    <string name="transfer_export_chip_settings">настройки</string>
+    <string name="transfer_last_export">Последняя выгрузка — %1$s</string>
+
+    <!--
+      Два предупреждения при выгрузке (ПЕР-34): о содержимом файла и о месте сохранения.
+      Внутрь файла они не пишутся: JSON читает машина.
+    -->
+    <string name="transfer_privacy_content">Файл содержит названия лекарств, дозы и историю приёмов. Он не зашифрован — обращайтесь с ним как с медицинским документом.</string>
+    <string name="transfer_privacy_place">Место сохранения выбираете вы. Папка, синхронизируемая с облаком, унесёт данные в облако.</string>
+
+    <!-- ===== Загрузка ===== -->
+    <string name="transfer_import_title">Загрузить</string>
+    <string name="transfer_import_subtitle">Из файла на этом устройстве</string>
+    <string name="transfer_mode_merge">Добавить к текущим</string>
+    <string name="transfer_mode_merge_hint">Совпадения по названию и дозировке будут показаны отдельно</string>
+    <string name="transfer_mode_replace">Заменить всё</string>
+    <string name="transfer_mode_replace_hint">Текущие данные на этом устройстве будут стёрты</string>
+    <string name="transfer_import_action">Выбрать файл</string>
+
+    <string name="transfer_permissions_note">На новом устройстве разрешения и автозапуск придётся выдать заново — они принадлежат системе, а не файлу. После загрузки откроется тот же экран настройки.</string>
+
+    <!-- ===== Сводка выбранного файла (ПЕР-15 п. 3) ===== -->
+    <string name="transfer_summary_title">Что в файле</string>
+    <string name="transfer_summary_exported_at">Выгружен %1$s</string>
+    <string name="transfer_summary_old_format">Файл создан старой версией Склянки (версия формата %1$d). Он будет прочитан через миграцию.</string>
+    <string name="transfer_summary_continue">Дальше</string>
+    <string name="transfer_summary_cancel">Отмена</string>
+
+    <!-- ===== Разбор совпадений (ПЕР-21, ПЕР-22) ===== -->
+    <string name="transfer_matches_title">Совпадения</string>
+    <string name="transfer_matches_hint">Эти лекарства уже есть на устройстве. Решение принимается по каждому отдельно.</string>
+    <string name="transfer_matches_empty">Совпадений нет — всё из файла добавится без вопросов.</string>
+    <string name="transfer_match_dosage">%1$s, %2$s</string>
+    <string name="transfer_match_dosage_value">%1$s %2$s</string>
+    <string name="transfer_match_difference_times">Время приёма: на устройстве %1$s, в файле %2$s</string>
+    <string name="transfer_match_difference_schedule_mode">Режим приёма различается</string>
+    <string name="transfer_match_difference_form">Форма выпуска различается</string>
+    <string name="transfer_match_difference_shape">Вид таблетки различается</string>
+    <string name="transfer_match_difference_dose_amount">Доза на приём различается</string>
+    <string name="transfer_match_difference_food_relation">Связь с едой различается</string>
+    <string name="transfer_match_difference_period">Период курса различается</string>
+    <string name="transfer_match_difference_stock">Остаток упаковки различается</string>
+    <string name="transfer_match_difference_max_per_day">Ограничение приёмов в сутки различается</string>
+    <string name="transfer_decision_keep_mine">Оставить моё</string>
+    <string name="transfer_decision_take_from_file">Взять из файла</string>
+    <string name="transfer_decision_add_separately">Добавить отдельно</string>
+    <string name="transfer_decision_do_not_load">Не загружать</string>
+    <string name="transfer_matches_drop_all">Не загружать ничего из совпавших</string>
+    <string name="transfer_matches_apply">Загрузить</string>
+    <string name="transfer_times_empty">по потребности</string>
+    <!-- Код единицы дозировки, который пишет форма (ОВ-16); чужая единица показывается как есть. -->
+    <string name="transfer_strength_unit_milligram">мг</string>
+
+    <!-- ===== Подтверждение замены всего (ПЕР-16 п. 2) ===== -->
+    <string name="transfer_replace_title">Заменить всё?</string>
+    <string name="transfer_replace_warning">Текущие данные на этом устройстве будут стёрты и заменены содержимым файла. Отменить это нельзя.</string>
+    <string name="transfer_replace_now">Сейчас на устройстве</string>
+    <string name="transfer_replace_after">Будет из файла</string>
+    <string name="transfer_replace_history_from">история с %1$s</string>
+    <string name="transfer_replace_history_empty">истории нет</string>
+    <string name="transfer_replace_safety_copy">Перед стиранием приложение сохранит страховочную копию текущих данных во внутреннюю память приложения, файл %1$s. Она недоступна другим приложениям и перезаписывается при следующей замене.</string>
+    <string name="transfer_replace_confirm">Стереть и загрузить</string>
+    <string name="transfer_replace_cancel">Не стирать</string>
+
+    <!-- ===== Отчёт (ПЕР-15 п. 7, критерий 17) ===== -->
+    <string name="transfer_report_title">Загрузка завершена</string>
+    <string name="transfer_report_profiles">Профилей добавлено: %1$d</string>
+    <string name="transfer_report_medications">Лекарств добавлено: %1$d</string>
+    <string name="transfer_report_medications_updated">Лекарств обновлено из файла: %1$d</string>
+    <string name="transfer_report_intakes">Записей истории добавлено: %1$d</string>
+    <string name="transfer_report_intakes_updated">Записей истории уточнено: %1$d</string>
+    <string name="transfer_report_intakes_skipped">Записей истории не добавлено, потому что они уже были: %1$d</string>
+    <string name="transfer_report_matches">Совпадений разрешено: %1$d</string>
+    <string name="transfer_report_decision">%1$s — %2$d</string>
+    <string name="transfer_report_not_transferred">Перенеслось не полностью</string>
+    <string name="transfer_report_notice_sound">Звук напоминания из файла на этом устройстве не найден и заменён звуком по умолчанию.</string>
+    <string name="transfer_report_notice_enum">Значение поля «%1$s» не распознано и заменено значением по умолчанию: %2$s.</string>
+    <string name="transfer_report_notice_enum_settings">Значение поля «%1$s» в настройках не распознано и заменено значением по умолчанию.</string>
+    <string name="transfer_report_notice_old_format">Файл создан старой версией формата (%1$d) и прочитан через миграцию.</string>
+    <string name="transfer_report_safety_copy">Страховочная копия прежних данных: %1$s</string>
+    <string name="transfer_report_continue">Настроить разрешения</string>
+    <string name="transfer_field_form">форма выпуска</string>
+    <string name="transfer_field_shape">вид таблетки</string>
+    <string name="transfer_field_food_relation">связь с едой</string>
+    <string name="transfer_field_schedule_mode">режим приёма</string>
+    <string name="transfer_field_archive_reason">причина архивации</string>
+    <string name="transfer_field_status">состояние приёма</string>
+    <string name="transfer_field_source">источник отметки</string>
+    <string name="transfer_field_unknown">неизвестное поле</string>
+
+    <!-- ===== Отказы (ПЕР-28, ПЕР-29, ПЕР-31, ПЕР-32) ===== -->
+    <string name="transfer_error_not_an_export">Файл не похож на выгрузку Склянки</string>
+    <string name="transfer_error_from_future">Файл создан более новой версией Склянки. Обновите приложение</string>
+    <string name="transfer_error_no_space">Места недостаточно. Ничего не стёрто и не загружено.</string>
+    <string name="transfer_error_not_applied">Загрузка не состоялась. Данные на устройстве не изменились.</string>
+    <string name="transfer_error_export_failed">Выгрузка не состоялась. Готового файла в выбранном месте нет.</string>
+    <string name="transfer_error_import_interrupted">Прошлая загрузка не состоялась. Данные на устройстве остались прежними.</string>
+
+    <!-- Техническое пояснение одной строкой (ПЕР-28): что именно не так, без содержимого файла. -->
+    <string name="transfer_reason_not_json">Файл не читается как JSON</string>
+    <string name="transfer_reason_missing_marker">В файле нет опознавателя выгрузки</string>
+    <string name="transfer_reason_foreign_marker">Опознаватель в файле не Склянки</string>
+    <string name="transfer_reason_invalid_version">Версия формата файла не распознана</string>
+    <string name="transfer_reason_missing_section">В файле нет обязательного раздела: %1$s</string>
+    <string name="transfer_reason_invalid_value">Значение не читается: %1$s</string>
+    <string name="transfer_reason_duplicate_id">Идентификатор в файле повторяется: %1$s</string>
+    <string name="transfer_reason_broken_link">Связь внутри файла оборвана: %1$s</string>
+    <string name="transfer_reason_self_profile">В файле нет своего профиля либо их больше одного</string>
+    <string name="transfer_reason_invalid_record">Запись в файле не проходит правила приложения: %1$s</string>
+
+    <!--
+      Шаблоны дат и времени. Вынесены в ресурсы, потому что порядок частей даты — свойство
+      языка, а не кода (НФТ-43).
+    -->
+    <string name="transfer_date_pattern_day_month">d MMMM</string>
+    <string name="transfer_date_pattern_full">d MMMM yyyy</string>
+    <string name="transfer_time_pattern">HH:mm</string>
+    <string name="transfer_summary_moment">%1$s, %2$s</string>
+    <!-- Кавычки обязательны: без них Android обрежет пробелы по краям. -->
+    <string name="transfer_times_separator">" и "</string>
+
+    <!-- ===== Подписи для доступности (НФТ-30) ===== -->
+    <string name="transfer_cd_export">Выгрузка</string>
+    <string name="transfer_cd_import">Загрузка</string>
+    <string name="transfer_cd_back">Назад</string>
+</resources>

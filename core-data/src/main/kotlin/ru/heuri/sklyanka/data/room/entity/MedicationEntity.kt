@@ -56,4 +56,17 @@ data class MedicationEntity(
     @ColumnInfo(name = "stock_threshold_days") val stockThresholdDays: Int?,
     @ColumnInfo(name = "archived_at") val archivedAt: Long?,
     @ColumnInfo(name = "archive_reason") val archiveReason: String?,
+    /**
+     * Дублировать ли напоминания этого лекарства на часы (ЧАС-15).
+     *
+     * Колонка добавлена миграцией 2 → 3: тумблеру карточки лекарства нужен носитель,
+     * а в перечне полей `docs/spec/02-data-model.md` §3 его нет (ОВ-58).
+     *
+     * `NOT NULL DEFAULT 1` — значение проставляется и уже существующим строкам, поэтому
+     * миграция обходится одним `ALTER TABLE ADD COLUMN` без перестроения таблицы: строки
+     * не переписываются, индексы остаются на месте, историю приёмов ничто не трогает (МГ-2).
+     * Значение по умолчанию объявлено и здесь: без него экспортированная схема расходится
+     * с базой после миграции, и Room откажется открывать базу.
+     */
+    @ColumnInfo(name = "mirror_to_watch", defaultValue = "1") val mirrorToWatch: Boolean = true,
 )

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Склонения чипов состава и отчёта.
+
+  Через plurals, а не конкатенацию (НФТ-44): «1 лекарство», «2 лекарства», «5 лекарств» —
+  три разные формы, и собрать их из числа и слова нельзя.
+-->
+<resources>
+
+    <!-- Чипы состава выгрузки. Набор чипов соответствует содержимому файла (ПЕР-3, критерий 3). -->
+    <plurals name="transfer_chip_medications">
+        <item quantity="one">%1$d лекарство</item>
+        <item quantity="few">%1$d лекарства</item>
+        <item quantity="many">%1$d лекарств</item>
+        <item quantity="other">%1$d лекарства</item>
+    </plurals>
+
+    <plurals name="transfer_chip_archived">
+        <item quantity="one">%1$d в архиве</item>
+        <item quantity="few">%1$d в архиве</item>
+        <item quantity="many">%1$d в архиве</item>
+        <item quantity="other">%1$d в архиве</item>
+    </plurals>
+
+    <plurals name="transfer_chip_history_months">
+        <item quantity="one">история за %1$d месяц</item>
+        <item quantity="few">история за %1$d месяца</item>
+        <item quantity="many">история за %1$d месяцев</item>
+        <item quantity="other">история за %1$d месяца</item>
+    </plurals>
+
+    <plurals name="transfer_chip_profiles">
+        <item quantity="one">%1$d профиль</item>
+        <item quantity="few">%1$d профиля</item>
+        <item quantity="many">%1$d профилей</item>
+        <item quantity="other">%1$d профиля</item>
+    </plurals>
+
+    <!-- Числа в предупреждении о замене (ПЕР-16 п. 2). -->
+    <plurals name="transfer_count_intakes">
+        <item quantity="one">%1$d запись истории</item>
+        <item quantity="few">%1$d записи истории</item>
+        <item quantity="many">%1$d записей истории</item>
+        <item quantity="other">%1$d записи истории</item>
+    </plurals>
+</resources>

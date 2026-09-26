@@ -13,6 +13,24 @@ enum class PlanReason(val code: String) {
     TIME_CHANGED("time_changed"),
     MEDICATION_SAVED("medication_saved"),
     MEDICATION_ARCHIVED("medication_archived"),
+
+    /**
+     * Возврат курса из архива (SKL-11).
+     *
+     * Отдельная причина рядом с архивацией: обе меняют состав расписания, но разбор
+     * вопроса «откуда у архивного курса приёмы» упирается именно в то, различимы ли
+     * эти два события в журнале.
+     */
+    MEDICATION_RESTORED("medication_restored"),
     ANCHOR_ALARM("anchor_alarm"),
     MANUAL_CHECK("manual_check"),
+
+    /**
+     * Загрузка файла переноса данных (ПЕР-18, SKL-19).
+     *
+     * Отдельная причина, а не MANUAL_CHECK: после загрузки состав приёмов меняется целиком,
+     * и запись «снято 40 приёмов, создано 52» разбирается только вместе с ответом на вопрос
+     * «почему именно сейчас».
+     */
+    DATA_IMPORTED("data_imported"),
 }

@@ -8,4 +8,30 @@
       онбординга (ПРФ-25), поэтому имя берётся отсюда, а не придумывается слоем данных.
     -->
     <string name="profile_self_default_name">Я</string>
+    <!-- ===== Напоминания (SKL-13) ===== -->
+
+    <!--
+      Названия каналов уведомлений (НАП-24). Человек видит их в системных настройках
+      приложения, поэтому они обязаны объяснять, что именно они шлют.
+    -->
+    <string name="reminder_channel_regular_name">Напоминания о приёме</string>
+    <string name="reminder_channel_regular_description">Карточка приёма в назначенное время</string>
+    <string name="reminder_channel_persistent_name">Настойчивые напоминания</string>
+    <string name="reminder_channel_persistent_description">Повтор, если приём остался неотмеченным</string>
+
+    <!-- Надзаголовок уведомления и разделитель списка лекарств в нём. -->
+    <string name="reminder_overline">Приём по расписанию</string>
+    <string name="reminder_time_pattern">HH:mm</string>
+    <string name="reminder_notification_separator">" · "</string>
+
+    <!-- «14:00 · Приём по расписанию» — вторая строка уведомления. -->
+    <string name="reminder_notification_text">%1$s · %2$s</string>
+
+    <!-- Пробное напоминание (НАП-22). -->
+    <string name="reminder_test_title">Пробное напоминание</string>
+    <string name="reminder_test_text">Так будет выглядеть напоминание о приёме</string>
+
+    <!-- Ярлык запуска на диагностику напоминаний (НАП-37). -->
+    <string name="diagnostics_shortcut_label">Напоминания</string>
+    <string name="diagnostics_shortcut_long_label">Диагностика напоминаний</string>
 </resources>

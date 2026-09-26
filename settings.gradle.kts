@@ -34,6 +34,8 @@ rootProject.name = "sklyanka"
 include(":app")
 include(":feature-today")
 include(":feature-meds")
+include(":feature-reminder")
+include(":feature-settings")
 include(":core-ui")
 include(":core-data")
 include(":core-domain")

@@ -14,6 +14,9 @@ dependencies {
     testImplementation(project(":core-domain"))
     testImplementation(libs.cucumber.java)
     testImplementation(libs.cucumber.junit.platform.engine)
+    // Фабрика объектов Cucumber: состояние сценария приезжает в шаги параметром
+    // конструктора, и экземпляр у сценария один на все классы шагов (TDD SKL-23 §5.1).
+    testImplementation(libs.cucumber.picocontainer)
     testImplementation(libs.junit.platform.suite)
 }
 
@@ -105,6 +108,7 @@ val acceptanceRun by tasks.registering {
         val reportDir = acceptanceReports.get().asFile.also { it.mkdirs() }
         val lines = mutableListOf<String>()
         val broken = mutableListOf<String>()
+        val brokenGlue = mutableListOf<String>()
         val quarantined = mutableListOf<String>()
         val failed = mutableListOf<String>()
         var undefinedSeen = false
@@ -130,6 +134,25 @@ val acceptanceRun by tasks.registering {
                 summary == null && target.name in quarantine -> {
                     quarantined += target.name
                     lines += "  QUARANTINE ${target.name}: feature file does not parse, see ${target.name}.txt"
+                }
+                // Отказ Cucumber загрузить шаги — это сломанный словарь шагов, а не
+                // сломанный документ задачи: карантин здесь не поможет, а диагноз обязан
+                // называть настоящую причину (SKL-23, TDD §8.1).
+                //
+                // Проверяется до итога, а не вместо него: Cucumber при повторном объявлении
+                // шага не отказывается запускаться, а печатает исключение в лог и выдаёт
+                // «0 Scenarios» — то есть прогон без этой ветки становится зелёным и пустым.
+                duplicateGlue.containsMatchIn(output) -> {
+                    brokenGlue += target.name
+                    lines += "  BROKEN-GLUE ${target.name}: a step is declared twice, " +
+                        "run :acceptance:verifyAcceptanceSteps, see ${target.name}.txt"
+                }
+                // Любая другая поломка прогона: исключение вместо исполнения сценария —
+                // это не «ни одного сценария», а не состоявшийся прогон.
+                runtimeFailure.containsMatchIn(output) -> {
+                    broken += target.name
+                    lines += "  BROKEN     ${target.name}: Cucumber failed while running, " +
+                        "see ${target.name}.txt"
                 }
                 summary == null -> {
                     broken += target.name
@@ -159,6 +182,15 @@ val acceptanceRun by tasks.registering {
         reportDir.resolve("summary.txt").writeText(report)
         report.trim().lines().forEach { logger.lifecycle(it) }
 
+        if (brokenGlue.isNotEmpty()) {
+            throw GradleException(
+                "The acceptance step dictionary is broken: a step is declared twice, so Cucumber " +
+                    "executed no scenario at all for ${brokenGlue.joinToString()} — it reported " +
+                    "\"0 Scenarios\" instead of failing. This is not a document problem and quarantine " +
+                    "does not apply: run :acceptance:verifyAcceptanceSteps — it names both declaration " +
+                    "points.",
+            )
+        }
         if (broken.isNotEmpty()) {
             throw GradleException(
                 "Cucumber could not parse or run these feature files: ${broken.joinToString()}. " +
@@ -229,6 +261,88 @@ val acceptanceChecklist by tasks.registering {
     }
 }
 
+/**
+ * Запуск реестра шагов (SKL-23).
+ *
+ * Тем же способом, что и Cucumber-CLI: тот же classpath, та же кодировка, тот же
+ * `sklyanka.repo.root` — иначе проверка словаря видела бы не то, что видит прогон.
+ */
+fun runStepDictionary(modes: List<String>): Pair<Int, String> {
+    val captured = ByteArrayOutputStream()
+    val result = project.javaexec {
+        classpath = sourceSets.test.get().runtimeClasspath
+        mainClass.set("ru.heuri.sklyanka.acceptance.tools.StepDictionary")
+        jvmArgs("-Dfile.encoding=UTF-8", "-Dsun.stdout.encoding=UTF-8", "-Dsun.stderr.encoding=UTF-8")
+        systemProperty("sklyanka.repo.root", rootProject.projectDir.absolutePath)
+        args = modes
+        standardOutput = captured
+        errorOutput = captured
+        isIgnoreExitValue = true
+    }
+    return result.exitValue to ansiCodes.replace(captured.toString(Charsets.UTF_8.name()), "")
+}
+
+/**
+ * Проверка «один шаг — одно объявление» (SKL-23, НФТ-49).
+ *
+ * Ловит два нарушения: одинаковые выражения и два разных выражения, ловящих одну строку
+ * сценария. Второе Cucumber сам замечает только когда исполнение доходит до этой строки,
+ * а до строк нереализованных сценариев оно не доходит никогда — то есть в прогоне такой
+ * дубль не видит никто.
+ *
+ * Проверка падает, а не предупреждает: она входит в check модуля и в verifyAll.
+ */
+val verifyAcceptanceSteps by tasks.registering {
+    group = "verification"
+    description = "Fails when an acceptance step is declared twice (same expression or same scenario line)."
+    dependsOn(tasks.named("testClasses"))
+    inputs.dir(rootProject.file(featuresPath))
+    inputs.files(sourceSets.test.get().output)
+    outputs.file(acceptanceReports.map { it.file("step-dictionary.txt") })
+
+    doLast {
+        val reportDir = acceptanceReports.get().asFile.also { it.mkdirs() }
+        val (exitValue, output) = runStepDictionary(listOf("--list", "--verify"))
+        val report = reportDir.resolve("step-dictionary.txt")
+        report.writeText(output)
+        // В лог — итог и нарушения; реестр целиком лежит в отчёте и печатается
+        // задачей acceptanceSteps.
+        output.lines().dropWhile { !it.startsWith(dictionarySummary) }.forEach { logger.lifecycle(it) }
+        if (exitValue != 0) {
+            throw GradleException(
+                "The acceptance step dictionary has duplicates: a step is declared twice, or two " +
+                    "declarations catch one scenario line. Both declaration points are named above " +
+                    "and in ${report.path}. A domain step belongs to steps/shared and is declared once.",
+            )
+        }
+    }
+}
+
+/**
+ * Реестр шагов приёмки одной командой (критерий приёмки 14 SKL-23).
+ *
+ * Отвечает на вопрос «а такой шаг уже есть?» до того, как написана первая строка новых
+ * шагов: раньше ответ получали, написав своё объявление и получив отказ прогона.
+ */
+val acceptanceSteps by tasks.registering {
+    group = "verification"
+    description = "Prints every acceptance step: its expression, where it is declared, shared or task-owned."
+    dependsOn(tasks.named("testClasses"))
+    inputs.dir(rootProject.file(featuresPath))
+    inputs.files(sourceSets.test.get().output)
+
+    doLast {
+        val reportDir = acceptanceReports.get().asFile.also { it.mkdirs() }
+        val (_, output) = runStepDictionary(listOf("--list"))
+        reportDir.resolve("step-dictionary.txt").writeText(output)
+        output.trim().lines().forEach { logger.lifecycle(it) }
+    }
+}
+
+tasks.named("check") {
+    dependsOn(verifyAcceptanceSteps)
+}
+
 // Штатная задача test оставлена для обычных JUnit-тестов модуля: движок Cucumber
 // из неё исключён, чтобы сценарный прогон был отдельной, управляемой командой.
 tasks.test {
@@ -238,6 +352,20 @@ tasks.test {
 }
 
 val ansiCodes = Regex("\u001B\\[[;\\d]*m")
+
+/** Строка итога реестра шагов: с неё начинается то, что стоит печатать в лог. */
+val dictionarySummary = "Словарь шагов:"
+
+/** Отказ Cucumber загрузить шаги из-за второго объявления того же выражения. */
+val duplicateGlue = Regex("DuplicateStepDefinitionException|[Dd]uplicate step definition")
+
+/**
+ * Прогон не состоялся: вместо исполнения сценария — исключение.
+ *
+ * Упавшая проверка выглядит иначе (FAILED и число упавших сценариев); здесь ловится
+ * поломка самого прогона, при которой Cucumber честно печатает «0 Scenarios».
+ */
+val runtimeFailure = Regex("Exception while executing pickle|io\\.cucumber\\.core\\.exception\\.CucumberException")
 val cucumberSummary = Regex("""\d+ Scenarios?( \([^)]*\))?""")
 
 /** «32 Scenarios (2 failed, 30 passed)» — сколько сценариев не прошло. */

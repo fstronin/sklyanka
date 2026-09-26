@@ -119,6 +119,24 @@ object SklyankaSizes {
     /** Наименьшая ширина числа между кнопками «Уменьшить» и «Увеличить»: чтобы «10» не дёргало ряд. */
     val CounterValue: Dp = 22.dp
 
+    // --- Карточка лекарства и недельная полоса приёмов (SKL-10, макет MedCard.dc.html) ---
+
+    /** Плитка значка в титуле карточки лекарства и её значок (62 и 30 в макете). */
+    val MedCardPlate: Dp = 62.dp
+    val MedCardPlateGlyph: Dp = 30.dp
+
+    /** Кружок дня в блоке «Последние 7 дней» и точка легенды под ним. */
+    val AdherenceDay: Dp = 26.dp
+    val AdherenceLegendDot: Dp = 10.dp
+
+    /**
+     * Обводка полого кружка сегодняшнего дня.
+     *
+     * Своя толщина, а не [BorderAccent]: полый кружок 26 dp с рамкой 1,5 dp читается как
+     * закрашенный светлым, и «сегодня» перестаёт отличаться от «пропущено» (ЭКР-6).
+     */
+    val AdherenceRing: Dp = 2.dp
+
     /** Баннер (§4.6): внутреннее поле 11–16 dp. */
     val BannerPaddingVertical: Dp = 11.dp
     val BannerPaddingHorizontal: Dp = 14.dp

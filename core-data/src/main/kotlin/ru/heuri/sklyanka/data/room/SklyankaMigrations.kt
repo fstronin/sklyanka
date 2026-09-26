@@ -30,8 +30,41 @@ object SklyankaMigrations {
         }
     }
 
+    /**
+     * Версия 2 → 3: у лекарства появляется признак дублирования напоминаний на часы.
+     *
+     * ЧАС-15 требует тумблера на каждое лекарство, а в перечне полей модели данных такого
+     * поля не было (ОВ-58) — тумблеру карточки лекарства (SKL-10) хранить настройку негде.
+     *
+     * Один `ALTER TABLE ADD COLUMN` без перестроения таблицы: строки не переписываются,
+     * индексы и внешние ключи остаются на месте, ни одна запись приёма не затрагивается
+     * (МГ-2). `NOT NULL DEFAULT 1` заполняет уже заведённые курсы: дублирование включено,
+     * а действующим ограничителем остаётся общее состояние связи с часами в настройках
+     * (ЧАС-15). Значение по умолчанию согласуется с сущностью — иначе Room отвергнет
+     * схему при открытии базы.
+     */
+    val MIGRATION_2_3 = object : Migration(2, 3) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE `medication` ADD COLUMN `mirror_to_watch` INTEGER NOT NULL DEFAULT 1")
+        }
+    }
+
+    /**
+     * Версия 3 → 4: появляется журнал срабатываний напоминаний (SKL-13, НФТ-50).
+     *
+     * Существующие таблицы не трогаются вовсе: добавление таблицы не переносит данные
+     * и не перестраивает индексы, поэтому история приёмов физически не может пострадать.
+     * Журнал сам по себе восстановим — но едет он в одной базе с историей, и разрушающей
+     * миграции здесь нет ни при каких условиях (МГ-2).
+     */
+    val MIGRATION_3_4 = object : Migration(3, 4) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            SCHEMA_4.forEach(db::execSQL)
+        }
+    }
+
     /** Все миграции по порядку. Room выбирает путь сам; пропусков в цепочке быть не должно. */
-    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2)
+    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
 
     /**
      * DDL версии 2 — дословно то, что Room ожидает увидеть при сверке схемы.
@@ -94,5 +127,26 @@ object SklyankaMigrations {
         )
         """,
         "CREATE INDEX IF NOT EXISTS `index_op_log_at` ON `op_log` (`at`)",
+    ).map { it.trimIndent() }
+
+    /**
+     * DDL версии 4 — журнал срабатываний напоминаний.
+     *
+     * Порядок и типы колонок дословно те, что ожидает Room: расхождение остановит
+     * инструментальный тест миграции на сверке схемы, а не человека на ревью (МГ-3).
+     */
+    private val SCHEMA_4 = listOf(
+        """
+        CREATE TABLE IF NOT EXISTS `reminder_log` (
+            `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `occurred_at` INTEGER NOT NULL,
+            `event` TEXT NOT NULL, `intake_id` TEXT, `medication_id` TEXT, `profile_id` TEXT,
+            `scheduled_at` INTEGER, `fired_at` INTEGER, `deviation_seconds` INTEGER,
+            `channel` TEXT, `delivered` INTEGER, `reason` TEXT, `alarms_cancelled` INTEGER,
+            `alarms_scheduled` INTEGER, `attempt` INTEGER, `snooze_minutes` INTEGER,
+            `watch_result` TEXT
+        )
+        """,
+        "CREATE INDEX IF NOT EXISTS `index_reminder_log_occurred_at` ON `reminder_log` (`occurred_at`)",
+        "CREATE INDEX IF NOT EXISTS `index_reminder_log_intake_id` ON `reminder_log` (`intake_id`)",
     ).map { it.trimIndent() }
 }

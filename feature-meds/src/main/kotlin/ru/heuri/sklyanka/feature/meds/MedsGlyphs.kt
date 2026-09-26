@@ -146,6 +146,29 @@ internal fun ChevronGlyph(color: Color, modifier: Modifier = Modifier, size: Dp 
     }
 }
 
+/**
+ * Стрелка «Назад» в шапке карточки лекарства (`MedCard.dc.html`).
+ *
+ * Тот же шеврон, отражённый влево. Отдельная функция, а не поворот существующего:
+ * поворот в разметке пришлось бы задавать углом по месту, а угол — такое же
+ * неподменяемое значение, как размер.
+ */
+@Composable
+internal fun BackGlyph(color: Color, modifier: Modifier = Modifier, size: Dp = SklyankaSizes.IconPlateGlyph) {
+    Canvas(modifier.size(size)) {
+        val side = this.size.minDimension
+        drawPath(
+            path = Path().apply {
+                moveTo(side * CHEVRON_RIGHT, side * CHEVRON_TOP)
+                lineTo(side * CHEVRON_LEFT, side * MIDDLE)
+                lineTo(side * CHEVRON_RIGHT, side * CHEVRON_BOTTOM)
+            },
+            color = color,
+            style = roundStroke(side),
+        )
+    }
+}
+
 /** Крестик: удаление строки времени. */
 @Composable
 internal fun CrossGlyph(color: Color, modifier: Modifier = Modifier, size: Dp = SklyankaSizes.MarkButtonGlyph) {

@@ -57,6 +57,11 @@ sklyanka:
     active: true
     domainPackages: 'ru.heuri.sklyanka.domain'
 
+  MedicalDataInJournal:
+    active: true
+    # Вызовы журналирования: журнал операций (SKL-07) и журнал срабатываний (SKL-13).
+    journalCalls: 'record,ReminderLogEntry,OpLogRecord'
+
 # --- Стандартные правила: точечные послабления ---
 complexity:
   LongParameterList:

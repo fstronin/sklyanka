@@ -189,6 +189,37 @@ class SklyankaRulesTest {
         assertTrue(editOfScale.isEmpty(), editOfScale.joinToString { it.message })
     }
 
+    @Test
+    fun `journal rule rejects a medication name and a dose in a journal call`() {
+        val findings = MedicalDataInJournal().lint(
+            """
+            package ru.heuri.sklyanka.domain.reminder
+
+            suspend fun write(log: Log, medication: Medication) {
+                log.record(event = "SHOWN", detail = medication.name)
+                log.record(event = "SHOWN", detail = medication.doseAmount.toPlainString())
+            }
+            """.trimIndent(),
+        )
+
+        assertEquals(2, findings.size, findings.joinToString { it.message })
+    }
+
+    @Test
+    fun `journal rule accepts identifiers and enum codes`() {
+        val findings = MedicalDataInJournal().lint(
+            """
+            package ru.heuri.sklyanka.domain.reminder
+
+            suspend fun write(log: Log, intake: Intake, event: Event) {
+                log.record(event = event.name, intakeId = intake.id, medicationId = intake.medicationId)
+            }
+            """.trimIndent(),
+        )
+
+        assertTrue(findings.isEmpty(), findings.joinToString { it.message })
+    }
+
     private companion object {
         val TOKEN_CONFIG = TestConfig("allowedPackages" to "ru.heuri.sklyanka.ui.token")
     }

@@ -8,10 +8,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import ru.heuri.sklyanka.data.log.LogRetention
+import ru.heuri.sklyanka.data.reminder.ReminderLogRetention
 import ru.heuri.sklyanka.data.repository.ProfileBootstrap
 import ru.heuri.sklyanka.domain.log.OperationLog
-import ru.heuri.sklyanka.domain.schedule.PlanReason
-import ru.heuri.sklyanka.scheduler.IntakePlanningTrigger
+import ru.heuri.sklyanka.domain.reminder.RecordReminderOutageUseCase
+import ru.heuri.sklyanka.domain.reminder.RescheduleReason
+import ru.heuri.sklyanka.domain.reminder.port.ReminderJournal
+import ru.heuri.sklyanka.platform.notification.ReminderChannels
+import ru.heuri.sklyanka.reminder.ReminderPlanningTrigger
 import javax.inject.Inject
 
 /**
@@ -37,13 +41,34 @@ class SklyankaApp : Application() {
     @Inject
     lateinit var operationLog: OperationLog
 
+    /**
+     * Генерация приёмов и постановка будильников в одном порядке (SKL-06, SKL-13).
+     *
+     * Прямой доступ к генератору приёмов здесь больше не нужен: порядок «сначала приёмы,
+     * потом будильники» держит один класс, и второй вызов из этого места означал бы
+     * двойной проход по профилям при каждом старте.
+     */
     @Inject
-    lateinit var intakePlanning: IntakePlanningTrigger
+    lateinit var reminderPlanning: ReminderPlanningTrigger
+
+    @Inject
+    lateinit var recordOutage: RecordReminderOutageUseCase
+
+    @Inject
+    lateinit var reminderChannels: ReminderChannels
+
+    @Inject
+    lateinit var reminderJournal: ReminderJournal
 
     private val startupScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onCreate() {
         super.onCreate()
+        // Каналы уведомлений создаются один раз и никогда не пересоздаются (ПЛ-10):
+        // параметры канала неизменяемы, а удаление и создание канала с тем же
+        // идентификатором восстанавливает прежний. Вызов синхронный и дешёвый —
+        // без каналов не показать ни одного напоминания.
+        reminderChannels.ensure()
         startupScope.launch {
             profileBootstrap.ensureOwnerProfile(
                 defaultName = getString(R.string.profile_self_default_name),
@@ -51,8 +76,16 @@ class SklyankaApp : Application() {
             )
             // Порядок важен: профиль владельца обязан существовать до того, как
             // генерация пойдёт по профилям, иначе первый запуск обходит пустой список.
-            intakePlanning.planAll(PlanReason.APP_START)
+            // Дальше порядок держит ReminderPlanningTrigger: сначала генерация приёмов,
+            // потом постановка будильников на окно
+            // (SKL-13, НАП-11). Старт — единственное событие, которое на EMUI случается
+            // наверняка, поэтому окно будильников пересобирается и здесь.
+            reminderPlanning.planAll(RescheduleReason.APP_START)
+            // Признак перерыва считается после пересборки: приложение могло быть
+            // принудительно остановлено, и об этом человеку говорят прямо (НАП-38).
+            recordOutage()
             operationLog.prune(LogRetention.KEEP_DAYS, LogRetention.KEEP_RECORDS)
+            reminderJournal.prune(ReminderLogRetention.KEEP_DAYS, ReminderLogRetention.KEEP_RECORDS)
         }
     }
 }

@@ -20,6 +20,14 @@ dependencies {
     implementation(project(":core-ui"))
     implementation(project(":core-data"))
     implementation(project(":feature-today"))
+    // Список, форма, карточка лекарства и архив курсов (SKL-09, SKL-10, SKL-11).
+    implementation(project(":feature-meds"))
+    // Перенос данных выгрузкой и загрузкой файлом (SKL-19). Модуль подключён, чтобы граф
+    // Hilt проверялся на сборке: иначе связки переноса остались бы непроверенными до
+    // первого запуска экрана.
+    implementation(project(":feature-settings"))
+    // Полноэкранное напоминание и диагностика напоминаний (SKL-13).
+    implementation(project(":feature-reminder"))
 
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.androidx.core.ktx)

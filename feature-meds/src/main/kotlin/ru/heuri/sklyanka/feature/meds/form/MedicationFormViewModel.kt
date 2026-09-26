@@ -2,6 +2,7 @@ package ru.heuri.sklyanka.feature.meds.form
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -28,6 +29,7 @@ import javax.inject.Inject
  * Отказ в сохранении черновик не трогает: он только добавляет перечень нарушенных
  * правил. Введённое не теряется — ни числа, ни набранный человеком текст этих чисел.
  */
+@HiltViewModel
 class MedicationFormViewModel @Inject constructor(
     private val activeProfile: ActiveProfileRepository,
     private val medications: MedicationRepository,

@@ -51,6 +51,14 @@ data class SklyankaColors(
     val progressTrack: Color,
     val switchOff: Color,
     val archiveBackground: Color,
+    /**
+     * Название лекарства в карточке архива (§1.2, производный от [text]).
+     *
+     * Роль, а не вычисление по месту: вычисление требует вызова `Color(…)`, который вне
+     * пакета токенов запрещён (НФТ-47), а экран, получивший функцию тонирования, снова
+     * получил бы возможность подобрать цвет самому.
+     */
+    val archiveText: Color,
     val profileStripe: Color,
     val profileBackground: Color,
     val profileHeader: Color,
@@ -87,6 +95,7 @@ fun lightColors(): SklyankaColors = SklyankaColors(
     progressTrack = Palette.ProgressTrack,
     switchOff = Palette.SwitchOff,
     archiveBackground = Palette.ArchiveBackground,
+    archiveText = tint(Palette.Text, Palette.ArchiveBackground, TINT_ARCHIVE_TEXT),
     profileStripe = Palette.Transparent,
     profileBackground = Palette.Background,
     profileHeader = Palette.Background,

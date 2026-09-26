@@ -49,6 +49,73 @@
         <item quantity="other">осталось %1$d дозы</item>
     </plurals>
 
+    <!--
+      ===== Карточка лекарства (MedCard.dc.html) =====
+    -->
+
+    <!-- Доза одного приёма: «по 1 таблетке», «по 2 таблетки», «по 5 таблеток». -->
+    <plurals name="card_dose_tablets">
+        <item quantity="one">по %1$s таблетке</item>
+        <item quantity="few">по %1$s таблетки</item>
+        <item quantity="many">по %1$s таблеток</item>
+        <item quantity="other">по %1$s таблетки</item>
+    </plurals>
+    <plurals name="card_dose_capsules">
+        <item quantity="one">по %1$s капсуле</item>
+        <item quantity="few">по %1$s капсулы</item>
+        <item quantity="many">по %1$s капсул</item>
+        <item quantity="other">по %1$s капсулы</item>
+    </plurals>
+    <plurals name="card_dose_millilitres">
+        <item quantity="one">по %1$s мл</item>
+        <item quantity="few">по %1$s мл</item>
+        <item quantity="many">по %1$s мл</item>
+        <item quantity="other">по %1$s мл</item>
+    </plurals>
+    <plurals name="card_dose_doses">
+        <item quantity="one">по %1$s дозе</item>
+        <item quantity="few">по %1$s дозы</item>
+        <item quantity="many">по %1$s доз</item>
+        <item quantity="other">по %1$s дозы</item>
+    </plurals>
+
+    <!-- Остаток дней курса: «осталось 17 дней». -->
+    <plurals name="card_course_days_left">
+        <item quantity="one">осталось %1$d день</item>
+        <item quantity="few">осталось %1$d дня</item>
+        <item quantity="many">осталось %1$d дней</item>
+        <item quantity="other">осталось %1$d дня</item>
+    </plurals>
+
+    <!-- Предупреждение о покупке в блоке остатка: «хватит на 4 дня». -->
+    <plurals name="card_stock_days_left">
+        <item quantity="one">хватит на %1$d день</item>
+        <item quantity="few">хватит на %1$d дня</item>
+        <item quantity="many">хватит на %1$d дней</item>
+        <item quantity="other">хватит на %1$d дня</item>
+    </plurals>
+
+    <!-- Счётчик недельной полосы: «12 из 14 приёмов». -->
+    <plurals name="card_week_counter">
+        <item quantity="one">%1$d из %2$d приёма</item>
+        <item quantity="few">%1$d из %2$d приёмов</item>
+        <item quantity="many">%1$d из %2$d приёмов</item>
+        <item quantity="other">%1$d из %2$d приёма</item>
+    </plurals>
+
+    <!--
+      ===== Архив курсов (Archive.dc.html) =====
+
+      Итог завершённого курса «7 дней · принято 13 из 14»: склоняется только число дней,
+      числитель и знаменатель идут без склоняемого существительного.
+    -->
+    <plurals name="archive_outcome">
+        <item quantity="one">%1$d день · принято %2$d из %3$d</item>
+        <item quantity="few">%1$d дня · принято %2$d из %3$d</item>
+        <item quantity="many">%1$d дней · принято %2$d из %3$d</item>
+        <item quantity="other">%1$d дня · принято %2$d из %3$d</item>
+    </plurals>
+
     <!-- Порог напоминания о покупке: «Когда останется на 5 дней». -->
     <plurals name="stock_threshold_caption">
         <item quantity="one">Когда останется на %1$d день</item>

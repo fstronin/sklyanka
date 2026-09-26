@@ -45,6 +45,17 @@
     <string name="cd_warning">Предупреждение</string>
     <string name="cd_profile">Чужой профиль</string>
 
+    <!--
+      Легенда недельной полосы приёмов (блок «Последние 7 дней», SKL-10).
+
+      Отдельные строки, а не переиспользованные «Принято» кнопки отметки и «Пропущено»
+      статуса: легенда объясняет вид кружка, а не называет действие, и при правке подписи
+      кнопки она обязана остаться прежней.
+    -->
+    <string name="adherence_legend_taken">Принято</string>
+    <string name="adherence_legend_missed">Пропущено</string>
+    <string name="adherence_legend_today">Сегодня</string>
+
     <!-- Числа с единицами — через plurals, а не конкатенацией (НФТ-44) -->
     <plurals name="intakes_taken_of_total">
         <item quantity="one">Принято %1$d из %2$d приёма</item>

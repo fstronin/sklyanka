@@ -2,6 +2,7 @@ package ru.heuri.sklyanka.feature.meds.list
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,6 +35,7 @@ import javax.inject.Inject
  * Архивированные лекарства в списке активных не показываются (ПР-11) — не фильтрацией
  * на экране, а выборкой слоя данных: фильтр на экране однажды забудут применить.
  */
+@HiltViewModel
 @OptIn(ExperimentalCoroutinesApi::class)
 class MedicationListViewModel @Inject constructor(
     activeProfile: ActiveProfileRepository,

@@ -8,6 +8,7 @@ import ru.heuri.sklyanka.domain.intake.CreatePrnIntakeUseCase
 import ru.heuri.sklyanka.domain.intake.EndOfDayIntakeWindow
 import ru.heuri.sklyanka.domain.intake.IntakeWindow
 import ru.heuri.sklyanka.domain.intake.MarkIntakeUseCase
+import ru.heuri.sklyanka.domain.intake.MarkSideEffects
 import ru.heuri.sklyanka.domain.intake.SweepMissedIntakesUseCase
 import ru.heuri.sklyanka.domain.log.OperationLog
 import ru.heuri.sklyanka.domain.repository.IntakeRepository
@@ -37,6 +38,13 @@ object IntakeModule {
     @Singleton
     fun provideIntakeWindow(): IntakeWindow = EndOfDayIntakeWindow()
 
+    /**
+     * Единственная точка отметки приёма.
+     *
+     * [MarkSideEffects] подставляется задачей SKL-13: состоявшаяся отметка обязана снять
+     * полноэкранное напоминание и отозвать парную карточку на часах (НАП-30, ЧАС-16).
+     * Место для этого одно — здесь, иначе четвёртый путь отметки об этом забудет.
+     */
     @Provides
     @Singleton
     fun provideMarkIntake(
@@ -44,11 +52,13 @@ object IntakeModule {
         medications: MedicationRepository,
         profiles: ProfileRepository,
         time: TimeSource,
+        sideEffects: MarkSideEffects,
     ): MarkIntakeUseCase = MarkIntakeUseCase(
         intakes = intakes,
         medications = medications,
         profiles = profiles,
         time = time,
+        sideEffects = sideEffects,
     )
 
     @Provides

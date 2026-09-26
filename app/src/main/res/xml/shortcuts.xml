@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Ярлык запуска на диагностику напоминаний (НАП-37).
+
+  Постоянная точка входа — пункт настроек «Разрешения и автозапуск» (SKL-20), и решение,
+  один это экран с онбордингом или два разных, не принято (ОВ-48). До тех пор экран
+  достижим ярлыком: диагностика, до которой нельзя добраться, не отвечает ни на один
+  вопрос человека, у которого не приходят напоминания.
+-->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_notification_mark"
+        android:shortcutId="reminders_diagnostics"
+        android:shortcutLongLabel="@string/diagnostics_shortcut_long_label"
+        android:shortcutShortLabel="@string/diagnostics_shortcut_label">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetClass="ru.heuri.sklyanka.feature.reminder.DiagnosticsActivity"
+            android:targetPackage="ru.heuri.sklyanka" />
+    </shortcut>
+</shortcuts>

@@ -20,6 +20,7 @@ import ru.heuri.sklyanka.domain.model.Medication
 import ru.heuri.sklyanka.domain.model.MedicationForm
 import ru.heuri.sklyanka.domain.model.Profile
 import ru.heuri.sklyanka.domain.model.ScheduleMode
+import ru.heuri.sklyanka.domain.model.TabletShape
 import ru.heuri.sklyanka.domain.repository.ActiveProfileRepository
 import ru.heuri.sklyanka.domain.repository.IntakeRepository
 import ru.heuri.sklyanka.domain.repository.MedicationRepository
@@ -68,17 +69,21 @@ internal object MedsTestData {
         startDate: LocalDate = LocalDate.of(2026, 3, 12),
         endDate: LocalDate? = null,
         archivedAt: Instant? = null,
+        archiveReason: ArchiveReason? = archivedAt?.let { ArchiveReason.MANUAL },
+        mirrorToWatch: Boolean = true,
+        shape: TabletShape? = null,
+        foodRelation: FoodRelation = FoodRelation.ANY,
     ) = Medication(
         id = id,
         profileId = profileId,
         name = name,
         form = form,
-        shape = null,
+        shape = shape,
         doseAmount = BigDecimal("2"),
         doseUnit = "tablet",
         strength = BigDecimal("50"),
         strengthUnit = "mg",
-        foodRelation = FoodRelation.ANY,
+        foodRelation = foodRelation,
         scheduleMode = mode,
         maxPerDay = maxPerDay,
         times = if (mode == ScheduleMode.SCHEDULED) times else emptyList(),
@@ -87,7 +92,18 @@ internal object MedsTestData {
         stockLeft = stockLeft?.let { BigDecimal(it) },
         stockThresholdDays = thresholdDays,
         archivedAt = archivedAt,
-        archiveReason = archivedAt?.let { ArchiveReason.MANUAL },
+        archiveReason = archiveReason,
+        mirrorToWatch = mirrorToWatch,
+    )
+
+    fun intake(medicationId: String, at: LocalDateTime, status: IntakeStatus) = Intake(
+        id = "intake-$medicationId-$at-$status",
+        medicationId = medicationId,
+        scheduledAt = at,
+        status = status,
+        actedAt = if (status == IntakeStatus.PENDING) null else at.atZone(ZONE).toInstant(),
+        source = if (status == IntakeStatus.PENDING) null else IntakeSource.PHONE,
+        actorProfileId = null,
     )
 
     fun taken(medicationId: String, at: LocalDateTime) = Intake(

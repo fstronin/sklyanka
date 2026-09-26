@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Тексты полноэкранного напоминания и экрана диагностики.
+
+  Формулировки карточки — дословно из макета `design/screens/Reminder.dc.html`.
+  Русского текста в Kotlin-коде нет вообще (НФТ-42), числительные — через plurals (НФТ-44).
+
+  Текстов экрана диагностики в макетах нет (ОВ-49): экран описан словами в НАП-37,
+  и формулировки здесь — предложение задачи, а не срисованный макет.
+-->
+<resources>
+
+    <!-- ===== Полноэкранное напоминание (Reminder.dc.html) ===== -->
+
+    <string name="reminder_overline">Приём по расписанию</string>
+    <string name="reminder_time_pattern">HH:mm</string>
+    <string name="reminder_mirrored_to_watch">Продублировано на часы</string>
+
+    <!-- Подпись кнопки откладывания собирается из настройки «Отложить на» (НАП-30). -->
+    <string name="reminder_snooze">Отложить %1$d мин</string>
+
+    <!-- Разделитель дозы и дозировки: «2 таблетки · 48 мг». -->
+    <string name="reminder_dose_separator">" · "</string>
+
+    <!-- «48 мг»: дозировка и её единица введены человеком и переводу не подлежат. -->
+    <string name="reminder_strength">%1$s %2$s</string>
+
+    <!-- Отметка строки в карточке из нескольких приёмов (НАП-36). -->
+    <string name="reminder_row_taken">Принято</string>
+    <string name="reminder_row_skip">Пропустить</string>
+
+    <!-- ===== Пробное напоминание (НАП-22) ===== -->
+
+    <string name="reminder_test_card_title">Пробное напоминание</string>
+    <string name="reminder_test_card_text">Так будет выглядеть напоминание о приёме. Записи о приёме не появится.</string>
+    <string name="reminder_test_card_action">Понятно</string>
+
+    <!-- ===== Диагностика напоминаний (НАП-37) ===== -->
+
+    <string name="diagnostics_title">Напоминания</string>
+    <string name="diagnostics_section_last">Последнее напоминание</string>
+    <string name="diagnostics_section_next">Следующее напоминание</string>
+    <string name="diagnostics_section_reschedule">Последняя сборка плана</string>
+    <string name="diagnostics_section_permissions">Разрешения</string>
+    <string name="diagnostics_section_journal">Журнал срабатываний</string>
+
+    <string name="diagnostics_none">нет данных</string>
+    <string name="diagnostics_datetime_pattern">d MMMM, HH:mm:ss</string>
+
+    <!-- «План 14:00 · факт 14:00:37 · отклонение 37 с». -->
+    <string name="diagnostics_deviation">Отклонение %1$d с</string>
+    <string name="diagnostics_planned">План %1$s</string>
+    <string name="diagnostics_actual">Факт %1$s</string>
+    <string name="diagnostics_scheduled_total">Всего поставлено будильников: %1$d</string>
+
+    <string name="diagnostics_permission_notifications">Уведомления</string>
+    <string name="diagnostics_permission_exact_alarms">Точные будильники</string>
+    <string name="diagnostics_permission_full_screen">Полноэкранные уведомления</string>
+    <string name="diagnostics_permission_dnd">Доступ к политике «Не беспокоить»</string>
+    <string name="diagnostics_permission_boot">Приёмник загрузки</string>
+    <string name="diagnostics_permission_autostart">Автозапуск и энергосбережение</string>
+
+    <string name="diagnostics_state_granted">выдано</string>
+    <string name="diagnostics_state_denied">не выдано</string>
+    <string name="diagnostics_state_unknown">проверьте вручную</string>
+
+    <!-- Пояснение к невыданному доступу к политике «Не беспокоить» (НАП-17). -->
+    <string name="diagnostics_dnd_hint">В режиме «Не беспокоить» повторные напоминания будут беззвучными.</string>
+
+    <!-- Предупреждение о ненадёжности напоминаний (НАП-18). -->
+    <string name="diagnostics_warning_notifications">Напоминания сейчас не приходят: уведомления отключены. Приёмы можно отмечать вручную.</string>
+    <string name="diagnostics_warning_exact_alarms">Напоминания могут приходить с опозданием: не выдано право на точные будильники.</string>
+    <string name="diagnostics_warning_both">Напоминания сейчас не приходят: отключены уведомления и не выдано право на точные будильники.</string>
+
+    <!-- Сообщение о перерыве в напоминаниях (НАП-38). -->
+    <string name="diagnostics_outage">Напоминания не приходили с %1$s. Проверьте разрешения и автозапуск, затем нажмите «Проверить сейчас».</string>
+
+    <string name="diagnostics_action_check">Проверить сейчас</string>
+    <string name="diagnostics_action_test">Пробное напоминание через минуту</string>
+    <string name="diagnostics_test_planned">Пробное напоминание придёт в %1$s</string>
+
+    <!-- Причины пересборки плана (таблица НАП-11). -->
+    <string name="diagnostics_reason_boot">перезагрузка</string>
+    <string name="diagnostics_reason_package_replaced">обновление приложения</string>
+    <string name="diagnostics_reason_timezone_changed">смена часового пояса</string>
+    <string name="diagnostics_reason_time_changed">перевод часов</string>
+    <string name="diagnostics_reason_schedule_edited">изменение расписания лекарства</string>
+    <string name="diagnostics_reason_medication_added">добавление лекарства</string>
+    <string name="diagnostics_reason_medication_archived">архивация лекарства</string>
+    <string name="diagnostics_reason_medication_unarchived">возврат лекарства из архива</string>
+    <string name="diagnostics_reason_alarm_fired">сработавшее напоминание</string>
+    <string name="diagnostics_reason_profile_set_changed">изменение состава профилей</string>
+    <string name="diagnostics_reason_anchor">ночная проверка</string>
+    <string name="diagnostics_reason_manual">ручное действие человека</string>
+    <string name="diagnostics_reason_data_imported">загрузка данных</string>
+    <string name="diagnostics_reason_app_start">запуск приложения</string>
+
+    <!-- Виды записей журнала (TDD §11.1). -->
+    <string name="diagnostics_event_fired">будильник сработал</string>
+    <string name="diagnostics_event_shown">напоминание показано</string>
+    <string name="diagnostics_event_suppressed">показ подавлен</string>
+    <string name="diagnostics_event_repeated">повтор напоминания</string>
+    <string name="diagnostics_event_snoozed">отложено</string>
+    <string name="diagnostics_event_rescheduled">план пересобран</string>
+    <string name="diagnostics_event_missed_sweep">переведено в пропущенные</string>
+    <string name="diagnostics_event_test">пробное напоминание</string>
+    <string name="diagnostics_event_outage">перерыв в напоминаниях</string>
+
+    <!-- «снято 1, поставлено 2» — счётчики записи о пересборке. -->
+    <string name="diagnostics_alarm_counters">снято %1$d, поставлено %2$d</string>
+</resources>

@@ -10,7 +10,7 @@ import io.gitlab.arturbosch.detekt.api.RuleSetProvider
  * Здесь живут запреты, которые нельзя выразить стандартными правилами detekt:
  * дизайн-токены, начертание мимо шкалы, русский текст в коде, прямое обращение к часам,
  * разрушающая
- * миграция Room и Android в доменном модуле (TDD §5.3).
+ * миграция Room, Android в доменном модуле и медицинские данные в журнале (TDD §5.3).
  */
 class SklyankaRuleSetProvider : RuleSetProvider {
 
@@ -25,6 +25,7 @@ class SklyankaRuleSetProvider : RuleSetProvider {
             DirectSystemClockAccess(config),
             DestructiveRoomMigration(config),
             AndroidImportInDomain(config),
+            MedicalDataInJournal(config),
         ),
     )
 

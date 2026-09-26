@@ -1,17 +1,41 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Манифест на этом этапе объявляет одну Activity и НИ ОДНОГО разрешения (TDD §4.4).
+  Разрешения подсистемы напоминаний (SKL-13, таблица НАП-15).
 
-  Разрешения приходят задачами, которым они нужны: уведомления, точные будильники
-  и приёмник загрузки — SKL-13. Разрешение INTERNET не появляется никогда (ПЛ-3, НФТ-15),
-  и это проверяется на собранном артефакте после слияния манифестов, а не здесь:
-  разрешение способна добавить зависимость.
+  Разрешение INTERNET не объявляется никогда (ПЛ-3, НФТ-15), и это проверяется на собранном
+  артефакте после слияния манифестов, а не здесь: разрешение способна добавить зависимость.
+  Именно поэтому в проекте нет WorkManager — androidx.work объявляет ACCESS_NETWORK_STATE
+  в своём манифесте, и проверка состава останавливает сборку.
 
   Тема запускаемой Activity — тема заставки (SKL-21): полотно и знак первого кадра
   рисует система по теме окна, ещё до создания Activity. Приложение переключается
   в свою тему само, через postSplashScreenTheme.
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Показ уведомлений; на Android 13+ спрашивается у человека (НАП-15). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!--
+      Точные будильники: объявляются оба разрешения (НАП-16).
+
+      USE_EXACT_ALARM — основное: приложение является календарём приёма лекарств, то есть
+      ровно тем случаем, для которого разрешение предназначено; оно выдаётся при установке
+      и не требует хождения в настройки. SCHEDULE_EXACT_ALARM — запасной путь на сборках
+      и прошивках, где первое не отрабатывает.
+    -->
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+
+    <!-- Перепланирование после перезагрузки: без него после первой же перезагрузки
+         напоминаний нет совсем (ПЛ-9, НФТ-2). -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!-- Полноэкранное напоминание поверх экрана блокировки (НАП-29). -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+
+    <!-- Тактильный канал напоминания (НАП-24). -->
+    <uses-permission android:name="android.permission.VIBRATE" />
 
     <application
         android:name=".SklyankaApp"
@@ -33,6 +57,85 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <!--
+              Ярлык запуска на диагностику напоминаний.
+
+              Постоянная точка входа — пункт настроек «Разрешения и автозапуск» (SKL-20,
+              ОВ-48); до неё экран диагностики иначе недостижим, а именно он отвечает
+              на вопрос «почему напоминание не пришло» (НАП-37).
+            -->
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
         </activity>
+
+        <!--
+          Полноэкранное напоминание (НАП-29).
+
+          showWhenLocked и turnScreenOn — на API 27 и выше; на 26 те же свойства включаются
+          флагами окна в самой Activity (minSdk 26, ПЛ-1).
+          excludeFromRecents: карточка приёма не остаётся в списке недавних — вернуться
+          к напоминанию через список задач нечего, а приём в нём выглядел бы отдельным
+          экраном приложения.
+        -->
+        <activity
+            android:name="ru.heuri.sklyanka.feature.reminder.ReminderActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:showWhenLocked="true"
+            android:taskAffinity=""
+            android:theme="@style/Theme.Sklyanka"
+            android:turnScreenOn="true" />
+
+        <!--
+          Диагностика напоминаний (НАП-37).
+
+          exported="true" без фильтра намерений: постоянного входа в неё ещё нет (ОВ-48,
+          SKL-20), а пройти чек-лист устройства (НАП-40) и открыть отчёт руками нужно уже
+          сейчас — ярлык запуска и прямой запуск командой это дают. Медицинских данных
+          на экране нет по построению (НФТ-19), поэтому цена открытости здесь нулевая.
+          Когда пункт настроек появится, атрибут снимается.
+        -->
+        <activity
+            android:name="ru.heuri.sklyanka.feature.reminder.DiagnosticsActivity"
+            android:exported="true"
+            android:label="@string/diagnostics_shortcut_label"
+            android:theme="@style/Theme.Sklyanka" />
+
+        <!--
+          Сработавший будильник: показ напоминания, якорь и пробное напоминание.
+
+          exported="false": будильники ставит само приложение, и снаружи их присылать
+          некому — открытый приёмник напоминаний означал бы чужие карточки приёма.
+        -->
+        <receiver
+            android:name=".reminder.AlarmReceiver"
+            android:exported="false" />
+
+        <!--
+          Системные события, после которых будильников больше нет (НАП-11).
+
+          exported="true" обязателен: события присылает система, а не приложение.
+          QUICKBOOT_POWERON — фирменное событие завершения загрузки на части прошивок,
+          где штатный BOOT_COMPLETED до приёмника не доходит.
+        -->
+        <receiver
+            android:name=".reminder.SystemEventReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <action android:name="android.intent.action.TIME_SET" />
+            </intent-filter>
+        </receiver>
     </application>
 </manifest>

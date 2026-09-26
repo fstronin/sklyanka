@@ -148,6 +148,74 @@
     <string name="form_save_blocked">Укажите название, чтобы сохранить лекарство</string>
 
     <!--
+      ===== Карточка лекарства (MedCard.dc.html) =====
+
+      Формулировки — дословно из макета. Строки состояний без макета собраны отдельно:
+      архивный вид карточки, лекарство «по потребности», предложение убрать законченный
+      курс и объяснение при возврате курса с прошедшей датой окончания — их в макете нет,
+      и они согласуются с дизайном.
+    -->
+
+    <string name="card_edit">Изменить</string>
+    <string name="card_section_schedule">Расписание</string>
+    <string name="card_section_course">Курс</string>
+    <string name="card_section_stock">Остаток</string>
+    <string name="card_section_week">Последние 7 дней</string>
+    <string name="card_course_period">%1$s — %2$s</string>
+    <string name="card_refill">Пополнить</string>
+    <string name="card_watch_mirror">Напоминать на часах</string>
+    <string name="card_archive">В архив</string>
+
+    <!-- Связь с едой в подписи титула: в форме это выбор, здесь — часть фразы. -->
+    <string name="card_food_before">до еды</string>
+    <string name="card_food_with">во время еды</string>
+    <string name="card_food_after">после еды</string>
+
+    <!--
+      Состояния карточки без макета (docs/spec/03-screens.md задаёт их словами).
+
+      «Ограничение» — заголовок блока, заменяющего расписание у лекарства «по потребности»:
+      в макете этого состояния нет, а заголовок «Расписание» над строкой «не чаще 3 раз
+      в сутки» противоречил бы сам себе.
+    -->
+    <string name="card_section_limit">Ограничение</string>
+    <string name="card_restore">Вернуть</string>
+    <string name="card_course_last_day">последний день</string>
+    <string name="card_course_over">курс закончился</string>
+
+    <!-- Ввод нового остатка: «Пополнить» заменяет значение (ОВ-13, решено в SKL-12). -->
+    <string name="card_refill_hint">Сколько осталось</string>
+    <string name="card_refill_confirm">Сохранить</string>
+
+    <!-- Предложение убрать законченный курс в архив (ОВ-42: приложение предлагает). -->
+    <string name="card_offer_course_finished">Курс закончился. Убрать его в архив?</string>
+    <string name="card_offer_action">В архив</string>
+
+    <!-- Возврат курса с прошедшей датой окончания (ОВ-14): молча ничего не происходит нельзя. -->
+    <string name="card_notice_period_needs_update">Период приёма закончился. Продлите его в форме правки, чтобы вернуть курс.</string>
+    <string name="card_notice_dismiss">Понятно</string>
+
+    <!-- Подписи для чтения с экрана (НФТ-30); формулировки — из aria-label макета -->
+    <string name="cd_adherence_today">%1$s, сегодня</string>
+    <string name="cd_adherence_completed">%1$s, принято %2$d из %3$d</string>
+    <string name="cd_adherence_no_intakes">%1$s, приёмов не было</string>
+    <string name="cd_adherence_before_course">%1$s, до начала курса</string>
+
+    <!--
+      ===== Архив курсов (Archive.dc.html) =====
+    -->
+
+    <string name="archive_group_finished">Курс завершён</string>
+    <string name="archive_group_manual">Убрано вручную</string>
+    <string name="archive_caption_since">в архиве с %1$s</string>
+    <string name="archive_restore">Вернуть</string>
+    <string name="archive_history_banner">История приёмов сохраняется. Возврат из архива восстановит лекарство с прежним расписанием.</string>
+
+    <!-- Пустой архив: макета нет, docs/spec/03-screens.md задаёт состояние словами. -->
+    <string name="archive_empty_title">В архиве пока ничего нет</string>
+    <string name="archive_empty_text">Законченные курсы попадут сюда из карточки лекарства. История приёмов при этом сохранится.</string>
+
+    <!--
       Шаблоны дат.
 
       Не текст, а формат: месяц склоняется («12 марта»), а не стоит в именительном
@@ -156,5 +224,8 @@
     -->
     <string name="date_pattern_day_month" translatable="false">d MMMM</string>
     <string name="date_pattern_full" translatable="false">d MMMM yyyy</string>
+    <!-- «Сб» в недельной полосе и «суббота» для программы чтения с экрана. -->
+    <string name="date_pattern_weekday_short" translatable="false">EEEEEE</string>
+    <string name="date_pattern_weekday_full" translatable="false">EEEE</string>
     <string name="time_pattern" translatable="false">HH:mm</string>
 </resources>

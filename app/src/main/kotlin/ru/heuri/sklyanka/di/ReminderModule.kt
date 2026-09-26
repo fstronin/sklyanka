@@ -1,0 +1,271 @@
+package ru.heuri.sklyanka.di
+
+import dagger.Binds
+import dagger.Module
+import dagger.Provides
+import dagger.hilt.InstallIn
+import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import ru.heuri.sklyanka.domain.intake.IntakeWindow
+import ru.heuri.sklyanka.domain.intake.MarkSideEffects
+import ru.heuri.sklyanka.domain.intake.SweepMissedIntakesUseCase
+import ru.heuri.sklyanka.domain.reminder.BuildReminderDiagnosticsUseCase
+import ru.heuri.sklyanka.domain.reminder.DismissReminderUseCase
+import ru.heuri.sklyanka.domain.reminder.HandleFiredReminderUseCase
+import ru.heuri.sklyanka.domain.reminder.ReadReminderReliabilityUseCase
+import ru.heuri.sklyanka.domain.reminder.RecordReminderOutageUseCase
+import ru.heuri.sklyanka.domain.reminder.RescheduleRemindersUseCase
+import ru.heuri.sklyanka.domain.reminder.ShowTestReminderUseCase
+import ru.heuri.sklyanka.domain.reminder.SnoozeReminderUseCase
+import ru.heuri.sklyanka.domain.reminder.SweepAtDayBoundaryUseCase
+import ru.heuri.sklyanka.domain.reminder.TestReminderUseCase
+import ru.heuri.sklyanka.domain.reminder.port.AlarmGateway
+import ru.heuri.sklyanka.domain.reminder.port.NoWatchGateway
+import ru.heuri.sklyanka.domain.reminder.port.NotificationGateway
+import ru.heuri.sklyanka.domain.reminder.port.PermissionStateReader
+import ru.heuri.sklyanka.domain.reminder.port.ReminderCardSource
+import ru.heuri.sklyanka.domain.reminder.port.ReminderJournal
+import ru.heuri.sklyanka.domain.reminder.port.ReminderPlanSource
+import ru.heuri.sklyanka.domain.reminder.port.ReminderSettings
+import ru.heuri.sklyanka.domain.reminder.port.WatchGateway
+import ru.heuri.sklyanka.domain.time.TimeSource
+import ru.heuri.sklyanka.feature.reminder.ReminderCheckNow
+import ru.heuri.sklyanka.platform.notification.ReminderNotifier
+import ru.heuri.sklyanka.platform.permission.SystemPermissionStateReader
+import ru.heuri.sklyanka.platform.reminder.AlarmManagerGateway
+import ru.heuri.sklyanka.reminder.ReminderPlanningTrigger
+import javax.inject.Qualifier
+import javax.inject.Singleton
+
+/**
+ * Область корутин подсистемы напоминаний.
+ *
+ * Именованная зависимость, а не `CoroutineScope` по месту: приёмник обязан продолжать
+ * работу после возврата из `onReceive`, и область для этого должна переживать сам приёмник.
+ * Создавать её в приёмнике значит терять работу вместе с объектом приёмника.
+ */
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class ReminderScope
+
+/**
+ * Сборка подсистемы напоминаний (SKL-13).
+ *
+ * Сценарии живут в домене и об Hilt не знают: домен не видит ни `javax.inject`, ни `dagger`
+ * (НФТ-46), поэтому объекты собираются здесь, а не аннотацией на конструкторе.
+ */
+@Module
+@InstallIn(SingletonComponent::class)
+object ReminderModule {
+
+    @Provides
+    @Singleton
+    @ReminderScope
+    fun provideReminderScope(): CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    /**
+     * Часы — SKL-16.
+     *
+     * До неё порт отвечает «часы не настроены»: недоступность часов не является ошибкой
+     * сценария, приём отмечается на телефоне (ЧАС-14).
+     */
+    @Provides
+    @Singleton
+    fun provideWatchGateway(): WatchGateway = NoWatchGateway
+
+    @Provides
+    @Singleton
+    fun provideReschedule(
+        plan: ReminderPlanSource,
+        alarms: AlarmGateway,
+        notifications: NotificationGateway,
+        journal: ReminderJournal,
+        sweepMissed: SweepMissedIntakesUseCase,
+        time: TimeSource,
+    ): RescheduleRemindersUseCase = RescheduleRemindersUseCase(
+        plan = plan,
+        alarms = alarms,
+        notifications = notifications,
+        journal = journal,
+        sweepMissed = sweepMissed,
+        time = time,
+    )
+
+    @Provides
+    @Singleton
+    fun provideSnooze(
+        plan: ReminderPlanSource,
+        alarms: AlarmGateway,
+        notifications: NotificationGateway,
+        journal: ReminderJournal,
+        time: TimeSource,
+    ): SnoozeReminderUseCase = SnoozeReminderUseCase(
+        plan = plan,
+        alarms = alarms,
+        notifications = notifications,
+        journal = journal,
+        time = time,
+    )
+
+    @Provides
+    @Singleton
+    @Suppress("LongParameterList")
+    fun provideHandleFired(
+        plan: ReminderPlanSource,
+        cards: ReminderCardSource,
+        notifications: NotificationGateway,
+        watch: WatchGateway,
+        alarms: AlarmGateway,
+        journal: ReminderJournal,
+        settings: ReminderSettings,
+        window: IntakeWindow,
+        time: TimeSource,
+    ): HandleFiredReminderUseCase = HandleFiredReminderUseCase(
+        plan = plan,
+        cards = cards,
+        notifications = notifications,
+        watch = watch,
+        alarms = alarms,
+        journal = journal,
+        settings = settings,
+        window = window,
+        time = time,
+    )
+
+    @Provides
+    @Singleton
+    fun provideDismiss(
+        plan: ReminderPlanSource,
+        cards: ReminderCardSource,
+        notifications: NotificationGateway,
+        watch: WatchGateway,
+    ): DismissReminderUseCase = DismissReminderUseCase(
+        plan = plan,
+        cards = cards,
+        notifications = notifications,
+        watch = watch,
+    )
+
+    /**
+     * Последствия отметки приёма (НАП-30, ЧАС-16).
+     *
+     * Подставляются в единственную точку отметки, поэтому карточка закрывается одинаково
+     * при отметке с экрана «Сегодня», с карточки напоминания и с часов.
+     */
+    @Provides
+    @Singleton
+    fun provideMarkSideEffects(dismiss: DismissReminderUseCase): MarkSideEffects =
+        MarkSideEffects { intakeId -> dismiss(intakeId) }
+
+    @Provides
+    @Singleton
+    fun provideTestReminder(alarms: AlarmGateway, time: TimeSource): TestReminderUseCase =
+        TestReminderUseCase(alarms = alarms, time = time)
+
+    @Provides
+    @Singleton
+    fun provideShowTestReminder(
+        notifications: NotificationGateway,
+        journal: ReminderJournal,
+        time: TimeSource,
+    ): ShowTestReminderUseCase = ShowTestReminderUseCase(
+        notifications = notifications,
+        journal = journal,
+        time = time,
+    )
+
+    /**
+     * «Проверить сейчас» для экрана диагностики (НАП-37).
+     *
+     * Экран получает операцию, а не планировщик: порядок «сначала приёмы, потом будильники»
+     * знает один класс в app, и знать его экрану незачем.
+     */
+    @Provides
+    @Singleton
+    fun provideCheckNow(trigger: ReminderPlanningTrigger): ReminderCheckNow =
+        ReminderCheckNow { reason -> trigger.planAll(reason) }
+
+    @Provides
+    @Singleton
+    fun provideReliability(permissions: PermissionStateReader): ReadReminderReliabilityUseCase =
+        ReadReminderReliabilityUseCase(permissions)
+
+    /**
+     * Проход по просроченным приёмам на границе суток (НАП-34).
+     *
+     * Единственная операция подсистемы, срабатывающая по времени: пока телефон включён
+     * и приложение не открывают, неотмеченный приём обязан стать пропущенным в полночь,
+     * а его карточка — исчезнуть из шторки.
+     */
+    @Provides
+    @Singleton
+    @Suppress("LongParameterList")
+    fun provideDayBoundarySweep(
+        sweepMissed: SweepMissedIntakesUseCase,
+        plan: ReminderPlanSource,
+        notifications: NotificationGateway,
+        alarms: AlarmGateway,
+        journal: ReminderJournal,
+        time: TimeSource,
+    ): SweepAtDayBoundaryUseCase = SweepAtDayBoundaryUseCase(
+        sweepMissed = sweepMissed,
+        plan = plan,
+        notifications = notifications,
+        alarms = alarms,
+        journal = journal,
+        time = time,
+    )
+
+    /**
+     * Обнаружение перерыва в напоминаниях при запуске (НАП-38).
+     *
+     * Вызывается из [ru.heuri.sklyanka.SklyankaApp] после пересборки окна: признак перерыва
+     * вычисляется по журналу и плану, а не по сохранённому флагу, поэтому сначала должен
+     * появиться актуальный план.
+     */
+    @Provides
+    @Singleton
+    fun provideRecordOutage(
+        plan: ReminderPlanSource,
+        journal: ReminderJournal,
+        time: TimeSource,
+    ): RecordReminderOutageUseCase = RecordReminderOutageUseCase(plan = plan, journal = journal, time = time)
+
+    @Provides
+    @Singleton
+    fun provideDiagnostics(
+        journal: ReminderJournal,
+        alarms: AlarmGateway,
+        permissions: PermissionStateReader,
+        plan: ReminderPlanSource,
+        reliability: ReadReminderReliabilityUseCase,
+        time: TimeSource,
+    ): BuildReminderDiagnosticsUseCase = BuildReminderDiagnosticsUseCase(
+        journal = journal,
+        alarms = alarms,
+        permissions = permissions,
+        plan = plan,
+        reliability = reliability,
+        time = time,
+    )
+}
+
+/** Порты домена соединяются с платформенными реализациями. */
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class ReminderBindings {
+
+    @Binds
+    @Singleton
+    abstract fun bindAlarmGateway(impl: AlarmManagerGateway): AlarmGateway
+
+    @Binds
+    @Singleton
+    abstract fun bindNotificationGateway(impl: ReminderNotifier): NotificationGateway
+
+    @Binds
+    @Singleton
+    abstract fun bindPermissionStateReader(impl: SystemPermissionStateReader): PermissionStateReader
+}

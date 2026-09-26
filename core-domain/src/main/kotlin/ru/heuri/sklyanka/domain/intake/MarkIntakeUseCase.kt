@@ -35,6 +35,12 @@ class MarkIntakeUseCase(
     private val medications: MedicationRepository,
     private val profiles: ProfileRepository,
     private val time: TimeSource,
+    /**
+     * Последствия отметки за пределами данных: снятие напоминания и отзыв карточки часов
+     * (SKL-13, НАП-30, ЧАС-16). По умолчанию отсутствуют — жизненный цикл приёма
+     * о подсистеме доставки не знает.
+     */
+    private val sideEffects: MarkSideEffects = MarkSideEffects.None,
 ) {
 
     suspend operator fun invoke(request: MarkRequest): MarkOutcome {
@@ -46,19 +52,21 @@ class MarkIntakeUseCase(
         // что делать с записью, принимается внутри транзакции — по её собственному чтению.
         val intake = intakes.get(request.intakeId)
         val medication = intake?.let { medications.get(it.medicationId) }
-        return if (medication == null) {
-            MarkOutcome.NotFound
-        } else {
-            intakes.markAtomically(
-                MarkCommand(
-                    intakeId = request.intakeId,
-                    result = request.result,
-                    source = request.source,
-                    actedAt = request.actedAt ?: time.now(),
-                    actorProfileId = actorFor(medication.profileId),
-                ),
-            )
-        }
+        if (medication == null) return MarkOutcome.NotFound
+        val outcome = intakes.markAtomically(
+            MarkCommand(
+                intakeId = request.intakeId,
+                result = request.result,
+                source = request.source,
+                actedAt = request.actedAt ?: time.now(),
+                actorProfileId = actorFor(medication.profileId),
+            ),
+        )
+        // Условие — «приём больше не ожидается», а не «отметка применена»: проигравшая
+        // отметка с часов тоже обязана закрыть карточку на телефоне, иначе человек видит
+        // напоминание о приёме, который уже отмечен (НАП-32, ЧАС-22).
+        if (outcome.intake?.isPending == false) sideEffects.onIntakeMarked(request.intakeId)
+        return outcome
     }
 
     /**

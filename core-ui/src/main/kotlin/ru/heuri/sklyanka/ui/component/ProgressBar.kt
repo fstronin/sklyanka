@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import ru.heuri.sklyanka.ui.theme.SklyankaTheme
 import ru.heuri.sklyanka.ui.token.SklyankaShapes
 import ru.heuri.sklyanka.ui.token.SklyankaSizes
@@ -64,6 +65,48 @@ fun SklyankaProgressBar(
 }
 
 /**
+ * Полоса без собственной подписи: число показано рядом, в шапке блока.
+ *
+ * Расширение каталога, объявленное вслух — как состояние `Error` у поля ввода (SKL-09).
+ * У [SklyankaProgressBar] подпись обязательна, и это правильно для полосы, стоящей
+ * отдельно. Но в блоке «Курс» карточки лекарства число «осталось 17 дней» нарисовано
+ * справа от заголовка (`design/screens/MedCard.dc.html`), и вторая такая же подпись под
+ * полосой — не доступность, а дубль.
+ *
+ * Поэтому подпись здесь не исчезает, а переезжает: [description] обязателен и уходит
+ * в дерево доступности вместо полосы. Полосы без числа по-прежнему не существует
+ * (НФТ-33) — оно либо под ней, либо рядом с ней и в подписи для чтения с экрана.
+ */
+@Composable
+fun SklyankaProgressTrack(
+    progress: Float,
+    description: String,
+    modifier: Modifier = Modifier,
+    purpose: ProgressPurpose = ProgressPurpose.Day,
+) {
+    val colors = SklyankaTheme.colors
+    val fill = when (purpose) {
+        ProgressPurpose.StockCritical -> colors.warning
+        else -> colors.accent
+    }
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(SklyankaSizes.ProgressHeight)
+            .background(colors.progressTrack, SklyankaShapes.Pill)
+            .testTag(TAG_PROGRESS_TRACK)
+            .clearAndSetSemantics { contentDescription = description },
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(progress.coerceIn(0f, 1f))
+                .fillMaxHeight()
+                .background(fill, SklyankaShapes.Pill),
+        )
+    }
+}
+
+/**
  * Индикатор шагов онбординга: сегменты вместо сплошной полосы (§4.7).
  *
  * Отдельным компонентом, а не параметром полосы: у него нет доли заполнения, есть
@@ -92,4 +135,5 @@ fun OnboardingSteps(total: Int, current: Int, modifier: Modifier = Modifier) {
 }
 
 const val TAG_PROGRESS_BAR = "progress_bar"
+const val TAG_PROGRESS_TRACK = "progress_track"
 const val TAG_ONBOARDING_STEPS = "onboarding_steps"

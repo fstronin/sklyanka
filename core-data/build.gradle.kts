@@ -5,6 +5,9 @@
 plugins {
     id("sklyanka.android.library")
     id("sklyanka.hilt")
+    // Формат файла переноса данных (SKL-19) описан объявлениями, а не ручной сборкой
+    // строки: ручной разбор JSON — это второй парсер, который расходится с первым.
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -35,6 +38,10 @@ dependencies {
     ksp(libs.room.compiler)
 
     implementation(libs.androidx.datastore.preferences)
+
+    // Файл переноса данных: разбор строгий по обязательным полям и терпимый
+    // к незнакомым ключам при совпадающей версии формата (ПЕР-5, TDD §4 SKL-19).
+    implementation(libs.kotlinx.serialization.json)
 
     testImplementation(libs.junit4)
     testImplementation(libs.kotlinx.coroutines.test)

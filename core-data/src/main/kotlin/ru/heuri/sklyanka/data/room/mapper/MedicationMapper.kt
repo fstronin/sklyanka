@@ -51,6 +51,7 @@ fun MedicationEntity.decode(): Decoded<Medication> {
             stockThresholdDays = stockThresholdDays,
             archivedAt = SklyankaConverters.millisToInstant(archivedAt),
             archiveReason = decodedReason,
+            mirrorToWatch = mirrorToWatch,
         ),
     )
 }
@@ -75,4 +76,5 @@ fun Medication.toEntity(): MedicationEntity = MedicationEntity(
     stockThresholdDays = stockThresholdDays,
     archivedAt = SklyankaConverters.instantToMillis(archivedAt),
     archiveReason = archiveReason?.name,
+    mirrorToWatch = mirrorToWatch,
 )
