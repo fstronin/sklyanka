@@ -12,5 +12,5 @@ import androidx.room.RoomDatabase
  * Разрушающие миграции запрещены правилом DestructiveRoomMigration (НФТ-9):
  * история приёмов — то, ради чего приложение существует.
  */
-@Database(entities = [DatabaseMarkerEntity::class], version = 1, exportSchema = false)
+@Database(entities = [DatabaseMarkerEntity::class], version = 1, exportSchema = true)
 abstract class SklyankaDatabase : RoomDatabase()

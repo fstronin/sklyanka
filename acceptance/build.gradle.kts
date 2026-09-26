@@ -32,12 +32,16 @@ val strictUndefined: Boolean =
  * каждый прогон печатает карантин отдельной строкой, и любой НОВЫЙ неразбираемый
  * файл валит прогон. Правка чужих артефактов — дело их задач.
  *
- * Причина у всех пяти одна: шаг перенесён на вторую строку. Gherkin переносов
- * внутри шага не понимает — шаг должен быть одной строкой. Список обязан
+ * Сейчас список пуст: все .feature разбираются. Механизм оставлен на случай,
+ * когда файл снова сломается и починка не может быть сделана сразу; заполняется
+ * он только через -Psklyanka.acceptance.quarantine=SKL-NN,... и обязан
  * сокращаться, а не расти.
+ *
+ * Типовая причина поломки одна: шаг перенесён на вторую строку. Gherkin переносов
+ * внутри шага не понимает — шаг должен быть одной строкой.
  */
 val quarantine: Set<String> =
-    ((project.findProperty("sklyanka.acceptance.quarantine") as String?) ?: "SKL-05,SKL-11,SKL-19,SKL-20,SKL-22")
+    ((project.findProperty("sklyanka.acceptance.quarantine") as String?) ?: "")
         .split(",").map { it.trim() }.filter { it.isNotEmpty() }.toSet()
 
 val acceptanceReports = layout.buildDirectory.dir("reports/acceptance")

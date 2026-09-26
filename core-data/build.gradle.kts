@@ -12,6 +12,10 @@ android {
     namespace = "ru.heuri.sklyanka.data"
 }
 
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
+}
+
 dependencies {
     implementation(project(":core-domain"))
 
