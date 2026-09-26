@@ -2,6 +2,14 @@ package ru.heuri.sklyanka.domain.schedule
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
+import ru.heuri.sklyanka.domain.intake.IntakeTransition
+import ru.heuri.sklyanka.domain.intake.MarkCommand
+import ru.heuri.sklyanka.domain.intake.MarkDecision
+import ru.heuri.sklyanka.domain.intake.MarkOutcome
+import ru.heuri.sklyanka.domain.intake.PrnCommand
+import ru.heuri.sklyanka.domain.intake.PrnDailyLimit
+import ru.heuri.sklyanka.domain.intake.PrnOutcome
+import ru.heuri.sklyanka.domain.intake.StockEffect
 import ru.heuri.sklyanka.domain.log.OpEvent
 import ru.heuri.sklyanka.domain.log.OpLogRecord
 import ru.heuri.sklyanka.domain.log.OperationLog
@@ -27,7 +35,14 @@ import java.time.LocalDateTime
  * проверяется правило; транзакционность и уникальность проверяются отдельно,
  * инструментальным тестом `core-data` на реальной базе.
  */
-internal class FakeIntakeRepository(private val time: TimeSource) : IntakeRepository {
+internal class FakeIntakeRepository(
+    private val time: TimeSource,
+    /**
+     * Лекарства нужны отметке: доза и остаток живут у них (ПР-5), суточный лимит — тоже
+     * (ИНВ-17). Планированию они не нужны, поэтому связь необязательная.
+     */
+    private val medications: FakeMedicationRepository? = null,
+) : IntakeRepository {
 
     val stored: MutableMap<String, Intake> = linkedMapOf()
 
@@ -105,6 +120,73 @@ internal class FakeIntakeRepository(private val time: TimeSource) : IntakeReposi
 
     override suspend fun expiredPending(before: LocalDateTime): List<Intake> =
         stored.values.filter { it.isPending && it.scheduledAt < before }
+
+    /**
+     * Та же последовательность, что и в транзакции Room: прочитать, решить правилом
+     * домена, записать, привести остаток. Здесь проверяется правило; неразрывность
+     * шагов проверяется инструментальным тестом `core-data` на настоящей базе.
+     */
+    override suspend fun markAtomically(command: MarkCommand): MarkOutcome {
+        val current = stored[command.intakeId] ?: return MarkOutcome.NotFound
+        return when (val decision = IntakeTransition.decide(current, command)) {
+            is MarkDecision.Keep -> MarkOutcome.Ignored(decision.intake, decision.reason)
+            is MarkDecision.Write -> {
+                stored[command.intakeId] = decision.intake
+                applyStock(decision.intake.medicationId, decision.stock)
+                if (decision.superseded) {
+                    MarkOutcome.Superseded(decision.intake, current)
+                } else {
+                    MarkOutcome.Applied(decision.intake)
+                }
+            }
+        }
+    }
+
+    override suspend fun createPrnAtomically(command: PrnCommand): PrnOutcome {
+        val medication = medications?.stored?.get(command.medicationId) ?: return PrnOutcome.UnknownMedication
+        val day = command.scheduledAt.toLocalDate()
+        val countToday = of(command.medicationId).count { it.scheduledAt.toLocalDate() == day }
+        val limit = medication.maxPerDay
+        return if (PrnDailyLimit.reached(limit, countToday)) {
+            PrnOutcome.RejectedDailyLimit(limit = requireNotNull(limit), countToday = countToday)
+        } else {
+            val intake = Intake(
+                id = "prn-${sequence++}",
+                medicationId = command.medicationId,
+                scheduledAt = command.scheduledAt,
+                status = IntakeStatus.TAKEN,
+                actedAt = command.actedAt,
+                source = command.source,
+                actorProfileId = command.actorProfileId,
+            )
+            put(intake)
+            applyStock(command.medicationId, StockEffect.DECREMENT)
+            PrnOutcome.Created(intake)
+        }
+    }
+
+    override suspend fun markMissed(ids: List<String>, at: Instant): Int = ids.count { id ->
+        val intake = stored[id]
+        if (intake == null || !intake.isPending) {
+            false
+        } else {
+            stored[id] = IntakeTransition.expire(intake, at)
+            true
+        }
+    }
+
+    /** Остаток ниже нуля не уходит (INV-8); лекарство без учёта остатка правилу не подчиняется (ПР-5). */
+    private fun applyStock(medicationId: String, effect: StockEffect) {
+        val medication = medications?.stored?.get(medicationId)
+        val stock = medication?.stockLeft
+        if (effect == StockEffect.NONE || medication == null || stock == null) return
+        val next = when (effect) {
+            StockEffect.DECREMENT -> (stock - medication.doseAmount).max(BigDecimal.ZERO)
+            StockEffect.RESTORE -> stock + medication.doseAmount
+            StockEffect.NONE -> stock
+        }
+        medications?.put(medication.copy(stockLeft = next))
+    }
 }
 
 /** Лекарства в памяти. */

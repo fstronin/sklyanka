@@ -124,7 +124,7 @@ class GuardTest {
         const val MEDICATION_DAO = "MedicationDao.kt"
         const val INTAKE_DAO = "IntakeDao.kt"
 
-        val PRODUCTION_MODULES = listOf("app", "core-data", "core-domain", "core-ui", "feature-today")
+        val PRODUCTION_MODULES = listOf("app", "core-data", "core-domain", "core-ui", "feature-today", "feature-meds")
 
         /**
          * Запросы, адресующиеся по первичному ключу.

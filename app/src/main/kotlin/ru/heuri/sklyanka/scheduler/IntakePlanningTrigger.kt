@@ -1,5 +1,7 @@
 package ru.heuri.sklyanka.scheduler
 
+import ru.heuri.sklyanka.domain.intake.SweepMissedIntakesUseCase
+import ru.heuri.sklyanka.domain.intake.SweepReason
 import ru.heuri.sklyanka.domain.schedule.PlanIntakesUseCase
 import ru.heuri.sklyanka.domain.schedule.PlanReason
 import ru.heuri.sklyanka.domain.schedule.PlanResult
@@ -18,10 +20,33 @@ import javax.inject.Singleton
  * расписания (`docs/tasks/SKL-06/TDD.md §7`).
  */
 @Singleton
-class IntakePlanningTrigger @Inject constructor(private val planIntakes: PlanIntakesUseCase) {
+class IntakePlanningTrigger @Inject constructor(
+    private val planIntakes: PlanIntakesUseCase,
+    private val sweepMissed: SweepMissedIntakesUseCase,
+) {
 
-    /** Полный обход: старт приложения, перезагрузка, смена пояса, перевод часов, якорь. */
-    suspend fun planAll(reason: PlanReason): PlanResult = planIntakes(PlanScope.AllProfiles, reason)
+    /**
+     * Полный обход: старт приложения, перезагрузка, смена пояса, перевод часов, якорь.
+     *
+     * Сначала проход по просроченным приёмам, потом генерация (НАП-34). Порядок не
+     * косметический: вчерашние приёмы обязаны стать пропущенными **до** того, как
+     * экран нарисует список дня, иначе человек увидит их ожидающимися и отметит
+     * задним числом то, чего не было.
+     */
+    suspend fun planAll(reason: PlanReason): PlanResult {
+        sweepMissed(sweepReason(reason))
+        return planIntakes(PlanScope.AllProfiles, reason)
+    }
+
+    /**
+     * Перевод просроченных приёмов без генерации — для вызова, у которого нет своей
+     * причины перепланировать: будильник границы суток (SKL-13).
+     */
+    suspend fun sweepMissedIntakes(reason: SweepReason) = sweepMissed(reason)
+
+    /** Старт приложения отличается от остальных причин только в журнале (`TDD.md §9`). */
+    private fun sweepReason(reason: PlanReason): SweepReason =
+        if (reason == PlanReason.APP_START) SweepReason.APP_START else SweepReason.REPLAN
 
     /**
      * Узкая область — одно лекарство: сохранение, архивация, возврат из архива.
@@ -29,6 +54,8 @@ class IntakePlanningTrigger @Inject constructor(private val planIntakes: PlanInt
      * Пересчитывать все профили при каждом нажатии «Сохранить» и дороже, и шумнее
      * в журнале: по нему потом разбирают, куда делся вечерний приём.
      */
-    suspend fun planMedication(medicationId: String, reason: PlanReason): PlanResult =
-        planIntakes(PlanScope.Medication(medicationId), reason)
+    suspend fun planMedication(medicationId: String, reason: PlanReason): PlanResult {
+        sweepMissed(SweepReason.REPLAN)
+        return planIntakes(PlanScope.Medication(medicationId), reason)
+    }
 }

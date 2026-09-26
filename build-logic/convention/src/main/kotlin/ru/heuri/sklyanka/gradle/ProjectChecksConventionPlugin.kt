@@ -114,7 +114,7 @@ class ProjectChecksConventionPlugin : Plugin<Project> {
     private companion object {
         const val VERIFICATION_GROUP = "verification"
         const val VIOLATION_SAMPLES = "tools/violations/kotlin"
-        val ANDROID_MODULES = listOf(":app", ":core-ui", ":core-data", ":feature-today")
+        val ANDROID_MODULES = listOf(":app", ":core-ui", ":core-data", ":feature-today", ":feature-meds")
         val PROJECT_RULES = listOf(
             "HardcodedDesignToken",
             "HardcodedTextStyle",

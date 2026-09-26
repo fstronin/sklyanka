@@ -10,6 +10,15 @@ import ru.heuri.sklyanka.data.room.mapper.Decoded
 import ru.heuri.sklyanka.data.room.mapper.decode
 import ru.heuri.sklyanka.data.room.mapper.toEntity
 import ru.heuri.sklyanka.domain.Transactor
+import ru.heuri.sklyanka.domain.intake.IgnoreReason
+import ru.heuri.sklyanka.domain.intake.IntakeTransition
+import ru.heuri.sklyanka.domain.intake.MarkCommand
+import ru.heuri.sklyanka.domain.intake.MarkDecision
+import ru.heuri.sklyanka.domain.intake.MarkOutcome
+import ru.heuri.sklyanka.domain.intake.PrnCommand
+import ru.heuri.sklyanka.domain.intake.PrnDailyLimit
+import ru.heuri.sklyanka.domain.intake.PrnOutcome
+import ru.heuri.sklyanka.domain.intake.StockEffect
 import ru.heuri.sklyanka.domain.log.OpEvent
 import ru.heuri.sklyanka.domain.log.OperationLog
 import ru.heuri.sklyanka.domain.model.Intake
@@ -21,6 +30,7 @@ import ru.heuri.sklyanka.domain.schedule.IntakePlanDiff
 import ru.heuri.sklyanka.domain.schedule.PlanApplyResult
 import ru.heuri.sklyanka.domain.time.TimeSource
 import java.math.BigDecimal
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
@@ -164,7 +174,7 @@ class IntakeRepositoryImpl @Inject constructor(
         }
 
         val intake = requireNotNull(dao.getById(intakeId))
-        if (status == IntakeStatus.TAKEN) decrementStock(intake)
+        if (status == IntakeStatus.TAKEN) applyStock(intake.medicationId, intake.id, StockEffect.DECREMENT)
         log.record(
             event = OpEvent.INTAKE_MARKED,
             medicationId = intake.medicationId,
@@ -180,23 +190,179 @@ class IntakeRepositoryImpl @Inject constructor(
         dao.selectExpiredPending(SklyankaConverters.dateTimeToText(before)).mapNotNull { decodeOrLog(it) }
 
     /**
-     * Списание остатка.
+     * Отметка приёма целиком одной транзакцией (ЧАС-24, НФТ-10).
+     *
+     * Последовательность неразрывна: прочитать текущее состояние, решить правилом домена,
+     * записать под условием и только затем привести остаток. Разорви её — и две отметки,
+     * пришедшие одновременно с телефона и с часов, спишут дозу дважды.
+     *
+     * Само правило здесь не живёт: [IntakeTransition] — чистая функция, проверяемая на JVM,
+     * а этот метод отвечает только за неразрывность.
+     */
+    override suspend fun markAtomically(command: MarkCommand): MarkOutcome = transactor.inTransaction {
+        val current = dao.getById(command.intakeId)?.let { decodeOrLog(it) }
+            ?: return@inTransaction MarkOutcome.NotFound
+
+        when (val decision = IntakeTransition.decide(current, command)) {
+            is MarkDecision.Keep -> {
+                log.record(
+                    event = OpEvent.INTAKE_MARK_IGNORED,
+                    medicationId = current.medicationId,
+                    intakeId = command.intakeId,
+                    before = current.status.name,
+                    after = command.result.status.name,
+                    source = command.source.name,
+                    detail = decision.reason.code,
+                )
+                MarkOutcome.Ignored(current, decision.reason)
+            }
+
+            is MarkDecision.Write -> writeMark(current, command, decision)
+        }
+    }
+
+    /**
+     * Создание приёма по потребности: проверка суточного лимита и вставка в одной
+     * транзакции (ПР-4, ИНВ-17).
+     *
+     * Лимит читается здесь, а не приходит снаружи: между чтением карточки лекарства и
+     * нажатием «Принять» лимит могли изменить, и решать обязано то значение, которое
+     * лежит в базе в момент вставки.
+     */
+    override suspend fun createPrnAtomically(command: PrnCommand): PrnOutcome = transactor.inTransaction {
+        val medication = medications.getById(command.medicationId)
+            ?: return@inTransaction PrnOutcome.UnknownMedication
+        val mode = SklyankaConverters.textToEnum<ScheduleMode>(medication.scheduleMode)
+        if (mode != ScheduleMode.PRN) return@inTransaction PrnOutcome.NotOnDemand
+
+        val day = command.scheduledAt.toLocalDate()
+        val countToday = dao.countOnDay(
+            profileId = medication.profileId,
+            medicationId = medication.id,
+            dayStart = startOfDay(day),
+            nextDayStart = startOfDay(day.plusDays(1)),
+        )
+        val limit = medication.maxPerDay
+        if (PrnDailyLimit.reached(limit, countToday)) {
+            log.record(
+                event = OpEvent.INTAKE_PRN_LIMIT_REACHED,
+                profileId = medication.profileId,
+                medicationId = medication.id,
+                before = countToday.toString(),
+                after = limit.toString(),
+            )
+            return@inTransaction PrnOutcome.RejectedDailyLimit(limit = requireNotNull(limit), countToday = countToday)
+        }
+
+        val intake = Intake(
+            id = UUID.randomUUID().toString(),
+            medicationId = medication.id,
+            scheduledAt = command.scheduledAt,
+            status = IntakeStatus.TAKEN,
+            actedAt = command.actedAt,
+            source = command.source,
+            actorProfileId = command.actorProfileId,
+        )
+        // Слот не проставляется: приём по потребности расписанию не подчиняется, и два
+        // таких приёма в одну минуту законны (ИНВ-14).
+        dao.insertAll(listOf(intake.toEntity(ScheduleMode.PRN)))
+        applyStock(medication.id, intake.id, StockEffect.DECREMENT)
+        log.record(
+            event = OpEvent.INTAKE_PRN_CREATED,
+            profileId = command.actorProfileId ?: medication.profileId,
+            medicationId = medication.id,
+            intakeId = intake.id,
+            after = (countToday + 1).toString(),
+            source = command.source.name,
+        )
+        PrnOutcome.Created(intake)
+    }
+
+    /**
+     * Пакетный перевод просроченных приёмов в MISSED (ПР-1).
+     *
+     * Пачка режется на части: число параметров запроса в SQLite ограничено, а человек,
+     * не открывавший приложение полгода, приносит проходу тысячи записей. Части идут
+     * внутри одной транзакции — половина переведённых приёмов хуже, чем ни одного.
+     */
+    override suspend fun markMissed(ids: List<String>, at: Instant): Int = transactor.inTransaction {
+        if (ids.isEmpty()) return@inTransaction 0
+        val moment = at.toEpochMilli()
+        val changed = ids.chunked(MISSED_BATCH).sumOf { chunk -> dao.markMissedIfPending(chunk, moment) }
+        changed
+    }
+
+    /**
+     * Запись отметки под условием, вычисленным доменом.
+     *
+     * Условие стоит в самом UPDATE: первая отметка проверяет «приём ещё ожидается»,
+     * замещающая — «записанная отметка позже пришедшей». Ноль изменённых строк означает,
+     * что между чтением и записью состояние изменилось; внутри транзакции этого быть
+     * не может, поэтому случай не игнорируется молча, а попадает в журнал (`TDD.md §9`).
+     */
+    private suspend fun writeMark(current: Intake, command: MarkCommand, decision: MarkDecision.Write): MarkOutcome {
+        val actedAt = command.actedAt.toEpochMilli()
+        val status = command.result.status.name
+        val changed = if (decision.superseded) {
+            dao.supersedeIfLater(command.intakeId, status, actedAt, command.source.name, command.actorProfileId)
+        } else {
+            dao.markIfPending(command.intakeId, status, actedAt, command.source.name, command.actorProfileId)
+        }
+        if (changed == 0) {
+            log.record(
+                event = OpEvent.DB_WRITE_FAILED,
+                medicationId = current.medicationId,
+                intakeId = command.intakeId,
+                before = current.status.name,
+                source = command.source.name,
+                detail = STALE_READ,
+            )
+            return MarkOutcome.Ignored(current, IgnoreReason.ALREADY_MARKED)
+        }
+
+        applyStock(current.medicationId, command.intakeId, decision.stock)
+        log.record(
+            event = if (decision.superseded) OpEvent.INTAKE_MARK_SUPERSEDED else OpEvent.INTAKE_MARKED,
+            // Профиль того, кто отметил; пусто означает, что отметил владелец профиля
+            // лекарства (ПР-12). Имён профилей в журнале нет — только идентификаторы.
+            profileId = command.actorProfileId,
+            medicationId = current.medicationId,
+            intakeId = command.intakeId,
+            before = current.status.name,
+            after = status,
+            source = command.source.name,
+        )
+        return if (decision.superseded) {
+            MarkOutcome.Superseded(decision.intake, current)
+        } else {
+            MarkOutcome.Applied(decision.intake)
+        }
+    }
+
+    /**
+     * Приведение остатка к результату отметки.
      *
      * Арифметика — в домене: остаток хранится текстом, потому что двоичная дробь не
      * представляет 0,1 точно, а упаковка уменьшается шагами по половине таблетки сотни
-     * раз подряд. Ниже нуля остаток не уходит (INV-8).
+     * раз подряд. Ниже нуля остаток не уходит (INV-8). Лекарство без учёта остатка
+     * правилу не подчиняется (ПР-5).
      */
-    private suspend fun decrementStock(intake: IntakeEntity) {
-        val medication = medications.getById(intake.medicationId) ?: return
-        val stock = SklyankaConverters.textToDecimal(medication.stockLeft) ?: return
+    private suspend fun applyStock(medicationId: String, intakeId: String, effect: StockEffect) {
+        val medication = medications.getById(medicationId)
+        val stock = medication?.let { SklyankaConverters.textToDecimal(it.stockLeft) }
+        if (effect == StockEffect.NONE || medication == null || stock == null) return
         val dose = requireNotNull(SklyankaConverters.textToDecimal(medication.doseAmount))
-        val next = (stock - dose).max(BigDecimal.ZERO)
+        val next = when (effect) {
+            StockEffect.DECREMENT -> (stock - dose).max(BigDecimal.ZERO)
+            StockEffect.RESTORE -> stock + dose
+            StockEffect.NONE -> stock
+        }
         medications.setStock(medication.id, next.toPlainString())
         log.record(
-            event = OpEvent.STOCK_DECREMENTED,
+            event = if (effect == StockEffect.RESTORE) OpEvent.STOCK_RESTORED else OpEvent.STOCK_DECREMENTED,
             profileId = medication.profileId,
             medicationId = medication.id,
-            intakeId = intake.id,
+            intakeId = intakeId,
             before = stock.toPlainString(),
             after = next.toPlainString(),
         )
@@ -221,5 +387,11 @@ class IntakeRepositoryImpl @Inject constructor(
         /** Room возвращает -1 у строки, которую пропустил конфликт-стратегией IGNORE. */
         const val NOT_INSERTED = -1L
         const val ALREADY_MARKED = "already_marked"
+
+        /** Доменная проверка и база разошлись: внутри транзакции такого быть не должно. */
+        const val STALE_READ = "stale_read"
+
+        /** Предел числа параметров запроса в SQLite — 999; пачка режется с запасом. */
+        const val MISSED_BATCH = 500
     }
 }

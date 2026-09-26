@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Тексты экранов «Лекарства» и «Новое лекарство».
+
+  Формулировки — дословно из макетов `design/screens/Meds.dc.html` и `AddMed.dc.html`
+  и из `docs/spec/03-screens.md`. Русского текста в Kotlin-коде нет вообще (НФТ-42),
+  числительные и единицы — через plurals (НФТ-44).
+
+  Строки, которых в макетах нет и которые согласуются с дизайном отдельно, собраны
+  в разделах «Ограничение приёмов» (дефект постановки Д-1), «Форма правки» и «Отказы
+  в сохранении»: макеты не содержат ни поля ограничения, ни состояния правки,
+  ни единого состояния ошибки.
+-->
+<resources>
+
+    <!-- ===== Список лекарств (Meds.dc.html) ===== -->
+
+    <string name="meds_title">Лекарства</string>
+    <string name="meds_tab_active">Активные · %1$d</string>
+    <string name="meds_tab_archive">Архив · %1$d</string>
+    <string name="meds_as_needed_chip">по потребности</string>
+
+    <!-- Разделитель строки описания «Таблетка · 50 мкг · 1 раз в сутки». -->
+    <string name="meds_separator">" · "</string>
+
+    <string name="meds_period_open">с %1$s · бессрочно</string>
+    <string name="meds_period_until">до %1$s</string>
+    <string name="meds_last_intake">последний приём — %1$s</string>
+
+    <!-- Пустой список активных: центральный блок из Empty.dc.html (docs/spec/03-screens.md). -->
+    <string name="meds_empty_title">Пока ничего не запланировано</string>
+    <string name="meds_empty_text">Добавьте лекарство — и его приёмы появятся здесь по часам.</string>
+    <string name="meds_empty_action">Добавить лекарство</string>
+
+    <!-- Подписи для чтения с экрана (НФТ-30); формулировки — из aria-label макетов -->
+    <string name="cd_add_medication">Добавить лекарство</string>
+    <string name="cd_open_medication">Открыть карточку: %1$s</string>
+
+    <!-- ===== Форма (AddMed.dc.html) ===== -->
+
+    <string name="form_title_new">Новое лекарство</string>
+    <string name="form_save_new">Сохранить лекарство</string>
+    <!-- Правка: макета этого состояния нет, формулировка из docs/spec/03-screens.md. -->
+    <string name="form_save_existing">Сохранить</string>
+
+    <string name="form_label_name">Название</string>
+    <string name="form_label_release_form">Форма выпуска</string>
+    <string name="form_label_tablet_shape">Вид таблетки</string>
+    <string name="form_label_dose">Доза на один приём</string>
+    <string name="form_label_intakes_per_day">Приёмов в сутки</string>
+    <string name="form_caption_times_below">Время задаётся ниже</string>
+    <string name="form_label_times">Время приёма</string>
+    <string name="form_add_time">Добавить время</string>
+    <string name="form_label_mode">Режим приёма</string>
+    <string name="form_mode_scheduled">По расписанию</string>
+    <string name="form_mode_as_needed">По потребности</string>
+    <string name="form_mode_as_needed_hint">По потребности — без напоминаний: приём отмечается вручную, когда понадобилось.</string>
+    <string name="form_label_food_relation">Связь с едой</string>
+    <string name="form_label_stock">Остаток в упаковке</string>
+    <string name="form_stock_now">Сейчас есть</string>
+    <string name="form_stock_reminder">Напомнить о покупке</string>
+    <string name="form_label_period">Период приёма</string>
+    <string name="form_period_start">Начало</string>
+    <string name="form_period_indefinite">Принимать бессрочно</string>
+    <string name="form_period_indefinite_caption">Дата окончания не задана</string>
+    <string name="form_period_end">Окончание</string>
+    <!-- Значение приглушённой строки «Окончание» при включённой бессрочности. -->
+    <string name="form_period_end_empty">—</string>
+
+    <!-- Подписи для чтения с экрана (НФТ-30); формулировки — из aria-label макета -->
+    <string name="cd_dose_amount">Количество</string>
+    <string name="cd_strength">Дозировка</string>
+    <string name="cd_decrease">Уменьшить</string>
+    <string name="cd_increase">Увеличить</string>
+    <string name="cd_delete_time">Удалить время %1$s</string>
+
+    <!-- ===== Формы выпуска ===== -->
+
+    <string name="med_form_tablet">Таблетка</string>
+    <string name="med_form_capsule">Капсула</string>
+    <string name="med_form_spray">Спрей</string>
+    <string name="med_form_syrup">Сироп</string>
+    <string name="med_form_drops">Капли</string>
+    <string name="med_form_injection">Инъекция</string>
+
+    <!-- ===== Вид таблетки ===== -->
+
+    <string name="tablet_shape_round">Круглая</string>
+    <string name="tablet_shape_round_scored">Круглая с риской</string>
+    <string name="tablet_shape_oval">Овальная</string>
+    <string name="tablet_shape_oblong">Продолговатая</string>
+    <string name="tablet_shape_triangular">Треугольная</string>
+
+    <!-- ===== Связь с едой ===== -->
+
+    <string name="food_relation_any">Неважно</string>
+    <string name="food_relation_before">До еды</string>
+    <string name="food_relation_with">Во время</string>
+    <string name="food_relation_after">После</string>
+
+    <!-- ===== Единицы ===== -->
+
+    <!-- Суффикс поля количества дозы: «2 шт», «5 мл», «2 дозы» — по форме выпуска. -->
+    <string name="dose_suffix_piece">шт</string>
+    <string name="dose_suffix_millilitre">мл</string>
+    <string name="dose_suffix_dose">доз</string>
+
+    <!--
+      Единица дозировки препарата. В макете она зафиксирована как «мг» и человеком
+      не редактируется: закрытый это список или свободный ввод — открытый вопрос ОВ-16.
+    -->
+    <string name="strength_unit_milligram">мг</string>
+
+    <!-- Единица остатка в упаковке: следует за формой выпуска (критерий 13). -->
+    <string name="stock_unit_tablets">таблеток</string>
+    <string name="stock_unit_capsules">капсул</string>
+    <string name="stock_unit_millilitres">мл</string>
+    <string name="stock_unit_doses">доз</string>
+
+    <!--
+      ===== Ограничение приёмов в сутки (дефект постановки Д-1) =====
+
+      Поля «не чаще N раз в сутки» в макете формы нет вовсе, хотя ограничение
+      показывается и в списке лекарств, и на экране «Сегодня». Решение задачи: блок
+      «Приёмов в сутки» при режиме «по потребности» не скрывается, а меняет смысл
+      и подпись. Формулировки согласуются с дизайном.
+    -->
+    <string name="form_label_max_per_day">Не чаще, раз в сутки</string>
+    <string name="form_caption_max_per_day">Приём отмечается вручную</string>
+
+    <!--
+      ===== Отказы в сохранении =====
+
+      Состояний ошибки в макетах нет ни одного, а правил девять. Формулировки
+      согласуются с дизайном; каждая называет поле, а не «что-то не так».
+    -->
+    <string name="error_name_empty">Укажите название лекарства</string>
+    <string name="error_dose_not_positive">Доза на приём должна быть больше нуля</string>
+    <string name="error_strength_without_unit">Укажите единицу дозировки</string>
+    <string name="error_unit_without_strength">Укажите значение дозировки</string>
+    <string name="error_no_times">Задайте хотя бы одно время приёма</string>
+    <string name="error_duplicate_time">Время %1$s повторяется</string>
+    <string name="error_end_before_start">Дата окончания раньше даты начала</string>
+    <string name="error_max_per_day_missing">Задайте, не чаще скольких раз в сутки принимать</string>
+    <string name="error_max_per_day_not_positive">Ограничение должно быть больше нуля</string>
+    <string name="error_stock_negative">Остаток не может быть отрицательным</string>
+    <!-- Причина недоступной кнопки сохранения: молча недоступная кнопка ничего не объясняет. -->
+    <string name="form_save_blocked">Укажите название, чтобы сохранить лекарство</string>
+
+    <!--
+      Шаблоны дат.
+
+      Не текст, а формат: месяц склоняется («12 марта»), а не стоит в именительном
+      падеже, поэтому шаблон живёт в ресурсах и применяется с локалью конфигурации,
+      а не собирается конкатенацией (НФТ-43).
+    -->
+    <string name="date_pattern_day_month" translatable="false">d MMMM</string>
+    <string name="date_pattern_full" translatable="false">d MMMM yyyy</string>
+    <string name="time_pattern" translatable="false">HH:mm</string>
+</resources>

@@ -149,6 +149,12 @@ fun TextFieldGallery(modifier: Modifier = Modifier) {
             unitLabel = stringResource(R.string.preview_field_unit),
             forcedState = TextFieldState.Disabled,
         )
+        SklyankaTextField(
+            value = stringResource(R.string.preview_field_value),
+            onValueChange = {},
+            errorText = stringResource(R.string.preview_field_error),
+            forcedState = TextFieldState.Error,
+        )
         SklyankaNumberField(value = stringResource(R.string.preview_time), onValueChange = {})
     }
 }

@@ -87,6 +87,38 @@ object SklyankaSizes {
     /** Отступ «Heuri» от нижнего края заставки. */
     val SplashVendorBottom: Dp = 46.dp
 
+    // --- Экраны лекарств: список и форма (SKL-09, макеты Meds.dc.html и AddMed.dc.html) ---
+
+    /**
+     * Круглая кнопка добавления лекарства и её знак (`Meds.dc.html`).
+     *
+     * Габарит именной, а не из шкалы отступов: плавающая кнопка — единственный элемент
+     * продукта такого размера, и подбирать его «примерно 60» на экране нельзя (НФТ-47).
+     */
+    val AddButton: Dp = 60.dp
+    val AddButtonGlyph: Dp = 26.dp
+
+    /** Шеврон перехода в карточке списка (`Meds.dc.html`). */
+    val Chevron: Dp = 16.dp
+
+    /** Плитка формы выпуска в сетке 3×2 и её значок (`AddMed.dc.html`). */
+    val FormTile: Dp = 78.dp
+    val FormTileGlyph: Dp = 22.dp
+
+    /** Кнопка вида таблетки и силуэт на ней (`AddMed.dc.html`). */
+    val ShapeButton: Dp = 60.dp
+    val ShapeGlyph: Dp = 30.dp
+
+    /** Высота вкладки сегментного переключателя «Активные · 5 / Архив · 12». */
+    val SegmentHeight: Dp = 38.dp
+
+    /** Поле количества дозы (120) и поле остатка в упаковке (54) — ширины из макета формы. */
+    val DoseField: Dp = 120.dp
+    val StockField: Dp = 54.dp
+
+    /** Наименьшая ширина числа между кнопками «Уменьшить» и «Увеличить»: чтобы «10» не дёргало ряд. */
+    val CounterValue: Dp = 22.dp
+
     /** Баннер (§4.6): внутреннее поле 11–16 dp. */
     val BannerPaddingVertical: Dp = 11.dp
     val BannerPaddingHorizontal: Dp = 14.dp

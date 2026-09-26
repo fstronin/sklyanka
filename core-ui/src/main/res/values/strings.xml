@@ -74,6 +74,7 @@
     <string name="preview_field_label">Название</string>
     <string name="preview_field_value">Значение</string>
     <string name="preview_field_unit">мг</string>
+    <string name="preview_field_error">Заполните поле</string>
     <string name="preview_chip_label">Таблетка</string>
     <string name="preview_switch_label">Настойчивое напоминание</string>
     <string name="preview_switch_caption">Повторить, если не отметили</string>

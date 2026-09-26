@@ -140,9 +140,67 @@ interface IntakeDao {
         actorProfileId: String?,
     ): Int
 
+    /**
+     * Замещение отметки более ранним действием (ПР-3, ЧАС-22).
+     *
+     * Условие `acted_at > :actedAt` стоит внутри самого UPDATE по той же причине, что
+     * и условие статуса у [markIfPending]: проверка «а не старше ли записанная отметка?»
+     * отдельным чтением оставляет между чтением и записью место для третьего события.
+     * Отметка, не более ранняя записанной, получает ноль изменённых строк и не делает
+     * ничего — второй записи не появляется ни в одном исходе (ПР-2, НФТ-10).
+     */
+    @Query(
+        """
+        UPDATE intake
+        SET status = :status, acted_at = :actedAt, source = :source,
+            actor_profile_id = :actorProfileId
+        WHERE id = :intakeId AND acted_at IS NOT NULL AND acted_at > :actedAt
+        """,
+    )
+    suspend fun supersedeIfLater(
+        intakeId: String,
+        status: String,
+        actedAt: Long,
+        source: String,
+        actorProfileId: String?,
+    ): Int
+
     /** Просроченные ожидающие приёмы для перевода в MISSED (ПР-1); граница окна — параметр домена (ОВ-4). */
     @Query("SELECT * FROM intake WHERE status = 'PENDING' AND scheduled_at < :before")
     suspend fun selectExpiredPending(before: String): List<IntakeEntity>
+
+    /**
+     * Пакетный перевод в MISSED по истечении окна (ПР-1).
+     *
+     * Условие `status = 'PENDING'` делает проход идемпотентным на уровне запроса:
+     * повторный проход по уже переведённым записям не переписывает момент перевода,
+     * даже если домен ошибся в выборке (НАП-34).
+     */
+    @Query(
+        """
+        UPDATE intake
+        SET status = 'MISSED', acted_at = :actedAt, source = 'AUTO', actor_profile_id = NULL
+        WHERE id IN (:intakeIds) AND status = 'PENDING'
+        """,
+    )
+    suspend fun markMissedIfPending(intakeIds: List<String>, actedAt: Long): Int
+
+    /**
+     * Сколько приёмов лекарства пришлось на одни местные сутки — счётчик суточного
+     * лимита приёмов по потребности (ИНВ-17).
+     *
+     * Границы суток приходят из домена уже текстом: арифметики над временем в SQL нет,
+     * потому что в сутках с переводом времени их 23 или 25 (НФТ-37).
+     */
+    @Query(
+        """
+        SELECT COUNT(*) FROM intake i
+        JOIN medication m ON m.id = i.medication_id
+        WHERE i.medication_id = :medicationId AND m.profile_id = :profileId
+          AND i.scheduled_at >= :dayStart AND i.scheduled_at < :nextDayStart
+        """,
+    )
+    suspend fun countOnDay(profileId: String, medicationId: String, dayStart: String, nextDayStart: String): Int
 
     @Query(
         """

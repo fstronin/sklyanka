@@ -3,6 +3,10 @@ package ru.heuri.sklyanka.acceptance
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
+import ru.heuri.sklyanka.domain.intake.MarkCommand
+import ru.heuri.sklyanka.domain.intake.MarkOutcome
+import ru.heuri.sklyanka.domain.intake.PrnCommand
+import ru.heuri.sklyanka.domain.intake.PrnOutcome
 import ru.heuri.sklyanka.domain.log.OpEvent
 import ru.heuri.sklyanka.domain.log.OpLogRecord
 import ru.heuri.sklyanka.domain.log.OperationLog
@@ -301,6 +305,14 @@ internal class PlanningWorld {
         ): Boolean = false
 
         override suspend fun expiredPending(before: LocalDateTime): List<Intake> = emptyList()
+
+        // Отметка приёма и его жизненный цикл — предмет SKL-07; приёмка генерации их
+        // не касается, и подменять их здесь значило бы держать вторую копию правил.
+        override suspend fun markAtomically(command: MarkCommand): MarkOutcome = MarkOutcome.NotFound
+
+        override suspend fun createPrnAtomically(command: PrnCommand): PrnOutcome = PrnOutcome.UnknownMedication
+
+        override suspend fun markMissed(ids: List<String>, at: Instant): Int = 0
     }
 
     private companion object {

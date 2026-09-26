@@ -43,6 +43,8 @@ androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx"
 # Штатный экран запуска Android 12+ с бэкпортом на minSdk 26 (SKL-21).
 androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "coreSplashscreen" }
 androidx-lifecycle-runtime-ktx = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version.ref = "lifecycle" }
+# Состояние экрана переживает поворот и уход в фон: viewModelScope нужен feature-* (SKL-09).
+androidx-lifecycle-viewmodel-ktx = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx", version.ref = "lifecycle" }
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
 
 # --- Compose ---

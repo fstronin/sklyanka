@@ -1,11 +1,16 @@
 package ru.heuri.sklyanka.domain.repository
 
 import kotlinx.coroutines.flow.Flow
+import ru.heuri.sklyanka.domain.intake.MarkCommand
+import ru.heuri.sklyanka.domain.intake.MarkOutcome
+import ru.heuri.sklyanka.domain.intake.PrnCommand
+import ru.heuri.sklyanka.domain.intake.PrnOutcome
 import ru.heuri.sklyanka.domain.model.Intake
 import ru.heuri.sklyanka.domain.model.IntakeSource
 import ru.heuri.sklyanka.domain.model.IntakeStatus
 import ru.heuri.sklyanka.domain.schedule.IntakePlanDiff
 import ru.heuri.sklyanka.domain.schedule.PlanApplyResult
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -84,4 +89,34 @@ interface IntakeRepository {
 
     /** Просроченные ожидающие приёмы для перевода в MISSED (ПР-1); граница окна приходит снаружи (ОВ-4). */
     suspend fun expiredPending(before: LocalDateTime): List<Intake>
+
+    /**
+     * Отметка приёма целиком: чтение текущего состояния, решение правила перехода,
+     * запись и приведение остатка — одна транзакция (ЧАС-24, НФТ-10).
+     *
+     * Разнести это на «прочитать», «решить» и «записать» нельзя: между чтением и записью
+     * помещается отметка с часов, и остаток списывается дважды. [markIfPending] остаётся
+     * тем же ядром идемпотентности и используется здесь, но сам по себе он не умеет
+     * замещать более позднюю отметку более ранней (ПР-3).
+     */
+    suspend fun markAtomically(command: MarkCommand): MarkOutcome
+
+    /**
+     * Создание приёма по потребности: проверка суточного лимита и вставка — одна
+     * транзакция (ПР-4, ИНВ-17).
+     *
+     * Иначе два быстрых нажатия подряд дают четвёртый приём при лимите три: оба успевают
+     * посчитать «уже три» до того, как первое вставит запись.
+     */
+    suspend fun createPrnAtomically(command: PrnCommand): PrnOutcome
+
+    /**
+     * Пакетный перевод ожидающихся приёмов в MISSED (ПР-1).
+     *
+     * Переводятся только те, что всё ещё ожидаются: повторный проход по тем же данным
+     * не меняет ни одной записи и не переписывает момент перевода (НАП-34).
+     *
+     * @return сколько записей действительно изменилось.
+     */
+    suspend fun markMissed(ids: List<String>, at: Instant): Int
 }
