@@ -66,6 +66,9 @@ complexity:
 style:
   MagicNumber:
     active: true
+    # Пакет дизайн-системы — единственное место, где числовые литералы цвета
+    # и размера законны: это и есть определение токенов (НФТ-47).
+    excludes: ['**/ui/token/**']
     ignoreNumbers: ['-1', '0', '1', '2']
     ignorePropertyDeclaration: true
     ignoreCompanionObjectPropertyDeclaration: true

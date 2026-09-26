@@ -36,7 +36,11 @@ class DirectSystemClockAccess(config: Config = Config.empty) : Rule(config) {
         if (expression.inAllowedScope(allowedPackages, allowedFiles)) return
 
         val normalized = expression.text.replace(Regex("\\s+"), "")
-        val hit = FORBIDDEN.firstOrNull { forbidden -> normalized.startsWith(forbidden) }
+        // Обращение может быть и полностью квалифицированным (java.time.LocalDate.now()),
+        // поэтому ищем совпадение по границам сегментов, а не по началу строки.
+        val hit = FORBIDDEN.firstOrNull { forbidden ->
+            Regex("(^|\\.)" + Regex.escape(forbidden) + "(\\(|\\.|$)").containsMatchIn(normalized)
+        }
         if (hit != null) {
             report(
                 CodeSmell(

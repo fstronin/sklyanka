@@ -3,6 +3,7 @@ package ru.heuri.sklyanka.gradle
 import io.gitlab.arturbosch.detekt.Detekt
 import io.gitlab.arturbosch.detekt.extensions.DetektExtension
 import org.gradle.api.Plugin
+import org.gradle.api.tasks.ClasspathNormalizer
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.configure
 import org.gradle.kotlin.dsl.dependencies
@@ -40,6 +41,12 @@ class QualityConventionPlugin : Plugin<Project> {
 
         tasks.withType<Detekt>().configureEach {
             jvmTarget = ProjectDefaults.JVM_TARGET
+            // Без этого jar с собственными правилами не входит в ключ кеша задачи:
+            // правило можно поправить, а detekt отдаст результат прошлого прогона
+            // и промолчит. Ошибка ровно того сорта, от которого защищает §5.2.
+            inputs.files(configurations.named(DETEKT_PLUGINS))
+                .withPropertyName("sklyankaDetektRules")
+                .withNormalizer(ClasspathNormalizer::class.java)
             reports {
                 xml.required.set(true)
                 html.required.set(true)
@@ -52,7 +59,11 @@ class QualityConventionPlugin : Plugin<Project> {
         dependencies {
             // Собственные правила проекта подключаются к detekt отдельной сборкой
             // config/detekt/rules — см. TDD §5.3.
-            add("detektPlugins", "ru.heuri.sklyanka:detekt-rules:1.0")
+            add(DETEKT_PLUGINS, "ru.heuri.sklyanka:detekt-rules:1.0")
         }
+    }
+
+    private companion object {
+        const val DETEKT_PLUGINS = "detektPlugins"
     }
 }

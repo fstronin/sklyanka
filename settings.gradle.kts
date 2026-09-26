@@ -16,7 +16,10 @@ pluginManagement {
 
 // Собственные правила detekt живут отдельной сборкой: их jar нужен detekt'у
 // как плагин, а не проекту как зависимость.
-includeBuild("config/detekt/rules")
+includeBuild("config/detekt/rules") {
+    // Иначе сборка зовётся по имени каталога («rules»), и ссылки на её задачи ломаются.
+    name = "detekt-rules"
+}
 
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)

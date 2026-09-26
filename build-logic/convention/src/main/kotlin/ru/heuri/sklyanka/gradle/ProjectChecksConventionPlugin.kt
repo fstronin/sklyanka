@@ -35,6 +35,9 @@ class ProjectChecksConventionPlugin : Plugin<Project> {
                                 configuration.dependencies.withType(ProjectDependency::class.java)
                             }
                             .map { it.path }
+                            // AGP заводит ссылку модуля на самого себя в тестовых
+                            // конфигурациях — это не ребро графа модулей.
+                            .filterNot { it == sub.path }
                             .distinct()
                             .sorted()
                     }
@@ -72,6 +75,11 @@ class ProjectChecksConventionPlugin : Plugin<Project> {
             reports.txt.outputLocation.set(
                 layout.buildDirectory.file("reports/detekt/violation-samples.txt"),
             )
+            // Тот же ключ кеша, что и у обычных задач detekt: правила меняются чаще,
+            // чем их координаты, и кеш обязан это замечать.
+            inputs.files(configurations.named("detektPlugins"))
+                .withPropertyName("sklyankaDetektRules")
+                .withNormalizer(org.gradle.api.tasks.ClasspathNormalizer::class.java)
         }
 
         val rulesFire = tasks.register<VerifyStaticAnalysisFiresTask>("verifyStaticAnalysisRules") {
@@ -90,8 +98,12 @@ class ProjectChecksConventionPlugin : Plugin<Project> {
         // Единый проверочный прогон одной командой (НФТ-49, TODO §25).
         tasks.register("verifyAll") {
             group = VERIFICATION_GROUP
-            description = "Build, static analysis, artifact composition checks and unit tests."
-            dependsOn(tasks.named("build"))
+            description = "Build, static analysis, artifact composition checks and all test levels."
+            // build корневого проекта собирает только корень — модули нужно назвать явно.
+            dependsOn(subprojects.map { "${it.path}:build" })
+            // Инструментальные и экранные тесты запустить негде, но они обязаны
+            // компилироваться: иначе сломанный androidTest обнаружится на устройстве.
+            dependsOn(ANDROID_MODULES.map { "$it:assembleDebugAndroidTest" })
             dependsOn(moduleGraph, moduleGraphRule, rulesFire)
             dependsOn(gradle.includedBuild("detekt-rules").task(":test"))
             dependsOn(":acceptance:acceptanceRun", ":acceptance:acceptanceChecklist")
@@ -102,6 +114,7 @@ class ProjectChecksConventionPlugin : Plugin<Project> {
     private companion object {
         const val VERIFICATION_GROUP = "verification"
         const val VIOLATION_SAMPLES = "tools/violations/kotlin"
+        val ANDROID_MODULES = listOf(":app", ":core-ui", ":core-data", ":feature-today")
         val PROJECT_RULES = listOf(
             "HardcodedDesignToken",
             "RussianTextInCode",

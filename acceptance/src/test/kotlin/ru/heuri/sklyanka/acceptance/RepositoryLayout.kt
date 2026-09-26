@@ -21,12 +21,11 @@ internal object RepositoryLayout {
         return PROJECT_DEPENDENCY.findAll(text).map { it.groupValues[1] }.distinct().sorted().toList()
     }
 
-    fun screenModules(): List<String> =
-        root.listFiles()
-            ?.filter { it.isDirectory && it.name.startsWith("feature-") }
-            ?.map { it.name }
-            ?.sorted()
-            .orEmpty()
+    fun screenModules(): List<String> = root.listFiles()
+        ?.filter { it.isDirectory && it.name.startsWith("feature-") }
+        ?.map { it.name }
+        ?.sorted()
+        .orEmpty()
 
     private fun locateRoot(): File {
         System.getProperty("sklyanka.repo.root")?.let { return File(it) }

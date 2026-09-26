@@ -26,7 +26,7 @@ class ProjectStructureSteps {
 
     @Given("сегодня 3 октября 2026")
     fun theDateIs() {
-        today = LocalDate.of(2026, 10, 3)
+        today = SCENARIO_DATE
     }
 
     @Given("репозиторий содержит скелет проекта без продуктового кода")
@@ -93,7 +93,7 @@ class ProjectStructureSteps {
         assertEquals(
             emptyList<String>(),
             unexpected,
-            "${inspectedModule} depends on modules outside core-*: $unexpected",
+            "$inspectedModule depends on modules outside core-*: $unexpected",
         )
     }
 
@@ -103,7 +103,12 @@ class ProjectStructureSteps {
         assertEquals(
             emptyList<String>(),
             screens,
-            "${inspectedModule} depends on other screen modules: $screens",
+            "$inspectedModule depends on other screen modules: $screens",
         )
+    }
+
+    private companion object {
+        /** Дата из «Предыстории» сценариев SKL-02. */
+        val SCENARIO_DATE: LocalDate = LocalDate.parse("2026-10-03")
     }
 }
