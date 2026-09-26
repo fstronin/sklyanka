@@ -89,8 +89,9 @@ class ReminderNotifier @Inject constructor(
      * Ответ берётся у системы, а не из памяти процесса: процесс на EMUI выгружается,
      * а уведомление в шторке остаётся.
      */
-    override suspend fun isShown(slot: ReminderSlot): Boolean =
-        manager.activeNotifications.any { it.id == idOf(slot) }
+    override suspend fun isShown(slot: ReminderSlot): Boolean = manager.activeNotifications.any {
+        it.id == idOf(slot)
+    }
 
     /**
      * Снять карточки, приёмы которых больше не ожидаются (НАП-34).
