@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Тексты экрана «Сегодня».
+
+  Формулировки — дословно из макетов `design/screens/Main.dc.html`,
+  `MainDense.dc.html`, `Empty.dc.html` и из `docs/spec/03-screens.md`. Русского текста
+  в Kotlin-коде нет вообще (НФТ-42), числительные — через plurals (НФТ-44).
+
+  Строки, которых в макетах нет, собраны в разделах «Ночь и просроченное» и
+  «Свёрнутые секции»: макет не рисует ни ночных приёмов, ни прошедшего времени суток
+  с неотмеченными приёмами, а поведение для них задано словами. Они помечены
+  открытыми вопросами ОВ-33 … ОВ-35 в `docs/tasks/SKL-08/task.md`.
+-->
+<resources>
+
+    <!-- ===== Шапка и прогресс (Main.dc.html) ===== -->
+
+    <string name="today_title">Сегодня</string>
+
+    <!--
+      «Пятница, 25 сентября». Шаблон, а не собранная строка: месяц в родительном
+      падеже даёт форматтер локали, а не склейка (НФТ-43).
+    -->
+    <string name="today_date_pattern">EEEE, d MMMM</string>
+    <string name="today_time_pattern">HH:mm</string>
+
+    <!-- «Принято 11 из 30 приёмов · 12 лекарств» (ЭКР-2, MainDense.dc.html). -->
+    <string name="today_progress_dense">%1$s · %2$s</string>
+
+    <!-- ===== Плашка остатка (Main.dc.html) ===== -->
+
+    <!-- «Магний B6 — осталось 9 таблеток, хватит на 4 дня». -->
+    <string name="today_stock_warning">%1$s — %2$s, %3$s</string>
+    <string name="today_stock_action">Купить</string>
+
+    <!-- ===== Ленты приёмов ===== -->
+
+    <string name="part_of_day_morning">Утро</string>
+    <string name="part_of_day_day">День</string>
+    <string name="part_of_day_evening">Вечер</string>
+
+    <!-- Ночь: приёмы с 00:00 до 06:59. В макетах такой ленты нет. -->
+    <string name="part_of_day_night">Ночь</string>
+
+    <string name="today_now">Сейчас</string>
+
+    <!-- Строчная форма внутри групповой карточки (MainDense.dc.html). -->
+    <string name="today_now_inline">сейчас</string>
+
+    <!-- Разделитель подписи приёма: «1 таблетка · 50 мкг · во время еды». -->
+    <string name="today_separator">" · "</string>
+
+    <!-- «50 мкг»: дозировка и её единица введены человеком и переводу не подлежат. -->
+    <string name="today_strength">%1$s %2$s</string>
+
+    <string name="food_relation_before">до еды</string>
+    <string name="food_relation_with">во время еды</string>
+    <string name="food_relation_after">после еды</string>
+
+    <!-- ===== Блок «По потребности» (Main.dc.html) ===== -->
+
+    <string name="today_prn_divider">По потребности</string>
+
+    <!-- ===== Плотный день (MainDense.dc.html) ===== -->
+
+    <!-- «Утро · 07:00 — 11:00». -->
+    <string name="dense_section_title">%1$s · %2$s — %3$s</string>
+
+    <!-- Счётчик развёрнутой секции: «3 из 9». -->
+    <string name="dense_section_counter">%1$d из %2$d</string>
+
+    <!--
+      Прошедшее время суток, в котором отмечено не всё. Макета нет: макет рисует
+      только «все отмечены» и «впереди», а проспавший утро человек существует.
+    -->
+    <string name="dense_section_partial">отмечено %1$d из %2$d</string>
+
+    <!-- ===== Групповая отметка (MainDense.dc.html, решение ОВ-32) ===== -->
+
+    <string name="group_mark_both">Отметить оба</string>
+    <string name="group_mark_all_three">Отметить все три</string>
+    <string name="group_mark_all_n">Отметить все %1$d</string>
+    <string name="group_mark_one_by_one">По одному</string>
+
+    <!-- «Магний B6 · Панангин · Омез» — перечисление лекарств одной строкой. -->
+    <string name="group_medications_separator">" · "</string>
+
+    <!-- ===== Пустое состояние (Empty.dc.html) ===== -->
+
+    <string name="today_empty_title">Пока ничего не запланировано</string>
+    <string name="today_empty_text">Добавьте лекарство — и его приёмы появятся здесь по часам.</string>
+    <string name="today_empty_action">Добавить лекарство</string>
+
+    <!--
+      Лекарства есть, а приёмов на сегодня нет (ОВ-34). Пустое состояние первого
+      запуска здесь показывать нельзя: человеку, у которого лекарства заведены, оно
+      сообщало бы неправду. Текст согласуется с дизайном отдельно.
+    -->
+    <string name="today_nothing_today">На сегодня приёмов нет</string>
+
+    <!-- ===== Нижняя панель (Main.dc.html) ===== -->
+
+    <string name="tab_today">Сегодня</string>
+    <string name="tab_meds">Лекарства</string>
+    <string name="tab_settings">Настройки</string>
+</resources>

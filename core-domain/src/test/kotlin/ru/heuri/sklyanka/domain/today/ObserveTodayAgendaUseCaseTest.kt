@@ -2,6 +2,8 @@ package ru.heuri.sklyanka.domain.today
 
 import app.cash.turbine.test
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -14,7 +16,9 @@ import ru.heuri.sklyanka.domain.model.IntakeStatus
 import ru.heuri.sklyanka.domain.schedule.FakeIntakeRepository
 import ru.heuri.sklyanka.domain.schedule.FakeMedicationRepository
 import ru.heuri.sklyanka.domain.schedule.RecordingOperationLog
+import ru.heuri.sklyanka.domain.stock.StockWarningForProfileUseCase
 import java.time.Duration
+import java.time.LocalDateTime
 import java.time.LocalTime
 
 /**
@@ -41,7 +45,7 @@ class ObserveTodayAgendaUseCaseTest {
             // Две минуты виртуального времени — и полночь наступила.
             advanceTimeBy(Duration.ofMinutes(3).toMillis())
 
-            val next = expectMostRecentItem()
+            val next = awaitItem()
             assertEquals(Today.DATE.plusDays(1), next.date)
             assertEquals(listOf("i-tomorrow"), next.layout.groups.flatMap { group -> group.items.map { it.id } })
             cancelAndIgnoreRemainingEvents()
@@ -59,7 +63,7 @@ class ObserveTodayAgendaUseCaseTest {
 
             advanceTimeBy(Duration.ofMinutes(3).toMillis())
 
-            val next = expectMostRecentItem()
+            val next = awaitItem()
             assertEquals(0, next.progress.taken)
             assertEquals(1, next.progress.planned)
             cancelAndIgnoreRemainingEvents()
@@ -105,7 +109,7 @@ class ObserveTodayAgendaUseCaseTest {
 
             advanceTimeBy(Duration.ofMinutes(2).toMillis())
 
-            assertTrue(expectMostRecentItem().layout.groups.single().isNow)
+            assertTrue(awaitItem().layout.groups.single().isNow)
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -120,12 +124,12 @@ class ObserveTodayAgendaUseCaseTest {
 
             world.activeProfile.switchTo("profile-other")
 
-            assertTrue(expectMostRecentItem().layout.groups.isEmpty())
+            assertTrue(awaitItem().layout.groups.isEmpty())
             cancelAndIgnoreRemainingEvents()
         }
     }
 
-    private fun kotlinx.coroutines.test.TestScope.world(startAt: java.time.LocalDateTime): World {
+    private fun TestScope.world(startAt: LocalDateTime): World {
         val clock = VirtualTimeSource(testScheduler, Today.moment(startAt), Today.ZONE)
         val medications = FakeMedicationRepository(clock)
         medications.put(losartan)
@@ -147,6 +151,7 @@ class ObserveTodayAgendaUseCaseTest {
             intakes = intakes,
             medications = medications,
             sweepMissed = SweepMissedIntakesUseCase(intakes, EndOfDayIntakeWindow(), clock, log),
+            stockWarnings = StockWarningForProfileUseCase(medications, clock, log),
             time = clock,
             build = BuildTodayAgenda(),
         )()

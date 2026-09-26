@@ -80,10 +80,9 @@ class DenseLayoutRuleTest {
         return layout.sections.single { it.partOfDay == partOfDay }
     }
 
-    private fun denseDay(): List<IntakeItem> =
-        intakes(count = 8, fromHour = 7, marked = 8, step = 30) +
-            intakes(count = 9, fromHour = 12, marked = 3, step = 30) +
-            intakes(count = 13, fromHour = 18, marked = 0, step = 25)
+    private fun denseDay(): List<IntakeItem> = intakes(count = 8, fromHour = 7, marked = 8, step = 30) +
+        intakes(count = 9, fromHour = 12, marked = 3, step = 30) +
+        intakes(count = 13, fromHour = 18, marked = 0, step = 25)
 
     private fun groupsOf(items: List<IntakeItem>): List<TimeGroup> = GroupIntakesByTime(items, now)
 

@@ -66,9 +66,12 @@ class StockRefillTest {
 
     @Test
     fun refillingLeavesTheHistoryOfIntakesUntouched() = runTest {
-        db.intakes.insertAll(
-            listOf(TestData.scheduledIntake(id = INTAKE_ID, status = IntakeStatus.TAKEN, actedAt = MOMENT.toEpochMilli())),
+        val taken = TestData.scheduledIntake(
+            id = INTAKE_ID,
+            status = IntakeStatus.TAKEN,
+            actedAt = MOMENT.toEpochMilli(),
         )
+        db.intakes.insertAll(listOf(taken))
         val before = db.intakes.getById(INTAKE_ID)
 
         refill(TestData.OWNER_MEDICATION_ID, BigDecimal("60"))

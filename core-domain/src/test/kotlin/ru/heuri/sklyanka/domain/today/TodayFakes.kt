@@ -48,17 +48,16 @@ internal class SnapshotTransactor(
 }
 
 /** Хранилище, отказывающее на записи одного приёма: отказ посреди групповой отметки. */
-internal class FailingOnMark(
-    private val delegate: FakeIntakeRepository,
-    private val failingIntakeId: String,
-) : IntakeRepository by delegate {
+internal class FailingOnMark(private val delegate: FakeIntakeRepository, private val failingIntakeId: String) :
+    IntakeRepository by delegate {
 
-    override suspend fun markAtomically(command: MarkCommand): MarkOutcome =
-        if (command.intakeId == failingIntakeId) {
-            error("the write for ${command.intakeId} cannot be performed")
-        } else {
-            delegate.markAtomically(command)
-        }
+    override suspend fun markAtomically(command: MarkCommand): MarkOutcome = if (
+        command.intakeId == failingIntakeId
+    ) {
+        error("the write for ${command.intakeId} cannot be performed")
+    } else {
+        delegate.markAtomically(command)
+    }
 }
 
 /**
@@ -68,9 +67,8 @@ internal class FailingOnMark(
  * не нужен. Экрану нужен именно он, поэтому наблюдаемая часть добавляется здесь,
  * а не переписывается в чужом наборе.
  */
-internal class DayStreamIntakeRepository(
-    private val delegate: FakeIntakeRepository,
-) : IntakeRepository by delegate {
+internal class DayStreamIntakeRepository(private val delegate: FakeIntakeRepository) :
+    IntakeRepository by delegate {
 
     private val revision = MutableStateFlow(0)
 

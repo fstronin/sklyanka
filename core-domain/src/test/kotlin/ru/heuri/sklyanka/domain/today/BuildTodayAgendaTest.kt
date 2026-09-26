@@ -2,12 +2,15 @@ package ru.heuri.sklyanka.domain.today
 
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import ru.heuri.sklyanka.domain.medication.DoseUnit
 import ru.heuri.sklyanka.domain.model.Intake
 import ru.heuri.sklyanka.domain.model.IntakeStatus
 import ru.heuri.sklyanka.domain.model.Medication
 import ru.heuri.sklyanka.domain.model.ScheduleMode
+import ru.heuri.sklyanka.domain.stock.StockWarning
 import java.time.LocalTime
 
 /** Сборка экрана «Сегодня» целиком (`TDD.md §9`). */
@@ -22,13 +25,17 @@ class BuildTodayAgendaTest {
 
     @Test
     fun `a taken intake shows its actual mark time`() {
+        val markedAt = Today.moment(Today.at(8, 5))
         val agenda = agendaOf(
-            intakes = listOf(Today.intake("i-1", eutirox.id, Today.at(8, 0), IntakeStatus.TAKEN)),
+            intakes = listOf(Today.intake("i-1", eutirox.id, Today.at(8, 0), IntakeStatus.TAKEN, markedAt)),
             medications = listOf(eutirox),
             now = Today.at(9, 0),
         )
 
-        assertEquals(IntakePresentation.TAKEN, agenda.layout.groups.single().items.single().presentation)
+        val item = agenda.layout.groups.single().items.single()
+        assertEquals(IntakePresentation.TAKEN, item.presentation)
+        // Фактическое время отметки, а не назначенное: карточка показывает «08:05».
+        assertEquals(LocalTime.of(8, 5), item.markedAt)
     }
 
     @Test
@@ -133,9 +140,46 @@ class BuildTodayAgendaTest {
         assertEquals(1, agenda.progress.medicationCount)
     }
 
+    @Test
+    fun `the stock warning of the domain reaches the screen with its dose unit`() {
+        val magnesium = Today.medication(
+            id = "m-stock",
+            times = listOf(LocalTime.of(14, 0)),
+            dose = "2",
+            stockLeft = "9",
+            thresholdDays = 5,
+        )
+
+        val agenda = build(
+            date = Today.DATE,
+            intakes = emptyList(),
+            activeMedications = listOf(magnesium),
+            now = Today.at(7, 30),
+            zone = Today.ZONE,
+            stockWarning = StockWarning.of(magnesium),
+        )
+
+        assertEquals("m-stock", agenda.stockWarning?.medicationId)
+        assertEquals(4, agenda.stockWarning?.daysLeft)
+        assertEquals(DoseUnit.TABLET, agenda.stockWarning?.doseUnit)
+    }
+
+    @Test
+    fun `without a triggered threshold there is no plate`() {
+        val agenda = agendaOf(intakes = emptyList(), medications = listOf(eutirox), now = Today.at(7, 30))
+
+        assertNull(agenda.stockWarning)
+    }
+
     private fun agendaOf(
         intakes: List<Intake>,
         medications: List<Medication>,
         now: java.time.LocalDateTime,
-    ): TodayAgenda = build(date = Today.DATE, intakes = intakes, activeMedications = medications, now = now)
+    ): TodayAgenda = build(
+        date = Today.DATE,
+        intakes = intakes,
+        activeMedications = medications,
+        now = now,
+        zone = Today.ZONE,
+    )
 }

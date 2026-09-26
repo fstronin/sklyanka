@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Числительные экрана «Сегодня» (НФТ-44).
+
+  Формы собраны здесь, а не в core-ui, по одной причине: `feature-*` не зависят друг
+  от друга, а часть форм (остаток упаковки) нужна и экрану лекарств, и этому экрану.
+  Когда SKL-12 закроет остаток как подсистему, общие формы уедут в core-ui одной
+  правкой — а до тех пор дублирование честнее зависимости между экранами.
+-->
+<resources>
+
+    <!-- «Принято 11 из 30 приёмов · 12 лекарств» — второе число подписи (ЭКР-2). -->
+    <plurals name="today_medications">
+        <item quantity="one">%1$d лекарство</item>
+        <item quantity="few">%1$d лекарства</item>
+        <item quantity="many">%1$d лекарств</item>
+        <item quantity="other">%1$d лекарства</item>
+    </plurals>
+
+    <!-- «хватит на 4 дня» — вторая половина плашки остатка. -->
+    <plurals name="today_days_left">
+        <item quantity="one">хватит на %1$d день</item>
+        <item quantity="few">хватит на %1$d дня</item>
+        <item quantity="many">хватит на %1$d дней</item>
+        <item quantity="other">хватит на %1$d дня</item>
+    </plurals>
+
+    <!-- «осталось 9 таблеток» — единица следует за формой выпуска. -->
+    <plurals name="today_stock_left_tablets">
+        <item quantity="one">осталась %1$s таблетка</item>
+        <item quantity="few">осталось %1$s таблетки</item>
+        <item quantity="many">осталось %1$s таблеток</item>
+        <item quantity="other">осталось %1$s таблетки</item>
+    </plurals>
+    <plurals name="today_stock_left_capsules">
+        <item quantity="one">осталась %1$s капсула</item>
+        <item quantity="few">осталось %1$s капсулы</item>
+        <item quantity="many">осталось %1$s капсул</item>
+        <item quantity="other">осталось %1$s капсулы</item>
+    </plurals>
+    <plurals name="today_stock_left_millilitres">
+        <item quantity="one">остался %1$s мл</item>
+        <item quantity="few">осталось %1$s мл</item>
+        <item quantity="many">осталось %1$s мл</item>
+        <item quantity="other">осталось %1$s мл</item>
+    </plurals>
+    <plurals name="today_stock_left_doses">
+        <item quantity="one">осталась %1$s доза</item>
+        <item quantity="few">осталось %1$s дозы</item>
+        <item quantity="many">осталось %1$s доз</item>
+        <item quantity="other">осталось %1$s дозы</item>
+    </plurals>
+
+    <!-- Доза одного приёма: «1 таблетка», «2 таблетки», «1 капсула». -->
+    <plurals name="today_dose_tablets">
+        <item quantity="one">%1$s таблетка</item>
+        <item quantity="few">%1$s таблетки</item>
+        <item quantity="many">%1$s таблеток</item>
+        <item quantity="other">%1$s таблетки</item>
+    </plurals>
+    <plurals name="today_dose_capsules">
+        <item quantity="one">%1$s капсула</item>
+        <item quantity="few">%1$s капсулы</item>
+        <item quantity="many">%1$s капсул</item>
+        <item quantity="other">%1$s капсулы</item>
+    </plurals>
+    <plurals name="today_dose_millilitres">
+        <item quantity="one">%1$s мл</item>
+        <item quantity="few">%1$s мл</item>
+        <item quantity="many">%1$s мл</item>
+        <item quantity="other">%1$s мл</item>
+    </plurals>
+    <plurals name="today_dose_doses">
+        <item quantity="one">%1$s доза</item>
+        <item quantity="few">%1$s дозы</item>
+        <item quantity="many">%1$s доз</item>
+        <item quantity="other">%1$s дозы</item>
+    </plurals>
+
+    <!-- Подпись карточки «по потребности»: «Без расписания · не чаще 3 раз в сутки». -->
+    <plurals name="today_prn_subtitle">
+        <item quantity="one">Без расписания · не чаще %1$d раза в сутки</item>
+        <item quantity="few">Без расписания · не чаще %1$d раз в сутки</item>
+        <item quantity="many">Без расписания · не чаще %1$d раз в сутки</item>
+        <item quantity="other">Без расписания · не чаще %1$d раза в сутки</item>
+    </plurals>
+
+    <!-- Почему «Принять» недоступно: причина видна текстом, а не одним серым цветом (НФТ-33). -->
+    <plurals name="today_prn_limit_reached">
+        <item quantity="one">Сегодня уже принято %1$d раз — это предел на сутки</item>
+        <item quantity="few">Сегодня уже принято %1$d раза — это предел на сутки</item>
+        <item quantity="many">Сегодня уже принято %1$d раз — это предел на сутки</item>
+        <item quantity="other">Сегодня уже принято %1$d раза — это предел на сутки</item>
+    </plurals>
+
+    <!-- Итоги свёрнутых секций плотного дня (MainDense.dc.html). -->
+    <plurals name="dense_section_all_marked">
+        <item quantity="one">%1$d приём, все отмечены</item>
+        <item quantity="few">%1$d приёма, все отмечены</item>
+        <item quantity="many">%1$d приёмов, все отмечены</item>
+        <item quantity="other">%1$d приёма, все отмечены</item>
+    </plurals>
+    <plurals name="dense_section_ahead">
+        <item quantity="one">%1$d приём впереди</item>
+        <item quantity="few">%1$d приёма впереди</item>
+        <item quantity="many">%1$d приёмов впереди</item>
+        <item quantity="other">%1$d приёма впереди</item>
+    </plurals>
+
+    <!-- Свёрнутый блок «по потребности» в плотном дне (docs/spec/03-screens.md). -->
+    <plurals name="today_prn_collapsed">
+        <item quantity="one">%1$d лекарство без расписания</item>
+        <item quantity="few">%1$d лекарства без расписания</item>
+        <item quantity="many">%1$d лекарств без расписания</item>
+        <item quantity="other">%1$d лекарства без расписания</item>
+    </plurals>
+</resources>

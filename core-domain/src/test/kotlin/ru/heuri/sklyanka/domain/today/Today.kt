@@ -81,9 +81,11 @@ internal object Today {
     )
 
     /** Пара «приём и его лекарство» с уже посчитанным видом карточки. */
-    fun item(
-        intake: Intake,
-        medication: Medication,
-        presentation: IntakePresentation = IntakePresentation.UPCOMING,
-    ) = IntakeItem(intake = intake, medication = medication, presentation = presentation)
+    fun item(intake: Intake, medication: Medication, presentation: IntakePresentation = IntakePresentation.UPCOMING) =
+        IntakeItem(
+            intake = intake,
+            medication = medication,
+            presentation = presentation,
+            markedAt = intake.actedAt?.atZone(ZONE)?.toLocalTime(),
+        )
 }

@@ -80,8 +80,8 @@ class StockForecastTest {
         assertEquals(StockForecast.Days(4), StockForecast.of(asCaptioned))
     }
 
-    private fun medication(perDay: Int, dose: String, stock: String): Medication =
-        Fixtures.scheduledMedication().copy(
+    private fun medication(perDay: Int, dose: String, stock: String): Medication = Fixtures.scheduledMedication()
+        .copy(
             doseAmount = BigDecimal(dose),
             times = (0 until perDay).map { LocalTime.of(MORNING_HOUR + it, 0) },
             stockLeft = BigDecimal(stock),

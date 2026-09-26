@@ -31,19 +31,30 @@ data class StockWarning(
          * запаса ровно на порог — ещё не повод предупреждать.
          */
         fun of(medication: Medication): StockWarning? {
-            if (medication.isArchived) return null
-            val stock = medication.stockLeft ?: return null
-            val threshold = medication.stockThresholdDays ?: return null
-            val days = (StockForecast.of(medication) as? StockForecast.Days) ?: return null
-            if (days.value >= threshold) return null
-            return StockWarning(
-                medicationId = medication.id,
-                medicationName = medication.name,
-                unitsLeft = stock,
-                daysLeft = days.value,
-                thresholdDays = threshold,
-            )
+            val threshold = thresholdOf(medication) ?: return null
+            val stock = medication.stockLeft
+            val days = (StockForecast.of(medication) as? StockForecast.Days)?.value
+            return if (stock == null || days == null || days >= threshold) {
+                null
+            } else {
+                StockWarning(
+                    medicationId = medication.id,
+                    medicationName = medication.name,
+                    unitsLeft = stock,
+                    daysLeft = days,
+                    thresholdDays = threshold,
+                )
+            }
         }
+
+        /**
+         * Порог действующего курса.
+         *
+         * Пустой порог означает «напоминать о покупке не просили», архивированный курс
+         * не предупреждает вовсе: покупать для него нечего (ПР-11).
+         */
+        private fun thresholdOf(medication: Medication): Int? =
+            medication.stockThresholdDays?.takeUnless { medication.isArchived }
 
         /**
          * Самое срочное предупреждение из нескольких.

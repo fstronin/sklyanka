@@ -1,12 +1,17 @@
 package ru.heuri.sklyanka.domain.today
 
 import ru.heuri.sklyanka.domain.intake.PrnDailyLimit
+import ru.heuri.sklyanka.domain.medication.DoseUnit
+import ru.heuri.sklyanka.domain.medication.doseUnit
 import ru.heuri.sklyanka.domain.model.Intake
 import ru.heuri.sklyanka.domain.model.IntakeStatus
 import ru.heuri.sklyanka.domain.model.Medication
 import ru.heuri.sklyanka.domain.model.ScheduleMode
+import ru.heuri.sklyanka.domain.stock.StockWarning
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime
+import java.time.ZoneId
 
 /**
  * Сборка экрана «Сегодня» из приёмов суток и активных лекарств профиля
@@ -28,11 +33,18 @@ class BuildTodayAgenda(private val denseLayout: DenseLayoutRule = DenseLayoutRul
         intakes: List<Intake>,
         activeMedications: List<Medication>,
         now: LocalDateTime,
+        zone: ZoneId,
+        stockWarning: StockWarning? = null,
     ): TodayAgenda {
         val byId = activeMedications.associateBy { it.id }
         val items = intakes.mapNotNull { intake ->
             byId[intake.medicationId]?.let { medication ->
-                IntakeItem(intake = intake, medication = medication, presentation = presentationOf(intake, now))
+                IntakeItem(
+                    intake = intake,
+                    medication = medication,
+                    presentation = presentationOf(intake, now),
+                    markedAt = intake.actedAt?.atZone(zone)?.toLocalTime(),
+                )
             }
         }
         // В ленты идут только приёмы по расписанию: приём по потребности уже случился,
@@ -44,8 +56,24 @@ class BuildTodayAgenda(private val denseLayout: DenseLayoutRule = DenseLayoutRul
             layout = denseLayout(groups, now),
             prn = prnEntries(activeMedications, items),
             progress = DayProgressRule(items, activeMedications),
-            stockWarning = StockWarningRule(activeMedications),
+            stockWarning = noticeOf(stockWarning, byId),
             activeMedications = activeMedications.count { !it.isArchived },
+        )
+    }
+
+    /**
+     * Единица остатка для плашки берётся у лекарства, а не у предупреждения.
+     *
+     * Предупреждение считает SKL-12 и единицами не занимается: «осталось 9 таблеток» и
+     * «осталось 9 капсул» — вопрос склонения, а не запаса. Лекарства, которого нет среди
+     * активных, плашка не показывает вовсе: оно архивировано между двумя значениями
+     * потока.
+     */
+    private fun noticeOf(warning: StockWarning?, byId: Map<String, Medication>): StockNotice? {
+        val medication = warning?.let { byId[it.medicationId] } ?: return null
+        return StockNotice(
+            warning = warning,
+            doseUnit = DoseUnit.ofCode(medication.doseUnit) ?: medication.form.doseUnit(),
         )
     }
 

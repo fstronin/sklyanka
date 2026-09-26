@@ -1,7 +1,9 @@
 package ru.heuri.sklyanka.domain.today
 
+import ru.heuri.sklyanka.domain.medication.DoseUnit
 import ru.heuri.sklyanka.domain.model.Intake
 import ru.heuri.sklyanka.domain.model.Medication
+import ru.heuri.sklyanka.domain.stock.StockWarning
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalTime
@@ -20,7 +22,7 @@ data class TodayAgenda(
     val prn: List<PrnEntry>,
     val progress: DayProgress,
     /** Одно, самое срочное (ПР-13); пусто, когда ни один порог не сработал. */
-    val stockWarning: StockWarning?,
+    val stockWarning: StockNotice?,
     /** Сколько активных лекарств у профиля вообще — вместе с «по потребности». */
     val activeMedications: Int,
 ) {
@@ -58,6 +60,14 @@ data class IntakeItem(
     val intake: Intake,
     val medication: Medication,
     val presentation: IntakePresentation,
+    /**
+     * Фактическое время отметки местными часами — «08:05» на карточке.
+     *
+     * Считается здесь, а не на экране: момент отметки хранится в UTC (ПР-3), а перевод
+     * его в местное время требует часового пояса, который экрану брать неоткуда —
+     * системные часы ему запрещены (НФТ-48).
+     */
+    val markedAt: LocalTime?,
 ) {
     val id: String get() = intake.id
     val medicationId: String get() = medication.id
@@ -149,15 +159,16 @@ data class DayProgress(
 }
 
 /**
- * Предупреждение об остатке (ПР-13).
+ * Предупреждение об остатке, готовое к показу плашкой (ПР-13).
  *
- * Расчёт «на сколько дней хватит» — задача SKL-12; сюда приходит уже посчитанное
- * значение, а экран только показывает плашку и ведёт по кнопке «Купить».
+ * Само предупреждение считает SKL-12 — отбор лекарств, прогноз запаса и выбор самого
+ * срочного живут в `domain.stock`, и второго их определения здесь нет намеренно.
+ * Экрану не хватает только единицы остатка: «осталось 9 таблеток» и «осталось 9 капсул»
+ * склоняются по-разному, а единица известна лекарству, а не предупреждению.
  */
-data class StockWarning(
-    val medicationId: String,
-    val medicationName: String,
-    val stockLeft: BigDecimal,
-    val doseUnitCode: String,
-    val daysLeft: Int,
-)
+data class StockNotice(val warning: StockWarning, val doseUnit: DoseUnit) {
+    val medicationId: String get() = warning.medicationId
+    val medicationName: String get() = warning.medicationName
+    val unitsLeft: BigDecimal get() = warning.unitsLeft
+    val daysLeft: Int get() = warning.daysLeft
+}

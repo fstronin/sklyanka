@@ -2,6 +2,7 @@ package ru.heuri.sklyanka.domain.stock
 
 import ru.heuri.sklyanka.domain.log.OpEvent
 import ru.heuri.sklyanka.domain.log.OperationLog
+import ru.heuri.sklyanka.domain.model.Medication
 import ru.heuri.sklyanka.domain.repository.MedicationRepository
 import java.math.BigDecimal
 
@@ -30,19 +31,23 @@ sealed interface RefillOutcome {
  * Истории приёмов пополнение не касается: остаток разошёлся с упаковкой — это про
  * упаковку, а не про то, что человек принимал.
  */
-class RefillStockUseCase(
-    private val medications: MedicationRepository,
-    private val log: OperationLog,
-) {
+class RefillStockUseCase(private val medications: MedicationRepository, private val log: OperationLog) {
 
     suspend operator fun invoke(medicationId: String, newValue: BigDecimal): RefillOutcome {
-        if (newValue < BigDecimal.ZERO) return RefillOutcome.NegativeValue
-        val medication = medications.get(medicationId) ?: return RefillOutcome.UnknownMedication
-        medications.setStock(medicationId, newValue)
+        val medication = medications.get(medicationId)
+        return when {
+            newValue < BigDecimal.ZERO -> RefillOutcome.NegativeValue
+            medication == null -> RefillOutcome.UnknownMedication
+            else -> replace(medication, newValue)
+        }
+    }
+
+    private suspend fun replace(medication: Medication, newValue: BigDecimal): RefillOutcome {
+        medications.setStock(medication.id, newValue)
         log.record(
             event = OpEvent.STOCK_REFILLED,
             profileId = medication.profileId,
-            medicationId = medicationId,
+            medicationId = medication.id,
             before = medication.stockLeft?.toPlainString(),
             after = newValue.toPlainString(),
         )

@@ -13,6 +13,7 @@ import ru.heuri.sklyanka.domain.intake.SweepReason
 import ru.heuri.sklyanka.domain.repository.ActiveProfileRepository
 import ru.heuri.sklyanka.domain.repository.IntakeRepository
 import ru.heuri.sklyanka.domain.repository.MedicationRepository
+import ru.heuri.sklyanka.domain.stock.StockWarningForProfileUseCase
 import ru.heuri.sklyanka.domain.time.TimeSource
 import java.time.Duration
 import java.time.LocalDate
@@ -41,9 +42,10 @@ class ObserveTodayAgendaUseCase(
     private val intakes: IntakeRepository,
     private val medications: MedicationRepository,
     private val sweepMissed: SweepMissedIntakesUseCase,
+    /** Предупреждение о покупке считает SKL-12; экран его только показывает. */
+    private val stockWarnings: StockWarningForProfileUseCase,
     private val time: TimeSource,
     private val build: BuildTodayAgenda = BuildTodayAgenda(),
-    private val tick: Duration = Duration.ofMinutes(1),
 ) {
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -67,8 +69,18 @@ class ObserveTodayAgendaUseCase(
     private fun agenda(profileId: String, date: LocalDate): Flow<TodayAgenda> = combine(
         intakes.observeDay(profileId, date),
         medications.observeActive(profileId),
+        stockWarnings(profileId),
         moments(),
-    ) { dayIntakes, active, now -> build(date, dayIntakes, active, now) }
+    ) { dayIntakes, active, warning, now ->
+        build(
+            date = date,
+            intakes = dayIntakes,
+            activeMedications = active,
+            now = now,
+            zone = time.zone(),
+            stockWarning = warning,
+        )
+    }
 
     /** Текущая дата и следующие за ней — каждая в свою местную полночь (НФТ-37). */
     private fun dayBoundaries(): Flow<Day> = flow {
@@ -84,7 +96,7 @@ class ObserveTodayAgendaUseCase(
     private fun moments(): Flow<LocalDateTime> = flow {
         while (true) {
             emit(time.nowLocal())
-            delay(tick.toMillis())
+            delay(TICK.toMillis())
         }
     }
 
@@ -102,4 +114,16 @@ class ObserveTodayAgendaUseCase(
 
     /** Сутки потока: дата и признак «это первое открытие, а не переход через полночь». */
     private data class Day(val date: LocalDate, val first: Boolean)
+
+    private companion object {
+
+        /**
+         * Шаг минутного такта.
+         *
+         * Минута, а не секунда: точнее минуты у экрана ничего не меняется — приёмы
+         * назначаются с точностью до минуты, и более частый такт только будил бы
+         * пересборку состояния впустую.
+         */
+        val TICK: Duration = Duration.ofMinutes(1)
+    }
 }

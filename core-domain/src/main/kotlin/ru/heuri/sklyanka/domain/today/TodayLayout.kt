@@ -30,11 +30,7 @@ sealed interface TodayLayout {
  * текущее развёрнуто, будущее свёрнуто. Ручное разворачивание живёт в состоянии
  * экрана, а не здесь: иначе оно сбрасывалось бы при каждой отметке (`TDD.md §5.2`).
  */
-data class DaySection(
-    val partOfDay: PartOfDay,
-    val state: SectionState,
-    val groups: List<TimeGroup>,
-) {
+data class DaySection(val partOfDay: PartOfDay, val state: SectionState, val groups: List<TimeGroup>) {
     val items: List<IntakeItem> get() = groups.flatMap { it.items }
 
     /** Всего приёмов в секции — первое число счётчика «3 из 9». */

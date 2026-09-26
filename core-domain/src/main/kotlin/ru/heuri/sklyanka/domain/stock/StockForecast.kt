@@ -39,8 +39,8 @@ sealed interface StockForecast {
          */
         fun of(medication: Medication): StockForecast {
             val stock = medication.stockLeft ?: return NotTracked
-            val daily = dailyUse(medication) ?: return Unknown
-            return Days(stock.divideToIntegralValue(daily).min(MAX_DAYS).toInt())
+            val daily = dailyUse(medication)
+            return if (daily == null) Unknown else Days(stock.divideToIntegralValue(daily).min(MAX_DAYS).toInt())
         }
 
         /**
@@ -51,9 +51,8 @@ sealed interface StockForecast {
          * дней в этих случаях не существует, а не равно бесконечности.
          */
         fun dailyUse(medication: Medication): BigDecimal? {
-            if (medication.scheduleMode != ScheduleMode.SCHEDULED) return null
-            val perDay = medication.times.size
-            if (perDay == 0) return null
+            // Приём по потребности приравнивается к расписанию без времён: делить не на что.
+            val perDay = medication.times.size.takeIf { medication.scheduleMode == ScheduleMode.SCHEDULED } ?: 0
             return (medication.doseAmount * BigDecimal(perDay)).takeIf { it > BigDecimal.ZERO }
         }
 
