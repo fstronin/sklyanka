@@ -1,5 +1,6 @@
 package ru.heuri.sklyanka.acceptance
 
+import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalTime
 
@@ -56,6 +57,14 @@ internal object RussianDates {
 
     /** Число словом или цифрой: «три», «3». */
     fun count(text: String): Int = NUMERALS[text.trim()] ?: text.trim().toInt()
+
+    /**
+     * Количество из текста сценария: «1», «0,5».
+     *
+     * Дробь в русском тексте пишется через запятую, и разбирать её как число
+     * с точкой нечем — [BigDecimal] такую запись не принимает.
+     */
+    fun amount(text: String): BigDecimal = BigDecimal(text.trim().replace(',', '.'))
 
     private val WHITESPACE = Regex("\\s+")
 }

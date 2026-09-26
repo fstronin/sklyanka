@@ -40,7 +40,9 @@ import java.time.LocalTime
 @Suppress("TooManyFunctions", "LargeClass")
 class IntakeLifecycleSteps {
 
-    private val world = IntakeLifecycleWorld()
+    // Мир сценария общий со всеми классами шагов (см. AcceptanceWorlds): Предыстория
+    // SKL-12 собирается шагами двух задач сразу, и смотреть они обязаны в одно состояние.
+    private val world = AcceptanceWorlds.lifecycle()
 
     // --- Предыстория: лекарства, остаток, окно -------------------------------------------
 
@@ -50,7 +52,7 @@ class IntakeLifecycleSteps {
     )
     fun theProfileHasAScheduledMedicationWithADose(profile: String, medication: String, times: String, dose: String) {
         world.addMedication(profileName = profile, name = medication, times = RussianDates.times(times))
-        world.update(medication) { it.copy(doseAmount = BigDecimal(dose)) }
+        world.update(medication) { it.copy(doseAmount = RussianDates.amount(dose)) }
     }
 
     @Given("^у профиля «(.+?)» есть лекарство «(.+?)» с приёмом в (\\d{2}:\\d{2}) и без учёта остатка$")
@@ -70,7 +72,7 @@ class IntakeLifecycleSteps {
             mode = ScheduleMode.PRN,
             maxPerDay = limit,
         )
-        dose?.let { amount -> world.update(medication) { it.copy(doseAmount = BigDecimal(amount)) } }
+        dose?.let { amount -> world.update(medication) { it.copy(doseAmount = RussianDates.amount(amount)) } }
     }
 
     /**
@@ -88,7 +90,8 @@ class IntakeLifecycleSteps {
 
     @Given("^доза одного приёма «(.+?)» — (\\S+) таблетк\\S+$")
     fun theDoseOfOneIntakeIs(medication: String, dose: String) {
-        world.update(medication) { it.copy(doseAmount = BigDecimal(dose)) }
+        // Доза приходит и цифрой, и русской дробью «0,5» — таблица примеров SKL-12.
+        world.update(medication) { it.copy(doseAmount = RussianDates.amount(dose)) }
     }
 
     @Given("^окно приёма — до конца суток$")

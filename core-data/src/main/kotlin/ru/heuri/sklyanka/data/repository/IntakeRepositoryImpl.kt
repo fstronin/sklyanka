@@ -28,8 +28,8 @@ import ru.heuri.sklyanka.domain.model.ScheduleMode
 import ru.heuri.sklyanka.domain.repository.IntakeRepository
 import ru.heuri.sklyanka.domain.schedule.IntakePlanDiff
 import ru.heuri.sklyanka.domain.schedule.PlanApplyResult
+import ru.heuri.sklyanka.domain.stock.StockLedger
 import ru.heuri.sklyanka.domain.time.TimeSource
-import java.math.BigDecimal
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -348,23 +348,24 @@ class IntakeRepositoryImpl @Inject constructor(
      * правилу не подчиняется (ПР-5).
      */
     private suspend fun applyStock(medicationId: String, intakeId: String, effect: StockEffect) {
-        val medication = medications.getById(medicationId)
-        val stock = medication?.let { SklyankaConverters.textToDecimal(it.stockLeft) }
-        if (effect == StockEffect.NONE || medication == null || stock == null) return
+        val medication = medications.getById(medicationId) ?: return
+        val stock = SklyankaConverters.textToDecimal(medication.stockLeft)
         val dose = requireNotNull(SklyankaConverters.textToDecimal(medication.doseAmount))
-        val next = when (effect) {
-            StockEffect.DECREMENT -> (stock - dose).max(BigDecimal.ZERO)
-            StockEffect.RESTORE -> stock + dose
-            StockEffect.NONE -> stock
-        }
-        medications.setStock(medication.id, next.toPlainString())
+        // Арифметика — доменного правила, а не этого метода (SKL-12): второй экземпляр
+        // правила списания рано или поздно разойдётся с первым, а остаток истории
+        // не хранит и разойтись ему нельзя.
+        val change = StockLedger.apply(stock, dose, effect) ?: return
+        medications.setStock(medication.id, change.after.toPlainString())
         log.record(
             event = if (effect == StockEffect.RESTORE) OpEvent.STOCK_RESTORED else OpEvent.STOCK_DECREMENTED,
             profileId = medication.profileId,
             medicationId = medication.id,
             intakeId = intakeId,
-            before = stock.toPlainString(),
-            after = next.toPlainString(),
+            before = change.before.toPlainString(),
+            after = change.after.toPlainString(),
+            // Остаток упёрся в ноль: доза оказалась больше остатка (ИНВ-8). Частота
+            // таких записей — прямой признак того, что счётчик разошёлся с упаковкой.
+            detail = CLAMPED_AT_ZERO.takeIf { change.clamped },
         )
     }
 
@@ -386,6 +387,9 @@ class IntakeRepositoryImpl @Inject constructor(
     private companion object {
         /** Room возвращает -1 у строки, которую пропустил конфликт-стратегией IGNORE. */
         const val NOT_INSERTED = -1L
+
+        /** Списание упёрлось в ноль: служебный код журнала, а не текст для человека. */
+        const val CLAMPED_AT_ZERO = "clamped_at_zero"
         const val ALREADY_MARKED = "already_marked"
 
         /** Доменная проверка и база разошлись: внутри транзакции такого быть не должно. */

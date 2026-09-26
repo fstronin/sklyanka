@@ -29,7 +29,9 @@ import java.time.LocalTime
 @Suppress("TooManyFunctions")
 class IntakePlanningSteps {
 
-    private val world = PlanningWorld()
+    // Мир сценария общий со всеми классами шагов (см. AcceptanceWorlds): шаги SKL-06
+    // встречаются в Предысториях чужих задач, и состояние у сценария обязано быть одно.
+    private val world = AcceptanceWorlds.planning()
 
     // --- Предыстория --------------------------------------------------------------------
 

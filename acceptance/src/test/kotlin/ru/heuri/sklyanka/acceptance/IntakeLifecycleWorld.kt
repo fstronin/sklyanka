@@ -36,6 +36,7 @@ import ru.heuri.sklyanka.domain.repository.MedicationRepository
 import ru.heuri.sklyanka.domain.repository.ProfileRepository
 import ru.heuri.sklyanka.domain.schedule.IntakePlanDiff
 import ru.heuri.sklyanka.domain.schedule.PlanApplyResult
+import ru.heuri.sklyanka.domain.stock.StockLedger
 import ru.heuri.sklyanka.domain.time.FixedTimeSource
 import java.math.BigDecimal
 import java.time.Instant
@@ -111,6 +112,15 @@ internal class IntakeLifecycleWorld {
         private set
 
     val log = CollectingIntakeLog()
+
+    /**
+     * Лекарства сценария как репозиторий.
+     *
+     * Остаток и порог предупреждения — поля лекарства, и сценарии SKL-12 читают их
+     * отсюда же, где их ставят шаги SKL-07. Второе хранилище лекарств означало бы, что
+     * приёмка проверяет два разных состояния и ни одно из них не совпадает с боевым.
+     */
+    val medicationStore: MedicationRepository = Medications()
 
     /** Состояние приёмов до первого действия сценария: с ним сверяются «остаётся», «не изменяется». */
     var before: Map<String, Intake> = emptyMap()
@@ -485,16 +495,12 @@ internal class IntakeLifecycleWorld {
             medicationsByName.values.firstOrNull { it.id == medicationId }
 
         private fun applyStock(medicationId: String, effect: StockEffect) {
-            val medication = medicationById(medicationId)
-            val stock = medication?.stockLeft
-            if (effect == StockEffect.NONE || medication == null || stock == null) return
-            val next = when (effect) {
-                StockEffect.DECREMENT -> (stock - medication.doseAmount).max(BigDecimal.ZERO)
-                StockEffect.RESTORE -> stock + medication.doseAmount
-                StockEffect.NONE -> stock
-            }
+            val medication = medicationById(medicationId) ?: return
+            // Правило списания — доменное и одно на всё приложение (SKL-12): копия
+            // арифметики здесь означала бы, что приёмка проверяет копию правила.
+            val change = StockLedger.apply(medication.stockLeft, medication.doseAmount, effect) ?: return
             val name = medicationsByName.entries.first { it.value.id == medicationId }.key
-            medicationsByName[name] = medication.copy(stockLeft = next)
+            medicationsByName[name] = medication.copy(stockLeft = change.after)
         }
     }
 
