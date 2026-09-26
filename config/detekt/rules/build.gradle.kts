@@ -11,7 +11,10 @@ group = "ru.heuri.sklyanka"
 version = "1.0"
 
 java {
-    toolchain.languageVersion.set(JavaLanguageVersion.of(17))
+    // В контейнере сборки доступен только JDK 21; целевой байткод фиксируем явно,
+    // toolchain не требуем, чтобы сборка шла на любой машине с JDK 17+.
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
 }
 
 kotlin {

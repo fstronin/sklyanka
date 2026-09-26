@@ -1,0 +1,95 @@
+# Конфигурация detekt «Склянки».
+#
+# Роль detekt — содержание кода, а не оформление: отступы и импорты проверяет ktlint
+# (TDD §5.1). Любая находка валит сборку — режим предупреждений не используется (TDD §5.2).
+# Файл дополняет стандартную конфигурацию (buildUponDefaultConfig = true).
+
+build:
+  maxIssues: 0
+  excludeCorrectable: false
+
+config:
+  validation: true
+  warningsAsErrors: false
+  # Собственный набор правил проекта нужно объявить, иначе валидация конфигурации
+  # сочтёт секцию sklyanka опечаткой.
+  checkExhaustiveness: false
+
+processors:
+  active: true
+
+console-reports:
+  active: true
+
+# --- Собственные правила проекта (TDD §5.3) ---
+sklyanka:
+  active: true
+
+  HardcodedDesignToken:
+    active: true
+    # Единственное место, где литералы цвета и размера законны, — токены дизайн-системы.
+    allowedPackages: 'ru.heuri.sklyanka.ui.token'
+    allowedFiles: ''
+
+  RussianTextInCode:
+    active: true
+    # Шаги приёмки обязаны дословно совпадать с русским Gherkin из docs/tasks:
+    # это ключевые слова сценария, а не текст интерфейса.
+    allowedPackages: 'ru.heuri.sklyanka.acceptance'
+    allowedFiles: ''
+
+  DirectSystemClockAccess:
+    active: true
+    allowedPackages: ''
+    # Реализация источника времени — единственное место, где часы читаются напрямую.
+    allowedFiles: 'SystemTimeSource.kt'
+
+  DestructiveRoomMigration:
+    active: true
+
+  AndroidImportInDomain:
+    active: true
+    domainPackages: 'ru.heuri.sklyanka.domain'
+
+# --- Стандартные правила: точечные послабления ---
+complexity:
+  LongParameterList:
+    functionThreshold: 7
+    constructorThreshold: 8
+  TooManyFunctions:
+    active: true
+    thresholdInFiles: 20
+    thresholdInClasses: 20
+    thresholdInInterfaces: 20
+    thresholdInObjects: 20
+
+style:
+  MagicNumber:
+    active: true
+    ignoreNumbers: ['-1', '0', '1', '2']
+    ignorePropertyDeclaration: true
+    ignoreCompanionObjectPropertyDeclaration: true
+    ignoreAnnotation: true
+    ignoreNamedArgument: true
+  MaxLineLength:
+    active: true
+    maxLineLength: 120
+  ForbiddenComment:
+    active: false
+  UnusedPrivateMember:
+    active: true
+
+naming:
+  FunctionNaming:
+    active: true
+    # Compose-функции именуются с большой буквы — это соглашение Compose, а не нарушение.
+    ignoreAnnotated: ['Composable']
+  TopLevelPropertyNaming:
+    active: true
+
+comments:
+  active: true
+  UndocumentedPublicClass:
+    active: false
+  UndocumentedPublicFunction:
+    active: false

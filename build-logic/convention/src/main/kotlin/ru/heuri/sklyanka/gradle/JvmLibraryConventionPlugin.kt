@@ -1,11 +1,11 @@
 package ru.heuri.sklyanka.gradle
 
+import org.gradle.api.JavaVersion
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.tasks.testing.Test
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
-import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.gradle.kotlin.dsl.configure
 import org.gradle.kotlin.dsl.dependencies
 import org.gradle.kotlin.dsl.withType
@@ -22,8 +22,10 @@ class JvmLibraryConventionPlugin : Plugin<Project> {
         pluginManager.apply("sklyanka.quality")
 
         extensions.configure<JavaPluginExtension> {
-            toolchain.languageVersion.set(JavaLanguageVersion.of(ProjectDefaults.JVM_TARGET))
+            sourceCompatibility = JavaVersion.VERSION_17
+            targetCompatibility = JavaVersion.VERSION_17
         }
+        configureKotlinJvmTarget()
 
         tasks.withType<Test>().configureEach {
             useJUnitPlatform()

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Строки приложения. Русского текста в Kotlin-коде нет вообще (НФТ-42). -->
+<resources>
+    <string name="app_name">Склянка</string>
+</resources>

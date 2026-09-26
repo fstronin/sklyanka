@@ -45,6 +45,18 @@ gradlePlugin {
             id = "sklyanka.quality"
             implementationClass = "ru.heuri.sklyanka.gradle.QualityConventionPlugin"
         }
+        register("releaseSigning") {
+            id = "sklyanka.release.signing"
+            implementationClass = "ru.heuri.sklyanka.gradle.ReleaseSigningConventionPlugin"
+        }
+        register("artifactChecks") {
+            id = "sklyanka.artifact.checks"
+            implementationClass = "ru.heuri.sklyanka.gradle.ArtifactChecksConventionPlugin"
+        }
+        register("projectChecks") {
+            id = "sklyanka.project.checks"
+            implementationClass = "ru.heuri.sklyanka.gradle.ProjectChecksConventionPlugin"
+        }
         register("hilt") {
             id = "sklyanka.hilt"
             implementationClass = "ru.heuri.sklyanka.gradle.HiltConventionPlugin"
