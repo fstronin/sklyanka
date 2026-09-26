@@ -34,8 +34,10 @@ class DismissReminderUseCaseTest {
     @Test
     fun `skipping removes the card and leaves the stock alone`() = runTest {
         world.pending()
-        world.moveTo(LocalDateTime.of(2026, 9, 25, 14, 2))
+        world.moveTo(LocalDateTime.of(2026, 9, 25, 14, 0))
+        world.fired(Fixtures.INTAKE_ID)
 
+        world.moveTo(LocalDateTime.of(2026, 9, 25, 14, 2))
         world.skip()
 
         assertEquals(IntakeStatus.SKIPPED, world.stored().status)

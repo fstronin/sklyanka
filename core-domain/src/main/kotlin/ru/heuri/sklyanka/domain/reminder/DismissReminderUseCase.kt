@@ -33,16 +33,19 @@ class DismissReminderUseCase(
         // Если карточки этого слота на экране нет, снимать и обновлять нечего: отметка
         // с экрана «Сегодня» идёт тем же путём, и показывать по ней уведомление о соседнем
         // приёме было бы уведомлением из ниоткуда.
-        if (!notifications.isShown(intake.slot)) return
+        if (notifications.isShown(intake.slot)) refresh(intake.slot)
+    }
 
-        val remaining = plan.pendingInSlot(intake.slot)
-        if (remaining.isEmpty()) {
-            notifications.cancel(intake.slot)
-            return
-        }
-        val card = cards.card(intake.slot, mirroredToWatch = false)
+    /**
+     * Показать карточку слота заново без отмеченной строки либо снять её совсем.
+     *
+     * Отметка одной строки общей карточки её не закрывает (НАП-36); повторный показ того же
+     * слота не звучит второй раз — уведомление обновляется.
+     */
+    private suspend fun refresh(slot: ReminderSlot) {
+        val card = cards.card(slot, mirroredToWatch = false)
         if (card == null || card.isEmpty) {
-            notifications.cancel(intake.slot)
+            notifications.cancel(slot)
         } else {
             notifications.show(card, ReminderChannel.REGULAR)
         }
