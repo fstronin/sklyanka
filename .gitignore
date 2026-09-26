@@ -1,0 +1,23 @@
+# Сборка
+build/
+.gradle/
+.kotlin/
+*.apk
+*.aab
+*.ap_
+*.dex
+local.properties
+
+# Подпись релиза: ни хранилище ключа, ни пароли не попадают в репозиторий (ПЛ-5)
+*.jks
+*.keystore
+keystore.properties
+
+# Отчёты проверок
+reports/
+
+# Среда разработки
+.idea/
+*.iml
+.DS_Store
+captures/
