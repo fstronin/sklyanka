@@ -66,6 +66,47 @@ interface IntakeDao {
     suspend fun getById(intakeId: String): IntakeEntity?
 
     /**
+     * Приёмы по расписанию одного лекарства внутри окна генерации (SKL-06).
+     *
+     * Запрос идёт по индексу (medication_id, scheduled_at, schedule_slot) — тому самому,
+     * который держит уникальность приёма по расписанию (INV-13).
+     *
+     * Условие по слоту отсеивает приёмы по потребности: слот у них NULL, плану они не
+     * подчиняются и удалению при перепланировании не подлежат (INV-14). Сравнение идёт
+     * с NULL, а не со значением слота, потому что значение — деталь хранения, а смысл
+     * условия — «запись порождена расписанием».
+     */
+    @Query(
+        """
+        SELECT i.* FROM intake i
+        JOIN medication m ON m.id = i.medication_id
+        WHERE i.medication_id = :medicationId AND m.profile_id = :profileId
+          AND i.schedule_slot IS NOT NULL
+          AND i.scheduled_at >= :from AND i.scheduled_at < :to
+        ORDER BY i.scheduled_at
+        """,
+    )
+    suspend fun selectScheduledBetween(
+        profileId: String,
+        medicationId: String,
+        from: String,
+        to: String,
+    ): List<IntakeEntity>
+
+    /**
+     * Снятие ожидающихся приёмов, переставших соответствовать расписанию.
+     *
+     * Условие `status = 'PENDING'` стоит внутри самого DELETE: между чтением окна и записью
+     * помещается отметка с часов, и без этого условия перепланирование стёрло бы её вместе
+     * с записью. Отметка неприкосновенна при любой правке расписания (ПР-11).
+     *
+     * Список идентификаторов приходит из окна генерации и потому короток — десятки записей,
+     * а не тысячи: предела SQLite на число параметров запроса он не достигает.
+     */
+    @Query("DELETE FROM intake WHERE id IN (:intakeIds) AND status = 'PENDING'")
+    suspend fun deletePending(intakeIds: List<String>): Int
+
+    /**
      * Вставка пачкой с пропуском конфликтов.
      *
      * Повторная генерация того же приёма — ожидаемый ход событий, а не ошибка:

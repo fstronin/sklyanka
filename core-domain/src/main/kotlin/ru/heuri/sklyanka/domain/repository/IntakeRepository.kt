@@ -4,6 +4,8 @@ import kotlinx.coroutines.flow.Flow
 import ru.heuri.sklyanka.domain.model.Intake
 import ru.heuri.sklyanka.domain.model.IntakeSource
 import ru.heuri.sklyanka.domain.model.IntakeStatus
+import ru.heuri.sklyanka.domain.schedule.IntakePlanDiff
+import ru.heuri.sklyanka.domain.schedule.PlanApplyResult
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -36,6 +38,34 @@ interface IntakeRepository {
      * вставленных строк.
      */
     suspend fun insertMissing(intakes: List<Intake>): Int
+
+    /**
+     * Приёмы по расписанию одного лекарства внутри окна генерации (SKL-06).
+     *
+     * Профиль — обязательный параметр, хотя лекарство задаёт его однозначно: выборка без
+     * профиля выглядит одинаково правильно и в верном, и в ошибочном вызове (ПР-10).
+     * Приёмы по потребности в выборку не попадают: слота они не занимают, плану не
+     * подчиняются и удалению при перепланировании не подлежат (ИНВ-14).
+     *
+     * Верхняя граница исключительная: сутки выбираются диапазоном, а не арифметикой
+     * «минус 24 часа» — в сутках с переводом времени их 23 или 25 (НФТ-37).
+     */
+    suspend fun scheduledBetween(
+        profileId: String,
+        medicationId: String,
+        from: LocalDateTime,
+        toExclusive: LocalDateTime,
+    ): List<Intake>
+
+    /**
+     * Применение плана одной транзакцией: удалить лишнее и создать недостающее.
+     *
+     * Именно одной: сбой между шагами оставил бы человека без части приёмов дня, а это
+     * пропущенное напоминание, то есть отказ продукта. Возвращается то, что действительно
+     * применилось, а не то, что просил домен: вставка пропускает конфликт по уникальному
+     * ключу (ИНВ-13), а удаление не трогает уже отмеченные приёмы.
+     */
+    suspend fun applyPlan(profileId: String, medicationId: String, diff: IntakePlanDiff): PlanApplyResult
 
     /**
      * Ядро идемпотентности (ПР-2, INV-19): отметка применяется, только если приём ещё ожидается.

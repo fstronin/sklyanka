@@ -73,6 +73,20 @@ object SklyankaSizes {
     /** Знак в пустом состоянии, плоская редукция (§4.8). */
     val EmptyStateMark: Dp = 92.dp
 
+    // --- Фирменный блок: заставка и логотип с названием (SKL-21) ---
+
+    /** Знак на заставке (`design/screens/Splash.dc.html`). */
+    val SplashMark: Dp = 170.dp
+
+    /** Знак в логотипе с названием (`design/screens/SklyankaLockup.dc.html`). */
+    val LockupMark: Dp = 128.dp
+
+    /** Зазор между знаком и текстовым блоком: 34 в обоих макетах фирменного блока. */
+    val BrandGap: Dp = 34.dp
+
+    /** Отступ «Heuri» от нижнего края заставки. */
+    val SplashVendorBottom: Dp = 46.dp
+
     /** Баннер (§4.6): внутреннее поле 11–16 dp. */
     val BannerPaddingVertical: Dp = 11.dp
     val BannerPaddingHorizontal: Dp = 14.dp

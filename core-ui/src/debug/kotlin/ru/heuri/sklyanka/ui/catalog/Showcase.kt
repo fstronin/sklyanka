@@ -21,6 +21,8 @@ import ru.heuri.sklyanka.ui.preview.ButtonGallery
 import ru.heuri.sklyanka.ui.preview.ChipGallery
 import ru.heuri.sklyanka.ui.preview.EmptyStateGallery
 import ru.heuri.sklyanka.ui.preview.IntakeCardGallery
+import ru.heuri.sklyanka.ui.preview.LockupGallery
+import ru.heuri.sklyanka.ui.preview.MarkGallery
 import ru.heuri.sklyanka.ui.preview.PREVIEW_WIDTH
 import ru.heuri.sklyanka.ui.preview.ProfileStripeGallery
 import ru.heuri.sklyanka.ui.preview.ProgressGallery
@@ -79,6 +81,8 @@ fun Showcase(modifier: Modifier = Modifier, profile: ProfileAccent = ProfileAcce
                 EmptyStateGallery()
                 ScreenHeaderGallery()
                 ProfileStripeGallery()
+                MarkGallery()
+                LockupGallery()
             }
         }
     }

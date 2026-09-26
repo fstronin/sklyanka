@@ -53,3 +53,11 @@ internal fun ScreenHeaderPreview() = PreviewEnvironments { ScreenHeaderGallery()
 @SklyankaPreviews
 @Composable
 internal fun ProfileStripePreview() = PreviewEnvironments { ProfileStripeGallery() }
+
+@SklyankaPreviews
+@Composable
+internal fun MarkPreview() = PreviewEnvironments { MarkGallery() }
+
+@SklyankaPreviews
+@Composable
+internal fun LockupPreview() = PreviewEnvironments { LockupGallery() }

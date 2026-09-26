@@ -3,9 +3,19 @@ package ru.heuri.sklyanka
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 import ru.heuri.sklyanka.feature.today.TodayScreen
+import ru.heuri.sklyanka.platform.startup.StartupRouter
+import ru.heuri.sklyanka.startup.SplashScreen
+import ru.heuri.sklyanka.startup.StartDestination
 import ru.heuri.sklyanka.ui.theme.SklyankaTheme
+import javax.inject.Inject
 
 /**
  * Единственная Activity приложения.
@@ -17,14 +27,44 @@ import ru.heuri.sklyanka.ui.theme.SklyankaTheme
  * ей пока не передаётся: по умолчанию это профиль владельца, и до появления
  * переключателя профиля (SKL-15) индикации чужого профиля нет, потому что ветка
  * тонирования не выполняется (ПРФ-16).
+ *
+ * **Заставка.** Первый кадр рисует система по теме `Theme.Sklyanka.Splash` — полотно
+ * и знак появляются до того, как выполнится хоть одна строка приложения, и потому
+ * не добавляют к холодному старту ничего (НФТ-21). [installSplashScreen] держит этот
+ * кадр, пока не решено, куда уходить; решение читается из системы и занимает доли
+ * миллисекунды, так что держится он ровно один кадр. Дольше заставка живёт только
+ * если дольше поднимается то, что и так нужно первому экрану.
  */
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    @Inject
+    lateinit var startupRouter: StartupRouter
+
     override fun onCreate(savedInstanceState: Bundle?) {
+        val splash = installSplashScreen()
         super.onCreate(savedInstanceState)
+
+        var destination by mutableStateOf<StartDestination?>(null)
+        // Системный кадр держится ровно до решения — и ни на кадр дольше.
+        splash.setKeepOnScreenCondition { destination == null }
+        lifecycleScope.launch { destination = startupRouter.resolve() }
+
         setContent {
             SklyankaTheme {
-                TodayScreen()
+                when (destination) {
+                    // Кадр заставки средствами приложения: полотно и знак те же, что
+                    // у системного, поэтому переход не мигает. Индикатора загрузки
+                    // на нём нет намеренно (docs/spec/03-screens.md «Заставка»).
+                    null -> SplashScreen()
+
+                    // Экран настройки разрешений — SKL-14; до него заставка уходит
+                    // на «Сегодня», а решение и его причина уже пишутся в журнал
+                    // запуска, чтобы подмена была видна, а не растворилась.
+                    StartDestination.Onboarding -> TodayScreen()
+
+                    StartDestination.Today -> TodayScreen()
+                }
             }
         }
     }

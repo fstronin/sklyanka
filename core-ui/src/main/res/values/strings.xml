@@ -11,6 +11,15 @@
 <resources>
     <string name="app_name">Склянка</string>
 
+    <!--
+      Фирменная подпись под названием. Хранится строчными и переводится в прописные
+      отрисовкой: читалка должна произносить слова, а не буквы.
+    -->
+    <string name="brand_tagline">приём лекарств</string>
+
+    <!-- Издатель у нижнего края заставки. -->
+    <string name="brand_vendor">Heuri</string>
+
     <!-- Подписи компонентов -->
     <string name="action_taken">Принято</string>
     <string name="action_skip">Пропустить</string>
@@ -26,6 +35,13 @@
     <string name="cd_mark_intake">Отметить приём: %1$s</string>
     <string name="cd_back">Назад</string>
     <string name="cd_app_mark">Знак Склянка</string>
+    <string name="cd_app_mark_glass">Знак Склянка: донце толстого стекла</string>
+    <string name="cd_icon_on_dark">Иконка на тёмном фоне</string>
+    <string name="cd_icon_on_light">Иконка на светлом фоне</string>
+    <string name="cd_flat_mark_72">Плоская редукция 72 пикселя</string>
+    <string name="cd_flat_mark_44">Плоская редукция 44 пикселя</string>
+    <string name="cd_flat_mark_28">Плоская редукция 28 пикселей</string>
+    <string name="cd_flat_mark_18">Плоская редукция 18 пикселей</string>
     <string name="cd_warning">Предупреждение</string>
     <string name="cd_profile">Чужой профиль</string>
 
@@ -80,4 +96,6 @@
     <string name="catalog_empty_state">Пустое состояние</string>
     <string name="catalog_screen_header">Шапка экрана</string>
     <string name="catalog_profile_stripe">Полоса профиля</string>
+    <string name="catalog_mark">Знак и его варианты</string>
+    <string name="catalog_lockup">Логотип с названием</string>
 </resources>

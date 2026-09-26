@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Мелкий значок уведомления: строка статуса и шторка.
+
+  Предельная ступень плоской редукции по `design/screens/SklyankaScale.dc.html`:
+  одно кольцо толщиной 26 и точка радиуса 30 на поле 200×200. Стекло, кольца и серп
+  на этом размере превращаются в грязь — различим только силуэт (`TDD.md` §5).
+
+  Цвет задаёт система: монохромный слой тонируется темой, значок уведомления —
+  строкой статуса. Поэтому здесь белый, а не токен: это маска, а не краска.
+
+  Ресурс пока никем не используется и помечен об этом явно: уведомления и их
+  каналы заводит SKL-13. Завести значок заранее дешевле, чем потом обнаружить,
+  что в строке статуса стоит стандартный кружок Android.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:ignore="UnusedResources"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+  <group
+      android:translateX="0"
+      android:translateY="0"
+      android:scaleX="0.12"
+      android:scaleY="0.12">
+    <path
+        android:pathData="M100,20 a80,80 0 1,0 0,160 a80,80 0 1,0 0,-160 Z"
+        android:strokeColor="@color/mark_silhouette"
+        android:strokeWidth="26" />
+    <path
+        android:pathData="M100,70 a30,30 0 1,0 0,60 a30,30 0 1,0 0,-60 Z"
+        android:fillColor="@color/mark_silhouette" />
+  </group>
+</vector>

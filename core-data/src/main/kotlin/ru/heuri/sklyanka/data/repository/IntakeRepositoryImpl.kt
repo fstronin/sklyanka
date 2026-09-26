@@ -17,10 +17,13 @@ import ru.heuri.sklyanka.domain.model.IntakeSource
 import ru.heuri.sklyanka.domain.model.IntakeStatus
 import ru.heuri.sklyanka.domain.model.ScheduleMode
 import ru.heuri.sklyanka.domain.repository.IntakeRepository
+import ru.heuri.sklyanka.domain.schedule.IntakePlanDiff
+import ru.heuri.sklyanka.domain.schedule.PlanApplyResult
 import ru.heuri.sklyanka.domain.time.TimeSource
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -82,6 +85,59 @@ class IntakeRepositoryImpl @Inject constructor(
         }
         inserted
     }
+
+    override suspend fun scheduledBetween(
+        profileId: String,
+        medicationId: String,
+        from: LocalDateTime,
+        toExclusive: LocalDateTime,
+    ): List<Intake> = dao.selectScheduledBetween(
+        profileId = profileId,
+        medicationId = medicationId,
+        from = SklyankaConverters.dateTimeToText(from),
+        to = SklyankaConverters.dateTimeToText(toExclusive),
+    ).mapNotNull { decodeOrLog(it) }
+
+    /**
+     * Применение плана генерации одной транзакцией (SKL-06).
+     *
+     * Порядок шагов — сначала снятие лишних, потом вставка недостающих: перенос приёма
+     * с 08:00 на 09:00 в обратном порядке упёрся бы в уникальный ключ, если бы новое время
+     * совпало со снимаемым старым у соседней даты.
+     *
+     * Журнал ведёт домен, а не этот метод: причина запуска и границы окна известны там,
+     * и одна операция генерации обязана оставлять одну запись, а не две.
+     */
+    override suspend fun applyPlan(profileId: String, medicationId: String, diff: IntakePlanDiff): PlanApplyResult =
+        transactor.inTransaction {
+            val medication = medications.getById(medicationId)
+            requireNotNull(medication) { "Plan refers to a medication that does not exist: $medicationId" }
+            require(medication.profileId == profileId) {
+                "Plan refers to a medication of another profile: $medicationId"
+            }
+
+            val deleted = if (diff.toDelete.isEmpty()) 0 else dao.deletePending(diff.toDelete)
+            val rows = diff.toCreate.map { moment -> pendingRow(medicationId, moment) }
+            val created = if (rows.isEmpty()) 0 else dao.insertAll(rows).count { it != NOT_INSERTED }
+            PlanApplyResult(created = created, deleted = deleted)
+        }
+
+    /**
+     * Строка нового ожидающегося приёма.
+     *
+     * Слот проставлен всегда: сюда попадают только приёмы, порождённые расписанием, и
+     * именно слот делает их уникальными на момент времени (INV-13).
+     */
+    private fun pendingRow(medicationId: String, moment: LocalDateTime) = IntakeEntity(
+        id = UUID.randomUUID().toString(),
+        medicationId = medicationId,
+        scheduledAt = SklyankaConverters.dateTimeToText(moment),
+        scheduleSlot = IntakeEntity.SCHEDULE_SLOT,
+        status = IntakeStatus.PENDING.name,
+        actedAt = null,
+        source = null,
+        actorProfileId = null,
+    )
 
     /**
      * Отметка приёма и списание остатка — вместе или никак (критерий 10, НФТ-11).

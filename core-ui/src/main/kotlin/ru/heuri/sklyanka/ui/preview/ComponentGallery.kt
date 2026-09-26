@@ -1,15 +1,19 @@
 package ru.heuri.sklyanka.ui.preview
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.dp
 import ru.heuri.sklyanka.ui.R
 import ru.heuri.sklyanka.ui.component.Banner
 import ru.heuri.sklyanka.ui.component.BannerKind
@@ -30,6 +34,8 @@ import ru.heuri.sklyanka.ui.component.ScreenHeaderKind
 import ru.heuri.sklyanka.ui.component.ScreenHeaderLabels
 import ru.heuri.sklyanka.ui.component.SecondaryButton
 import ru.heuri.sklyanka.ui.component.SklyankaChip
+import ru.heuri.sklyanka.ui.component.SklyankaLockup
+import ru.heuri.sklyanka.ui.component.SklyankaMark
 import ru.heuri.sklyanka.ui.component.SklyankaNumberField
 import ru.heuri.sklyanka.ui.component.SklyankaProgressBar
 import ru.heuri.sklyanka.ui.component.SklyankaSwitch
@@ -39,9 +45,12 @@ import ru.heuri.sklyanka.ui.component.SwitchState
 import ru.heuri.sklyanka.ui.component.TextFieldState
 import ru.heuri.sklyanka.ui.modifier.withCappedFontScale
 import ru.heuri.sklyanka.ui.theme.SklyankaTheme
+import ru.heuri.sklyanka.ui.token.MarkEnvironment
 import ru.heuri.sklyanka.ui.token.SklyankaShapes
+import ru.heuri.sklyanka.ui.token.SklyankaSizes
 import ru.heuri.sklyanka.ui.token.SklyankaSpacing
 import ru.heuri.sklyanka.ui.token.SklyankaType
+import ru.heuri.sklyanka.ui.token.markTileBackground
 
 /**
  * Каталог компонентов: каждый компонент во всех состояниях из
@@ -216,6 +225,61 @@ fun EmptyStateGallery(modifier: Modifier = Modifier) {
     }
 }
 
+/**
+ * Лестница знака целиком: стекло в двух средах и четыре ступени редукции.
+ *
+ * Каталог показывает их рядом не для красоты. Знак редуцируется тремя ступенями,
+ * и единственный способ увидеть, что предельная ступень остаётся тем же знаком, —
+ * поставить её рядом с крупной (`acceptance.feature`, «Мелкий знак остаётся
+ * узнаваемым рядом с крупным»).
+ */
+@Composable
+fun MarkGallery(modifier: Modifier = Modifier) {
+    GallerySection(stringResource(R.string.catalog_mark), modifier) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Section),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            SklyankaMark(
+                contentDescription = stringResource(R.string.cd_icon_on_dark),
+                size = SklyankaSizes.LockupMark,
+                environment = MarkEnvironment.Dark,
+                modifier = Modifier
+                    .background(markTileBackground(MarkEnvironment.Dark), SklyankaShapes.Card)
+                    .padding(SklyankaSpacing.Block),
+            )
+            SklyankaMark(
+                contentDescription = stringResource(R.string.cd_icon_on_light),
+                size = SklyankaSizes.LockupMark,
+                environment = MarkEnvironment.Light,
+                modifier = Modifier
+                    .background(markTileBackground(MarkEnvironment.Light), SklyankaShapes.Card)
+                    .padding(SklyankaSpacing.Block),
+            )
+        }
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Section),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            FLAT_LADDER_PREVIEW.forEach { (descriptionId, size) ->
+                SklyankaMark(
+                    contentDescription = stringResource(descriptionId),
+                    size = size.dp,
+                    environment = MarkEnvironment.Light,
+                )
+            }
+        }
+    }
+}
+
+/** Логотип с названием: он же уходит в материалы магазинов (SKL-22). */
+@Composable
+fun LockupGallery(modifier: Modifier = Modifier) {
+    GallerySection(stringResource(R.string.catalog_lockup), modifier) {
+        SklyankaLockup()
+    }
+}
+
 @Composable
 fun ScreenHeaderGallery(modifier: Modifier = Modifier) {
     val title = stringResource(R.string.preview_screen_title)
@@ -316,6 +380,14 @@ private fun GallerySection(title: String, modifier: Modifier = Modifier, content
         content()
     }
 }
+
+/** Четыре ступени редукции из `SklyankaScale.dc.html` с их подписями для читалки. */
+private val FLAT_LADDER_PREVIEW = listOf(
+    R.string.cd_flat_mark_72 to 72,
+    R.string.cd_flat_mark_44 to 44,
+    R.string.cd_flat_mark_28 to 28,
+    R.string.cd_flat_mark_18 to 18,
+)
 
 private const val PREVIEW_PROGRESS = 0.4f
 private const val PREVIEW_TAKEN = 2

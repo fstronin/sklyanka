@@ -23,6 +23,12 @@ dependencies {
 
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.androidx.core.ktx)
+    // Заставка — штатным механизмом платформы, а не собственной Activity (TDD §6).
+    implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
+
+    // Правило выбора экрана после заставки — арифметика по трём признакам,
+    // и проверяется она на JVM: эмулятор для неё не нужен и недоступен.
+    testImplementation(libs.junit4)
 }

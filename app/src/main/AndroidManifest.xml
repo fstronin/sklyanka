@@ -6,6 +6,10 @@
   и приёмник загрузки — SKL-13. Разрешение INTERNET не появляется никогда (ПЛ-3, НФТ-15),
   и это проверяется на собранном артефакте после слияния манифестов, а не здесь:
   разрешение способна добавить зависимость.
+
+  Тема запускаемой Activity — тема заставки (SKL-21): полотно и знак первого кадра
+  рисует система по теме окна, ещё до создания Activity. Приложение переключается
+  в свою тему само, через postSplashScreenTheme.
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
@@ -14,7 +18,9 @@
         android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="false"
+        android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="false"
         android:theme="@style/Theme.Sklyanka">
 
@@ -22,7 +28,7 @@
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name"
-            android:theme="@style/Theme.Sklyanka">
+            android:theme="@style/Theme.Sklyanka.Splash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

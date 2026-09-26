@@ -13,7 +13,9 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.Dp
+import ru.heuri.sklyanka.ui.token.MarkVariant
 import ru.heuri.sklyanka.ui.token.SklyankaSizes
+import ru.heuri.sklyanka.ui.token.markVariantFor
 
 /**
  * Простая графика дизайн-системы.
@@ -60,13 +62,6 @@ private const val CAPSULE_TOP = 0.34f
 private const val CAPSULE_BOTTOM = 0.66f
 private const val CAPSULE_LEFT = 0.12f
 private const val CAPSULE_RIGHT = 0.88f
-
-/** Плоская редукция знака: два кольца и точка (§7). */
-private const val MARK_OUTER_RADIUS = 0.43f
-private const val MARK_INNER_RADIUS = 0.25f
-private const val MARK_DOT_RADIUS = 0.075f
-private const val MARK_OUTER_STROKE = 0.045f
-private const val MARK_INNER_STROKE = 0.035f
 
 /** Галочка: обязательный спутник цвета в статусе «принято» (НФТ-33). */
 @Composable
@@ -171,29 +166,22 @@ fun MedicationGlyph(color: Color, modifier: Modifier = Modifier, size: Dp = Skly
 }
 
 /**
- * Знак «Склянки» в плоской редукции: два кольца и точка одной краской.
+ * Знак «Склянки» плоской редукцией, заданной краской.
  *
- * Стекло не переживает мелкие размеры (§7), и в пустом состоянии знак работает как
- * иллюстрация одной краской. Ресурсы стеклянной версии приходят в SKL-21; здесь —
- * контракт компонента и та самая редукция, которая от размера не зависит.
+ * Отличие от [SklyankaMark] — в том, кто решает про цвет. Знак «сам по себе» стоит
+ * в среде и красится средой; знак-иллюстрация (пустое состояние, плашка
+ * «О приложении», диагностика часов) подчинён тону экрана и красится ролью, которую
+ * задаёт место: `switchOff` в пустом состоянии, `textTertiary` в «О приложении» (§7).
+ * Поэтому цвет здесь параметр, а не вывод из среды.
+ *
+ * Ступень редукции при этом всё равно выбирается размером, а не вручную: правило
+ * одно на весь знак ([markVariantFor]). На 92 dp пустого состояния это «два кольца
+ * и точка», на 40 dp плашки — та же пара колец потолще, на 18 dp — кольцо и точка.
  */
 @Composable
 fun FlatMark(color: Color, modifier: Modifier = Modifier, size: Dp = SklyankaSizes.EmptyStateMark) {
-    Canvas(modifier.size(size)) {
-        val side = this.size.minDimension
-        val center = Offset(side / 2, side / 2)
-        drawCircle(
-            color = color,
-            radius = side * MARK_OUTER_RADIUS,
-            center = center,
-            style = Stroke(width = side * MARK_OUTER_STROKE),
-        )
-        drawCircle(
-            color = color,
-            radius = side * MARK_INNER_RADIUS,
-            center = center,
-            style = Stroke(width = side * MARK_INNER_STROKE),
-        )
-        drawCircle(color = color, radius = side * MARK_DOT_RADIUS, center = center)
-    }
+    // Стекло сюда не попадает даже на 92 dp: иллюстрация одной краской — это
+    // требование §7, а не следствие размера. Ступень берётся ближайшая плоская.
+    val variant = markVariantFor(size).takeUnless { it == MarkVariant.Glass } ?: MarkVariant.FlatRingsAndDot
+    Canvas(modifier.size(size)) { drawFlatVariant(variant, color) }
 }

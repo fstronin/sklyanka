@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Иконка приложения — адаптивная (ПЛ-1, minSdk 26: доступна на всей линейке).
+
+  Подложка и передний план раздельно: маску выбирает система, и целым знак остаётся
+  только за счёт запаса по краю. Знак занимает 150 из 180 плитки макета, то есть 60
+  из 108 поля слоя, — внешнее кольцо не достаёт до границы 72, на которой обрезает
+  любая маска (`TDD.md` §5).
+
+  Монохромный слой — предельная ступень редукции: тематическая иконка Android 13+
+  красится системой одним цветом, и градиенты в ней превратились бы в пятно.
+-->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@drawable/ic_launcher_background" />
+    <foreground android:drawable="@drawable/ic_launcher_foreground" />
+    <monochrome android:drawable="@drawable/ic_launcher_monochrome" />
+</adaptive-icon>

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Монохромный слой адаптивной иконки (тематические иконки Android 13+).
+
+  Предельная ступень плоской редукции по `design/screens/SklyankaScale.dc.html`:
+  одно кольцо толщиной 26 и точка радиуса 30 на поле 200×200. Стекло, кольца и серп
+  на этом размере превращаются в грязь — различим только силуэт (`TDD.md` §5).
+
+  Цвет задаёт система: монохромный слой тонируется темой, значок уведомления —
+  строкой статуса. Поэтому здесь белый, а не токен: это маска, а не краска.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+  <group
+      android:translateX="24"
+      android:translateY="24"
+      android:scaleX="0.3"
+      android:scaleY="0.3">
+    <path
+        android:pathData="M100,20 a80,80 0 1,0 0,160 a80,80 0 1,0 0,-160 Z"
+        android:strokeColor="@color/mark_silhouette"
+        android:strokeWidth="26" />
+    <path
+        android:pathData="M100,70 a30,30 0 1,0 0,60 a30,30 0 1,0 0,-60 Z"
+        android:fillColor="@color/mark_silhouette" />
+  </group>
+</vector>

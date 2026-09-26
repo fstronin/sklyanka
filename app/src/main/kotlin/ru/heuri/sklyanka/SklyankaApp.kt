@@ -10,6 +10,8 @@ import kotlinx.coroutines.launch
 import ru.heuri.sklyanka.data.log.LogRetention
 import ru.heuri.sklyanka.data.repository.ProfileBootstrap
 import ru.heuri.sklyanka.domain.log.OperationLog
+import ru.heuri.sklyanka.domain.schedule.PlanReason
+import ru.heuri.sklyanka.scheduler.IntakePlanningTrigger
 import javax.inject.Inject
 
 /**
@@ -21,6 +23,10 @@ import javax.inject.Inject
  *
  * Здесь же подрезается журнал операций. Подрезка идёт отдельной операцией и вне
  * транзакции: она не имеет права откатить отметку приёма.
+ *
+ * И здесь же пополняется окно приёмов (SKL-06): приложение на EMUI выгружается, и старт —
+ * единственное событие, которое случается наверняка. Остальные события перепланирования
+ * (перезагрузка, смена пояса, перевод часов, якорный будильник) приходят с SKL-13.
  */
 @HiltAndroidApp
 class SklyankaApp : Application() {
@@ -31,6 +37,9 @@ class SklyankaApp : Application() {
     @Inject
     lateinit var operationLog: OperationLog
 
+    @Inject
+    lateinit var intakePlanning: IntakePlanningTrigger
+
     private val startupScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onCreate() {
@@ -40,6 +49,9 @@ class SklyankaApp : Application() {
                 defaultName = getString(R.string.profile_self_default_name),
                 color = ContextCompat.getColor(this@SklyankaApp, R.color.profile_self_default),
             )
+            // Порядок важен: профиль владельца обязан существовать до того, как
+            // генерация пойдёт по профилям, иначе первый запуск обходит пустой список.
+            intakePlanning.planAll(PlanReason.APP_START)
             operationLog.prune(LogRetention.KEEP_DAYS, LogRetention.KEEP_RECORDS)
         }
     }

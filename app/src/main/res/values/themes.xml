@@ -2,4 +2,25 @@
 <resources>
     <!-- Тема-обёртка до появления дизайн-системы (SKL-05). -->
     <style name="Theme.Sklyanka" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <!--
+      Заставка (SKL-21).
+
+      Это не экран и не Activity, а первый кадр запуска: полотно и знак рисует сама
+      система, до того как приложение успевает что-либо построить. Отсюда требование
+      НФТ-21 выполняется не оптимизацией, а устройством — заставке нечего успевать.
+
+      `Theme.SplashScreen` из androidx.core:core-splashscreen даёт один и тот же
+      механизм и на Android 12+, где он штатный, и ниже, где его нет: minSdk у нас 26
+      (ПЛ-1), и собственный экран-заставка для старых версий означал бы вторую
+      реализацию с собственными ошибками.
+
+      `postSplashScreenTheme` — тема, в которую окно переключается, когда заставка
+      уходит. Без неё приложение осталось бы жить в теме заставки.
+    -->
+    <style name="Theme.Sklyanka.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/mark_tile_dark</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_mark</item>
+        <item name="postSplashScreenTheme">@style/Theme.Sklyanka</item>
+    </style>
 </resources>
