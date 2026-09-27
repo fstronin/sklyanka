@@ -224,8 +224,16 @@
     -->
     <string name="date_pattern_day_month" translatable="false">d MMMM</string>
     <string name="date_pattern_full" translatable="false">d MMMM yyyy</string>
-    <!-- «Сб» в недельной полосе и «суббота» для программы чтения с экрана. -->
-    <string name="date_pattern_weekday_short" translatable="false">EEEEEE</string>
+    <!--
+      «Сб» в недельной полосе и «суббота» для программы чтения с экрана.
+
+      Ровно три «E», а не шесть. Шесть — запись CLDR для короткой формы, её понимает
+      ICU, но не java.time: DateTimeFormatter.ofPattern отказывается разбирать больше
+      пяти букв подряд и валит отрисовку карточки лекарства с IllegalArgumentException.
+      Найдено переносом экранных проверок на JVM (SKL-24): до него карточку не собирал
+      ни один прогон.
+    -->
+    <string name="date_pattern_weekday_short" translatable="false">EEE</string>
     <string name="date_pattern_weekday_full" translatable="false">EEEE</string>
     <string name="time_pattern" translatable="false">HH:mm</string>
 </resources>

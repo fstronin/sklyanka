@@ -57,6 +57,10 @@ gradlePlugin {
             id = "sklyanka.project.checks"
             implementationClass = "ru.heuri.sklyanka.gradle.ProjectChecksConventionPlugin"
         }
+        register("screenTests") {
+            id = "sklyanka.screen.tests"
+            implementationClass = "ru.heuri.sklyanka.gradle.ScreenTestsConventionPlugin"
+        }
         register("hilt") {
             id = "sklyanka.hilt"
             implementationClass = "ru.heuri.sklyanka.gradle.HiltConventionPlugin"

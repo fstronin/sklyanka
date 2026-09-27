@@ -34,6 +34,21 @@ androidxTestJunit = "1.2.1"
 androidxTestCore = "1.6.1"
 androidxTestRunner = "1.6.2"
 cucumber = "7.20.1"
+# Стенд экранных проверок на JVM (SKL-24): имитация Android для Compose-тестов.
+# Версия задаёт заодно координату android-all-instrumented ниже: Robolectric принимает
+# только тот снимок платформы, который знает сам, и подставлять его руками нельзя.
+robolectric = "4.17"
+# Снимок платформы API 35 для Robolectric 4.17: androidVersion 15, сборка 13954326,
+# предварительная инструментация версии 7. Объявлен зависимостью, а не скачиванием
+# из самого Robolectric: иначе версия платформы живёт вне каталога версий, и обещание
+# «версии одним местом» перестаёт быть правдой.
+robolectricAndroidAll = "15-robolectric-13954326-i7"
+# Снятие и сверка эталонных снимков поверх Robolectric (SKL-24).
+#
+# 1.60.0, а не последняя: начиная с 1.61.0 библиотека собирается Kotlin 2.3, и её
+# метаданные (mv=2.3.0) компилятор проекта (Kotlin 2.0.21, читает до 2.1.0) не понимает.
+# Поднимать Kotlin ради снимочного стенда — решение уровня проекта, а не этой задачи.
+roborazzi = "1.60.0"
 junitPlatform = "1.11.3"
 kotlinpoet = "1.18.1"
 
@@ -93,8 +108,20 @@ androidx-test-junit = { module = "androidx.test.ext:junit", version.ref = "andro
 androidx-test-core = { module = "androidx.test:core-ktx", version.ref = "androidxTestCore" }
 androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidxTestRunner" }
 
+# --- Экранный и снимочный стенд на JVM (SKL-24) ---
+#
+# Robolectric даёт Compose-тестам настоящий Context, настоящие ресурсы и настоящую
+# композицию в обычной задаче test. Roborazzi поверх него снимает и сверяет снимки.
+# Ни одна из этих зависимостей не приходит в продуктовый classpath: они объявляются
+# только в тестовых конфигурациях, и проверка состава артефакта это подтверждает.
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
+robolectric-android-all = { module = "org.robolectric:android-all-instrumented", version.ref = "robolectricAndroidAll" }
+roborazzi = { module = "io.github.takahirom.roborazzi:roborazzi", version.ref = "roborazzi" }
+roborazzi-compose = { module = "io.github.takahirom.roborazzi:roborazzi-compose", version.ref = "roborazzi" }
+
 # --- Сценарный прогон ---
 cucumber-java = { module = "io.cucumber:cucumber-java", version.ref = "cucumber" }
+cucumber-core = { module = "io.cucumber:cucumber-core", version.ref = "cucumber" }
 cucumber-junit-platform-engine = { module = "io.cucumber:cucumber-junit-platform-engine", version.ref = "cucumber" }
 # Фабрика объектов Cucumber: один экземпляр состояния сценария на все классы шагов (SKL-23).
 cucumber-picocontainer = { module = "io.cucumber:cucumber-picocontainer", version.ref = "cucumber" }

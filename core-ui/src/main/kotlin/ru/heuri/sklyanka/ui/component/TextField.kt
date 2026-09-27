@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -88,21 +90,16 @@ fun SklyankaTextField(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Small),
         ) {
-            Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
-                BasicTextField(
+            Box(
+                modifier = Modifier.weight(1f).fillMaxHeight(),
+                contentAlignment = Alignment.CenterStart,
+            ) {
+                FieldInput(
                     value = value,
                     onValueChange = onValueChange,
-                    enabled = state != TextFieldState.Disabled,
+                    state = state,
+                    numeric = numeric,
                     interactionSource = interactionSource,
-                    textStyle = SklyankaType.Body.copy(
-                        color = if (state == TextFieldState.Disabled) colors.textDisabled else colors.text,
-                    ),
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = if (numeric) KeyboardType.Number else KeyboardType.Text,
-                    ),
-                    cursorBrush = SolidColor(colors.accent),
-                    singleLine = true,
-                    modifier = Modifier.testTag(TAG_TEXT_FIELD_INPUT),
                 )
                 if (value.isEmpty() && hint.isNotEmpty()) {
                     Text(text = hint, style = SklyankaType.Body, color = colors.textDisabled)
@@ -123,6 +120,43 @@ fun SklyankaTextField(
             )
         }
     }
+}
+
+/**
+ * Строка ввода внутри поля.
+ *
+ * Занимает всю высоту поля, а не высоту строки текста. Без этого нажимаемой была
+ * строка в 20 dp внутри поля высотой 50 dp — то есть НФТ-29 нарушался ровно там, где
+ * человек вводит дозу. Найдено переносом экранных проверок на JVM (SKL-24):
+ * до него каталог компонентов не собирал ни один прогон.
+ */
+@Composable
+private fun FieldInput(
+    value: String,
+    onValueChange: (String) -> Unit,
+    state: TextFieldState,
+    numeric: Boolean,
+    interactionSource: MutableInteractionSource,
+) {
+    val colors = SklyankaTheme.colors
+    BasicTextField(
+        value = value,
+        onValueChange = onValueChange,
+        enabled = state != TextFieldState.Disabled,
+        interactionSource = interactionSource,
+        textStyle = SklyankaType.Body.copy(
+            color = if (state == TextFieldState.Disabled) colors.textDisabled else colors.text,
+        ),
+        keyboardOptions = KeyboardOptions(
+            keyboardType = if (numeric) KeyboardType.Number else KeyboardType.Text,
+        ),
+        cursorBrush = SolidColor(colors.accent),
+        singleLine = true,
+        modifier = Modifier.fillMaxSize().testTag(TAG_TEXT_FIELD_INPUT),
+        decorationBox = { inner ->
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.CenterStart) { inner() }
+        },
+    )
 }
 
 /**
@@ -157,7 +191,10 @@ fun SklyankaNumberField(
     val colors = SklyankaTheme.colors
     Box(
         modifier = modifier
-            .height(SklyankaSizes.CompactFieldHeight)
+            // Нижняя граница, а не точная высота: макет рисует поле в 42 dp, а НФТ-29
+            // требует 44 по обеим сторонам, и конфликт разрешается в пользу цели
+            // нажатия, а не плотности вёрстки (см. `Modifier.minTouchTarget`, ОВ-17).
+            .height(SklyankaSizes.CompactFieldHeight.coerceAtLeast(SklyankaSizes.MinTouchTarget))
             .background(colors.background, SklyankaShapes.Compact)
             .border(SklyankaSizes.BorderThin, colors.line, SklyankaShapes.Compact)
             .padding(horizontal = SklyankaSizes.BannerPaddingVertical)
@@ -174,6 +211,13 @@ fun SklyankaNumberField(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             cursorBrush = SolidColor(colors.accent),
             singleLine = true,
+            // Та же причина, что и у обычного поля: нажатие принимает всё поле.
+            modifier = Modifier.fillMaxHeight(),
+            decorationBox = { inner ->
+                Box(modifier = Modifier.fillMaxHeight(), contentAlignment = Alignment.Center) {
+                    inner()
+                }
+            },
         )
     }
 }

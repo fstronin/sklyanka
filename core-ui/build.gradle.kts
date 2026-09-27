@@ -6,6 +6,9 @@
 plugins {
     id("sklyanka.android.library")
     id("sklyanka.android.compose")
+    // Экранные проверки и эталонные снимки идут на JVM (SKL-24): каталог состояний
+    // дизайн-системы — первое, что обязано быть защищено снимком.
+    id("sklyanka.screen.tests")
 }
 
 android {
@@ -18,4 +21,8 @@ dependencies {
     // Расчёт контраста, тонирование и полнота наборов проверяются на JVM: эмулятор
     // для арифметики по токенам не нужен, а без эмулятора он и недоступен (TDD §11.1).
     testImplementation(libs.junit4)
+    // Экранный прогон сценарной приёмки (SKL-24, ОВ-74): Cucumber запускается изнутри
+    // модульного теста под Robolectric, поэтому шаги видят собранный компонент.
+    testDebugImplementation(libs.cucumber.java)
+    testDebugImplementation(libs.cucumber.core)
 }

@@ -112,6 +112,9 @@ class ProjectChecksConventionPlugin : Plugin<Project> {
                 ":acceptance:acceptanceRun",
                 ":acceptance:acceptanceChecklist",
                 ":acceptance:verifyAcceptanceSteps",
+                // Сценарии, исполняемые экранным прогоном на JVM, печатаются списком:
+                // исключение из сценарного прогона обязано оставаться видимым (SKL-24, ОВ-78).
+                ":acceptance:acceptanceScreenList",
             )
         }
         }

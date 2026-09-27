@@ -6,6 +6,8 @@
 plugins {
     id("sklyanka.android.application")
     id("sklyanka.android.compose")
+    // Экранная проверка и эталонный снимок заставки идут на JVM (SKL-24).
+    id("sklyanka.screen.tests")
     id("sklyanka.hilt")
     id("sklyanka.release.signing")
     id("sklyanka.artifact.checks")

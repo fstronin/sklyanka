@@ -120,7 +120,7 @@ val acceptanceRun by tasks.registering {
                     "--glue",
                     "ru.heuri.sklyanka.acceptance",
                     "--tags",
-                    "not @manual and not @slow",
+                    automaticTags,
                     "--plugin",
                     "progress",
                     "--snippets",
@@ -176,7 +176,7 @@ val acceptanceRun by tasks.registering {
         }
 
         val report = buildString {
-            appendLine("Acceptance run over $featuresPath (tags: not @manual and not @slow)")
+            appendLine("Acceptance run over $featuresPath (tags: $automaticTags)")
             lines.forEach { appendLine(it) }
         }
         reportDir.resolve("summary.txt").writeText(report)
@@ -258,6 +258,54 @@ val acceptanceChecklist by tasks.registering {
         }
         reportDir.resolve("manual-checklist.txt").writeText(checklist.toString())
         checklist.toString().trim().lines().forEach { logger.lifecycle(it) }
+    }
+}
+
+/**
+ * Сценарии, исполняемые экранным прогоном на JVM, а не этим (SKL-24, ОВ-74, ОВ-78).
+ *
+ * Модуль `acceptance` — чистый Kotlin/JVM по ADR-0007, и шага, обращающегося к
+ * собранному экрану, в нём написать нечем. Раньше такие сценарии были неотличимы от
+ * «шаг ещё не написан»: и то и другое печаталось как `undefined`. Тег `@screen`
+ * различает их, а эта задача печатает их списком — чтобы исключение из прогона
+ * оставалось видимым, а не превращалось в способ спрятать сценарий.
+ *
+ * Сами они исполняются в модульных тестах модуля с экранами (см. `ScreenAcceptanceTest`).
+ */
+val acceptanceScreenList by tasks.registering {
+    group = "verification"
+    description = "Prints the @screen scenarios: they run on the screen stand, not in this run."
+    dependsOn(tasks.named("testClasses"))
+    inputs.dir(rootProject.file(featuresPath))
+    inputs.files(sourceSets.test.get().output)
+    outputs.dir(acceptanceReports)
+
+    doLast {
+        val reportDir = acceptanceReports.get().asFile.also { it.mkdirs() }
+        val listing = StringBuilder(
+            "Scenarios executed by the screen stand on the JVM (@screen), not by this run\n",
+        )
+        featureTargets().forEach { target ->
+            val output = runCucumber(
+                target,
+                listOf(
+                    "--glue",
+                    "ru.heuri.sklyanka.acceptance",
+                    "--tags",
+                    screenTag,
+                    "--dry-run",
+                    "--plugin",
+                    "pretty",
+                ),
+            )
+            val scenarios = scenarioLine.findAll(output).map { it.groupValues[1].trim() }.toList()
+            if (scenarios.isNotEmpty()) {
+                listing.appendLine("  ${target.name}:")
+                scenarios.forEach { listing.appendLine("    - $it") }
+            }
+        }
+        reportDir.resolve("screen-scenarios.txt").writeText(listing.toString())
+        listing.toString().trim().lines().forEach { logger.lifecycle(it) }
     }
 }
 
@@ -352,6 +400,17 @@ tasks.test {
 }
 
 val ansiCodes = Regex("\u001B\\[[;\\d]*m")
+
+/**
+ * Тег сценариев, исполняемых экранным прогоном на JVM (SKL-24, ОВ-74).
+ *
+ * Исключение из автоматического прогона, а не сокрытие: их печатает
+ * задача acceptanceScreenList, и их исполняет ScreenAcceptanceTest.
+ */
+val screenTag = "@screen"
+
+/** Что берёт автоматический прогон: всё, кроме ручного, медленного и экранного. */
+val automaticTags = "not @manual and not @slow and not $screenTag"
 
 /** Строка итога реестра шагов: с неё начинается то, что стоит печатать в лог. */
 val dictionarySummary = "Словарь шагов:"

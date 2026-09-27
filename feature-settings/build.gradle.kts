@@ -7,6 +7,8 @@
 plugins {
     id("sklyanka.android.library")
     id("sklyanka.android.compose")
+    // Экранные проверки и эталонные снимки экрана переноса данных идут на JVM (SKL-24).
+    id("sklyanka.screen.tests")
     id("sklyanka.hilt")
 }
 

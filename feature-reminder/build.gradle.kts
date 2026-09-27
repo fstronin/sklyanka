@@ -8,6 +8,8 @@
 plugins {
     id("sklyanka.android.library")
     id("sklyanka.android.compose")
+    // Экранные проверки и эталонный снимок карточки напоминания идут на JVM (SKL-24).
+    id("sklyanka.screen.tests")
     id("sklyanka.hilt")
 }
 

@@ -7,6 +7,8 @@
 plugins {
     id("sklyanka.android.library")
     id("sklyanka.android.compose")
+    // Экранные проверки и эталонные снимки экранов лекарств идут на JVM (SKL-24).
+    id("sklyanka.screen.tests")
     id("sklyanka.hilt")
 }
 

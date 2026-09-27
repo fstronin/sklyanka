@@ -16,6 +16,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.style.TextOverflow
 import ru.heuri.sklyanka.domain.medication.TrailingLine
 import ru.heuri.sklyanka.feature.meds.ChevronGlyph
 import ru.heuri.sklyanka.feature.meds.FormPlate
@@ -80,13 +81,29 @@ internal fun MedicationCard(
     }
 }
 
+/**
+ * Название и, у карточки «по потребности», серый чип рядом с ним.
+ *
+ * Название ужимается, чип — нет. Без `weight(fill = false)` строка названия забирает
+ * всю ширину первой, чипу достаётся нулевая, и его подпись разворачивается в столбик
+ * по одной букве, раздувая карточку втрое. В макете это выражено `min-width: 0`
+ * на колонке (`design/screens/Meds.dc.html`). Найдено переносом экранных проверок
+ * на JVM (SKL-24): до него карточку «по потребности» не собирал ни один прогон.
+ */
 @Composable
 private fun TitleLine(card: MedicationCardUi) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Small),
     ) {
-        Text(text = card.title, style = SklyankaType.BodyStrong, color = SklyankaTheme.colors.text)
+        Text(
+            text = card.title,
+            style = SklyankaType.BodyStrong,
+            color = SklyankaTheme.colors.text,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f, fill = false),
+        )
         if (card.asNeeded != null) {
             SklyankaChip(
                 text = stringResource(R.string.meds_as_needed_chip),
