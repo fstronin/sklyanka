@@ -125,17 +125,19 @@ object SourceStepScan {
         val brackets = Brackets()
         for (index in from until lines.size) {
             for (character in lines[index]) {
-                if (brackets.closes(character)) return text.toString()
-                if (brackets.inside) text.append(character)
+                when (brackets.consume(character)) {
+                    Reading.END -> return text.toString()
+                    Reading.TAKE -> text.append(character)
+                    Reading.SKIP -> Unit
+                }
             }
-            if (brackets.inside) {
-                text.append('\n')
-            } else if (brackets.opened) {
-                break
-            }
+            if (brackets.open) text.append('\n') else if (brackets.started) break
         }
         return text.toString()
     }
+
+    /** Что делать с прочитанным символом. */
+    private enum class Reading { SKIP, TAKE, END }
 
     /**
      * Счётчик круглых скобок, не считающий скобки внутри строкового литерала.
@@ -150,31 +152,48 @@ object SourceStepScan {
         private var escaped = false
 
         /** Открывающая скобка уже встречена. */
-        var opened: Boolean = false
+        var started: Boolean = false
             private set
 
-        /** Мы внутри аргумента: этот символ идёт в текст. */
-        val inside: Boolean get() = depth >= 1
+        /** Мы внутри аргумента. */
+        val open: Boolean get() = depth >= 1
 
-        /** Этот символ закрывает аргумент: дальше читать нечего. */
-        fun closes(character: Char): Boolean {
-            when {
-                escaped -> escaped = false
-                inString && character == '\\' -> escaped = true
-                character == '"' -> inString = !inString
-                inString -> Unit
-                character == '(' -> {
+        fun consume(character: Char): Reading {
+            if (escaped) {
+                escaped = false
+                return taking()
+            }
+            if (inString) return insideString(character)
+            return outsideString(character)
+        }
+
+        private fun insideString(character: Char): Reading {
+            when (character) {
+                '\\' -> escaped = true
+                '"' -> inString = false
+            }
+            return taking()
+        }
+
+        private fun outsideString(character: Char): Reading {
+            when (character) {
+                '"' -> inString = true
+                '(' -> {
                     depth++
-                    opened = true
+                    started = true
+                    // Сама открывающая скобка аргументом не является.
+                    if (depth == 1) return Reading.SKIP
                 }
 
-                character == ')' -> {
+                ')' -> {
                     depth--
-                    if (depth == 0) return true
+                    if (depth == 0) return Reading.END
                 }
             }
-            return false
+            return taking()
         }
+
+        private fun taking(): Reading = if (open) Reading.TAKE else Reading.SKIP
     }
 
     /**
