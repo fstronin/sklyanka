@@ -5,12 +5,12 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import ru.heuri.sklyanka.data.assertRefused
 import ru.heuri.sklyanka.domain.model.IntakeSource
 import ru.heuri.sklyanka.domain.model.IntakeStatus
 import ru.heuri.sklyanka.domain.model.ScheduleMode
@@ -129,10 +129,8 @@ class IntakeDaoTest {
 
     @Test
     fun anIntakeWithoutItsMedicationIsRejected() = runTest {
-        assertThrows(SQLiteConstraintException::class.java) {
-            runTest {
-                db.intakes.insertAll(listOf(TestData.scheduledIntake(id = OWN_INTAKE, medicationId = MISSING_ID)))
-            }
+        assertRefused<SQLiteConstraintException> {
+            db.intakes.insertAll(listOf(TestData.scheduledIntake(id = OWN_INTAKE, medicationId = MISSING_ID)))
         }
     }
 

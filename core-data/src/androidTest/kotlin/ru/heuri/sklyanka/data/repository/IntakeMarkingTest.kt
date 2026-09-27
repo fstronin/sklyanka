@@ -4,12 +4,12 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import ru.heuri.sklyanka.data.assertRefused
 import ru.heuri.sklyanka.data.log.RoomOperationLog
 import ru.heuri.sklyanka.data.room.DatabaseTestRule
 import ru.heuri.sklyanka.data.room.SklyankaTransactor
@@ -94,12 +94,10 @@ class IntakeMarkingTest {
         // Отказ хранилища (НФТ-11) в контейнере не воспроизвести — SQLiteFullException
         // требует реально кончившегося места. Проверяется то же свойство транзакции:
         // исключение на любом шаге откатывает всё, что было записано до него.
-        assertThrows(IllegalStateException::class.java) {
-            runTest {
-                transactor.inTransaction {
-                    intakes.markIfPending(INTAKE_ID, IntakeStatus.TAKEN, IntakeSource.PHONE)
-                    error("storage refused in the middle")
-                }
+        assertRefused<IllegalStateException> {
+            transactor.inTransaction {
+                intakes.markIfPending(INTAKE_ID, IntakeStatus.TAKEN, IntakeSource.PHONE)
+                error("storage refused in the middle")
             }
         }
 

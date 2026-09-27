@@ -3,11 +3,11 @@ package ru.heuri.sklyanka.data.repository
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertThrows
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import ru.heuri.sklyanka.data.assertRefused
 import ru.heuri.sklyanka.data.room.DatabaseTestRule
 import ru.heuri.sklyanka.data.room.SklyankaTransactor
 import ru.heuri.sklyanka.data.room.TestData
@@ -42,14 +42,12 @@ class ReplaceAllDataTest {
 
     @Test
     fun anInterruptedReplacementLeavesTheOriginalState() = runTest {
-        assertThrows(IllegalStateException::class.java) {
-            runTest {
-                transactor.inTransaction {
-                    db.intakes.deleteAll()
-                    db.medications.deleteAll()
-                    db.profiles.deleteAll()
-                    error("the transfer file ended in the middle")
-                }
+        assertRefused<IllegalStateException> {
+            transactor.inTransaction {
+                db.intakes.deleteAll()
+                db.medications.deleteAll()
+                db.profiles.deleteAll()
+                error("the transfer file ended in the middle")
             }
         }
 

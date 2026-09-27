@@ -1,28 +1,21 @@
 package ru.heuri.sklyanka.data.repository
 
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.preferencesDataStoreFile
-import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
-import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
-import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import ru.heuri.sklyanka.data.assertRefused
 import ru.heuri.sklyanka.data.log.RoomOperationLog
 import ru.heuri.sklyanka.data.prefs.ActiveProfileDataStore
+import ru.heuri.sklyanka.data.prefs.SettingsStoreRule
 import ru.heuri.sklyanka.data.room.DatabaseTestRule
 import ru.heuri.sklyanka.data.room.TestData
 import ru.heuri.sklyanka.domain.log.OpEvent
 import ru.heuri.sklyanka.domain.time.FixedTimeSource
-import java.io.File
 import java.time.Instant
 import java.time.ZoneId
 
@@ -41,22 +34,11 @@ class ActiveProfileTest {
     @get:Rule
     val db = DatabaseTestRule()
 
+    @get:Rule
+    val settings = SettingsStoreRule(SETTINGS_NAME)
+
     private val clock = FixedTimeSource(Instant.parse("2026-09-25T05:00:00Z"), ZoneId.of("Europe/Moscow"))
-    private lateinit var settingsFile: File
-    private lateinit var preferences: DataStore<Preferences>
-
-    @Before
-    fun createSettings() {
-        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
-        settingsFile = context.preferencesDataStoreFile(SETTINGS_NAME)
-        settingsFile.delete()
-        preferences = PreferenceDataStoreFactory.create { settingsFile }
-    }
-
-    @After
-    fun removeSettings() {
-        settingsFile.delete()
-    }
+    private val preferences get() = settings.preferences
 
     @Test
     fun theFirstRunCreatesExactlyOneOwnerProfile() = runTest {
@@ -89,7 +71,7 @@ class ActiveProfileTest {
 
         // Новый объект поверх того же файла настроек — то же, что новый запуск процесса.
         val afterRestart = ActiveProfileRepositoryImpl(
-            ActiveProfileDataStore(PreferenceDataStoreFactory.create { settingsFile }),
+            ActiveProfileDataStore(settings.restart()),
             db.profiles,
             log,
         )
@@ -125,7 +107,7 @@ class ActiveProfileTest {
         val switchesBefore = log.recent(RECENT).count { it.event == OpEvent.PROFILE_SWITCHED }
 
         val afterRestart = ActiveProfileRepositoryImpl(
-            ActiveProfileDataStore(PreferenceDataStoreFactory.create { settingsFile }),
+            ActiveProfileDataStore(settings.restart()),
             db.profiles,
             log,
         )
@@ -143,7 +125,7 @@ class ActiveProfileTest {
             RoomOperationLog(db.opLog, clock),
         )
 
-        assertThrows(IllegalStateException::class.java) { runTest { active.current() } }
+        assertRefused<IllegalStateException> { active.current() }
     }
 
     private companion object {

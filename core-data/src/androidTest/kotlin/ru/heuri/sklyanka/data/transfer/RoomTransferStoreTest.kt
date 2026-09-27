@@ -4,12 +4,12 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import ru.heuri.sklyanka.data.assertRefused
 import ru.heuri.sklyanka.data.room.DatabaseTestRule
 import ru.heuri.sklyanka.data.room.SklyankaTransactor
 import ru.heuri.sklyanka.data.room.TestData
@@ -115,7 +115,7 @@ class RoomTransferStoreTest {
             intakesToInsert = listOf(fileIntake().copy(medicationId = "nowhere")),
         )
 
-        assertThrows(Exception::class.java) { runTest { store.apply(broken) } }
+        assertRefused<Exception> { store.apply(broken) }
 
         val state = store.readAll()
         assertEquals(1, state.profiles.size)
@@ -166,7 +166,7 @@ class RoomTransferStoreTest {
         }
         val plan: TransferPlan = BuildTransferPlan(ids).replaceAll(withoutSelf)
 
-        assertThrows(Exception::class.java) { runTest { store.apply(plan) } }
+        assertRefused<Exception> { store.apply(plan) }
 
         assertNotNull("INV-1 must hold after a rollback", db.profiles.getSelf())
     }

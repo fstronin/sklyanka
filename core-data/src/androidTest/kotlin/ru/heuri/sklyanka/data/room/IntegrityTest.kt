@@ -4,10 +4,10 @@ import android.database.sqlite.SQLiteConstraintException
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertThrows
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import ru.heuri.sklyanka.data.assertRefused
 
 /**
  * Ссылочная целостность и запрет удаления.
@@ -27,19 +27,15 @@ class IntegrityTest {
 
     @Test
     fun aMedicationWithoutItsProfileIsRejected() = runTest {
-        assertThrows(SQLiteConstraintException::class.java) {
-            runTest { db.medications.upsert(TestData.medication(profileId = MISSING_ID)) }
-        }
+        assertRefused<SQLiteConstraintException> { db.medications.upsert(TestData.medication(profileId = MISSING_ID)) }
     }
 
     @Test
     fun anIntakeWithoutItsMedicationIsRejected() = runTest {
         db.profiles.insert(TestData.owner())
 
-        assertThrows(SQLiteConstraintException::class.java) {
-            runTest {
-                db.intakes.insertAll(listOf(TestData.scheduledIntake(id = INTAKE_ID, medicationId = MISSING_ID)))
-            }
+        assertRefused<SQLiteConstraintException> {
+            db.intakes.insertAll(listOf(TestData.scheduledIntake(id = INTAKE_ID, medicationId = MISSING_ID)))
         }
     }
 
@@ -48,12 +44,10 @@ class IntegrityTest {
         db.profiles.insert(TestData.owner())
         db.medications.upsert(TestData.medication())
 
-        assertThrows(SQLiteConstraintException::class.java) {
-            runTest {
-                db.intakes.insertAll(
-                    listOf(TestData.scheduledIntake(id = INTAKE_ID).copy(actorProfileId = MISSING_ID)),
-                )
-            }
+        assertRefused<SQLiteConstraintException> {
+            db.intakes.insertAll(
+                listOf(TestData.scheduledIntake(id = INTAKE_ID).copy(actorProfileId = MISSING_ID)),
+            )
         }
     }
 
@@ -61,8 +55,8 @@ class IntegrityTest {
     fun aSecondOwnerProfileIsRejectedByTheUniqueSlot() = runTest {
         db.profiles.insert(TestData.owner())
 
-        assertThrows(SQLiteConstraintException::class.java) {
-            runTest { db.profiles.insert(TestData.relative().copy(isSelf = true, selfSlot = "self")) }
+        assertRefused<SQLiteConstraintException> {
+            db.profiles.insert(TestData.relative().copy(isSelf = true, selfSlot = "self"))
         }
         assertEquals(1, db.profiles.count())
     }
@@ -72,9 +66,7 @@ class IntegrityTest {
         db.profiles.insert(TestData.owner())
         db.medications.upsert(TestData.medication())
 
-        assertThrows(SQLiteConstraintException::class.java) {
-            runTest { db.profiles.deleteAll() }
-        }
+        assertRefused<SQLiteConstraintException> { db.profiles.deleteAll() }
         assertEquals(1, db.profiles.count())
     }
 
@@ -84,9 +76,7 @@ class IntegrityTest {
         db.medications.upsert(TestData.medication())
         db.intakes.insertAll(listOf(TestData.scheduledIntake(id = INTAKE_ID)))
 
-        assertThrows(SQLiteConstraintException::class.java) {
-            runTest { db.medications.deleteAll() }
-        }
+        assertRefused<SQLiteConstraintException> { db.medications.deleteAll() }
         assertEquals(1, db.medications.countInProfile(TestData.OWNER_ID))
     }
 
