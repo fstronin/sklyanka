@@ -68,6 +68,15 @@ skl_seed_direct() {
     skl_adb -s "$serial" shell "chown $uid:$uid /data/data/$SKL_APP_ID/databases/${SKL_APP_DB}*"
     skl_adb -s "$serial" shell "restorecon -R /data/data/$SKL_APP_ID/databases" >/dev/null 2>&1 || true
 
+    # Разрешение на уведомления: `pm clear` между прогонами снимает его молча, и тогда
+    # нагрузка отрабатывает вхолостую — будильники срабатывают, показы подавляются,
+    # и час прогона уходит впустую. Проверяется здесь, а не после прогона.
+    if ! skl_adb -s "$serial" shell "dumpsys package $SKL_APP_ID" |
+        grep -q "POST_NOTIFICATIONS: granted=true"; then
+        skl_warn "разрешение на уведомления не выдано: показы будут подавлены (НАП-15)"
+        skl_warn "выдать: adb -s $serial shell pm grant $SKL_APP_ID android.permission.POST_NOTIFICATIONS"
+    fi
+
     # Запуск приложения: окно пересобирает продукт, и будильники ставит он.
     skl_adb -s "$serial" shell "am start -n $SKL_APP_ID/$SKL_APP_ID.MainActivity" >/dev/null
     sleep 8
