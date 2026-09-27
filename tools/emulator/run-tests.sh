@@ -42,7 +42,7 @@ esac
 
 results="$(skl_results_dir "$api")"
 log_file="$results/tests-$group.log"
-skl_log "прогон группы «$group» на $(skl_serial "$api"); лог: $log_file"
+skl_log "прогон группы «${group}» на $(skl_serial "$api"); лог: $log_file"
 
 status=0
 # Пустой фильтр (группа all) разворачивается через ${name[@]+...}: bash 3.2 — а это
@@ -62,6 +62,6 @@ if [[ -d "$xml_dir" ]]; then
 fi
 
 if (( status != 0 )); then
-    skl_warn "группа «$group» не прошла; разбор — в отчётах выше"
+    skl_warn "группа «${group}» не прошла; разбор — в отчётах выше"
 fi
 exit "$status"
