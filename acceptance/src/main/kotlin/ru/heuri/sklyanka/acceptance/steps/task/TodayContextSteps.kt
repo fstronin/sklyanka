@@ -49,6 +49,11 @@ class TodayContextSteps(private val world: AcceptanceWorld) {
                 world.medications.update(name) { it.copy(doseAmount = RussianDates.amount(leadingNumber(dose))) }
             }
         }
+        // Приёмы порождаются здесь, в момент Предыстории, а не при сборке экрана.
+        // Окно генерации начинается «сейчас» (SKL-06), и планировщик, запущенный после
+        // того как сценарий перевёл часы на 14:05, приёма на 14:00 уже не создаёт —
+        // сутки на экране оказались бы без него.
+        world.plan()
     }
 
     @Given("^у профиля есть лекарство «([^»]+)» по потребности, не чаще (\\d+) раз в сутки$")
@@ -60,6 +65,12 @@ class TodayContextSteps(private val world: AcceptanceWorld) {
             mode = ScheduleMode.PRN,
             maxPerDay = limit,
         )
+    }
+
+    /** Приёмы суток по расписанию Предыстории: порождает их планировщик, а не шаг. */
+    @Given("^приёмы суток запланированы$")
+    fun theIntakesOfTheDayArePlanned() {
+        world.plan()
     }
 
     @Given("^приёмы на (\\d{2}:\\d{2}) отмечены принятыми$")

@@ -18,8 +18,9 @@ import ru.heuri.sklyanka.feature.today.TodayUiState
 internal object TodayStand {
 
     fun agenda(world: AcceptanceWorld): TodayAgenda {
-        // Приёмы порождает планировщик SKL-06, а не шаг: Предыстория называет расписание.
-        world.plan()
+        // Планировщик здесь не запускается намеренно: окно генерации начинается «сейчас»
+        // (SKL-06), и запуск после перевода часов вперёд не создал бы приёма, время
+        // которого уже прошло. Приёмы суток порождает Предыстория, в свой момент.
         val profileName = world.profiles.active
         val profile = world.profiles.get(profileName)
         val date = world.clock.today()
