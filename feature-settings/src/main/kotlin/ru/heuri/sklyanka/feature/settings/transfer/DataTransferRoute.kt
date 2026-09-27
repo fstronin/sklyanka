@@ -1,5 +1,6 @@
 package ru.heuri.sklyanka.feature.settings.transfer
 
+import android.content.ActivityNotFoundException
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
@@ -51,8 +52,8 @@ fun DataTransferRoute(
         DataTransferScreen(
             state = state,
             onIntent = viewModel::onIntent,
-            onSave = { saveLauncher.launch(state.exportFileName) },
-            onPickFile = { pickLauncher.launch(arrayOf(MIME_JSON, MIME_ANY)) },
+            onSave = { withPicker(viewModel) { saveLauncher.launch(state.exportFileName) } },
+            onPickFile = { withPicker(viewModel) { pickLauncher.launch(arrayOf(MIME_JSON, MIME_ANY)) } },
             onBack = onBack,
             modifier = modifier,
         )
@@ -103,6 +104,24 @@ fun DataTransferRoute(
                 modifier = modifier,
             )
         } ?: overview()
+    }
+}
+
+/**
+ * Запуск системного выбора файлов на устройстве, где его может не быть.
+ *
+ * Выбор места и файла — чужая активность, и на устройстве без неё `launch` бросает
+ * `ActivityNotFoundException` прямо в главный поток: приложение умирает по нажатию кнопки.
+ * Так и происходило на образе без системного выбора файлов — то есть отказ этот не
+ * умозрительный. Человеку вместо падения говорится, что выбрать файл нечем.
+ */
+private inline fun withPicker(viewModel: DataTransferViewModel, launch: () -> Unit) {
+    try {
+        launch()
+    } catch (_: ActivityNotFoundException) {
+        // Исключение — единственный способ узнать об отсутствии активности заранее:
+        // опрос PackageManager отвечает на другой вопрос и на части прошивок отвечает неверно.
+        viewModel.onIntent(TransferIntent.NoFilePicker)
     }
 }
 

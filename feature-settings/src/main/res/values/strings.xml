@@ -112,6 +112,7 @@
     <string name="transfer_error_no_space">Места недостаточно. Ничего не стёрто и не загружено.</string>
     <string name="transfer_error_not_applied">Загрузка не состоялась. Данные на устройстве не изменились.</string>
     <string name="transfer_error_export_failed">Выгрузка не состоялась. Готового файла в выбранном месте нет.</string>
+    <string name="transfer_error_no_file_picker">На устройстве нет приложения для выбора файлов. Перенос данных без него невозможен.</string>
     <string name="transfer_error_import_interrupted">Прошлая загрузка не состоялась. Данные на устройстве остались прежними.</string>
 
     <!-- Техническое пояснение одной строкой (ПЕР-28): что именно не так, без содержимого файла. -->

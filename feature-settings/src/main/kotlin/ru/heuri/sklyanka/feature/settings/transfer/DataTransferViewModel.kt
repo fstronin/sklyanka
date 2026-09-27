@@ -78,6 +78,8 @@ class DataTransferViewModel @Inject constructor(
             TransferIntent.Apply -> apply()
             TransferIntent.AcknowledgeReport -> reset()
             TransferIntent.DismissFailure -> mutable.update { it.copy(failure = null) }
+            TransferIntent.NoFilePicker ->
+                mutable.update { it.copy(busy = false, failure = TransferFailure.NoFilePicker) }
             TransferIntent.Leave -> reset()
         }
     }

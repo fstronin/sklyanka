@@ -37,6 +37,12 @@ sealed interface TransferIntent {
     data object DismissFailure : TransferIntent
 
     /**
+     * Системный выбор файлов не открылся: обрабатывать его отсутствие может только экран,
+     * потому что чужую активность запускает он.
+     */
+    data object NoFilePicker : TransferIntent
+
+    /**
      * Уход с экрана.
      *
      * Загрузка не переживает уход с экрана (ПЕР-17): состояние сбрасывается, и при

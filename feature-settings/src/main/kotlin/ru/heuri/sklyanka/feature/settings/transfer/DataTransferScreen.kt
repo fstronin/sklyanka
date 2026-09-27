@@ -186,6 +186,7 @@ private fun FailureBanner(failure: TransferFailure, onDismiss: () -> Unit) {
                 TransferFailure.NoSpace -> stringResource(R.string.transfer_error_no_space)
                 TransferFailure.ImportNotApplied -> stringResource(R.string.transfer_error_not_applied)
                 TransferFailure.ExportFailed -> stringResource(R.string.transfer_error_export_failed)
+                TransferFailure.NoFilePicker -> stringResource(R.string.transfer_error_no_file_picker)
             },
             actionLabel = stringResource(R.string.transfer_summary_cancel),
             onAction = onDismiss,
