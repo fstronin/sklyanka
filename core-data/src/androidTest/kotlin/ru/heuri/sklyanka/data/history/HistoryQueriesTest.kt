@@ -13,6 +13,7 @@ import ru.heuri.sklyanka.data.log.RoomOperationLog
 import ru.heuri.sklyanka.data.repository.HistoryRepositoryImpl
 import ru.heuri.sklyanka.data.room.DatabaseTestRule
 import ru.heuri.sklyanka.data.room.TestData
+import ru.heuri.sklyanka.domain.history.HistorySlice
 import ru.heuri.sklyanka.domain.history.HistoryWindow
 import ru.heuri.sklyanka.domain.model.ArchiveReason
 import ru.heuri.sklyanka.domain.model.IntakeStatus
@@ -22,6 +23,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.YearMonth
 import java.time.ZoneId
+import kotlin.system.measureTimeMillis
 
 /**
  * Выборка истории на настоящей базе: профиль, архив и границы периода (SKL-18).
@@ -154,8 +156,75 @@ class HistoryQueriesTest {
         assertTrue(slice.medications.isEmpty())
     }
 
+    /**
+     * НФТ-24, НФТ-25: год приёма при пяти лекарствах — и месяц по-прежнему выбирается
+     * запросом, а не обходом таблицы.
+     *
+     * Наполнение ровно то, что называет требование: 5 лекарств × 365 дней × 2 приёма =
+     * 3 650 записей. Месяц из них — 310 (5 × 31 × 2), и это подтверждает, что база
+     * отдаёт окно, а не всю историю, из которой расчёт потом выбирает нужное.
+     *
+     * Замер — причина, по которой задача не заводит хранимые месячные агрегаты
+     * (`docs/tasks/SKL-18/TDD.md §4`): четвёртая сущность, которую надо инвалидировать
+     * при каждой отметке, оправдана только не выдержанным бюджетом. Если бюджет
+     * однажды перестанет выдерживаться, решение выносится отдельной задачей с этим
+     * замером в обоснование, а не правкой по месту.
+     *
+     * Бюджет здесь жёстче НФТ-25: 300 мс требование даёт всему открытию экрана,
+     * включая расчёт и первую отрисовку, а выборка — только его первый шаг.
+     */
+    @Test
+    fun aYearOfHistoryStillGivesBackOneMonth() = runTest {
+        fillAYearOfFiveMedications()
+
+        var slice: HistorySlice? = null
+        val elapsed = measureTimeMillis {
+            slice = history.observe(TestData.OWNER_ID, SEPTEMBER).first()
+        }
+
+        val month = requireNotNull(slice).intakes.count { it.id.startsWith(YEAR_PREFIX) }
+        assertEquals(SEPTEMBER_RECORDS, month)
+        assertTrue("selecting the month of a year-sized history took $elapsed ms", elapsed < MONTH_QUERY_BUDGET_MILLIS)
+    }
+
+    /** Год приёма: пять лекарств по два приёма в сутки, 3 650 записей (НФТ-24). */
+    private suspend fun fillAYearOfFiveMedications() {
+        repeat(YEAR_MEDICATIONS) { index ->
+            db.medications.upsert(TestData.medication(id = yearMedicationId(index), name = "med-year-$index"))
+        }
+        val firstDay = LocalDate.of(2026, 1, 1)
+        val rows = (0 until YEAR_DAYS).flatMap { day ->
+            (0 until YEAR_MEDICATIONS).flatMap { index ->
+                YEAR_TIMES.map { hour ->
+                    TestData.scheduledIntake(
+                        id = "$YEAR_PREFIX-$index-$day-$hour",
+                        medicationId = yearMedicationId(index),
+                        scheduledAt = firstDay.plusDays(day.toLong()).atTime(hour, 0),
+                        status = IntakeStatus.TAKEN,
+                        actedAt = 0L,
+                        source = "PHONE",
+                    )
+                }
+            }
+        }
+        db.intakes.insertAll(rows)
+    }
+
+    private fun yearMedicationId(index: Int) = "77777777-7777-4777-8777-77777777777$index"
+
     private companion object {
         const val ARCHIVED_MEDICATION_ID = "66666666-6666-4666-8666-666666666666"
         val SEPTEMBER: HistoryWindow = HistoryWindow.of(YearMonth.of(2026, 9))
+
+        const val YEAR_PREFIX = "year"
+        const val YEAR_MEDICATIONS = 5
+        const val YEAR_DAYS = 365
+        val YEAR_TIMES = listOf(8, 20)
+
+        /** 5 лекарств × 31 день сентября × 2 приёма. */
+        const val SEPTEMBER_RECORDS = 310
+
+        /** Выборка месяца — первый шаг из трёхсот миллисекунд НФТ-25, а не все они. */
+        const val MONTH_QUERY_BUDGET_MILLIS = 150
     }
 }

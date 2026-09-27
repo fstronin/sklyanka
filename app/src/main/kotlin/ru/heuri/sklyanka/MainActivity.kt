@@ -17,18 +17,28 @@ import kotlinx.coroutines.launch
 import ru.heuri.sklyanka.domain.onboarding.OnboardingSource
 import ru.heuri.sklyanka.domain.onboarding.ShouldShowOnboardingUseCase
 import ru.heuri.sklyanka.domain.profile.ProfileContextProvider
+import ru.heuri.sklyanka.feature.history.HistoryViewModel
 import ru.heuri.sklyanka.feature.meds.archive.ArchiveViewModel
 import ru.heuri.sklyanka.feature.meds.card.MedicationCardViewModel
 import ru.heuri.sklyanka.feature.meds.form.MedicationFormViewModel
 import ru.heuri.sklyanka.feature.meds.list.MedicationListViewModel
 import ru.heuri.sklyanka.feature.onboarding.OnboardingViewModel
+import ru.heuri.sklyanka.feature.onboarding.PermissionsActivity
 import ru.heuri.sklyanka.feature.onboarding.PermissionsRoute
+import ru.heuri.sklyanka.feature.reminder.DiagnosticsActivity
+import ru.heuri.sklyanka.feature.settings.SettingsNavigation
+import ru.heuri.sklyanka.feature.settings.SettingsRoute
+import ru.heuri.sklyanka.feature.settings.SettingsViewModel
+import ru.heuri.sklyanka.feature.settings.transfer.DataTransferViewModel
 import ru.heuri.sklyanka.feature.today.TodayNavigation
 import ru.heuri.sklyanka.feature.today.TodayRoute
 import ru.heuri.sklyanka.feature.today.TodayViewModel
 import ru.heuri.sklyanka.navigation.MedsDestination
 import ru.heuri.sklyanka.navigation.MedsSection
 import ru.heuri.sklyanka.navigation.MedsViewModels
+import ru.heuri.sklyanka.navigation.RootTab
+import ru.heuri.sklyanka.navigation.SettingsDestination
+import ru.heuri.sklyanka.navigation.SettingsSection
 import ru.heuri.sklyanka.platform.startup.StartupRouter
 import ru.heuri.sklyanka.startup.SplashScreen
 import ru.heuri.sklyanka.startup.StartDestination
@@ -89,6 +99,9 @@ class MainActivity : ComponentActivity() {
     private val medsForm: MedicationFormViewModel by viewModels()
     private val medCard: MedicationCardViewModel by viewModels()
     private val archive: ArchiveViewModel by viewModels()
+    private val settings: SettingsViewModel by viewModels()
+    private val history: HistoryViewModel by viewModels()
+    private val transfer: DataTransferViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val splash = installSplashScreen()
@@ -164,24 +177,77 @@ class MainActivity : ComponentActivity() {
         // (НФТ-52): человек уходит выдавать разрешение в системные настройки и возвращается,
         // и карточка обязана измениться без перезахода (критерии приёмки 4 и 16).
         onboarding.refresh()
+        // То же и для настроек: состояние разрешений и связи с часами читается из системы
+        // при каждом возвращении на передний план, а не запоминается флагом (НФТ-52,
+        // критерий приёмки 6).
+        settings.refresh()
     }
 
     /**
-     * Корень приложения: экран «Сегодня» и раздел «Лекарства».
+     * Корень приложения: три вкладки нижней панели и экраны второго уровня.
      *
-     * Нижней панели на весь продукт пока нет — она принадлежит экрану «Сегодня», и переход
-     * «Лекарства» открывает раздел поверх, а не рядом. Настоящий граф на три вкладки
-     * появится вместе с переключением профиля (SKL-15).
+     * Граф собран здесь и только здесь: `feature-*` друг от друга не зависят, и решать,
+     * куда ведут переходы, обязан `app` (`ADR-0007`). Библиотека навигации не подключена —
+     * состояний семь, все внутри одной Activity.
      *
-     * `null` означает «человек на экране «Сегодня»»: ненулевое значение — это место, с
-     * которого раздел лекарств открывается.
+     * Раздел «Лекарства» и экраны второго уровня открываются **поверх** вкладки и возвращают
+     * туда, откуда открыты: место входа хранится ([RootTab], [HistoryOrigin]), а не
+     * угадывается по тому, какой экран был отрисован последним. Иначе человек, ушедший
+     * в лекарства из настроек, возвращался бы на «Сегодня».
+     *
+     * Диагностика напоминаний и экран разрешений — отдельные Activity (SKL-13, SKL-14),
+     * и в этот граф они не встраиваются: у них есть собственные точки входа — ярлык запуска
+     * и уведомление.
      */
     @Composable
     private fun Root() {
+        var tab by remember { mutableStateOf(RootTab.TODAY) }
         var meds by remember { mutableStateOf<MedsDestination?>(null) }
-        val destination = meds
-        if (destination == null) {
-            TodayRoute(
+        var section by remember { mutableStateOf<SettingsDestination?>(null) }
+        val medsDestination = meds
+        val secondLevel = section
+        when {
+            secondLevel != null -> SettingsSection(
+                destination = secondLevel,
+                history = history,
+                transfer = transfer,
+                onLeave = { section = null },
+                onOpenPermissions = { startActivity(PermissionsActivity.intentFor(this)) },
+            )
+
+            medsDestination != null -> MedsSection(
+                viewModels = MedsViewModels(
+                    list = medsList,
+                    form = medsForm,
+                    card = medCard,
+                    archive = archive,
+                ),
+                onLeaveSection = { meds = null },
+                initial = medsDestination,
+            )
+
+            tab == RootTab.SETTINGS -> SettingsRoute(
+                viewModel = settings,
+                navigation = SettingsNavigation(
+                    // Экран добавления профиля не зафиксирован (`ОВ-3`): строка есть,
+                    // потому что она есть в макете, а перехода за ней пока нет. Заглушка,
+                    // открывающая пустой экран, обещала бы больше, чем продукт умеет.
+                    addProfile = {},
+                    // Экран подключения часов — SKL-17. `null` означает «экрана нет»,
+                    // и строка часов остаётся состоянием связи, а не мнимым переходом.
+                    openWatchSetup = null,
+                    // Решение по `ОВ-48`: сначала диагностика — что именно не так, —
+                    // и только потом онбординг. Обратный порядок отправлял бы человека
+                    // проходить цепочку заново, не сказав ему, сломано ли что-нибудь.
+                    openDiagnostics = { startActivity(DiagnosticsActivity.intentFor(this)) },
+                    openHistory = { section = SettingsDestination.HISTORY },
+                    openDataTransfer = { section = SettingsDestination.TRANSFER },
+                    openToday = { tab = RootTab.TODAY },
+                    openMedications = { meds = MedsDestination.List },
+                ),
+            )
+
+            else -> TodayRoute(
                 viewModel = today,
                 navigation = TodayNavigation(
                     openMedicationCard = { id -> meds = MedsDestination.Card(id) },
@@ -190,18 +256,10 @@ class MainActivity : ComponentActivity() {
                     openMedicationStock = { id -> meds = MedsDestination.Card(id) },
                     addMedication = { meds = MedsDestination.NewMedication },
                     openMedicationList = { meds = MedsDestination.List },
+                    // Вкладка «Настройки» нижней панели и аватар профиля в шапке ведут
+                    // в одно место — шестерёнки в шапке нет (ПРФ-19, критерий приёмки 14).
+                    openSettings = { tab = RootTab.SETTINGS },
                 ),
-            )
-        } else {
-            MedsSection(
-                viewModels = MedsViewModels(
-                    list = medsList,
-                    form = medsForm,
-                    card = medCard,
-                    archive = archive,
-                ),
-                onLeaveSection = { meds = null },
-                initial = destination,
             )
         }
     }

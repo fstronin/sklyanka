@@ -43,4 +43,24 @@
         <item quantity="many">%1$d записей истории</item>
         <item quantity="other">%1$d записи истории</item>
     </plurals>
+
+    <!-- ===== Экран «Настройки» (SKL-20) ===== -->
+
+    <!-- Число лекарств в строке чужого профиля (ПРФ-7). -->
+    <plurals name="settings_profile_medications">
+        <item quantity="one">%1$d лекарство</item>
+        <item quantity="few">%1$d лекарства</item>
+        <item quantity="many">%1$d лекарств</item>
+        <item quantity="other">%1$d лекарства</item>
+    </plurals>
+
+    <!-- Интервал откладывания в строке «Отложить на». -->
+    <plurals name="settings_snooze_minutes">
+        <item quantity="one">%1$d минута</item>
+        <item quantity="few">%1$d минуты</item>
+        <item quantity="many">%1$d минут</item>
+        <item quantity="other">%1$d минуты</item>
+    </plurals>
+
 </resources>
+

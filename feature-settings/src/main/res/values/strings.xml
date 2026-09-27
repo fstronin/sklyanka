@@ -141,4 +141,69 @@
     <string name="transfer_cd_export">Выгрузка</string>
     <string name="transfer_cd_import">Загрузка</string>
     <string name="transfer_cd_back">Назад</string>
+
+    <!-- ==================================================================== -->
+    <!-- Экран «Настройки» (SKL-20). Формулировки дословно из               -->
+    <!-- design/screens/Settings.dc.html; состояния, которых в макете нет,   -->
+    <!-- названы по ЧАС-18, НАП-20 и НФТ-8.                                  -->
+    <!-- ==================================================================== -->
+    <string name="settings_title">Настройки</string>
+
+    <!-- Рубрики разделов. Прописные задаёт оформление, а не эта строка. -->
+    <string name="settings_rubric_profiles">Профили</string>
+    <string name="settings_rubric_reminders">Напоминания</string>
+    <string name="settings_rubric_system">Часы и система</string>
+    <string name="settings_rubric_data">Данные</string>
+
+    <!-- ===== Профили ===== -->
+    <string name="settings_profile_self">Мои лекарства</string>
+    <string name="settings_profile_self_initial">Я</string>
+    <string name="settings_profile_mirrored">напоминания дублируются мне</string>
+    <string name="settings_profile_subtitle">%1$s · %2$s</string>
+    <string name="settings_profile_add">Добавить профиль</string>
+    <string name="cd_settings_profile_active">Активный профиль</string>
+
+    <!-- ===== Напоминания ===== -->
+    <string name="settings_sound">Звук</string>
+    <string name="settings_sound_value">Мягкий сигнал</string>
+    <!-- НАП-27: в первой версии один общий звук, выбора на лекарство нет. -->
+    <string name="settings_sound_caption">Один на все напоминания</string>
+    <string name="settings_persistent">Настойчивое напоминание</string>
+    <string name="settings_persistent_caption">Повторить, если не отметили</string>
+    <string name="settings_snooze">Отложить на</string>
+
+    <!-- ===== Часы и система ===== -->
+    <string name="settings_watch">Часы Huawei</string>
+    <string name="settings_watch_connected">%1$s · подключены</string>
+    <string name="settings_watch_disconnected">Не на связи · приём отмечается на телефоне</string>
+    <string name="settings_watch_not_configured">Не подключены · приём отмечается на телефоне</string>
+
+    <string name="settings_permissions">Разрешения и автозапуск</string>
+    <!--
+      Сколько разрешений не выдано (НФТ-8). Одно — словом, как в макете: строка читается
+      как утверждение, а «1 не выдано» читается как отчёт. Через две строки, а не через
+      plurals: в русском форма «одно» приходится и на 21, и на 31, и подпись «Одно
+      не выдано» при двадцати одном отказе была бы ложью (lint ImpliedQuantity).
+    -->
+    <string name="settings_permissions_denied_one">Одно не выдано</string>
+    <string name="settings_permissions_denied_many">%1$d не выдано</string>
+    <!-- НАП-20: состояние автозапуска EMUI система не отдаёт, и приложение об этом говорит. -->
+    <string name="settings_permissions_granted_manual">Выданы · автозапуск проверьте вручную</string>
+    <string name="settings_permissions_granted">Все разрешения выданы</string>
+
+    <!-- ===== Данные ===== -->
+    <string name="settings_history">История приёмов</string>
+    <string name="settings_transfer_caption">Выгрузка и загрузка файлом, без облака</string>
+
+    <!-- ===== О приложении ===== -->
+    <!-- Версия подставляется из собранного пакета, а не из макета. -->
+    <string name="settings_about_app">Склянка %1$s</string>
+    <string name="settings_about_vendor">Heuri · не является медицинским изделием</string>
+    <string name="cd_settings_about_mark">Знак Склянка</string>
+
+    <!-- ===== Нижняя панель ===== -->
+    <string name="settings_tab_today">Сегодня</string>
+    <string name="settings_tab_meds">Лекарства</string>
+    <string name="settings_tab_settings">Настройки</string>
 </resources>
+
