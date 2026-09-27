@@ -7,7 +7,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.defaultMinSize
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -58,7 +58,7 @@ fun PrimaryButton(
             shape = SklyankaShapes.Large,
         ),
         modifier = modifier
-            .height(SklyankaSizes.PrimaryButtonHeight)
+            .heightIn(min = SklyankaSizes.PrimaryButtonHeight)
             .testTag(TAG_PRIMARY_BUTTON),
     )
 }
@@ -92,7 +92,7 @@ fun SecondaryButton(
             shape = SklyankaShapes.Button,
         ),
         modifier = modifier
-            .height(SklyankaSizes.SecondaryButtonHeight)
+            .heightIn(min = SklyankaSizes.SecondaryButtonHeight)
             .testTag(TAG_SECONDARY_BUTTON),
     )
 }

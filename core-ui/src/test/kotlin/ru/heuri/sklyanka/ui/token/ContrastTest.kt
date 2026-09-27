@@ -126,6 +126,26 @@ class ContrastTest {
         assertTrue(contrastRatio(dark.text, dark.surface) >= AA_NORMAL)
     }
 
+    /**
+     * Шапка экрана в тёмной среде (SKL-25, дефект 2).
+     *
+     * Фон шапки — роль `profileHeader`, а не `background`: у владельца подкраски нет,
+     * и роль совпадает с фоном. Пока она оставалась светлой в тёмном наборе, шапка
+     * была светлой, а заголовок поверх неё — цветом фона: контраст ровно 1,00, то
+     * есть заголовка не видно (НФТ-32).
+     */
+    @Test
+    fun `the screen header stays readable in the dark environment`() {
+        assertTrue(
+            "the title on the dark header is ${contrastRatio(dark.text, dark.profileHeader)}",
+            contrastRatio(dark.text, dark.profileHeader) >= AA_NORMAL,
+        )
+        assertTrue(
+            "the overline on the dark header is ${contrastRatio(dark.textMuted, dark.profileHeader)}",
+            contrastRatio(dark.textMuted, dark.profileHeader) >= AA_NORMAL,
+        )
+    }
+
     private data class Pair(val name: String, val foreground: Color, val background: Color, val expected: Double)
 
     private companion object {

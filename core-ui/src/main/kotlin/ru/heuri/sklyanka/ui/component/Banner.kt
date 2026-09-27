@@ -1,12 +1,9 @@
 package ru.heuri.sklyanka.ui.component
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -44,7 +41,39 @@ fun Banner(
         BannerKind.Neutral -> colors.textMuted
         else -> colors.onAccentSoft
     }
-    Row(
+    // Ряд тот же, что у карточки приёма: при крупном системном шрифте действие
+    // уезжает под текст, а текст не сжимается уже своего самого длинного слова —
+    // иначе «заканчивается» разрывается посреди слова (НФТ-31, §6.3).
+    StackingRow(
+        leading = {
+            when (kind) {
+                BannerKind.Warning -> WarningGlyph(
+                    color = colors.warning,
+                    modifier = Modifier.semanticsLabel(stringResource(R.string.cd_warning)),
+                )
+
+                BannerKind.Profile -> ProfileGlyph(
+                    color = colors.accent,
+                    modifier = Modifier.semanticsLabel(stringResource(R.string.cd_profile)),
+                )
+
+                BannerKind.Neutral -> Unit
+            }
+        },
+        text = {
+            Text(
+                text = text,
+                style = SklyankaType.Caption,
+                color = textColor,
+            )
+        },
+        action = {
+            if (actionLabel != null && onAction != null) {
+                QuietButton(text = actionLabel, onClick = onAction)
+            }
+        },
+        gap = SklyankaSpacing.Default,
+        minTextWidth = SklyankaSizes.MinTextColumn,
         modifier = modifier
             .background(background, SklyankaShapes.Medium)
             .padding(
@@ -52,32 +81,7 @@ fun Banner(
                 vertical = SklyankaSizes.BannerPaddingVertical,
             )
             .testTag(TAG_BANNER),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Default),
-    ) {
-        when (kind) {
-            BannerKind.Warning -> WarningGlyph(
-                color = colors.warning,
-                modifier = Modifier.semanticsLabel(stringResource(R.string.cd_warning)),
-            )
-
-            BannerKind.Profile -> ProfileGlyph(
-                color = colors.accent,
-                modifier = Modifier.semanticsLabel(stringResource(R.string.cd_profile)),
-            )
-
-            BannerKind.Neutral -> Unit
-        }
-        Text(
-            text = text,
-            style = SklyankaType.Caption,
-            color = textColor,
-            modifier = Modifier.weight(1f),
-        )
-        if (actionLabel != null && onAction != null) {
-            QuietButton(text = actionLabel, onClick = onAction)
-        }
-    }
+    )
 }
 
 const val TAG_BANNER = "banner"

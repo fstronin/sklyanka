@@ -29,7 +29,8 @@ class ColorRolesTest {
     }
 
     /**
-     * §5: в тёмной среде переопределяются ровно восемь ролей.
+     * §5: в тёмной среде переопределяются ровно восемь ролей — плюс две нейтральные
+     * роли профиля, которые своего цвета не вводят и повторяют фон среды.
      *
      * Тест падает и когда тёмную роль забыли, и когда завели лишнюю: неиспользуемый
      * тёмный токен — приглашение нарисовать экран, которого в объёме нет.
@@ -37,8 +38,23 @@ class ColorRolesTest {
     @Test
     fun `dark set overrides exactly the eight declared roles`() {
         val changed = light.keys.filter { role -> light[role] != dark[role] }.toSet()
-        assertEquals(DARK_OVERRIDDEN_ROLES.toSet(), changed)
-        assertEquals(DARK_OVERRIDDEN_ROLES.size, changed.size)
+        assertEquals((DARK_OVERRIDDEN_ROLES + NEUTRAL_PROFILE_ROLES).toSet(), changed)
+        assertEquals(EIGHT_DARK_TOKENS, DARK_OVERRIDDEN_ROLES.size)
+    }
+
+    /**
+     * Нейтральная роль профиля — это «подкраски нет», а не отдельный цвет (ПРФ-16).
+     *
+     * Поэтому в любой среде она равна фону этой среды. Пока роль оставалась светлой
+     * в тёмном наборе, шапка экрана в тёмной среде рисовалась светлой, а заголовок
+     * поверх неё — цветом фона, то есть не рисовался вовсе (SKL-25, дефект 2).
+     */
+    @Test
+    fun `neutral profile roles follow the background of their environment`() {
+        NEUTRAL_PROFILE_ROLES.forEach { role ->
+            assertEquals("$role must equal the light background", light["background"], light[role])
+            assertEquals("$role must equal the dark background", dark["background"], dark[role])
+        }
     }
 
     @Test
@@ -64,6 +80,9 @@ class ColorRolesTest {
     }
 
     private companion object {
+
+        /** §5 называет восемь тёмных токенов; число проверяется, а не подразумевается. */
+        const val EIGHT_DARK_TOKENS = 8
 
         /**
          * Имена и значения ролей из `toString()` набора.

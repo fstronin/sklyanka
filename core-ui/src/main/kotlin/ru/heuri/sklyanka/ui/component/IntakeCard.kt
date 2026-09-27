@@ -22,11 +22,8 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.layout.Layout
-import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import ru.heuri.sklyanka.ui.R
 import ru.heuri.sklyanka.ui.theme.SklyankaTheme
@@ -90,17 +87,23 @@ fun IntakeCard(
         if (state == IntakeCardState.DueNow) {
             // Ряд действий раскрывается только когда время наступило: карточка
             // «требует действия» отличается не одной лишь рамкой (§6.1, вывод 5).
-            Row(horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Default)) {
-                PrimaryButton(
-                    text = stringResource(R.string.action_taken),
-                    onClick = { actions.onMark?.invoke() },
-                    modifier = Modifier.weight(1f),
-                )
-                SecondaryButton(
-                    text = stringResource(R.string.action_skip),
-                    onClick = { actions.onSkip?.invoke() },
-                )
-            }
+            // При крупном системном шрифте кнопки встают друг под друга: подпись
+            // главного действия не сжимается (§6.3, НФТ-31).
+            StackingButtons(
+                primary = {
+                    PrimaryButton(
+                        text = stringResource(R.string.action_taken),
+                        onClick = { actions.onMark?.invoke() },
+                    )
+                },
+                secondary = {
+                    SecondaryButton(
+                        text = stringResource(R.string.action_skip),
+                        onClick = { actions.onSkip?.invoke() },
+                    )
+                },
+                gap = SklyankaSpacing.Default,
+            )
         }
     }
 }
@@ -219,6 +222,10 @@ private fun MarkButton(medicationLabel: String, onMark: (() -> Unit)?) {
  * по масштабу врёт при длинном названии лекарства — оно перестаёт помещаться и на
  * обычном масштабе. Кнопка отметки при этом не сжимается: её размер задан в `dp`,
  * и ряд уступает ей место, а не наоборот (критерий 5).
+ *
+ * Сама раскладка общая с баннером (`StackingLayouts.kt`): правило «колонку нельзя
+ * сжимать уже её самого длинного слова» одно на дизайн-систему, и расходиться
+ * двумя копиями ему нельзя.
  */
 @Composable
 private fun IntakeRow(
@@ -227,48 +234,15 @@ private fun IntakeRow(
     action: @Composable () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Layout(
-        contents = listOf(icon, text, action),
-        modifier = modifier.fillMaxWidth(),
-    ) { (iconMeasurables, textMeasurables, actionMeasurables), constraints ->
-        val gap = SklyankaSpacing.Medium.roundToPx()
-        val minTextWidth = SklyankaSizes.MinTextColumn.roundToPx()
-        val loose = Constraints()
-
-        val iconPlaceable = iconMeasurables.first().measure(loose)
-        val actionPlaceable = actionMeasurables.first().measure(loose)
-        val actionGap = if (actionPlaceable.width == 0) 0 else gap
-
-        // Ширина может прийти неограниченной (горизонтальная прокрутка): тогда ряд
-        // занимает нужное содержимому, а не Constraints.Infinity точек.
-        val available = if (constraints.hasBoundedWidth) {
-            constraints.maxWidth
-        } else {
-            iconPlaceable.width + gap + minTextWidth + actionGap + actionPlaceable.width
-        }
-        val inlineTextWidth = available - iconPlaceable.width - gap - actionPlaceable.width - actionGap
-        val stacked = inlineTextWidth < minTextWidth && actionPlaceable.width > 0
-        val textWidth = if (stacked) available - iconPlaceable.width - gap else inlineTextWidth
-        val textPlaceable = textMeasurables.first()
-            .measure(Constraints(maxWidth = textWidth.coerceAtLeast(0)))
-
-        val rowHeight = maxOf(iconPlaceable.height, textPlaceable.height, actionHeightInRow(actionPlaceable, stacked))
-        val height = if (stacked) rowHeight + gap + actionPlaceable.height else rowHeight
-
-        layout(available, height) {
-            iconPlaceable.place(0, (rowHeight - iconPlaceable.height) / 2)
-            textPlaceable.place(iconPlaceable.width + gap, (rowHeight - textPlaceable.height) / 2)
-            if (stacked) {
-                actionPlaceable.place(iconPlaceable.width + gap, rowHeight + gap)
-            } else {
-                actionPlaceable.place(available - actionPlaceable.width, (rowHeight - actionPlaceable.height) / 2)
-            }
-        }
-    }
+    StackingRow(
+        leading = icon,
+        text = text,
+        action = action,
+        gap = SklyankaSpacing.Medium,
+        minTextWidth = SklyankaSizes.MinTextColumn,
+        modifier = modifier,
+    )
 }
-
-/** Перенесённое под текст действие в высоту верхнего ряда не входит. */
-private fun actionHeightInRow(action: Placeable, stacked: Boolean): Int = if (stacked) 0 else action.height
 
 /**
  * Пунктирная граница.

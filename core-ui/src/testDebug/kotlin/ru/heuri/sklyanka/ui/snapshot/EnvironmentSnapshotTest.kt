@@ -2,7 +2,6 @@ package ru.heuri.sklyanka.ui.snapshot
 
 import android.content.Context
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
@@ -10,17 +9,6 @@ import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.Test
 import org.junit.runner.RunWith
 import ru.heuri.sklyanka.ui.R
-import ru.heuri.sklyanka.ui.component.Banner
-import ru.heuri.sklyanka.ui.component.BannerKind
-import ru.heuri.sklyanka.ui.component.IntakeCard
-import ru.heuri.sklyanka.ui.component.IntakeCardActions
-import ru.heuri.sklyanka.ui.component.IntakeCardLabels
-import ru.heuri.sklyanka.ui.component.IntakeCardState
-import ru.heuri.sklyanka.ui.component.PrimaryButton
-import ru.heuri.sklyanka.ui.component.ProfileStripe
-import ru.heuri.sklyanka.ui.component.ScreenHeader
-import ru.heuri.sklyanka.ui.component.ScreenHeaderLabels
-import ru.heuri.sklyanka.ui.component.SklyankaTextField
 import ru.heuri.sklyanka.ui.theme.ProfileAccent
 import ru.heuri.sklyanka.ui.theme.SklyankaTheme
 import ru.heuri.sklyanka.ui.token.GolosText
@@ -107,38 +95,6 @@ class EnvironmentSnapshotTest {
         ) {
             SnapshotSurface(profile = profile, dark = dark) { EnvironmentSheet() }
         }
-    }
-
-    @Composable
-    private fun EnvironmentSheet() {
-        ProfileStripe()
-        ScreenHeader(
-            labels = ScreenHeaderLabels(
-                title = context.getString(R.string.preview_screen_title),
-                overline = context.getString(R.string.preview_date),
-            ),
-        )
-        IntakeCard(
-            state = IntakeCardState.DueNow,
-            labels = IntakeCardLabels(
-                medication = context.getString(R.string.preview_medication),
-                dose = context.getString(R.string.preview_dose),
-                time = context.getString(R.string.preview_marked_time),
-            ),
-            actions = IntakeCardActions(onMark = {}, onSkip = {}),
-        )
-        SklyankaTextField(
-            value = context.getString(R.string.preview_field_value),
-            onValueChange = {},
-            hint = context.getString(R.string.preview_field_label),
-        )
-        Banner(
-            text = context.getString(R.string.preview_banner_warning),
-            kind = BannerKind.Warning,
-            actionLabel = context.getString(R.string.preview_quiet_action),
-            onAction = {},
-        )
-        PrimaryButton(text = context.getString(R.string.preview_primary_action), onClick = {})
     }
 
     private companion object {
