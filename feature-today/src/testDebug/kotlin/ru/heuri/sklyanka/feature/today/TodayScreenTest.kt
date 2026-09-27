@@ -39,7 +39,6 @@ import ru.heuri.sklyanka.ui.component.TAG_MARK_BUTTON
 import ru.heuri.sklyanka.ui.component.TAG_MISSED_STATUS
 import ru.heuri.sklyanka.ui.component.TAG_SCREEN_HEADER
 import ru.heuri.sklyanka.ui.component.TAG_TAKEN_STATUS
-import ru.heuri.sklyanka.ui.theme.ProfileAccent
 import ru.heuri.sklyanka.ui.theme.SklyankaTheme
 import java.math.BigDecimal
 import java.time.LocalTime
@@ -271,15 +270,27 @@ internal object TodayFixtures {
     const val LOSARTAN = "Лозартан"
     const val GROUP_SIZE = 3
 
-    /** Обычный день: принятый приём, просроченный, наступивший и ещё впереди. */
-    fun plainDay(): TodayUiState.Content = content(
+    /** Профиль, которому принадлежат лекарства заглушки: в чужом контексте это чужой профиль. */
+    const val CARD_PROFILE_ID = "profile-card"
+
+    /** Владелец телефона — он же исполнитель отметки в чужом профиле (ПР-12, ИНВ-18). */
+    const val ACTOR_PROFILE_ID = "profile-owner"
+
+    /**
+     * Обычный день: принятый приём, просроченный, наступивший и ещё впереди.
+     *
+     * [markedByYou] ставит у принятого приёма исполнителя отметки: в чужом профиле владелец
+     * телефона отметил приём своей рукой, и под фактическим временем стоит «отметили вы»
+     * (ПРФ-14). В своём профиле такой отметки не бывает по построению (ИНВ-18).
+     */
+    fun plainDay(markedByYou: Boolean = false): TodayUiState.Content = content(
         layout = TodayLayout.Plain(
             listOf(
                 group(
                     time = LocalTime.of(8, 0),
                     isNow = false,
                     items = listOf(
-                        item("i-taken", "Эутирокс", LocalTime.of(8, 0), IntakePresentation.TAKEN),
+                        item("i-taken", "Эутирокс", LocalTime.of(8, 0), IntakePresentation.TAKEN, markedByYou),
                         item("i-missed", "Витамин D3", LocalTime.of(8, 0), IntakePresentation.MISSED),
                     ),
                 ),
@@ -351,8 +362,6 @@ internal object TodayFixtures {
         progress: DayProgress = DayProgress(taken = 0, planned = 1, medicationCount = 1),
     ) = TodayUiState.Content(
         date = DATE,
-        isForeignProfile = false,
-        profileAccent = ProfileAccent.Owner,
         progress = progress,
         stockWarning = stockWarning,
         layout = layout,
@@ -376,7 +385,13 @@ internal object TodayFixtures {
         groups = listOf(group(items.first().intake.scheduledAt.toLocalTime(), isNow = false, items = items)),
     )
 
-    private fun item(id: String, name: String, time: LocalTime, presentation: IntakePresentation): IntakeItem {
+    private fun item(
+        id: String,
+        name: String,
+        time: LocalTime,
+        presentation: IntakePresentation,
+        markedByYou: Boolean = false,
+    ): IntakeItem {
         val medication = medication(id = "m-$id", name = name, times = listOf(time))
         return IntakeItem(
             intake = ru.heuri.sklyanka.domain.model.Intake(
@@ -386,7 +401,9 @@ internal object TodayFixtures {
                 status = presentation.status(),
                 actedAt = null,
                 source = null,
-                actorProfileId = null,
+                // Исполнитель отметки заполнен ровно тогда, когда он отличается от профиля
+                // приёма (ИНВ-18) — именно это и означает подпись «отметили вы».
+                actorProfileId = ACTOR_PROFILE_ID.takeIf { markedByYou },
             ),
             medication = medication,
             presentation = presentation,
@@ -433,7 +450,7 @@ internal object TodayFixtures {
         maxPerDay: Int? = null,
     ) = ru.heuri.sklyanka.domain.model.Medication(
         id = id,
-        profileId = "profile-self",
+        profileId = CARD_PROFILE_ID,
         name = name,
         form = ru.heuri.sklyanka.domain.model.MedicationForm.TABLET,
         shape = ru.heuri.sklyanka.domain.model.TabletShape.ROUND,

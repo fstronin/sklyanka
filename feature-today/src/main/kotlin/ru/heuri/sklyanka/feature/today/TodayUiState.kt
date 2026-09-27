@@ -8,7 +8,6 @@ import ru.heuri.sklyanka.domain.today.PrnEntry
 import ru.heuri.sklyanka.domain.today.StockNotice
 import ru.heuri.sklyanka.domain.today.TimeGroup
 import ru.heuri.sklyanka.domain.today.TodayLayout
-import ru.heuri.sklyanka.ui.theme.ProfileAccent
 import java.time.LocalDate
 import java.time.LocalTime
 
@@ -19,6 +18,15 @@ import java.time.LocalTime
  * локальные, скелет загрузки не показывается, а отказ чтения базы — аварийная
  * ситуация, а не экранное состояние. [Opening] — не загрузка: это первый кадр до
  * первого значения потока, в нём не рисуется ничего, а не крутится индикатор.
+ *
+ * **Полей `isForeignProfile` и `profileAccent` здесь больше нет** (SKL-15). SKL-08 завела
+ * их как точку расширения, ожидая, что оформление профиля будет приходить в состояние
+ * экрана. Оказалось наоборот: индикация обязана быть на **всех** экранах в контексте
+ * профиля (ПРФ-12), и её место — корень приложения (`ProfileChrome`), а не состояние
+ * каждого экрана. Состояние экрана, несущее оформление, — это одиннадцать состояний,
+ * в каждом из которых оформление можно забыть; в корне забыть нечего. Признак «чужой
+ * профиль» экран вообще не хранит: он его не спрашивает, потому что ни одно его решение
+ * от профиля не зависит.
  */
 sealed interface TodayUiState {
 
@@ -36,16 +44,6 @@ sealed interface TodayUiState {
     @Immutable
     data class Content(
         val date: LocalDate,
-        /**
-         * Точка расширения SKL-15.
-         *
-         * Вводится сразу, хотя в этой задаче всегда означает свой профиль: SKL-15
-         * добавляет шесть признаков чужого профиля одновременно, и если акцент
-         * останется константой в каждом компоненте, задача профилей превратится
-         * в правку каждого места (ПРФ-11, ПРФ-16).
-         */
-        val isForeignProfile: Boolean,
-        val profileAccent: ProfileAccent,
         val progress: DayProgress,
         val stockWarning: StockNotice?,
         val layout: TodayLayout,

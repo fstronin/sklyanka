@@ -72,6 +72,15 @@ data class IntakeItem(
     val id: String get() = intake.id
     val medicationId: String get() = medication.id
 
+    /**
+     * Отметку поставил владелец телефона в чужом профиле — подпись «отметили вы» (ПРФ-14).
+     *
+     * Условие — «исполнитель записан», а не сравнение с активным профилем: `actor_profile_id`
+     * заполняется ровно тогда, когда он отличается от профиля приёма (ИНВ-18), и второе
+     * сравнение здесь означало бы второй источник правды о том, чья это отметка.
+     */
+    val markedByYou: Boolean get() = intake.actorProfileId != null
+
     /** Отметить с экрана можно только то, что ещё ожидается (ПР-1, ПР-2). */
     val isMarkable: Boolean get() = presentation.isMarkable
 }

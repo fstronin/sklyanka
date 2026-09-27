@@ -93,6 +93,10 @@ internal fun IntakeRow(item: IntakeItem, onIntent: (TodayIntent) -> Unit, modifi
             dose = item.doseCaption(),
             time = item.markedAt?.timeLabel().orEmpty(),
         ),
+        // Шестой признак чужого профиля (ПРФ-14): отметку в чужом профиле поставил
+        // владелец телефона, и она подписана. В своём профиле подписи не бывает никогда —
+        // `actor_profile_id` там пуст по построению (ИНВ-18).
+        markedByYou = item.markedByYou,
         actions = IntakeCardActions(
             onMark = { onIntent(TodayIntent.MarkTaken(item.id)) }.takeIf { item.isMarkable },
             onSkip = { onIntent(TodayIntent.MarkSkipped(item.id)) }.takeIf { item.isMarkable },

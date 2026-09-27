@@ -8,6 +8,22 @@
   вопрос человека, у которого не приходят напоминания.
 -->
 <shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <!--
+      Экран разрешений и автозапуска (SKL-14, НАП-21). Стоит первым: до того, как цепочка
+      пройдена, диагностике нечего показывать, кроме невыданных разрешений.
+    -->
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_notification_mark"
+        android:shortcutId="permissions_onboarding"
+        android:shortcutLongLabel="@string/permissions_shortcut_long_label"
+        android:shortcutShortLabel="@string/permissions_shortcut_label">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetClass="ru.heuri.sklyanka.feature.onboarding.PermissionsActivity"
+            android:targetPackage="ru.heuri.sklyanka" />
+    </shortcut>
+
     <shortcut
         android:enabled="true"
         android:icon="@drawable/ic_notification_mark"

@@ -1,0 +1,56 @@
+package ru.heuri.sklyanka.feature.onboarding
+
+import android.content.Context
+import android.content.Intent
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.viewModels
+import dagger.hilt.android.AndroidEntryPoint
+import ru.heuri.sklyanka.domain.onboarding.OnboardingSource
+import ru.heuri.sklyanka.ui.theme.SklyankaTheme
+
+/**
+ * Повторный вход на экран разрешений (НАП-21, критерий приёмки 15).
+ *
+ * Своя Activity, а не экран в графе навигации, по той же причине, что у диагностики (SKL-13):
+ * постоянная точка входа — пункт настроек «Разрешения и автозапуск», и решение, один это
+ * экран с диагностикой или два разных, не принято (ОВ-48). До ответа экран не встраивается
+ * в чужой граф навигации, чтобы потом не выковыривать его оттуда.
+ *
+ * Экран тот же, что при первом запуске, — отличается только источником: индикатор шагов
+ * принадлежит онбордингу и при входе из настроек не показывается.
+ */
+@AndroidEntryPoint
+class PermissionsActivity : ComponentActivity() {
+
+    private val viewModel: OnboardingViewModel by viewModels()
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent {
+            SklyankaTheme {
+                PermissionsRoute(
+                    viewModel = viewModel,
+                    source = OnboardingSource.SETTINGS,
+                    // Отдельный экран: и «Дальше», и «Пропустить» возвращают туда, откуда
+                    // пришли. Обещать подключение часов из настроек нечем — это шаг
+                    // онбординга, а не пункт настроек (SKL-17).
+                    onExit = { finish() },
+                )
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Состояние читается из системы при каждом показе (НФТ-52): человек мог уйти
+        // выдавать разрешение в системные настройки и вернуться, и экран обязан это заметить
+        // без перезахода (критерии приёмки 4 и 16).
+        viewModel.refresh()
+    }
+
+    companion object {
+        fun intentFor(context: Context): Intent = Intent(context, PermissionsActivity::class.java)
+    }
+}

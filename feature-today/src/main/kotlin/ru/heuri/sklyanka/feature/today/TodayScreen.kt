@@ -20,10 +20,10 @@ import androidx.compose.ui.text.style.TextAlign
 import ru.heuri.sklyanka.domain.today.TodayLayout
 import ru.heuri.sklyanka.ui.component.Banner
 import ru.heuri.sklyanka.ui.component.EmptyState
-import ru.heuri.sklyanka.ui.component.ProfileStripe
 import ru.heuri.sklyanka.ui.component.ScreenHeader
 import ru.heuri.sklyanka.ui.component.ScreenHeaderLabels
 import ru.heuri.sklyanka.ui.component.SklyankaProgressBar
+import ru.heuri.sklyanka.ui.profile.ProfileAvatar
 import ru.heuri.sklyanka.ui.theme.SklyankaTheme
 import ru.heuri.sklyanka.ui.token.SklyankaSpacing
 import ru.heuri.sklyanka.ui.token.SklyankaType
@@ -37,10 +37,14 @@ import ru.heuri.sklyanka.ui.token.SklyankaType
  *
  * Кнопки-шестерёнки в шапке нет намеренно: вкладка «Настройки» нижней панели её
  * дублирует, и `docs/spec/03-screens.md` предписывает дублирование входа убрать.
+ * Аватар профиля в шапке при этом есть — он индикатор, а не вторая шестерёнка, и ведёт
+ * в список профилей настроек (ПРФ-19, решение по `ОВ-54`).
  *
- * Полоса профиля стоит вверху всегда, а рисуется ли она — решает тема (ПРФ-12).
- * Это и есть точка расширения SKL-15: решение на стороне экрана было бы одиннадцатью
- * местами, где его можно забыть.
+ * Оформление профиля экран не собирает и не выбирает: полосу, подкраску, надпись
+ * «Профиль · Имя», баннер и акцент даёт `ProfileChrome` в корне приложения (ПРФ-12).
+ * SKL-08 держала здесь `ProfileStripe` и поля профиля в состоянии — SKL-15 подняла их
+ * в корень: экранов в контексте профиля одиннадцать, и решение на стороне экрана — это
+ * одиннадцать мест, где его можно забыть, причём забыть незаметно.
  */
 @Composable
 fun TodayScreen(state: TodayUiState, onIntent: (TodayIntent) -> Unit, modifier: Modifier = Modifier) {
@@ -51,7 +55,6 @@ fun TodayScreen(state: TodayUiState, onIntent: (TodayIntent) -> Unit, modifier: 
             .background(colors.background)
             .testTag(TAG_TODAY_SCREEN),
     ) {
-        ProfileStripe()
         when (state) {
             TodayUiState.Opening -> Box(Modifier.fillMaxSize().weight(1f))
             is TodayUiState.Empty -> TodayEmpty(state, onIntent, Modifier.weight(1f))
@@ -74,6 +77,7 @@ private fun TodayEmpty(state: TodayUiState.Empty, onIntent: (TodayIntent) -> Uni
                 title = stringResource(R.string.today_title),
                 overline = state.date.headerDate(),
             ),
+            trailing = { ProfileAvatar(onOpenProfiles = { onIntent(TodayIntent.OpenSettings) }) },
         )
         Box(modifier = Modifier.fillMaxSize().weight(1f), contentAlignment = Alignment.Center) {
             EmptyState(
@@ -119,6 +123,9 @@ private fun TodayHeader(state: TodayUiState.Content, onIntent: (TodayIntent) -> 
             title = stringResource(R.string.today_title),
             overline = state.date.headerDate(),
         ),
+        // Аватар — индикатор активного профиля; нажатие ведёт в список профилей
+        // настроек, а не раскрывает меню (ПРФ-19, `ОВ-54`).
+        trailing = { ProfileAvatar(onOpenProfiles = { onIntent(TodayIntent.OpenSettings) }) },
     )
     Column(
         modifier = Modifier.fillMaxWidth().padding(horizontal = SklyankaSpacing.Section),

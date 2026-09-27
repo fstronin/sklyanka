@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
@@ -44,8 +45,11 @@ import ru.heuri.sklyanka.ui.component.SklyankaTextField
 import ru.heuri.sklyanka.ui.component.SwitchState
 import ru.heuri.sklyanka.ui.component.TextFieldState
 import ru.heuri.sklyanka.ui.modifier.withCappedFontScale
+import ru.heuri.sklyanka.ui.profile.LocalProfileChrome
+import ru.heuri.sklyanka.ui.profile.ProfileChromeState
 import ru.heuri.sklyanka.ui.theme.SklyankaTheme
 import ru.heuri.sklyanka.ui.token.MarkEnvironment
+import ru.heuri.sklyanka.ui.token.ProfileColor
 import ru.heuri.sklyanka.ui.token.SklyankaShapes
 import ru.heuri.sklyanka.ui.token.SklyankaSizes
 import ru.heuri.sklyanka.ui.token.SklyankaSpacing
@@ -296,12 +300,17 @@ fun ScreenHeaderGallery(modifier: Modifier = Modifier) {
         ScreenHeaderKind.entries.filter { it != ScreenHeaderKind.Root }.forEach { kind ->
             ScreenHeader(labels = ScreenHeaderLabels(title = title), kind = kind, onBack = {})
         }
-        ScreenHeader(
-            labels = ScreenHeaderLabels(
-                title = title,
-                profileName = stringResource(R.string.preview_profile_name),
+        // Шапка чужого профиля показывается вместе со своим оформлением: надпись
+        // «Профиль · Имя» и баннер приходят из окружения, а не параметром, и порознь
+        // их в каталоге показать нечем — так же, как и в приложении (ПРФ-11).
+        CompositionLocalProvider(
+            LocalProfileChrome provides ProfileChromeState.Foreign(
+                name = stringResource(R.string.preview_profile_name),
+                colour = ProfileColor.Terracotta,
             ),
-        )
+        ) {
+            ScreenHeader(labels = ScreenHeaderLabels(title = title))
+        }
     }
 }
 

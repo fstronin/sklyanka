@@ -3,6 +3,7 @@ package ru.heuri.sklyanka.domain.intake
 import ru.heuri.sklyanka.domain.model.Intake
 import ru.heuri.sklyanka.domain.model.IntakeSource
 import ru.heuri.sklyanka.domain.model.ScheduleMode
+import ru.heuri.sklyanka.domain.profile.ActorResolver
 import ru.heuri.sklyanka.domain.repository.IntakeRepository
 import ru.heuri.sklyanka.domain.repository.MedicationRepository
 import ru.heuri.sklyanka.domain.repository.ProfileRepository
@@ -84,15 +85,13 @@ class CreatePrnIntakeUseCase(
                     // и без обрезки ИНВ-14 («scheduled_at == acted_at») ломался бы на секундах.
                     scheduledAt = moment.atZone(time.zone()).toLocalDateTime().withSecond(0).withNano(0),
                     source = source,
-                    actorProfileId = actorFor(medication.profileId),
+                    actorProfileId = ActorResolver.actorFor(
+                        intakeProfileId = medication.profileId,
+                        source = source,
+                        selfProfileId = profiles.getSelf()?.id,
+                    ),
                 ),
             )
         }
-    }
-
-    /** То же правило, что и у обычной отметки (ПР-12): чужой профиль подписывается владельцем. */
-    private suspend fun actorFor(medicationProfileId: String): String? {
-        val self = profiles.getSelf() ?: return null
-        return self.id.takeIf { it != medicationProfileId }
     }
 }

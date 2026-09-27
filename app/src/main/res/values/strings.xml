@@ -34,4 +34,16 @@
     <!-- Ярлык запуска на диагностику напоминаний (НАП-37). -->
     <string name="diagnostics_shortcut_label">Напоминания</string>
     <string name="diagnostics_shortcut_long_label">Диагностика напоминаний</string>
+
+    <!-- ===== Онбординг разрешений (SKL-14) ===== -->
+
+    <!--
+      Ярлык запуска и подпись окна экрана разрешений.
+
+      Временная точка входа, как и у диагностики: постоянной будет строка настроек
+      «Разрешения и автозапуск» (SKL-20, ОВ-48). Название строки — дословно из макета
+      `design/screens/Settings.dc.html`, чтобы при переезде в настройки его не пришлось менять.
+    -->
+    <string name="permissions_shortcut_label">Разрешения и автозапуск</string>
+    <string name="permissions_shortcut_long_label">Разрешения и автозапуск EMUI</string>
 </resources>

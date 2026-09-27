@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
 import com.github.takahirom.roborazzi.RoborazziComposeOptions
@@ -11,10 +12,12 @@ import com.github.takahirom.roborazzi.captureRoboImage
 import com.github.takahirom.roborazzi.size
 import org.junit.Test
 import org.junit.runner.RunWith
-import ru.heuri.sklyanka.ui.theme.ProfileAccent
+import ru.heuri.sklyanka.ui.profile.ProfileChrome
+import ru.heuri.sklyanka.ui.profile.ProfileChromeState
 import ru.heuri.sklyanka.ui.theme.SklyankaTheme
 import ru.heuri.sklyanka.ui.token.ProfileColor
 import java.io.File
+import ru.heuri.sklyanka.ui.R as UiR
 
 /**
  * Эталонные снимки экрана «Сегодня» (SKL-24, критерий 5).
@@ -47,16 +50,21 @@ class TodayScreenSnapshotTest {
         )
     }
 
+    /**
+     * Экран в чужом профиле — все признаки разом (ПРФ-11).
+     *
+     * Снимается вместе с `ProfileChrome`, а не с одной лишь подменённой темой: оформление
+     * профиля живёт в корне приложения (SKL-15), и снимок обязан показывать то, что видит
+     * человек, — полосу, подкрашенную шапку, надпись «Профиль · Имя», баннер, акцент
+     * действий и подпись «отметили вы» у отмеченного приёма.
+     */
     @Test
-    fun aForeignProfile() = capture(
-        name = "foreign-profile",
-        profile = ProfileAccent.Foreign(ProfileColor.Terracotta),
-    ) {
-        TodayScreen(state = TodayFixtures.plainDay(), onIntent = {})
+    fun aForeignProfile() = capture(name = "foreign-profile", foreign = true) {
+        TodayScreen(state = TodayFixtures.plainDay(markedByYou = true), onIntent = {})
     }
 
     @OptIn(ExperimentalRoborazziApi::class)
-    private fun capture(name: String, profile: ProfileAccent = ProfileAccent.Owner, content: @Composable () -> Unit) {
+    private fun capture(name: String, foreign: Boolean = false, content: @Composable () -> Unit) {
         val directory = requireNotNull(System.getProperty("roborazzi.output.dir")) {
             "roborazzi.output.dir is not set: the screen test convention must be applied to this module"
         }
@@ -66,11 +74,21 @@ class TodayScreenSnapshotTest {
                 size(widthDp = WIDTH, heightDp = HEIGHT)
             },
         ) {
-            SklyankaTheme(profile = profile) {
-                androidx.compose.foundation.layout.Box(
-                    modifier = Modifier.fillMaxWidth().background(SklyankaTheme.colors.background),
-                ) {
-                    content()
+            if (foreign) {
+                ProfileChrome(
+                    ProfileChromeState.Foreign(
+                        name = stringResource(UiR.string.preview_profile_name),
+                        colour = ProfileColor.Terracotta,
+                    ),
+                    content = content,
+                )
+            } else {
+                SklyankaTheme {
+                    androidx.compose.foundation.layout.Box(
+                        modifier = Modifier.fillMaxWidth().background(SklyankaTheme.colors.background),
+                    ) {
+                        content()
+                    }
                 }
             }
         }

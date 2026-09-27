@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import ru.heuri.sklyanka.ui.R
+import ru.heuri.sklyanka.ui.profile.LocalProfileChrome
 import ru.heuri.sklyanka.ui.theme.SklyankaTheme
 import ru.heuri.sklyanka.ui.token.SklyankaSizes
 import ru.heuri.sklyanka.ui.token.SklyankaSpacing
@@ -24,10 +25,16 @@ import java.util.Locale
 /**
  * Шапка экрана.
  *
- * Подкраска и надпись «Профиль · Имя» появляются сами: фон берётся из роли
- * `profileHeader`, которая в теме владельца совпадает с обычным фоном, а надпись
- * рисуется только когда передано [profileName]. Экран передаёт имя активного
- * профиля и не решает, показывать ли признак (ПРФ-12).
+ * Три признака чужого профиля появляются здесь **сами**, без участия экрана: подкраска
+ * берётся из роли `profileHeader`, которая в теме владельца совпадает с обычным фоном,
+ * а надпись «Профиль · Имя» и несворачиваемый баннер рисуются, когда оформление профиля
+ * несёт имя (`ProfileChrome`, ПРФ-11, ПРФ-12).
+ *
+ * Имя профиля приходит из окружения, а не параметром. Параметр можно забыть на одном
+ * экране из одиннадцати, и отказ будет незаметен: экран выглядит нормально, просто
+ * индикация пропала. Отсюда же следует, что баннер нельзя отключить отдельно от надписи
+ * (ПРФ-13): у шапки нет параметра, которым это делается, и не появится — избыточность
+ * индикации и есть защита (ПРФ-10).
  *
  * Заголовок не обрезается и переносится на вторую строку при увеличенном системном
  * шрифте: шапка растёт по высоте (§6.3, критерий 5).
@@ -41,7 +48,7 @@ fun ScreenHeader(
     trailing: @Composable (() -> Unit)? = null,
 ) {
     val colors = SklyankaTheme.colors
-    val profileName = labels.profileName
+    val profileName = LocalProfileChrome.current.foreignName
     val overline = labels.overline
     val foreign = profileName != null
     Column(
@@ -55,7 +62,9 @@ fun ScreenHeader(
                 bottom = SklyankaSizes.HeaderBottomPadding,
             )
             .testTag(TAG_SCREEN_HEADER),
-        verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Hair),
+        // Зазор макета между строкой заголовка и баннером. В шапке владельца ребёнок
+        // ровно один, и зазор ни на что не влияет.
+        verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Large),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -70,8 +79,8 @@ fun ScreenHeader(
                 verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Hair),
             ) {
                 when {
-                    foreign -> Text(
-                        text = stringResource(R.string.profile_label, profileName.orEmpty()).uppercased(),
+                    profileName != null -> Text(
+                        text = stringResource(R.string.profile_label, profileName).uppercased(),
                         style = SklyankaType.Overline,
                         color = colors.accent,
                         modifier = Modifier.testTag(TAG_PROFILE_LABEL),
@@ -91,12 +100,37 @@ fun ScreenHeader(
             }
             trailing?.invoke()
         }
+        if (profileName != null) {
+            // Баннер стоит внутри подкрашенной шапки — так он нарисован в макете
+            // `MainProfile.dc.html`. Действия у него нет: закрыть его нечем и незачем
+            // (ПРФ-13). Вторая фраза называет последствие — куда попадёт отметка.
+            ProfileBanner(profileName)
+        }
         if (foreign) {
             // Нижняя граница появляется только у подкрашенной шапки: на обычном фоне
             // она отделяла бы шапку от того же самого цвета.
             HeaderDivider()
         }
     }
+}
+
+/**
+ * Несворачиваемый баннер чужого профиля (ПРФ-13, критерий 5).
+ *
+ * Текст — дословно из `design/screens/MainProfile.dc.html`, а не короткая форма
+ * текстовой спецификации («Это не ваши приёмы»): вторая фраза называет **последствие**,
+ * и человек узнаёт не только, что он не там, но и что случится, если он нажмёт кнопку.
+ *
+ * Действия у баннера нет ни в каком виде. Кнопка «скрыть» превратила бы шесть признаков
+ * в пять, а после первой недели — в ноль: закрытый однажды баннер человек закрывает
+ * каждый раз не глядя.
+ */
+@Composable
+private fun ProfileBanner(profileName: String) {
+    Banner(
+        text = stringResource(R.string.profile_banner, profileName),
+        kind = BannerKind.Profile,
+    )
 }
 
 @Composable

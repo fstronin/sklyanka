@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Тексты экрана истории (SKL-18).
+
+  Все формулировки взяты дословно из макета `design/screens/History.dc.html` и раздела
+  «История» `docs/spec/03-screens.md`. Русского текста в Kotlin нет вовсе (НФТ-42),
+  включая подписи для чтения с экрана и строки документа отчёта.
+
+  Названий настоящих лекарств и имён людей среди заглушек нет: снимок экрана
+  разработчика не должен превращаться в медицинские данные (НФТ-19).
+-->
+<resources>
+
+    <!-- Шапка и сводка -->
+    <string name="history_title">История</string>
+    <string name="history_report_action">Отчёт врачу</string>
+    <string name="history_tile_on_time">принято вовремя</string>
+    <string name="history_tile_days_without_misses">дней без пропусков</string>
+    <string name="history_tile_misses">пропусков за месяц</string>
+
+    <!--
+      Прочерк вместо числа.
+
+      Показывается, когда считать нечего: месяц без записей и плитка «принято вовремя»,
+      порог которой не согласован (ОВ-4). Ресурс, а не литерал в коде: это текст
+      интерфейса, пусть и из одного знака.
+    -->
+    <string name="history_value_dash">—</string>
+    <string name="history_percent">%1$d %%</string>
+
+    <!--
+      Календарь месяца.
+
+      «LLLL» — отдельная форма названия месяца: «сентябрь», а не «сентября». Форма
+      родительного падежа («d MMMM») нужна дате внутри строки, а переключателю месяца —
+      именительный.
+    -->
+    <string name="history_month_pattern" translatable="false">LLLL yyyy</string>
+    <string name="history_date_pattern" translatable="false">d MMMM</string>
+    <string name="history_date_pattern_full" translatable="false">d MMMM yyyy</string>
+    <string name="history_time_pattern" translatable="false">HH:mm</string>
+    <string name="history_datetime_pattern" translatable="false">d MMMM yyyy, HH:mm</string>
+
+    <string name="cd_previous_month">Предыдущий месяц</string>
+    <string name="cd_next_month">Следующий месяц</string>
+
+    <string name="weekday_monday">Пн</string>
+    <string name="weekday_tuesday">Вт</string>
+    <string name="weekday_wednesday">Ср</string>
+    <string name="weekday_thursday">Чт</string>
+    <string name="weekday_friday">Пт</string>
+    <string name="weekday_saturday">Сб</string>
+    <string name="weekday_sunday">Вс</string>
+
+    <string name="history_legend_all_taken">всё принято</string>
+    <string name="history_legend_partial">частично</string>
+    <string name="history_legend_missed">пропуск</string>
+
+    <!--
+      Состояние дня словами (НФТ-33).
+
+      Цвет клетки — не единственный носитель смысла: три цвета легенды сами по себе
+      недоступны, поэтому у каждого дня есть подпись для чтения с экрана. Слова
+      совпадают с легендой там, где легенда есть, и называют остальные состояния там,
+      где её нет.
+    -->
+    <string name="cd_history_day">%1$s, %2$s</string>
+    <string name="cd_history_day_today">%1$s, сегодня, %2$s</string>
+    <string name="history_state_no_intakes">приёмов не было</string>
+    <string name="history_state_ahead">приём ещё не наступил</string>
+    <string name="history_state_before_history">до начала ведения истории</string>
+
+    <!-- Блок «По лекарствам» и строка-вывод -->
+    <string name="history_breakdown_title">По лекарствам</string>
+    <string name="history_archived_course">в архиве</string>
+    <string name="cd_history_medication">%1$s, принято %2$s</string>
+
+    <!--
+      Строка-вывод о самом пропускаемом приёме.
+
+      Единственное место в продукте, где приложение обобщает за человека. Формулировка
+      описательная: приложение не медицинское изделие и рекомендаций не даёт. Здесь
+      нельзя появиться ни совету («перенесите приём»), ни оценке («вы плохо соблюдаете
+      назначение»), ни побуждению («обратитесь к врачу») — и это ограничение проверяется
+      тестом, а не памятью ревьюера.
+
+      Четыре отдельные строки, а не склейка прилагательного с шаблоном: «утренний приём»
+      и «дневной приём» согласуются по-разному, а собранная из кусков фраза ломается
+      на первом же переводе (НФТ-43).
+    -->
+    <string name="history_insight_morning">Чаще всего пропускается утренний приём в %1$s.</string>
+    <string name="history_insight_day">Чаще всего пропускается дневной приём в %1$s.</string>
+    <string name="history_insight_evening">Чаще всего пропускается вечерний приём в %1$s.</string>
+    <string name="history_insight_night">Чаще всего пропускается ночной приём в %1$s.</string>
+
+    <!-- Отчёт врачу: показ с экрана, передача и сохранение -->
+    <string name="history_report_title">Отчёт врачу</string>
+    <string name="history_report_warning">Отчёт содержит медицинские данные в открытом виде.</string>
+    <string name="history_report_share">Передать</string>
+    <string name="history_report_save">Сохранить файлом</string>
+    <string name="history_report_shared">Отчёт передан</string>
+    <string name="history_report_saved">Отчёт сохранён</string>
+    <string name="history_report_cancelled">Передача отчёта отменена</string>
+    <string name="history_report_failed">Отчёт не сохранён</string>
+    <string name="history_notice_dismiss">Понятно</string>
+
+    <!--
+      Документ отчёта.
+
+      Формат артефакта не подтверждён (ОВ-15), поэтому документ собирается из тех же
+      строк, что читает человек с экрана: подтверждение формата меняет отрисовку,
+      а не состав. Выводов и рекомендаций в документе нет — по той же причине, что
+      и в строке-выводе.
+    -->
+    <string name="report_document_title">Отчёт о приёме лекарств</string>
+    <string name="report_document_profile">Профиль: %1$s</string>
+    <string name="report_document_period">Период: %1$s — %2$s</string>
+    <string name="report_document_generated">Сформирован: %1$s</string>
+    <string name="report_document_summary">Сводка</string>
+    <string name="report_document_on_time">Принято вовремя: %1$s</string>
+    <string name="report_document_days_without_misses">Дней без пропусков: %1$d</string>
+    <string name="report_document_misses">Пропусков за период: %1$d</string>
+    <string name="report_document_medications">По лекарствам</string>
+    <string name="report_document_medication">%1$s — принято %2$d из %3$d (%4$s)</string>
+    <string name="report_document_strength">Дозировка: %1$s %2$s</string>
+    <string name="report_document_schedule">Приём: %1$s</string>
+    <string name="report_document_as_needed">Приём по потребности</string>
+    <string name="report_document_course">Курс: %1$s — %2$s</string>
+    <string name="report_document_course_open">Курс: с %1$s, бессрочно</string>
+    <string name="report_document_archived">Курс в архиве</string>
+    <string name="report_document_missed_dates">Даты пропусков: %1$s</string>
+    <string name="report_document_no_misses">Пропусков нет</string>
+    <string name="report_document_empty">За период нет ни одной записи о приёме.</string>
+    <!-- Разделитель перечисления: кавычки сохраняют пробел, который AAPT иначе обрежет. -->
+    <string name="report_document_separator" translatable="false">", "</string>
+    <string name="report_file_name" translatable="false">sklyanka-report-%1$s.txt</string>
+    <string name="report_file_pattern" translatable="false">yyyy-MM</string>
+    <string name="report_media_type" translatable="false">text/plain</string>
+
+    <!-- Единица дозировки в документе отчёта -->
+    <string name="strength_unit_milligram">мг</string>
+</resources>

@@ -30,6 +30,10 @@ dependencies {
     implementation(project(":feature-settings"))
     // Полноэкранное напоминание и диагностика напоминаний (SKL-13).
     implementation(project(":feature-reminder"))
+    // История приёмов, приверженность за месяц и отчёт врачу (SKL-18).
+    implementation(project(":feature-history"))
+    // Экран разрешений EMUI и вызов пробного напоминания (SKL-14).
+    implementation(project(":feature-onboarding"))
 
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.androidx.core.ktx)

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Числительные — через plurals, а не конкатенацией (НФТ-44).
+
+  Форма «Одно не выдано» взята дословно из `design/screens/Settings.dc.html`; она
+  соответствует quantity="one". Остальные формы макетом не заданы: сводное состояние
+  считает все три шага цепочки, включая автозапуск, и «два» с «три» там встречаются
+  ровно так же часто, как «одно».
+-->
+<resources>
+    <plurals name="onboarding_summary_unresolved">
+        <item quantity="one">Одно не выдано</item>
+        <item quantity="few">%1$d не выдано</item>
+        <item quantity="many">%1$d не выдано</item>
+        <item quantity="other">%1$d не выдано</item>
+    </plurals>
+</resources>

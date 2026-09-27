@@ -130,6 +130,8 @@ class ProjectChecksConventionPlugin : Plugin<Project> {
             ":feature-today",
             ":feature-meds",
             ":feature-reminder",
+            ":feature-onboarding",
+            ":feature-history",
             ":feature-settings",
         )
         val PROJECT_RULES = listOf(

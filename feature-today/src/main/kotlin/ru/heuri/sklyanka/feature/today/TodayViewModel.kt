@@ -19,7 +19,6 @@ import ru.heuri.sklyanka.domain.today.MarkIntakeGroupUseCase
 import ru.heuri.sklyanka.domain.today.ObserveTodayAgendaUseCase
 import ru.heuri.sklyanka.domain.today.PartOfDay
 import ru.heuri.sklyanka.domain.today.TodayAgenda
-import ru.heuri.sklyanka.ui.theme.ProfileAccent
 import java.time.LocalTime
 import javax.inject.Inject
 
@@ -84,10 +83,6 @@ class TodayViewModel @Inject constructor(
     } else {
         TodayUiState.Content(
             date = agenda.date,
-            // Свой профиль: признаки чужого не добавляются ничем (ПРФ-16). Значения
-            // становятся переменными в SKL-15, здесь они — место, куда те встанут.
-            isForeignProfile = false,
-            profileAccent = ProfileAccent.Owner,
             progress = agenda.progress,
             stockWarning = agenda.stockWarning,
             layout = agenda.layout,

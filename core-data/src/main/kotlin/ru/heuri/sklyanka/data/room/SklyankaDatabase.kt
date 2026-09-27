@@ -2,6 +2,7 @@ package ru.heuri.sklyanka.data.room
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
+import ru.heuri.sklyanka.data.room.dao.HistoryDao
 import ru.heuri.sklyanka.data.room.dao.IntakeDao
 import ru.heuri.sklyanka.data.room.dao.MedicationDao
 import ru.heuri.sklyanka.data.room.dao.OpLogDao
@@ -56,6 +57,9 @@ abstract class SklyankaDatabase : RoomDatabase() {
 
     /** Выборки планировщика напоминаний (SKL-13, НАП-12). */
     abstract fun reminderDao(): ReminderDao
+
+    /** Выборки экрана истории (SKL-18): единственное законное чтение лекарств без фильтра архива. */
+    abstract fun historyDao(): HistoryDao
 
     /**
      * Выборки переноса данных (SKL-19, ПЕР-15, ПЕР-16).

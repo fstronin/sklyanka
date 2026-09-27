@@ -3,6 +3,7 @@ package ru.heuri.sklyanka.ui.snapshot
 import android.content.Context
 import androidx.compose.foundation.layout.Row
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
@@ -36,6 +37,8 @@ import ru.heuri.sklyanka.ui.component.SklyankaSwitchRow
 import ru.heuri.sklyanka.ui.component.SklyankaTextField
 import ru.heuri.sklyanka.ui.component.SwitchState
 import ru.heuri.sklyanka.ui.component.TextFieldState
+import ru.heuri.sklyanka.ui.profile.LocalProfileChrome
+import ru.heuri.sklyanka.ui.profile.ProfileChromeState
 import ru.heuri.sklyanka.ui.theme.ProfileAccent
 import ru.heuri.sklyanka.ui.token.ProfileColor
 import ru.heuri.sklyanka.ui.token.SklyankaShapes
@@ -207,13 +210,20 @@ class ComponentStateSnapshotTest {
                 ScreenHeader(labels = ScreenHeaderLabels(title = title), kind = kind, onBack = {})
             }
         }
-        capture("screen-header-foreign-profile") {
-            ScreenHeader(
-                labels = ScreenHeaderLabels(
-                    title = title,
-                    profileName = context.getString(R.string.preview_profile_name),
+        // Шапка чужого профиля снимается вместе со своим оформлением: надпись
+        // «Профиль · Имя» и баннер приходят из окружения и порознь не существуют (ПРФ-11).
+        capture(
+            name = "screen-header-foreign-profile",
+            profile = ProfileAccent.Foreign(ProfileColor.Terracotta),
+        ) {
+            CompositionLocalProvider(
+                LocalProfileChrome provides ProfileChromeState.Foreign(
+                    name = context.getString(R.string.preview_profile_name),
+                    colour = ProfileColor.Terracotta,
                 ),
-            )
+            ) {
+                ScreenHeader(labels = ScreenHeaderLabels(title = title))
+            }
         }
     }
 

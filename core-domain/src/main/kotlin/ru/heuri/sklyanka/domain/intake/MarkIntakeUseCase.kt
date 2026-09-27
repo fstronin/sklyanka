@@ -1,6 +1,7 @@
 package ru.heuri.sklyanka.domain.intake
 
 import ru.heuri.sklyanka.domain.model.IntakeSource
+import ru.heuri.sklyanka.domain.profile.ActorResolver
 import ru.heuri.sklyanka.domain.repository.IntakeRepository
 import ru.heuri.sklyanka.domain.repository.MedicationRepository
 import ru.heuri.sklyanka.domain.repository.ProfileRepository
@@ -50,6 +51,10 @@ class MarkIntakeUseCase(
         // Приём и его лекарство читаются до транзакции: от них нужен только профиль
         // владельца лекарства, и от исхода отметки он не зависит (ПР-12). Решение же,
         // что делать с записью, принимается внутри транзакции — по её собственному чтению.
+        //
+        // Кто отметил — [ActorResolver], одно правило на все три пути отметки (ПРФ-14):
+        // отметка с часов подписи не получает, потому что на часах экрана профиля нет
+        // и нажавший мог быть самим подопечным (ПРФ-22).
         val intake = intakes.get(request.intakeId)
         val medication = intake?.let { medications.get(it.medicationId) }
         if (medication == null) return MarkOutcome.NotFound
@@ -59,7 +64,11 @@ class MarkIntakeUseCase(
                 result = request.result,
                 source = request.source,
                 actedAt = request.actedAt ?: time.now(),
-                actorProfileId = actorFor(medication.profileId),
+                actorProfileId = ActorResolver.actorFor(
+                    intakeProfileId = medication.profileId,
+                    source = request.source,
+                    selfProfileId = profiles.getSelf()?.id,
+                ),
             ),
         )
         // Условие — «приём больше не ожидается», а не «отметка применена»: проигравшая
@@ -67,20 +76,5 @@ class MarkIntakeUseCase(
         // напоминание о приёме, который уже отмечен (НАП-32, ЧАС-22).
         if (outcome.intake?.isPending == false) sideEffects.onIntakeMarked(request.intakeId)
         return outcome
-    }
-
-    /**
-     * Кто отметил (ПР-12, ПРФ-14).
-     *
-     * Заполняется, только когда приём принадлежит чужому профилю: подпись «отметили вы»
-     * в своей истории бессмысленна и зашумляет экран. Значение — профиль владельца
-     * телефона, и оно заведомо не совпадает с профилем лекарства (ИНВ-18).
-     *
-     * Отметка с часов идёт по тому же правилу: она попадает в профиль приёма и активный
-     * профиль на телефоне не трогает (ПРФ-22).
-     */
-    private suspend fun actorFor(medicationProfileId: String): String? {
-        val self = profiles.getSelf() ?: return null
-        return self.id.takeIf { it != medicationProfileId }
     }
 }

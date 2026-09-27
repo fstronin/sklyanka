@@ -1,7 +1,6 @@
 package ru.heuri.sklyanka
 
 import android.app.Application
-import androidx.core.content.ContextCompat
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -16,6 +15,8 @@ import ru.heuri.sklyanka.domain.reminder.RescheduleReason
 import ru.heuri.sklyanka.domain.reminder.port.ReminderJournal
 import ru.heuri.sklyanka.platform.notification.ReminderChannels
 import ru.heuri.sklyanka.reminder.ReminderPlanningTrigger
+import ru.heuri.sklyanka.startup.StartupSeed
+import ru.heuri.sklyanka.ui.token.ProfilePalette
 import javax.inject.Inject
 
 /**
@@ -60,6 +61,15 @@ class SklyankaApp : Application() {
     @Inject
     lateinit var reminderJournal: ReminderJournal
 
+    /**
+     * Заготовки данных отладочной сборки (`ОВ-3`).
+     *
+     * В релизной сборке набор пуст: связка живёт в `src/debug`, и в релизном артефакте
+     * её физически нет.
+     */
+    @Inject
+    lateinit var seeds: Set<@JvmSuppressWildcards StartupSeed>
+
     private val startupScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onCreate() {
@@ -72,8 +82,16 @@ class SklyankaApp : Application() {
         startupScope.launch {
             profileBootstrap.ensureOwnerProfile(
                 defaultName = getString(R.string.profile_self_default_name),
-                color = ContextCompat.getColor(this@SklyankaApp, R.color.profile_self_default),
+                // Цвет профиля владельца берётся из палитры дизайн-системы, а не из
+                // ресурсов приложения (SKL-15 закрывает замечание SKL-04): токен цвета
+                // живёт в одном месте (НФТ-47), и в набор выбираемых цветов профиля он
+                // не входит (ПРФ-15).
+                color = ProfilePalette.ownerAccentArgb,
             )
+            // Отладочная заготовка данных: второй профиль, без которого приёмку профилей
+            // нечем пройти руками, пока нет экрана добавления (`ОВ-3`). В релизной сборке
+            // набор пуст — связки там нет вовсе.
+            seeds.forEach { it.seed() }
             // Порядок важен: профиль владельца обязан существовать до того, как
             // генерация пойдёт по профилям, иначе первый запуск обходит пустой список.
             // Дальше порядок держит ReminderPlanningTrigger: сначала генерация приёмов,

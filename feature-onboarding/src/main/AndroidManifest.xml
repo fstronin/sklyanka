@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Activity экрана разрешений объявляется в манифесте приложения (как и экраны SKL-13):
+  видимость системного менеджера EMUI и состав разрешений объявляет app, и объявление
+  Activity живёт там же, где то, без чего она не работает.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" />

@@ -1,6 +1,7 @@
 package ru.heuri.sklyanka.ui.token
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 
 /**
  * Цвет профиля. Набор закрыт (ПРФ-15, критерий 3).
@@ -25,6 +26,10 @@ enum class ProfileColor(val color: Color) {
     Olive(Palette.ProfileOlive),
 
     Plum(Palette.ProfilePlum),
+    ;
+
+    /** Значение для базы: `Profile.color` хранит ARGB, палитру знает только интерфейс. */
+    val argb: Int get() = color.toArgb()
 }
 
 /** Набор цветов профиля как целое: выбор в настройках и опора тестов. */
@@ -35,4 +40,27 @@ object ProfilePalette {
 
     /** Основной акцент приложения. В набор не входит; нужен тестам и теме владельца. */
     val ownerAccent: Color = Palette.Accent
+
+    /**
+     * Цвет профиля владельца для записи в базу (ПРФ-25, ПРФ-26).
+     *
+     * Здесь, а не ресурсом приложения: до SKL-15 значение лежало в `app/res/values/colors.xml`
+     * с пометкой «переедет в палитру». Переехало. Токен цвета обязан жить в одном месте
+     * (НФТ-47), а два места расходятся на первой же правке — и расходятся молча, потому
+     * что цвет своего профиля нигде не показывается как индикация (ПРФ-16).
+     */
+    val ownerAccentArgb: Int = ownerAccent.toArgb()
+
+    /** Допустимые значения `Profile.color` для чужого профиля — опора проверки ПРФ-15. */
+    val allowedArgb: Set<Int> = all.map { it.argb }.toSet()
+
+    /**
+     * Цвет профиля по значению из базы.
+     *
+     * Незнакомое значение не роняет экран и не превращается в произвольный цвет: файл
+     * переноса или более новая сборка могли записать что угодно (МГ-6), а индикация
+     * чужого профиля обязана остаться — цветом из набора, а не тем, что пришло. Первый
+     * цвет набора — это цвет чужого профиля из спецификации.
+     */
+    fun of(argb: Int): ProfileColor = all.firstOrNull { it.argb == argb } ?: ProfileColor.Terracotta
 }
