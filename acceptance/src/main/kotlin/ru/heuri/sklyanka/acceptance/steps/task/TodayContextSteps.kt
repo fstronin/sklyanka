@@ -67,12 +67,6 @@ class TodayContextSteps(private val world: AcceptanceWorld) {
         )
     }
 
-    /** Приёмы суток по расписанию Предыстории: порождает их планировщик, а не шаг. */
-    @Given("^приёмы суток запланированы$")
-    fun theIntakesOfTheDayArePlanned() {
-        world.plan()
-    }
-
     @Given("^приёмы на (\\d{2}:\\d{2}) отмечены принятыми$")
     fun theIntakesOfThatTimeAreTaken(time: String) {
         val moment = world.clock.today().atTime(LocalTime.parse(time))

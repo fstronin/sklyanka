@@ -131,7 +131,11 @@ object SourceStepScan {
                     Reading.SKIP -> Unit
                 }
             }
-            if (brackets.open) text.append('\n') else if (brackets.started) break
+            if (brackets.open) {
+                text.append('\n')
+            } else if (brackets.started) {
+                break
+            }
         }
         return text.toString()
     }
@@ -158,6 +162,7 @@ object SourceStepScan {
         /** Мы внутри аргумента. */
         val open: Boolean get() = depth >= 1
 
+        @Suppress("ReturnCount")
         fun consume(character: Char): Reading {
             if (escaped) {
                 escaped = false
@@ -175,6 +180,7 @@ object SourceStepScan {
             return taking()
         }
 
+        @Suppress("ReturnCount")
         private fun outsideString(character: Char): Reading {
             when (character) {
                 '"' -> inString = true

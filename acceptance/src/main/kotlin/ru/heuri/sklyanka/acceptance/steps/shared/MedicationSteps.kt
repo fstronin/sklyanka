@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import ru.heuri.sklyanka.acceptance.RussianDates
 import ru.heuri.sklyanka.acceptance.steps.dateOf
+import ru.heuri.sklyanka.acceptance.steps.medicationNamed
 import ru.heuri.sklyanka.acceptance.world.AcceptanceWorld
 import ru.heuri.sklyanka.domain.model.ScheduleMode
 import java.math.BigDecimal
@@ -42,7 +43,7 @@ class MedicationSteps(private val world: AcceptanceWorld) {
     )
     fun theProfileHasAScheduledMedicationWithADose(profile: String, medication: String, times: String, dose: String) {
         add(profile, medication, RussianDates.times(times))
-        world.medications.update(medication) { it.copy(doseAmount = RussianDates.amount(dose)) }
+        world.medications.update(world.medicationNamed(medication)) { it.copy(doseAmount = RussianDates.amount(dose)) }
     }
 
     @Given("^у профиля «(.+?)» есть лекарство «(.+?)» с приёмом в (\\d{2}:\\d{2}) и без учёта остатка$")
@@ -75,21 +76,25 @@ class MedicationSteps(private val world: AcceptanceWorld) {
     @Given("^остаток упаковки «(.+?)» — (\\d+) таблет\\S+$")
     fun theStockOfThatMedication(medication: String, amount: Int) {
         if (world.acted) {
-            assertEquals(BigDecimal(amount), world.medications.stockOf(medication), "stock of $medication")
+            assertEquals(
+                BigDecimal(amount),
+                world.medications.stockOf(world.medicationNamed(medication)),
+                "stock of $medication",
+            )
         } else {
-            world.medications.update(medication) { it.copy(stockLeft = BigDecimal(amount)) }
+            world.medications.update(world.medicationNamed(medication)) { it.copy(stockLeft = BigDecimal(amount)) }
         }
     }
 
     @Given("^доза одного приёма «(.+?)» — (\\S+) таблетк\\S+$")
     fun theDoseOfOneIntakeIs(medication: String, dose: String) {
         // Доза приходит и цифрой, и русской дробью «0,5» — таблица примеров SKL-12.
-        world.medications.update(medication) { it.copy(doseAmount = RussianDates.amount(dose)) }
+        world.medications.update(world.medicationNamed(medication)) { it.copy(doseAmount = RussianDates.amount(dose)) }
     }
 
     @Then("^учёт остатка «(.+?)» остаётся невключённым$")
     fun theStockOfThatMedicationStaysUntracked(medication: String) {
-        assertNull(world.medications.stockOf(medication), "stock of $medication")
+        assertNull(world.medications.stockOf(world.medicationNamed(medication)), "stock of $medication")
     }
 
     // --- Вспомогательное ------------------------------------------------------------------

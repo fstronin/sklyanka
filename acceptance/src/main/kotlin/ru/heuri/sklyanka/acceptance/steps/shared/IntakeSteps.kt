@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import ru.heuri.sklyanka.acceptance.RussianDates
 import ru.heuri.sklyanka.acceptance.steps.TAKE_BUTTON
 import ru.heuri.sklyanka.acceptance.steps.localMoment
+import ru.heuri.sklyanka.acceptance.steps.medicationNamed
 import ru.heuri.sklyanka.acceptance.steps.resultOf
 import ru.heuri.sklyanka.acceptance.steps.statusOf
 import ru.heuri.sklyanka.acceptance.world.AcceptanceWorld
@@ -41,7 +42,7 @@ class IntakeSteps(private val world: AcceptanceWorld) {
     // до этой строки исполнение не доходило никогда.
     @Given("^приём «([^»]+)» на (.+?), (\\d{2}:\\d{2}) (?:ожидается|не отмечался)$")
     fun thatIntakeIsPending(medication: String, date: String, time: String) {
-        world.intakes.pending(medication, world.localMoment(date, time))
+        world.intakes.pending(world.medicationNamed(medication), world.localMoment(date, time))
     }
 
     @Given("^человек его не отмечал$")
@@ -51,16 +52,22 @@ class IntakeSteps(private val world: AcceptanceWorld) {
 
     @Given("^приём «(.+?)» на (.+?), (\\d{2}:\\d{2}) отмечен принятым в (\\d{2}:\\d{2})(?: в телефоне)?$")
     fun thatIntakeIsAlreadyTaken(medication: String, date: String, time: String, markedAt: String) {
-        world.markExisting(medication, world.localMoment(date, time), LocalTime.parse(markedAt), MarkResult.TAKEN)
+        world.markExisting(
+            medication = world.medicationNamed(medication),
+            at = world.localMoment(date, time),
+            markedAt = LocalTime.parse(markedAt),
+            result = MarkResult.TAKEN,
+        )
     }
 
     @Given("^приёмы «(.+?)» с (.+?) по (.+?) отмечены принятыми$")
     fun theIntakesOfThoseDatesAreTaken(medication: String, from: String, to: String) {
         // Отметка как данность Предыстории, а не как действие: сценарий, который проверяет
         // сам переход, отмечает приём доменным сценарием отметки.
-        val times = world.medications.get(medication).times
+        val name = world.medicationNamed(medication)
+        val times = world.medications.get(name).times
         RussianDates.range(from, to, world.clock.today()).forEach { date ->
-            times.forEach { time -> world.intakes.markTaken(medication, date.atTime(time)) }
+            times.forEach { time -> world.intakes.markTaken(name, date.atTime(time)) }
         }
     }
 
@@ -91,7 +98,7 @@ class IntakeSteps(private val world: AcceptanceWorld) {
     fun thePersonPressesTakeForThatMedication(date: String, time: String, medication: String) {
         world.rememberState()
         world.clock.moveTo(world.localMoment(date, time))
-        world.pressTakeOnDemand(medication)
+        world.pressTakeOnDemand(world.medicationNamed(medication))
     }
 
     // --- Проверки: состояние приёма -------------------------------------------------------------
@@ -109,7 +116,7 @@ class IntakeSteps(private val world: AcceptanceWorld) {
 
     @Then("^приём «(.+?)» на (.+?), (\\d{2}:\\d{2}) остаётся принятым$")
     fun thatIntakeStaysTaken(medication: String, date: String, time: String) {
-        val intake = world.intakes.at(medication, world.localMoment(date, time))
+        val intake = world.intakes.at(world.medicationNamed(medication), world.localMoment(date, time))
         assertEquals(IntakeStatus.TAKEN, intake.status)
     }
 
@@ -138,7 +145,7 @@ class IntakeSteps(private val world: AcceptanceWorld) {
 
     @Then("^отметки приёмов (?:«(.+?)» )?с (.+?) по (.+?) (?:остаются прежними|не изменяются)$")
     fun theMarkingsOfThatRangeAreUnchanged(medication: String?, from: String, to: String) {
-        val name = medication ?: world.medications.last
+        val name = medication?.let { world.medicationNamed(it) } ?: world.medications.last
         val dates = RussianDates.range(from, to, world.clock.today()).toSet()
         val marked = world.before.values.filter { it.scheduledAt.toLocalDate() in dates && !it.isPending }
         assertTrue(marked.isNotEmpty(), "the scenario marked nothing")

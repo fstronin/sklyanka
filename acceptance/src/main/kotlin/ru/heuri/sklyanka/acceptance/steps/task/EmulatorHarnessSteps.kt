@@ -167,8 +167,7 @@ class EmulatorHarnessSteps {
     }
 
     @Тогда("ни один скрипт не содержит синтаксической ошибки")
-    fun noScriptIsBroken() =
-        assertEquals(emptyList<String>(), syntaxFailures, "these scripts do not parse as shell")
+    fun noScriptIsBroken() = assertEquals(emptyList<String>(), syntaxFailures, "these scripts do not parse as shell")
 
     @Тогда("прогон проверок устройства идёт задачей connectedDebugAndroidTest")
     fun theDeviceChecksRunAsAGradleTask() {
@@ -373,11 +372,10 @@ class EmulatorHarnessSteps {
 
     private fun configFile(): File = File(RepositoryLayout.root, "$HARNESS_DIRECTORY/$CONFIG_SCRIPT")
 
-    private fun harnessFiles(): List<File> =
-        File(RepositoryLayout.root, HARNESS_DIRECTORY).listFiles()
-            ?.filter { it.isFile && (it.name.endsWith(SHELL_SUFFIX) || it.name.endsWith(PYTHON_SUFFIX)) }
-            ?.sortedBy { it.name }
-            .orEmpty()
+    private fun harnessFiles(): List<File> = File(RepositoryLayout.root, HARNESS_DIRECTORY).listFiles()
+        ?.filter { it.isFile && (it.name.endsWith(SHELL_SUFFIX) || it.name.endsWith(PYTHON_SUFFIX)) }
+        ?.sortedBy { it.name }
+        .orEmpty()
 
     private fun assertHarnessStep(script: String, marker: String) {
         val file = harnessFiles().singleOrNull { it.name == script } ?: error("the harness has no $script")
