@@ -98,11 +98,26 @@ skl_expect_journal() {
 }
 
 # Момент «через N часов» по часам образа, в миллисекундах.
+#
+# Считается от часов ОБРАЗА, а не машины прогона. Разница между ними не теоретическая:
+# испытания И-4 … И-7 переводят часы образа на часы и на сутки вперёд, и момент,
+# посчитанный от часов машины, оказывается для образа прошлым — испытание тогда
+# переводит часы назад и измеряет не то, что написано в его названии.
 skl_hours_ahead_ms() {
     local seconds
     seconds="$(skl_shell "date +%s" | tr -d '\r')"
     [[ "$seconds" =~ ^[0-9]+$ ]] || skl_die "часы образа не прочитались"
     echo $(( (seconds + $1 * 3600) * 1000 ))
+}
+
+# Ближайшее «завтра в HH:00» по часам образа, в миллисекундах.
+skl_device_tomorrow_ms() {
+    local hour="${1:-9}" seconds
+    seconds="$(skl_shell "date +%s" | tr -d '\r')"
+    [[ "$seconds" =~ ^[0-9]+$ ]] || skl_die "часы образа не прочитались"
+    python3 -c "import datetime,sys; now=datetime.datetime.fromtimestamp(int(sys.argv[1])); \
+print(int((now+datetime.timedelta(days=1)).replace(hour=int(sys.argv[2]),minute=0,second=0,microsecond=0).timestamp()*1000))" \
+        "$seconds" "$hour"
 }
 
 skl_launch_app() {
@@ -299,8 +314,12 @@ skl_trial_i9() { # Переход через полночь
     skl_trial_begin "И-9" "$1"
     skl_adb_root "$SKL_TRIAL_API"
     skl_warn "испытание требует нагрузки с приёмами 23:55 и 00:05: ./seed.sh $SKL_TRIAL_API --mode day"
-    local target
-    target="$(python3 -c 'import time,datetime; print(int(datetime.datetime.combine(datetime.date.today(), datetime.time(23,50)).timestamp()*1000))')"
+    local target seconds
+    # 23:50 сегодняшних суток ОБРАЗА: часы машины прогона к этому моменту уже разошлись
+    # с часами образа на сутки и более.
+    seconds="$(skl_shell "date +%s" | tr -d '\r')"
+    target="$(python3 -c "import datetime,sys; now=datetime.datetime.fromtimestamp(int(sys.argv[1])); \
+print(int(now.replace(hour=23,minute=50,second=0,microsecond=0).timestamp()*1000))" "$seconds")"
     skl_shell "cmd alarm set-time $target" >/dev/null 2>&1 || skl_die "перевести часы к 23:50 не удалось"
     sleep 900 # 23:50 → 00:05 плюс запас
     local across
@@ -322,15 +341,59 @@ skl_trial_i10() { # Истечение окна на выключенном ус
     "$SKL_DIR/start.sh" "$api"
     SKL_TRIAL_SERIAL="$(skl_serial "$api")"
     skl_adb_root "$api"
-    local tomorrow
-    tomorrow="$(python3 -c 'import datetime; print(int((datetime.datetime.now()+datetime.timedelta(days=1)).replace(hour=9,minute=0,second=0).timestamp()*1000))')"
-    skl_shell "cmd alarm set-time $tomorrow" >/dev/null 2>&1 || skl_warn "часы вперёд перевести не удалось: испытание неполное"
+
+    # Момент считается от нагрузки, а не от часов образа: «устройство было выключено
+    # до конца суток приёма» — это сутки ПРИЁМА. Часы образа после холодного запуска
+    # взяты у машины прогона заново и о нагрузке ничего не знают.
+    local target
+    target="$(skl_journal_query "$api" \
+        "SELECT strftime('%s', date(MIN(scheduled_at), '+1 day') || ' 09:00:00') * 1000
+         FROM intake WHERE status = 'PENDING'" | head -n 1)"
+    [[ "$target" =~ ^[0-9]+$ ]] || target="$(skl_device_tomorrow_ms 9)"
+    skl_shell "cmd alarm set-time $target" >/dev/null 2>&1 || skl_warn "часы вперёд перевести не удалось"
+
+    # Сравнивать с `datetime('now')` нельзя: база читается на машине прогона, и «сейчас»
+    # там — часы машины, а не часы образа. Разница между ними здесь измеряется сутками.
+    local device_local overdue
+    device_local="$(skl_shell "date +%Y-%m-%dT%H:%M" | tr -d '\r')"
+    overdue="$(skl_journal_query "$api" \
+        "SELECT COUNT(*) FROM intake WHERE scheduled_at < '$device_local'" | head -n 1)"
+    if [[ "${overdue:-0}" -eq 0 ]]; then
+        skl_trial_end "не проведено: просроченных приёмов нет — заведите нагрузку (./seed.sh --mode direct) и повторите"
+        return 1
+    fi
+
     skl_launch_app
     sleep 30
-    if skl_expect_journal "missed_sweep"; then
-        skl_trial_end "проведено"
+
+    # Требование НАП-34 состоит из двух половин, и проверяются обе: непринятые приёмы
+    # переведены в «пропущено без отметки» И всплеска уведомлений не случилось. Вторая
+    # половина важнее первой: телефон, включённый через сутки, не имеет права вывалить
+    # очередь карточек о вчерашнем.
+    local still_pending shown_after outcome=0
+    device_local="$(skl_shell "date +%Y-%m-%dT%H:%M" | tr -d '\r')"
+    still_pending="$(skl_journal_query "$api" \
+        "SELECT COUNT(*) FROM intake WHERE status = 'PENDING' AND scheduled_at < '$device_local'" |
+        head -n 1)"
+    shown_after="$(skl_journal_since "shown")"
+    if [[ "${still_pending:-1}" -ne 0 ]]; then
+        skl_warn "просроченных приёмов осталось ожидающимися: $still_pending"
+        outcome=1
+    fi
+    if [[ "${shown_after:-0}" -ne 0 ]]; then
+        skl_warn "после включения показано уведомлений: $shown_after — это всплеск, запрещённый НАП-34"
+        outcome=1
+    fi
+    # След в журнале напоминаний оставляет только проход по границе суток; проход при
+    # запуске переводит приёмы молча. Для разбора жалобы «почему не пришло» это разница,
+    # поэтому здесь предупреждение, а не молчание.
+    skl_expect_journal "missed_sweep" ||
+        skl_warn "перевод в пропущенные следа в журнале напоминаний не оставил (TDD SKL-13 §11.1)"
+
+    if (( outcome == 0 )); then
+        skl_trial_end "проведено: просроченные переведены в пропущенные, всплеска показов нет"
     else
-        skl_trial_end "отказ: непринятые приёмы не переведены в «пропущено»"
+        skl_trial_end "отказ: см. предупреждения выше"
         return 1
     fi
 }
