@@ -337,6 +337,10 @@ class MedicationFormSteps {
          * Каждый сценарий ломает в нём ровно одно поле: иначе отказ не доказывает, какое
          * правило сработало.
          */
+/** Значения черновика по умолчанию — те же, что в таблицах примеров SKL-09. */
+        val DEFAULT_TIME: LocalTime = LocalTime.of(8, 0)
+        const val DEFAULT_THRESHOLD_DAYS = 5
+
         fun defaultDraft(): MedicationDraft = MedicationDraft(
             id = null,
             profileId = PROFILE_ID,
@@ -346,11 +350,11 @@ class MedicationFormSteps {
             strength = BigDecimal("48"),
             strengthUnit = "mg",
             scheduleMode = ScheduleMode.SCHEDULED,
-            times = listOf(LocalTime.of(8, 0)),
+            times = listOf(DEFAULT_TIME),
             startDate = REFERENCE_DATE,
             endDate = null,
             stockLeft = BigDecimal("60"),
-            stockThresholdDays = 5,
+            stockThresholdDays = DEFAULT_THRESHOLD_DAYS,
         )
     }
 }

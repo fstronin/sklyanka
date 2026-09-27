@@ -79,12 +79,7 @@ fun ScreenHeader(
                 verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Hair),
             ) {
                 when {
-                    profileName != null -> Text(
-                        text = stringResource(R.string.profile_label, profileName).uppercased(),
-                        style = SklyankaType.Overline,
-                        color = colors.accent,
-                        modifier = Modifier.testTag(TAG_PROFILE_LABEL),
-                    )
+                    profileName != null -> ProfileOverline(profileName)
 
                     overline != null -> Text(
                         text = overline.uppercased(),
@@ -111,6 +106,58 @@ fun ScreenHeader(
             // она отделяла бы шапку от того же самого цвета.
             HeaderDivider()
         }
+    }
+}
+
+/**
+ * Надпись «Профиль · Имя» (ПРФ-11, критерий 4).
+ *
+ * Публичная и единственная: экранов в контексте профиля одиннадцать, и текст, стиль
+ * и тег надписи обязаны быть в одном месте. Собранная по месту копия расходится
+ * с оригиналом молча — а расхождение здесь означает, что человек не узнал, чей экран
+ * перед ним.
+ */
+@Composable
+fun ProfileOverline(profileName: String, modifier: Modifier = Modifier) {
+    Text(
+        text = stringResource(R.string.profile_label, profileName).uppercased(),
+        style = SklyankaType.Overline,
+        color = SklyankaTheme.colors.accent,
+        modifier = modifier.testTag(TAG_PROFILE_LABEL),
+    )
+}
+
+/**
+ * Индикация чужого профиля для экрана, чья шапка собрана по месту, а не [ScreenHeader].
+ *
+ * Появилась по итогам SKL-26: исполнимая приёмка SKL-15 (`Структура сценария` «Признаки
+ * чужого профиля есть на всех экранах профиля») показала, что карточка лекарства
+ * надписи «Профиль · Имя» и баннера не показывала вовсе. Её шапка собрана по месту
+ * намеренно (заголовок карточки — название лекарства, и рисовать его дважды нельзя),
+ * и вместе с шапкой из экрана выпала индикация — то есть ровно та дыра в защите,
+ * о которой говорит `ПРФ-12`.
+ *
+ * В профиле владельца не рисует ничего: отсутствие индикации само по себе сигнал
+ * (`ПРФ-16`).
+ */
+@Composable
+fun ProfileIndication(modifier: Modifier = Modifier) {
+    val profileName = LocalProfileChrome.current.foreignName ?: return
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(SklyankaTheme.colors.profileHeader)
+            .padding(
+                start = SklyankaSpacing.Section,
+                end = SklyankaSpacing.Section,
+                top = SklyankaSizes.HeaderTopPaddingProfile,
+                bottom = SklyankaSizes.HeaderBottomPadding,
+            ),
+        verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Large),
+    ) {
+        ProfileOverline(profileName)
+        ProfileBanner(profileName)
+        HeaderDivider()
     }
 }
 

@@ -15,7 +15,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import ru.heuri.sklyanka.domain.reminder.ReminderDiagnostics
-import ru.heuri.sklyanka.domain.reminder.ReminderJournalExportOutcome
 import ru.heuri.sklyanka.domain.reminder.ReminderLogEntry
 import ru.heuri.sklyanka.domain.reminder.ReminderOnTimeSummary
 import ru.heuri.sklyanka.domain.reminder.ReminderWarning

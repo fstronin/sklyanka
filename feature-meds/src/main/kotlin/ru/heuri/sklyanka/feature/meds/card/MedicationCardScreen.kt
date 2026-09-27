@@ -25,6 +25,7 @@ import ru.heuri.sklyanka.feature.meds.ReleaseFormGlyph
 import ru.heuri.sklyanka.feature.meds.screenPadding
 import ru.heuri.sklyanka.ui.component.Banner
 import ru.heuri.sklyanka.ui.component.BannerKind
+import ru.heuri.sklyanka.ui.component.ProfileIndication
 import ru.heuri.sklyanka.ui.component.QuietButton
 import ru.heuri.sklyanka.ui.component.SecondaryButton
 import ru.heuri.sklyanka.ui.theme.SklyankaTheme
@@ -53,6 +54,10 @@ fun MedicationCardScreen(state: MedCardUiState, onIntent: (MedCardIntent) -> Uni
             .background(colors.background)
             .testTag(TAG_MEDICATION_CARD_SCREEN),
     ) {
+        // Индикация чужого профиля: шапка карточки собрана по месту, и надпись
+        // «Профиль · Имя» с баннером выпадала из неё вместе с `ScreenHeader` —
+        // дыра в защите, найденная исполнимой приёмкой SKL-15 (ПРФ-12, SKL-26).
+        ProfileIndication()
         CardTopBar(onIntent)
         Column(
             modifier = Modifier

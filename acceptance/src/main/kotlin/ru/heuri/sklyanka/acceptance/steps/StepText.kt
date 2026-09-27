@@ -19,11 +19,9 @@ import java.time.LocalTime
  */
 fun AcceptanceWorld.dateOf(text: String): LocalDate = RussianDates.date(text, clock.today())
 
-fun AcceptanceWorld.localMoment(date: String, time: String): LocalDateTime =
-    dateOf(date).atTime(LocalTime.parse(time))
+fun AcceptanceWorld.localMoment(date: String, time: String): LocalDateTime = dateOf(date).atTime(LocalTime.parse(time))
 
-fun resultOf(text: String): MarkResult =
-    if (text.startsWith(TAKEN_WORD)) MarkResult.TAKEN else MarkResult.SKIPPED
+fun resultOf(text: String): MarkResult = if (text.startsWith(TAKEN_WORD)) MarkResult.TAKEN else MarkResult.SKIPPED
 
 fun statusOf(text: String): IntakeStatus = when {
     text.startsWith(TAKEN_WORD) || text.startsWith(TAKEN_NEUTER) -> IntakeStatus.TAKEN

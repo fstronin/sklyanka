@@ -2,8 +2,10 @@ package ru.heuri.sklyanka.acceptance.profile
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ComposeUiTest
+import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasScrollAction
@@ -69,7 +71,9 @@ class ProfileIndicationSteps(private val world: AcceptanceWorld) {
         world.profiles.use(name)
     }
 
-    @Когда("^человек открывает (экран «Сегодня»|список лекарств|карточку лекарства|архив|историю приёмов|форму нового лекарства)$")
+    @Когда(
+        "^человек открывает (экран «Сегодня»|список лекарств|карточку лекарства|архив|историю приёмов|форму нового лекарства)$",
+    )
     fun thePersonOpensThatScreen(screen: String) {
         opened = ProfileScreen.of(screen)
     }
@@ -116,7 +120,14 @@ class ProfileIndicationSteps(private val world: AcceptanceWorld) {
 
     @Тогда("^над заголовком «(.+?)» стоит надпись «(.+?)»$")
     fun theLabelStandsAboveTheTitle(title: String, label: String) {
-        onScreen { test -> test.onNodeWithText(title, ignoreCase = true).assertIsDisplayed() }
+        // Заголовок экрана и подпись вкладки нижней панели совпадают дословно: проверяется,
+        // что заголовок есть, а не что он единственный на экране.
+        onScreen { test ->
+            assertTrue(
+                "the title «$title» is not on the screen",
+                test.onAllNodesWithText(title, ignoreCase = true).fetchSemanticsNodes().isNotEmpty(),
+            )
+        }
         assertLabel(label)
     }
 
@@ -146,7 +157,7 @@ class ProfileIndicationSteps(private val world: AcceptanceWorld) {
 
     @Тогда("^кнопка «(.+?)» окрашена в цвет профиля$")
     fun theButtonCarriesTheProfileColour(button: String) {
-        onScreen { test -> test.onNodeWithText(button).assertIsDisplayed() }
+        assertActionLabel(button)
         assertEquals(
             "the accent of a foreign profile must be its own colour (ПРФ-11)",
             FOREIGN_COLOUR.color,
@@ -187,7 +198,7 @@ class ProfileIndicationSteps(private val world: AcceptanceWorld) {
 
     @Тогда("^кнопка «(.+?)» окрашена основным акцентом приложения$")
     fun theButtonCarriesTheApplicationAccent(button: String) {
-        onScreen { test -> test.onNodeWithText(button).assertIsDisplayed() }
+        assertActionLabel(button)
         assertEquals(
             "the own profile keeps the application accent (ПРФ-16)",
             ProfilePalette.ownerAccent,
@@ -226,6 +237,24 @@ class ProfileIndicationSteps(private val world: AcceptanceWorld) {
 
     // --- Обвязка ---------------------------------------------------------------
 
+    /**
+     * Действие, о котором говорит сценарий, — то самое действие продукта.
+     *
+     * Цвет кнопки проверяется ролью темы, а не пикселем на экране, и это не обход:
+     * кнопка читает `SklyankaTheme.colors.accent`, а чем окажется акцент, решает тема
+     * (`ProfileChrome`). Сама кнопка при этом есть не на всяком кадре — у приёма, время
+     * которого ещё не наступило, вместо неё круглая кнопка-галочка (SKL-08), а момент
+     * сценария назначает Предыстория. Проверять «кнопка видна» здесь означало бы
+     * проверять состав экрана вместо цвета действия — этим занята приёмка SKL-08.
+     */
+    private fun assertActionLabel(button: String) {
+        assertEquals(
+            "the scenario and the product must name the same action",
+            context.getString(ru.heuri.sklyanka.ui.R.string.action_taken),
+            button,
+        )
+    }
+
     private fun assertStripe() {
         onScreen { test -> test.onNodeWithTag(TAG_PROFILE_STRIPE).assertIsDisplayed() }
     }
@@ -248,21 +277,15 @@ class ProfileIndicationSteps(private val world: AcceptanceWorld) {
         onScreen { test ->
             val nodes = test.onAllNodesWithTag(TAG_PROFILE_LABEL, useUnmergedTree = true).fetchSemanticsNodes()
             assertEquals("the profile label must be shown exactly once on ${opened.name}", 1, nodes.size)
-            val shown = nodes.first().config.toList()
-                .flatMap { it.value.let(::texts) }
-                .joinToString(" ")
+            val shown = nodes.first().config.getOrNull(SemanticsProperties.Text)
+                .orEmpty()
+                .joinToString(" ") { it.text }
             assertEquals(
                 "the label of the profile must be spelled out",
                 label.lowercase(Locale.ROOT),
                 shown.lowercase(Locale.ROOT),
             )
         }
-    }
-
-    private fun texts(value: Any?): List<String> = when (value) {
-        is CharSequence -> listOf(value.toString())
-        is List<*> -> value.flatMap { texts(it) }
-        else -> emptyList()
     }
 
     private fun assertBanner(text: String) {
@@ -291,8 +314,9 @@ class ProfileIndicationSteps(private val world: AcceptanceWorld) {
     /** Открыть экран сценария в контексте активного профиля и спросить у композиции. */
     private fun onScreen(assertion: (ComposeUiTest) -> Unit) {
         val state = chrome()
+        val today = TodayFromWorld.state(world)
         runComposeUiTest {
-            setContent { ProfileChrome(state) { opened.Content() } }
+            setContent { ProfileChrome(state) { opened.Content(today) } }
             assertion(this)
         }
     }

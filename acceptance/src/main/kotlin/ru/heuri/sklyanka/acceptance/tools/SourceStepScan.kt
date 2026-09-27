@@ -122,34 +122,59 @@ object SourceStepScan {
      */
     private fun argumentOf(lines: List<String>, from: Int): String {
         val text = StringBuilder()
-        var depth = 0
-        var started = false
-        var inString = false
-        var escaped = false
+        val brackets = Brackets()
         for (index in from until lines.size) {
             for (character in lines[index]) {
-                val structural = !inString
-                when {
-                    escaped -> escaped = false
-                    inString && character == '\\' -> escaped = true
-                    character == '"' -> inString = !inString
-                    structural && character == '(' -> {
-                        depth++
-                        started = true
-                        if (depth == 1) continue
-                    }
-
-                    structural && character == ')' -> {
-                        depth--
-                        if (depth == 0) return text.toString()
-                    }
-                }
-                if (started && depth >= 1) text.append(character)
+                if (brackets.closes(character)) return text.toString()
+                if (brackets.inside) text.append(character)
             }
-            text.append('\n')
-            if (started && depth == 0) break
+            if (brackets.inside) {
+                text.append('\n')
+            } else if (brackets.opened) {
+                break
+            }
         }
         return text.toString()
+    }
+
+    /**
+     * Счётчик круглых скобок, не считающий скобки внутри строкового литерала.
+     *
+     * Отдельным типом, а не флагами внутри цикла: разбор одной аннотации — это четыре
+     * состояния, и в виде вложенных условий он перестаёт читаться на третьем.
+     */
+    private class Brackets {
+
+        private var depth = 0
+        private var inString = false
+        private var escaped = false
+
+        /** Открывающая скобка уже встречена. */
+        var opened: Boolean = false
+            private set
+
+        /** Мы внутри аргумента: этот символ идёт в текст. */
+        val inside: Boolean get() = depth >= 1
+
+        /** Этот символ закрывает аргумент: дальше читать нечего. */
+        fun closes(character: Char): Boolean {
+            when {
+                escaped -> escaped = false
+                inString && character == '\\' -> escaped = true
+                character == '"' -> inString = !inString
+                inString -> Unit
+                character == '(' -> {
+                    depth++
+                    opened = true
+                }
+
+                character == ')' -> {
+                    depth--
+                    if (depth == 0) return true
+                }
+            }
+            return false
+        }
     }
 
     /**
@@ -161,34 +186,38 @@ object SourceStepScan {
     private fun literalsOf(argument: String): String? {
         if (argument.contains(RAW_STRING)) return null
         val parts = mutableListOf<String>()
+        val between = StringBuilder()
         var index = 0
-        val rest = StringBuilder()
         while (index < argument.length) {
-            val character = argument[index]
-            if (character == '"') {
-                val literal = StringBuilder()
-                index++
-                while (index < argument.length && argument[index] != '"') {
-                    if (argument[index] == '\\' && index + 1 < argument.length) {
-                        literal.append(argument[index]).append(argument[index + 1])
-                        index += 2
-                        continue
-                    }
-                    literal.append(argument[index])
-                    index++
-                }
-                if (index >= argument.length) return null
-                parts += literal.toString()
+            if (argument[index] != '"') {
+                between.append(argument[index])
                 index++
                 continue
             }
-            rest.append(character)
-            index++
+            val literal = readLiteral(argument, index) ?: return null
+            parts += literal.first
+            index = literal.second
         }
         // Между литералами разрешены только склейка, запятые и пробелы: всё остальное —
         // вычисление, а вычисленное выражение проверка прочитать не может и не притворяется.
-        if (parts.isEmpty() || rest.any { it !in ALLOWED_BETWEEN }) return null
+        if (parts.isEmpty() || between.any { it !in ALLOWED_BETWEEN }) return null
         return parts.joinToString("").replace("\\\\", "\\").replace("\\\"", "\"")
+    }
+
+    /** Один строковый литерал, начинающийся на [from]: его текст и позиция за ним. */
+    private fun readLiteral(argument: String, from: Int): Pair<String, Int>? {
+        val literal = StringBuilder()
+        var index = from + 1
+        while (index < argument.length && argument[index] != '"') {
+            if (argument[index] == '\\' && index + 1 < argument.length) {
+                literal.append(argument[index]).append(argument[index + 1])
+                index += 2
+                continue
+            }
+            literal.append(argument[index])
+            index++
+        }
+        return if (index >= argument.length) null else literal.toString() to index + 1
     }
 
     /** Имя функции, к которой относится аннотация: первая строка с `fun` после неё. */

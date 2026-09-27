@@ -2,10 +2,10 @@ package ru.heuri.sklyanka.acceptance.profile
 
 import androidx.compose.runtime.Composable
 import ru.heuri.sklyanka.domain.history.AdherencePeriod
+import ru.heuri.sklyanka.domain.medication.DoseUnit
 import ru.heuri.sklyanka.domain.medication.MedicationDraft
 import ru.heuri.sklyanka.domain.medication.MedicationSubtitle
 import ru.heuri.sklyanka.domain.medication.WeekAdherenceStrip
-import ru.heuri.sklyanka.domain.medication.DoseUnit
 import ru.heuri.sklyanka.domain.model.MedicationForm
 import ru.heuri.sklyanka.domain.stock.StockPanel
 import ru.heuri.sklyanka.feature.history.HistoryScreen
@@ -47,49 +47,57 @@ internal sealed interface ProfileScreen {
     /** Как экран назван в сценарии. */
     val name: String
 
+    /**
+     * Экран в контексте профиля.
+     *
+     * @param today состояние «Сегодня», собранное доменом из мира сценария; остальным
+     * экранам оно не нужно — индикация от наполнения не зависит
+     */
     @Composable
-    fun Content()
+    fun Content(today: TodayUiState)
 
     data object Today : ProfileScreen {
         override val name: String get() = "экран «Сегодня»"
 
         @Composable
-        override fun Content() = TodayScreen(state = TodayUiState.Empty(DATE), onIntent = {})
+        override fun Content(today: TodayUiState) = TodayScreen(state = today, onIntent = {})
     }
 
     data object MedicationList : ProfileScreen {
         override val name: String get() = "список лекарств"
 
         @Composable
-        override fun Content() = MedicationListScreen(state = MedsUiState(loading = false), onIntent = {})
+        override fun Content(today: TodayUiState) =
+            MedicationListScreen(state = MedsUiState(loading = false), onIntent = {})
     }
 
     data object MedicationCard : ProfileScreen {
         override val name: String get() = "карточку лекарства"
 
         @Composable
-        override fun Content() = MedicationCardScreen(state = card(), onIntent = {})
+        override fun Content(today: TodayUiState) = MedicationCardScreen(state = card(), onIntent = {})
     }
 
     data object Archive : ProfileScreen {
         override val name: String get() = "архив"
 
         @Composable
-        override fun Content() = ArchiveScreen(state = ArchiveUiState(loading = false), onIntent = {})
+        override fun Content(today: TodayUiState) =
+            ArchiveScreen(state = ArchiveUiState(loading = false), onIntent = {})
     }
 
     data object History : ProfileScreen {
         override val name: String get() = "историю приёмов"
 
         @Composable
-        override fun Content() = HistoryScreen(state = history(), onIntent = {})
+        override fun Content(today: TodayUiState) = HistoryScreen(state = history(), onIntent = {})
     }
 
     data object MedicationFormScreen : ProfileScreen {
         override val name: String get() = "форму нового лекарства"
 
         @Composable
-        override fun Content() = MedicationFormScreen(
+        override fun Content(today: TodayUiState) = MedicationFormScreen(
             state = form(),
             onIntent = {},
             onCancel = {},

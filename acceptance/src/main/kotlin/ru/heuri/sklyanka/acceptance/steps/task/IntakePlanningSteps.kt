@@ -159,7 +159,7 @@ class IntakePlanningSteps(private val world: AcceptanceWorld) {
     fun theApplicationPlansIntakesThriceInARow(date: String, time: String) {
         world.rememberState()
         world.clock.moveTo(moment(date, time))
-        repeat(3) { world.plan() }
+        repeat(PLAN_RUNS_IN_A_ROW) { world.plan() }
     }
 
     @When("^наступает (.+?), (\\d{2}:\\d{2}) и приложение планирует приёмы$")
@@ -504,6 +504,9 @@ class IntakePlanningSteps(private val world: AcceptanceWorld) {
         "intakes of $medication: " + world.intakes.pendingOf(medication).map { it.scheduledAt }
 
     private companion object {
+        /** «Три раза подряд» из текста сценария: повторный запуск не должен дублировать приёмы. */
+        const val PLAN_RUNS_IN_A_ROW = 3
+
         val NOON: LocalTime = LocalTime.of(12, 0)
     }
 }

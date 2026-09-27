@@ -3,6 +3,7 @@ package ru.heuri.sklyanka.acceptance.steps.task
 import io.cucumber.java.en.Given
 import org.junit.jupiter.api.Assertions.assertEquals
 import ru.heuri.sklyanka.acceptance.RussianDates
+import ru.heuri.sklyanka.acceptance.steps.localMoment
 import ru.heuri.sklyanka.acceptance.world.AcceptanceWorld
 import java.time.LocalTime
 
@@ -66,6 +67,19 @@ class ProfileContextSteps(private val world: AcceptanceWorld) {
                 strengthUnit = unit,
             )
         }
+    }
+
+    @Given("^приём «([^»]+)» профиля «([^»]+)» на (.+?), (\\d{2}:\\d{2}) ожидается$")
+    fun theIntakeOfThatProfileIsPending(medication: String, profile: String, date: String, time: String) {
+        // Профиль назван в строке не для порядка: сценарий проверяет, что отметка ушла
+        // в чужой профиль, и приём обязан принадлежать именно ему (ПРФ-10).
+        val owner = world.profiles.get(profile)
+        assertEquals(
+            owner.id,
+            world.medications.get(medication).profileId,
+            "«$medication» must belong to «$profile»",
+        )
+        world.intakes.pending(medication, world.localMoment(date, time))
     }
 
     private fun add(profile: String, medication: String, time: String) {
