@@ -1,6 +1,7 @@
 package ru.heuri.sklyanka.acceptance.steps
 
 import ru.heuri.sklyanka.acceptance.RussianDates
+import ru.heuri.sklyanka.acceptance.RussianNames
 import ru.heuri.sklyanka.acceptance.world.AcceptanceWorld
 import ru.heuri.sklyanka.domain.intake.MarkResult
 import ru.heuri.sklyanka.domain.model.IntakeSource
@@ -20,6 +21,17 @@ import java.time.LocalTime
 fun AcceptanceWorld.dateOf(text: String): LocalDate = RussianDates.date(text, clock.today())
 
 fun AcceptanceWorld.localMoment(date: String, time: String): LocalDateTime = dateOf(date).atTime(LocalTime.parse(time))
+
+/**
+ * Имя лекарства из текста шага в том падеже, в каком его поставила фраза.
+ *
+ * Предыстория заводит «Магний B6», а проверка говорит «остаток упаковки «Магния B6»» —
+ * и это одно лекарство. Разбор падежа — [RussianNames]; неизвестное имя остаётся ошибкой
+ * шага, а не молчаливым созданием лекарства.
+ */
+fun AcceptanceWorld.medicationNamed(text: String): String = requireNotNull(
+    RussianNames.resolve(text, medications.names()),
+) { "unknown medication: $text (known: ${medications.names()})" }
 
 fun resultOf(text: String): MarkResult = if (text.startsWith(TAKEN_WORD)) MarkResult.TAKEN else MarkResult.SKIPPED
 

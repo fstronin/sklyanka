@@ -1,5 +1,6 @@
 package ru.heuri.sklyanka.gradle
 
+import com.android.build.api.dsl.CommonExtension
 import com.android.build.api.dsl.Lint
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.withType
@@ -33,3 +34,28 @@ internal fun Lint.configureSklyankaLint(rootProject: Project) {
     sarifReport = false
     error += setOf("NewApi", "HardcodedText", "InlinedApi")
 }
+
+/**
+ * Параметры инструментального прогона на эмуляторе (SKL-27).
+ *
+ * До этой задачи ни одна инструментальная проверка не выполнялась ни разу, и требований
+ * к `connectedDebugAndroidTest` не было нигде: задача существует по умолчанию, а её
+ * поведение по умолчанию рассчитано на быстрое устройство с включённой отрисовкой.
+ *
+ * Анимации выключаются на уровне сборки, а не руками оператора: проверка, падающая
+ * потому, что кто-то не выполнил подготовительную команду, обвиняет продукт вместо стенда.
+ * Таймаут установки поднят: отладочный артефакт ставится на программно отрисованный образ
+ * без аппаратного ускорения дольше, чем отводит AGP по умолчанию, и его отказ выглядит
+ * как отказ проверок.
+ */
+internal fun CommonExtension<*, *, *, *, *, *>.configureSklyankaInstrumentation() {
+    testOptions {
+        animationsDisabled = true
+    }
+    installation {
+        timeOutInMs = INSTALL_TIMEOUT_MS
+    }
+}
+
+/** Пять минут: установка на образ без аппаратного ускорения занимает минуты, а не секунды. */
+private const val INSTALL_TIMEOUT_MS = 300_000

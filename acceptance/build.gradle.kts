@@ -65,6 +65,25 @@ val quarantine: Set<String> =
 
 val acceptanceReports = layout.buildDirectory.dir("reports/acceptance")
 
+/**
+ * Исходники шагов, объявленных вне этого модуля (SKL-26, TDD §6.1).
+ *
+ * Словарь шагов распределён по модулям: экранный шаг живёт в модуле своего экрана.
+ * Проверка словаря читает эти файлы, значит они — её вход. Без этого правка шага
+ * в модуле экрана не перезапускала бы проверку, и дубль проезжал бы на кеше — то есть
+ * проверка существовала бы, но не срабатывала.
+ */
+val distributedStepSources: List<File> = rootProject.projectDir.listFiles()
+    ?.filter { it.isDirectory && it.name != project.name }
+    ?.flatMap { module ->
+        File(module, "src").listFiles()
+            ?.map { sourceSet -> File(sourceSet, "kotlin/ru/heuri/sklyanka/acceptance") }
+            .orEmpty()
+    }
+    ?.filter { it.isDirectory }
+    ?.sortedBy { it.path }
+    .orEmpty()
+
 /** Каталоги задач, в которых лежат .feature; если их нет — сам указанный путь. */
 fun featureTargets(): List<File> {
     val root = rootProject.file(featuresPath)
@@ -117,7 +136,9 @@ val acceptanceRun by tasks.registering {
     description = "Runs the Gherkin acceptance scenarios from $featuresPath (Cucumber-JVM, ru locale)."
     dependsOn(tasks.named("testClasses"))
     inputs.dir(rootProject.file(featuresPath))
-    inputs.files(sourceSets.test.get().output)
+    // И основной набор, и тестовый: словарь шагов живёт в основном (SKL-26, TDD §4.1),
+    // и без него правка шага не перезапускала бы прогон — проверка проезжала бы на кеше.
+    inputs.files(sourceSets.main.get().output, sourceSets.test.get().output)
     outputs.dir(acceptanceReports)
 
     doLast {
@@ -247,7 +268,9 @@ val acceptanceChecklist by tasks.registering {
     description = "Prints the @manual scenarios as a device check-list."
     dependsOn(tasks.named("testClasses"))
     inputs.dir(rootProject.file(featuresPath))
-    inputs.files(sourceSets.test.get().output)
+    // И основной набор, и тестовый: словарь шагов живёт в основном (SKL-26, TDD §4.1),
+    // и без него правка шага не перезапускала бы прогон — проверка проезжала бы на кеше.
+    inputs.files(sourceSets.main.get().output, sourceSets.test.get().output)
     outputs.dir(acceptanceReports)
 
     doLast {
@@ -293,7 +316,9 @@ val acceptanceScreenList by tasks.registering {
     description = "Prints the @screen scenarios: they run on the screen stand, not in this run."
     dependsOn(tasks.named("testClasses"))
     inputs.dir(rootProject.file(featuresPath))
-    inputs.files(sourceSets.test.get().output)
+    // И основной набор, и тестовый: словарь шагов живёт в основном (SKL-26, TDD §4.1),
+    // и без него правка шага не перезапускала бы прогон — проверка проезжала бы на кеше.
+    inputs.files(sourceSets.main.get().output, sourceSets.test.get().output)
     outputs.dir(acceptanceReports)
 
     doLast {
@@ -321,6 +346,52 @@ val acceptanceScreenList by tasks.registering {
             }
         }
         reportDir.resolve("screen-scenarios.txt").writeText(listing.toString())
+        listing.toString().trim().lines().forEach { logger.lifecycle(it) }
+    }
+}
+
+/**
+ * Сценарии, проверяемые только на устройстве (SKL-26, вторая половина `ОВ-78`).
+ *
+ * От `@manual` отличаются тем, что человек для них не нужен: нужна платформа. Прогон
+ * на JVM их исключает и печатает списком — иначе они неотличимы от «шаг ещё не написан»,
+ * и это ровно то, на что указывает `ОВ-78`.
+ */
+val acceptanceDeviceList by tasks.registering {
+    group = "verification"
+    description = "Prints the @device scenarios: they are checkable on a device only."
+    dependsOn(tasks.named("testClasses"))
+    inputs.dir(rootProject.file(featuresPath))
+    // И основной набор, и тестовый: словарь шагов живёт в основном (SKL-26, TDD §4.1),
+    // и без него правка шага не перезапускала бы прогон — проверка проезжала бы на кеше.
+    inputs.files(sourceSets.main.get().output, sourceSets.test.get().output)
+    outputs.dir(acceptanceReports)
+
+    doLast {
+        val reportDir = acceptanceReports.get().asFile.also { it.mkdirs() }
+        val listing = StringBuilder(
+            "Scenarios checkable on a device only ($deviceTag), not by the JVM runs\n",
+        )
+        featureTargets().forEach { target ->
+            val output = runCucumber(
+                target,
+                listOf(
+                    "--glue",
+                    "ru.heuri.sklyanka.acceptance",
+                    "--tags",
+                    deviceTag,
+                    "--dry-run",
+                    "--plugin",
+                    "pretty",
+                ),
+            )
+            val scenarios = scenarioLine.findAll(output).map { it.groupValues[1].trim() }.toList()
+            if (scenarios.isNotEmpty()) {
+                listing.appendLine("  ${target.name}:")
+                scenarios.forEach { listing.appendLine("    - $it") }
+            }
+        }
+        reportDir.resolve("device-scenarios.txt").writeText(listing.toString())
         listing.toString().trim().lines().forEach { logger.lifecycle(it) }
     }
 }
@@ -361,7 +432,10 @@ val verifyAcceptanceSteps by tasks.registering {
     description = "Fails when an acceptance step is declared twice (same expression or same scenario line)."
     dependsOn(tasks.named("testClasses"))
     inputs.dir(rootProject.file(featuresPath))
-    inputs.files(sourceSets.test.get().output)
+    // И основной набор, и тестовый: словарь шагов живёт в основном (SKL-26, TDD §4.1),
+    // и без него правка шага не перезапускала бы прогон — проверка проезжала бы на кеше.
+    inputs.files(sourceSets.main.get().output, sourceSets.test.get().output)
+    inputs.files(distributedStepSources).withPropertyName("distributedSteps").optional()
     outputs.file(acceptanceReports.map { it.file("step-dictionary.txt") })
 
     doLast {
@@ -393,7 +467,10 @@ val acceptanceSteps by tasks.registering {
     description = "Prints every acceptance step: its expression, where it is declared, shared or task-owned."
     dependsOn(tasks.named("testClasses"))
     inputs.dir(rootProject.file(featuresPath))
-    inputs.files(sourceSets.test.get().output)
+    // И основной набор, и тестовый: словарь шагов живёт в основном (SKL-26, TDD §4.1),
+    // и без него правка шага не перезапускала бы прогон — проверка проезжала бы на кеше.
+    inputs.files(sourceSets.main.get().output, sourceSets.test.get().output)
+    inputs.files(distributedStepSources).withPropertyName("distributedSteps").optional()
 
     doLast {
         val reportDir = acceptanceReports.get().asFile.also { it.mkdirs() }
@@ -425,8 +502,20 @@ val ansiCodes = Regex("\u001B\\[[;\\d]*m")
  */
 val screenTag = "@screen"
 
-/** Что берёт автоматический прогон: всё, кроме ручного, медленного и экранного. */
-val automaticTags = "not @manual and not @slow and not $screenTag"
+/**
+ * Тег сценариев, проверяемых только на устройстве (SKL-26, вторая половина `ОВ-78`).
+ *
+ * `@manual` означает «нужен человек или перезагрузка». Но есть сценарии, которым нужна
+ * настоящая платформа без всякой перезагрузки: полноэкранная карточка поверх экрана
+ * блокировки, различимость сигналов каналов уведомлений, путь до часов и обратно.
+ * Автоматизировать их можно — но только на устройстве, и в прогоне на JVM они выглядели
+ * как обычные нереализованные. Тег их различает, а задача acceptanceDeviceList печатает
+ * списком: исключение из прогона не должно становиться способом спрятать сценарий.
+ */
+val deviceTag = "@device"
+
+/** Что берёт автоматический прогон: всё, кроме ручного, медленного, экранного и устройственного. */
+val automaticTags = "not @manual and not @slow and not $screenTag and not $deviceTag"
 
 /** Строка итога реестра шагов: с неё начинается то, что стоит печатать в лог. */
 val dictionarySummary = "Словарь шагов:"

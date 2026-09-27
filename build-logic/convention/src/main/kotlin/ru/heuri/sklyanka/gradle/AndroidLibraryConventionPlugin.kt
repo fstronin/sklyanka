@@ -28,6 +28,7 @@ class AndroidLibraryConventionPlugin : Plugin<Project> {
             lint {
                 configureSklyankaLint(rootProject)
             }
+            configureSklyankaInstrumentation()
         }
         configureKotlinJvmTarget()
 
