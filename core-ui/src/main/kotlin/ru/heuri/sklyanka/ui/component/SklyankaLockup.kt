@@ -12,12 +12,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import ru.heuri.sklyanka.ui.R
+import ru.heuri.sklyanka.ui.locale.InterfaceLocale
 import ru.heuri.sklyanka.ui.theme.SklyankaTheme
 import ru.heuri.sklyanka.ui.token.MarkEnvironment
 import ru.heuri.sklyanka.ui.token.SklyankaBrandType
 import ru.heuri.sklyanka.ui.token.SklyankaSizes
 import ru.heuri.sklyanka.ui.token.SklyankaSpacing
-import java.util.Locale
 
 /**
  * Логотип с названием: знак слева, «Склянка» и «приём лекарств» справа на тёмном фоне
@@ -56,7 +56,7 @@ fun SklyankaLockup(modifier: Modifier = Modifier) {
                     color = colors.text,
                 )
                 Text(
-                    text = stringResource(R.string.brand_tagline).uppercase(Locale.getDefault()),
+                    text = stringResource(R.string.brand_tagline).uppercase(InterfaceLocale.VALUE),
                     style = SklyankaBrandType.LockupTagline,
                     color = colors.textMuted,
                 )

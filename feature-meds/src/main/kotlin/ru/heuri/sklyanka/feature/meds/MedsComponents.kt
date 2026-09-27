@@ -21,13 +21,13 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
+import ru.heuri.sklyanka.ui.locale.InterfaceLocale
 import ru.heuri.sklyanka.ui.modifier.minTouchTarget
 import ru.heuri.sklyanka.ui.theme.SklyankaTheme
 import ru.heuri.sklyanka.ui.token.SklyankaShapes
 import ru.heuri.sklyanka.ui.token.SklyankaSizes
 import ru.heuri.sklyanka.ui.token.SklyankaSpacing
 import ru.heuri.sklyanka.ui.token.SklyankaType
-import java.util.Locale
 
 /**
  * Составные части экранов лекарств, которых нет в каталоге дизайн-системы.
@@ -42,7 +42,7 @@ import java.util.Locale
 @Composable
 internal fun SectionLabel(text: String, modifier: Modifier = Modifier) {
     Text(
-        text = text.uppercase(Locale.getDefault()),
+        text = text.uppercase(InterfaceLocale.VALUE),
         style = SklyankaType.Overline,
         color = SklyankaTheme.colors.textMuted,
         modifier = modifier,

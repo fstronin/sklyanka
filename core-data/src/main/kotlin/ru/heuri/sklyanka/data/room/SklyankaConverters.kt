@@ -7,6 +7,7 @@ import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
+import java.util.Locale
 
 /**
  * Преобразование доменных типов в колонки хранения и обратно.
@@ -24,13 +25,14 @@ import java.time.format.DateTimeParseException
 object SklyankaConverters {
 
     /** `HH:mm` — время суток из расписания. */
-    private val TIME: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+    private val TIME: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm", Locale.ROOT)
 
     /** `YYYY-MM-DD` — календарная граница курса. */
-    private val DATE: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE
+    private val DATE: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE.withLocale(Locale.ROOT)
 
     /** `YYYY-MM-DDTHH:mm` — назначенное время приёма, с точностью до минуты. */
-    private val DATE_TIME: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm")
+    private val DATE_TIME: DateTimeFormatter =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm", Locale.ROOT)
 
     private const val TIMES_SEPARATOR = ","
 

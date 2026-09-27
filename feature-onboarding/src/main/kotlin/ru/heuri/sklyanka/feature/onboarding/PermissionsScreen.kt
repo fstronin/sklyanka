@@ -34,6 +34,7 @@ import ru.heuri.sklyanka.ui.component.PrimaryButton
 import ru.heuri.sklyanka.ui.component.QuietButton
 import ru.heuri.sklyanka.ui.component.SecondaryButton
 import ru.heuri.sklyanka.ui.component.SklyankaSwitchRow
+import ru.heuri.sklyanka.ui.locale.InterfaceLocale
 import ru.heuri.sklyanka.ui.theme.SklyankaTheme
 import ru.heuri.sklyanka.ui.token.SklyankaShapes
 import ru.heuri.sklyanka.ui.token.SklyankaSizes
@@ -356,7 +357,10 @@ private fun TestReminderBlock(
                 .testTag(TAG_TEST_REMINDER),
         )
         state.testReminderAt?.let { at ->
-            val pattern = DateTimeFormatter.ofPattern(stringResource(R.string.onboarding_test_time_pattern))
+            val pattern = DateTimeFormatter.ofPattern(
+                stringResource(R.string.onboarding_test_time_pattern),
+                InterfaceLocale.VALUE,
+            )
             Text(
                 text = stringResource(R.string.onboarding_test_planned, toLocal(at).format(pattern)),
                 style = SklyankaType.Caption,

@@ -8,6 +8,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import dagger.hilt.android.AndroidEntryPoint
 import ru.heuri.sklyanka.domain.onboarding.OnboardingSource
+import ru.heuri.sklyanka.ui.locale.withInterfaceLocale
 import ru.heuri.sklyanka.ui.theme.SklyankaTheme
 
 /**
@@ -23,6 +24,16 @@ import ru.heuri.sklyanka.ui.theme.SklyankaTheme
  */
 @AndroidEntryPoint
 class PermissionsActivity : ComponentActivity() {
+
+    /**
+     * Язык интерфейса закрепляется до первого обращения к ресурсам (НФТ-43а, `ADR-0008`).
+     *
+     * Без этого Android применил бы к русским строкам правила множественного числа языка
+     * телефона, а даты вывел бы его словами.
+     */
+    override fun attachBaseContext(base: Context) {
+        super.attachBaseContext(base.withInterfaceLocale())
+    }
 
     private val viewModel: OnboardingViewModel by viewModels()
 

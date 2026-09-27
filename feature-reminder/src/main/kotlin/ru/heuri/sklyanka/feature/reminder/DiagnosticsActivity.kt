@@ -12,6 +12,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import dagger.hilt.android.AndroidEntryPoint
 import ru.heuri.sklyanka.domain.reminder.ReminderJournalDocument
+import ru.heuri.sklyanka.ui.locale.withInterfaceLocale
 import ru.heuri.sklyanka.ui.theme.SklyankaTheme
 import javax.inject.Inject
 
@@ -25,6 +26,16 @@ import javax.inject.Inject
  */
 @AndroidEntryPoint
 class DiagnosticsActivity : ComponentActivity() {
+
+    /**
+     * Язык интерфейса закрепляется до первого обращения к ресурсам (НФТ-43а, `ADR-0008`).
+     *
+     * Без этого Android применил бы к русским строкам правила множественного числа языка
+     * телефона, а даты вывел бы его словами.
+     */
+    override fun attachBaseContext(base: Context) {
+        super.attachBaseContext(base.withInterfaceLocale())
+    }
 
     private val viewModel: DiagnosticsViewModel by viewModels()
 

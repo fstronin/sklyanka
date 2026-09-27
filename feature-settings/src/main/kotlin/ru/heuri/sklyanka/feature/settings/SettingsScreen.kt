@@ -26,6 +26,7 @@ import ru.heuri.sklyanka.ui.component.FlatMark
 import ru.heuri.sklyanka.ui.component.ScreenHeader
 import ru.heuri.sklyanka.ui.component.ScreenHeaderLabels
 import ru.heuri.sklyanka.ui.component.SklyankaSwitchRow
+import ru.heuri.sklyanka.ui.locale.InterfaceLocale
 import ru.heuri.sklyanka.ui.modifier.minTouchTarget
 import ru.heuri.sklyanka.ui.theme.SklyankaTheme
 import ru.heuri.sklyanka.ui.token.ProfilePalette
@@ -33,7 +34,6 @@ import ru.heuri.sklyanka.ui.token.SklyankaShapes
 import ru.heuri.sklyanka.ui.token.SklyankaSizes
 import ru.heuri.sklyanka.ui.token.SklyankaSpacing
 import ru.heuri.sklyanka.ui.token.SklyankaType
-import java.util.Locale
 
 /**
  * Экран «Настройки» (`design/screens/Settings.dc.html`).
@@ -160,7 +160,7 @@ private fun ProfileRowState.subtitle(): String {
 private fun ProfileRowState.initial(): String {
     val fallback = stringResource(R.string.settings_profile_self_initial)
     if (isSelf) return fallback
-    return name.trim().take(1).uppercase(Locale.getDefault()).ifEmpty { fallback }
+    return name.trim().take(1).uppercase(InterfaceLocale.VALUE).ifEmpty { fallback }
 }
 
 /**

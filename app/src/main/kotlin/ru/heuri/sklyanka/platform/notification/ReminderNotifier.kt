@@ -12,6 +12,8 @@ import ru.heuri.sklyanka.domain.reminder.ReminderChannel
 import ru.heuri.sklyanka.domain.reminder.ReminderSlot
 import ru.heuri.sklyanka.domain.reminder.port.NotificationGateway
 import ru.heuri.sklyanka.feature.reminder.ReminderActivity
+import ru.heuri.sklyanka.ui.locale.InterfaceLocale
+import ru.heuri.sklyanka.ui.locale.withInterfaceLocale
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -31,9 +33,19 @@ import javax.inject.Singleton
  */
 @Singleton
 class ReminderNotifier @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @ApplicationContext applicationContext: Context,
     private val channels: ReminderChannels,
 ) : NotificationGateway {
+
+    /**
+     * Контекст с закреплённым языком интерфейса (НФТ-43а, `ADR-0008`).
+     *
+     * Уведомление собирается вне экрана, из контекста приложения, и язык этого контекста —
+     * язык телефона. Закрепляется он здесь, а не в `Application`: обёртка базового
+     * контекста приложения ломает разрешение ресурсов под имитацией Android, то есть
+     * уносит с собой весь экранный прогон. Точка, из которой строится текст, — эта.
+     */
+    private val context: Context = applicationContext.withInterfaceLocale()
 
     private val manager: NotificationManager =
         requireNotNull(context.getSystemService(NotificationManager::class.java))
@@ -41,7 +53,10 @@ class ReminderNotifier @Inject constructor(
     override suspend fun show(card: ReminderCard, channel: ReminderChannel) {
         channels.ensure()
         val time = card.scheduledAt.format(
-            DateTimeFormatter.ofPattern(context.getString(R.string.reminder_time_pattern)),
+            // Локаль интерфейса, а не локаль процесса: уведомление строится из контекста
+            // приложения, и на телефоне с чужим языком время в подписи выглядело бы
+            // иначе, чем на экране (НФТ-43а).
+            DateTimeFormatter.ofPattern(context.getString(R.string.reminder_time_pattern), InterfaceLocale.VALUE),
         )
         val names = card.items.joinToString(context.getString(R.string.reminder_notification_separator)) {
             it.medicationName

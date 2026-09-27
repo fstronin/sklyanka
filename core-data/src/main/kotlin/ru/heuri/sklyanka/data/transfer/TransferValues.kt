@@ -14,6 +14,7 @@ import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 /**
  * Отказ разбора, выраженный исключением.
@@ -37,9 +38,9 @@ internal class DecodeFailure(val reject: TransferReject) : IllegalArgumentExcept
  */
 internal object TransferValues {
 
-    val TIME: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
-    val DATE: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE
-    val OFFSET: DateTimeFormatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME
+    val TIME: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm", Locale.ROOT)
+    val DATE: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE.withLocale(Locale.ROOT)
+    val OFFSET: DateTimeFormatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME.withLocale(Locale.ROOT)
 
     fun requireDecimal(element: JsonElement?, fieldName: String): BigDecimal =
         decimal(element, fieldName) ?: throw DecodeFailure(

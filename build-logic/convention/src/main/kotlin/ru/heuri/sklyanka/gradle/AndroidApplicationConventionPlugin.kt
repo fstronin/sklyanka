@@ -23,6 +23,13 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
                 versionCode = 1
                 versionName = "0.1.0"
                 testInstrumentationRunner = ProjectDefaults.ANDROID_TEST_RUNNER
+                // Приложение говорит на одном языке (НФТ-43), и это записано здесь, а не
+                // только в строках: иначе в артефакт едут чужие переводы библиотек, а
+                // система не знает, на каких языках приложение вообще разговаривает.
+                // Механизмом закрепления языка это НЕ является — им служит конфигурация
+                // контекста (ADR-0008): форму множественного числа выбирает система
+                // по локали конфигурации, а не по составу ресурсов.
+                resourceConfigurations += ProjectDefaults.INTERFACE_LOCALE
             }
             compileOptions {
                 sourceCompatibility = JavaVersion.VERSION_17

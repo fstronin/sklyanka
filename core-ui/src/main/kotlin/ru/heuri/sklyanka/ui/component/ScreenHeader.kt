@@ -15,12 +15,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import ru.heuri.sklyanka.ui.R
+import ru.heuri.sklyanka.ui.locale.InterfaceLocale
 import ru.heuri.sklyanka.ui.profile.LocalProfileChrome
 import ru.heuri.sklyanka.ui.theme.SklyankaTheme
 import ru.heuri.sklyanka.ui.token.SklyankaSizes
 import ru.heuri.sklyanka.ui.token.SklyankaSpacing
 import ru.heuri.sklyanka.ui.token.SklyankaType
-import java.util.Locale
 
 /**
  * Шапка экрана.
@@ -206,7 +206,7 @@ private fun HeaderDivider() {
  * РЕГИСТР») исполняется преобразованием — но ровно в одном месте дизайн-системы и
  * с учётом локали: `uppercase()` без локали ломается на второй локали (НФТ-43).
  */
-private fun String.uppercased(): String = uppercase(Locale.getDefault())
+private fun String.uppercased(): String = uppercase(InterfaceLocale.VALUE)
 
 const val TAG_SCREEN_HEADER = "screen_header"
 const val TAG_PROFILE_LABEL = "profile_label"

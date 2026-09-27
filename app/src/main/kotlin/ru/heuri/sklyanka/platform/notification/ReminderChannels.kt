@@ -9,6 +9,7 @@ import android.provider.Settings
 import dagger.hilt.android.qualifiers.ApplicationContext
 import ru.heuri.sklyanka.R
 import ru.heuri.sklyanka.domain.reminder.ReminderChannel
+import ru.heuri.sklyanka.ui.locale.withInterfaceLocale
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -30,7 +31,17 @@ import javax.inject.Singleton
  * что принимать, и вынужден разблокировать телефон (НАП-24).
  */
 @Singleton
-class ReminderChannels @Inject constructor(@ApplicationContext private val context: Context) {
+class ReminderChannels @Inject constructor(@ApplicationContext applicationContext: Context) {
+
+    /**
+     * Контекст с закреплённым языком интерфейса (НФТ-43а, `ADR-0008`).
+     *
+     * Названия и описания каналов человек читает в системных настройках телефона, и на
+     * телефоне с чужим языком они пришли бы на его языке — точнее, русские строки
+     * с чужими правилами. Канал создаётся один раз и не пересоздаётся (ПЛ-10), поэтому
+     * язык названия выбирается ровно один раз в жизни установки.
+     */
+    private val context: Context = applicationContext.withInterfaceLocale()
 
     private val manager: NotificationManager =
         requireNotNull(context.getSystemService(NotificationManager::class.java))

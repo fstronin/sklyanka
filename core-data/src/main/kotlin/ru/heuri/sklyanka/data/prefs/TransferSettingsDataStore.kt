@@ -14,6 +14,7 @@ import ru.heuri.sklyanka.domain.transfer.TransferSettingsStore
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -103,7 +104,7 @@ class TransferSettingsDataStore @Inject constructor(private val preferences: Dat
          */
         val IMPORT_RUNNING = booleanPreferencesKey("transfer_import_running")
 
-        val TIME: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
-        val DATE: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE
+        val TIME: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm", Locale.ROOT)
+        val DATE: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE.withLocale(Locale.ROOT)
     }
 }

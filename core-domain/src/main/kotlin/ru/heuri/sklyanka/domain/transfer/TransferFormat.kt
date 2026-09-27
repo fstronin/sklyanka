@@ -2,6 +2,7 @@ package ru.heuri.sklyanka.domain.transfer
 
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 /**
  * Опознание файла переноса и версия его формата (ПЕР-2, ПЕР-6, ПЕР-7).
@@ -47,7 +48,7 @@ object TransferFormat {
     private const val NAME_PREFIX = "sklyanka-"
     private const val NAME_SUFFIX = ".json"
 
-    private val FILE_DATE: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE
+    private val FILE_DATE: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE.withLocale(Locale.ROOT)
 
     /**
      * Имя файла выгрузки `sklyanka-ГГГГ-ММ-ДД.json` (ПЕР-2).

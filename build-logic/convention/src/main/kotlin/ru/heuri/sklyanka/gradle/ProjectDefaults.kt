@@ -45,6 +45,12 @@ object ProjectDefaults {
      * устройства, поэтому разрешение здесь — цена хранения, а не качество проверки.
      */
     const val SCREEN_TEST_QUALIFIERS = "ru-rRU-w390dp-h844dp-mdpi"
+
+    /**
+     * Язык интерфейса — один (НФТ-43). Код языка живёт здесь, потому что его знают
+     * и сборка, и манифест, и код: разойдясь, они разойдутся молча.
+     */
+    const val INTERFACE_LOCALE = "ru"
 }
 
 internal val Project.libs: VersionCatalog

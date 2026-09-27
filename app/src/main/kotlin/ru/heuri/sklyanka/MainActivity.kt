@@ -1,5 +1,6 @@
 package ru.heuri.sklyanka
 
+import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -45,6 +46,7 @@ import ru.heuri.sklyanka.platform.startup.StartupRouter
 import ru.heuri.sklyanka.reminder.ReminderOutageAnnouncer
 import ru.heuri.sklyanka.startup.SplashScreen
 import ru.heuri.sklyanka.startup.StartDestination
+import ru.heuri.sklyanka.ui.locale.withInterfaceLocale
 import ru.heuri.sklyanka.ui.profile.ProfileChrome
 import ru.heuri.sklyanka.ui.profile.ProfileChromeState
 import ru.heuri.sklyanka.ui.theme.SklyankaTheme
@@ -75,6 +77,16 @@ import javax.inject.Inject
  */
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    /**
+     * Язык интерфейса закрепляется до первого обращения к ресурсам (НФТ-43а, `ADR-0008`).
+     *
+     * Без этого Android применил бы к русским строкам правила множественного числа языка
+     * телефона, а даты вывел бы его словами.
+     */
+    override fun attachBaseContext(base: Context) {
+        super.attachBaseContext(base.withInterfaceLocale())
+    }
 
     @Inject
     lateinit var startupRouter: StartupRouter

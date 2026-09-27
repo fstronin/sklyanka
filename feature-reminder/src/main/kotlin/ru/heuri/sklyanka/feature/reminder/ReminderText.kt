@@ -10,6 +10,7 @@ import ru.heuri.sklyanka.domain.reminder.ReminderJournalExportOutcome
 import ru.heuri.sklyanka.domain.reminder.RescheduleReason
 import ru.heuri.sklyanka.domain.reminder.port.PermissionState
 import ru.heuri.sklyanka.domain.reminder.port.ReminderPermission
+import ru.heuri.sklyanka.ui.locale.InterfaceLocale
 import java.math.BigDecimal
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -26,7 +27,7 @@ import java.time.format.DateTimeFormatter
 /** «14:00» — время приёма над названием лекарства. */
 @Composable
 internal fun LocalDateTime.timeLabel(): String =
-    format(DateTimeFormatter.ofPattern(stringResource(R.string.reminder_time_pattern)))
+    format(DateTimeFormatter.ofPattern(stringResource(R.string.reminder_time_pattern), InterfaceLocale.VALUE))
 
 /** «2 таблетки · 48 мг» — доза и дозировка одной строкой (НАП-29). */
 @Composable
@@ -63,8 +64,11 @@ internal fun snoozeLabel(minutes: Int): String = stringResource(R.string.reminde
 
 /** Момент в журнале диагностики: «25 сентября, 14:00:37». */
 @Composable
-internal fun LocalDateTime.journalMoment(): String =
-    format(DateTimeFormatter.ofPattern(stringResource(R.string.diagnostics_datetime_pattern)))
+internal fun LocalDateTime.journalMoment(): String = format(
+    // Локаль указана явно: `ofPattern` без неё берёт локаль процесса, а она остаётся
+    // локалью телефона и после закрепления конфигурации (ADR-0008).
+    DateTimeFormatter.ofPattern(stringResource(R.string.diagnostics_datetime_pattern), InterfaceLocale.VALUE),
+)
 
 /** Название разрешения строкой диагностики (НАП-37). */
 @Composable
@@ -156,5 +160,6 @@ internal fun ReminderJournalExportOutcome.label(): String = when (this) {
 
 /** Момент, с которого напоминания не приходили, в сообщении о перерыве (НАП-38). */
 @Composable
-internal fun LocalDateTime.outageMoment(): String =
-    format(DateTimeFormatter.ofPattern(stringResource(R.string.reminder_outage_notice_moment_pattern)))
+internal fun LocalDateTime.outageMoment(): String = format(
+    DateTimeFormatter.ofPattern(stringResource(R.string.reminder_outage_notice_moment_pattern), InterfaceLocale.VALUE),
+)

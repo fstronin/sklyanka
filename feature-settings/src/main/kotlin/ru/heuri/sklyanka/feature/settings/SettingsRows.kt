@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import ru.heuri.sklyanka.ui.component.StackingRow
+import ru.heuri.sklyanka.ui.locale.InterfaceLocale
 import ru.heuri.sklyanka.ui.modifier.minTouchTarget
 import ru.heuri.sklyanka.ui.theme.SklyankaTheme
 import ru.heuri.sklyanka.ui.token.SklyankaShapes
@@ -34,7 +35,7 @@ import ru.heuri.sklyanka.ui.token.SklyankaType
 @Composable
 internal fun SectionRubric(text: String, modifier: Modifier = Modifier) {
     Text(
-        text = text.uppercase(),
+        text = text.uppercase(InterfaceLocale.VALUE),
         style = SklyankaType.Overline,
         color = SklyankaTheme.colors.textMuted,
         modifier = modifier.padding(start = SklyankaSpacing.Micro),

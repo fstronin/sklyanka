@@ -7,6 +7,7 @@ import ru.heuri.sklyanka.domain.transfer.TransferFiles
 import java.time.Duration
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 /**
  * Готовый файл журнала срабатываний (НФТ-51).
@@ -40,7 +41,7 @@ data class ReminderJournalDocument(val fileName: String, val content: String, va
          * он его сохранял. Имён профилей и названий лекарств в имени нет (НФТ-19).
          */
         fun fileName(date: LocalDate): String =
-            NAME_PREFIX + date.format(DateTimeFormatter.ISO_LOCAL_DATE) + NAME_SUFFIX
+            NAME_PREFIX + date.format(DateTimeFormatter.ISO_LOCAL_DATE.withLocale(Locale.ROOT)) + NAME_SUFFIX
     }
 }
 

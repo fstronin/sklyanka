@@ -14,12 +14,12 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import ru.heuri.sklyanka.ui.R
 import ru.heuri.sklyanka.ui.component.SklyankaMark
+import ru.heuri.sklyanka.ui.locale.InterfaceLocale
 import ru.heuri.sklyanka.ui.theme.SklyankaTheme
 import ru.heuri.sklyanka.ui.token.MarkEnvironment
 import ru.heuri.sklyanka.ui.token.SklyankaBrandType
 import ru.heuri.sklyanka.ui.token.SklyankaSizes
 import ru.heuri.sklyanka.ui.token.SklyankaSpacing
-import java.util.Locale
 
 /**
  * Заставка: знак, название, подпись и издатель на тёмном полотне
@@ -67,7 +67,7 @@ fun SplashScreen(modifier: Modifier = Modifier) {
                     Text(
                         // Прописные — отрисовкой, а не в ресурсе: читалка должна
                         // произносить слова, а не перечислять буквы (НФТ-30).
-                        text = stringResource(R.string.brand_tagline).uppercase(Locale.getDefault()),
+                        text = stringResource(R.string.brand_tagline).uppercase(InterfaceLocale.VALUE),
                         style = SklyankaBrandType.SplashTagline,
                         // Макет задаёт подписи #8C837A, а издателю #6B635B. Новых цветов
                         // задача не вводит (TDD §9), поэтому берутся две ближайшие роли

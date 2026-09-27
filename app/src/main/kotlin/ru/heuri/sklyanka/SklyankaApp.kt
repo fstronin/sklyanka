@@ -16,6 +16,7 @@ import ru.heuri.sklyanka.platform.notification.ReminderChannels
 import ru.heuri.sklyanka.reminder.ReminderOutageAnnouncer
 import ru.heuri.sklyanka.reminder.ReminderPlanningTrigger
 import ru.heuri.sklyanka.startup.StartupSeed
+import ru.heuri.sklyanka.ui.locale.withInterfaceLocale
 import ru.heuri.sklyanka.ui.token.ProfilePalette
 import javax.inject.Inject
 
@@ -85,7 +86,8 @@ class SklyankaApp : Application() {
         reminderChannels.ensure()
         startupScope.launch {
             profileBootstrap.ensureOwnerProfile(
-                defaultName = getString(R.string.profile_self_default_name),
+                // Имя профиля по умолчанию — текст интерфейса, и язык у него свой (НФТ-43а).
+                defaultName = withInterfaceLocale().getString(R.string.profile_self_default_name),
                 // Цвет профиля владельца берётся из палитры дизайн-системы, а не из
                 // ресурсов приложения (SKL-15 закрывает замечание SKL-04): токен цвета
                 // живёт в одном месте (НФТ-47), и в набор выбираемых цветов профиля он
