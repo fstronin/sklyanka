@@ -31,12 +31,32 @@
 # Матрица НФТ-40 этими образами НЕ покрывается: эмулятор — AOSP, а не EMUI.
 SKL_API_LEVELS=(26 31 35)
 
+# Архитектура гостя определяется машиной прогона, а не выбором автора матрицы.
+#
+# Эмулятор исполняет только того гостя, для которого в его сборке есть qemu:
+# сборка darwin-aarch64 несёт qemu-system-aarch64 и не несёт qemu-system-x86_64,
+# поэтому на машине Apple Silicon образ x86_64 не поднимается вовсе — не «медленно»,
+# а никак. Уровни API от этого не зависят: у всех трёх есть образ без сервисов Google
+# и в arm64-v8a, и в x86_64, и матрица остаётся той же самой.
+skl_host_abi() {
+    case "$(uname -m)" in
+        arm64 | aarch64) echo "arm64-v8a" ;;
+        x86_64 | amd64) echo "x86_64" ;;
+        *) return 1 ;;
+    esac
+}
+
 # Кандидаты пакетов системного образа по уровню API, через пробел, по приоритету.
+#
+# aosp_atd для API 26 не существует ни в одной архитектуре — отсюда единственный
+# кандидат `default` на минимальном уровне.
 skl_image_candidates() {
+    local abi
+    abi="$(skl_host_abi)" || return 1
     case "$1" in
-        26) echo "system-images;android-26;default;x86_64" ;;
-        31) echo "system-images;android-31;aosp_atd;x86_64 system-images;android-31;default;x86_64" ;;
-        35) echo "system-images;android-35;aosp_atd;x86_64 system-images;android-35;default;x86_64" ;;
+        26) echo "system-images;android-26;default;$abi" ;;
+        31) echo "system-images;android-31;aosp_atd;$abi system-images;android-31;default;$abi" ;;
+        35) echo "system-images;android-35;aosp_atd;$abi system-images;android-35;default;$abi" ;;
         *) return 1 ;;
     esac
 }

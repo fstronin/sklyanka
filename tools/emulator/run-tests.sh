@@ -45,7 +45,12 @@ log_file="$results/tests-$group.log"
 skl_log "прогон группы «$group» на $(skl_serial "$api"); лог: $log_file"
 
 status=0
-skl_gradle "$api" "$SKL_TEST_MODULE:$SKL_TEST_TASK" "${filter[@]}" 2>&1 | tee "$log_file" || status=$?
+# Пустой фильтр (группа all) разворачивается через ${name[@]+...}: bash 3.2 — а это
+# системный bash macOS — считает разворот пустого массива обращением к неназначенной
+# переменной и с set -u прекращает работу. Прогон «всё подряд» на такой машине
+# не запускался вовсе.
+skl_gradle "$api" "$SKL_TEST_MODULE:$SKL_TEST_TASK" ${filter[@]+"${filter[@]}"} 2>&1 |
+    tee "$log_file" || status=$?
 
 # Отчёты AGP — машинно читаемые XML; они и есть результат прогона проверок,
 # а не то, что осталось в терминале.

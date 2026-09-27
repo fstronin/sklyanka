@@ -144,9 +144,14 @@ skl_results_dir() {
 }
 
 # Единая точка вызова Gradle: тот же серийный номер, что у остальных шагов.
+#
+# Каталог сборки задаётся явно, а не наследуется: скрипты оснастки запускаются из
+# tools/emulator, а обёртка считает проектом текущий каталог — и Gradle отказывается
+# работать, потому что tools/emulator не входит ни в одну сборку.
 skl_gradle() {
     local api="$1"; shift
-    ANDROID_SERIAL="$(skl_serial "$api")" "$SKL_REPO_ROOT/gradlew" --console=plain "$@"
+    ANDROID_SERIAL="$(skl_serial "$api")" "$SKL_REPO_ROOT/gradlew" \
+        --project-dir "$SKL_REPO_ROOT" --console=plain "$@"
 }
 
 # --- Журнал напоминаний --------------------------------------------------------

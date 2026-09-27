@@ -17,12 +17,22 @@ source "$SKL_DIR/lib.sh"
 
 # Первый из кандидатов, который SDK вообще знает: состав образов между версиями
 # cmdline-tools меняется, и «aosp_atd для API 31» существует не везде.
+# Координата пакета в том виде, в котором её печатает список: sdkmanager новых
+# cmdline-tools разделяет части пути косой чертой, старый — точкой с запятой, а на вход
+# avdmanager принимает только точку с запятой. Сравнивать поэтому приходится
+# по приведённому виду, иначе «образа нет в SDK» означает лишь «список другой версии».
+# Принимает координату аргументом либо поток целиком — приведение нужно и тому,
+# и другому, а две функции об одном отличались бы только способом чтения.
+skl_image_path_form() {
+    if (( $# > 0 )); then tr ';' '/' <<<"$1"; else tr ';' '/'; fi
+}
+
 skl_resolve_image() {
     local api="$1" candidates available candidate
     candidates="$(skl_image_candidates "$api")" || skl_die "уровень API $api не описан в config.sh"
-    available="$("$(skl_require_tool sdkmanager)" --list 2>/dev/null || true)"
+    available="$("$(skl_require_tool sdkmanager)" --list 2>/dev/null | skl_image_path_form || true)"
     for candidate in $candidates; do
-        if grep -Fq "$candidate" <<<"$available"; then echo "$candidate"; return 0; fi
+        if grep -Fq "$(skl_image_path_form "$candidate")" <<<"$available"; then echo "$candidate"; return 0; fi
     done
     # Список мог не прочитаться (нет сети, нет лицензий): берём первого кандидата
     # и даём sdkmanager сказать своё слово сам — его отказ понятнее нашей догадки.
@@ -33,7 +43,7 @@ skl_resolve_image() {
 skl_install_package() {
     local package="$1" sdkmanager
     sdkmanager="$(skl_require_tool sdkmanager)"
-    if "$sdkmanager" --list_installed 2>/dev/null | grep -Fq "$package"; then
+    if "$sdkmanager" --list_installed 2>/dev/null | skl_image_path_form | grep -Fq "$(skl_image_path_form "$package")"; then
         skl_log "пакет уже установлен: $package"
         return 0
     fi
