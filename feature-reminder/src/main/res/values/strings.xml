@@ -43,6 +43,7 @@
     <string name="diagnostics_section_reschedule">Последняя сборка плана</string>
     <string name="diagnostics_section_permissions">Разрешения</string>
     <string name="diagnostics_section_journal">Журнал срабатываний</string>
+    <string name="diagnostics_section_on_time">Вовремя за 7 дней</string>
 
     <string name="diagnostics_none">нет данных</string>
     <string name="diagnostics_datetime_pattern">d MMMM, HH:mm:ss</string>
@@ -75,9 +76,21 @@
     <!-- Сообщение о перерыве в напоминаниях (НАП-38). -->
     <string name="diagnostics_outage">Напоминания не приходили с %1$s. Проверьте разрешения и автозапуск, затем нажмите «Проверить сейчас».</string>
 
+    <!-- Сводка «вовремя за 7 дней» (НФТ-51): «12 из 13 · 92 %». Вовремя — по НАП-2. -->
+    <string name="diagnostics_on_time">%1$d из %2$d · %3$d %%</string>
+    <string name="diagnostics_on_time_none">Срабатываний за это время не было</string>
+    <string name="diagnostics_on_time_rule">Вовремя — отклонение не больше 120 секунд</string>
+
     <string name="diagnostics_action_check">Проверить сейчас</string>
     <string name="diagnostics_action_test">Пробное напоминание через минуту</string>
+    <string name="diagnostics_action_export">Выгрузить журнал</string>
+    <string name="diagnostics_action_setup">Пройти настройку заново</string>
     <string name="diagnostics_test_planned">Пробное напоминание придёт в %1$s</string>
+
+    <!-- Исход выгрузки журнала файлом (НФТ-51). -->
+    <string name="diagnostics_export_saved">Журнал выгружен · %1$s</string>
+    <string name="diagnostics_export_failed">Журнал не выгружен: запись не удалась</string>
+    <string name="diagnostics_export_no_space">Журнал не выгружен: на устройстве не хватает места</string>
 
     <!-- Причины пересборки плана (таблица НАП-11). -->
     <string name="diagnostics_reason_boot">перезагрузка</string>
@@ -105,7 +118,14 @@
     <string name="diagnostics_event_missed_sweep">переведено в пропущенные</string>
     <string name="diagnostics_event_test">пробное напоминание</string>
     <string name="diagnostics_event_outage">перерыв в напоминаниях</string>
+    <string name="diagnostics_event_settings_changed">изменена настройка</string>
 
     <!-- «снято 1, поставлено 2» — счётчики записи о пересборке. -->
     <string name="diagnostics_alarm_counters">снято %1$d, поставлено %2$d</string>
+
+    <!-- ===== Сообщение о перерыве при входе в приложение (НАП-38) ===== -->
+
+    <string name="reminder_outage_notice">Напоминания не приходили с %1$s. Приёмы за это время можно отметить вручную.</string>
+    <string name="reminder_outage_notice_action">Что делать</string>
+    <string name="reminder_outage_notice_moment_pattern">d MMMM, HH:mm</string>
 </resources>

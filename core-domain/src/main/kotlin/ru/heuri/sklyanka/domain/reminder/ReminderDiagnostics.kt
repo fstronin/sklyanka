@@ -28,6 +28,8 @@ data class ReminderDiagnostics(
     val permissions: Map<ReminderPermission, PermissionState>,
     val reliability: ReminderReliability,
     val outage: ReminderOutage?,
+    /** Сводка «сколько сработало вовремя за последние 7 дней» (НФТ-51). */
+    val onTime: ReminderOnTimeSummary,
     /** Журнал срабатываний — не менее 50 записей (НАП-37). */
     val journal: List<ReminderLogEntry>,
 )
@@ -79,6 +81,9 @@ class BuildReminderDiagnosticsUseCase(
                 expected = expected,
                 firedIntakeIds = journal.firedIntakeIds(now.minus(OUTAGE_LOOKBACK)),
             ),
+            // Сводка считается по промежутку времени, а не по последним записям: «вовремя
+            // за 7 дней» от длины показанного журнала зависеть не имеет права (НФТ-51).
+            onTime = ReminderOnTimeRule.summarize(journal.since(now.minus(ReminderOnTimeRule.WINDOW))),
             journal = journal.recent(limit),
         )
     }

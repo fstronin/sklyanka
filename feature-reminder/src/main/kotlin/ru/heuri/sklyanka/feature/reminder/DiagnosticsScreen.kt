@@ -15,7 +15,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import ru.heuri.sklyanka.domain.reminder.ReminderDiagnostics
+import ru.heuri.sklyanka.domain.reminder.ReminderJournalExportOutcome
 import ru.heuri.sklyanka.domain.reminder.ReminderLogEntry
+import ru.heuri.sklyanka.domain.reminder.ReminderOnTimeSummary
 import ru.heuri.sklyanka.domain.reminder.ReminderWarning
 import ru.heuri.sklyanka.domain.reminder.RescheduleReason
 import ru.heuri.sklyanka.domain.reminder.port.PermissionState
@@ -45,10 +47,17 @@ import java.time.LocalDateTime
  * компонентов дизайн-системы. Наружу экран не отправляет ничего (НАП-39).
  */
 @Composable
+@Suppress("LongParameterList")
 fun DiagnosticsScreen(
     state: DiagnosticsUiState,
     onCheckNow: () -> Unit,
     onTestReminder: () -> Unit,
+    onExportJournal: () -> Unit,
+    /**
+     * «Пройти настройку заново» (НАП-21). `null` означает «экрана настройки нет»: кнопки
+     * тогда нет вовсе — кнопка, ведущая в никуда, обещает больше, чем продукт умеет.
+     */
+    onRestartSetup: (() -> Unit)?,
     onBack: () -> Unit,
     toLocal: (Instant) -> LocalDateTime,
     modifier: Modifier = Modifier,
@@ -74,9 +83,19 @@ fun DiagnosticsScreen(
             verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Medium),
         ) {
             item { Warnings(snapshot, toLocal) }
-            item { Actions(state, onCheckNow, onTestReminder, toLocal) }
+            item {
+                Actions(
+                    state = state,
+                    onCheckNow = onCheckNow,
+                    onTestReminder = onTestReminder,
+                    onExportJournal = onExportJournal,
+                    onRestartSetup = onRestartSetup,
+                    toLocal = toLocal,
+                )
+            }
             item { LastShown(snapshot, toLocal) }
             item { NextPlanned(snapshot, toLocal) }
+            item { OnTime(snapshot.onTime) }
             item { LastReschedule(snapshot, toLocal) }
             item { Permissions(snapshot) }
             item { SectionTitle(stringResource(R.string.diagnostics_section_journal)) }
@@ -120,10 +139,13 @@ private fun Warnings(snapshot: ReminderDiagnostics, toLocal: (Instant) -> LocalD
 }
 
 @Composable
+@Suppress("LongParameterList")
 private fun Actions(
     state: DiagnosticsUiState,
     onCheckNow: () -> Unit,
     onTestReminder: () -> Unit,
+    onExportJournal: () -> Unit,
+    onRestartSetup: (() -> Unit)?,
     toLocal: (Instant) -> LocalDateTime,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Small)) {
@@ -143,6 +165,25 @@ private fun Actions(
                     .testTag(TAG_TEST_REMINDER),
             )
         }
+        Row(horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Medium)) {
+            SecondaryButton(
+                text = stringResource(R.string.diagnostics_action_export),
+                onClick = onExportJournal,
+                modifier = Modifier
+                    .weight(1f)
+                    .testTag(TAG_EXPORT_JOURNAL),
+            )
+            // Кнопки нет, когда некуда вести: экран настройки разрешений подключает `app`.
+            if (onRestartSetup != null) {
+                SecondaryButton(
+                    text = stringResource(R.string.diagnostics_action_setup),
+                    onClick = onRestartSetup,
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag(TAG_RESTART_SETUP),
+                )
+            }
+        }
         state.testPlannedAt?.let { at ->
             Text(
                 text = stringResource(R.string.diagnostics_test_planned, toLocal(at).journalMoment()),
@@ -150,6 +191,35 @@ private fun Actions(
                 color = SklyankaTheme.colors.textMuted,
             )
         }
+        // Исход выгрузки словами: отмолчаться нельзя ни при удаче, ни при отказе (НФТ-8).
+        state.exportOutcome?.let { outcome ->
+            Text(
+                text = outcome.label(),
+                style = SklyankaType.Caption,
+                color = SklyankaTheme.colors.textMuted,
+                modifier = Modifier.testTag(TAG_EXPORT_OUTCOME),
+            )
+        }
+    }
+}
+
+/**
+ * Сводка «вовремя за 7 дней» (НФТ-51).
+ *
+ * Строкой, а не полосой: сводка отвечает на вопрос «работает ли оно вообще», и число
+ * срабатываний рядом с долей нужно затем, чтобы «100 %» на одном срабатывании нельзя
+ * было принять за доказательство надёжности.
+ */
+@Composable
+private fun OnTime(summary: ReminderOnTimeSummary) {
+    Section(stringResource(R.string.diagnostics_section_on_time), TAG_ON_TIME) {
+        val percent = summary.percent
+        if (percent == null) {
+            Value(stringResource(R.string.diagnostics_on_time_none))
+        } else {
+            Value(stringResource(R.string.diagnostics_on_time, summary.onTime, summary.fired, percent))
+        }
+        Value(stringResource(R.string.diagnostics_on_time_rule))
     }
 }
 
@@ -281,5 +351,9 @@ const val TAG_TEST_REMINDER = "diagnostics_test_reminder"
 const val TAG_LAST_SHOWN = "diagnostics_last_shown"
 const val TAG_NEXT = "diagnostics_next"
 const val TAG_RESCHEDULE = "diagnostics_reschedule"
+const val TAG_ON_TIME = "diagnostics_on_time"
+const val TAG_EXPORT_JOURNAL = "diagnostics_export_journal"
+const val TAG_EXPORT_OUTCOME = "diagnostics_export_outcome"
+const val TAG_RESTART_SETUP = "diagnostics_restart_setup"
 const val TAG_PERMISSIONS = "diagnostics_permissions"
 const val TAG_JOURNAL_ROW = "diagnostics_journal_row"

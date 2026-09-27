@@ -9,7 +9,7 @@ import java.io.File
  * направление зависимостей между модулями. Проверять это по build-файлам —
  * ровно то, что делает конвейер, только с точки зрения приёмки.
  */
-internal object RepositoryLayout {
+object RepositoryLayout {
 
     val root: File by lazy { locateRoot() }
 

@@ -6,6 +6,7 @@ import androidx.compose.ui.res.stringResource
 import ru.heuri.sklyanka.domain.medication.DoseUnit
 import ru.heuri.sklyanka.domain.medication.doseUnit
 import ru.heuri.sklyanka.domain.reminder.ReminderEvent
+import ru.heuri.sklyanka.domain.reminder.ReminderJournalExportOutcome
 import ru.heuri.sklyanka.domain.reminder.RescheduleReason
 import ru.heuri.sklyanka.domain.reminder.port.PermissionState
 import ru.heuri.sklyanka.domain.reminder.port.ReminderPermission
@@ -130,7 +131,30 @@ internal val EVENT_LABELS: Map<ReminderEvent, Int> = mapOf(
     ReminderEvent.MISSED_SWEEP to R.string.diagnostics_event_missed_sweep,
     ReminderEvent.TEST to R.string.diagnostics_event_test,
     ReminderEvent.OUTAGE to R.string.diagnostics_event_outage,
+    ReminderEvent.SETTINGS_CHANGED to R.string.diagnostics_event_settings_changed,
 )
 
 @Composable
 internal fun ReminderEvent.label(): String = stringResource(EVENT_LABELS.getValue(this))
+
+/**
+ * Исход выгрузки журнала словами (НФТ-51).
+ *
+ * Число записей — через `plurals` (НФТ-44); размер файла и место, куда он ушёл, человеку
+ * не называются: место выбрала система по его просьбе, и приложение его не запоминает.
+ */
+@Composable
+internal fun ReminderJournalExportOutcome.label(): String = when (this) {
+    is ReminderJournalExportOutcome.Saved -> stringResource(
+        R.string.diagnostics_export_saved,
+        pluralStringResource(R.plurals.diagnostics_export_records, records, records),
+    )
+
+    ReminderJournalExportOutcome.NotEnoughSpace -> stringResource(R.string.diagnostics_export_no_space)
+    ReminderJournalExportOutcome.Failed -> stringResource(R.string.diagnostics_export_failed)
+}
+
+/** Момент, с которого напоминания не приходили, в сообщении о перерыве (НАП-38). */
+@Composable
+internal fun LocalDateTime.outageMoment(): String =
+    format(DateTimeFormatter.ofPattern(stringResource(R.string.reminder_outage_notice_moment_pattern)))

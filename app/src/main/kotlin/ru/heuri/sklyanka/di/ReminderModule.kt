@@ -13,6 +13,7 @@ import ru.heuri.sklyanka.domain.intake.MarkSideEffects
 import ru.heuri.sklyanka.domain.intake.SweepMissedIntakesUseCase
 import ru.heuri.sklyanka.domain.reminder.BuildReminderDiagnosticsUseCase
 import ru.heuri.sklyanka.domain.reminder.DismissReminderUseCase
+import ru.heuri.sklyanka.domain.reminder.ExportReminderJournalUseCase
 import ru.heuri.sklyanka.domain.reminder.HandleFiredReminderUseCase
 import ru.heuri.sklyanka.domain.reminder.ReadReminderReliabilityUseCase
 import ru.heuri.sklyanka.domain.reminder.RecordReminderOutageUseCase
@@ -31,10 +32,14 @@ import ru.heuri.sklyanka.domain.reminder.port.ReminderPlanSource
 import ru.heuri.sklyanka.domain.reminder.port.ReminderSettings
 import ru.heuri.sklyanka.domain.reminder.port.WatchGateway
 import ru.heuri.sklyanka.domain.time.TimeSource
+import ru.heuri.sklyanka.domain.transfer.TransferFiles
+import ru.heuri.sklyanka.feature.onboarding.PermissionsActivity
 import ru.heuri.sklyanka.feature.reminder.ReminderCheckNow
+import ru.heuri.sklyanka.feature.reminder.ReminderSetupEntry
 import ru.heuri.sklyanka.platform.notification.ReminderNotifier
 import ru.heuri.sklyanka.platform.permission.SystemPermissionStateReader
 import ru.heuri.sklyanka.platform.reminder.AlarmManagerGateway
+import ru.heuri.sklyanka.reminder.ReminderOutageDetector
 import ru.heuri.sklyanka.reminder.ReminderPlanningTrigger
 import javax.inject.Qualifier
 import javax.inject.Singleton
@@ -232,6 +237,43 @@ object ReminderModule {
         journal: ReminderJournal,
         time: TimeSource,
     ): RecordReminderOutageUseCase = RecordReminderOutageUseCase(plan = plan, journal = journal, time = time)
+
+    /**
+     * Обнаружение перерыва для объявления при входе (НАП-38).
+     *
+     * Держатель объявления получает операцию, а не сценарий: ему нужен исход, а порядок
+     * «сначала план, потом признак» знает тот, кто зовёт пересборку.
+     */
+    @Provides
+    @Singleton
+    fun provideOutageDetector(record: RecordReminderOutageUseCase): ReminderOutageDetector =
+        ReminderOutageDetector { record() }
+
+    /**
+     * Выгрузка журнала срабатываний файлом (НФТ-51).
+     *
+     * Файловая часть — тот же [TransferFiles], что у переноса данных: системный выбор
+     * места, запись целиком и снятие цели при срыве уже реализованы там, и второй путь
+     * записи файла означал бы второй набор ошибок в том же месте.
+     */
+    @Provides
+    @Singleton
+    fun provideJournalExport(
+        journal: ReminderJournal,
+        files: TransferFiles,
+        time: TimeSource,
+    ): ExportReminderJournalUseCase = ExportReminderJournalUseCase(journal = journal, files = files, time = time)
+
+    /**
+     * Куда ведёт «Пройти настройку заново» с экрана диагностики (НАП-21).
+     *
+     * Решать это обязан `app`: `feature-reminder` не зависит от `feature-onboarding`
+     * и о существовании экрана разрешений не знает (`ADR-0007`).
+     */
+    @Provides
+    @Singleton
+    fun provideReminderSetupEntry(): ReminderSetupEntry =
+        ReminderSetupEntry { context -> PermissionsActivity.intentFor(context) }
 
     @Provides
     @Singleton

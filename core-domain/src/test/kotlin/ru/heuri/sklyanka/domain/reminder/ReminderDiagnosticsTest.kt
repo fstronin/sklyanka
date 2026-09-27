@@ -85,6 +85,29 @@ class ReminderDiagnosticsTest {
     }
 
     @Test
+    fun `the seven day on time summary is part of the snapshot`() = runTest {
+        // Два срабатывания в пределах НАП-2, одно с опозданием и одно старше недели:
+        // сводка обязана считаться по промежутку времени, а не по последним записям.
+        listOf(0L to 10L, 0L to 30L, 0L to 600L).forEach { (offsetDays, deviation) ->
+            world.journal.record(firing(days = offsetDays, deviation = deviation))
+        }
+        world.journal.record(firing(days = 8L, deviation = 5L))
+
+        val summary = world.diagnostics().onTime
+
+        assertEquals(3, summary.fired)
+        assertEquals(2, summary.onTime)
+        assertEquals(7L, summary.days)
+    }
+
+    private fun firing(days: Long, deviation: Long) = ReminderLogEntry(
+        occurredAt = world.clock.now().minusSeconds(days * SECONDS_IN_DAY),
+        event = ReminderEvent.FIRED,
+        intakeId = "intake-$days-$deviation",
+        deviationSeconds = deviation,
+    )
+
+    @Test
     fun `a plan that fired nothing is reported as a break`() = runTest {
         world.pending(at = LocalDateTime.of(2026, 9, 25, 12, 0))
         world.reschedule(RescheduleReason.APP_START)
@@ -117,5 +140,9 @@ class ReminderDiagnosticsTest {
         forbidden.forEach { value ->
             assertTrue(!text.contains(value), "the reminder journal must not carry '$value' (NFR-19)")
         }
+    }
+
+    private companion object {
+        const val SECONDS_IN_DAY = 86_400L
     }
 }

@@ -33,4 +33,12 @@
         <item quantity="many">%1$s доз</item>
         <item quantity="other">%1$s дозы</item>
     </plurals>
+
+    <!-- Размер выгруженного журнала: «1 запись», «12 записей» (НФТ-44). -->
+    <plurals name="diagnostics_export_records">
+        <item quantity="one">%1$d запись</item>
+        <item quantity="few">%1$d записи</item>
+        <item quantity="many">%1$d записей</item>
+        <item quantity="other">%1$d записи</item>
+    </plurals>
 </resources>

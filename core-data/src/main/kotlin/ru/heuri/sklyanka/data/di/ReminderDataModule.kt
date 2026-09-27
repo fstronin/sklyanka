@@ -6,7 +6,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import ru.heuri.sklyanka.data.prefs.AlarmRegistryStore
-import ru.heuri.sklyanka.data.prefs.ReminderSettingsStore
+import ru.heuri.sklyanka.data.prefs.JournalingReminderSettings
 import ru.heuri.sklyanka.data.reminder.ReminderDataSource
 import ru.heuri.sklyanka.data.reminder.RoomReminderJournal
 import ru.heuri.sklyanka.data.room.SklyankaDatabase
@@ -47,9 +47,16 @@ abstract class ReminderDataBindings {
     @Singleton
     abstract fun bindReminderJournal(impl: RoomReminderJournal): ReminderJournal
 
+    /**
+     * Настройки напоминания подставляются обёрткой со следом в журнале (НАП-14).
+     *
+     * Само хранилище наружу не выдаётся намеренно: изменение настройки обязано оставлять
+     * запись при любом пути — из настроек, из онбординга, из загрузки файла переноса, —
+     * а привязка прямо на хранилище тихо вернула бы молчаливый путь.
+     */
     @Binds
     @Singleton
-    abstract fun bindReminderSettings(impl: ReminderSettingsStore): ReminderSettings
+    abstract fun bindReminderSettings(impl: JournalingReminderSettings): ReminderSettings
 
     @Binds
     @Singleton

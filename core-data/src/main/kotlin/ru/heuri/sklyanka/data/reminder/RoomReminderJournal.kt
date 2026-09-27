@@ -66,6 +66,10 @@ class RoomReminderJournal @Inject constructor(private val dao: ReminderLogDao, p
 
     override suspend fun last(event: ReminderEvent): ReminderLogEntry? = dao.last(event.name)?.let(::toDomain)
 
+    /** Выборка по времени запросом: реализация по умолчанию ограничена числом записей. */
+    override suspend fun since(from: Instant): List<ReminderLogEntry> =
+        dao.since(from.toEpochMilli()).mapNotNull(::toDomain)
+
     override suspend fun firedIntakeIds(since: Instant): Set<String> =
         dao.firedIntakeIds(ReminderEvent.FIRED.name, since.toEpochMilli()).toSet()
 

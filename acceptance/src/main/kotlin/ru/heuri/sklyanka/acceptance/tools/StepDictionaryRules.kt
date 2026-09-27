@@ -1,12 +1,19 @@
 package ru.heuri.sklyanka.acceptance.tools
 
-/** Объявление шага: выражение и место, где оно написано. */
+/**
+ * Объявление шага: выражение и место, где оно написано.
+ *
+ * [origin] — модуль и набор исходников, откуда объявление прочитано («acceptance/main»,
+ * «feature-today/testDebug»). После SKL-26 словарь распределён по модулям, и без места
+ * сообщение о дубле не говорит, куда идти.
+ */
 data class StepDeclaration(
     val expression: String,
     val declaredIn: String,
     val method: String,
     val keyword: String = "",
     val shared: Boolean = false,
+    val origin: String = "",
 ) {
     val at: String get() = "$declaredIn.$method"
 }
@@ -33,6 +40,18 @@ sealed interface DictionaryViolation {
     data class SameExpression(val expression: String, val declarations: List<StepDeclaration>) : DictionaryViolation {
         override fun message(): String = "Шаг «$expression» объявлен ${declarations.size} раза: " +
             declarations.joinToString(", ") { it.at }
+    }
+
+    /**
+     * Объявление шага, выражение которого проверка прочитать не смогла (SKL-26, TDD §6.1).
+     *
+     * Молчаливый пропуск такого объявления вернул бы дубль, от которого защищает вся
+     * проверка: шаг был бы объявлен, а словарь о нём не знал бы.
+     */
+    data class Unparsed(val declaration: UnparsedDeclaration) : DictionaryViolation {
+        override fun message(): String =
+            "Объявление шага в ${declaration.at} проверка прочитать не смогла: «${declaration.line}». " +
+                "Выражение шага обязано быть строковым литералом, при необходимости склеенным «+»."
     }
 
     /** Два разных выражения ловят одну и ту же строку сценария. */

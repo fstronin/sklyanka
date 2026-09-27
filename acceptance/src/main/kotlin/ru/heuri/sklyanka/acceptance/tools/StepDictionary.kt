@@ -9,8 +9,9 @@ import java.io.File
  * запускает Cucumber-CLI: тот же classpath, та же кодировка, тот же `sklyanka.repo.root`.
  *
  * Режимы:
- * - `--verify` — падает с ненулевым кодом, если одно выражение объявлено дважды или одну
- *   строку сценария ловят два разных объявления; сообщение называет обе точки объявления;
+ * - `--verify` — падает с ненулевым кодом, если внутри одного прогона одно выражение
+ *   объявлено дважды, одну строку сценария ловят два разных объявления или объявление
+ *   не удалось прочитать; сообщение называет обе точки объявления;
  * - `--list` — печатает реестр: выражение, место объявления, общий шаг или задачный
  *   и сколько строк каких задач он ловит. Это ответ на вопрос «а такой шаг уже есть?»
  *   до того, как написана первая строка новых шагов.
@@ -18,6 +19,11 @@ import java.io.File
  * Почему проверка отдельная, а не «Cucumber сам заметит»: Cucumber замечает второе
  * объявление той же строки только когда исполнение до этой строки доходит, а до строк
  * нереализованных сценариев оно не доходит никогда.
+ *
+ * **Словарь распределён по модулям (SKL-26).** Экранный шаг живёт в модуле своего экрана,
+ * потому что только оттуда видны экран и его ресурсы. Поэтому объявления читаются из двух
+ * источников — отражением по классам модуля сценарной приёмки и из исходников остальных
+ * модулей ([SourceStepScan]) — и проверяются внутри каждого прогона ([StepScopes]).
  */
 object StepDictionary {
 
@@ -29,20 +35,35 @@ object StepDictionary {
     @JvmStatic
     fun main(args: Array<String>) {
         val root = repositoryRoot()
-        val declarations = declarations()
+        val reflected = declarations()
+        val scans = SourceStepScan.modulesWithSteps(root, StepScopes.ACCEPTANCE_MODULE)
+            .associateWith { module -> SourceStepScan.scan(root, module) }
+        val scanned = scans.mapValues { (_, scan) -> scan.declarations }
+        val unparsed = scans.values.flatMap { it.unparsed }
+        val scopes = StepScopes.of(reflected, scanned)
+        val all = (reflected + scanned.values.flatten()).distinct()
         val lines = scenarioLines(File(root, TASKS_DIR))
-        if (declarations.isEmpty()) {
+        if (all.isEmpty()) {
             println("Объявлений шагов не найдено — проверять нечего, и это само по себе ошибка.")
             kotlin.system.exitProcess(1)
         }
-        if (args.contains("--list")) println(registry(declarations, lines))
+        if (args.contains("--list")) println(registry(scopes, all, lines))
 
-        val violations = StepDictionaryRules.violations(declarations, lines)
+        // Нарушение называет прогон, в котором объявления столкнулись: без этого непонятно,
+        // куда идти — словарь распределён по модулям.
+        val violations = unparsed.map { DictionaryViolation.Unparsed(it).message() } +
+            scopes.flatMap { scope ->
+                StepDictionaryRules.violations(scope.declarations, lines)
+                    .map { "[${scope.name}] " + it.message() }
+            }
         if (violations.isEmpty()) {
-            println("Словарь шагов: нарушений нет (${declarations.size} объявлений, ${lines.size} строк шагов).")
+            println(
+                "Словарь шагов: нарушений нет (${all.size} объявлений в ${scopes.size} прогонах, " +
+                    "${lines.size} строк шагов).",
+            )
         } else {
             println("Словарь шагов: нарушений ${violations.size}.")
-            violations.forEach { println("  " + it.message()) }
+            violations.forEach { println("  " + it) }
         }
         if (args.contains("--verify") && violations.isNotEmpty()) kotlin.system.exitProcess(1)
     }
@@ -56,26 +77,44 @@ object StepDictionary {
      */
     fun declarations(roots: List<File> = classpathDirectories()): List<StepDeclaration> {
         val loader = StepDictionary::class.java.classLoader
-        return glueClassNames(roots).sorted().mapNotNull { name ->
-            runCatching { Class.forName(name, false, loader) }.getOrNull()
-        }.flatMap { type ->
-            type.declaredMethods.sortedBy { it.name }.flatMap { method ->
-                method.annotations.mapNotNull { annotation ->
-                    val annotationType = annotation.annotationClass.java
-                    if (!annotationType.name.startsWith(CUCUMBER_ANNOTATIONS)) return@mapNotNull null
-                    val expression = runCatching {
-                        annotationType.getMethod("value").invoke(annotation) as? String
-                    }.getOrNull() ?: return@mapNotNull null
-                    StepDeclaration(
-                        expression = expression,
-                        declaredIn = type.name.removePrefix("$GLUE_PACKAGE."),
-                        method = method.name,
-                        keyword = annotationType.simpleName,
-                        shared = type.name.startsWith("$SHARED_PACKAGE."),
-                    )
-                }
+        return roots.filter { it.isDirectory }.flatMap { dir ->
+            val origin = originOf(dir)
+            glueClassNames(dir).sorted().mapNotNull { name ->
+                runCatching { Class.forName(name, false, loader) }.getOrNull()
+            }.flatMap { type -> declarationsOf(type, origin) }
+        }.distinct()
+    }
+
+    private fun declarationsOf(type: Class<*>, origin: String): List<StepDeclaration> =
+        type.declaredMethods.sortedBy { it.name }.flatMap { method ->
+            method.annotations.mapNotNull { annotation ->
+                val annotationType = annotation.annotationClass.java
+                if (!annotationType.name.startsWith(CUCUMBER_ANNOTATIONS)) return@mapNotNull null
+                val expression = runCatching {
+                    annotationType.getMethod("value").invoke(annotation) as? String
+                }.getOrNull() ?: return@mapNotNull null
+                StepDeclaration(
+                    expression = expression,
+                    declaredIn = "$origin: " + type.name.removePrefix("$GLUE_PACKAGE."),
+                    method = method.name,
+                    keyword = annotationType.simpleName,
+                    shared = type.name.startsWith("$SHARED_PACKAGE."),
+                    origin = origin,
+                )
             }
         }
+
+    /**
+     * Модуль и набор исходников по каталогу классов.
+     *
+     * `…/acceptance/build/classes/kotlin/main` → `acceptance/main`. Общий артефакт
+     * отличается от шагов задач именно набором, и прогонам это различие нужно.
+     */
+    private fun originOf(dir: File): String {
+        val parts = dir.absolutePath.split(File.separatorChar)
+        val build = parts.indexOf("build")
+        val module = parts.getOrNull(build - 1) ?: return dir.name
+        return "$module/${parts.last()}"
     }
 
     /** Строки шагов всех документов приёмки, с раскрытием таблиц примеров. */
@@ -93,15 +132,11 @@ object StepDictionary {
         .map(::File)
         .filter { it.isDirectory }
 
-    private fun glueClassNames(roots: List<File>): List<String> = roots
-        .filter { it.isDirectory }
-        .flatMap { dir ->
-            dir.walkTopDown()
-                .filter { it.isFile && it.extension == "class" }
-                .map { it.relativeTo(dir).path.removeSuffix(".class").replace(File.separatorChar, '.') }
-                .filter { it.startsWith("$GLUE_PACKAGE.") }
-                .toList()
-        }
+    private fun glueClassNames(dir: File): List<String> = dir.walkTopDown()
+        .filter { it.isFile && it.extension == "class" }
+        .map { it.relativeTo(dir).path.removeSuffix(".class").replace(File.separatorChar, '.') }
+        .filter { it.startsWith("$GLUE_PACKAGE.") }
+        .toList()
         .distinct()
 
     private fun repositoryRoot(): File {
@@ -110,7 +145,11 @@ object StepDictionary {
         return File(property)
     }
 
-    private fun registry(declarations: List<StepDeclaration>, lines: List<ScenarioLine>): String {
+    private fun registry(
+        scopes: List<StepScope>,
+        declarations: List<StepDeclaration>,
+        lines: List<ScenarioLine>,
+    ): String {
         val caught = declarations.associateWith { declaration ->
             lines.filter { StepDictionaryRules.matches(declaration.expression, it.text) }
         }
@@ -122,11 +161,14 @@ object StepDictionary {
                     "${lines.size} строк шагов в ${tasks.size} документах приёмки.",
             )
             appendLine()
+            appendLine("ПРОГОНЫ — область видимости словаря: дубль опасен внутри прогона")
+            scopes.forEach { scope -> appendLine("  ${scope.name}: ${scope.declarations.size} объявлений") }
+            appendLine()
             appendLine("ОБЩИЕ ШАГИ — предметная область, доступны сценариям любой задачи")
             declarations.filter { it.shared }.sortedBy { it.at }
                 .forEach { append(describe(it, caught.getValue(it))) }
             appendLine()
-            appendLine("ШАГИ ЗАДАЧ — предмет ровно одной задачи")
+            appendLine("ШАГИ ЗАДАЧ И ЭКРАНОВ — предмет ровно одной задачи")
             declarations.filterNot { it.shared }.sortedBy { it.at }
                 .forEach { append(describe(it, caught.getValue(it))) }
             appendLine()

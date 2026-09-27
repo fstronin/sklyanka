@@ -27,6 +27,16 @@ interface ReminderLogDao {
     suspend fun ofIntake(intakeId: String): List<ReminderLogEntity>
 
     /**
+     * Записи, начиная с момента.
+     *
+     * Условие по времени, а не потолок по числу: сводка «вовремя за 7 дней» и выгрузка
+     * журнала файлом (НФТ-51) спрашивают про промежуток, и «последние N» молча меняли бы
+     * ответ при всплеске пересборок плана. Индекс по `occurred_at` для этого и есть.
+     */
+    @Query("SELECT * FROM reminder_log WHERE occurred_at >= :since ORDER BY occurred_at DESC, id DESC")
+    suspend fun since(since: Long): List<ReminderLogEntity>
+
+    /**
      * Приёмы, о которых напоминание действительно сработало.
      *
      * Опора обнаружения перерыва (НАП-38): будильник стоял, момент прошёл, а записи нет —

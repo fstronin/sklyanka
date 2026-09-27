@@ -4,12 +4,16 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import dagger.hilt.android.AndroidEntryPoint
+import ru.heuri.sklyanka.domain.reminder.ReminderJournalDocument
 import ru.heuri.sklyanka.ui.theme.SklyankaTheme
+import javax.inject.Inject
 
 /**
  * Экран диагностики напоминаний (НАП-37).
@@ -24,15 +28,35 @@ class DiagnosticsActivity : ComponentActivity() {
 
     private val viewModel: DiagnosticsViewModel by viewModels()
 
+    /**
+     * Куда ведёт «Пройти настройку заново» (НАП-21).
+     *
+     * Подставляется `app`: экран разрешений принадлежит SKL-14, и экранные модули друг
+     * от друга не зависят (`ADR-0007`).
+     */
+    @Inject
+    lateinit var setupEntry: ReminderSetupEntry
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             SklyankaTheme {
                 val state by viewModel.state.collectAsState()
+                // Системный выбор места (SAF) живёт здесь, а не в `ViewModel` и не в домене:
+                // это результат чужой активности, и получить его может только composable.
+                // Наружу уходит непрозрачная ссылка строкой, разрешений на внешнее
+                // хранилище приложение не запрашивает (НФТ-17).
+                val saveLauncher = rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.CreateDocument(ReminderJournalDocument.MEDIA_TYPE),
+                ) { uri -> uri?.let { viewModel.onExportTo(it.toString()) } }
                 DiagnosticsScreen(
                     state = state,
                     onCheckNow = viewModel::onCheckNow,
                     onTestReminder = viewModel::onTestReminder,
+                    onExportJournal = { saveLauncher.launch(state.exportFileName) },
+                    onRestartSetup = {
+                        startActivity(setupEntry.intentFor(this@DiagnosticsActivity))
+                    },
                     onBack = ::finish,
                     toLocal = viewModel::local,
                 )

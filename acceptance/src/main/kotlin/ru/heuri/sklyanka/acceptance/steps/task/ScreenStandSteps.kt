@@ -393,15 +393,30 @@ class ScreenStandSteps {
 
     @Тогда("ни один зелёный сценарий не покраснел")
     fun noGreenScenarioTurnedRed() {
-        // Автоматический прогон исключает ровно один новый тег, и ни один чужой
-        // сценарий его не несёт: исключение не способно спрятать чужую приёмку.
-        val carriers = featureFiles().filter { it.readText().contains(SCREEN_TAG) }
+        // Тег @screen исключает сценарий из автоматического прогона, и проверяется здесь
+        // ровно то, что исключение не превращается в сокрытие: у каждой задачи, чьи
+        // сценарии его несут, обязан существовать экранный прогон, который их исполняет.
+        //
+        // До SKL-26 условие было записано жёстче — «тег не несёт ни одна задача, кроме
+        // этой». Тогда это было равносильно: экранный прогон существовал ровно один,
+        // в core-ui, и был прогоном этой задачи. SKL-26 завела экранные прогоны в
+        // модулях с экранами, и прежняя формулировка стала запрещать не сокрытие,
+        // а само появление таких прогонов — то есть проверяла бы отсутствие работы,
+        // а не её качество. Смысл сохранён, область применения расширена.
+        // Тег ищется строкой тегов, а не вхождением текста: слово «@screen» встречается
+        // и в прозе документа, а проза сценария не помечает.
+        val carriers = featureFiles()
+            .filter { file -> file.readLines().any { it.trim().startsWith("@") && SCREEN_TAG in tagsOf(it) } }
             .map { it.parentFile.name }
-            .filterNot { it == THIS_TASK }
+            .distinct()
+            .sorted()
+        assertTrue(carriers.isNotEmpty(), "no task carries the $SCREEN_TAG tag at all")
+        val runners = screenTestFiles().map { it.readText() }
+        val unexecuted = carriers.filterNot { task -> runners.any { it.contains(task) } }
         assertEquals(
             emptyList<String>(),
-            carriers,
-            "the @screen tag must not hide scenarios of other tasks: $carriers",
+            unexecuted,
+            "the $SCREEN_TAG tag must not hide scenarios: no screen run executes $unexecuted",
         )
     }
 
@@ -436,6 +451,9 @@ class ScreenStandSteps {
         ?.flatMap { directory -> directory.walkTopDown().filter { it.extension == PNG_EXTENSION }.toList() }
         ?.sortedBy { it.path }
         .orEmpty()
+
+    /** Теги строки тегов как отдельные слова: «@screen-run» тегом «@screen» не является. */
+    private fun tagsOf(line: String): List<String> = line.trim().split(WHITESPACE).filter { it.startsWith("@") }
 
     private fun featureFiles(): List<File> = File(RepositoryLayout.root, TASKS_DIRECTORY).walkTopDown()
         .filter { it.extension == FEATURE }
@@ -489,8 +507,8 @@ class ScreenStandSteps {
         const val SCREEN_GROUP = "screen"
         const val BUILD_DIRECTORY = "/build/"
         const val TASKS_DIRECTORY = "docs/tasks"
-        const val THIS_TASK = "SKL-24"
         const val SCREEN_TAG = "@screen"
+        val WHITESPACE = Regex("\\s+")
 
         /** Сколько проверок переехало на JVM: меньше — значит что-то потерялось. */
         const val MOVED_CHECKS = 104

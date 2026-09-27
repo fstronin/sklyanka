@@ -17,6 +17,7 @@ import kotlinx.coroutines.launch
 import ru.heuri.sklyanka.domain.onboarding.OnboardingSource
 import ru.heuri.sklyanka.domain.onboarding.ShouldShowOnboardingUseCase
 import ru.heuri.sklyanka.domain.profile.ProfileContextProvider
+import ru.heuri.sklyanka.domain.time.TimeSource
 import ru.heuri.sklyanka.feature.history.HistoryViewModel
 import ru.heuri.sklyanka.feature.meds.archive.ArchiveViewModel
 import ru.heuri.sklyanka.feature.meds.card.MedicationCardViewModel
@@ -26,6 +27,7 @@ import ru.heuri.sklyanka.feature.onboarding.OnboardingViewModel
 import ru.heuri.sklyanka.feature.onboarding.PermissionsActivity
 import ru.heuri.sklyanka.feature.onboarding.PermissionsRoute
 import ru.heuri.sklyanka.feature.reminder.DiagnosticsActivity
+import ru.heuri.sklyanka.feature.reminder.ReminderOutageNotice
 import ru.heuri.sklyanka.feature.settings.SettingsNavigation
 import ru.heuri.sklyanka.feature.settings.SettingsRoute
 import ru.heuri.sklyanka.feature.settings.SettingsViewModel
@@ -40,6 +42,7 @@ import ru.heuri.sklyanka.navigation.RootTab
 import ru.heuri.sklyanka.navigation.SettingsDestination
 import ru.heuri.sklyanka.navigation.SettingsSection
 import ru.heuri.sklyanka.platform.startup.StartupRouter
+import ru.heuri.sklyanka.reminder.ReminderOutageAnnouncer
 import ru.heuri.sklyanka.startup.SplashScreen
 import ru.heuri.sklyanka.startup.StartDestination
 import ru.heuri.sklyanka.ui.profile.ProfileChrome
@@ -92,6 +95,20 @@ class MainActivity : ComponentActivity() {
     /** Единственный источник контекста активного профиля на всё приложение (ПРФ-17). */
     @Inject
     lateinit var profileContext: ProfileContextProvider
+
+    /**
+     * Сообщение о перерыве в напоминаниях (НАП-38).
+     *
+     * Показывается в корне, над содержимым: человек, у которого напоминания не приходили,
+     * обязан узнать об этом там, куда он входит. На экран диагностики он сам не пойдёт —
+     * он пойдёт туда уже после того, как потерял приёмы.
+     */
+    @Inject
+    lateinit var outageAnnouncer: ReminderOutageAnnouncer
+
+    /** Местное время момента перерыва: журнал хранит моменты в UTC (НФТ-48). */
+    @Inject
+    lateinit var time: TimeSource
 
     private val onboarding: OnboardingViewModel by viewModels()
     private val today: TodayViewModel by viewModels()
@@ -150,7 +167,10 @@ class MainActivity : ComponentActivity() {
                     // в контексте профиля (ПРФ-12). Заставка и экран разрешений в него
                     // не входят: профиля на них ещё нет, а на первом запуске он всегда
                     // свой.
-                    else -> ProfileChrome(profileChrome()) { Root() }
+                    else -> ProfileChrome(profileChrome()) {
+                        OutageNotice()
+                        Root()
+                    }
                 }
             }
         }
@@ -171,8 +191,34 @@ class MainActivity : ComponentActivity() {
         return ProfileChromeState.of(name = profile.name, colorArgb = profile.color, isSelf = profile.isSelf)
     }
 
+    /**
+     * Сообщение о перерыве в напоминаниях над содержимым (НАП-38).
+     *
+     * Признак перечитывается при каждом возвращении на передний план ([onResume]), а не
+     * запоминается флагом: перерыв кончается сам, когда напоминания снова пошли.
+     */
+    @Composable
+    private fun OutageNotice() {
+        val outage by outageAnnouncer.current.collectAsState()
+        outage?.let { detected ->
+            ReminderOutageNotice(
+                outage = detected,
+                onOpenDiagnostics = {
+                    // Сообщение доставлено: дальше о перерыве говорит диагностика, и второй
+                    // раз тот же перерыв объявлять незачем.
+                    outageAnnouncer.acknowledge()
+                    startActivity(DiagnosticsActivity.intentFor(this))
+                },
+                toLocal = { instant -> instant.atZone(time.zone()).toLocalDateTime() },
+            )
+        }
+    }
+
     override fun onResume() {
         super.onResume()
+        // Перерыв в напоминаниях мог начаться, пока приложение было в фоне, и мог
+        // закончиться сам: признак считается заново, а не хранится флагом (НАП-38).
+        lifecycleScope.launch { outageAnnouncer.refresh() }
         // Состояние разрешений читается из системы при каждом возврате на передний план
         // (НФТ-52): человек уходит выдавать разрешение в системные настройки и возвращается,
         // и карточка обязана измениться без перезахода (критерии приёмки 4 и 16).

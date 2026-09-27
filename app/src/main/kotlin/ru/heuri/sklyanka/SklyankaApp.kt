@@ -10,10 +10,10 @@ import ru.heuri.sklyanka.data.log.LogRetention
 import ru.heuri.sklyanka.data.reminder.ReminderLogRetention
 import ru.heuri.sklyanka.data.repository.ProfileBootstrap
 import ru.heuri.sklyanka.domain.log.OperationLog
-import ru.heuri.sklyanka.domain.reminder.RecordReminderOutageUseCase
 import ru.heuri.sklyanka.domain.reminder.RescheduleReason
 import ru.heuri.sklyanka.domain.reminder.port.ReminderJournal
 import ru.heuri.sklyanka.platform.notification.ReminderChannels
+import ru.heuri.sklyanka.reminder.ReminderOutageAnnouncer
 import ru.heuri.sklyanka.reminder.ReminderPlanningTrigger
 import ru.heuri.sklyanka.startup.StartupSeed
 import ru.heuri.sklyanka.ui.token.ProfilePalette
@@ -52,8 +52,12 @@ class SklyankaApp : Application() {
     @Inject
     lateinit var reminderPlanning: ReminderPlanningTrigger
 
+    /**
+     * Перерыв в напоминаниях: признак считается здесь, а показывает его корень приложения
+     * (НАП-38). Запись в журнал делает то же обнаружение.
+     */
     @Inject
-    lateinit var recordOutage: RecordReminderOutageUseCase
+    lateinit var outageAnnouncer: ReminderOutageAnnouncer
 
     @Inject
     lateinit var reminderChannels: ReminderChannels
@@ -100,8 +104,9 @@ class SklyankaApp : Application() {
             // наверняка, поэтому окно будильников пересобирается и здесь.
             reminderPlanning.planAll(RescheduleReason.APP_START)
             // Признак перерыва считается после пересборки: приложение могло быть
-            // принудительно остановлено, и об этом человеку говорят прямо (НАП-38).
-            recordOutage()
+            // принудительно остановлено, и об этом человеку говорят прямо — сообщением
+            // над содержимым при входе, а не только записью в журнале (НАП-38).
+            outageAnnouncer.refresh()
             operationLog.prune(LogRetention.KEEP_DAYS, LogRetention.KEEP_RECORDS)
             reminderJournal.prune(ReminderLogRetention.KEEP_DAYS, ReminderLogRetention.KEEP_RECORDS)
         }
