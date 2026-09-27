@@ -92,9 +92,32 @@ internal class FakeNotificationGateway : NotificationGateway {
     /** Что сейчас на экране: показ добавляет слот, снятие убирает — как в шторке. */
     private val visibleSlots: MutableSet<ReminderSlot> = mutableSetOf()
 
+    /**
+     * Доходит ли показ до шторки.
+     *
+     * `false` воспроизводит тихий отказ показа: приложение попросило, система не показала —
+     * отключённым каналом, отклонённым полноэкранным намерением, вмешательством оболочки.
+     * Разрешение при этом на месте, поэтому от [enabled] это состояние отличается.
+     */
+    var reachesTheShade: Boolean = true
+
+    /**
+     * Через сколько опросов уведомление становится видимым.
+     *
+     * Шторка наполняется не в тот же миг, в который приложение вызвало показ, и проверка
+     * отметки предъявления без этой задержки измеряла бы ровно то же, что отметка вызова.
+     */
+    var appearsAfterPolls: Int = 0
+
+    /** Что происходит на каждом опросе шторки: тестам нужно двигать часы. */
+    var onPoll: (() -> Unit)? = null
+
+    private var polls: Int = 0
+
     override suspend fun show(card: ReminderCard, channel: ReminderChannel) {
         shown += card to channel
-        visibleSlots += card.slot
+        polls = 0
+        if (reachesTheShade) visibleSlots += card.slot
     }
 
     override suspend fun cancel(slot: ReminderSlot) {
@@ -102,7 +125,11 @@ internal class FakeNotificationGateway : NotificationGateway {
         visibleSlots -= slot
     }
 
-    override suspend fun isShown(slot: ReminderSlot): Boolean = slot in visibleSlots
+    override suspend fun isShown(slot: ReminderSlot): Boolean {
+        onPoll?.invoke()
+        polls += 1
+        return slot in visibleSlots && polls > appearsAfterPolls
+    }
 
     override suspend fun retainOnly(pendingIntakeIds: Set<String>) {
         retained = pendingIntakeIds

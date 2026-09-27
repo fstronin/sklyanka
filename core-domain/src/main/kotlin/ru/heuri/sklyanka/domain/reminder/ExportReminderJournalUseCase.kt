@@ -192,7 +192,7 @@ internal object ReminderJournalCsv {
         entry.watchResult.orEmpty(),
         // Признак НАП-2 рядом с отклонением: иначе доля «вовремя» в файле считается
         // заново и каждый раз по своему порогу.
-        if (entry.event == ReminderEvent.FIRED) ReminderOnTimeRule.isOnTime(entry.deviationSeconds).toString() else "",
+        if (entry.event == ReminderEvent.SHOWN) ReminderOnTimeRule.isOnTime(entry.deviationSeconds).toString() else "",
     )
 
     /** Значение с разделителем, кавычкой или переводом строки не имеет права разорвать таблицу. */

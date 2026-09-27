@@ -189,4 +189,45 @@ class HandleFiredReminderUseCaseTest {
         assertTrue(world.alarms.repeats.isEmpty())
         assertTrue(world.stored().isPending, "the intake stays unmarked (REM-26)")
     }
+
+    @Test
+    fun `the deviation of a show is counted from the moment the notification appeared`() = runTest {
+        // Шторка наполняется не мгновенно: уведомление обнаруживается третьим опросом,
+        // и каждый опрос стоит секунду по часам устройства.
+        world.pending()
+        world.notifications.appearsAfterPolls = 2
+        world.notifications.onPoll = { world.clock.advanceTo(world.clock.now().plusSeconds(1)) }
+        world.moveTo(LocalDateTime.of(2026, 9, 25, 14, 0).plusSeconds(5))
+
+        world.fired(Fixtures.INTAKE_ID)
+
+        // Получение управления — пять секунд, предъявление — восемь: гейт считается
+        // по второму числу (НАП-2, SKL-03 TDD §4.1), и в журнале они не совпадают.
+        assertEquals(5L, world.journal.of(ReminderEvent.FIRED).single().deviationSeconds)
+        assertEquals(8L, world.journal.of(ReminderEvent.SHOWN).single().deviationSeconds)
+    }
+
+    @Test
+    fun `a show that never reached the shade is not written down as shown`() = runTest {
+        world.pending()
+        world.settings.setPersistentEnabled(true)
+        world.notifications.reachesTheShade = false
+
+        val outcome = fireAtFourteen()
+
+        assertEquals(FiredOutcome.Suppressed(SuppressReason.NOT_PRESENTED), outcome)
+        assertTrue(
+            world.journal.of(ReminderEvent.SHOWN).isEmpty(),
+            "a reminder nobody saw must not enter the on time share",
+        )
+        assertEquals(1, world.journal.of(ReminderEvent.FIRED).size, "the alarm did reach the application")
+        val suppressed = world.journal.of(ReminderEvent.SUPPRESSED).single()
+        assertEquals(SuppressReason.NOT_PRESENTED.code, suppressed.reason)
+        assertEquals(false, suppressed.delivered)
+        assertEquals(
+            1,
+            world.alarms.repeats.size,
+            "a reminder that failed to appear is exactly when the next attempt matters (REM-1)",
+        )
+    }
 }

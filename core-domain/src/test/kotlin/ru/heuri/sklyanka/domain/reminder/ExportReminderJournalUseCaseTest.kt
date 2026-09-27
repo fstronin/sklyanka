@@ -31,11 +31,15 @@ class ExportReminderJournalUseCaseTest {
 
     private val export = ExportReminderJournalUseCase(journal = journal, files = files, time = clock)
 
+    /**
+     * Срабатывание — это предъявление уведомления (`04-reminders.md` §1), и признак НАП-2
+     * стоит именно у этой записи: у записи о получении управления его нет и быть не может.
+     */
     private suspend fun firing(deviation: Long = 37L, at: Instant = now) {
         journal.record(
             ReminderLogEntry(
                 occurredAt = at,
-                event = ReminderEvent.FIRED,
+                event = ReminderEvent.SHOWN,
                 intakeId = "intake-1",
                 medicationId = "med-1",
                 profileId = "profile-1",
@@ -76,7 +80,7 @@ class ExportReminderJournalUseCaseTest {
         // в него не приписалось ничего сверх полей журнала (НФТ-19).
         val row = content.trim().lines()[1]
         assertEquals(
-            "2026-09-25T09:00:00Z,fired,intake-1,med-1,profile-1," +
+            "2026-09-25T09:00:00Z,shown,intake-1,med-1,profile-1," +
                 "2026-09-25T08:59:23Z,2026-09-25T09:00:00Z,37,reminders_regular,true,,,,,,,true",
             row,
         )

@@ -1,5 +1,6 @@
 package ru.heuri.sklyanka.domain.reminder
 
+import kotlinx.coroutines.delay
 import ru.heuri.sklyanka.domain.intake.IntakeWindow
 import ru.heuri.sklyanka.domain.model.IntakeStatus
 import ru.heuri.sklyanka.domain.reminder.port.AlarmGateway
@@ -30,6 +31,16 @@ enum class SuppressReason(val code: String) {
 
     /** Нечего показать: все приёмы слота отмечены. */
     EMPTY_SLOT("empty_slot"),
+
+    /**
+     * Показ вызван, а уведомления в шторке нет (SKL-03 `TDD.md §4.2`).
+     *
+     * Отличается от [NOTIFICATIONS_DISABLED] тем, что разрешение на месте: систему
+     * попросили показать, и она не показала — отключённым каналом, ограничением
+     * полноэкранного намерения или отказом фирменной оболочки. Для человека это тот же
+     * тихий отказ, и в доле «вовремя» ему места нет.
+     */
+    NOT_PRESENTED("not_presented"),
 }
 
 /** Чем закончилось срабатывание будильника. */
@@ -155,9 +166,16 @@ class HandleFiredReminderUseCase(
             ),
         )
         notifications.show(card, channel)
+        val presentedAt = awaitPresentation(intake.slot)
+        if (presentedAt == null) {
+            // Повтор ставится и здесь: напоминание, которого человек не увидел, — как раз
+            // тот случай, когда следующая попытка нужнее всего (НАП-1).
+            planRepeat(intake, attempt, now)
+            return suppress(time.now(), SuppressReason.NOT_PRESENTED, intake, scheduledAt, deviation)
+        }
         journal.record(
             ReminderLogEntry(
-                occurredAt = now,
+                occurredAt = presentedAt,
                 // Повтор отличается от первого показа видом записи: по нему в диагностике
                 // видно, что настойчивое напоминание действительно сработало (НАП-25).
                 event = if (attempt == 0) ReminderEvent.SHOWN else ReminderEvent.REPEATED,
@@ -165,8 +183,9 @@ class HandleFiredReminderUseCase(
                 medicationId = intake.medicationId,
                 profileId = intake.profileId,
                 scheduledAt = scheduledAt,
-                firedAt = now,
-                deviationSeconds = deviation,
+                // Отметка предъявления, а не получения управления: от неё считается НАП-2.
+                firedAt = presentedAt,
+                deviationSeconds = Duration.between(scheduledAt, presentedAt).seconds,
                 channel = channel,
                 delivered = true,
                 attempt = attempt,
@@ -174,6 +193,29 @@ class HandleFiredReminderUseCase(
             ),
         )
         return FiredOutcome.Shown(card, channel, watchResult, planRepeat(intake, attempt, now))
+    }
+
+    /**
+     * Момент, в который уведомление оказалось в шторке, либо `null`, если не оказалось
+     * (SKL-03 `TDD.md §4.2`).
+     *
+     * Вызов показа не означает показа: разрешение могло быть отозвано, канал — отключён,
+     * полноэкранное намерение — отклонено системой. Запись «показано» сразу после вызова
+     * превращала бы журнал в измеритель собственных намерений, а долю «вовремя» — в долю
+     * попыток, тогда как обещана доля предъявлений (`04-reminders.md` §1).
+     *
+     * Спрашивается у системы, а не у памяти процесса, и спрашивается несколько раз:
+     * уведомление появляется в шторке не в тот же миг, в который приложение о нём попросило.
+     * Отметка берётся по факту обнаружения — то есть чуть позже истины, никогда раньше:
+     * ошибка такого измерения работает против нас, а не в нашу пользу, и при допуске НАП-2
+     * в две минуты доля секунды ничего не решает.
+     */
+    private suspend fun awaitPresentation(slot: ReminderSlot): Instant? {
+        repeat(PRESENTATION_ATTEMPTS) { attempt ->
+            if (notifications.isShown(slot)) return time.now()
+            if (attempt < PRESENTATION_ATTEMPTS - 1) delay(PRESENTATION_POLL_MILLIS)
+        }
+        return null
     }
 
     /** Повтор настойчивого напоминания, если он разрешён правилом (НАП-25, НАП-26). */
@@ -217,5 +259,16 @@ class HandleFiredReminderUseCase(
             ),
         )
         return FiredOutcome.Suppressed(reason)
+    }
+
+    private companion object {
+        /**
+         * Сколько раз спросить систему о показанном уведомлении и с каким шагом.
+         *
+         * Секунда суммарно: меньше — и медленный холодный старт процесса выглядел бы
+         * непоказанным уведомлением, больше — и приёмник упёрся бы в отведённое ему время.
+         */
+        const val PRESENTATION_ATTEMPTS = 10
+        const val PRESENTATION_POLL_MILLIS = 100L
     }
 }

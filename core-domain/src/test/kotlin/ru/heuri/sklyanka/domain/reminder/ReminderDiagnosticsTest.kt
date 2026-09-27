@@ -100,9 +100,10 @@ class ReminderDiagnosticsTest {
         assertEquals(7L, summary.days)
     }
 
+    /** Предъявленное напоминание: сводка «вовремя» считается по показу, а не по колбэку. */
     private fun firing(days: Long, deviation: Long) = ReminderLogEntry(
         occurredAt = world.clock.now().minusSeconds(days * SECONDS_IN_DAY),
-        event = ReminderEvent.FIRED,
+        event = ReminderEvent.SHOWN,
         intakeId = "intake-$days-$deviation",
         deviationSeconds = deviation,
     )

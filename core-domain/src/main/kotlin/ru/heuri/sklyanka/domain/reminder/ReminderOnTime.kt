@@ -54,15 +54,22 @@ object ReminderOnTimeRule {
     /**
      * Сводка по записям журнала.
      *
-     * Считается по записям `FIRED`: это момент, когда система отдала управление
-     * приложению, и именно он измеряет надёжность доставки. Записи `SHOWN` несут то же
-     * отклонение, и счёт по обоим видам удваивал бы каждое срабатывание.
+     * Считается по записям `SHOWN` — по предъявлению уведомления человеку. Это не выбор
+     * из двух равных: «сработало» определено моментом предъявления, и получение колбэка
+     * без последующего показа срабатыванием не считается вовсе (`04-reminders.md` §1,
+     * SKL-03 `TDD.md §4.1`). Счёт по `FIRED` отвечал бы на другой вопрос — доходил ли
+     * будильник до приложения, — и обещанную долю завышал бы ровно на тихие отказы показа,
+     * то есть на самый опасный класс отказов.
+     *
+     * Повторы (`REPEATED`) в счёт не идут: настойчивое напоминание измеряет отклонение
+     * от того же планового времени и опаздывает по построению (НАП-25). Их учёт занижал бы
+     * долю тем сильнее, чем настойчивее приложение напоминает.
      */
     fun summarize(entries: List<ReminderLogEntry>, days: Long = WINDOW.toDays()): ReminderOnTimeSummary {
-        val fired = entries.filter { it.event == ReminderEvent.FIRED }
+        val shown = entries.filter { it.event == ReminderEvent.SHOWN }
         return ReminderOnTimeSummary(
-            fired = fired.size,
-            onTime = fired.count { isOnTime(it.deviationSeconds) },
+            fired = shown.size,
+            onTime = shown.count { isOnTime(it.deviationSeconds) },
             days = days,
         )
     }

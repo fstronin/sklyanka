@@ -17,7 +17,7 @@ class ReminderOnTimeRuleTest {
 
     private val now: Instant = Instant.parse("2026-09-25T11:00:00Z")
 
-    private fun fired(deviation: Long?, event: ReminderEvent = ReminderEvent.FIRED) = ReminderLogEntry(
+    private fun shown(deviation: Long?, event: ReminderEvent = ReminderEvent.SHOWN) = ReminderLogEntry(
         occurredAt = now,
         event = event,
         intakeId = "intake-1",
@@ -44,9 +44,9 @@ class ReminderOnTimeRuleTest {
     }
 
     @Test
-    fun `the summary counts firings and how many of them were on time`() {
+    fun `the summary counts presentations and how many of them were on time`() {
         val summary = ReminderOnTimeRule.summarize(
-            listOf(fired(10), fired(119), fired(600), fired(null)),
+            listOf(shown(10), shown(119), shown(600), shown(null)),
         )
 
         assertEquals(4, summary.fired)
@@ -56,15 +56,16 @@ class ReminderOnTimeRuleTest {
     }
 
     @Test
-    fun `only firings are counted`() {
-        // Запись о показе несёт то же отклонение: счёт по обоим видам удваивал бы
-        // каждое срабатывание, а пробное напоминание меряет нажатие кнопки.
+    fun `only presentations are counted`() {
+        // Получение управления показом не является (`04-reminders.md` §1), повтор опаздывает
+        // от того же планового времени по построению, а пробное меряет нажатие кнопки.
         val summary = ReminderOnTimeRule.summarize(
             listOf(
-                fired(10),
-                fired(10, ReminderEvent.SHOWN),
-                fired(10, ReminderEvent.TEST),
-                fired(10, ReminderEvent.RESCHEDULED),
+                shown(10),
+                shown(10, ReminderEvent.FIRED),
+                shown(10, ReminderEvent.REPEATED),
+                shown(10, ReminderEvent.TEST),
+                shown(10, ReminderEvent.RESCHEDULED),
             ),
         )
 
@@ -73,7 +74,19 @@ class ReminderOnTimeRuleTest {
     }
 
     @Test
-    fun `without firings there is no share at all`() {
+    fun `a firing that never reached the shade is not in the share`() {
+        // Тихий отказ показа: будильник дошёл до приложения, уведомление до человека — нет.
+        // Счёт по FIRED засчитал бы его вовремя, и доля обещала бы не то, что измеряет.
+        val summary = ReminderOnTimeRule.summarize(
+            listOf(shown(3, ReminderEvent.FIRED), shown(3, ReminderEvent.SUPPRESSED)),
+        )
+
+        assertFalse(summary.hasData, "a reminder the person never saw cannot make the share")
+        assertNull(summary.percent)
+    }
+
+    @Test
+    fun `without presentations there is no share at all`() {
         val summary = ReminderOnTimeRule.summarize(emptyList())
 
         assertFalse(summary.hasData)
