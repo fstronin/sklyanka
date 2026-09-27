@@ -165,13 +165,34 @@ skl_wait_for_next_scheduled() {
 skl_trial_i1() { # Перезагрузка (НФТ-2)
     skl_trial_begin "И-1" "$1"
     skl_launch_app
+    # Часы образа до перезагрузки. Эмулятор их не переживает: после перезагрузки гость
+    # возвращается на время виртуального RTC (≈ часы машины), а нагрузка посеяна под
+    # прежние часы — следующий плановый приём уезжает на полсуток, и все испытания,
+    # которые его дожидаются, отказываются ждать или засыпают на часы. Часы запоминаются
+    # и после проверки восстановления возвращаются на место.
+    local pre_epoch
+    pre_epoch="$(skl_shell "date +%s" | tr -d '\r')"
     skl_log "перезагрузка образа"
     skl_adb -s "$SKL_TRIAL_SERIAL" reboot
     sleep 5
     skl_wait_boot "$SKL_TRIAL_API" || skl_die "образ не вернулся из перезагрузки"
-    # НФТ-2 требует восстановления не позднее 60 секунд после BOOT_COMPLETED.
+    # Отметка переставляется по часам образа ПОСЛЕ перезагрузки: часы откатились,
+    # и записи восстановления лежат после новой отметки, а не до старой. Ожидание
+    # с новой отметкой и есть окно НФТ-2: 60 секунд после BOOT_COMPLETED.
+    SKL_TRIAL_MARK="$(skl_device_now_ms "$SKL_TRIAL_API")"
     sleep 60
-    if skl_expect_journal "rescheduled" "boot"; then
+    local outcome=0
+    skl_expect_journal "rescheduled" "boot" || outcome=1
+    # Возврат часов на время до перезагрузки: без него нагрузка остаётся в будущем
+    # относительно образа. Отказ возврата не валит испытание — следующие испытания
+    # сами скажут, что ждать нечего, — но о нём обязано быть сказано.
+    if skl_adb_root "$SKL_TRIAL_API" >/dev/null 2>&1 && skl_shell "cmd alarm set-time $((pre_epoch * 1000))" >/dev/null 2>&1; then
+        skl_log "часы возвращены на момент до перезагрузки: $(skl_shell date | tr -d '\r')"
+        sleep 30 # время на пересборку по причине time_changed — следующее испытание ждёт плановых моментов
+    else
+        skl_warn "часы образа вернуть не удалось: нагрузка осталась в будущем, следующие испытания откажутся ждать"
+    fi
+    if (( outcome == 0 )); then
         skl_trial_end "проведено"
     else
         skl_trial_end "отказ: пересборки по причине boot нет"
@@ -240,8 +261,11 @@ skl_trial_i5() { # Смена пояса назад + идемпотентнос
     skl_trial_begin "И-5" "$1"
     skl_set_timezone "Europe/Kaliningrad"
     local duplicates
+    # Счёт идёт только от отметки испытания: нагрузка переиспользует одни и те же
+    # идентификаторы приёмов между посевами, и журнал накапливает показы прежних прогонов
+    # под теми же id — без фильтра испытание меряло бы историю журнала, а не испытание.
     duplicates="$(skl_journal_query "$SKL_TRIAL_API" \
-        "SELECT COUNT(*) FROM (SELECT intake_id FROM reminder_log WHERE UPPER(event) = 'SHOWN' AND intake_id IS NOT NULL GROUP BY intake_id, attempt HAVING COUNT(*) > 1)" | head -n 1)"
+        "SELECT COUNT(*) FROM (SELECT intake_id FROM reminder_log WHERE UPPER(event) = 'SHOWN' AND intake_id IS NOT NULL AND occurred_at >= $SKL_TRIAL_MARK GROUP BY intake_id, attempt HAVING COUNT(*) > 1)" | head -n 1)"
     skl_expect_journal "rescheduled" "timezone_changed" || { skl_trial_end "отказ: пересборки нет"; return 1; }
     if [[ "${duplicates:-0}" -gt 0 ]]; then
         skl_trial_end "отказ: $duplicates приёмов показаны повторно — идемпотентность нарушена (НАП-9)"
@@ -354,10 +378,13 @@ skl_trial_i10() { # Истечение окна на выключенном ус
 
     # Сравнивать с `datetime('now')` нельзя: база читается на машине прогона, и «сейчас»
     # там — часы машины, а не часы образа. Разница между ними здесь измеряется сутками.
+    # Просроченными считаются только приёмы ПРОШЛЫХ суток: сегодняшний приём живёт
+    # до полуночи, какое бы время у него ни стояло (НФТ-37), и перевод его в пропущенные
+    # досрочно был бы дефектом продукта, а не признаком восстановления.
     local device_local overdue
     device_local="$(skl_shell "date +%Y-%m-%dT%H:%M" | tr -d '\r')"
     overdue="$(skl_journal_query "$api" \
-        "SELECT COUNT(*) FROM intake WHERE scheduled_at < '$device_local'" | head -n 1)"
+        "SELECT COUNT(*) FROM intake WHERE date(scheduled_at) < date('$device_local')" | head -n 1)"
     if [[ "${overdue:-0}" -eq 0 ]]; then
         skl_trial_end "не проведено: просроченных приёмов нет — заведите нагрузку (./seed.sh --mode direct) и повторите"
         return 1
@@ -367,15 +394,24 @@ skl_trial_i10() { # Истечение окна на выключенном ус
     sleep 30
 
     # Требование НАП-34 состоит из двух половин, и проверяются обе: непринятые приёмы
-    # переведены в «пропущено без отметки» И всплеска уведомлений не случилось. Вторая
-    # половина важнее первой: телефон, включённый через сутки, не имеет права вывалить
-    # очередь карточек о вчерашнем.
-    local still_pending shown_after outcome=0
+    # прошедших суток переведены в «пропущено без отметки» И всплеска уведомлений
+    # не случилось. Вторая половина важнее первой: телефон, включённый через сутки,
+    # не имеет права вывалить очередь карточек о вчерашнем.
+    #
+    # Всплеском считается только показ приёмов ПРОШЛЫХ суток: догоняющий показ приёма
+    # текущего дня — законное поведение продукта (окно приёма ещё не истекло, НФТ-37),
+    # а не всплеск. Граница суток считается от часов образа.
+    local still_pending shown_after outcome=0 now_epoch hour minute second day_start
     device_local="$(skl_shell "date +%Y-%m-%dT%H:%M" | tr -d '\r')"
     still_pending="$(skl_journal_query "$api" \
-        "SELECT COUNT(*) FROM intake WHERE status = 'PENDING' AND scheduled_at < '$device_local'" |
+        "SELECT COUNT(*) FROM intake WHERE status = 'PENDING' AND date(scheduled_at) < date('$device_local')" |
         head -n 1)"
-    shown_after="$(skl_journal_since "shown")"
+    now_epoch="$(skl_shell "date +%s" | tr -d '\r')"
+    read -r hour minute second <<<"$(skl_shell "date +%H:%M:%S" | tr -d '\r' | tr ':' ' ')"
+    day_start=$(( now_epoch - hour * 3600 - minute * 60 - second ))
+    shown_after="$(skl_journal_query "$api" \
+        "SELECT COUNT(*) FROM reminder_log WHERE UPPER(event) = 'SHOWN' AND occurred_at >= $SKL_TRIAL_MARK AND scheduled_at < $((day_start * 1000))" |
+        head -n 1)"
     if [[ "${still_pending:-1}" -ne 0 ]]; then
         skl_warn "просроченных приёмов осталось ожидающимися: $still_pending"
         outcome=1
@@ -426,17 +462,34 @@ skl_trial_i14() { # Отказ в разрешении на уведомлени
         skl_trial_end "неприменимо к этому образу: POST_NOTIFICATIONS появилось на API 33, здесь API $sdk"
         return 0
     fi
+    # Испытание идёт в хвосте прогона, и посеянная на день нагрузка к этому времени
+    # отработала: без свежих приёмов ждать следующий плановый момент нечего. Нагрузка
+    # обновляется здесь, а не в расписании прогона, чтобы и одиночный запуск испытания
+    # был самодостаточен.
+    "$SKL_DIR/seed.sh" "$SKL_TRIAL_API" --mode direct >/dev/null || true
     skl_shell "pm revoke $SKL_APP_ID android.permission.POST_NOTIFICATIONS" >/dev/null
-    local next now wait_seconds
+    local next now wait_seconds not_waited=0
     next="$(skl_next_scheduled_ms)"
     if [[ -n "$next" ]]; then
         now="$(skl_device_now_ms "$SKL_TRIAL_API")"
         wait_seconds=$(( (next - now) / 1000 + 120 ))
-        (( wait_seconds > 0 )) && sleep "$wait_seconds"
+        # Предел тот же, что у И-3: если плановый момент далеко, ждать нечего —
+        # нагрузка рассинхронизировалась с часами образа (например, после перезагрузки),
+        # и спать часами значит остановить прогон.
+        if (( wait_seconds > SKL_TRIAL_WAIT_LIMIT )); then
+            skl_warn "ближайший плановый момент через ${wait_seconds} с — дальше предела: нагрузка рассинхронизирована (./seed.sh --mode direct)"
+            not_waited=1
+        elif (( wait_seconds > 0 )); then
+            sleep "$wait_seconds"
+        fi
     fi
     local outcome=0
     skl_expect_journal "suppressed" || outcome=1
     skl_shell "pm grant $SKL_APP_ID android.permission.POST_NOTIFICATIONS" >/dev/null || true
+    if (( not_waited == 1 )); then
+        skl_trial_end "не проведено: ждать было нечего — нагрузка рассинхронизирована"
+        return 1
+    fi
     if (( outcome == 0 )); then
         skl_trial_end "проведено: отказ показа зафиксирован, а не проигнорирован"
     else
