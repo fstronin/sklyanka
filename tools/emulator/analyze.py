@@ -67,12 +67,25 @@ DISCLAIMER = (
 
 
 def read_journal(db_path: str) -> list[dict]:
+    """Записи журнала с приведённым к нижнему регистру видом записи.
+
+    Вид записи приложение хранит именем константы (`SHOWN`), а печатает в выгрузке
+    служебным кодом (`shown`). Разбор сравнивает с кодом, поэтому написание приводится
+    здесь, один раз: без этого ни одна запись не попадала ни в один счёт, и прогон,
+    в котором напоминания исправно приходили, давал нулевую долю и пустые числа гейта.
+    """
     connection = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
     connection.row_factory = sqlite3.Row
     columns = ", ".join(COLUMNS)
     rows = connection.execute(f"SELECT {columns} FROM reminder_log ORDER BY occurred_at").fetchall()
     connection.close()
-    return [dict(row) for row in rows]
+    entries = []
+    for row in rows:
+        entry = dict(row)
+        if entry["event"] is not None:
+            entry["event"] = str(entry["event"]).lower()
+        entries.append(entry)
+    return entries
 
 
 def read_marks(path: str | None) -> list[dict]:

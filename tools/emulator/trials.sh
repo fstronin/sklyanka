@@ -78,7 +78,10 @@ skl_shell() { skl_adb -s "$SKL_TRIAL_SERIAL" shell "$@"; }
 # Сколько записей журнала данного вида появилось после отметки начала испытания.
 skl_journal_since() {
     local event="$1" reason="${2:-}" sql
-    sql="SELECT COUNT(*) FROM reminder_log WHERE occurred_at >= $SKL_TRIAL_MARK AND event = '$event'"
+    # Вид записи сравнивается без учёта регистра: приложение хранит его именем константы
+    # (`SHOWN`), а испытания названы служебными кодами (`shown`). Совпадения по букве
+    # между ними нет, и сравнение по букве превращало любое испытание в отказ.
+    sql="SELECT COUNT(*) FROM reminder_log WHERE occurred_at >= $SKL_TRIAL_MARK AND UPPER(event) = UPPER('$event')"
     [[ -n "$reason" ]] && sql="$sql AND reason = '$reason'"
     skl_journal_query "$SKL_TRIAL_API" "$sql" | head -n 1
 }
@@ -191,7 +194,7 @@ skl_trial_i5() { # Смена пояса назад + идемпотентнос
     skl_set_timezone "Europe/Kaliningrad"
     local duplicates
     duplicates="$(skl_journal_query "$SKL_TRIAL_API" \
-        "SELECT COUNT(*) FROM (SELECT intake_id FROM reminder_log WHERE event = 'shown' AND intake_id IS NOT NULL GROUP BY intake_id, attempt HAVING COUNT(*) > 1)" | head -n 1)"
+        "SELECT COUNT(*) FROM (SELECT intake_id FROM reminder_log WHERE UPPER(event) = 'SHOWN' AND intake_id IS NOT NULL GROUP BY intake_id, attempt HAVING COUNT(*) > 1)" | head -n 1)"
     skl_expect_journal "rescheduled" "timezone_changed" || { skl_trial_end "отказ: пересборки нет"; return 1; }
     if [[ "${duplicates:-0}" -gt 0 ]]; then
         skl_trial_end "отказ: $duplicates приёмов показаны повторно — идемпотентность нарушена (НАП-9)"
@@ -270,7 +273,7 @@ skl_trial_i9() { # Переход через полночь
     sleep 900 # 23:50 → 00:05 плюс запас
     local across
     across="$(skl_journal_query "$SKL_TRIAL_API" \
-        "SELECT COUNT(*) FROM reminder_log WHERE event = 'shown' AND occurred_at >= $SKL_TRIAL_MARK" | head -n 1)"
+        "SELECT COUNT(*) FROM reminder_log WHERE UPPER(event) = 'SHOWN' AND occurred_at >= $SKL_TRIAL_MARK" | head -n 1)"
     if [[ "${across:-0}" -ge 2 ]]; then
         skl_trial_end "проведено: показов через полночь $across"
     else
@@ -363,7 +366,7 @@ skl_trial_i15() { # Отказ в точных будильниках
     sleep 20
     local denied
     denied="$(skl_journal_query "$SKL_TRIAL_API" \
-        "SELECT COUNT(*) FROM reminder_log WHERE occurred_at >= $SKL_TRIAL_MARK AND event = 'rescheduled' AND alarms_scheduled = 0" | head -n 1)"
+        "SELECT COUNT(*) FROM reminder_log WHERE occurred_at >= $SKL_TRIAL_MARK AND UPPER(event) = 'RESCHEDULED' AND alarms_scheduled = 0" | head -n 1)"
     skl_shell "appops set $SKL_APP_ID SCHEDULE_EXACT_ALARM allow" >/dev/null || true
     skl_trial_end "проведено частично: пересборок без поставленных будильников ${denied:-0}"
 }
