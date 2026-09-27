@@ -3,6 +3,7 @@ package ru.heuri.sklyanka.reminder
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Test
 import ru.heuri.sklyanka.domain.reminder.RescheduleReason
 import ru.heuri.sklyanka.domain.schedule.PlanReason
@@ -43,7 +44,7 @@ class ReminderPlanReasonsTest {
         assertEquals(PlanReason.TIMEZONE_CHANGED, ReminderPlanReasons.intakeReason(RescheduleReason.TIMEZONE_CHANGED))
         assertEquals(PlanReason.TIME_CHANGED, ReminderPlanReasons.intakeReason(RescheduleReason.TIME_CHANGED))
         assertEquals(PlanReason.MEDICATION_SAVED, ReminderPlanReasons.intakeReason(RescheduleReason.SCHEDULE_EDITED))
-        assertEquals(PlanReason.MEDICATION_SAVED, ReminderPlanReasons.intakeReason(RescheduleReason.MEDICATION_ADDED))
+        assertEquals(PlanReason.MEDICATION_ADDED, ReminderPlanReasons.intakeReason(RescheduleReason.MEDICATION_ADDED))
         assertEquals(
             PlanReason.MEDICATION_ARCHIVED,
             ReminderPlanReasons.intakeReason(RescheduleReason.MEDICATION_ARCHIVED),
@@ -56,5 +57,42 @@ class ReminderPlanReasonsTest {
         assertEquals(PlanReason.MANUAL_CHECK, ReminderPlanReasons.intakeReason(RescheduleReason.MANUAL))
         assertEquals(PlanReason.DATA_IMPORTED, ReminderPlanReasons.intakeReason(RescheduleReason.DATA_IMPORTED))
         assertEquals(PlanReason.APP_START, ReminderPlanReasons.intakeReason(RescheduleReason.APP_START))
+    }
+
+    @Test
+    fun `changes of one medication map back to the reminder reasons of NAP-11`() {
+        assertEquals(
+            RescheduleReason.MEDICATION_ADDED,
+            ReminderPlanReasons.rescheduleReason(PlanReason.MEDICATION_ADDED),
+        )
+        assertEquals(
+            RescheduleReason.SCHEDULE_EDITED,
+            ReminderPlanReasons.rescheduleReason(PlanReason.MEDICATION_SAVED),
+        )
+        assertEquals(
+            RescheduleReason.MEDICATION_ARCHIVED,
+            ReminderPlanReasons.rescheduleReason(PlanReason.MEDICATION_ARCHIVED),
+        )
+        assertEquals(
+            RescheduleReason.MEDICATION_UNARCHIVED,
+            ReminderPlanReasons.rescheduleReason(PlanReason.MEDICATION_RESTORED),
+        )
+    }
+
+    @Test
+    fun `a generation reason that does not change one medication refuses loudly`() {
+        // Через порт перепланирования одного лекарства проходят только четыре причины;
+        // всё остальное — ошибка программиста, и молчаливая подмена причины запрещена
+        // (НАП-14): журнал напоминаний по ней разбирают, почему напоминание не пришло.
+        for (reason in setOf(
+            PlanReason.APP_START,
+            PlanReason.BOOT,
+            PlanReason.DATA_IMPORTED,
+            PlanReason.MANUAL_CHECK,
+        )) {
+            assertThrows(IllegalStateException::class.java) {
+                ReminderPlanReasons.rescheduleReason(reason)
+            }
+        }
     }
 }

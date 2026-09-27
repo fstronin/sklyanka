@@ -51,6 +51,12 @@ class ReminderPlanningTrigger @Inject constructor(
  * с профилями состав приёмов не меняют, а лишний проход по всем профилям в приёмнике
  * стоит времени, которого у приёмника нет (НАП-13).
  *
+ * Здесь же обратное направление — причина перепланирования по причине генерации.
+ * Оно нужно порту [MedicationPlanner] (`MedicationCardModule`): сценарии лекарств
+ * знают только свои причины генерации, а очередь будильников обязана получить
+ * свою причину с той же гранулярностью (НАП-11): «добавлено лекарство» и «изменено
+ * расписание» в журнале напоминаний различимы так же, как и в журнале генерации.
+ *
  * Вынесено из класса, чтобы соответствие проверялось тестом на JVM без поднятия
  * планировщика: забытая причина не ломает ничего сразу — окно приёмов просто перестаёт
  * пополняться, и напоминания кончаются через неделю.
@@ -63,12 +69,29 @@ internal object ReminderPlanReasons {
         RescheduleReason.PACKAGE_REPLACED -> PlanReason.APP_START
         RescheduleReason.TIMEZONE_CHANGED -> PlanReason.TIMEZONE_CHANGED
         RescheduleReason.TIME_CHANGED -> PlanReason.TIME_CHANGED
-        RescheduleReason.SCHEDULE_EDITED, RescheduleReason.MEDICATION_ADDED -> PlanReason.MEDICATION_SAVED
+        RescheduleReason.SCHEDULE_EDITED -> PlanReason.MEDICATION_SAVED
+        RescheduleReason.MEDICATION_ADDED -> PlanReason.MEDICATION_ADDED
         RescheduleReason.MEDICATION_ARCHIVED -> PlanReason.MEDICATION_ARCHIVED
         RescheduleReason.MEDICATION_UNARCHIVED -> PlanReason.MEDICATION_RESTORED
         RescheduleReason.ANCHOR -> PlanReason.ANCHOR_ALARM
         RescheduleReason.MANUAL -> PlanReason.MANUAL_CHECK
         RescheduleReason.DATA_IMPORTED -> PlanReason.DATA_IMPORTED
         RescheduleReason.ALARM_FIRED, RescheduleReason.PROFILE_SET_CHANGED -> null
+    }
+
+    /**
+     * Причина перепланирования будильников по причине генерации приёмов.
+     *
+     * Через [MedicationPlanner] проходят только причины изменения одного лекарства;
+     * всё остальное — ошибка программиста, и отказ здесь обязателен: молчаливая
+     * подмена причины переписала бы журнал напоминаний, по которому разбирают,
+     * почему напоминание не пришло (НАП-14).
+     */
+    fun rescheduleReason(reason: PlanReason): RescheduleReason = when (reason) {
+        PlanReason.MEDICATION_ADDED -> RescheduleReason.MEDICATION_ADDED
+        PlanReason.MEDICATION_SAVED -> RescheduleReason.SCHEDULE_EDITED
+        PlanReason.MEDICATION_ARCHIVED -> RescheduleReason.MEDICATION_ARCHIVED
+        PlanReason.MEDICATION_RESTORED -> RescheduleReason.MEDICATION_UNARCHIVED
+        else -> error("Generation for reason ${reason.code} does not change one medication: no reminder reason for it")
     }
 }

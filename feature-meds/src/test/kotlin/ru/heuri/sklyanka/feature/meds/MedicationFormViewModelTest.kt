@@ -26,7 +26,9 @@ import ru.heuri.sklyanka.domain.model.Profile
 import ru.heuri.sklyanka.domain.model.ScheduleMode
 import ru.heuri.sklyanka.domain.model.TabletShape
 import ru.heuri.sklyanka.domain.schedule.IntakeGenerationPolicy
+import ru.heuri.sklyanka.domain.schedule.MedicationPlanner
 import ru.heuri.sklyanka.domain.schedule.PlanIntakesUseCase
+import ru.heuri.sklyanka.domain.schedule.PlanScope
 import ru.heuri.sklyanka.feature.meds.form.FormMode
 import ru.heuri.sklyanka.feature.meds.form.MedFormIntent
 import ru.heuri.sklyanka.feature.meds.form.MedicationFormViewModel
@@ -58,14 +60,16 @@ class MedicationFormViewModelTest {
         saveMedication = SaveMedicationUseCase(
             validate = ValidateMedicationDraft(),
             medications = medications,
-            planIntakes = PlanIntakesUseCase(
-                profiles = profiles,
-                medications = medications,
-                intakes = intakes,
-                time = clock,
-                log = log,
-                policy = IntakeGenerationPolicy(windowDepthDays = WINDOW_DEPTH_DAYS),
-            ),
+            planner = MedicationPlanner { medicationId, reason ->
+                PlanIntakesUseCase(
+                    profiles = profiles,
+                    medications = medications,
+                    intakes = intakes,
+                    time = clock,
+                    log = log,
+                    policy = IntakeGenerationPolicy(windowDepthDays = WINDOW_DEPTH_DAYS),
+                )(PlanScope.Medication(medicationId), reason)
+            },
             transactor = DirectTransactor(),
             log = log,
             newId = { NEW_ID },

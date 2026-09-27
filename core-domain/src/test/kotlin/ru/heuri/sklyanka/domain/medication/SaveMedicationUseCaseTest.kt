@@ -16,7 +16,12 @@ import ru.heuri.sklyanka.domain.model.TabletShape
 import ru.heuri.sklyanka.domain.schedule.FakeIntakeRepository
 import ru.heuri.sklyanka.domain.schedule.FakeMedicationRepository
 import ru.heuri.sklyanka.domain.schedule.FakeProfileRepository
+import ru.heuri.sklyanka.domain.schedule.GenerationWindow
+import ru.heuri.sklyanka.domain.schedule.MedicationPlanner
 import ru.heuri.sklyanka.domain.schedule.PlanIntakesUseCase
+import ru.heuri.sklyanka.domain.schedule.PlanReason
+import ru.heuri.sklyanka.domain.schedule.PlanResult
+import ru.heuri.sklyanka.domain.schedule.PlanScope
 import ru.heuri.sklyanka.domain.schedule.Planning
 import ru.heuri.sklyanka.domain.schedule.RecordingOperationLog
 import java.math.BigDecimal
@@ -39,17 +44,23 @@ class SaveMedicationUseCaseTest {
     private val log = RecordingOperationLog()
     private val transactor = CountingTransactor()
 
+    /** Причины, с которыми форма звала порт перепланирования. */
+    private val planReasons = mutableListOf<Pair<String, PlanReason>>()
+
     private val save = SaveMedicationUseCase(
         validate = ValidateMedicationDraft(),
         medications = medications,
-        planIntakes = PlanIntakesUseCase(
-            profiles = profiles,
-            medications = medications,
-            intakes = intakes,
-            time = clock,
-            log = log,
-            policy = Planning.POLICY,
-        ),
+        planner = MedicationPlanner { medicationId, reason ->
+            planReasons += medicationId to reason
+            PlanIntakesUseCase(
+                profiles = profiles,
+                medications = medications,
+                intakes = intakes,
+                time = clock,
+                log = log,
+                policy = Planning.POLICY,
+            )(PlanScope.Medication(medicationId), reason)
+        },
         transactor = transactor,
         log = log,
         newId = { Drafts.NEW_ID },
@@ -190,7 +201,9 @@ class SaveMedicationUseCaseTest {
 
         val record = log.records.single { it.event == OpEvent.MEDICATION_UPDATED }
         assertEquals("name,dose_amount", record.after)
-        assertNull(record.detail)
+        // Доза — часть расписания по таблице НАП-11, поэтому правка помечается как
+        // изменение расписания, а значения полей в журнал по-прежнему не попадают.
+        assertEquals("schedule_changed", record.detail)
         assertFalse(log.records.any { it.after?.contains("med-b") == true })
     }
 
@@ -202,6 +215,63 @@ class SaveMedicationUseCaseTest {
         save(MedicationDraft.of(stored).copy(times = listOf(LocalTime.of(9, 0))))
 
         assertEquals("schedule_changed", log.records.single { it.event == OpEvent.MEDICATION_UPDATED }.detail)
+    }
+
+    // --- Причина перепланирования ------------------------------------------------------------
+
+    @Test
+    fun `creating a course plans with the added reason, editing the schedule with the saved one`() = runTest {
+        save(Drafts.valid())
+        val stored = medications.stored.getValue(Drafts.NEW_ID)
+        save(MedicationDraft.of(stored).copy(times = listOf(LocalTime.of(9, 0))))
+
+        assertEquals(
+            listOf(
+                Drafts.NEW_ID to PlanReason.MEDICATION_ADDED,
+                Drafts.NEW_ID to PlanReason.MEDICATION_SAVED,
+            ),
+            planReasons,
+        )
+    }
+
+    @Test
+    fun `editing a name only does not replan since the schedule has not changed`() = runTest {
+        save(Drafts.valid())
+        val stored = medications.stored.getValue(Drafts.NEW_ID)
+
+        save(MedicationDraft.of(stored).copy(name = "med-b"))
+
+        assertEquals(listOf(Drafts.NEW_ID to PlanReason.MEDICATION_ADDED), planReasons)
+    }
+
+    @Test
+    fun `a rejected save never touches the planner`() = runTest {
+        save(Drafts.valid().copy(name = ""))
+
+        assertTrue(planReasons.isEmpty())
+        assertTrue(intakes.stored.isEmpty())
+    }
+
+    @Test
+    fun `the planner runs after the course is written, never before`() = runTest {
+        // Порядок «запись, потом перепланирование» принципиален (НФТ-6): планировщик,
+        // увидевший хранилище до записи, снял бы приёмы курса, который ещё не появился.
+        var seenAtCall: String? = null
+        val ordered = SaveMedicationUseCase(
+            validate = ValidateMedicationDraft(),
+            medications = medications,
+            planner = MedicationPlanner { medicationId, reason ->
+                seenAtCall = medications.stored[medicationId]?.name
+                PlanResult(window = GenerationWindow.of(Drafts.TODAY, 7), reason = reason, medications = emptyList())
+            },
+            transactor = transactor,
+            log = log,
+            newId = { Drafts.NEW_ID },
+        )
+
+        ordered(Drafts.valid())
+
+        assertEquals("med-a", seenAtCall)
     }
 
     @Test

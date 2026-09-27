@@ -5,9 +5,8 @@ import ru.heuri.sklyanka.domain.log.OpEvent
 import ru.heuri.sklyanka.domain.log.OperationLog
 import ru.heuri.sklyanka.domain.model.Medication
 import ru.heuri.sklyanka.domain.repository.MedicationRepository
-import ru.heuri.sklyanka.domain.schedule.PlanIntakesUseCase
+import ru.heuri.sklyanka.domain.schedule.MedicationPlanner
 import ru.heuri.sklyanka.domain.schedule.PlanReason
-import ru.heuri.sklyanka.domain.schedule.PlanScope
 import java.util.UUID
 
 /** Чем кончилось сохранение формы. */
@@ -29,18 +28,19 @@ sealed interface SaveResult {
  * Сохранение лекарства (`TDD.md §5.4`).
  *
  * Порядок шагов жёсткий: проверка → запись курса → порождение приёмов на ближайшее окно.
- * Перепланирование будильников (НФТ-6, НАП-11) выполняется **после** успешной записи,
- * а не внутри её транзакции: планировщик — платформенный адаптер, и его вызов внутри
- * транзакции базы удерживал бы транзакцию на времени работы `AlarmManager`.
+ * Генерация идёт через порт [MedicationPlanner], а не напрямую: точка запуска в `app`
+ * держит порядок «сначала перевод просроченных, потом генерация» (НАП-34) и пересобирает
+ * будильники вслед за приёмами (НФТ-6, НАП-11). Перепланирование выполняется **после**
+ * успешной записи, а не внутри её транзакции: планировщик — платформенный адаптер, и его
+ * вызов внутри транзакции базы удерживал бы транзакцию на времени работы `AlarmManager`.
  *
- * Генерация приёмов вызывается как есть и не переопределяется: правила генерации
- * принадлежат SKL-06. Своей транзакцией её обёртывать нельзя — [PlanIntakesUseCase]
- * открывает собственную и применяет план целиком или никак.
+ * Причина генерации различает появление и правку: будильники по НАП-11 пересобираются
+ * по обоим событиям, но с разными причинами в журнале (`MEDICATION_ADDED` и `SCHEDULE_EDITED`).
  */
 class SaveMedicationUseCase(
     private val validate: ValidateMedicationDraft,
     private val medications: MedicationRepository,
-    private val planIntakes: PlanIntakesUseCase,
+    private val planner: MedicationPlanner,
     private val transactor: Transactor,
     private val log: OperationLog,
     /** Идентификатор нового курса. Параметром — чтобы тест видел детерминированный ключ. */
@@ -66,15 +66,29 @@ class SaveMedicationUseCase(
         }
 
         val previous = normalized.id?.let { medications.get(it) }
+        val created = previous == null
         val medication = normalized.toMedication(id = normalized.id ?: newId())
         transactor.inTransaction { medications.save(medication) }
-        record(medication, previous)
+        val changed = previous?.let { changedFields(it, medication) } ?: emptyList()
+        record(medication, previous, changed)
 
-        val plan = planIntakes(PlanScope.Medication(medication.id), PlanReason.MEDICATION_SAVED)
+        // Перепланирование нужно не любому сохранению, а изменению расписания (НАП-11):
+        // правка названия или остатка состав приёмов и очередь будильников не меняет,
+        // и запись «пересобрано по причине изменённого расписания» в журнале была бы
+        // неправдой. Причины различаются для нового курса и правки — НАП-11 разводит
+        // «добавлено» и «изменено» и в журнале напоминаний (НАП-14).
+        val plan = if (created || SCHEDULE_FIELDS.any { it in changed }) {
+            planner.plan(
+                medicationId = medication.id,
+                reason = if (created) PlanReason.MEDICATION_ADDED else PlanReason.MEDICATION_SAVED,
+            )
+        } else {
+            null
+        }
         return SaveResult.Saved(
             medicationId = medication.id,
-            createdIntakes = plan.created,
-            deletedIntakes = plan.deleted,
+            createdIntakes = plan?.created ?: 0,
+            deletedIntakes = plan?.deleted ?: 0,
         )
     }
 
@@ -84,7 +98,7 @@ class SaveMedicationUseCase(
      * У правки записываются **имена** изменившихся полей, а не значения: «изменились
      * times и dose_amount» диагностически достаточно и не содержит медицинских данных (НФТ-19).
      */
-    private suspend fun record(medication: Medication, previous: Medication?) {
+    private suspend fun record(medication: Medication, previous: Medication?, changed: List<String>) {
         if (previous == null) {
             log.record(
                 event = OpEvent.MEDICATION_CREATED,
@@ -94,7 +108,6 @@ class SaveMedicationUseCase(
             )
             return
         }
-        val changed = changedFields(previous, medication)
         log.record(
             event = OpEvent.MEDICATION_UPDATED,
             profileId = medication.profileId,
@@ -111,7 +124,13 @@ class SaveMedicationUseCase(
 
     private companion object {
         const val SCHEDULE_CHANGED = "schedule_changed"
-        val SCHEDULE_FIELDS = setOf("times", "start_date", "end_date", "schedule_mode", "max_per_day")
+
+        /**
+         * Поля, изменение которых меняет расписание (НАП-11).
+         *
+         * Доза входит по таблице НАП-11 наравне с временами и границами курса.
+         */
+        val SCHEDULE_FIELDS = setOf("times", "start_date", "end_date", "schedule_mode", "max_per_day", "dose_amount")
 
         /**
          * Поля курса именами колонок модели данных.

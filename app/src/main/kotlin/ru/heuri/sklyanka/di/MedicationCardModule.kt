@@ -13,12 +13,13 @@ import ru.heuri.sklyanka.domain.medication.SaveMedicationUseCase
 import ru.heuri.sklyanka.domain.medication.ToggleWatchMirrorUseCase
 import ru.heuri.sklyanka.domain.medication.ValidateMedicationDraft
 import ru.heuri.sklyanka.domain.model.IntakeSource
+import ru.heuri.sklyanka.domain.reminder.RescheduleRemindersUseCase
 import ru.heuri.sklyanka.domain.repository.MedicationRepository
 import ru.heuri.sklyanka.domain.schedule.MedicationPlanner
-import ru.heuri.sklyanka.domain.schedule.PlanIntakesUseCase
 import ru.heuri.sklyanka.domain.stock.RefillStockUseCase
 import ru.heuri.sklyanka.domain.time.TimeSource
 import ru.heuri.sklyanka.feature.meds.list.TakePrnAction
+import ru.heuri.sklyanka.reminder.ReminderPlanReasons
 import ru.heuri.sklyanka.scheduler.IntakePlanningTrigger
 import javax.inject.Singleton
 
@@ -38,13 +39,24 @@ object MedicationCardModule {
      *
      * Именно `IntakePlanningTrigger.planMedication`, а не сам use-case генерации: точка
      * запуска удерживает обязательный порядок «сначала перевод просроченных приёмов, потом
-     * генерация окна» (НАП-34) и станет местом постановки будильников, когда та появится
-     * (SKL-13). Домен об этом классе не знает и знать не должен.
+     * генерация окна» (НАП-34). Вслед за приёмами пересобирается очередь будильников —
+     * тем же портом, в том же порядке (НФТ-6, НАП-11): после каждого изменения лекарства
+     * будильники обязаны совпасть с базой, иначе напоминание о новом курсе не прозвучит
+     * до ближайшего запуска приложения. Причина перепланирования берётся из собственного
+     * соответствия [ReminderPlanReasons.rescheduleReason]: «добавлено», «изменено»,
+     * «в архив» и «из архива» в журнале напоминаний различимы (НАП-14).
+     * Домен об этом классе не знает и знать не должен.
      */
     @Provides
     @Singleton
-    fun provideMedicationPlanner(trigger: IntakePlanningTrigger): MedicationPlanner =
-        MedicationPlanner { medicationId, reason -> trigger.planMedication(medicationId, reason) }
+    fun provideMedicationPlanner(
+        trigger: IntakePlanningTrigger,
+        reschedule: RescheduleRemindersUseCase,
+    ): MedicationPlanner = MedicationPlanner { medicationId, reason ->
+        val plan = trigger.planMedication(medicationId, reason)
+        reschedule(ReminderPlanReasons.rescheduleReason(reason))
+        plan
+    }
 
     @Provides
     @Singleton
@@ -88,18 +100,21 @@ object MedicationCardModule {
      *
      * Собирается здесь, потому что раздел «Лекарства» подключается к графу этой задачей:
      * до неё форма не создавалась ни из одного экрана, и связки у сценария не было.
+     *
+     * Генерация идёт тем же портом [MedicationPlanner], что у архивации и возврата:
+     * одно событие — один путь, и будильники пересобираются вслед за приёмами (НАП-11).
      */
     @Provides
     @Singleton
     fun provideSaveMedication(
         medications: MedicationRepository,
-        planIntakes: PlanIntakesUseCase,
+        planner: MedicationPlanner,
         transactor: Transactor,
         log: OperationLog,
     ): SaveMedicationUseCase = SaveMedicationUseCase(
         validate = ValidateMedicationDraft(),
         medications = medications,
-        planIntakes = planIntakes,
+        planner = planner,
         transactor = transactor,
         log = log,
     )
