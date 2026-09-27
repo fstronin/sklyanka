@@ -59,8 +59,10 @@ class BuildReminderDiagnosticsUseCase(
         // Ожидавшиеся срабатывания: приёмы, чей момент прошёл, а отметки так и нет.
         // Нижняя граница — сутки назад: перерыв длиной больше суток человек и так увидит
         // в истории, а выборка на всю базу стоила бы полного прохода по приёмам.
+        // Приёмы, напоминание о которых обязано было состояться: не только ожидающиеся,
+        // но и переведённые в пропущенные — именно они и доказывают перерыв (НАП-38).
         val expected = WindowIntakeSelector
-            .remindable(
+            .expected(
                 plan.candidates(
                     from = now.atZone(zone).toLocalDateTime().minusDays(1),
                     toInclusive = now.atZone(zone).toLocalDateTime(),

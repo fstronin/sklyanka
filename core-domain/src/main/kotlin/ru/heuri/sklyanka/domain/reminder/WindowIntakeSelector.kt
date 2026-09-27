@@ -51,9 +51,32 @@ object WindowIntakeSelector {
             .sortedWith(compareBy({ it.at }, { it.intakeId }))
             .toList()
 
+    /**
+     * Приёмы, о которых напоминание **обязано было** состояться (НАП-38).
+     *
+     * Отличается от [remindable] одним: сюда входит и приём, уже переведённый в
+     * «пропущено без отметки». Это не послабление, а условие работоспособности признака
+     * перерыва. Проход по просроченным (НАП-34) идёт при запуске **раньше**, чем считается
+     * перерыв, и к моменту счёта каждый приём, доказывающий перерыв, уже не `PENDING`.
+     * Отбор по [remindable] поэтому всегда давал пустой список, и сообщение «напоминания
+     * не приходили с такого-то часа» не показывалось ни разу — ни после короткой
+     * остановки, ни после суток простоя.
+     *
+     * Отметки человека сюда не попадают: `TAKEN` и `SKIPPED` ставит он сам, и приём,
+     * отмеченный заранее, напоминания не ждал. `MISSED` ставит только проход по
+     * просроченным — то есть само приложение.
+     */
+    fun expected(candidates: List<ReminderIntake>): List<ReminderIntake> = candidates.filter { candidate ->
+        (candidate.status == IntakeStatus.PENDING || candidate.status == IntakeStatus.MISSED) &&
+            isPlannable(candidate)
+    }
+
     /** Признаки, не зависящие от времени: статус, режим, архив, профиль. */
-    private fun isRemindable(candidate: ReminderIntake): Boolean = candidate.status == IntakeStatus.PENDING &&
-        candidate.scheduleMode == ScheduleMode.SCHEDULED &&
+    private fun isRemindable(candidate: ReminderIntake): Boolean =
+        candidate.status == IntakeStatus.PENDING && isPlannable(candidate)
+
+    /** Всё, кроме статуса: режим приёма, архив лекарства, профиль. */
+    private fun isPlannable(candidate: ReminderIntake): Boolean = candidate.scheduleMode == ScheduleMode.SCHEDULED &&
         !candidate.medicationArchived &&
         (candidate.profileIsSelf || candidate.profileMirrorsReminders)
 }

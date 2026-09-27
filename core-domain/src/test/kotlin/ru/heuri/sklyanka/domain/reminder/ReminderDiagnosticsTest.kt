@@ -5,7 +5,9 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import ru.heuri.sklyanka.domain.intake.SweepReason
 import ru.heuri.sklyanka.domain.model.Fixtures
+import ru.heuri.sklyanka.domain.model.IntakeStatus
 import ru.heuri.sklyanka.domain.reminder.port.PermissionState
 import ru.heuri.sklyanka.domain.reminder.port.ReminderPermission
 import java.time.LocalDateTime
@@ -117,6 +119,38 @@ class ReminderDiagnosticsTest {
         val snapshot = world.diagnostics()
 
         assertEquals(world.momentOf(LocalDateTime.of(2026, 9, 25, 12, 0)), snapshot.outage?.since)
+    }
+
+    @Test
+    fun `an intake already swept into missed still proves the break`() = runTest {
+        // Длинный перерыв: приложение остановили, окно приёма истекло, и проход
+        // по просроченным перевёл приём в «пропущено без отметки» — раньше, чем признак
+        // перерыва успели посчитать. Именно этот случай НАП-38 и описывает: человек
+        // открывает приложение и обязан увидеть, с какого момента напоминания не шли.
+        world.pending(at = LocalDateTime.of(2026, 9, 25, 12, 0))
+        world.reschedule(RescheduleReason.APP_START)
+        world.moveTo(LocalDateTime.of(2026, 9, 26, 9, 0))
+        world.sweep(SweepReason.APP_START)
+
+        val snapshot = world.diagnostics()
+
+        assertEquals(IntakeStatus.MISSED, world.stored().status, "the sweep must have run first")
+        assertEquals(
+            world.momentOf(LocalDateTime.of(2026, 9, 25, 12, 0)),
+            snapshot.outage?.since,
+            "a break the person lived through cannot disappear because the sweep tidied up after it",
+        )
+    }
+
+    @Test
+    fun `an intake the person marked is not a break`() = runTest {
+        // Отметка заранее: напоминание не приходило, потому что и не должно было.
+        world.pending(at = LocalDateTime.of(2026, 9, 25, 12, 0))
+        world.take()
+
+        world.moveTo(LocalDateTime.of(2026, 9, 25, 18, 0))
+
+        assertEquals(null, world.diagnostics().outage)
     }
 
     @Test

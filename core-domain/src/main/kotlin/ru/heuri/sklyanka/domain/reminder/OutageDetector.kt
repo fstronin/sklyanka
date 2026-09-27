@@ -74,8 +74,10 @@ class RecordReminderOutageUseCase(
     suspend operator fun invoke(): ReminderOutage? {
         val now = time.now()
         val zone = time.zone()
+        // Приёмы, напоминание о которых обязано было состояться: не только ожидающиеся,
+        // но и переведённые в пропущенные — именно они и доказывают перерыв (НАП-38).
         val expected = WindowIntakeSelector
-            .remindable(
+            .expected(
                 plan.candidates(
                     from = now.atZone(zone).toLocalDateTime().minusDays(1),
                     toInclusive = now.atZone(zone).toLocalDateTime(),

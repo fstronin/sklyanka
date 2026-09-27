@@ -97,6 +97,14 @@ skl_expect_journal() {
     return 1
 }
 
+# Момент «через N часов» по часам образа, в миллисекундах.
+skl_hours_ahead_ms() {
+    local seconds
+    seconds="$(skl_shell "date +%s" | tr -d '\r')"
+    [[ "$seconds" =~ ^[0-9]+$ ]] || skl_die "часы образа не прочитались"
+    echo $(( (seconds + $1 * 3600) * 1000 ))
+}
+
 skl_launch_app() {
     skl_shell "monkey -p $SKL_APP_ID -c android.intent.category.LAUNCHER 1" >/dev/null 2>&1 || true
     sleep 5
@@ -108,6 +116,33 @@ skl_next_scheduled_ms() {
     skl_journal_query "$SKL_TRIAL_API" \
         "SELECT MIN(scheduled_at) FROM reminder_log WHERE scheduled_at IS NOT NULL AND scheduled_at > $SKL_TRIAL_MARK" |
         head -n 1
+}
+
+# Дождаться ближайшего планового момента плюс запас, но не дольше предела.
+#
+# Возвращает 1, когда ждать нечего или ждать слишком долго: это не отказ продукта,
+# а незаведённая нагрузка, и испытание обязано сказать это словами, а не уснуть.
+# Предел не косметический: после испытаний со сменой часов ближайший плановый момент
+# оказывается завтрашним, и ожидание без предела останавливало весь прогон.
+skl_wait_for_next_scheduled() {
+    local margin="${1:-120}" next now wait_seconds
+    next="$(skl_next_scheduled_ms)"
+    if [[ -z "$next" ]]; then
+        skl_warn "в журнале нет будущего планового момента: нагрузка не заведена (./seed.sh --mode direct)"
+        return 1
+    fi
+    now="$(skl_device_now_ms "$SKL_TRIAL_API")"
+    wait_seconds=$(( (next - now) / 1000 + margin ))
+    if (( wait_seconds > SKL_TRIAL_WAIT_LIMIT )); then
+        skl_warn "ближайший плановый момент через ${wait_seconds} с — дальше предела ${SKL_TRIAL_WAIT_LIMIT} с"
+        skl_warn "заведите нагрузку заново: ./seed.sh $SKL_TRIAL_API --mode direct"
+        return 1
+    fi
+    if (( wait_seconds > 0 )); then
+        skl_log "жду планового момента: ${wait_seconds} с"
+        sleep "$wait_seconds"
+    fi
+    return 0
 }
 
 # --- Испытания -----------------------------------------------------------------
@@ -150,17 +185,14 @@ skl_trial_i3() { # Doze принудительный
     skl_shell "dumpsys deviceidle enable" >/dev/null || true
     skl_shell "dumpsys deviceidle force-idle" >/dev/null
     skl_log "состояние глубокого idle: $(skl_shell "dumpsys deviceidle get deep" | tr -d '\r')"
-    local next now wait_seconds
-    next="$(skl_next_scheduled_ms)"
-    if [[ -n "$next" ]]; then
-        now="$(skl_device_now_ms "$SKL_TRIAL_API")"
-        wait_seconds=$(( (next - now) / 1000 + 180 ))
-        (( wait_seconds > 0 )) && { skl_log "жду планового момента: ${wait_seconds} с"; sleep "$wait_seconds"; }
-    else
-        skl_warn "в журнале нет будущего планового момента: нагрузка не заведена (./seed.sh)"
-    fi
+    local waited=0
+    skl_wait_for_next_scheduled 180 || waited=1
     skl_shell "dumpsys deviceidle unforce" >/dev/null || true
     skl_shell "dumpsys battery reset" >/dev/null || true
+    if (( waited != 0 )); then
+        skl_trial_end "не проведено: ждать было нечего — нагрузка не заведена"
+        return 1
+    fi
     if skl_expect_journal "shown"; then
         skl_trial_end "проведено"
     else
@@ -225,14 +257,20 @@ skl_trial_i7() { # Принудительная остановка (НАП-38)
     skl_trial_begin "И-7" "$1"
     skl_launch_app
     skl_shell "am force-stop $SKL_APP_ID" >/dev/null
-    skl_log "приложение остановлено принудительно; жду плановый момент"
-    local next now wait_seconds
-    next="$(skl_next_scheduled_ms)"
-    if [[ -n "$next" ]]; then
-        now="$(skl_device_now_ms "$SKL_TRIAL_API")"
-        wait_seconds=$(( (next - now) / 1000 + 120 ))
-        (( wait_seconds > 0 )) && sleep "$wait_seconds"
-    fi
+    skl_log "приложение остановлено принудительно"
+    # Остановки на один пропущенный приём мало, и это не придирка к сценарию.
+    # Просроченный точный будильник, поставленный заново при запуске, срабатывает
+    # немедленно: приложение догоняет пропуск и показывает напоминание с опозданием,
+    # то есть терять оказывается нечего и перерыва действительно нет.
+    #
+    # Перерыв — это напоминания, которые уже не придут. Поэтому часы переводятся за конец
+    # суток: окно приёма истекает, пока приложения нет, и догонять становится нечего.
+    # Ровно это и происходит у человека, чей телефон остановил приложение на ночь.
+    local target
+    target="$(skl_hours_ahead_ms 20)"
+    skl_shell "cmd alarm set-time $target" >/dev/null 2>&1 || skl_die "перевести часы вперёд не удалось"
+    sleep 5
+    skl_log "часы переведены за конец суток: $(skl_shell date | tr -d '\r')"
     skl_launch_app
     sleep 15
     if skl_expect_journal "outage"; then
@@ -248,13 +286,7 @@ skl_trial_i8() { # Смахивание из недавних — эквивал
     skl_launch_app
     skl_warn "настоящий жест смахивания на образе без окна недоступен: am kill — ближайший эквивалент (процесс снимается, будильники остаются)"
     skl_shell "am kill $SKL_APP_ID" >/dev/null
-    local next now wait_seconds
-    next="$(skl_next_scheduled_ms)"
-    if [[ -n "$next" ]]; then
-        now="$(skl_device_now_ms "$SKL_TRIAL_API")"
-        wait_seconds=$(( (next - now) / 1000 + 120 ))
-        (( wait_seconds > 0 )) && sleep "$wait_seconds"
-    fi
+    skl_wait_for_next_scheduled 120 || true
     if skl_expect_journal "shown"; then
         skl_trial_end "проведено частично"
     else
