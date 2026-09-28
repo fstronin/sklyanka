@@ -26,6 +26,7 @@ import com.github.takahirom.roborazzi.RoborazziTaskType
 import com.github.takahirom.roborazzi.captureRoboImage
 import com.github.takahirom.roborazzi.size
 import io.cucumber.java.ru.Допустим
+import io.cucumber.java.ru.И
 import io.cucumber.java.ru.Когда
 import io.cucumber.java.ru.Но
 import io.cucumber.java.ru.Тогда
@@ -268,17 +269,23 @@ class SettingsScreenSteps(private val world: AcceptanceWorld) {
      * Акцент в семантике не живёт, поэтому при значении «акцентным цветом» вопрос
      * задаётся картинке: у той же строки без отказов акцентных пикселей меньше.
      */
-    @Тогда("^строка «Разрешения и автозапуск» показывает (.+)$")
+    @Тогда(
+        "^строка «Разрешения и автозапуск» показывает " +
+            "((?:состояние )?«.+».*|число невыданных разрешений|нейтральную подпись без акцента)$",
+    )
     fun thePermissionsRowShows(value: String) {
         val state = SettingsScreenProbe.state(world)
+        // SKL-14 называет то же состояние словами «показывает состояние «Одно не выдано»»;
+        // строка «показывает, что не всё выдано» сюда не попадает — у неё своё объявление.
+        val shown = value.removePrefix("состояние ").trim()
         when {
-            value.startsWith("«${string(R.string.settings_permissions_denied_one)}»") -> {
+            shown.startsWith("«${string(R.string.settings_permissions_denied_one)}»") -> {
                 assertEquals(1, state.permissions.denied, "the premise says exactly one permission is missing")
                 assertTrue(
                     hasText(state, string(R.string.settings_permissions_denied_one)),
                     "the row must say exactly that (НФТ-8)",
                 )
-                if (value.contains("акцент")) {
+                if (shown.contains("акцент")) {
                     val neutral = state.copy(permissions = state.permissions.copy(denied = 0))
                     assertTrue(
                         accentPixels(state) > accentPixels(neutral),
@@ -287,7 +294,7 @@ class SettingsScreenSteps(private val world: AcceptanceWorld) {
                 }
             }
 
-            value == "число невыданных разрешений" -> {
+            shown == "число невыданных разрешений" -> {
                 assertEquals(2, state.permissions.denied)
                 assertTrue(
                     hasText(state, context.getString(R.string.settings_permissions_denied_many, TWO)),
@@ -313,6 +320,22 @@ class SettingsScreenSteps(private val world: AcceptanceWorld) {
                 )
             }
         }
+    }
+
+    /**
+     * Акцент строки отдельной проверкой (SKL-14).
+     *
+     * В семантике цвет не живёт, поэтому вопрос задаётся картинке: у того же экрана
+     * без единого отказа акцентных пикселей меньше (приём SKL-20 и SKL-18).
+     */
+    @И("^это состояние выделено акцентным цветом$")
+    fun theStateIsHighlighted() {
+        val state = SettingsScreenProbe.state(world)
+        val neutral = state.copy(permissions = state.permissions.copy(denied = 0))
+        assertTrue(
+            accentPixels(state) > accentPixels(neutral),
+            "the missing permission must be shown in accent (НФТ-8)",
+        )
     }
 
     @Когда("^человек выдаёт точные будильники в системных настройках и возвращается в приложение$")
