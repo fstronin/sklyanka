@@ -32,7 +32,10 @@ import java.util.Locale
 @Composable
 internal fun MedicationSubtitle.text(): String {
     val separator = stringResource(R.string.meds_separator)
-    val head = listOfNotNull(form.label(), shape?.label()).joinToString(" ")
+    // Вид таблетки — часть фразы, а не подпись кнопки: в макете `MedCard.dc.html`
+    // и спеке он со строчной («Таблетка круглая с риской»). Найдено экранной приёмкой.
+    val head = listOfNotNull(form.label(), shape?.label()?.replaceFirstChar { it.lowercase(locale()) })
+        .joinToString(" ")
     val dose = strength?.let { value -> strengthUnit?.let { "${value.plain()} ${strengthUnitLabel(it)}" } }
     return listOfNotNull(head, dose, foodRelation?.cardLabel()).joinToString(separator)
 }
@@ -56,7 +59,9 @@ private fun FoodRelation.cardLabel(): String? = when (this) {
 @Composable
 internal fun ScheduleBlockUi.Scheduled.summary(): String {
     val separator = stringResource(R.string.meds_separator)
-    val frequency = pluralStringResource(R.plurals.times_per_day, timesPerDay, timesPerDay)
+    // Склонение карточки («2 приёма в сутки»), а не строки списка («2 раза в сутки»):
+    // в макете `MedCard.dc.html` и спеке частота названа приёмами. Найдено экранной приёмкой.
+    val frequency = pluralStringResource(R.plurals.card_intakes_per_day, timesPerDay, timesPerDay)
     return listOf(frequency, doseText(doseAmount, doseUnit)).joinToString(separator)
 }
 

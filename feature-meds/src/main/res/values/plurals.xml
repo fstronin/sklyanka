@@ -53,6 +53,18 @@
       ===== Карточка лекарства (MedCard.dc.html) =====
     -->
 
+    <!--
+      Частота в блоке «Расписание»: «2 приёма в сутки» — как в макете.
+      От `times_per_day` отличается существительным: в списке лекарств та же частота
+      пишется «2 раза в сутки» (строка описания карточки списка).
+    -->
+    <plurals name="card_intakes_per_day">
+        <item quantity="one">%1$d приём в сутки</item>
+        <item quantity="few">%1$d приёма в сутки</item>
+        <item quantity="many">%1$d приёмов в сутки</item>
+        <item quantity="other">%1$d приёма в сутки</item>
+    </plurals>
+
     <!-- Доза одного приёма: «по 1 таблетке», «по 2 таблетки», «по 5 таблеток». -->
     <plurals name="card_dose_tablets">
         <item quantity="one">по %1$s таблетке</item>
