@@ -51,7 +51,6 @@ import java.util.Locale
 @OptIn(ExperimentalTestApi::class)
 class InterfaceLanguageSteps(private val world: AcceptanceWorld) {
 
-    private var snoozeMinutes: Int = ReminderSettingsValues.DEFAULT_SNOOZE_MINUTES
     private var foreignMedications: Int = 0
     private var shown: List<String> = emptyList()
     private var russianExport: List<String> = emptyList()
@@ -70,11 +69,6 @@ class InterfaceLanguageSteps(private val world: AcceptanceWorld) {
             locale.language == InterfaceLocale.VALUE.language,
             "the stand must run with a device language other than the interface one, got $locale",
         )
-    }
-
-    @Допустим("^настройка «Отложить на» — (\\d+) минут$")
-    fun theSnoozeIntervalIs(minutes: Int) {
-        snoozeMinutes = minutes
     }
 
     @Допустим("^у профиля «([^»]+)» заведено лекарств: (\\d+)$")
@@ -232,7 +226,12 @@ class InterfaceLanguageSteps(private val world: AcceptanceWorld) {
                 mirrorReminders = true,
             ),
         ),
-        reminders = ReminderSettingsValues(persistentEnabled = true, snoozeMinutes = snoozeMinutes),
+        // Интервал называет общий шаг «настройка «Отложить на» — …»; здесь он читается
+        // из того же мира, а не из второй копии значения (ОДИН шаг — одно объявление).
+        reminders = ReminderSettingsValues(
+            persistentEnabled = true,
+            snoozeMinutes = world.reminders.settings().snoozeMinutes,
+        ),
         watch = WatchLinkState.NotConnected,
         permissions = PermissionsSummary(denied = 0, manual = 1),
         version = "0.1.0",

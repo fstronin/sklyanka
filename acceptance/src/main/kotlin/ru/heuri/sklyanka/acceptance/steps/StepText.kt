@@ -38,7 +38,7 @@ fun resultOf(text: String): MarkResult = if (text.startsWith(TAKEN_WORD)) MarkRe
 fun statusOf(text: String): IntakeStatus = when {
     text.startsWith(TAKEN_WORD) || text.startsWith(TAKEN_NEUTER) -> IntakeStatus.TAKEN
     text.endsWith(WITHOUT_A_MARK) -> IntakeStatus.MISSED
-    text.startsWith(PENDING_WORD) -> IntakeStatus.PENDING
+    text.startsWith(PENDING_WORD) || text.startsWith(NOT_MARKED_WORD) -> IntakeStatus.PENDING
     else -> IntakeStatus.SKIPPED
 }
 
@@ -51,6 +51,7 @@ fun sourceOf(text: String): IntakeSource = when (text) {
 const val TAKEN_WORD = "принят"
 const val TAKEN_NEUTER = "принято"
 const val PENDING_WORD = "ожидающ"
+const val NOT_MARKED_WORD = "неотмечен"
 const val WITHOUT_A_MARK = "без отметки"
 const val PHONE_WORD = "телефон"
 const val WATCH_WORD = "часы"

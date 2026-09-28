@@ -76,9 +76,16 @@ class IntakePlanningSteps(private val world: AcceptanceWorld) {
         world.medications.update(medication) { it.copy(startDate = date(from), endDate = null) }
     }
 
-    @Given("^«(.+?)» отправлено в архив (.+?)$")
-    fun theMedicationWasArchivedOn(medication: String, on: String) {
-        world.medications.archive(medication, date(on).atTime(NOON).atZone(world.clock.zone).toInstant())
+    /**
+     * Лекарство уже в архиве к названному моменту.
+     *
+     * Время суток необязательно: SKL-04 и SKL-06 называют одну дату, SKL-13 — дату и время.
+     * `отправлен` и `отправлено` — одна и та же данность в мужском и среднем роде.
+     */
+    @Given("^«(.+?)» отправлен[о]? в архив (.+?)(?: в (\\d{2}:\\d{2}))?$")
+    fun theMedicationWasArchivedOn(medication: String, on: String, time: String?) {
+        val at = date(on).atTime(time?.let(LocalTime::parse) ?: NOON)
+        world.medications.archive(medication, at.atZone(world.clock.zone).toInstant())
     }
 
     @Given("^«(.+?)» находится в архиве$")

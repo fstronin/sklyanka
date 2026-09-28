@@ -6,6 +6,7 @@ import ru.heuri.sklyanka.domain.intake.MarkIntakeUseCase
 import ru.heuri.sklyanka.domain.intake.MarkOutcome
 import ru.heuri.sklyanka.domain.intake.MarkRequest
 import ru.heuri.sklyanka.domain.intake.MarkResult
+import ru.heuri.sklyanka.domain.intake.MarkSideEffects
 import ru.heuri.sklyanka.domain.intake.PrnOutcome
 import ru.heuri.sklyanka.domain.intake.SweepMissedIntakesUseCase
 import ru.heuri.sklyanka.domain.intake.SweepReason
@@ -245,12 +246,32 @@ class AcceptanceWorld {
      * Отказ домена не роняет шаг: проигравшая отметка — штатный ход событий, и сценарий
      * проверяет именно то, что человеку при этом ничего не показали.
      */
-    fun mark(intakeId: String, result: MarkResult, source: IntakeSource, actedAt: Instant): MarkOutcome {
+    fun mark(intakeId: String, result: MarkResult, source: IntakeSource, actedAt: Instant): MarkOutcome =
+        applyMark(intakeId, result, source, actedAt, MarkSideEffects.None)
+
+    /**
+     * Отметка с последствиями подсистемы напоминаний (SKL-13, НАП-30).
+     *
+     * Отличается от [mark] ровно точкой композиции: снятие уведомления и отзыв карточки
+     * часов приходят теми же последствиями, что у продукта (`ReminderModule`), а не
+     * повторяются шагом. Нужна сценарию «отметка с часов закрывает напоминание».
+     */
+    fun markWithSideEffects(intakeId: String, result: MarkResult, source: IntakeSource, actedAt: Instant): MarkOutcome =
+        applyMark(intakeId, result, source, actedAt, reminders.markSideEffects())
+
+    private fun applyMark(
+        intakeId: String,
+        result: MarkResult,
+        source: IntakeSource,
+        actedAt: Instant,
+        sideEffects: MarkSideEffects,
+    ): MarkOutcome {
         val useCase = MarkIntakeUseCase(
             repositories.intakeStore,
             repositories.medicationStore,
             repositories.profileStore,
             clock.time,
+            sideEffects,
         )
         val outcome = runCatching {
             runBlocking { useCase(MarkRequest(intakeId, result, source, actedAt)) }

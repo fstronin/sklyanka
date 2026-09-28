@@ -236,9 +236,20 @@ class IntakeLifecycleSteps(private val world: AcceptanceWorld) {
         repeat(2) { world.pressTakeOnDemand(medication) }
     }
 
+    /**
+     * Наступил момент: часы сдвинулись, просроченные переведены, будильники сработали.
+     *
+     * Доставка срабатываний и полночный проход добавлены SKL-13: момент — это не только
+     * статус приёмов, но и показ напоминаний. У сценариев без будильников и уведомлений
+     * обе части ничего не делают.
+     */
     @When("^наступает (.+?), (\\d{2}:\\d{2})$")
     fun thatMomentComes(date: String, time: String) {
-        advanceAndSweep(moment(date, time), SweepReason.TIMER)
+        val at = moment(date, time)
+        advanceAndSweep(at, SweepReason.TIMER)
+        world.reminders.deliverThrough(at)
+        // Граница суток снимает карточки приёмов, которые перестали ожидаться (НАП-34).
+        if (LocalTime.parse(time) == LocalTime.MIDNIGHT) world.reminders.dayBoundarySweep()
     }
 
     @When("^устройство включают (.+?) в (\\d{2}:\\d{2})$")
