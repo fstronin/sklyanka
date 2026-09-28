@@ -9,11 +9,18 @@ import ru.heuri.sklyanka.domain.intake.MarkResult
 import ru.heuri.sklyanka.domain.intake.PrnOutcome
 import ru.heuri.sklyanka.domain.intake.SweepMissedIntakesUseCase
 import ru.heuri.sklyanka.domain.intake.SweepReason
+import ru.heuri.sklyanka.domain.medication.MedicationDraft
+import ru.heuri.sklyanka.domain.medication.MedicationListRules
+import ru.heuri.sklyanka.domain.medication.SaveMedicationUseCase
+import ru.heuri.sklyanka.domain.medication.SaveResult
+import ru.heuri.sklyanka.domain.medication.ValidateMedicationDraft
 import ru.heuri.sklyanka.domain.model.Intake
 import ru.heuri.sklyanka.domain.model.IntakeSource
 import ru.heuri.sklyanka.domain.schedule.IntakeGenerationPolicy
+import ru.heuri.sklyanka.domain.schedule.MedicationPlanner
 import ru.heuri.sklyanka.domain.schedule.PlanIntakesUseCase
 import ru.heuri.sklyanka.domain.schedule.PlanReason
+import ru.heuri.sklyanka.domain.schedule.PlanResult
 import ru.heuri.sklyanka.domain.schedule.PlanScope
 import ru.heuri.sklyanka.domain.today.GroupMarkOutcome
 import ru.heuri.sklyanka.domain.today.MarkIntakeGroupUseCase
@@ -89,7 +96,7 @@ class AcceptanceWorld {
 
     // --- Действия: планирование --------------------------------------------------------------
 
-    fun plan(scope: PlanScope = PlanScope.AllProfiles, reason: PlanReason = PlanReason.MANUAL_CHECK) {
+    fun plan(scope: PlanScope = PlanScope.AllProfiles, reason: PlanReason = PlanReason.MANUAL_CHECK): PlanResult {
         val useCase = PlanIntakesUseCase(
             profiles = repositories.profileStore,
             medications = repositories.medicationStore,
@@ -98,12 +105,69 @@ class AcceptanceWorld {
             log = log,
             policy = IntakeGenerationPolicy(windowDepthDays = depthDays),
         )
-        runBlocking { useCase(scope, reason) }
+        return runBlocking { useCase(scope, reason) }
     }
 
     fun planMedication(name: String, reason: PlanReason) {
         plan(PlanScope.Medication(medications.get(name).id), reason)
     }
+
+    /**
+     * Перепланирование одного лекарства в виде порта [MedicationPlanner] (`SKL-09`).
+     *
+     * Так сохранение курса и его архивация вызывают ту же генерацию, что и приложение:
+     * второй реализации «что произойдёт с приёмами после сохранения» в приёмке нет.
+     */
+    fun planner(): MedicationPlanner = MedicationPlanner { medicationId, reason ->
+        plan(PlanScope.Medication(medicationId), reason)
+    }
+
+    // --- Счётчики списка лекарств ----------------------------------------------------------------
+
+    /** Сколько у профиля активных по расписанию и сколько в архиве — правилом ЭКР-3 из домена. */
+    fun medicationCounts(profileName: String = profiles.active): ListCounts {
+        val profileId = profiles.get(profileName).id
+        val owned = medications.all().filter { it.profileId == profileId }
+        return ListCounts(
+            active = MedicationListRules.activeCount(owned),
+            archived = owned.count { it.isArchived },
+        )
+    }
+
+    /**
+     * Счётчики до последнего изменения состава — предмет проверок «уменьшился на единицу».
+     *
+     * Задание Предыстории и проверка следствия лежат в разных классах шагов, и передать
+     * счётчики друг другу можно только через мир сценария. Заполняется действием, которое
+     * состав меняет: «лекарство отправлено в архив» (SKL-09).
+     */
+    var medicationCountsBefore: ListCounts? = null
+
+    /** Пара счётчиков списка лекарств: «Активные · N» и «Архив · N». */
+    data class ListCounts(val active: Int, val archived: Int)
+
+    // --- Действия: сохранение лекарства ----------------------------------------------------------
+
+    /**
+     * Сохранение лекарства настоящим `SaveMedicationUseCase` (`SKL-09`).
+     *
+     * Проверка, запись и порождение приёмов — тот же путь, что у формы в продукте:
+     * приёмка проверяет следствие сохранения, а не повторяет его правила.
+     */
+    fun save(draft: MedicationDraft): SaveResult {
+        val useCase = SaveMedicationUseCase(
+            validate = ValidateMedicationDraft(),
+            medications = repositories.medicationStore,
+            planner = planner(),
+            transactor = ScenarioTransactor(intakes, medications),
+            log = log,
+            newId = { "medication-saved-${++savedMedications}" },
+        )
+        return runBlocking { useCase(draft) }
+    }
+
+    /** Идентификаторы сохранённых сценарием курсов: детерминированные, но разные. */
+    private var savedMedications: Int = 0
 
     // --- Действия: отметка приёма --------------------------------------------------------------
 

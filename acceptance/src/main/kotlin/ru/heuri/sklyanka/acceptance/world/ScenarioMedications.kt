@@ -18,6 +18,7 @@ import java.time.LocalTime
  * лекарство заводится строкой Предыстории, и если строка не сработала, сценарий
  * обязан об этом сказать.
  */
+@Suppress("TooManyFunctions")
 class ScenarioMedications(private val clock: ScenarioClock) {
 
     private val byName = linkedMapOf<String, Medication>()
@@ -82,6 +83,18 @@ class ScenarioMedications(private val clock: ScenarioClock) {
     }
 
     /**
+     * Запись лекарства хранилищем: сохранение курса из формы (SKL-09).
+     *
+     * Ключ берётся у существующей записи с тем же идентификатором, а у новой — её имя:
+     * правка существующего курса не заводит в мире второй записи о том же лекарстве.
+     */
+    fun put(medication: Medication) {
+        val key = byName.entries.firstOrNull { it.value.id == medication.id }?.key ?: medication.name
+        byName[key] = medication
+        last = key
+    }
+
+    /**
      * Довести лекарства профиля до числа, названного Предысторией.
      *
      * Сценарий говорит «профиль заведён с четырьмя лекарствами», а по имени называет
@@ -114,6 +127,21 @@ class ScenarioMedications(private val clock: ScenarioClock) {
 
     fun archive(name: String, at: Instant) {
         update(name) { it.copy(archivedAt = at, archiveReason = ArchiveReason.MANUAL) }
+    }
+
+    /**
+     * Архивация хранилищем — так её видит настоящий `ArchiveMedicationUseCase` (SKL-09).
+     *
+     * Момент берётся у часов сценария (НФТ-48), а не у системных. Повторная архивация
+     * возвращает `false`, как и условное обновление настоящего хранилища (ИНВ-9).
+     */
+    fun archiveById(medicationId: String, reason: ArchiveReason): Boolean {
+        val entry = byName.entries
+            .firstOrNull { it.value.id == medicationId && !it.value.isArchived }
+            ?: return false
+        byName[entry.key] = entry.value.copy(archivedAt = clock.now(), archiveReason = reason)
+        last = entry.key
+        return true
     }
 
     fun unarchive(name: String) {

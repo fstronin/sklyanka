@@ -93,9 +93,10 @@ class ScenarioRepositories(
 
         override suspend fun get(medicationId: String): Medication? = medications.byId(medicationId)
 
-        override suspend fun save(medication: Medication) = Unit
+        override suspend fun save(medication: Medication) = medications.put(medication)
 
-        override suspend fun archive(medicationId: String, reason: ArchiveReason): Boolean = false
+        override suspend fun archive(medicationId: String, reason: ArchiveReason): Boolean =
+            medications.archiveById(medicationId, reason)
 
         override suspend fun setStock(medicationId: String, stockLeft: BigDecimal?) {
             medications.setStock(medicationId, stockLeft)
