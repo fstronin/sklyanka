@@ -21,3 +21,6 @@ reports/
 *.iml
 .DS_Store
 captures/
+
+# Конфиг среды opencode (kotlin-lsp) — локальный, не часть продукта
+opencode.json
