@@ -102,6 +102,18 @@ class ScenarioMedications(private val clock: ScenarioClock) {
 
     fun stockOf(name: String): BigDecimal? = get(name).stockLeft
 
+    private var stockBeforeAction: Map<String, BigDecimal?> = emptyMap()
+
+    /** Остаток на момент последнего действия: им проверяется «отметка не изменила остаток». */
+    fun rememberStock() {
+        stockBeforeAction = byName.mapValues { it.value.stockLeft }
+    }
+
+    fun stockBefore(name: String): BigDecimal? {
+        require(stockBeforeAction.containsKey(name)) { "the stock of $name was never remembered" }
+        return stockBeforeAction[name]
+    }
+
     /** Списание и пополнение приходят из домена по идентификатору, а не по имени. */
     fun setStock(medicationId: String, stockLeft: BigDecimal?) {
         val name = byName.entries.firstOrNull { it.value.id == medicationId }?.key ?: return
@@ -110,5 +122,13 @@ class ScenarioMedications(private val clock: ScenarioClock) {
 
     fun focusOn(name: String) {
         last = name
+    }
+
+    /** Снимок лекарств для транзакции: откат групповой отметки возвращает и остатки. */
+    fun snapshot(): Map<String, Medication> = byName.toMap()
+
+    fun restore(snapshot: Map<String, Medication>) {
+        byName.clear()
+        byName.putAll(snapshot)
     }
 }

@@ -7,9 +7,11 @@ import ru.heuri.sklyanka.domain.stock.StockWarning
 import ru.heuri.sklyanka.domain.stock.StockWarningForProfileUseCase
 import ru.heuri.sklyanka.domain.today.BuildTodayAgenda
 import ru.heuri.sklyanka.domain.today.DayProgress
+import ru.heuri.sklyanka.domain.today.PartOfDay
 import ru.heuri.sklyanka.domain.today.TodayAgenda
 import ru.heuri.sklyanka.domain.today.TodayLayout
 import ru.heuri.sklyanka.feature.today.TodayUiState
+import java.time.LocalTime
 
 /**
  * Повестка суток и состояние экрана «Сегодня» из мира сценария приёмки.
@@ -62,7 +64,7 @@ internal object TodayStand {
         is TodayLayout.Dense -> layout.sections.flatMap { it.groups }
     }.flatMap { group -> group.items.map { it.medication.id } }.toSet()
 
-    fun state(world: AcceptanceWorld): TodayUiState {
+    fun state(world: AcceptanceWorld, toggles: TodayScreenToggles = TodayScreenToggles()): TodayUiState {
         val agenda = agenda(world)
         return if (agenda.isFirstRun) {
             TodayUiState.Empty(agenda.date)
@@ -73,11 +75,24 @@ internal object TodayStand {
                 stockWarning = agenda.stockWarning,
                 layout = agenda.layout,
                 prn = agenda.prn,
-                toggledSections = emptySet(),
-                expandedGroups = emptySet(),
-                prnCollapsed = false,
+                toggledSections = toggles.toggledSections,
+                expandedGroups = toggles.expandedGroups,
+                prnCollapsed = toggles.prnCollapsed,
                 nothingToday = agenda.hasNothingToday,
             )
         }
     }
 }
+
+/**
+ * Ручные переключения экрана, накопленные сценарием.
+ *
+ * В продукте они живут в потоке `TodayViewModel` и переживают пересборку повестки дня
+ * (`TDD.md §5.2`). Стенд собирает экран заново на каждый шаг, поэтому накопленное
+ * хранит [TodayScreenProbe] между шагами сценария, а состояние принимает готовым.
+ */
+data class TodayScreenToggles(
+    val toggledSections: Set<PartOfDay> = emptySet(),
+    val expandedGroups: Set<LocalTime> = emptySet(),
+    val prnCollapsed: Boolean = false,
+)

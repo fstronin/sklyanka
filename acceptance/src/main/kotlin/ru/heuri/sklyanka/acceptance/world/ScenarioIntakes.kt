@@ -8,6 +8,7 @@ import ru.heuri.sklyanka.domain.intake.PrnOutcome
 import ru.heuri.sklyanka.domain.model.Intake
 import ru.heuri.sklyanka.domain.model.IntakeSource
 import ru.heuri.sklyanka.domain.model.IntakeStatus
+import ru.heuri.sklyanka.domain.today.GroupMarkOutcome
 import java.time.Instant
 import java.time.LocalDateTime
 
@@ -47,6 +48,21 @@ class ScenarioIntakes(private val clock: ScenarioClock, private val medications:
 
     var lastPrnOutcome: PrnOutcome? = null
 
+    /** Чем кончилась последняя групповая отметка: по этому сценарий судит об отказе (ОВ-32). */
+    var lastGroupOutcome: GroupMarkOutcome? = null
+
+    /** Приёмы последней групповой операции: «все три приёма считаются принятыми». */
+    var lastGroupIds: List<String> = emptyList()
+
+    /**
+     * Идентификатор лекарства, на записи которого хранилище отказывает.
+     *
+     * Сценарий групповой отметки (ОВ-32) проверяет, что отказ на одном приёме не
+     * оставляет группу полуотмеченной. Хранилище в памяти, как и настоящее, умеет
+     * отказывать — иначе эту ветку нечем завести.
+     */
+    var failingMedicationId: String? = null
+
     /** Нажатия на часах, ещё не дошедшие до телефона. */
     val presses: MutableList<WatchPress> = mutableListOf()
 
@@ -58,6 +74,14 @@ class ScenarioIntakes(private val clock: ScenarioClock, private val medications:
 
     fun store(intake: Intake) {
         byId[intake.id] = intake
+    }
+
+    /** Снимок хранилища для транзакции: групповая отметка — «всё или ничего» (ОВ-32). */
+    fun snapshot(): Map<String, Intake> = byId.toMap()
+
+    fun restore(snapshot: Map<String, Intake>) {
+        byId.clear()
+        byId.putAll(snapshot)
     }
 
     fun removeIfPending(intakeId: String): Boolean = byId[intakeId]?.isPending == true && byId.remove(intakeId) != null

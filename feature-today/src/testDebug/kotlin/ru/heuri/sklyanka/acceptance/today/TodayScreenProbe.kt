@@ -42,8 +42,26 @@ import ru.heuri.sklyanka.ui.theme.SklyankaTheme
 @OptIn(ExperimentalTestApi::class)
 internal object TodayScreenProbe {
 
+    /**
+     * Ручные переключения текущего сценария и его мир.
+     *
+     * Мир сценария создаётся заново, а вместе с ним начинается и новый набор
+     * переключений: смена мира — единственный признак нового сценария, который
+     * виден стенду.
+     */
+    private var lastWorld: AcceptanceWorld? = null
+    private var toggles = TodayScreenToggles()
+
     /** Состояние, которое продукт показал бы сейчас. */
-    fun state(world: AcceptanceWorld): TodayUiState = TodayStand.state(world)
+    fun state(world: AcceptanceWorld): TodayUiState = TodayStand.state(world, togglesFor(world))
+
+    private fun togglesFor(world: AcceptanceWorld): TodayScreenToggles {
+        if (lastWorld !== world) {
+            lastWorld = world
+            toggles = TodayScreenToggles()
+        }
+        return toggles
+    }
 
     /** Собрать экран и задать вопрос его композиции. */
     fun <T> ask(world: AcceptanceWorld, question: (ComposeUiTest) -> T): T {
@@ -113,7 +131,22 @@ internal object TodayScreenProbe {
         when (intent) {
             is TodayIntent.MarkTaken -> mark(world, intent.intakeId, MarkResult.TAKEN)
             is TodayIntent.MarkSkipped -> mark(world, intent.intakeId, MarkResult.SKIPPED)
+            is TodayIntent.MarkGroupTaken -> world.markGroup(intent.intakeIds, world.clock.nowLocal())
             is TodayIntent.TakePrn -> world.pressTakeOnDemand(nameOf(world, intent.medicationId))
+
+            // Свёртка и разворот — зрительная часть состояния: в продукте её ведёт
+            // `TodayViewModel` (`TDD.md §5.2`), в стенде — сам стенд.
+            is TodayIntent.ExpandGroup -> toggles = toggles.copy(expandedGroups = toggles.expandedGroups + intent.time)
+            is TodayIntent.ToggleSection -> toggles = toggles.copy(
+                toggledSections = if (intent.partOfDay in toggles.toggledSections) {
+                    toggles.toggledSections - intent.partOfDay
+                } else {
+                    toggles.toggledSections + intent.partOfDay
+                },
+            )
+
+            TodayIntent.TogglePrnBlock -> toggles = toggles.copy(prnCollapsed = !toggles.prnCollapsed)
+
             // Переходы наружу состояние экрана не меняют: их разбирает маршрут, и
             // приёмка «Сегодня» их не проверяет.
             else -> Unit

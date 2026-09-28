@@ -177,6 +177,9 @@ class ScenarioRepositories(
 
         override suspend fun markAtomically(command: MarkCommand): MarkOutcome {
             val current = intakes.get(command.intakeId) ?: return MarkOutcome.NotFound
+            if (current.medicationId == intakes.failingMedicationId) {
+                error("the write of the intake ${command.intakeId} cannot be performed")
+            }
             return when (val decision = IntakeTransition.decide(current, command)) {
                 is MarkDecision.Keep -> MarkOutcome.Ignored(decision.intake, decision.reason)
                 is MarkDecision.Write -> {

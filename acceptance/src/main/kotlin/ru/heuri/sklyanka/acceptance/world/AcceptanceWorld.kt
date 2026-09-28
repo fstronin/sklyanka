@@ -15,6 +15,8 @@ import ru.heuri.sklyanka.domain.schedule.IntakeGenerationPolicy
 import ru.heuri.sklyanka.domain.schedule.PlanIntakesUseCase
 import ru.heuri.sklyanka.domain.schedule.PlanReason
 import ru.heuri.sklyanka.domain.schedule.PlanScope
+import ru.heuri.sklyanka.domain.today.GroupMarkOutcome
+import ru.heuri.sklyanka.domain.today.MarkIntakeGroupUseCase
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -76,6 +78,7 @@ class AcceptanceWorld {
     fun rememberState() {
         acted = true
         intakes.remember()
+        medications.rememberStock()
     }
 
     // --- Действия: планирование --------------------------------------------------------------
@@ -160,6 +163,41 @@ class AcceptanceWorld {
         mark(intakeId, result, IntakeSource.PHONE, moment)
         deliverRemainingPresses()
         intakes.focusOn(requireNotNull(intakes.get(intakeId)) { "unknown intake: $intakeId" })
+    }
+
+    /**
+     * Отметка целой группы одновременных приёмов — нажатие «Отметить все три» (ОВ-32).
+     *
+     * Идёт через настоящий [MarkIntakeGroupUseCase]: правило «вся группа или никак»
+     * и единое время отметки проверяются, а не пересказываются. Отказ хранилища
+     * возвращается наружу как [GroupMarkOutcome.Rejected], а не бросается: сценарий
+     * проверяет последствия отказа, а не исключение.
+     */
+    fun markGroup(intakeIds: List<String>, at: LocalDateTime, result: MarkResult = MarkResult.TAKEN): GroupMarkOutcome {
+        rememberState()
+        val useCase = MarkIntakeGroupUseCase(
+            markIntake = MarkIntakeUseCase(
+                repositories.intakeStore,
+                repositories.medicationStore,
+                repositories.profileStore,
+                clock.time,
+            ),
+            transactor = ScenarioTransactor(intakes, medications),
+            time = clock.time,
+            log = log,
+        )
+        val outcome = runBlocking { useCase(intakeIds, IntakeSource.PHONE, result, clock.momentOf(at)) }
+        intakes.lastGroupOutcome = outcome
+        intakes.lastGroupIds = intakeIds
+        return outcome
+    }
+
+    /**
+     * Сценарий «запись отметки «Омеза» не может быть выполнена»: хранилище отказывает
+     * на записи названного лекарства.
+     */
+    fun failWriteFor(medication: String) {
+        intakes.failingMedicationId = medications.get(medication).id
     }
 
     /**
