@@ -87,7 +87,10 @@ class ProjectStructureSteps {
     fun inspectScreenDependencies() {
         val module = RepositoryLayout.screenModules().first()
         inspectedModule = module
-        inspectedDependencies = RepositoryLayout.projectDependenciesOf(module)
+        // Продуктовые зависимости: экранный прогон приёмки подключает общий артефакт
+        // `:acceptance` тестовой конфигурацией, и правилом графа модулей это разрешено
+        // (SKL-26, `TDD.md §4.4`). В продуктовый артефакт такая зависимость не попадает.
+        inspectedDependencies = RepositoryLayout.projectDependenciesOf(module, includeTest = false)
     }
 
     @Then("он зависит только от общих модулей")

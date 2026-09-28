@@ -32,4 +32,11 @@ dependencies {
     // задачи нет, а арифметике по месяцу оно и не нужно.
     testImplementation(libs.junit4)
     testImplementation(libs.kotlinx.coroutines.test)
+
+    // Экранный прогон сценарной приёмки истории и отчёта врачу (SKL-26): Cucumber
+    // запускается изнутри модульного теста под Robolectric, поэтому шаги видят собранный
+    // экран. Общий мир сценария и весь словарь шагов приезжают общим артефактом приёмки;
+    // фабрика объектов Cucumber раздаёт один мир всем классам шагов сценария.
+    testDebugImplementation(project(":acceptance"))
+    testDebugImplementation(libs.cucumber.picocontainer)
 }

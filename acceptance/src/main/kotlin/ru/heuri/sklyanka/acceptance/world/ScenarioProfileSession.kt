@@ -56,6 +56,15 @@ class ScenarioProfileSession(private val profiles: ScenarioProfiles, private val
         requireNotNull(provider.snapshot()) { "the scenario has no active profile at all" }
     }
 
+    /**
+     * Хранилище активного профиля как порт домена.
+     *
+     * Открыто наружу, потому что настоящие сценарии домена принимают его параметром:
+     * расчёт истории и сборка отчёта (`SKL-18`) спрашивают профиль у того же источника,
+     * что и продукт, — второй копии «кто сейчас активен» в приёмке нет.
+     */
+    val activeStore: ActiveProfileRepository get() = active
+
     private fun providerOver(active: ActiveProfileRepository): ProfileContextProvider =
         object : ProfileContextProvider {
 

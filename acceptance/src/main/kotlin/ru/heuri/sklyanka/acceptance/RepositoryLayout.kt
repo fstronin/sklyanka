@@ -15,11 +15,23 @@ object RepositoryLayout {
 
     fun moduleBuildFile(module: String): File = File(root, "$module/build.gradle.kts")
 
-    /** Модули проекта, на которые ссылается build-файл модуля. */
-    fun projectDependenciesOf(module: String): List<String> {
+    /**
+     * Модули проекта, на которые ссылается build-файл модуля.
+     *
+     * @param includeTest считать ли зависимости тестовых наборов. Проверке графа модулей
+     *   (SKL-02) нужны только продуктовые зависимости: экранный прогон приёмки подключает
+     *   общий артефакт `:acceptance` тестовой конфигурацией, и это разрешено правилом
+     *   направления зависимостей (SKL-26, `TDD.md §4.4`). Проверке словаря шагов тестовые
+     *   зависимости, наоборот, нужны: экранный прогон видит общий артефакт именно через них.
+     */
+    fun projectDependenciesOf(module: String, includeTest: Boolean = true): List<String> {
         val text = moduleBuildFile(module).readText()
-        return PROJECT_DEPENDENCY.findAll(text).map { it.groupValues[1] }.distinct().sorted().toList()
+        val scanned = if (includeTest) text else text.lines().filterNot(::isTestDependencyLine).joinToString("\n")
+        return PROJECT_DEPENDENCY.findAll(scanned).map { it.groupValues[1] }.distinct().sorted().toList()
     }
+
+    private fun isTestDependencyLine(line: String): Boolean =
+        TEST_CONFIGURATIONS.any { line.trimStart().startsWith(it) }
 
     fun screenModules(): List<String> = root.listFiles()
         ?.filter { it.isDirectory && it.name.startsWith("feature-") }
@@ -38,4 +50,8 @@ object RepositoryLayout {
     }
 
     private val PROJECT_DEPENDENCY = Regex("""project\("(:[A-Za-z0-9\-_]+)"\)""")
+
+    /** Конфигурации тестовых наборов: их зависимости не входят в продуктовый граф. */
+    private val TEST_CONFIGURATIONS =
+        listOf("testImplementation", "testDebugImplementation", "androidTestImplementation")
 }

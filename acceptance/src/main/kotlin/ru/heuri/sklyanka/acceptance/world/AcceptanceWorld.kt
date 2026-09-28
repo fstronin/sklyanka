@@ -63,6 +63,16 @@ class AcceptanceWorld {
     /** Активный профиль как состояние приложения: переключение и перезапуск (ПРФ-17, ПРФ-18). */
     val profileSession = ScenarioProfileSession(profiles, repositories.profileStore)
 
+    /** История приёмов: срез периода и отчёт врачу настоящими сценариями домена (SKL-18). */
+    val history = ScenarioHistory(
+        medications = medications,
+        intakes = intakes,
+        profiles = repositories.profileStore,
+        activeProfile = profileSession.activeStore,
+        clock = clock,
+        log = log,
+    )
+
     /** Подсистема напоминаний: будильники, карточки и журнал (SKL-13, ПРФ-6). */
     val reminders = ScenarioReminders(clock, profiles, medications, intakes, repositories, log)
 
