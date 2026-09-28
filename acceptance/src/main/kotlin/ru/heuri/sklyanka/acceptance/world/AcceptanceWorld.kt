@@ -55,7 +55,7 @@ class AcceptanceWorld {
 
     val intakes = ScenarioIntakes(clock, medications)
 
-    val log = ScenarioLog()
+    val log = ScenarioLog(clock)
 
     /** Репозитории поверх состояния: под ними гоняются настоящие доменные сценарии. */
     val repositories = ScenarioRepositories(profiles, medications, intakes)
@@ -75,6 +75,34 @@ class AcceptanceWorld {
 
     /** Подсистема напоминаний: будильники, карточки и журнал (SKL-13, ПРФ-6). */
     val reminders = ScenarioReminders(clock, profiles, medications, intakes, repositories, log)
+
+    /**
+     * Перенос данных: порты файловой системы и хранилища в памяти (SKL-19).
+     *
+     * Перепланирование после загрузки идёт тем же полным обходом, что в продукте:
+     * все профили, затем каждый архивированный курс, и следом пересборка очереди
+     * будильников настоящим `RescheduleRemindersUseCase` (ПЕР-18, НАП-11).
+     */
+    val transfer = ScenarioTransfer(
+        profiles = profiles,
+        medications = medications,
+        intakes = intakes,
+        activeProfile = profileSession.activeStore,
+        log = log,
+        clock = clock,
+        fullReplan = {
+            // Порядок полного обхода НАП-34: сначала просроченные, потом генерация,
+            // потом будильники — как в `IntakePlanningTrigger` продукта.
+            sweep(SweepReason.REPLAN)
+            plan(PlanScope.AllProfiles, PlanReason.DATA_IMPORTED)
+            reminders.reschedule(RescheduleReason.DATA_IMPORTED)
+        },
+        medicationReplan = { medicationId ->
+            sweep(SweepReason.REPLAN)
+            plan(PlanScope.Medication(medicationId), PlanReason.DATA_IMPORTED)
+            reminders.reschedule(RescheduleReason.DATA_IMPORTED)
+        },
+    )
 
     /** Глубина окна генерации приёмов: значение приходит из Предыстории, а не из кода. */
     var depthDays: Int = DEFAULT_DEPTH_DAYS

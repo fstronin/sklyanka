@@ -33,4 +33,12 @@ dependencies {
     // а порядок шагов загрузки в нём и не нуждается.
     testImplementation(libs.junit4)
     testImplementation(libs.kotlinx.coroutines.test)
+
+    // Экранный прогон сценарной приёмки переноса данных (SKL-26): Cucumber запускается
+    // изнутри модульного теста под Robolectric, поэтому шаги видят собранный экран,
+    // а настоящий кодек формата приезжает из core-data. Общий мир сценария и весь
+    // словарь шагов приезжают общим артефактом приёмки; фабрика объектов Cucumber
+    // раздаёт один мир всем классам шагов сценария.
+    testDebugImplementation(project(":acceptance"))
+    testDebugImplementation(libs.cucumber.picocontainer)
 }
