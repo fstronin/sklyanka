@@ -65,11 +65,9 @@ class ProfileIndicationSteps(private val world: AcceptanceWorld) {
 
     // --- Действия --------------------------------------------------------------
 
-    @Когда("^(.+?) в (\\d{2}:\\d{2}) человек переключается (?:обратно )?на профиль «(.+?)»$")
-    fun thePersonSwitchesToThatProfile(date: String, time: String, name: String) {
-        world.clock.moveTo(world.dateOf(date).atTime(LocalTime.parse(time)))
-        world.profiles.use(name)
-    }
+    // Переключение профиля объявлено в общем артефакте (`ProfileSwitchingSteps`): та же
+    // строка стоит в доменном сценарии разделения профилей, и два объявления одного
+    // выражения встретились бы в этом прогоне и погасили бы его целиком.
 
     @Когда(
         "^человек открывает (экран «Сегодня»|список лекарств|карточку лекарства|архив|историю приёмов|форму нового лекарства)$",

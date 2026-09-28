@@ -52,6 +52,9 @@ class AcceptanceWorld {
     /** Репозитории поверх состояния: под ними гоняются настоящие доменные сценарии. */
     val repositories = ScenarioRepositories(profiles, medications, intakes)
 
+    /** Активный профиль как состояние приложения: переключение и перезапуск (ПРФ-17, ПРФ-18). */
+    val profileSession = ScenarioProfileSession(profiles, repositories.profileStore)
+
     /** Глубина окна генерации приёмов: значение приходит из Предыстории, а не из кода. */
     var depthDays: Int = DEFAULT_DEPTH_DAYS
 

@@ -3,6 +3,7 @@ package ru.heuri.sklyanka.acceptance
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.YearMonth
 
 /**
  * Разбор дат, времён и числительных русских сценариев.
@@ -15,6 +16,12 @@ object RussianDates {
     private val MONTHS = listOf(
         "января", "февраля", "марта", "апреля", "мая", "июня",
         "июля", "августа", "сентября", "октября", "ноября", "декабря",
+    )
+
+    /** Названия месяцев в именительном падеже: «за сентябрь 2026». */
+    private val MONTHS_NOMINATIVE = listOf(
+        "январь", "февраль", "март", "апрель", "май", "июнь",
+        "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь",
     )
 
     private val NUMERALS = mapOf(
@@ -67,6 +74,21 @@ object RussianDates {
         val to = date(toText, reference)
         val from = date(fromText, to)
         return generateSequence(from) { it.plusDays(1) }.takeWhile { !it.isAfter(to) }.toList()
+    }
+
+    /**
+     * Месяц и год из текста «сентябрь 2026» или «сентября 2026».
+     *
+     * Сценарий называет период и именительным падежом («за сентябрь»), и родительным;
+     * год может отсутствовать и берётся из текущего дня сценария.
+     */
+    fun month(text: String, reference: LocalDate): YearMonth {
+        val parts = text.trim().split(WHITESPACE)
+        val name = parts[0].lowercase()
+        val index = MONTHS.indexOf(name).takeIf { it >= 0 }
+            ?: MONTHS_NOMINATIVE.indexOf(name).takeIf { it >= 0 }
+        val month = requireNotNull(index) { "unknown month: ${parts[0]}" } + 1
+        return YearMonth.of(parts.getOrNull(1)?.toInt() ?: reference.year, month)
     }
 
     /** Времена приёма: «08:00, 14:00 и 20:00». */

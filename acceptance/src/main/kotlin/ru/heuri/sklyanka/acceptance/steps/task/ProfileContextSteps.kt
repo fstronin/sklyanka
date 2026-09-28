@@ -36,8 +36,9 @@ class ProfileContextSteps(private val world: AcceptanceWorld) {
         val profile = world.profiles.get(name)
         assertEquals(false, profile.isSelf, "«$name» must not be the phone owner")
         // Число лекарств из Предыстории проверяется там, где оно показано, — в строке
-        // списка профилей; здесь оно обязано быть числом, а не словом без смысла.
-        assertEquals(true, RussianDates.count(count) > 0, "a foreign profile must own medications")
+        // списка профилей; здесь оно запоминается, чтобы строка показала его, а не
+        // пересчёт по лекарствам, названным ниже: сценарий перечисляет не все.
+        world.profiles.declareMedicationCount(name, RussianDates.count(count))
     }
 
     @Given("^у профиля «(.+?)» есть лекарство «(.+?)» с приёмом в (\\d{2}:\\d{2}), доза (\\S+) таблетк\\S+$")

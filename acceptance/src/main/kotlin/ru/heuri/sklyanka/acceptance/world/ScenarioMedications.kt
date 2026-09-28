@@ -82,6 +82,26 @@ class ScenarioMedications(private val clock: ScenarioClock) {
     }
 
     /**
+     * Довести лекарства профиля до числа, названного Предысторией.
+     *
+     * Сценарий говорит «профиль заведён с четырьмя лекарствами», а по имени называет
+     * только те, о которых идёт речь. Строка списка профилей показывает все четыре,
+     * поэтому недостающие заводятся здесь — в момент, когда число проверяется. Иначе
+     * шаг показывал бы экран с числом из собственной строки вместо числа Предыстории.
+     */
+    fun ensureCount(profile: ScenarioProfiles, profileName: String, count: Int) {
+        val owner = profile.get(profileName)
+        val missing = count - all().count { it.profileId == owner.id }
+        repeat(missing.coerceAtLeast(0)) {
+            add(
+                profile = profile,
+                profileName = profileName,
+                name = "$UNNAMED_MEDICATION ${all().count { it.profileId == owner.id } + 1}",
+            )
+        }
+    }
+
+    /**
      * Убрать лекарство из мира сценария.
      *
      * Это не действие продукта, а данность Предыстории: сценарий, которому нужно
@@ -130,5 +150,10 @@ class ScenarioMedications(private val clock: ScenarioClock) {
     fun restore(snapshot: Map<String, Medication>) {
         byName.clear()
         byName.putAll(snapshot)
+    }
+
+    private companion object {
+        /** Ключ лекарства, которое Предыстория посчитала, но не назвала. */
+        const val UNNAMED_MEDICATION = "лекарство без имени"
     }
 }

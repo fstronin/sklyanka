@@ -16,6 +16,8 @@ class ScenarioProfiles {
 
     private val byName = linkedMapOf<String, Profile>()
 
+    private val declaredCounts = mutableMapOf<String, Int>()
+
     /** Профиль, открытый на телефоне. Отметка с часов его не меняет (ПРФ-22). */
     var active: String = ""
         private set
@@ -43,4 +45,18 @@ class ScenarioProfiles {
     fun byId(profileId: String): Profile? = byName.values.firstOrNull { it.id == profileId }
 
     fun self(): Profile? = byName.values.firstOrNull { it.isSelf }
+
+    /**
+     * Сколько лекарств Предыстория назвала у профиля.
+     *
+     * Сценарий перечисляет не все: «профиль с четырьмя лекарствами» называет число,
+     * а ниже — только те лекарства, о которых идёт речь. Число проверяется там, где оно
+     * показано, — в строке списка профилей, — и туда приходит отсюда, а не пересчётом
+     * по названным: пересчёт показывал бы строку сценария вместо факта Предыстории.
+     */
+    fun declareMedicationCount(name: String, count: Int) {
+        declaredCounts[name] = count
+    }
+
+    fun declaredMedicationCount(name: String): Int? = declaredCounts[name]
 }
