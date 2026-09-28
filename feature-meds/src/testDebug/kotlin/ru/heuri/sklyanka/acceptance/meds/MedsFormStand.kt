@@ -8,6 +8,7 @@ import androidx.compose.ui.test.runComposeUiTest
 import ru.heuri.sklyanka.acceptance.world.AcceptanceWorld
 import ru.heuri.sklyanka.domain.medication.MedicationDraft
 import ru.heuri.sklyanka.domain.medication.normalized
+import ru.heuri.sklyanka.domain.model.Medication
 import ru.heuri.sklyanka.feature.meds.form.FormInputs
 import ru.heuri.sklyanka.feature.meds.form.FormMode
 import ru.heuri.sklyanka.feature.meds.form.MedFormIntent
@@ -41,15 +42,26 @@ internal object MedsFormStand {
 
     /** Форма нового лекарства; времена можно задать предпосылкой сценария. */
     fun open(world: AcceptanceWorld, times: List<LocalTime> = emptyList()): MedFormUiState {
-        if (lastWorld !== world) {
-            lastWorld = world
-            state = null
-            cancelledHere = false
-        }
+        resetIfNewWorld(world)
         val current = state
         if (current != null) return current
         val draft = MedicationDraft.new(profileId(world), world.clock.today()).copy(times = times)
         return MedFormUiState.of(draft.normalized(), FormMode.Create, FormInputs()).also { state = it }
+    }
+
+    /**
+     * Форма правки: тот же черновик, заполненный из существующего лекарства.
+     *
+     * Повторяет `MedicationFormViewModel.open(medicationId)`: `MedicationDraft.of` даёт
+     * черновик, заголовок шапки — название лекарства, тексты числовых полей — записанные
+     * значения. Правила переиспользуются, а не пересказываются.
+     */
+    fun openEdit(world: AcceptanceWorld, medication: Medication): MedFormUiState {
+        resetIfNewWorld(world)
+        val current = state
+        if (current != null) return current
+        val draft = MedicationDraft.of(medication)
+        return MedFormUiState.of(draft, FormMode.Edit(medication.name), inputsOf(draft)).also { state = it }
     }
 
     /** Открыта ли форма в этом сценарии и была ли она закрыта «Отменой». */
@@ -184,6 +196,23 @@ internal object MedsFormStand {
 
     private fun MedFormUiState.with(draft: MedicationDraft, inputs: FormInputs = this.inputs): MedFormUiState =
         MedFormUiState.of(draft.normalized(), mode, inputs)
+
+    private fun resetIfNewWorld(world: AcceptanceWorld) {
+        if (lastWorld !== world) {
+            lastWorld = world
+            state = null
+            cancelledHere = false
+        }
+    }
+
+    /** Текст числовых полей при открытии правки: то, что уже записано (как в ViewModel). */
+    private fun inputsOf(draft: MedicationDraft): FormInputs = FormInputs(
+        doseAmount = draft.doseAmount.plain(),
+        strength = draft.strength.plain(),
+        stockLeft = draft.stockLeft.plain(),
+    )
+
+    private fun BigDecimal?.plain(): String = this?.stripTrailingZeros()?.toPlainString().orEmpty()
 
     private fun profileId(world: AcceptanceWorld): String = world.profiles.get(world.profiles.active).id
 

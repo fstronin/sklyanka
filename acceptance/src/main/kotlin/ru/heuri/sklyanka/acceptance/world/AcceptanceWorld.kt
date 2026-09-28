@@ -16,6 +16,7 @@ import ru.heuri.sklyanka.domain.medication.SaveResult
 import ru.heuri.sklyanka.domain.medication.ValidateMedicationDraft
 import ru.heuri.sklyanka.domain.model.Intake
 import ru.heuri.sklyanka.domain.model.IntakeSource
+import ru.heuri.sklyanka.domain.reminder.RescheduleReason
 import ru.heuri.sklyanka.domain.schedule.IntakeGenerationPolicy
 import ru.heuri.sklyanka.domain.schedule.MedicationPlanner
 import ru.heuri.sklyanka.domain.schedule.PlanIntakesUseCase
@@ -115,11 +116,33 @@ class AcceptanceWorld {
     /**
      * Перепланирование одного лекарства в виде порта [MedicationPlanner] (`SKL-09`).
      *
-     * Так сохранение курса и его архивация вызывают ту же генерацию, что и приложение:
-     * второй реализации «что произойдёт с приёмами после сохранения» в приёмке нет.
+     * Повторяет связку продукта (`MedicationCardModule.provideMedicationPlanner` над
+     * `IntakePlanningTrigger.planMedication`): сначала проход по просроченным, потом
+     * генерация окна приёмов, потом пересборка будильников — тем же настоящим
+     * `RescheduleRemindersUseCase`. Второй реализации «что произойдёт после сохранения»
+     * в приёмке нет.
      */
     fun planner(): MedicationPlanner = MedicationPlanner { medicationId, reason ->
-        plan(PlanScope.Medication(medicationId), reason)
+        sweep(SweepReason.REPLAN)
+        val result = plan(PlanScope.Medication(medicationId), reason)
+        reminders.reschedule(reminderReason(reason))
+        result
+    }
+
+    /**
+     * Причина перепланирования по причине генерации — таблица НАП-11 как в `app`
+     * (`ReminderPlanReasons.rescheduleReason`). Через порт проходят только причины одного
+     * лекарства; прочие — ошибка программиста, и отказ здесь обязателен, как и в продукте.
+     *
+     * Соответствие повторено, а не переиспользовано: `ReminderPlanReasons` — внутренний
+     * объект `app`, а модуль приёмки остаётся чистым JVM (`ADR-0007`) и `app` не видит.
+     */
+    private fun reminderReason(reason: PlanReason): RescheduleReason = when (reason) {
+        PlanReason.MEDICATION_ADDED -> RescheduleReason.MEDICATION_ADDED
+        PlanReason.MEDICATION_SAVED -> RescheduleReason.SCHEDULE_EDITED
+        PlanReason.MEDICATION_ARCHIVED -> RescheduleReason.MEDICATION_ARCHIVED
+        PlanReason.MEDICATION_RESTORED -> RescheduleReason.MEDICATION_UNARCHIVED
+        else -> error("Generation for reason ${reason.code} does not change one medication")
     }
 
     // --- Счётчики списка лекарств ----------------------------------------------------------------
