@@ -1,8 +1,8 @@
 package ru.heuri.sklyanka.platform.transfer
 
-import ru.heuri.sklyanka.domain.schedule.PlanReason
+import ru.heuri.sklyanka.domain.reminder.RescheduleReason
 import ru.heuri.sklyanka.domain.transfer.TransferReplanner
-import ru.heuri.sklyanka.scheduler.IntakePlanningTrigger
+import ru.heuri.sklyanka.reminder.ReminderPlanningTrigger
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -12,6 +12,12 @@ import javax.inject.Singleton
  * Собственного планирования перенос не делает: он вызывает уже существующий полный обход
  * (SKL-06) с причиной «загрузка данных». Причина не косметическая — по ней в журнале
  * разбирается, почему состав приёмов изменился целиком именно в этот момент.
+ *
+ * Вызов идёт через [ReminderPlanningTrigger], а не через генерацию приёмов напрямую:
+ * полный обход НАП-11 — это «сначала приёмы, потом будильники», и после загрузки
+ * очередь будильников обязана пересобраться тем же порядком. Без пересборки новые
+ * расписания из файла остались бы без напоминаний до ближайшего запуска приложения,
+ * а осиротевшие будильники прежних приёмов — в системе.
  *
  * **Второй проход по архивированным курсам — это лечение находки SKL-06**
  * (`docs/tasks/SKL-06/TODO.md`, пункт 21). Полный обход посещает только активные курсы:
@@ -27,14 +33,14 @@ import javax.inject.Singleton
  * архивированных курсов файла, и платится она один раз — на загрузке.
  */
 @Singleton
-class PlanningTransferReplanner @Inject constructor(private val planning: IntakePlanningTrigger) : TransferReplanner {
+class PlanningTransferReplanner @Inject constructor(private val planning: ReminderPlanningTrigger) : TransferReplanner {
 
     override suspend fun replanAfterTransfer(archivedMedicationIds: List<String>) {
-        planning.planAll(PlanReason.DATA_IMPORTED)
+        planning.planAll(RescheduleReason.DATA_IMPORTED)
         // Порядок важен: полный обход сначала приводит в порядок активные курсы, и только
         // потом снимаются приёмы архивированных — иначе снятое было бы создано заново.
         archivedMedicationIds.forEach { medicationId ->
-            planning.planMedication(medicationId, PlanReason.DATA_IMPORTED)
+            planning.planMedication(medicationId, RescheduleReason.DATA_IMPORTED)
         }
     }
 }

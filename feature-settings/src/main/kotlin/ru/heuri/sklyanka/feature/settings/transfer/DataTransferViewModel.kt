@@ -230,11 +230,18 @@ class DataTransferViewModel @Inject constructor(
                     }
                 }
 
+                // Отказ применения возвращает на исходный шаг: сообщение о нём живёт
+                // на экране переноса, и без возврата человек не увидел бы ни слова
+                // (ПЕР-27, ПЕР-31: «приложение сообщает, что загрузка не состоялась»).
                 is TransferOutcome.NotEnoughSpace ->
-                    mutable.update { it.copy(busy = false, failure = TransferFailure.NoSpace) }
+                    mutable.update {
+                        it.copy(busy = false, step = TransferStep.OVERVIEW, failure = TransferFailure.NoSpace)
+                    }
 
                 TransferOutcome.NotApplied ->
-                    mutable.update { it.copy(busy = false, failure = TransferFailure.ImportNotApplied) }
+                    mutable.update {
+                        it.copy(busy = false, step = TransferStep.OVERVIEW, failure = TransferFailure.ImportNotApplied)
+                    }
             }
         }
     }
