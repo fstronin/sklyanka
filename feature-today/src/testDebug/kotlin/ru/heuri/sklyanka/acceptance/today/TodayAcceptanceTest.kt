@@ -12,6 +12,10 @@ import ru.heuri.sklyanka.acceptance.run.ScreenAcceptanceRun
  *
  * Модуль свой: «Сегодня» живёт здесь, и шаг о составе его лент обязан видеть собранный
  * экран и его ресурсы (`SKL-26/TDD.md §4.3`).
+ *
+ * Сценарий «Купить» ведёт к остатку лекарства (`@composition`) исполняется прогоном
+ * `app`: ему нужны оба экрана сразу, и его тег исключён здесь — иначе он остался бы
+ * в этом прогоне без шагов.
  */
 @RunWith(AndroidJUnit4::class)
 // Экран длиннее окна телефона: блок «По потребности» и нижние ленты иначе не собираются,
@@ -25,10 +29,12 @@ class TodayAcceptanceTest {
 
     @Test
     fun theScreenScenariosOfTodayRunOnTheStand() {
-        assertNull(ScreenAcceptanceRun.run(task = TASK))
+        assertNull(ScreenAcceptanceRun.run(task = TASK, tags = "$SCREEN_TAG and not $COMPOSITION_TAG"))
     }
 
     private companion object {
         const val TASK = "SKL-08"
+        const val SCREEN_TAG = "@screen"
+        const val COMPOSITION_TAG = "@composition"
     }
 }

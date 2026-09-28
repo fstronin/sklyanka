@@ -10,7 +10,6 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasAnyDescendant
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ApplicationProvider
 import io.cucumber.java.ru.Когда
@@ -22,7 +21,6 @@ import ru.heuri.sklyanka.acceptance.steps.medicationNamed
 import ru.heuri.sklyanka.acceptance.world.AcceptanceWorld
 import ru.heuri.sklyanka.domain.intake.SweepReason
 import ru.heuri.sklyanka.domain.model.Intake
-import ru.heuri.sklyanka.feature.today.TAG_LANE_HEADER
 import ru.heuri.sklyanka.feature.today.TodayIntent
 import ru.heuri.sklyanka.ui.component.TAG_INTAKE_CARD
 import ru.heuri.sklyanka.ui.component.TAG_MARK_BUTTON
@@ -164,23 +162,7 @@ class TodayMarkingSteps(private val world: AcceptanceWorld) {
 
     @Тогда("^карточка «([^»]+)» остаётся в группе «(\\d{2}:\\d{2})»$")
     fun theCardStaysInThatLane(medication: String, time: String) {
-        TodayScreenProbe.ask(world) { test ->
-            val card = test.onNode(TodayScreenProbe.card(world, medication), useUnmergedTree = true)
-                .fetchSemanticsNode()
-            val lanes = test.onAllNodesWithTag(TAG_LANE_HEADER, useUnmergedTree = true).fetchSemanticsNodes()
-            val header = lanes.first { time in TodayScreenProbe.textsOf(it) }
-            assertTrue(
-                "the card of $medication must sit under its lane $time",
-                card.boundsInRoot.top >= header.boundsInRoot.top,
-            )
-            val nextLane = lanes.map { it.boundsInRoot.top }.filter { it > header.boundsInRoot.top }.minOrNull()
-            if (nextLane != null) {
-                assertTrue(
-                    "the card of $medication must sit above the next lane",
-                    card.boundsInRoot.top < nextLane,
-                )
-            }
-        }
+        TodayScreenProbe.ask(world) { test -> TodayScreenProbe.assertCardInLane(world, test, medication, time) }
     }
 
     @Тогда("^карточка показана приглушённой, без кнопок отметки$")

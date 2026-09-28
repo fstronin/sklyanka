@@ -116,6 +116,28 @@ internal object TodayScreenProbe {
         .fetchSemanticsNodes()
         .map { textsOf(it) }
 
+    /** Метка справа от ленты указанного времени: «Утро», «Вечер» или «Сейчас». */
+    fun laneLabelOf(test: ComposeUiTest, time: String): String? = lanes(test).firstOrNull { it.first() == time }?.last()
+
+    /**
+     * Карточка лекарства стоит под разделителем указанного времени.
+     *
+     * Проверка по границам, а не по тегу: разделитель — сосед карточки в разметке,
+     * общего родителя у них нет, и принадлежность видна только расположением.
+     */
+    fun assertCardInLane(world: AcceptanceWorld, test: ComposeUiTest, medication: String, time: String) {
+        val card = test.onNode(card(world, medication), useUnmergedTree = true).fetchSemanticsNode()
+        val lanes = test.onAllNodesWithTag(TAG_LANE_HEADER, useUnmergedTree = true).fetchSemanticsNodes()
+        val header = lanes.first { time in textsOf(it) }
+        check(card.boundsInRoot.top >= header.boundsInRoot.top) {
+            "the card of $medication must sit under its lane $time"
+        }
+        val nextLane = lanes.map { it.boundsInRoot.top }.filter { it > header.boundsInRoot.top }.minOrNull()
+        if (nextLane != null) {
+            check(card.boundsInRoot.top < nextLane) { "the card of $medication must sit above the next lane" }
+        }
+    }
+
     /** Тексты всех узлов с тегом, в порядке разметки. */
     fun texts(test: ComposeUiTest, tag: String): List<String> = test
         .onAllNodesWithTag(tag, useUnmergedTree = true)

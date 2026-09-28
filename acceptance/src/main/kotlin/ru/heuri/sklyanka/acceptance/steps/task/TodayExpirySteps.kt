@@ -35,6 +35,11 @@ class TodayExpirySteps(private val world: AcceptanceWorld) {
         world.intakes.pending(world.medicationNamed(medication), world.localMoment(date, time))
     }
 
+    @Given("^(.+?) приём «([^»]+)» на (\\d{2}:\\d{2}) остался без отметки$")
+    fun thatIntakeWasLeftUnmarkedOn(date: String, medication: String, time: String) {
+        world.intakes.pending(world.medicationNamed(medication), world.dateOf(date).atTime(LocalTime.parse(time)))
+    }
+
     @Given("^приёмы «([^»]+)» и «([^»]+)» на (\\d{2}:\\d{2}) остались без отметки$")
     fun thoseTwoIntakesWereLeftUnmarked(first: String, second: String, time: String) {
         val moment = world.clock.today().atTime(LocalTime.parse(time))

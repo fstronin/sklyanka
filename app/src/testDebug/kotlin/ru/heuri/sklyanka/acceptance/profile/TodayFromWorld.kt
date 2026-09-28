@@ -1,6 +1,10 @@
 package ru.heuri.sklyanka.acceptance.profile
 
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import ru.heuri.sklyanka.acceptance.world.AcceptanceWorld
+import ru.heuri.sklyanka.domain.stock.StockWarning
+import ru.heuri.sklyanka.domain.stock.StockWarningForProfileUseCase
 import ru.heuri.sklyanka.domain.today.BuildTodayAgenda
 import ru.heuri.sklyanka.feature.today.TodayUiState
 
@@ -30,6 +34,7 @@ internal object TodayFromWorld {
             activeMedications = medications,
             now = world.clock.nowLocal(),
             zone = world.clock.zone,
+            stockWarning = stockWarning(world, profile.id),
         )
         return if (agenda.isFirstRun) {
             TodayUiState.Empty(agenda.date)
@@ -46,5 +51,20 @@ internal object TodayFromWorld {
                 nothingToday = agenda.hasNothingToday,
             )
         }
+    }
+
+    /**
+     * Самое срочное предупреждение об остатке — тем же доменным сценарием, что в продукте.
+     *
+     * Плашка на экране показывает одно предупреждение из сработавших порогов, и решает,
+     * какое (SKL-12): копии этого выбора в стенде нет.
+     */
+    private fun stockWarning(world: AcceptanceWorld, profileId: String): StockWarning? {
+        val useCase = StockWarningForProfileUseCase(
+            world.repositories.medicationStore,
+            world.clock.time,
+            world.log,
+        )
+        return runBlocking { useCase(profileId).first() }
     }
 }

@@ -5,9 +5,12 @@ import io.cucumber.java.en.Given
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import ru.heuri.sklyanka.acceptance.RussianDates
+import ru.heuri.sklyanka.acceptance.RussianNames
 import ru.heuri.sklyanka.acceptance.steps.dateOf
 import ru.heuri.sklyanka.acceptance.steps.medicationNamed
 import ru.heuri.sklyanka.acceptance.world.AcceptanceWorld
+import ru.heuri.sklyanka.domain.intake.MarkResult
+import ru.heuri.sklyanka.domain.intake.SweepReason
 import ru.heuri.sklyanka.domain.model.ScheduleMode
 import java.time.LocalTime
 
@@ -97,6 +100,93 @@ class TodayContextSteps(private val world: AcceptanceWorld) {
         world.intakes.outcomes.clear()
     }
 
+    // --- Предыстория: профиль без расписания и лекарств -------------------------
+
+    @Given("^у активного профиля нет ни одного лекарства$")
+    fun theActiveProfileHasNoMedications() {
+        // Данность Предыстории, а не действие продукта: сценарию нужен первый запуск,
+        // и лекарства убираются, а не архивируются — у архива остался бы список.
+        val owner = world.profiles.get(world.profiles.active).id
+        world.medications.all().filter { it.profileId == owner }.forEach { world.medications.remove(nameOf(it.id)) }
+        assertTrue(
+            world.medications.all().none { it.profileId == owner },
+            "the active profile must have no medications at all",
+        )
+    }
+
+    @Given("^у профиля нет приёмов по расписанию на (.+)$")
+    fun theProfileHasNoScheduledIntakesOn(date: String) {
+        // Лекарства по расписанию убираются из мира: планировать по ним нечего, и в сутки
+        // сценария они не попадают. Приёмы по потребности остаются — они и есть предмет.
+        val owner = world.profiles.get(world.profiles.active).id
+        world.medications.all()
+            .filter { it.profileId == owner && it.scheduleMode == ScheduleMode.SCHEDULED }
+            .forEach { world.medications.remove(nameOf(it.id)) }
+        assertTrue(
+            world.medications.all().none { it.profileId == owner && it.scheduleMode == ScheduleMode.SCHEDULED },
+            "the profile must have no scheduled medications on $date",
+        )
+    }
+
+    @Given("^у профиля есть лекарство «([^»]+)» по потребности$")
+    fun theProfileHasThatOnDemandMedication(name: String) {
+        val resolved = RussianNames.resolve(name, world.medications.names())
+        if (resolved == null) {
+            world.medications.add(
+                profile = world.profiles,
+                profileName = world.profiles.active,
+                name = name,
+                mode = ScheduleMode.PRN,
+            )
+        } else {
+            assertEquals(
+                ScheduleMode.PRN,
+                world.medications.get(resolved).scheduleMode,
+                "«$name» must be an on-demand medication",
+            )
+        }
+    }
+
+    @Given("^у профиля есть лекарство «([^»]+)» с приёмом в (\\d{2}:\\d{2})$")
+    fun theProfileHasThatMedicationAt(medication: String, time: String) {
+        world.medications.add(
+            profile = world.profiles,
+            profileName = world.profiles.active,
+            name = medication,
+            times = listOf(LocalTime.parse(time)),
+        )
+        // Приёмы рождает планировщик, а не шаг (SKL-06).
+        world.plan()
+    }
+
+    @Given(
+        "^(.+?) приём «([^»]+)» на (\\d{2}:\\d{2}) принят, " +
+            "а приём «([^»]+)» на (\\d{2}:\\d{2}) пропущен без отметки$",
+    )
+    fun oneIntakeIsTakenAndTheOtherIsMissed(
+        date: String,
+        firstMedication: String,
+        firstTime: String,
+        secondMedication: String,
+        secondTime: String,
+    ) {
+        val at = world.clock.nowLocal()
+        val day = world.dateOf(date)
+        val first = LocalTime.parse(firstTime)
+        world.markExisting(
+            medication = world.medicationNamed(firstMedication),
+            at = day.atTime(first),
+            markedAt = first.plusMinutes(MINUTES_AFTER),
+            result = MarkResult.TAKEN,
+        )
+        world.intakes.pending(world.medicationNamed(secondMedication), day.atTime(LocalTime.parse(secondTime)))
+        // Пропуск без отметки создаёт проход по просроченным, а не запись статуса
+        // в обход правила (ПР-1).
+        world.clock.moveTo(day.plusDays(1).atStartOfDay())
+        world.sweep(SweepReason.TIMER)
+        world.clock.moveTo(at)
+    }
+
     private fun nameOf(medicationId: String): String =
         requireNotNull(world.medications.names().firstOrNull { world.medications.get(it).id == medicationId })
 
@@ -108,6 +198,9 @@ class TodayContextSteps(private val world: AcceptanceWorld) {
         const val MEDICATION_COLUMN = "лекарство"
         const val DOSE_COLUMN = "доза и дозировка"
         const val TIME_COLUMN = "время приёма"
+
+        /** На сколько минут отметка позже назначенного времени: «принят в 08:05». */
+        const val MINUTES_AFTER = 5L
         val LEADING_NUMBER = Regex("""^\d+(?:[.,]\d+)?""")
     }
 }
