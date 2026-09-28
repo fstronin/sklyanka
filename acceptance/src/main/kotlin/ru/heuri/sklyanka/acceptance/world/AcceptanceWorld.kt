@@ -147,6 +147,22 @@ class AcceptanceWorld {
     }
 
     /**
+     * Отметка, пришедшая с экрана: намерение кнопки называет приём, а не «текущий».
+     *
+     * От [markFromPhone] отличается только адресатом — два прохода по нажатиям часов
+     * и правило первенства по времени действия те же (ПР-3). Копии этого правила
+     * у экранных шагов нет: кнопка говорит о своём приёме, а решает домен.
+     */
+    fun markFromScreen(intakeId: String, at: LocalDateTime, result: MarkResult) {
+        rememberState()
+        val moment = clock.momentOf(at)
+        deliverPressesUntil(moment)
+        mark(intakeId, result, IntakeSource.PHONE, moment)
+        deliverRemainingPresses()
+        intakes.focusOn(requireNotNull(intakes.get(intakeId)) { "unknown intake: $intakeId" })
+    }
+
+    /**
      * Уже отмеченный приём как данность Предыстории.
      *
      * Отметка идёт через домен, а не записью в обход правил: сценарий, начинающийся

@@ -81,6 +81,17 @@ class ScenarioMedications(private val clock: ScenarioClock) {
         last = name
     }
 
+    /**
+     * Убрать лекарство из мира сценария.
+     *
+     * Это не действие продукта, а данность Предыстории: сценарий, которому нужно
+     * «у профиля нет ни одного лекарства по потребности», обязан убрать заведённое
+     * общей Предысторией — архивация оставила бы лекарство в профиле.
+     */
+    fun remove(name: String) {
+        byName.remove(name)
+    }
+
     fun archive(name: String, at: Instant) {
         update(name) { it.copy(archivedAt = at, archiveReason = ArchiveReason.MANUAL) }
     }

@@ -1,12 +1,7 @@
 package ru.heuri.sklyanka.acceptance.today
 
-import androidx.compose.ui.semantics.SemanticsNode
-import androidx.compose.ui.semantics.SemanticsProperties
-import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
-import androidx.compose.ui.test.onAllNodesWithTag
-import androidx.compose.ui.test.runComposeUiTest
 import io.cucumber.java.ru.Когда
 import io.cucumber.java.ru.Тогда
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -18,10 +13,7 @@ import ru.heuri.sklyanka.acceptance.world.AcceptanceWorld
 import ru.heuri.sklyanka.domain.model.IntakeStatus
 import ru.heuri.sklyanka.domain.model.ScheduleMode
 import ru.heuri.sklyanka.feature.today.TAG_DAY_PROGRESS
-import ru.heuri.sklyanka.feature.today.TAG_LANE_HEADER
-import ru.heuri.sklyanka.feature.today.TodayScreen
 import ru.heuri.sklyanka.ui.component.TAG_SCREEN_HEADER
-import ru.heuri.sklyanka.ui.theme.SklyankaTheme
 import java.time.LocalTime
 
 /**
@@ -146,32 +138,9 @@ class TodayScreenSteps(private val world: AcceptanceWorld) {
     /** Метка справа от ленты указанного времени. */
     private fun laneLabelOf(time: String): String? = lanes().firstOrNull { it.first() == time }?.last()
 
-    /** Ленты собранного экрана: первым текстом время, последним — метка справа. */
-    private fun lanes(): List<List<String>> = onScreen { test ->
-        test.onAllNodesWithTag(TAG_LANE_HEADER, useUnmergedTree = true)
-            .fetchSemanticsNodes()
-            .map { node -> textsOf(node) }
-    }
+    private fun lanes(): List<List<String>> = onScreen { test -> TodayScreenProbe.lanes(test) }
 
-    private fun texts(tag: String): List<String> = onScreen { test ->
-        test.onAllNodesWithTag(tag, useUnmergedTree = true)
-            .fetchSemanticsNodes()
-            .flatMap { node -> textsOf(node) }
-    }
+    private fun texts(tag: String): List<String> = onScreen { test -> TodayScreenProbe.texts(test, tag) }
 
-    /** Весь текст узла и его поддерева, в порядке разметки. */
-    private fun textsOf(node: SemanticsNode): List<String> =
-        node.config.getOrNull(SemanticsProperties.Text).orEmpty().map { it.text } +
-            node.children.flatMap { textsOf(it) }
-
-    private fun <T> onScreen(question: (ComposeUiTest) -> T): T {
-        val state = TodayStand.state(world)
-        var answer: T? = null
-        runComposeUiTest {
-            setContent { SklyankaTheme { TodayScreen(state = state, onIntent = {}) } }
-            answer = question(this)
-        }
-        @Suppress("UNCHECKED_CAST")
-        return answer as T
-    }
+    private fun <T> onScreen(question: (ComposeUiTest) -> T): T = TodayScreenProbe.ask(world, question)
 }

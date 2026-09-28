@@ -86,6 +86,16 @@ class MedicationSteps(private val world: AcceptanceWorld) {
         }
     }
 
+    /** Тот же остаток, но в проверке действия: «нажатие не списало лишнего». */
+    @Then("^остаток упаковки «([^»]+)» остаётся (\\d+) таблет\\S+$")
+    fun theStockOfThatMedicationStays(medication: String, amount: Int) {
+        assertEquals(
+            BigDecimal(amount),
+            world.medications.stockOf(world.medicationNamed(medication)),
+            "stock of $medication",
+        )
+    }
+
     @Given("^доза одного приёма «(.+?)» — (\\S+) таблетк\\S+$")
     fun theDoseOfOneIntakeIs(medication: String, dose: String) {
         // Доза приходит и цифрой, и русской дробью «0,5» — таблица примеров SKL-12.

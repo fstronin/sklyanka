@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import ru.heuri.sklyanka.acceptance.RussianDates
+import ru.heuri.sklyanka.acceptance.steps.medicationNamed
 import ru.heuri.sklyanka.acceptance.steps.resultOf
 import ru.heuri.sklyanka.acceptance.world.AcceptanceWorld
 import ru.heuri.sklyanka.domain.intake.MarkResult
@@ -76,6 +77,26 @@ class StockSteps(private val world: AcceptanceWorld) {
     fun theStockAndThresholdOfThatMedication(medication: String, units: String, days: Int) {
         stock(medication, RussianDates.amount(units))
         threshold(medication, days)
+    }
+
+    @Given(
+        "^у «([^»]+)» остаток (\\d+) (?:таблет\\S+|капсул\\S*), и его хватит на " +
+            "(\\d+) дн\\S+ при пороге (\\d+) дн\\S+$",
+    )
+    fun theStockThatLastsThoseDays(medication: String, units: Int, days: Int, thresholdDays: Int) {
+        // Имя приходит в падеже сценария: «у «Магния B6» остаток…» — и приводится
+        // к ключу Предыстории, иначе шаг завёл бы второе лекарство.
+        val name = world.medicationNamed(medication)
+        stock(name, BigDecimal(units))
+        threshold(name, thresholdDays)
+        // «Хватит на 4 дня» — следствие остатка, дозы и расписания, а не отдельное поле:
+        // сценарий называет ожидание, шаг сверяет его с прогнозом домена.
+        assertEquals(StockForecast.Days(days), forecast(name), "forecast of $name")
+    }
+
+    @Given("^ни у одного активного лекарства порог остатка не сработал$")
+    fun noThresholdOfTheActiveProfileHasFired() {
+        assertNull(warningOnToday(), "the scenario needs no stock warning at all")
     }
 
     @Given("^у профиля «([^»]+)» есть лекарство «([^»]+)» с (\\d+) приём\\S* в сутки по (\\S+) таблетк\\S+$")
