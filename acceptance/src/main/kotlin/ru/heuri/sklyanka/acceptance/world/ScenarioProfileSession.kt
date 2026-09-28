@@ -33,9 +33,18 @@ class ScenarioProfileSession(private val profiles: ScenarioProfiles, private val
     private val active = ScenarioActiveProfile()
     private var provider: ProfileContextProvider = providerOver(active)
 
-    /** Переключение тем же сценарием домена, что и в продукте; изменяет и мир сценария. */
+    /**
+     * Переключение тем же сценарием, каким пользуются настройки и карточка напоминания.
+     *
+     * Открыто наружу, потому что карточка напоминания (`OpenReminderProfileUseCase`)
+     * принимает переключатель параметром: собирать ей второй такой же в шаге значило бы
+     * проверять копию.
+     */
+    val switch: SwitchProfileUseCase = SwitchProfileUseCase(store, active)
+
+    /** Переключение по имени профиля сценария; изменяет и мир сценария. */
     fun switchTo(name: String, reason: SwitchReason): SwitchOutcome =
-        runBlocking { SwitchProfileUseCase(store, active)(profiles.get(name).id, reason) }
+        runBlocking { switch(profiles.get(name).id, reason) }
 
     /** Перезапуск приложения: поставщик контекста собирается заново над тем же хранилищем. */
     fun restart() {

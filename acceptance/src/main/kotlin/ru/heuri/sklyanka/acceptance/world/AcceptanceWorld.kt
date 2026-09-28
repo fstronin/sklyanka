@@ -55,6 +55,9 @@ class AcceptanceWorld {
     /** Активный профиль как состояние приложения: переключение и перезапуск (ПРФ-17, ПРФ-18). */
     val profileSession = ScenarioProfileSession(profiles, repositories.profileStore)
 
+    /** Подсистема напоминаний: будильники, карточки и журнал (SKL-13, ПРФ-6). */
+    val reminders = ScenarioReminders(clock, profiles, medications, intakes, repositories, log)
+
     /** Глубина окна генерации приёмов: значение приходит из Предыстории, а не из кода. */
     var depthDays: Int = DEFAULT_DEPTH_DAYS
 

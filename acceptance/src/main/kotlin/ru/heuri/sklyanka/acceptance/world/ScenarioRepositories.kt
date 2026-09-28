@@ -78,7 +78,7 @@ class ScenarioRepositories(
 
         override suspend fun getSelf(): Profile? = profiles.self()
 
-        override suspend fun save(profile: Profile) = Unit
+        override suspend fun save(profile: Profile) = profiles.replace(profile)
     }
 
     // --- Лекарства -----------------------------------------------------------------------------

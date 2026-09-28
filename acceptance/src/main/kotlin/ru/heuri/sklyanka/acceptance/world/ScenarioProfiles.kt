@@ -47,6 +47,24 @@ class ScenarioProfiles {
     fun self(): Profile? = byName.values.firstOrNull { it.isSelf }
 
     /**
+     * Дублирование напоминаний как данность Предыстории (ПРФ-5).
+     *
+     * Отдельно от [ru.heuri.sklyanka.domain.profile.SetMirrorRemindersUseCase]: строка
+     * «у профиля выключено дублирование» описывает, с чем сценарий начинается, а не
+     * действие человека. Действие идёт настоящим сценарием домена и меняет флаг через
+     * хранилище.
+     */
+    fun setMirrorReminders(name: String, enabled: Boolean) {
+        byName[name] = get(name).copy(mirrorReminders = enabled)
+    }
+
+    /** Запись профиля хранилищем: им пользуются настоящие сценарии домена. */
+    fun replace(profile: Profile) {
+        val name = byName.entries.firstOrNull { it.value.id == profile.id }?.key ?: return
+        byName[name] = profile
+    }
+
+    /**
      * Сколько лекарств Предыстория назвала у профиля.
      *
      * Сценарий перечисляет не все: «профиль с четырьмя лекарствами» называет число,

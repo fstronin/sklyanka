@@ -38,7 +38,10 @@ class ProfileSwitchingSteps(private val world: AcceptanceWorld) {
     @Когда("^(.+?) в (\\d{2}:\\d{2}) человек переключается (?:обратно )?на профиль «([^»]+)»$")
     fun thePersonSwitchesToThatProfile(date: String, time: String, name: String) {
         world.clock.moveTo(world.localMoment(date, time))
-        world.profiles.use(name)
+        // Настоящий сценарий домена, а не запись активного профиля в обход правила:
+        // сценарий «смена активного профиля не меняет набор напоминаний» проверяет
+        // именно его (НАП-12).
+        world.profileSession.switchTo(name, SwitchReason.USER_SETTINGS)
     }
 
     // --- Хранение активного профиля --------------------------------------------

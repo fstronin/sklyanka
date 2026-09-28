@@ -172,10 +172,18 @@ class ProfileMarkingSteps(private val world: AcceptanceWorld) {
             ?: moment.toLocalTime()
     }
 
+    /**
+     * Приём, о котором говорит строка «приём «Л» профиля «П» считается …».
+     *
+     * Сначала — приём, отмеченный действием сценария: планировщик порождает приёмы
+     * и на следующие сутки, и «последний по расписанию» — не тот, о котором идёт речь.
+     */
     private fun intakeOf(medication: String, profile: String): Intake {
         val owner = world.profiles.get(profile).id
+        val medicationId = world.medications.get(medication).id
         assertEquals(owner, world.medications.get(medication).profileId, "«$medication» must belong to «$profile»")
-        return world.intakes.of(medication).last()
+        return world.intakes.appliedMarks.values.lastOrNull { it.medicationId == medicationId }
+            ?: world.intakes.of(medication).last()
     }
 
     private fun focused(medication: String): Intake = world.intakes.of(medication).last()
