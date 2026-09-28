@@ -36,7 +36,7 @@ class GuardTest {
     @Test
     fun noModuleReadsTheSystemClockDirectly() {
         val offenders = productionSources()
-            .filterNot { it.name in CLOCK_ALLOWED_FILES }
+            .filterNot { it.isClockAllowed() }
             .filter { file -> CLOCK_CALLS.any { call -> file.readText().contains(call) } }
             .map { it.name }
 
@@ -45,6 +45,11 @@ class GuardTest {
             offenders.isEmpty(),
         )
     }
+
+    /** Часы читаются напрямую только в platform/time/SystemTimeSource — по пути, а не по имени (ОВ-73). */
+    private fun File.isClockAllowed(): Boolean =
+        name == "GuardTest.kt" ||
+            path.replace('\\', '/').endsWith("/ru/heuri/sklyanka/platform/time/SystemTimeSource.kt")
 
     @Test
     fun noBuildEverFallsBackToADestructiveMigration() {
@@ -124,7 +129,18 @@ class GuardTest {
         const val MEDICATION_DAO = "MedicationDao.kt"
         const val INTAKE_DAO = "IntakeDao.kt"
 
-        val PRODUCTION_MODULES = listOf("app", "core-data", "core-domain", "core-ui", "feature-today", "feature-meds")
+        val PRODUCTION_MODULES = listOf(
+            "app",
+            "core-data",
+            "core-domain",
+            "core-ui",
+            "feature-today",
+            "feature-meds",
+            "feature-history",
+            "feature-settings",
+            "feature-onboarding",
+            "feature-reminder",
+        )
 
         /**
          * Запросы, адресующиеся по первичному ключу.
@@ -135,8 +151,7 @@ class GuardTest {
          */
         val PROFILE_FREE_QUERIES = setOf("getById", "markIfPending", "selectExpiredPending")
 
-        /** Единственное место в проекте, где системные часы читаются напрямую, плюс сам страж. */
-        val CLOCK_ALLOWED_FILES = setOf("SystemTimeSource.kt", "GuardTest.kt")
+        /** Единственное место в проекте, где системные часы читаются напрямую, — по пути (ОВ-73), плюс сам страж. */
         val SELF_REFERENCING_FILES = setOf("GuardTest.kt")
 
         val CLOCK_CALLS = listOf(

@@ -46,9 +46,11 @@ sklyanka:
 
   DirectSystemClockAccess:
     active: true
-    allowedPackages: ''
-    # Реализация источника времени — единственное место, где часы читаются напрямую.
-    allowedFiles: 'SystemTimeSource.kt'
+    # Реализация источника времени — единственное место, где часы читаются напрямую (НФТ-48).
+    # Разрешение по пакету, а не по имени файла: иначе любой файл SystemTimeSource.kt
+    # в любом модуле обходил бы правило (ОВ-73).
+    allowedPackages: 'ru.heuri.sklyanka.platform.time'
+    allowedFiles: ''
 
   DestructiveRoomMigration:
     active: true

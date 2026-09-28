@@ -53,7 +53,9 @@ class DirectSystemClockAccess(config: Config = Config.empty) : Rule(config) {
     }
 
     private companion object {
-        const val DEFAULT_ALLOWED_FILES = "SystemTimeSource.kt"
+        // По умолчанию файл не разрешён: разрешение выдаётся конфигурацией по пакету
+        // (detekt.yml → allowedPackages), а не по имени файла (ОВ-73).
+        const val DEFAULT_ALLOWED_FILES = ""
         val FORBIDDEN = listOf(
             "System.currentTimeMillis",
             "System.nanoTime",
