@@ -73,7 +73,7 @@ class TransferSteps(private val world: AcceptanceWorld) {
 
     // --- Предыстория ---------------------------------------------------------------------------
 
-    @Допустим("^активен свой профиль «(.+?)»$")
+    @Допустим("^активен свой профиль «([^»]+)»$")
     fun theOwnProfileIsActive(name: String) {
         val profile = world.profiles.get(name)
         assertTrue(profile.isSelf, "«$name» must be the phone owner, it is declared first")

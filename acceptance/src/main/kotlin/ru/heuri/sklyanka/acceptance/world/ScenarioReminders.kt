@@ -50,10 +50,18 @@ class ScenarioReminders(
     private val log: ScenarioLog,
 ) {
 
-    private val alarms = InMemoryAlarms()
+    /**
+     * Порты подсистемы открыты наружу, потому что ими питаются экраны диагностики
+     * и настроек (SKL-20): журнал, состояние будильников и настройки — то же самое
+     * состояние, что видят сценарии напоминаний, и второй его копии в приёмке нет.
+     */
+    val alarms: AlarmGateway = InMemoryAlarms()
+
     private val notifications = InMemoryNotifications()
-    private val journal = InMemoryReminderJournal()
-    private val settings = InMemoryReminderSettings()
+
+    val journal: ReminderJournal = InMemoryReminderJournal()
+
+    val settingsStore: ReminderSettings = InMemoryReminderSettings()
 
     private var before: Map<String, Instant>? = null
 
@@ -117,11 +125,19 @@ class ScenarioReminders(
             watch = NoWatchGateway,
             alarms = alarms,
             journal = journal,
-            settings = settings,
+            settings = settingsStore,
             window = intakes.window,
             time = clock.time,
         )(intakeId)
     }
+
+    /**
+     * Приёмы глазами планировщика — для снимка диагностики (SKL-20, НАП-37).
+     *
+     * Тот же источник, что у пересборки окна: второй список кандидатов разошёлся бы
+     * с первым, и признак перерыва считался бы по чужим приёмам.
+     */
+    fun planSource(): ReminderPlanSource = PlanSource()
 
     /**
      * Приёмы глазами планировщика и содержимое карточки — тем же соединением приёма,

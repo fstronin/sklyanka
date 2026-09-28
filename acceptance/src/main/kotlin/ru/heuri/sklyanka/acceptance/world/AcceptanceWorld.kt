@@ -77,6 +77,13 @@ class AcceptanceWorld {
     val reminders = ScenarioReminders(clock, profiles, medications, intakes, repositories, log)
 
     /**
+     * Чужое состояние системы: разрешения и связь с часами (SKL-20, НФТ-52).
+     *
+     * Читается настоящими портами экранов, а меняется строками Предыстории сценария.
+     */
+    val system = ScenarioSystemState()
+
+    /**
      * Перенос данных: порты файловой системы и хранилища в памяти (SKL-19).
      *
      * Перепланирование после загрузки идёт тем же полным обходом, что в продукте:
