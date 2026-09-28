@@ -147,10 +147,13 @@ class MedicationSaveSteps(private val world: AcceptanceWorld) {
 
     @Тогда("^напоминание на (.+?), (\\d{2}:\\d{2}) поставлено$")
     fun thatReminderIsScheduled(date: String, time: String) {
-        val intake = world.intakes.at(savedMedication, world.localMoment(date, time))
+        // Лекарство называет либо шаг сохранения этого класса, либо последняя строка
+        // Предыстории: возврат из архива (SKL-11) планирует будильники тем же окном.
+        val medication = savedMedication.takeIf { it.isNotEmpty() } ?: world.medications.last
+        val intake = world.intakes.at(medication, world.localMoment(date, time))
         assertNotNull(
             world.reminders.alarmOf(intake.id),
-            "the reminder of «$savedMedication» at $date, $time must be scheduled",
+            "the reminder of «$medication» at $date, $time must be scheduled",
         )
     }
 

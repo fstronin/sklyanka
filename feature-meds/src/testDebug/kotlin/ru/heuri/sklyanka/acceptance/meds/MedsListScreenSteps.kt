@@ -6,6 +6,7 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasAnyDescendant
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onAllNodesWithTag
@@ -26,6 +27,8 @@ import ru.heuri.sklyanka.acceptance.steps.medicationNamed
 import ru.heuri.sklyanka.acceptance.world.AcceptanceWorld
 import ru.heuri.sklyanka.feature.meds.R
 import ru.heuri.sklyanka.feature.meds.TAG_SEGMENTED_CONTROL
+import ru.heuri.sklyanka.feature.meds.archive.TAG_ARCHIVE_CAPTION
+import ru.heuri.sklyanka.feature.meds.archive.TAG_ARCHIVE_CARD
 import ru.heuri.sklyanka.feature.meds.list.MedsIntent
 import ru.heuri.sklyanka.feature.meds.list.TAG_ADD_MEDICATION
 import ru.heuri.sklyanka.feature.meds.list.TAG_LAST_INTAKE
@@ -172,16 +175,43 @@ class MedsListScreenSteps(private val world: AcceptanceWorld) {
 
     // --- Остаток и период в карточке ----------------------------------------------
 
+    /**
+     * Карточка лекарства показывает названную строку — в списке или в архиве.
+     *
+     * Сценарии карточки списка и карточки архива зовут эту строку одинаково; различает
+     * их состояние лекарства: активное показывает уточнение расписания, архивное —
+     * подпись итога или даты архивации (ЭКР-8).
+     */
     @Тогда("^в карточке «([^»]+)» показано «([^»]+)»$")
     fun theCardShows(medication: String, text: String) {
-        MedsListStand.ask(world) { test ->
-            val node = test
-                .onNode(hasTestTag(TAG_TRAILING_LINE) and hasAnyAncestor(card(medication)), useUnmergedTree = true)
-                .fetchSemanticsNode()
-            val shown = MedsProbe.textsOf(node).single()
-            assertEquals("the card of «$medication» must show «$text»", text, shown)
+        if (world.medications.get(world.medicationNamed(medication)).isArchived) {
+            ArchiveStand.ask(world) { test ->
+                val cardNode = test.onNode(archiveCard(medication), useUnmergedTree = true).fetchSemanticsNode()
+                val caption = test
+                    .onNode(
+                        hasTestTag(TAG_ARCHIVE_CAPTION) and hasAnyAncestor(archiveCard(medication)),
+                        useUnmergedTree = true,
+                    )
+                    .fetchSemanticsNode()
+                assertTrue(
+                    "the archive card of «$medication» must show «$text»: ${MedsProbe.textsOf(cardNode)}",
+                    MedsProbe.textsOf(caption).single() == text,
+                )
+            }
+        } else {
+            MedsListStand.ask(world) { test ->
+                val node = test
+                    .onNode(hasTestTag(TAG_TRAILING_LINE) and hasAnyAncestor(card(medication)), useUnmergedTree = true)
+                    .fetchSemanticsNode()
+                val shown = MedsProbe.textsOf(node).single()
+                assertEquals("the card of «$medication» must show «$text»", text, shown)
+            }
         }
     }
+
+    /** Карточка архивного лекарства: имя лежит у потомков, кликабельна вся строка. */
+    private fun archiveCard(medication: String) = hasTestTag(TAG_ARCHIVE_CARD) and
+        hasAnyDescendant(hasText(MedsListStand.displayName(world, medication)))
 
     // --- «Принять» в списке --------------------------------------------------------
 

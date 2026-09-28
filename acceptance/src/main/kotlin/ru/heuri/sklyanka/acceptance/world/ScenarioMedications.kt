@@ -23,6 +23,16 @@ class ScenarioMedications(private val clock: ScenarioClock) {
 
     private val byName = linkedMapOf<String, Medication>()
 
+    /**
+     * Счётчик идентификаторов лекарств.
+     *
+     * Отдельный, а не размер карты: повторное заведение имени (Предыстория задачи
+     * перезаводит «пять активных лекарств», уже названных общим миром) не должно
+     * выдавать двум лекарствам один идентификатор — ключи ленивого списка архива
+     * обязаны быть уникальными.
+     */
+    private var sequence = 0
+
     /** Лекарство, о котором шла речь последним: шаги без имени говорят о нём. */
     var last: String = ""
         private set
@@ -49,12 +59,13 @@ class ScenarioMedications(private val clock: ScenarioClock) {
         maxPerDay: Int? = null,
     ) {
         val owner = profile.get(profileName)
+        val number = ++sequence
         byName[name] = Medication(
-            id = "medication-${byName.size + 1}",
+            id = "medication-$number",
             profileId = owner.id,
             // Названий лекарств в модели сценария нет: в журнал и в отчёты попадают
             // только идентификаторы (НФТ-19), а имя из Gherkin — ключ сценария.
-            name = "med-${byName.size + 1}",
+            name = "med-$number",
             form = MedicationForm.TABLET,
             shape = null,
             doseAmount = BigDecimal.ONE,

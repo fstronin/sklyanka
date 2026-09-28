@@ -58,9 +58,16 @@ class MedsListContextSteps(private val world: AcceptanceWorld) {
         }
     }
 
+    /**
+     * Пять активных курсов: четыре безымянных и «Магний B6».
+     *
+     * «Магний B6» назван намеренно: сценарии архива называют его, чтобы убрать один курс
+     * из пяти и проверить счётчики («Активные · 4», «Архив · 13»). Пять при этом остаётся
+     * пятью, и счётчик сценария 41 SKL-09 не меняется.
+     */
     @Given("^у профиля пять активных лекарств по расписанию$")
     fun theProfileHasFiveScheduledMedications() {
-        repeat(FIVE) { index ->
+        repeat(FIVE - 1) { index ->
             world.medications.add(
                 profile = world.profiles,
                 profileName = world.profiles.active,
@@ -68,6 +75,12 @@ class MedsListContextSteps(private val world: AcceptanceWorld) {
                 times = listOf(DEFAULT_TIME),
             )
         }
+        world.medications.add(
+            profile = world.profiles,
+            profileName = world.profiles.active,
+            name = "Магний B6",
+            times = listOf(DEFAULT_TIME),
+        )
     }
 
     @Given("^в архиве двенадцать лекарств$")

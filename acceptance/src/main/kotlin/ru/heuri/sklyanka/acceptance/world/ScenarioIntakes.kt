@@ -86,6 +86,16 @@ class ScenarioIntakes(private val clock: ScenarioClock, private val medications:
 
     fun removeIfPending(intakeId: String): Boolean = byId[intakeId]?.isPending == true && byId.remove(intakeId) != null
 
+    /**
+     * Убрать всю историю приёмов лекарства.
+     *
+     * Это данность Предыстории, заменяющая историю общего мира: сценарий, называющий
+     * свой набор записей, не должен считать вместе с ним курс, заведённый Предысторией.
+     */
+    fun removeOf(medicationId: String) {
+        byId.entries.removeIf { (_, intake) -> intake.medicationId == medicationId }
+    }
+
     fun nextId(): String = "intake-${sequence++}"
 
     // --- Выборки -------------------------------------------------------------------------
