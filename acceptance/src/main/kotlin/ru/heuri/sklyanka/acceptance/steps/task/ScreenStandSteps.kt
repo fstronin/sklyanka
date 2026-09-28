@@ -555,13 +555,22 @@ class ScreenStandSteps {
         val TEST_ANNOTATION = Regex("""(?m)^\s*@Test\b""")
         val ENUM_DECLARATION = Regex("""enum class \w+\s*\{([^}]*)}""")
 
-        /** Модули, в которых работает стенд. */
+        /**
+         * Модули, в которых работает стенд.
+         *
+         * Список обязан называть все модули с экранными прогонами: по нему проверяется,
+         * что модуль применяет конвенцию стенда и не заводит собственной снимочной задачи.
+         * `feature-history` и `feature-onboarding` добавлены, когда их прогоны заработали
+         * (SKL-18, SKL-14): до этого проверка знала не обо всех и молчала о двух.
+         */
         val SCREEN_MODULES = listOf(
             "core-ui",
             "feature-today",
             "feature-meds",
             "feature-reminder",
             "feature-settings",
+            "feature-history",
+            "feature-onboarding",
             "app",
         )
 

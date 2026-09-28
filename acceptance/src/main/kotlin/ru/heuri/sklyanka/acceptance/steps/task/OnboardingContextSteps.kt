@@ -1,0 +1,133 @@
+package ru.heuri.sklyanka.acceptance.steps.task
+
+import io.cucumber.java.ru.Допустим
+import io.cucumber.java.ru.И
+import io.cucumber.java.ru.Когда
+import kotlinx.coroutines.runBlocking
+import org.junit.jupiter.api.Assertions.assertFalse
+import ru.heuri.sklyanka.acceptance.steps.dateOf
+import ru.heuri.sklyanka.acceptance.steps.localMoment
+import ru.heuri.sklyanka.acceptance.world.AcceptanceWorld
+import ru.heuri.sklyanka.domain.intake.MarkResult
+import ru.heuri.sklyanka.domain.model.IntakeSource
+import ru.heuri.sklyanka.domain.reminder.port.ReminderPermission
+import java.math.BigDecimal
+
+/**
+ * Доменные шаги приёмки SKL-14: установка, онбординг, отзыв разрешений.
+ *
+ * Строки живут в общем артефакте, потому что говорят о мире сценария, а не об экране:
+ * их читают и стенд экрана разрешений (`feature-onboarding`), и композиция `app`,
+ * и прогон диагностики (`feature-reminder`). Сохранённых фактов ровно два — «видел экран»
+ * и «подтвердил автозапуск»; состояния разрешений меняются в [AcceptanceWorld.system]
+ * и читаются портом при каждом показе (НФТ-52).
+ *
+ * Русский текст в аннотациях — ключевые слова Gherkin, а не текст интерфейса.
+ */
+@Suppress("TooManyFunctions")
+class OnboardingContextSteps(private val world: AcceptanceWorld) {
+
+    // --- Предыстория ---------------------------------------------------------------------------
+
+    /**
+     * Чистая установка: экран разрешений человек ещё не видел, оба разрешения цепочки не выданы.
+     *
+     * На Android 13+ разрешение на уведомления при установке не выдано (ПЛ-13), а право
+     * на точные будильники не выдаётся диалогом ни на одной версии — его выдают на экране
+     * особого доступа (ПЛ-14). Именно поэтому цепочка состоит из трёх шагов, а не из одного.
+     */
+    @Допустим("^приложение только что установлено на телефон с прошивкой EMUI$")
+    fun theAppWasJustInstalled() {
+        assertFalse(runBlocking { world.onboarding.seen() }, "a fresh install has never seen the onboarding")
+        world.system.deny(ReminderPermission.NOTIFICATIONS, ReminderPermission.EXACT_ALARMS)
+    }
+
+    @Допустим("^человек пропустил онбординг(?: (.+?) в (\\d{2}:\\d{2}))?$")
+    fun thePersonSkippedTheOnboarding(date: String?, time: String?) {
+        runBlocking { world.onboarding.markSeen() }
+        if (date != null && time != null) world.clock.moveTo(world.localMoment(date, time))
+    }
+
+    @Допустим("^человек прошёл онбординг (.+?) в (\\d{2}:\\d{2})$")
+    fun thePersonPassedTheOnboarding(date: String, time: String) {
+        passOnboarding(date, time)
+    }
+
+    @Допустим("^онбординг пройден (.+?) в (\\d{2}:\\d{2})$")
+    fun theOnboardingIsPassed(date: String, time: String) {
+        passOnboarding(date, time)
+    }
+
+    @Допустим("^ни одно из разрешений не выдано$")
+    fun noneOfThePermissionsIsGranted() {
+        // Разрешения цепочки: уведомления и точные будильники. Автозапуск — не разрешение
+        // Android, и «не выдано» для него сказать нечего (НАП-20, ПЛ-18).
+        world.system.deny(ReminderPermission.NOTIFICATIONS, ReminderPermission.EXACT_ALARMS)
+    }
+
+    @И("^телефон не применяет к приложению оптимизацию батареи$")
+    fun thePhoneIgnoresBatteryOptimization() {
+        world.onboarding.setBatteryOptimizationIgnored(true)
+    }
+
+    // --- Отзыв разрешений позже ----------------------------------------------------------------
+
+    @Допустим("^(.+?) в (\\d{2}:\\d{2}) он отозвал разрешение на уведомления в системных настройках$")
+    fun thePersonRevokedNotifications(date: String, time: String) {
+        world.clock.moveTo(world.localMoment(date, time))
+        world.system.deny(ReminderPermission.NOTIFICATIONS)
+    }
+
+    @Допустим("^(.+?) право на точные будильники было отозвано$")
+    fun theExactAlarmsWereRevoked(date: String) {
+        world.dateOf(date)
+        world.system.deny(ReminderPermission.EXACT_ALARMS)
+    }
+
+    // --- Данности лекарства и отметки ----------------------------------------------------------
+
+    @Допустим("^у профиля «([^»]+)» есть лекарство «([^»]+)» с остатком (\\d+) таблеток$")
+    fun theProfileHasAMedicationWithStock(profile: String, medication: String, stock: Int) {
+        world.medications.add(
+            profile = world.profiles,
+            profileName = profile,
+            name = medication,
+        )
+        world.medications.update(medication) { it.copy(stockLeft = BigDecimal(stock)) }
+    }
+
+    /**
+     * Ручная отметка как путь человека без разрешений: приложение открыто, приём отмечен.
+     *
+     * Отметка идёт настоящей точкой входа домена (`MarkIntakeUseCase`); «открывает» здесь
+     * означает, что человек пользуется приложением руками, а доступность экранов проверяет
+     * шаг композиции. Время в строке — когда человек отметил, а не когда приём назначен
+     * (НАП-31): приём заводится по расписанию лекарства.
+     */
+    @Когда("^(.+?) в (\\d{2}:\\d{2}) человек сам открывает приложение и отмечает приём принятым$")
+    fun thePersonOpensTheAppAndMarks(date: String, time: String) {
+        val day = world.dateOf(date)
+        val name = world.medications.last
+        val medication = world.medications.get(name)
+        val scheduled = day.atTime(requireNotNull(medication.times.minOrNull()) { "the scenario names no time" })
+        val intake = world.intakes.pending(name, scheduled)
+        world.rememberState()
+        val moment = world.localMoment(date, time)
+        world.clock.moveTo(moment)
+        world.mark(intake.id, MarkResult.TAKEN, IntakeSource.PHONE, world.clock.momentOf(moment))
+        world.intakes.focusOn(intake)
+    }
+
+    // --- Обвязка -------------------------------------------------------------------------------
+
+    private fun passOnboarding(date: String, time: String) {
+        runBlocking {
+            world.onboarding.markSeen()
+            // Прошедший цепочку подтвердил автозапуск — иначе шаг не был бы пройден (НАП-20).
+            world.onboarding.setAutostartConfirmed(true)
+        }
+        // И выдал оба разрешения: пройденная цепочка означает, что они были (НАП-19).
+        world.system.grant(ReminderPermission.NOTIFICATIONS, ReminderPermission.EXACT_ALARMS)
+        world.clock.moveTo(world.localMoment(date, time))
+    }
+}

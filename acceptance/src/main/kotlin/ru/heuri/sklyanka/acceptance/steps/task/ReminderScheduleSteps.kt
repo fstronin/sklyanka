@@ -119,6 +119,11 @@ class ReminderScheduleSteps(private val world: AcceptanceWorld) {
         world.system.grant(ReminderPermission.EXACT_ALARMS)
     }
 
+    @Допустим("^право на точные будильники выдано$")
+    fun exactAlarmsRightIsGranted() {
+        world.system.grant(ReminderPermission.EXACT_ALARMS)
+    }
+
     @Допустим("^настройка «Отложить на» — (\\d+) минут$")
     fun theSnoozeSettingIs(minutes: Int) {
         runBlocking { world.reminders.settingsStore.setSnoozeMinutes(minutes) }
@@ -288,10 +293,21 @@ class ReminderScheduleSteps(private val world: AcceptanceWorld) {
         assertEquals(before, cardsOf(medication).size, "no reminder of $medication may arrive")
     }
 
+    /**
+     * Напоминание пришло в свой час.
+     *
+     * Пробное напоминание (SKL-14) — тот же будильник и тот же путь доставки: если к моменту
+     * назначено оно, приходит оно, а не напоминание о приёме. Различать их сценарию нечем
+     * и не нужно — строка означает «механизм сработал».
+     */
     @И("^в (\\d{2}:\\d{2}) напоминание приходит$")
     fun theReminderComesAt(time: String) {
         val before = cardsOf(medication).size
         advanceTo(LocalTime.parse(time))
+        if (world.reminders.deliverTest()) {
+            assertTrue(world.reminders.testReminderShown(), "the test reminder must be presented (НАП-22)")
+            return
+        }
         assertEquals(before + 1, cardsOf(medication).size, "the reminder of $medication must arrive")
     }
 

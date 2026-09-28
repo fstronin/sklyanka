@@ -47,6 +47,7 @@ import java.time.LocalDateTime
  * переключения активного профиля и проверяют, что флаг дублирования добавляет и снимает
  * напоминания немедленно (ПРФ-6, НАП-12).
  */
+@Suppress("TooManyFunctions")
 class ScenarioReminders(
     private val clock: ScenarioClock,
     private val profiles: ScenarioProfiles,
@@ -208,6 +209,14 @@ class ScenarioReminders(
 
     /** Показанные карточки с каналами: «первое обычным сигналом, повтор настойчивым». */
     fun shownWithChannels(): List<Pair<ReminderCard, ReminderChannel>> = notifications.shown.toList()
+
+    /**
+     * Показано ли пробное напоминание (НАП-22).
+     *
+     * Пробное идёт тем же портом уведомлений, что настоящее, и его показ считается здесь:
+     * без этого «приходит полноэкранное напоминание» нечем отличить от «будильник поставлен».
+     */
+    fun testReminderShown(): Boolean = notifications.testShows > 0
 
     private fun deliver(intakeId: String) {
         runBlocking {
@@ -390,6 +399,10 @@ private class InMemoryNotifications : NotificationGateway {
 
     val shown: MutableList<Pair<ReminderCard, ReminderChannel>> = mutableListOf()
 
+    /** Сколько раз показано пробное напоминание: его карточки за приёмом нет (НАП-22). */
+    var testShows: Int = 0
+        private set
+
     private val visible: MutableSet<ReminderSlot> = mutableSetOf()
 
     override suspend fun show(card: ReminderCard, channel: ReminderChannel) {
@@ -409,7 +422,9 @@ private class InMemoryNotifications : NotificationGateway {
         }
     }
 
-    override suspend fun showTest() = Unit
+    override suspend fun showTest() {
+        testShows += 1
+    }
 
     override fun areNotificationsEnabled(): Boolean = true
 }

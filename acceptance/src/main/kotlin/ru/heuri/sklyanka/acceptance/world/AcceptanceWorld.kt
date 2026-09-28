@@ -1,6 +1,9 @@
 package ru.heuri.sklyanka.acceptance.world
 
 import kotlinx.coroutines.runBlocking
+import ru.heuri.sklyanka.domain.history.AdherenceCalculator
+import ru.heuri.sklyanka.domain.history.AdherencePeriod
+import ru.heuri.sklyanka.domain.history.HistoryWindow
 import ru.heuri.sklyanka.domain.intake.CreatePrnIntakeUseCase
 import ru.heuri.sklyanka.domain.intake.MarkIntakeUseCase
 import ru.heuri.sklyanka.domain.intake.MarkOutcome
@@ -27,8 +30,10 @@ import ru.heuri.sklyanka.domain.schedule.PlanScope
 import ru.heuri.sklyanka.domain.today.GroupMarkOutcome
 import ru.heuri.sklyanka.domain.today.MarkIntakeGroupUseCase
 import java.time.Instant
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
+import java.time.YearMonth
 
 /**
  * Состояние одного сценария приёмки: создаётся на сценарий и живёт ровно его.
@@ -85,6 +90,14 @@ class AcceptanceWorld {
     val system = ScenarioSystemState()
 
     /**
+     * Онбординг разрешений (SKL-14): что сохранено, что подсказано и что записано.
+     *
+     * Сохранённых фактов ровно два — «видел экран» и «подтвердил автозапуск»; состояния
+     * разрешений читаются из [system] при каждом показе (НФТ-52).
+     */
+    val onboarding = ScenarioOnboarding()
+
+    /**
      * Перенос данных: порты файловой системы и хранилища в памяти (SKL-19).
      *
      * Перепланирование после загрузки идёт тем же полным обходом, что в продукте:
@@ -139,6 +152,28 @@ class AcceptanceWorld {
         acted = true
         intakes.remember()
         medications.rememberStock()
+    }
+
+    /**
+     * Приверженность на момент до действия: ею проверяется «пробное не меняет историю» (НАП-22).
+     *
+     * Снимок берётся не из кольца приёмов, а настоящим доменным расчётом (SKL-18): второй
+     * копии правила «что считается приверженностью» в приёмке нет.
+     */
+    var adherenceBefore: AdherencePeriod? = null
+        private set
+
+    fun rememberAdherence() {
+        adherenceBefore = adherenceOn(clock.today())
+    }
+
+    /** Приверженность за месяц названной даты — тем же `AdherenceCalculator`, что в истории. */
+    fun adherenceOn(date: LocalDate): AdherencePeriod {
+        val active = profiles.active
+        require(active.isNotEmpty()) { "the scenario names no profile" }
+        val window = HistoryWindow.of(YearMonth.from(date))
+        val profileId = profiles.get(active).id
+        return AdherenceCalculator().of(history.slice(profileId, window), window, date, clock.zone)
     }
 
     // --- Действия: планирование --------------------------------------------------------------

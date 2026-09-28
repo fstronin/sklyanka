@@ -13,7 +13,6 @@ import androidx.test.core.app.ApplicationProvider
 import io.cucumber.java.ru.Допустим
 import io.cucumber.java.ru.И
 import io.cucumber.java.ru.Когда
-import io.cucumber.java.ru.Но
 import io.cucumber.java.ru.Тогда
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -22,10 +21,6 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import ru.heuri.sklyanka.acceptance.steps.dateOf
 import ru.heuri.sklyanka.acceptance.steps.localMoment
 import ru.heuri.sklyanka.acceptance.world.AcceptanceWorld
-import ru.heuri.sklyanka.domain.history.AdherenceCalculator
-import ru.heuri.sklyanka.domain.history.AdherencePeriod
-import ru.heuri.sklyanka.domain.history.HistoryWindow
-import ru.heuri.sklyanka.domain.model.IntakeStatus
 import ru.heuri.sklyanka.domain.reminder.BuildReminderDiagnosticsUseCase
 import ru.heuri.sklyanka.domain.reminder.ReminderChannel
 import ru.heuri.sklyanka.domain.reminder.ReminderEvent
@@ -39,11 +34,9 @@ import ru.heuri.sklyanka.feature.reminder.TAG_CHECK_NOW
 import ru.heuri.sklyanka.feature.reminder.TAG_DIAGNOSTICS
 import ru.heuri.sklyanka.feature.reminder.TAG_JOURNAL_ROW
 import ru.heuri.sklyanka.feature.reminder.TAG_TEST_REMINDER
-import java.math.BigDecimal
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalTime
-import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 
 /**
@@ -61,11 +54,6 @@ class ReminderDiagnosticsSteps(private val world: AcceptanceWorld) {
 
     private val context: Context = ApplicationProvider.getApplicationContext()
     private val locale = context.resources.configuration.locales[0]
-
-    /** Состояние мира до пробного напоминания: пробное не смеет его менять (НАП-22). */
-    private var intakesBefore: List<Pair<String, IntakeStatus>>? = null
-    private var stocksBefore: Map<String, BigDecimal?> = emptyMap()
-    private var adherenceBefore: AdherencePeriod? = null
 
     // --- Предыстория: последнее сработавшее и следующее ----------------------------------------
 
@@ -225,7 +213,10 @@ class ReminderDiagnosticsSteps(private val world: AcceptanceWorld) {
 
     @Когда("^человек нажимает «Пробное напоминание через минуту» в диагностике$")
     fun thePersonPressesTestReminder() {
-        rememberEverything()
+        // Снимок до действия: «пробное не оставляет следа» проверяется общими шагами
+        // (TestReminderSteps) против него, а не против второй копии состояния.
+        world.rememberState()
+        world.rememberAdherence()
         DiagnosticsStand.ask(world) { assertTag(TAG_DIAGNOSTICS) }
         DiagnosticsStand.act(world) { onNodeWithTag(TAG_TEST_REMINDER).performScrollTo().performClick() }
         assertNotNull(world.reminders.testReminderAt(), "the test reminder must be scheduled")
@@ -241,20 +232,9 @@ class ReminderDiagnosticsSteps(private val world: AcceptanceWorld) {
         assertEquals(world.clock.now(), entry.firedAt)
     }
 
-    @Но("^записи о приёме не появляется$")
-    fun noIntakeAppears() {
-        assertEquals(intakesBefore, world.intakes.all().map { it.id to it.status })
-    }
-
-    @И("^приверженность за 25 сентября 2026 не меняется$")
-    fun theAdherenceDoesNotChange() {
-        assertEquals(requireNotNull(adherenceBefore), adherence())
-    }
-
-    @И("^остаток ни одной упаковки не меняется$")
-    fun noStockChanges() {
-        assertEquals(stocksBefore, world.medications.all().associate { it.id to it.stockLeft })
-    }
+    // «Записи о приёме не появляется», «приверженность … не меняется» и «остаток ни одной
+    // упаковки не меняется» живут в общем словаре (TestReminderSteps): те же строки стоят
+    // в сценариях SKL-14, и два объявления одного текста погасили бы прогон целиком.
 
     // --- Журнал срабатываний -------------------------------------------------------------------
 
@@ -378,20 +358,6 @@ class ReminderDiagnosticsSteps(private val world: AcceptanceWorld) {
         assertEquals(expected, state.snapshot?.permissions?.get(permission), "the state of $permission")
         assertTrue(hasText(state, string(permissionLabel(permission))), "the row of $permission must be shown")
         assertTrue(hasText(state, string(stateLabel(expected))), "the state must be in words")
-    }
-
-    private fun rememberEverything() {
-        intakesBefore = world.intakes.all().map { it.id to it.status }
-        stocksBefore = world.medications.all().associate { it.id to it.stockLeft }
-        adherenceBefore = adherence()
-    }
-
-    /** Приверженность за месяц сценария — настоящим доменным правилом, а не пересчётом. */
-    private fun adherence(): AdherencePeriod {
-        val window = HistoryWindow.of(YearMonth.from(world.clock.today()))
-        val profileId = world.profiles.get(world.profiles.active).id
-        val slice = world.history.slice(profileId, window)
-        return AdherenceCalculator().of(slice, window, world.clock.today(), world.clock.zone)
     }
 
     private fun addAnonymousMedication(name: String) {
