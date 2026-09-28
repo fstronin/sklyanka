@@ -48,7 +48,7 @@
     <string name="profile_self_initial">Я</string>
 
     <!-- Описания для чтения с экрана (НФТ-30); формулировки — из aria-label макетов -->
-    <string name="cd_mark_intake">Отметить приём: %1$s</string>
+    <string name="cd_mark_intake">Отметить приём %1$s</string>
     <string name="cd_back">Назад</string>
     <string name="cd_app_mark">Знак Склянка</string>
     <string name="cd_app_mark_glass">Знак Склянка: донце толстого стекла</string>
