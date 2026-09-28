@@ -19,7 +19,13 @@
     <string name="onboarding_intro">На прошивке EMUI система агрессивно выгружает фоновые приложения. Без трёх разрешений ниже приёмы будут приходить с опозданием или не приходить совсем.</string>
 
     <string name="onboarding_step_notifications">Уведомления</string>
-    <string name="onboarding_step_notifications_caption">Карточка приёма на экране и на часах</string>
+    <!--
+      Единственная строка раздела «Из макета», отступившая от макета дословно: слова
+      «и на часах» сняты решением `ADR-0009` — интеграция с Wear Engine отложена
+      до пост-MVP, и обещать карточку на часах первой версии нельзя. Макет не правится;
+      слова вернутся вместе с часами.
+    -->
+    <string name="onboarding_step_notifications_caption">Карточка приёма на экране</string>
 
     <string name="onboarding_step_exact_alarms">Точные будильники</string>
     <string name="onboarding_step_exact_alarms_caption">Иначе Android сдвинет приём на удобное себе время — до получаса</string>

@@ -10,11 +10,16 @@
 -->
 <resources>
 
-    <!-- ===== Полноэкранное напоминание (Reminder.dc.html) ===== -->
+    <!--
+      ===== Полноэкранное напоминание (Reminder.dc.html) =====
+
+      Плашки «Продублировано на часы» из макета здесь нет: интеграция с часами отложена
+      до пост-MVP решением `ADR-0009`, и состояние о часах в первой версии не бывает
+      истинным. Строка вернётся вместе с Wear Engine.
+    -->
 
     <string name="reminder_overline">Приём по расписанию</string>
     <string name="reminder_time_pattern">HH:mm</string>
-    <string name="reminder_mirrored_to_watch">Продублировано на часы</string>
 
     <!-- Подпись кнопки откладывания собирается из настройки «Отложить на» (НАП-30). -->
     <string name="reminder_snooze">Отложить %1$d мин</string>

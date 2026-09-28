@@ -9,17 +9,16 @@ import com.github.takahirom.roborazzi.fontScale
 import com.github.takahirom.roborazzi.size
 import org.junit.Test
 import org.junit.runner.RunWith
-import ru.heuri.sklyanka.domain.watch.WatchLinkState
 import ru.heuri.sklyanka.ui.theme.SklyankaTheme
 import java.io.File
 
 /**
  * Эталонные снимки экрана настроек (SKL-24).
  *
- * Три состояния, а не одно: часы на связи и одно разрешение не выдано — то, что нарисовано
- * в макете; часы не настроены и всё выдано — то, как экран выглядит в собранном продукте;
- * и тот же экран при системном шрифте 200 %, где вёрстка обязана расти, а не обрезаться
- * (НФТ-31).
+ * Три состояния, а не одно: одно разрешение не выдано — состояние, близкое к макету;
+ * всё выдано — то, как экран выглядит в собранном продукте; и тот же экран при системном
+ * шрифте 200 %, где вёрстка обязана расти, а не обрезаться (НФТ-31). Строки часов
+ * на снимках нет по решению `ADR-0009`.
  */
 @RunWith(AndroidJUnit4::class)
 class SettingsScreenSnapshotTest {
@@ -30,12 +29,8 @@ class SettingsScreenSnapshotTest {
     }
 
     @Test
-    fun theScreenAsTheBuiltProductShowsIt() = capture("settings-unpaired-watch") {
-        SettingsScreen(
-            state = SettingsScreenFixtures.state(watch = WatchLinkState.NotConfigured, denied = 0),
-            onIntent = {},
-            canOpenWatchSetup = false,
-        )
+    fun theScreenAsTheBuiltProductShowsIt() = capture("settings-product") {
+        SettingsScreen(state = SettingsScreenFixtures.state(denied = 0), onIntent = {})
     }
 
     @Test

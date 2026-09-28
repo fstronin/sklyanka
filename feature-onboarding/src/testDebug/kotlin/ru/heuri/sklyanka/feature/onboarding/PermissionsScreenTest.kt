@@ -309,7 +309,9 @@ class PermissionsScreenTest {
             text(R.string.onboarding_intro),
         )
         assertEquals("Уведомления", text(R.string.onboarding_step_notifications))
-        assertEquals("Карточка приёма на экране и на часах", text(R.string.onboarding_step_notifications_caption))
+        // Единственное отступление от макета дословно: «и на часах» снято решением
+        // ADR-0009 — интеграция с Wear Engine отложена до пост-MVP, и обещать её нельзя.
+        assertEquals("Карточка приёма на экране", text(R.string.onboarding_step_notifications_caption))
         assertEquals("Точные будильники", text(R.string.onboarding_step_exact_alarms))
         assertEquals(
             "Иначе Android сдвинет приём на удобное себе время — до получаса",

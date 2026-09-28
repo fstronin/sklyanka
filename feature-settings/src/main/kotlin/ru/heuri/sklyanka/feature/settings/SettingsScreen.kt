@@ -20,7 +20,6 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import ru.heuri.sklyanka.domain.watch.WatchLinkState
 import ru.heuri.sklyanka.ui.component.CheckGlyph
 import ru.heuri.sklyanka.ui.component.FlatMark
 import ru.heuri.sklyanka.ui.component.ScreenHeader
@@ -39,8 +38,9 @@ import ru.heuri.sklyanka.ui.token.SklyankaType
  * Экран «Настройки» (`design/screens/Settings.dc.html`).
  *
  * Третья вкладка и единственное место, где человек видит систему целиком: чей приём он
- * ведёт, как приложение будет напоминать, на связи ли часы, выданы ли разрешения, где
- * лежат данные и чем приложение не является.
+ * ведёт, как приложение будет напоминать, выданы ли разрешения, где лежат данные и чем
+ * приложение не является. Строки часов на экране нет: интеграция отложена до пост-MVP
+ * (`ADR-0009`), а подпись о связи, которая не может измениться, была бы ложью.
  *
  * Своего состояния экран не держит: всё приходит в [state], наружу уходят намерения.
  * Каждая подпись под строкой — утверждение о состоянии системы, и ложное утверждение
@@ -52,12 +52,7 @@ import ru.heuri.sklyanka.ui.token.SklyankaType
  * по `ОВ-11`), а не забытая строка, поэтому и заготовки под неё в коде нет.
  */
 @Composable
-fun SettingsScreen(
-    state: SettingsUiState,
-    onIntent: (SettingsIntent) -> Unit,
-    modifier: Modifier = Modifier,
-    canOpenWatchSetup: Boolean = true,
-) {
+fun SettingsScreen(state: SettingsUiState, onIntent: (SettingsIntent) -> Unit, modifier: Modifier = Modifier) {
     val colors = SklyankaTheme.colors
     Column(
         modifier = modifier
@@ -77,7 +72,7 @@ fun SettingsScreen(
         ) {
             profilesBlock(state, onIntent)
             remindersBlock(state, onIntent)
-            systemBlock(state, canOpenWatchSetup, onIntent)
+            systemBlock(state, onIntent)
             dataBlock(onIntent)
             item { AboutPlate(state.version) }
         }
@@ -226,46 +221,17 @@ private fun LazyListScope.remindersBlock(state: SettingsUiState, onIntent: (Sett
     }
 }
 
-/** Раздел «Часы и система» (ЧАС-18, НФТ-8, НАП-20). */
-private fun LazyListScope.systemBlock(
-    state: SettingsUiState,
-    canOpenWatchSetup: Boolean,
-    onIntent: (SettingsIntent) -> Unit,
-) {
+/**
+ * Раздел «Система» (НФТ-8, НАП-20).
+ *
+ * Строки «Часы Huawei» из макета в первой версии нет: интеграция отложена до пост-MVP
+ * (`ADR-0009`), а строка состояния связи, которая не может измениться, — ложь.
+ */
+private fun LazyListScope.systemBlock(state: SettingsUiState, onIntent: (SettingsIntent) -> Unit) {
     item {
         SettingsBlock(stringResource(R.string.settings_rubric_system)) {
-            WatchRow(state.watch, canOpenWatchSetup) { onIntent(SettingsIntent.OpenWatchSetup) }
-            RowDivider()
             PermissionsRow(state.permissions) { onIntent(SettingsIntent.OpenPermissions) }
         }
-    }
-}
-
-@Composable
-private fun WatchRow(link: WatchLinkState, canOpen: Boolean, onClick: () -> Unit) {
-    val colors = SklyankaTheme.colors
-    // Подключённое состояние — цветом «принято», как в макете; остальные нейтральны:
-    // «часы не настроены» не отказ, и красить его в предупреждение было бы неправдой
-    // (ЧАС-19).
-    val subtitle = when (link) {
-        is WatchLinkState.Connected -> stringResource(R.string.settings_watch_connected, link.model)
-        WatchLinkState.NotConnected -> stringResource(R.string.settings_watch_disconnected)
-        WatchLinkState.NotConfigured -> stringResource(R.string.settings_watch_not_configured)
-    }
-    val line = RowSubtitle(subtitle, if (link is WatchLinkState.Connected) colors.taken else null)
-    if (canOpen) {
-        SettingsRow(
-            title = stringResource(R.string.settings_watch),
-            subtitle = line,
-            onClick = onClick,
-            modifier = Modifier.testTag(TAG_WATCH_ROW),
-        )
-    } else {
-        SettingsStateRow(
-            title = stringResource(R.string.settings_watch),
-            subtitle = line,
-            modifier = Modifier.testTag(TAG_WATCH_ROW),
-        )
     }
 }
 

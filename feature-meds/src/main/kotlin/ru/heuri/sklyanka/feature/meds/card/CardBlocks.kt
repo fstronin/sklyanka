@@ -3,7 +3,6 @@ package ru.heuri.sklyanka.feature.meds.card
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -28,7 +27,6 @@ import ru.heuri.sklyanka.ui.component.AdherenceWeek
 import ru.heuri.sklyanka.ui.component.ProgressPurpose
 import ru.heuri.sklyanka.ui.component.SecondaryButton
 import ru.heuri.sklyanka.ui.component.SklyankaProgressTrack
-import ru.heuri.sklyanka.ui.component.SklyankaSwitchRow
 import ru.heuri.sklyanka.ui.component.SklyankaTextField
 import ru.heuri.sklyanka.ui.theme.SklyankaTheme
 import ru.heuri.sklyanka.ui.token.SklyankaShapes
@@ -267,31 +265,6 @@ internal fun WeekBlock(week: WeekAdherenceStrip, modifier: Modifier = Modifier) 
     }
 }
 
-/**
- * Строка «Напоминать на часах».
- *
- * Нажимается вся строка, а не бегунок: цель нажатия 52×32 меньше нормы по высоте (НФТ-29).
- * У архивированного курса строка недоступна: напоминаний у него нет (ПР-11).
- */
-@Composable
-internal fun WatchRow(watch: WatchMirrorUi, onIntent: (MedCardIntent) -> Unit, modifier: Modifier = Modifier) {
-    val colors = SklyankaTheme.colors
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(colors.surface, SklyankaShapes.Card)
-            .border(SklyankaSizes.BorderThin, colors.lineOnSurface, SklyankaShapes.Card)
-            .testTag(TAG_WATCH_ROW),
-    ) {
-        SklyankaSwitchRow(
-            label = stringResource(R.string.card_watch_mirror),
-            checked = watch.checked,
-            enabled = watch.enabled,
-            onCheckedChange = { enabled -> onIntent(MedCardIntent.WatchMirrorToggled(enabled)) },
-        )
-    }
-}
-
 const val TAG_BLOCK_TRAILING = "med_card_block_trailing"
 const val TAG_SCHEDULE_BLOCK = "med_card_schedule"
 const val TAG_LIMIT_BLOCK = "med_card_limit"
@@ -304,4 +277,3 @@ const val TAG_REFILL = "med_card_refill"
 const val TAG_REFILL_ROW = "med_card_refill_row"
 const val TAG_REFILL_CONFIRM = "med_card_refill_confirm"
 const val TAG_WEEK_BLOCK = "med_card_week"
-const val TAG_WATCH_ROW = "med_card_watch_row"

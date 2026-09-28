@@ -17,13 +17,11 @@ fun SettingsRoute(viewModel: SettingsViewModel, navigation: SettingsNavigation, 
     val state by viewModel.state.collectAsState()
     SettingsScreen(
         state = state,
-        // Строка часов ведёт на экран подключения (SKL-17), которого в продукте ещё нет.
-        // Пока его нет, строка показывает состояние связи и перехода не обещает: нажатие,
-        // после которого ничего не происходит, человек читает как поломку.
-        canOpenWatchSetup = navigation.openWatchSetup != null,
         onIntent = { intent ->
             when (intent) {
                 SettingsIntent.AddProfile -> navigation.addProfile()
+                // Строка часов из состава первой версии снята (`ADR-0009`), но намерение
+                // и переход сохранены швом пост-MVP: экран их сейчас не порождает.
                 SettingsIntent.OpenWatchSetup -> navigation.openWatchSetup?.invoke()
                 SettingsIntent.OpenPermissions -> navigation.openDiagnostics()
                 SettingsIntent.OpenHistory -> navigation.openHistory()
@@ -48,10 +46,10 @@ data class SettingsNavigation(
     /** Список профилей → добавление профиля (`ОВ-3`, механика SKL-15). */
     val addProfile: () -> Unit = {},
     /**
-     * «Часы Huawei» → подключение часов (SKL-17).
+     * «Часы Huawei» → подключение часов (SKL-17, пост-MVP).
      *
-     * `null` означает, что экрана подключения в сборке нет: строка тогда остаётся
-     * состоянием связи и не притворяется переходом.
+     * Шов сохранён решением `ADR-0009` вместе с доменным швом часов: экран первой версии
+     * намерения не порождает, но возвращение строки не потребует правки навигации.
      */
     val openWatchSetup: (() -> Unit)? = null,
     /**

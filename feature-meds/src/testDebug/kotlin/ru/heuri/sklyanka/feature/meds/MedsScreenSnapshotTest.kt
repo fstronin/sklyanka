@@ -161,6 +161,8 @@ class MedsScreenSnapshotTest {
         stock = StockPanel.Visible(unitsLeft = BigDecimal("9"), daysLeft = STOCK_DAYS, warning = true),
         stockUnit = DoseUnit.TABLET,
         week = week(),
+        // Состояние часов непустое, а строки на снимке нет: состав экрана определён
+        // решением `ADR-0009`, и снимок обязан это показывать.
         watchMirror = WatchMirrorUi(checked = true, enabled = true),
         isArchived = false,
         courseFinishedOffer = false,

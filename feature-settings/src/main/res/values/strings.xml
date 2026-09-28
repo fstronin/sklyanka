@@ -153,7 +153,12 @@
     <!-- Рубрики разделов. Прописные задаёт оформление, а не эта строка. -->
     <string name="settings_rubric_profiles">Профили</string>
     <string name="settings_rubric_reminders">Напоминания</string>
-    <string name="settings_rubric_system">Часы и система</string>
+    <!--
+      В макете рубрика называется «Часы и система»; слово «Часы» снято вместе с отложенной
+      до пост-MVP интеграцией (`ADR-0009`). Строка строки часов вернётся в рубрику вместе
+      с Wear Engine.
+    -->
+    <string name="settings_rubric_system">Система</string>
     <string name="settings_rubric_data">Данные</string>
 
     <!-- ===== Профили ===== -->
@@ -173,11 +178,12 @@
     <string name="settings_persistent_caption">Повторить, если не отметили</string>
     <string name="settings_snooze">Отложить на</string>
 
-    <!-- ===== Часы и система ===== -->
-    <string name="settings_watch">Часы Huawei</string>
-    <string name="settings_watch_connected">%1$s · подключены</string>
-    <string name="settings_watch_disconnected">Не на связи · приём отмечается на телефоне</string>
-    <string name="settings_watch_not_configured">Не подключены · приём отмечается на телефоне</string>
+    <!-- ===== Система ===== -->
+    <!--
+      Строки «Часы Huawei» здесь нет: интеграция с часами отложена до пост-MVP
+      (`ADR-0009`), и подпись о состоянии связи, которое не может измениться, была бы
+      ложью. Строки вернутся вместе с Wear Engine.
+    -->
 
     <string name="settings_permissions">Разрешения и автозапуск</string>
     <!--

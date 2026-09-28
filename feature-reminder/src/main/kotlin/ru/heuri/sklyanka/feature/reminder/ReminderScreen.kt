@@ -18,10 +18,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import ru.heuri.sklyanka.ui.component.ChipState
 import ru.heuri.sklyanka.ui.component.PrimaryButton
 import ru.heuri.sklyanka.ui.component.SecondaryButton
-import ru.heuri.sklyanka.ui.component.SklyankaChip
 import ru.heuri.sklyanka.ui.component.SklyankaMark
 import ru.heuri.sklyanka.ui.theme.SklyankaTheme
 import ru.heuri.sklyanka.ui.token.SklyankaShapes
@@ -39,8 +37,9 @@ import ru.heuri.sklyanka.ui.token.SklyankaType
  * спецификации, потому что правится оно в одной строке токенов, а не здесь.
  *
  * Состав и порядок — по макету: надзаголовок, время, знак лекарства, название, доза
- * и дозировка одной строкой, чип «Продублировано на часы», затем ровно три действия
- * (НАП-30). Подпись кнопки откладывания собирается из настройки, а не хранится строкой:
+ * и дозировка одной строкой, затем ровно три действия (НАП-30). Чип «Продублировано
+ * на часы» из макета не выводится: интеграция отложена до пост-MVP (`ADR-0009`).
+ * Подпись кнопки откладывания собирается из настройки, а не хранится строкой:
  * человек, поставивший 30 минут, обязан увидеть «Отложить 30 мин» — константа в этом месте
  * врёт о том, что кнопка сделает.
  */
@@ -71,16 +70,6 @@ fun ReminderScreen(state: ReminderUiState.Card, actions: ReminderActions, modifi
                 // Несколько приёмов на одно время — одна карточка со списком (НАП-36):
                 // три полноэкранных уведомления подряд человек закрывает не глядя.
                 MultipleIntakes(state.items, actions)
-            }
-            if (state.mirroredToWatch) {
-                SklyankaChip(
-                    text = stringResource(R.string.reminder_mirrored_to_watch),
-                    state = ChipState.Info,
-                    shape = SklyankaShapes.Pill,
-                    modifier = Modifier
-                        .padding(top = SklyankaSpacing.Section)
-                        .testTag(TAG_WATCH_CHIP),
-                )
             }
         }
         Actions(state, actions)
@@ -290,7 +279,6 @@ const val TAG_TIME = "reminder_time"
 const val TAG_NAME = "reminder_name"
 const val TAG_DOSE = "reminder_dose"
 const val TAG_PROFILE = "reminder_profile"
-const val TAG_WATCH_CHIP = "reminder_watch_chip"
 const val TAG_ROW = "reminder_row"
 const val TAG_ACTION_TAKEN = "reminder_action_taken"
 const val TAG_ACTION_SNOOZE = "reminder_action_snooze"

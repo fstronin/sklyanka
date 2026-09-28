@@ -2,7 +2,6 @@ package ru.heuri.sklyanka.feature.meds
 
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -34,12 +33,10 @@ import ru.heuri.sklyanka.feature.meds.card.TAG_SCHEDULE_BLOCK
 import ru.heuri.sklyanka.feature.meds.card.TAG_STOCK_BLOCK
 import ru.heuri.sklyanka.feature.meds.card.TAG_SUBTITLE
 import ru.heuri.sklyanka.feature.meds.card.TAG_TIME_CHIP
-import ru.heuri.sklyanka.feature.meds.card.TAG_WATCH_ROW
 import ru.heuri.sklyanka.feature.meds.card.TAG_WEEK_BLOCK
 import ru.heuri.sklyanka.feature.meds.card.WatchMirrorUi
 import ru.heuri.sklyanka.ui.component.TAG_ADHERENCE_DAY
 import ru.heuri.sklyanka.ui.component.TAG_ADHERENCE_LEGEND
-import ru.heuri.sklyanka.ui.component.TAG_SWITCH
 import ru.heuri.sklyanka.ui.theme.SklyankaTheme
 import java.math.BigDecimal
 import java.time.LocalDate
@@ -151,22 +148,25 @@ class MedicationCardScreenTest {
             state(
                 schedule = ScheduleBlockUi.AsNeeded(maxPerDay = 3),
                 course = null,
-                watch = null,
             ),
         )
 
         composeRule.onNodeWithTag(TAG_LIMIT_BLOCK).assertIsDisplayed()
         composeRule.onAllNodesWithTag(TAG_SCHEDULE_BLOCK).assertCountEquals(0)
         composeRule.onAllNodesWithTag(TAG_COURSE_BLOCK).assertCountEquals(0)
-        composeRule.onAllNodesWithTag(TAG_WATCH_ROW).assertCountEquals(0)
     }
 
+    /**
+     * Строки «Напоминать на часах» на карточке нет — отдельной проверкой.
+     *
+     * Это решение `ADR-0009` (интеграция с Wear Engine отложена до пост-MVP), а не
+     * упущение: без теста строка однажды вернётся сама, вместе с состоянием `watchMirror`.
+     */
     @Test
-    fun theWatchRowIsLabelledForAScreenReader() {
+    fun thereIsNoWatchRowOnTheCard() {
         show(state())
 
-        composeRule.onNodeWithTag(TAG_WATCH_ROW).assertIsDisplayed()
-        composeRule.onNodeWithText(context.getString(R.string.card_watch_mirror)).assertIsDisplayed()
+        composeRule.onAllNodesWithTag(TAG_WATCH_ROW).assertCountEquals(0)
     }
 
     @Test
@@ -177,13 +177,12 @@ class MedicationCardScreenTest {
     }
 
     @Test
-    fun anArchivedCardOffersToRestoreAndLocksTheWatchSwitch() {
-        show(state(isArchived = true, watch = WatchMirrorUi(checked = true, enabled = false)))
+    fun anArchivedCardOffersRestoreAndCarriesNoWatchSwitch() {
+        show(state(isArchived = true))
 
         composeRule.onNodeWithTag(TAG_RESTORE).assertIsDisplayed()
         composeRule.onAllNodesWithTag(TAG_ARCHIVE).assertCountEquals(0)
-        composeRule.onNodeWithTag(TAG_SWITCH, useUnmergedTree = true).assertIsDisplayed()
-        composeRule.onNodeWithTag(ru.heuri.sklyanka.ui.component.TAG_SWITCH_ROW).assertIsNotEnabled()
+        composeRule.onAllNodesWithTag(TAG_WATCH_ROW).assertCountEquals(0)
     }
 
     /**
@@ -233,7 +232,6 @@ class MedicationCardScreenTest {
             fraction = COURSE_FRACTION,
         ),
         stock: StockPanel = StockPanel.Visible(unitsLeft = BigDecimal("9"), daysLeft = 4, warning = true),
-        watch: WatchMirrorUi? = WatchMirrorUi(checked = true, enabled = true),
         isArchived: Boolean = false,
     ) = MedCardUiState(
         medicationId = "medication-1",
@@ -251,7 +249,9 @@ class MedicationCardScreenTest {
         stock = stock,
         stockUnit = DoseUnit.TABLET,
         week = week(),
-        watchMirror = watch,
+        // Состояние часов намеренно непустое: строки на экране нет именно потому,
+        // что её вывел из состава MVP `ADR-0009`, а не потому, что состояние пусто.
+        watchMirror = WatchMirrorUi(checked = true, enabled = true),
         isArchived = isArchived,
         courseFinishedOffer = false,
         refill = null,
@@ -277,6 +277,9 @@ class MedicationCardScreenTest {
 
         /** Строки выбора звука на карточке нет: тега тоже нет ни в одном компоненте. */
         const val TAG_SOUND_ROW = "med_card_sound_row"
+
+        /** Строки часов на карточке нет: тега тоже нет ни в одном компоненте (`ADR-0009`). */
+        const val TAG_WATCH_ROW = "med_card_watch_row"
 
         val TODAY: LocalDate = LocalDate.of(2026, 9, 25)
         val START_DATE: LocalDate = LocalDate.of(2026, 9, 12)

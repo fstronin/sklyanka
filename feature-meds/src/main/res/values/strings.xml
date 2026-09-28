@@ -163,7 +163,10 @@
     <string name="card_section_week">Последние 7 дней</string>
     <string name="card_course_period">%1$s — %2$s</string>
     <string name="card_refill">Пополнить</string>
-    <string name="card_watch_mirror">Напоминать на часах</string>
+    <!--
+      Строки «Напоминать на часах» здесь нет: интеграция с Wear Engine отложена
+      до пост-MVP (`ADR-0009`), строка вернётся вместе с ней.
+    -->
     <string name="card_archive">В архив</string>
 
     <!-- Связь с едой в подписи титула: в форме это выбор, здесь — часть фразы. -->

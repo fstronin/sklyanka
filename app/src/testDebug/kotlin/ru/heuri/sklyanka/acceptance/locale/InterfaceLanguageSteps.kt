@@ -86,7 +86,7 @@ class InterfaceLanguageSteps(private val world: AcceptanceWorld) {
 
     @Когда("^человек открывает настройки$")
     fun thePersonOpensSettings() {
-        render { SettingsScreen(state = settingsState(), onIntent = {}, canOpenWatchSetup = false) }
+        render { SettingsScreen(state = settingsState(), onIntent = {}) }
     }
 
     // Формулировка развода с общим шагом «человек открывает экран «Сегодня»» из приёмки

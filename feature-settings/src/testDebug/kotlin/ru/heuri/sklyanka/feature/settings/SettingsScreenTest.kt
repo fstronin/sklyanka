@@ -1,6 +1,7 @@
 package ru.heuri.sklyanka.feature.settings
 
 import androidx.compose.ui.test.SemanticsNodeInteractionsProvider
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -18,7 +19,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import ru.heuri.sklyanka.domain.reminder.port.ReminderSettingsValues
-import ru.heuri.sklyanka.domain.watch.WatchLinkState
 import ru.heuri.sklyanka.ui.component.TAG_SWITCH_ROW
 import ru.heuri.sklyanka.ui.theme.SklyankaTheme
 import ru.heuri.sklyanka.ui.token.SklyankaSizes
@@ -127,21 +127,18 @@ class SettingsScreenTest {
         assertEquals(1, composeRule.onAllNodesWithText(string(R.string.settings_sound)).fetchSemanticsNodes().size)
     }
 
+    /**
+     * Строки «Часы Huawei» на экране нет — отдельной проверкой.
+     *
+     * Это решение `ADR-0009`: интеграция с Wear Engine отложена до пост-MVP, и подпись
+     * о связи, которая не может измениться, была бы ложью. Проверка идёт против строки,
+     * которой нет ни в одном ресурсе, а не против тега.
+     */
     @Test
-    fun theWatchRowStatesTheConnectedModel() {
+    fun thereIsNoWatchRowOnTheScreen() {
         show()
 
-        val connected = context.getString(R.string.settings_watch_connected, SettingsScreenFixtures.WATCH_MODEL)
-        composeRule.onNodeWithText(connected, useUnmergedTree = true).assertExists()
-    }
-
-    /** ЧАС-18, ЧАС-19: в каждом состоянии человек видит формулировку, а не молчание. */
-    @Test
-    fun theWatchRowSpeaksInEveryState() {
-        show(SettingsScreenFixtures.state(watch = WatchLinkState.NotConfigured))
-        composeRule
-            .onNodeWithText(string(R.string.settings_watch_not_configured), useUnmergedTree = true)
-            .assertExists()
+        composeRule.onAllNodesWithText(WATCH_ROW_TITLE).assertCountEquals(0)
     }
 
     @Test
@@ -270,7 +267,7 @@ class SettingsScreenTest {
                 ),
             ) {
                 SklyankaTheme {
-                    SettingsScreen(state = state, onIntent = onIntent, canOpenWatchSetup = false)
+                    SettingsScreen(state = state, onIntent = onIntent)
                 }
             }
         }
@@ -281,6 +278,12 @@ class SettingsScreenTest {
     private companion object {
         const val TWO = 2
         const val SCALE_200 = 2.0f
+
+        /**
+         * Заголовок снятой строки часов. Литерал намеренный: ресурс удалён решением
+         * `ADR-0009`, и проверить его отсутствие иначе нечем.
+         */
+        const val WATCH_ROW_TITLE = "Часы Huawei"
 
         /** Округление плотности может отнять доли точки; одной точки запаса хватает. */
         val TOLERANCE = SklyankaSizes.BorderThin

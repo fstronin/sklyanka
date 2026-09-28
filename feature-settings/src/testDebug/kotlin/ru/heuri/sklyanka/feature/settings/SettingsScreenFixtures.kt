@@ -1,25 +1,22 @@
 package ru.heuri.sklyanka.feature.settings
 
 import ru.heuri.sklyanka.domain.reminder.port.ReminderSettingsValues
-import ru.heuri.sklyanka.domain.watch.WatchLinkState
 import ru.heuri.sklyanka.ui.token.ProfileColor
 
 /**
  * Состояния экрана настроек для экранных проверок и снимков.
  *
  * Мир тот же, что в `acceptance.feature`: свой профиль активен, у профиля «Мама» четыре
- * лекарства с дублированием напоминаний, часы GT 6 Pro подключены, одно разрешение
- * не выдано.
+ * лекарства с дублированием напоминаний, одно разрешение не выдано. Часов в мире первой
+ * версии нет — интеграция отложена (`ADR-0009`).
  */
 internal object SettingsScreenFixtures {
 
-    const val WATCH_MODEL = "GT 6 Pro"
     const val FOREIGN_NAME = "Мама"
     const val FOREIGN_MEDICATIONS = 4
     const val VERSION = "0.1.0"
 
     fun state(
-        watch: WatchLinkState = WatchLinkState.Connected(WATCH_MODEL),
         denied: Int = 1,
         manual: Int = 1,
         reminders: ReminderSettingsValues = ReminderSettingsValues(persistentEnabled = true),
@@ -46,7 +43,6 @@ internal object SettingsScreenFixtures {
             ),
         ),
         reminders = reminders,
-        watch = watch,
         permissions = PermissionsSummary(denied = denied, manual = manual),
         version = VERSION,
     )

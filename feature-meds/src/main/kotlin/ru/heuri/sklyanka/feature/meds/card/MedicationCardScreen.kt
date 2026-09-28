@@ -76,7 +76,6 @@ fun MedicationCardScreen(state: MedCardUiState, onIntent: (MedCardIntent) -> Uni
             state.course?.let { course -> CourseBlock(course) }
             StockBlock(state, onIntent)
             WeekBlock(state.week)
-            state.watchMirror?.let { watch -> WatchRow(watch, onIntent) }
         }
         ArchiveAction(state, onIntent)
     }

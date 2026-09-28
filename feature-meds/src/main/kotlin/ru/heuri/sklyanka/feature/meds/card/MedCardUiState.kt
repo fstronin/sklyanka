@@ -33,7 +33,13 @@ data class MedCardUiState(
     val stock: StockPanel,
     val stockUnit: DoseUnit,
     val week: WeekAdherenceStrip,
-    /** `null` у лекарства «по потребности»: на часы такие приёмы не уходят (ЧАС-17). */
+    /**
+     * `null` у лекарства «по потребности»: на часы такие приёмы не уходят (ЧАС-17).
+     *
+     * Строка «Напоминать на часах» в первой версии не выводится: интеграция отложена
+     * до пост-MVP (`ADR-0009`). Поле остаётся швом пост-MVP-работы, а не мёртвым
+     * состоянием: переключатель вернётся тем же полем.
+     */
     val watchMirror: WatchMirrorUi?,
     val isArchived: Boolean,
     /**

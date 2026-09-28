@@ -50,7 +50,6 @@ class SettingsForeignLocaleTest {
                     SettingsScreen(
                         state = stateWith(snoozeMinutes = SNOOZE, foreignMedications = MEDICATIONS),
                         onIntent = {},
-                        canOpenWatchSetup = false,
                     )
                 }
             }

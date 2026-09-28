@@ -35,9 +35,6 @@ class ReminderScreenSnapshotTest {
         show(state(rows = listOf(row(), row(id = "intake-2", name = "med-b"))))
     }
 
-    @Test
-    fun mirroredToTheWatch() = capture("reminder-mirrored") { show(state(mirrored = true)) }
-
     private fun row(id: String = "intake-1", name: String = "med-a") = ReminderRow(
         intakeId = id,
         name = name,
@@ -47,11 +44,11 @@ class ReminderScreenSnapshotTest {
         strengthUnit = "mg",
     )
 
-    private fun state(rows: List<ReminderRow> = listOf(row()), mirrored: Boolean = false) = ReminderUiState.Card(
+    private fun state(rows: List<ReminderRow> = listOf(row())) = ReminderUiState.Card(
         scheduledAt = LocalDateTime.of(2026, 9, 25, 14, 0),
         items = rows,
         snoozeMinutes = SNOOZE_MINUTES,
-        mirroredToWatch = mirrored,
+        mirroredToWatch = false,
         foreignProfileName = null,
     )
 

@@ -179,37 +179,10 @@ internal fun SettingsValueRow(title: String, value: String, modifier: Modifier =
     }
 }
 
-/**
- * Строка состояния без перехода: заголовок и подпись, ни шеврона, ни нажатия.
- *
- * Нужна ровно для одного случая — строки «Часы Huawei» в сборке, где экрана подключения
- * ещё нет (SKL-17). Состояние связи человек видеть обязан (ЧАС-18), а перехода, которого
- * нет, обещать нельзя.
- */
-@Composable
-internal fun SettingsStateRow(title: String, subtitle: RowSubtitle, modifier: Modifier = Modifier) {
-    val colors = SklyankaTheme.colors
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .minTouchTarget()
-            .padding(horizontal = SklyankaSpacing.Block, vertical = SklyankaSpacing.Large),
-        verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Hair),
-    ) {
-        Text(text = title, style = SklyankaType.BodyDefault, color = colors.text)
-        Text(
-            text = subtitle.text,
-            style = SklyankaType.CaptionSmall,
-            color = subtitle.color ?: colors.textMuted,
-        )
-    }
-}
-
 /** Метки строк — точки опоры экранных проверок. */
 internal const val TAG_SETTINGS_SCREEN = "settings_screen"
 internal const val TAG_PROFILE_ROW = "settings_profile_row"
 internal const val TAG_ACTIVE_PROFILE = "settings_profile_active"
-internal const val TAG_WATCH_ROW = "settings_watch_row"
 internal const val TAG_PERMISSIONS_ROW = "settings_permissions_row"
 internal const val TAG_ABOUT = "settings_about"
 internal const val TAG_BOTTOM_BAR = "settings_bottom_bar"
