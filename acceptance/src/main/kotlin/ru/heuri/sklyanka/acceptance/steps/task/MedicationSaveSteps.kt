@@ -5,6 +5,7 @@ import io.cucumber.java.ru.Когда
 import io.cucumber.java.ru.Тогда
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -13,9 +14,11 @@ import ru.heuri.sklyanka.acceptance.steps.medicationNamed
 import ru.heuri.sklyanka.acceptance.world.AcceptanceWorld
 import ru.heuri.sklyanka.domain.medication.MedicationDraft
 import ru.heuri.sklyanka.domain.medication.SaveResult
+import ru.heuri.sklyanka.domain.model.FoodRelation
 import ru.heuri.sklyanka.domain.model.Medication
 import ru.heuri.sklyanka.domain.model.MedicationForm
 import ru.heuri.sklyanka.domain.model.ScheduleMode
+import ru.heuri.sklyanka.domain.schedule.PlanReason
 import java.math.BigDecimal
 import java.time.LocalTime
 
@@ -96,6 +99,49 @@ class MedicationSaveSteps(private val world: AcceptanceWorld) {
             before,
             world.reminders.scheduled(),
             "the window of alarms must be rebuilt after the schedule edit (НАП-11)",
+        )
+    }
+
+    @Тогда("^ближайшее окно напоминаний перепланировано$")
+    fun theReminderWindowWasRebuilt() {
+        val before = requireNotNull(world.reminders.scheduledBefore()) {
+            "the scenario never remembered the window of alarms"
+        }
+        assertNotEquals(
+            before,
+            world.reminders.scheduled(),
+            "the window of alarms must be rebuilt after the schedule edit (НАП-11)",
+        )
+    }
+
+    /**
+     * Правка, не тронувшая расписание, будильники не трогает (НАП-11).
+     *
+     * Предпосылка — у курса уже есть будильники: без неё сравнение «не перепланировано»
+     * шло бы между двумя пустыми наборами и ничего не доказывало. Набор собирает тот же
+     * порт, что у сохранения в продукте.
+     */
+    @Когда("^(.+?) в (\\d{2}:\\d{2}) человек меняет только связь с едой на «(.+?)» и сохраняет$")
+    fun thePersonChangesOnlyTheFoodRelation(date: String, time: String, food: String) {
+        world.clock.moveTo(world.localMoment(date, time))
+        val name = world.medications.last
+        savedMedication = name
+        runBlocking { world.planner().plan(world.medications.get(name).id, PlanReason.MEDICATION_ADDED) }
+        world.reminders.rememberScheduled()
+        val edited = MedicationDraft.of(world.medications.get(name)).copy(foodRelation = foodRelation(food))
+        val result = world.save(edited)
+        assertTrue(result is SaveResult.Saved, "the edited medication must be saved: $result")
+    }
+
+    @Тогда("^ближайшее окно напоминаний не перепланируется$")
+    fun theReminderWindowIsUntouched() {
+        val before = requireNotNull(world.reminders.scheduledBefore()) {
+            "the scenario never remembered the window of alarms"
+        }
+        assertEquals(
+            before,
+            world.reminders.scheduled(),
+            "an edit that did not touch the schedule must not rebuild the window (НАП-11)",
         )
     }
 
@@ -235,6 +281,14 @@ class MedicationSaveSteps(private val world: AcceptanceWorld) {
         "Сироп" -> MedicationForm.SYRUP
         "Капли" -> MedicationForm.DROPS
         else -> MedicationForm.INJECTION
+    }
+
+    /** Связь с едой в сценарии карточки: «после еды», «до еды», «во время еды». */
+    private fun foodRelation(label: String): FoodRelation = when (label.lowercase()) {
+        "до еды", "до" -> FoodRelation.BEFORE_MEAL
+        "во время", "во время еды" -> FoodRelation.WITH_MEAL
+        "после", "после еды" -> FoodRelation.AFTER_MEAL
+        else -> FoodRelation.ANY
     }
 
     private companion object {
