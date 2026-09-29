@@ -32,7 +32,7 @@ dependencies {
     implementation(project(":feature-reminder"))
     // История приёмов, приверженность за месяц и отчёт врачу (SKL-18).
     implementation(project(":feature-history"))
-    // Экран разрешений EMUI и вызов пробного напоминания (SKL-14).
+    // Экран разрешений EMUI (SKL-14).
     implementation(project(":feature-onboarding"))
 
     implementation(libs.kotlinx.coroutines.core)
