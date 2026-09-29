@@ -30,7 +30,6 @@ import ru.stohastika.sklyanka.feature.settings.profile.DeleteProfileViewModel
 import ru.stohastika.sklyanka.feature.settings.profile.TAG_DELETE_CONFIRM
 import ru.stohastika.sklyanka.feature.settings.profile.TAG_DELETE_DONE
 import ru.stohastika.sklyanka.feature.settings.profile.TAG_DELETE_EXPORT
-import ru.stohastika.sklyanka.feature.settings.profile.TAG_DELETE_SCREEN
 import ru.stohastika.sklyanka.ui.component.TAG_TEXT_FIELD_INPUT
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 

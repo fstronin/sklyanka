@@ -54,7 +54,9 @@ class DeleteProfileScreenTest {
         val title = string(R.string.profile_delete_title)
         composeRule.onNodeWithText(title).assertIsDisplayed()
         composeRule.onNodeWithTag(TAG_DELETE_INTRO).assertIsDisplayed()
-        composeRule.onNodeWithText(string(R.string.profile_delete_medications, MEDICATIONS, ARCHIVED)).assertIsDisplayed()
+        composeRule.onNodeWithText(
+            string(R.string.profile_delete_medications, MEDICATIONS, ARCHIVED),
+        ).assertIsDisplayed()
         composeRule.onNodeWithText(string(R.string.profile_delete_history, INTAKES)).assertIsDisplayed()
         composeRule.onNodeWithTag(TAG_DELETE_REMINDERS).assertIsDisplayed()
         composeRule.onNodeWithTag(TAG_DELETE_WARNING).assertIsDisplayed()

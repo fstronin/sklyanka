@@ -268,7 +268,11 @@ class DeleteProfileScreenSteps(private val world: AcceptanceWorld) {
     }
 
     private fun assertDeleteButtonLabel(label: String) {
-        assertEquals(string(R.string.profile_delete_confirm), label, "the step must speak about the confirmation button")
+        assertEquals(
+            string(R.string.profile_delete_confirm),
+            label,
+            "the step must speak about the confirmation button",
+        )
     }
 
     private fun string(id: Int): String = context.getString(id)
