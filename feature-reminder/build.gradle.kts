@@ -14,7 +14,7 @@ plugins {
 }
 
 android {
-    namespace = "ru.heuri.sklyanka.feature.reminder"
+    namespace = "ru.stohastika.sklyanka.feature.reminder"
 }
 
 dependencies {

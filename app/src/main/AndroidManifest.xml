@@ -126,7 +126,7 @@
           экраном приложения.
         -->
         <activity
-            android:name="ru.heuri.sklyanka.feature.reminder.ReminderActivity"
+            android:name="ru.stohastika.sklyanka.feature.reminder.ReminderActivity"
             android:excludeFromRecents="true"
             android:exported="false"
             android:launchMode="singleTask"
@@ -145,7 +145,7 @@
           Когда пункт настроек появится, атрибут снимается.
         -->
         <activity
-            android:name="ru.heuri.sklyanka.feature.reminder.DiagnosticsActivity"
+            android:name="ru.stohastika.sklyanka.feature.reminder.DiagnosticsActivity"
             android:exported="true"
             android:label="@string/diagnostics_shortcut_label"
             android:theme="@style/Theme.Sklyanka" />
@@ -165,7 +165,7 @@
           по построению (НФТ-19). Когда пункт настроек появится, атрибут снимается.
         -->
         <activity
-            android:name="ru.heuri.sklyanka.feature.onboarding.PermissionsActivity"
+            android:name="ru.stohastika.sklyanka.feature.onboarding.PermissionsActivity"
             android:exported="true"
             android:label="@string/permissions_shortcut_label"
             android:theme="@style/Theme.Sklyanka" />

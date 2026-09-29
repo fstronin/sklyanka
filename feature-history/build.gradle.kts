@@ -13,7 +13,7 @@ plugins {
 }
 
 android {
-    namespace = "ru.heuri.sklyanka.feature.history"
+    namespace = "ru.stohastika.sklyanka.feature.history"
 }
 
 dependencies {

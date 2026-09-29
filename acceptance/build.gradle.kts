@@ -77,7 +77,7 @@ val distributedStepSources: List<File> = rootProject.projectDir.listFiles()
     ?.filter { it.isDirectory && it.name != project.name }
     ?.flatMap { module ->
         File(module, "src").listFiles()
-            ?.map { sourceSet -> File(sourceSet, "kotlin/ru/heuri/sklyanka/acceptance") }
+            ?.map { sourceSet -> File(sourceSet, "kotlin/ru/stohastika/sklyanka/acceptance") }
             .orEmpty()
     }
     ?.filter { it.isDirectory }
@@ -155,7 +155,7 @@ val acceptanceRun by tasks.registering {
                 target,
                 listOf(
                     "--glue",
-                    "ru.heuri.sklyanka.acceptance",
+                    "ru.stohastika.sklyanka.acceptance",
                     "--tags",
                     automaticTags,
                     "--plugin",
@@ -281,7 +281,7 @@ val acceptanceChecklist by tasks.registering {
                 target,
                 listOf(
                     "--glue",
-                    "ru.heuri.sklyanka.acceptance",
+                    "ru.stohastika.sklyanka.acceptance",
                     "--tags",
                     "@manual",
                     "--dry-run",
@@ -331,7 +331,7 @@ val acceptanceScreenList by tasks.registering {
                 target,
                 listOf(
                     "--glue",
-                    "ru.heuri.sklyanka.acceptance",
+                    "ru.stohastika.sklyanka.acceptance",
                     "--tags",
                     screenTag,
                     "--dry-run",
@@ -377,7 +377,7 @@ val acceptanceDeviceList by tasks.registering {
                 target,
                 listOf(
                     "--glue",
-                    "ru.heuri.sklyanka.acceptance",
+                    "ru.stohastika.sklyanka.acceptance",
                     "--tags",
                     deviceTag,
                     "--dry-run",
@@ -406,7 +406,7 @@ fun runStepDictionary(modes: List<String>): Pair<Int, String> {
     val captured = ByteArrayOutputStream()
     val result = project.javaexec {
         classpath = sourceSets.test.get().runtimeClasspath
-        mainClass.set("ru.heuri.sklyanka.acceptance.tools.StepDictionary")
+        mainClass.set("ru.stohastika.sklyanka.acceptance.tools.StepDictionary")
         jvmArgs("-Dfile.encoding=UTF-8", "-Dsun.stdout.encoding=UTF-8", "-Dsun.stderr.encoding=UTF-8")
         systemProperty("sklyanka.repo.root", rootProject.projectDir.absolutePath)
         args = modes

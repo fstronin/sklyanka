@@ -205,7 +205,7 @@
     <!-- ===== О приложении ===== -->
     <!-- Версия подставляется из собранного пакета, а не из макета. -->
     <string name="settings_about_app">Склянка %1$s</string>
-    <string name="settings_about_vendor">Heuri · не является медицинским изделием</string>
+    <string name="settings_about_vendor">Stohastika · не является медицинским изделием</string>
     <string name="cd_settings_about_mark">Знак Склянка</string>
 
     <!-- ===== Нижняя панель ===== -->

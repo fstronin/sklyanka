@@ -7,7 +7,7 @@ plugins {
     alias(libs.plugins.kotlin.jvm)
 }
 
-group = "ru.heuri.sklyanka"
+group = "ru.stohastika.sklyanka"
 version = "1.0"
 
 java {

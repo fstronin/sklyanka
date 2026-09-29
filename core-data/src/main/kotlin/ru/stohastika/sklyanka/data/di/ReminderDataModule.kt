@@ -1,0 +1,72 @@
+package ru.stohastika.sklyanka.data.di
+
+import dagger.Binds
+import dagger.Module
+import dagger.Provides
+import dagger.hilt.InstallIn
+import dagger.hilt.components.SingletonComponent
+import ru.stohastika.sklyanka.data.prefs.AlarmRegistryStore
+import ru.stohastika.sklyanka.data.prefs.JournalingReminderSettings
+import ru.stohastika.sklyanka.data.reminder.ReminderDataSource
+import ru.stohastika.sklyanka.data.reminder.RoomReminderJournal
+import ru.stohastika.sklyanka.data.room.SklyankaDatabase
+import ru.stohastika.sklyanka.data.room.dao.ReminderDao
+import ru.stohastika.sklyanka.data.room.dao.ReminderLogDao
+import ru.stohastika.sklyanka.domain.reminder.port.AlarmRegistry
+import ru.stohastika.sklyanka.domain.reminder.port.ReminderCardSource
+import ru.stohastika.sklyanka.domain.reminder.port.ReminderJournal
+import ru.stohastika.sklyanka.domain.reminder.port.ReminderPlanSource
+import ru.stohastika.sklyanka.domain.reminder.port.ReminderSettings
+import javax.inject.Singleton
+
+/**
+ * Хранилище подсистемы напоминаний (SKL-13).
+ *
+ * Отдельный модуль, а не дополнение к `DataModule` и `DataBindings`: подсистема заводится
+ * своей задачей, и её привязки должны быть видны одним файлом — вместе с причиной, почему
+ * межпрофильная выборка планировщика законна (НАП-12), а журнал срабатываний живёт
+ * отдельно от журнала операций.
+ */
+@Module
+@InstallIn(SingletonComponent::class)
+object ReminderDataModule {
+
+    @Provides
+    fun provideReminderLogDao(database: SklyankaDatabase): ReminderLogDao = database.reminderLogDao()
+
+    @Provides
+    fun provideReminderDao(database: SklyankaDatabase): ReminderDao = database.reminderDao()
+}
+
+/** Интерфейсы домена напоминаний соединяются с реализациями слоя данных. */
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class ReminderDataBindings {
+
+    @Binds
+    @Singleton
+    abstract fun bindReminderJournal(impl: RoomReminderJournal): ReminderJournal
+
+    /**
+     * Настройки напоминания подставляются обёрткой со следом в журнале (НАП-14).
+     *
+     * Само хранилище наружу не выдаётся намеренно: изменение настройки обязано оставлять
+     * запись при любом пути — из настроек, из онбординга, из загрузки файла переноса, —
+     * а привязка прямо на хранилище тихо вернула бы молчаливый путь.
+     */
+    @Binds
+    @Singleton
+    abstract fun bindReminderSettings(impl: JournalingReminderSettings): ReminderSettings
+
+    @Binds
+    @Singleton
+    abstract fun bindAlarmRegistry(impl: AlarmRegistryStore): AlarmRegistry
+
+    @Binds
+    @Singleton
+    abstract fun bindReminderPlanSource(impl: ReminderDataSource): ReminderPlanSource
+
+    @Binds
+    @Singleton
+    abstract fun bindReminderCardSource(impl: ReminderDataSource): ReminderCardSource
+}

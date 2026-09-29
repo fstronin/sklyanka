@@ -20,8 +20,8 @@
         android:shortcutShortLabel="@string/permissions_shortcut_label">
         <intent
             android:action="android.intent.action.VIEW"
-            android:targetClass="ru.heuri.sklyanka.feature.onboarding.PermissionsActivity"
-            android:targetPackage="ru.heuri.sklyanka" />
+            android:targetClass="ru.stohastika.sklyanka.feature.onboarding.PermissionsActivity"
+            android:targetPackage="ru.stohastika.sklyanka" />
     </shortcut>
 
     <shortcut
@@ -32,7 +32,7 @@
         android:shortcutShortLabel="@string/diagnostics_shortcut_label">
         <intent
             android:action="android.intent.action.VIEW"
-            android:targetClass="ru.heuri.sklyanka.feature.reminder.DiagnosticsActivity"
-            android:targetPackage="ru.heuri.sklyanka" />
+            android:targetClass="ru.stohastika.sklyanka.feature.reminder.DiagnosticsActivity"
+            android:targetPackage="ru.stohastika.sklyanka" />
     </shortcut>
 </shortcuts>

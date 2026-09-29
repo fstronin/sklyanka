@@ -11,7 +11,7 @@ plugins {
 }
 
 android {
-    namespace = "ru.heuri.sklyanka.data"
+    namespace = "ru.stohastika.sklyanka.data"
 
     sourceSets {
         // Экспортированные схемы Room нужны инструментальному тесту миграций как ресурсы:

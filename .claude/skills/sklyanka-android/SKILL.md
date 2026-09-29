@@ -1,6 +1,6 @@
 ---
 name: sklyanka-android
-description: Правила реализации Android-приложения «Склянка» — стек, модули и направление зависимостей, пакеты от ru.heuri.sklyanka, дизайн-система и строки, работа со временем, точные напоминания, журналирование, запреты и формат коммитов. Применяй при написании и ревью любого кода проекта, при выборе модуля для класса, при сомнении «куда это положить» и «можно ли так делать».
+description: Правила реализации Android-приложения «Склянка» — стек, модули и направление зависимостей, пакеты от ru.stohastika.sklyanka, дизайн-система и строки, работа со временем, точные напоминания, журналирование, запреты и формат коммитов. Применяй при написании и ревью любого кода проекта, при выборе модуля для класса, при сомнении «куда это положить» и «можно ли так делать».
 ---
 
 > Соглашения проекта — `CLAUDE.md`. Спецификация — `docs/spec/`. Архитектурные решения — `docs/spec/adr/`.
@@ -30,8 +30,8 @@ Kotlin, Jetpack Compose, Room, Hilt, корутины и Flow, AlarmManager, Wea
 
 ## Именование
 
-- Пакеты — от `ru.heuri.sklyanka`: `ru.heuri.sklyanka.domain.intake`, `ru.heuri.sklyanka.data.room`, `ru.heuri.sklyanka.ui.token`, `ru.heuri.sklyanka.feature.today`.
-- Имя пакета приложения — ровно `ru.heuri.sklyanka` (17 символов; лимит Wear Engine — 28).
+- Пакеты — от `ru.stohastika.sklyanka`: `ru.stohastika.sklyanka.domain.intake`, `ru.stohastika.sklyanka.data.room`, `ru.stohastika.sklyanka.ui.token`, `ru.stohastika.sklyanka.feature.today`.
+- Имя пакета приложения — ровно `ru.stohastika.sklyanka` (22 символа; лимит Wear Engine — 28).
 - Код, идентификаторы, имена тестов и сообщения коммитов — английский. Документация, Gherkin и интерфейс — русский.
 - Доменные термины совпадают с `docs/spec/11-glossary.md`: `Intake`, `Medication`, `Profile`, `pending/taken/skipped/missed`, `scheduled/prn`.
 

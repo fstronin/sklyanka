@@ -69,7 +69,7 @@ description: Пишет план имплементации задачи SKL-NN 
 
 ### 1. <Глагольное описание задачи>
 
-**Файл:** `core-domain/src/main/kotlin/ru/heuri/sklyanka/domain/Intake.kt` (или **Файлы:** список)
+**Файл:** `core-domain/src/main/kotlin/ru/stohastika/sklyanka/domain/Intake.kt` (или **Файлы:** список)
 
 - Конкретное действие.
 - Конкретное действие.
@@ -129,7 +129,7 @@ description: Пишет план имплементации задачи SKL-NN 
 
 ### 3. Ввести правило перехода состояний Intake
 
-**Файл:** `core-domain/src/main/kotlin/ru/heuri/sklyanka/domain/Intake.kt`
+**Файл:** `core-domain/src/main/kotlin/ru/stohastika/sklyanka/domain/Intake.kt`
 
 - Добавить `canBeMarked()`: отметка допустима только из состояния «ожидается».
 - Вынести расчёт границы окна (до конца суток) в правило домена, время брать из инжектированных часов.

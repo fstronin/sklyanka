@@ -14,7 +14,7 @@ plugins {
 }
 
 android {
-    namespace = "ru.heuri.sklyanka.feature.onboarding"
+    namespace = "ru.stohastika.sklyanka.feature.onboarding"
 }
 
 dependencies {

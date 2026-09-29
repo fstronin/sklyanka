@@ -13,7 +13,7 @@ plugins {
 }
 
 android {
-    namespace = "ru.heuri.sklyanka.feature.today"
+    namespace = "ru.stohastika.sklyanka.feature.today"
 }
 
 dependencies {

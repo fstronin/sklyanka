@@ -28,20 +28,20 @@ sklyanka:
   HardcodedDesignToken:
     active: true
     # Единственное место, где литералы цвета и размера законны, — токены дизайн-системы.
-    allowedPackages: 'ru.heuri.sklyanka.ui.token'
+    allowedPackages: 'ru.stohastika.sklyanka.ui.token'
     allowedFiles: ''
 
   HardcodedTextStyle:
     active: true
     # Шкала типографики — единственное место, где TextStyle собирается из значений.
-    allowedPackages: 'ru.heuri.sklyanka.ui.token'
+    allowedPackages: 'ru.stohastika.sklyanka.ui.token'
     allowedFiles: ''
 
   RussianTextInCode:
     active: true
     # Шаги приёмки обязаны дословно совпадать с русским Gherkin из docs/tasks:
     # это ключевые слова сценария, а не текст интерфейса.
-    allowedPackages: 'ru.heuri.sklyanka.acceptance'
+    allowedPackages: 'ru.stohastika.sklyanka.acceptance'
     allowedFiles: ''
 
   DirectSystemClockAccess:
@@ -49,7 +49,7 @@ sklyanka:
     # Реализация источника времени — единственное место, где часы читаются напрямую (НФТ-48).
     # Разрешение по пакету, а не по имени файла: иначе любой файл SystemTimeSource.kt
     # в любом модуле обходил бы правило (ОВ-73).
-    allowedPackages: 'ru.heuri.sklyanka.platform.time'
+    allowedPackages: 'ru.stohastika.sklyanka.platform.time'
     allowedFiles: ''
 
   DestructiveRoomMigration:
@@ -57,7 +57,7 @@ sklyanka:
 
   AndroidImportInDomain:
     active: true
-    domainPackages: 'ru.heuri.sklyanka.domain'
+    domainPackages: 'ru.stohastika.sklyanka.domain'
 
   MedicalDataInJournal:
     active: true

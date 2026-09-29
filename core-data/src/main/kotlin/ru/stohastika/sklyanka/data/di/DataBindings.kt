@@ -1,0 +1,62 @@
+package ru.stohastika.sklyanka.data.di
+
+import dagger.Binds
+import dagger.Module
+import dagger.hilt.InstallIn
+import dagger.hilt.components.SingletonComponent
+import ru.stohastika.sklyanka.data.log.RoomOperationLog
+import ru.stohastika.sklyanka.data.repository.ActiveProfileContext
+import ru.stohastika.sklyanka.data.repository.ActiveProfileRepositoryImpl
+import ru.stohastika.sklyanka.data.repository.IntakeRepositoryImpl
+import ru.stohastika.sklyanka.data.repository.MedicationRepositoryImpl
+import ru.stohastika.sklyanka.data.repository.ProfileRepositoryImpl
+import ru.stohastika.sklyanka.data.room.SklyankaTransactor
+import ru.stohastika.sklyanka.domain.Transactor
+import ru.stohastika.sklyanka.domain.log.OperationLog
+import ru.stohastika.sklyanka.domain.profile.ProfileContextProvider
+import ru.stohastika.sklyanka.domain.repository.ActiveProfileRepository
+import ru.stohastika.sklyanka.domain.repository.IntakeRepository
+import ru.stohastika.sklyanka.domain.repository.MedicationRepository
+import ru.stohastika.sklyanka.domain.repository.ProfileRepository
+import javax.inject.Singleton
+
+/**
+ * Интерфейсы домена соединяются с реализациями слоя данных.
+ *
+ * Наружу из core-data торчат только интерфейсы из core-domain: сущности Room за
+ * пределы модуля не выходят, и компромиссы хранения не расползаются по правилам
+ * предметной области.
+ */
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class DataBindings {
+
+    @Binds
+    @Singleton
+    abstract fun bindProfileRepository(impl: ProfileRepositoryImpl): ProfileRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindMedicationRepository(impl: MedicationRepositoryImpl): MedicationRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindIntakeRepository(impl: IntakeRepositoryImpl): IntakeRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindActiveProfileRepository(impl: ActiveProfileRepositoryImpl): ActiveProfileRepository
+
+    /** Единственный источник контекста профиля для экранов и оформления (ПРФ-11, ПРФ-12). */
+    @Binds
+    @Singleton
+    abstract fun bindProfileContextProvider(impl: ActiveProfileContext): ProfileContextProvider
+
+    @Binds
+    @Singleton
+    abstract fun bindTransactor(impl: SklyankaTransactor): Transactor
+
+    @Binds
+    @Singleton
+    abstract fun bindOperationLog(impl: RoomOperationLog): OperationLog
+}

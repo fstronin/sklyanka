@@ -129,19 +129,19 @@ SKL_ADB_TIMEOUT=60
 SKL_TEST_MODULE=":core-data"
 SKL_TEST_TASK="connectedDebugAndroidTest"
 
-SKL_GROUP_FAST_PACKAGES="ru.heuri.sklyanka.data.repository"
-SKL_GROUP_DATA_PACKAGES="ru.heuri.sklyanka.data.room,ru.heuri.sklyanka.data.transfer,ru.heuri.sklyanka.data.reminder,ru.heuri.sklyanka.data.history"
+SKL_GROUP_FAST_PACKAGES="ru.stohastika.sklyanka.data.repository"
+SKL_GROUP_DATA_PACKAGES="ru.stohastika.sklyanka.data.room,ru.stohastika.sklyanka.data.transfer,ru.stohastika.sklyanka.data.reminder,ru.stohastika.sklyanka.data.history"
 # Объёмные и гоночные проверки: тысяча повторов в двух потоках и база годового объёма.
-SKL_GROUP_HEAVY_CLASSES="ru.heuri.sklyanka.data.room.VolumeTest,ru.heuri.sklyanka.data.room.ConcurrencyTest,ru.heuri.sklyanka.data.history.HistoryQueriesTest"
+SKL_GROUP_HEAVY_CLASSES="ru.stohastika.sklyanka.data.room.VolumeTest,ru.stohastika.sklyanka.data.room.ConcurrencyTest,ru.stohastika.sklyanka.data.history.HistoryQueriesTest"
 # Миграции — отдельной группой: они поднимают базу предыдущей версии из экспортированных
 # схем, и падение здесь означает совсем другое, чем падение запроса (МГ-3).
-SKL_GROUP_MIGRATION_CLASSES="ru.heuri.sklyanka.data.room.MigrationTest,ru.heuri.sklyanka.data.reminder.ReminderLogMigrationTest"
+SKL_GROUP_MIGRATION_CLASSES="ru.stohastika.sklyanka.data.room.MigrationTest,ru.stohastika.sklyanka.data.reminder.ReminderLogMigrationTest"
 
 # --- Приложение ----------------------------------------------------------------
-SKL_APP_ID="ru.heuri.sklyanka"
+SKL_APP_ID="ru.stohastika.sklyanka"
 SKL_APP_DB="sklyanka.db"
-SKL_DIAGNOSTICS_ACTIVITY="ru.heuri.sklyanka.feature.reminder.DiagnosticsActivity"
-SKL_PERMISSIONS_ACTIVITY="ru.heuri.sklyanka.feature.onboarding.PermissionsActivity"
+SKL_DIAGNOSTICS_ACTIVITY="ru.stohastika.sklyanka.feature.reminder.DiagnosticsActivity"
+SKL_PERMISSIONS_ACTIVITY="ru.stohastika.sklyanka.feature.onboarding.PermissionsActivity"
 
 # --- Нагрузка синтетического курса (И-16) --------------------------------------
 #

@@ -14,7 +14,7 @@ plugins {
 }
 
 android {
-    namespace = "ru.heuri.sklyanka"
+    namespace = "ru.stohastika.sklyanka"
 }
 
 dependencies {
