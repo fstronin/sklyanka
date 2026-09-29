@@ -369,7 +369,7 @@ private class NoSnoozePlan : ReminderPlanSource {
 
 private class NoAlarms : AlarmGateway {
 
-    override suspend fun schedule(intakeId: String, at: Instant) = Unit
+    override suspend fun schedule(intakeId: String, at: Instant, attempt: Int) = Unit
 
     override suspend fun cancel(intakeId: String) = Unit
 
@@ -378,8 +378,6 @@ private class NoAlarms : AlarmGateway {
     override suspend fun scheduleAnchor(at: Instant) = Unit
 
     override suspend fun scheduleDayBoundary(at: Instant) = Unit
-
-    override suspend fun scheduleRepeat(intakeId: String, at: Instant, attempt: Int) = Unit
 
     override fun canScheduleExact(): Boolean = true
 }

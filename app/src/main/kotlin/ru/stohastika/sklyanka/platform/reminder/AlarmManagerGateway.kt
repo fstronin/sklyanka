@@ -34,8 +34,18 @@ class AlarmManagerGateway @Inject constructor(
 
     private val alarms: AlarmManager = requireNotNull(context.getSystemService(AlarmManager::class.java))
 
-    override suspend fun schedule(intakeId: String, at: Instant) {
-        if (setExact(at, pendingIntent(ReminderAlarms.intake(context, intakeId, attempt = 0)))) {
+    /**
+     * Поставить или заменить будильник приёма (НАП-5, НАП-25).
+     *
+     * Номер показа уезжает дополнением намерения: `0` — первое напоминание, `1…` —
+     * настойчивый повтор, который звучит настойчивым каналом. Момент записывается
+     * в список поставленных будильников под тем же приёмом: пересборка окна судит
+     * по нему, снимать ли будильник, а назначенное время приёма после первого показа
+     * уже в прошлом и в окно не попадает (НАП-31). Без записи повтор снимался бы
+     * первой же пересборкой как осиротевший.
+     */
+    override suspend fun schedule(intakeId: String, at: Instant, attempt: Int) {
+        if (setExact(at, pendingIntent(ReminderAlarms.intake(context, intakeId, attempt)))) {
             registry.put(intakeId, at)
         }
     }
@@ -68,20 +78,6 @@ class AlarmManagerGateway @Inject constructor(
 
     override suspend fun scheduleDayBoundary(at: Instant) {
         setExact(at, pendingIntent(ReminderAlarms.dayBoundary(context)))
-    }
-
-    /**
-     * Повтор настойчивого напоминания (НАП-25).
-     *
-     * Момент повтора записывается в список поставленных будильников под тем же приёмом:
-     * пересборка окна судит по нему, снимать ли будильник, а назначенное время приёма
-     * к этому моменту уже в прошлом и в окно не попадает (НАП-31). Без записи повтор
-     * снимался бы первой же пересборкой как осиротевший.
-     */
-    override suspend fun scheduleRepeat(intakeId: String, at: Instant, attempt: Int) {
-        if (setExact(at, pendingIntent(ReminderAlarms.intake(context, intakeId, attempt)))) {
-            registry.put(intakeId, at)
-        }
     }
 
     /**

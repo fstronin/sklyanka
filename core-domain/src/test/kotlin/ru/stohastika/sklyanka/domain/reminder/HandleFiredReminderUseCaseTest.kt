@@ -162,10 +162,12 @@ class HandleFiredReminderUseCaseTest {
 
         fireAtFourteen()
 
-        val repeat = world.alarms.repeats.single()
-        assertEquals(Fixtures.INTAKE_ID, repeat.first)
-        assertEquals(world.momentOf(LocalDateTime.of(2026, 9, 25, 14, 15)), repeat.second)
-        assertEquals(1, repeat.third)
+        assertEquals(
+            world.momentOf(LocalDateTime.of(2026, 9, 25, 14, 15)),
+            world.alarms.alarms[Fixtures.INTAKE_ID],
+            "the repeat alarm must be planned one interval ahead",
+        )
+        assertEquals(1, world.alarms.attempts[Fixtures.INTAKE_ID], "the repeat carries show number 1")
     }
 
     @Test
@@ -175,7 +177,7 @@ class HandleFiredReminderUseCaseTest {
         val outcome = fireAtFourteen() as FiredOutcome.Shown
 
         assertEquals(RepeatDecision.Stop(RepeatStop.DISABLED), outcome.repeat)
-        assertTrue(world.alarms.repeats.isEmpty())
+        assertTrue(world.alarms.alarms.isEmpty())
     }
 
     @Test
@@ -186,7 +188,7 @@ class HandleFiredReminderUseCaseTest {
         val outcome = fireAtFourteen(attempt = PersistentRepeatPolicy.MAX_REPEATS) as FiredOutcome.Shown
 
         assertEquals(RepeatDecision.Stop(RepeatStop.LIMIT_REACHED), outcome.repeat)
-        assertTrue(world.alarms.repeats.isEmpty())
+        assertTrue(world.alarms.alarms.isEmpty())
         assertTrue(world.stored().isPending, "the intake stays unmarked (REM-26)")
     }
 
@@ -225,9 +227,10 @@ class HandleFiredReminderUseCaseTest {
         assertEquals(SuppressReason.NOT_PRESENTED.code, suppressed.reason)
         assertEquals(false, suppressed.delivered)
         assertEquals(
-            1,
-            world.alarms.repeats.size,
+            world.momentOf(LocalDateTime.of(2026, 9, 25, 14, 15)),
+            world.alarms.alarms[Fixtures.INTAKE_ID],
             "a reminder that failed to appear is exactly when the next attempt matters (REM-1)",
         )
+        assertEquals(1, world.alarms.attempts[Fixtures.INTAKE_ID])
     }
 }

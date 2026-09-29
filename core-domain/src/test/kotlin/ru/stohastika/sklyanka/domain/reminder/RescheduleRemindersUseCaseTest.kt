@@ -243,7 +243,7 @@ class RescheduleKeepsDeferredAlarmsTest {
 
         world.moveTo(LocalDateTime.of(2026, 9, 25, 14, 0))
         world.fired(Fixtures.INTAKE_ID)
-        val repeatAt = world.alarms.repeats.single().second
+        val repeatAt = requireNotNull(world.alarms.alarms[Fixtures.INTAKE_ID]) { "the repeat must be armed" }
 
         world.moveTo(LocalDateTime.of(2026, 9, 25, 14, 1))
         val outcome = world.reschedule(RescheduleReason.ALARM_FIRED)

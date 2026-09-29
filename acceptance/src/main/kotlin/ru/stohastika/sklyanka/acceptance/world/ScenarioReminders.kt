@@ -318,12 +318,12 @@ private class InMemoryAlarms : AlarmGateway {
 
     private val byIntake = linkedMapOf<String, Instant>()
 
-    /** Номер показа у повторов: по нему срабатывание идёт настойчивым каналом (НАП-25). */
+    /** Номер показа рядом с моментом: 0 — первый, 1… — повтор (НАП-25). */
     private val attempts = linkedMapOf<String, Int>()
 
-    override suspend fun schedule(intakeId: String, at: Instant) {
+    override suspend fun schedule(intakeId: String, at: Instant, attempt: Int) {
         byIntake[intakeId] = at
-        attempts.remove(intakeId)
+        attempts[intakeId] = attempt
     }
 
     override suspend fun cancel(intakeId: String) {
@@ -336,11 +336,6 @@ private class InMemoryAlarms : AlarmGateway {
     override suspend fun scheduleAnchor(at: Instant) = Unit
 
     override suspend fun scheduleDayBoundary(at: Instant) = Unit
-
-    override suspend fun scheduleRepeat(intakeId: String, at: Instant, attempt: Int) {
-        byIntake[intakeId] = at
-        attempts[intakeId] = attempt
-    }
 
     override fun canScheduleExact(): Boolean = true
 

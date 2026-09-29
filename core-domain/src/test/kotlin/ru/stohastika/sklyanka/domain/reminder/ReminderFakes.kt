@@ -33,7 +33,10 @@ import java.time.LocalDateTime
 internal class FakeAlarmGateway : AlarmGateway {
 
     val alarms: MutableMap<String, Instant> = linkedMapOf()
-    val repeats: MutableList<Triple<String, Instant, Int>> = mutableListOf()
+
+    /** Номер показа рядом с моментом: 0 — первый, 1… — настойчивый повтор (НАП-25). */
+    val attempts: MutableMap<String, Int> = linkedMapOf()
+
     var anchor: Instant? = null
     var dayBoundary: Instant? = null
     var exactAllowed: Boolean = true
@@ -44,14 +47,16 @@ internal class FakeAlarmGateway : AlarmGateway {
     var cancelCalls: Int = 0
         private set
 
-    override suspend fun schedule(intakeId: String, at: Instant) {
+    override suspend fun schedule(intakeId: String, at: Instant, attempt: Int) {
         scheduleCalls++
         alarms[intakeId] = at
+        attempts[intakeId] = attempt
     }
 
     override suspend fun cancel(intakeId: String) {
         cancelCalls++
         alarms.remove(intakeId)
+        attempts.remove(intakeId)
     }
 
     override suspend fun scheduled(): Map<String, Instant> = alarms.toMap()
@@ -62,13 +67,6 @@ internal class FakeAlarmGateway : AlarmGateway {
 
     override suspend fun scheduleDayBoundary(at: Instant) {
         dayBoundary = at
-    }
-
-    override suspend fun scheduleRepeat(intakeId: String, at: Instant, attempt: Int) {
-        repeats += Triple(intakeId, at, attempt)
-        // Как в платформенной реализации: повтор известен набору поставленных будильников,
-        // иначе пересборка окна сняла бы его как осиротевший.
-        alarms[intakeId] = at
     }
 
     override fun canScheduleExact(): Boolean = exactAllowed
