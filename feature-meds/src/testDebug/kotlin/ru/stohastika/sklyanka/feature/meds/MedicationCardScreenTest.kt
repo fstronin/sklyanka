@@ -23,11 +23,14 @@ import ru.stohastika.sklyanka.domain.model.TabletShape
 import ru.stohastika.sklyanka.domain.stock.StockPanel
 import ru.stohastika.sklyanka.feature.meds.card.MedCardUiState
 import ru.stohastika.sklyanka.feature.meds.card.MedicationCardScreen
+import ru.stohastika.sklyanka.feature.meds.card.RefillUi
 import ru.stohastika.sklyanka.feature.meds.card.ScheduleBlockUi
 import ru.stohastika.sklyanka.feature.meds.card.TAG_ARCHIVE
 import ru.stohastika.sklyanka.feature.meds.card.TAG_COURSE_BAR
 import ru.stohastika.sklyanka.feature.meds.card.TAG_COURSE_BLOCK
 import ru.stohastika.sklyanka.feature.meds.card.TAG_LIMIT_BLOCK
+import ru.stohastika.sklyanka.feature.meds.card.TAG_REFILL_CANCEL
+import ru.stohastika.sklyanka.feature.meds.card.TAG_REFILL_ROW
 import ru.stohastika.sklyanka.feature.meds.card.TAG_RESTORE
 import ru.stohastika.sklyanka.feature.meds.card.TAG_SCHEDULE_BLOCK
 import ru.stohastika.sklyanka.feature.meds.card.TAG_STOCK_BAR
@@ -157,6 +160,22 @@ class MedicationCardScreenTest {
             )
             .assertIsDisplayed()
         composeRule.onAllNodesWithTag(TAG_STOCK_BAR, useUnmergedTree = true).assertCountEquals(0)
+    }
+
+    @Test
+    fun theRefillRowOpensInTheStockBlockWithTheUnitAndCancel() {
+        show(state(refill = RefillUi(text = "")))
+
+        composeRule.onNodeWithTag(TAG_REFILL_ROW, useUnmergedTree = true).assertIsDisplayed()
+        composeRule.onNodeWithTag(TAG_REFILL_CANCEL, useUnmergedTree = true).assertIsDisplayed()
+        composeRule
+            .onNodeWithText(context.getString(UiR.string.action_cancel), useUnmergedTree = true)
+            .assertIsDisplayed()
+        // Единица строки пополнения — та же, что у остатка: человек вводит число в тех же
+        // единицах, в каких карточка о нём говорит.
+        composeRule
+            .onNodeWithText(context.getString(R.string.stock_unit_tablets), useUnmergedTree = true)
+            .assertIsDisplayed()
     }
 
     @Test
@@ -297,6 +316,7 @@ class MedicationCardScreenTest {
         ),
         stock: StockPanel = StockPanel.Visible(unitsLeft = BigDecimal("9"), daysLeft = 4, warning = true),
         isArchived: Boolean = false,
+        refill: RefillUi? = null,
     ) = MedCardUiState(
         medicationId = "medication-1",
         title = MEDICATION_NAME,
@@ -318,7 +338,7 @@ class MedicationCardScreenTest {
         watchMirror = WatchMirrorUi(checked = true, enabled = true),
         isArchived = isArchived,
         courseFinishedOffer = false,
-        refill = null,
+        refill = refill,
         notice = null,
     )
 

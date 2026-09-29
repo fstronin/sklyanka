@@ -15,6 +15,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import ru.stohastika.sklyanka.domain.medication.CourseProgress
+import ru.stohastika.sklyanka.domain.medication.DoseUnit
 import ru.stohastika.sklyanka.domain.medication.WeekAdherenceStrip
 import ru.stohastika.sklyanka.domain.stock.StockPanel
 import ru.stohastika.sklyanka.feature.meds.ClockGlyph
@@ -22,10 +23,12 @@ import ru.stohastika.sklyanka.feature.meds.R
 import ru.stohastika.sklyanka.feature.meds.SectionLabel
 import ru.stohastika.sklyanka.feature.meds.dayAndMonth
 import ru.stohastika.sklyanka.feature.meds.formatted
+import ru.stohastika.sklyanka.feature.meds.stockLabel
 import ru.stohastika.sklyanka.feature.meds.stockLeftLabel
 import ru.stohastika.sklyanka.feature.meds.stockPackageLabel
 import ru.stohastika.sklyanka.ui.component.AdherenceWeek
 import ru.stohastika.sklyanka.ui.component.ProgressPurpose
+import ru.stohastika.sklyanka.ui.component.QuietButton
 import ru.stohastika.sklyanka.ui.component.SecondaryButton
 import ru.stohastika.sklyanka.ui.component.SklyankaProgressTrack
 import ru.stohastika.sklyanka.ui.component.SklyankaTextField
@@ -34,6 +37,7 @@ import ru.stohastika.sklyanka.ui.token.SklyankaShapes
 import ru.stohastika.sklyanka.ui.token.SklyankaSizes
 import ru.stohastika.sklyanka.ui.token.SklyankaSpacing
 import ru.stohastika.sklyanka.ui.token.SklyankaType
+import ru.stohastika.sklyanka.ui.R as UiR
 
 /**
  * Блоки карточки лекарства (`design/screens/MedCard.dc.html`).
@@ -235,7 +239,7 @@ internal fun StockBlock(state: MedCardUiState, onIntent: (MedCardIntent) -> Unit
                 modifier = Modifier.testTag(TAG_STOCK_BAR),
             )
         }
-        state.refill?.let { refill -> RefillRow(refill, onIntent) }
+        state.refill?.let { refill -> RefillRow(refill, state.stockUnit, onIntent) }
     }
 }
 
@@ -243,30 +247,46 @@ internal fun StockBlock(state: MedCardUiState, onIntent: (MedCardIntent) -> Unit
  * Ввод нового значения остатка.
  *
  * «Пополнить» заменяет значение (ОВ-13, решено в SKL-12), поэтому спрашивается именно
- * «сколько осталось», а не «сколько добавить». Строка ввода открывается внутри блока, а
- * не отдельным экраном: макета у неё нет, и заводить экран, которого не рисовали, хуже,
- * чем показать поле там, где человек нажал кнопку.
+ * «сколько осталось», а не «сколько добавить». Строка открывается внутри блока,
+ * а не отдельным экраном: макета у неё нет, и заводить экран, которого не рисовали,
+ * хуже, чем показать поле там, где человек нажал кнопку. Единица — та же, что у строки
+ * остатка; действия — «Сохранить» (второстепенная) и тихая «Отмена».
+ *
+ * Размер упаковки строка не меняет: он свойство упаковки, а не остатка, и правится
+ * только формой «Изменить».
  */
 @Composable
-private fun RefillRow(refill: RefillUi, onIntent: (MedCardIntent) -> Unit) {
-    Row(
+private fun RefillRow(refill: RefillUi, unit: DoseUnit, onIntent: (MedCardIntent) -> Unit) {
+    Column(
         modifier = Modifier.fillMaxWidth().testTag(TAG_REFILL_ROW),
-        verticalAlignment = Alignment.Top,
-        horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Small),
+        verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Small),
     ) {
         SklyankaTextField(
             value = refill.text,
             onValueChange = { text -> onIntent(MedCardIntent.RefillValueChanged(text)) },
             hint = stringResource(R.string.card_refill_hint),
+            unitLabel = unit.stockLabel(),
             numeric = true,
             errorText = stringResource(R.string.error_stock_negative).takeIf { refill.invalid },
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.fillMaxWidth(),
         )
-        SecondaryButton(
-            text = stringResource(R.string.card_refill_confirm),
-            onClick = { onIntent(MedCardIntent.RefillConfirmed) },
-            modifier = Modifier.testTag(TAG_REFILL_CONFIRM),
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Small, Alignment.End),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            QuietButton(
+                text = stringResource(UiR.string.action_cancel),
+                onClick = { onIntent(MedCardIntent.RefillCancelled) },
+                muted = true,
+                modifier = Modifier.testTag(TAG_REFILL_CANCEL),
+            )
+            SecondaryButton(
+                text = stringResource(R.string.card_refill_confirm),
+                onClick = { onIntent(MedCardIntent.RefillConfirmed) },
+                modifier = Modifier.testTag(TAG_REFILL_CONFIRM),
+            )
+        }
     }
 }
 
@@ -294,4 +314,5 @@ const val TAG_STOCK_BAR = "med_card_stock_bar"
 const val TAG_REFILL = "med_card_refill"
 const val TAG_REFILL_ROW = "med_card_refill_row"
 const val TAG_REFILL_CONFIRM = "med_card_refill_confirm"
+const val TAG_REFILL_CANCEL = "med_card_refill_cancel"
 const val TAG_WEEK_BLOCK = "med_card_week"
