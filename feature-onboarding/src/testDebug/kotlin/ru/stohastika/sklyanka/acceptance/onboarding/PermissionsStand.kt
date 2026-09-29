@@ -15,7 +15,6 @@ import ru.stohastika.sklyanka.domain.onboarding.LeaveOnboardingUseCase
 import ru.stohastika.sklyanka.domain.onboarding.OnboardingSource
 import ru.stohastika.sklyanka.domain.onboarding.PermissionStep
 import ru.stohastika.sklyanka.domain.onboarding.ReadPermissionChecklistUseCase
-import ru.stohastika.sklyanka.domain.reminder.TestReminderUseCase
 import ru.stohastika.sklyanka.feature.onboarding.OnboardingExit
 import ru.stohastika.sklyanka.feature.onboarding.OnboardingUiState
 import ru.stohastika.sklyanka.feature.onboarding.OnboardingViewModel
@@ -23,15 +22,13 @@ import ru.stohastika.sklyanka.feature.onboarding.PermissionsActions
 import ru.stohastika.sklyanka.feature.onboarding.PermissionsScreen
 import ru.stohastika.sklyanka.feature.onboarding.SystemSettingsNavigator
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
-import java.time.Instant
 
 /**
  * Стенд экрана разрешений: настоящий `OnboardingViewModel` на мире сценария (SKL-14).
  *
  * Состояние цепочки читается настоящим `ReadPermissionChecklistUseCase` из тех же портов,
  * что у продукта: разрешения — из системы (`ScenarioSystemState`, НФТ-52), сохранённые
- * факты и подсказки — из мира онбординга. Пробное напоминание ставится настоящим
- * `TestReminderUseCase` в те же будильники мира.
+ * факты и подсказки — из мира онбординга.
  *
  * Подменяется только платформа: системные переходы записывает [RecordingNavigator],
  * а системный диалог уведомлений, который в продукте показывает `PermissionsRoute`,
@@ -95,11 +92,9 @@ internal object PermissionsStand {
                         }
                     },
                     onAutostartConfirmed = { confirmed -> onAction { model(world).onAutostartConfirmed(confirmed) } },
-                    onTestReminder = { onAction { model(world).onTestReminder() } },
                     onNext = { onAction { model(world).onNext() } },
                     onSkip = { onAction { model(world).onSkip() } },
                 ),
-                toLocal = { instant: Instant -> instant.atZone(world.clock.zone).toLocalDateTime() },
             )
         }
     }
@@ -136,10 +131,8 @@ internal object PermissionsStand {
         ),
         confirmAutostart = ConfirmAutostartUseCase(world.onboarding, world.onboarding),
         leaveOnboarding = LeaveOnboardingUseCase(world.onboarding, world.onboarding),
-        testReminder = TestReminderUseCase(world.reminders.alarms, world.clock.time),
         navigator = navigator,
         log = world.onboarding,
-        time = world.clock.time,
     )
 
     /** Забыть подменённый главный диспетчер: стенд не должен влиять на соседние тесты. */

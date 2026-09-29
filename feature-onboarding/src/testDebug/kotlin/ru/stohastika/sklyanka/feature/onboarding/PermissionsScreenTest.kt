@@ -22,7 +22,7 @@ import ru.stohastika.sklyanka.ui.component.TAG_ONBOARDING_STEPS
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 
 /**
- * Состав экрана разрешений (НАП-19 … НАП-22, критерии приёмки 1 … 8, 15, 17, 21).
+ * Состав экрана разрешений (НАП-19 … НАП-21, критерии приёмки 1 … 7, 15, 17, 21).
  *
  * Идёт на JVM под Robolectric в обычном `./gradlew test` (SKL-24): настоящая композиция,
  * настоящие ресурсы модуля, настоящая семантика. Чего стенд НЕ доказывает: что системный
@@ -33,9 +33,8 @@ import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
  * проверяла бы тест, а не экран.
  */
 @RunWith(AndroidJUnit4::class)
-// Экран длиннее окна телефона: цепочка из трёх карточек, плашка, запуск пробного
-// напоминания и две кнопки внизу. В окне телефона он скроллится, и проверка состава
-// видела бы только его верх (SKL-24).
+// Экран длиннее окна телефона: цепочка из трёх карточек и две кнопки внизу. В окне
+// телефона он скроллится, и проверка состава видела бы только его верх (SKL-24).
 @Config(qualifiers = "w390dp-h2400dp-mdpi")
 class PermissionsScreenTest {
 
@@ -50,7 +49,6 @@ class PermissionsScreenTest {
                 PermissionsScreen(
                     state = state,
                     actions = actions,
-                    toLocal = PermissionsScreenFixtures::toLocal,
                 )
             }
         }
@@ -118,8 +116,8 @@ class PermissionsScreenTest {
     fun theAutostartCardSaysOutLoudThatTheAppCannotCheckIt() {
         show(PermissionsScreenFixtures.asDrawn())
 
-        // Критерий приёмки 7: приложение прямо говорит, что проверить это может только
-        // пробное напоминание.
+        // Критерий приёмки 7: приложение прямо говорит, что проверить эту настройку
+        // оно не может.
         compose.onNodeWithTag(TAG_AUTOSTART_UNVERIFIABLE, useUnmergedTree = true).assertIsDisplayed()
         compose.onNodeWithText(text(R.string.onboarding_autostart_unverifiable)).assertIsDisplayed()
     }
@@ -157,33 +155,6 @@ class PermissionsScreenTest {
         show(PermissionsScreenFixtures.chainComplete())
 
         compose.onNodeWithTag(TAG_AUTOSTART_CONFIRM).assertIsOn()
-    }
-
-    @Test
-    fun thePlaqueAboutTheTestReminderStandsAboveTheControlThatStartsIt() {
-        show(PermissionsScreenFixtures.asDrawn())
-
-        // Критерий приёмки 8: человек узнаёт, что напоминание придёт через минуту,
-        // ДО того, как его поставит.
-        compose.onNodeWithTag(TAG_TEST_HINT, useUnmergedTree = true).assertIsDisplayed()
-        compose.onNodeWithText(text(R.string.onboarding_test_hint)).assertIsDisplayed()
-        compose.onNodeWithTag(TAG_TEST_REMINDER).assertIsDisplayed()
-        assertTrue(text(R.string.onboarding_test_hint).contains("через минуту"))
-    }
-
-    @Test
-    fun theStartedTestReminderReportsWhenItWillArrive() {
-        show(PermissionsScreenFixtures.testReminderScheduled())
-
-        compose.onNodeWithTag(TAG_TEST_PLANNED).assertIsDisplayed()
-        compose.onNodeWithText(context.getString(R.string.onboarding_test_planned, "10:01")).assertIsDisplayed()
-    }
-
-    @Test
-    fun anUndeliveredTestReminderIsAnInvitationBackAndNotAVerdict() {
-        show(PermissionsScreenFixtures.testReminderScheduled())
-
-        compose.onNodeWithText(text(R.string.onboarding_test_not_delivered)).assertIsDisplayed()
     }
 
     @Test
@@ -259,16 +230,6 @@ class PermissionsScreenTest {
     }
 
     @Test
-    fun theTestReminderControlReachesTheModel() {
-        var started = 0
-        show(PermissionsScreenFixtures.asDrawn(), PermissionsScreenFixtures.actions(onTestReminder = { started++ }))
-
-        compose.onNodeWithTag(TAG_TEST_REMINDER).performClick()
-
-        assertEquals(1, started)
-    }
-
-    @Test
     fun bothWaysOutReachTheModel() {
         var next = 0
         var skip = 0
@@ -325,10 +286,6 @@ class PermissionsScreenTest {
         assertEquals("Есть", text(R.string.onboarding_state_granted))
         assertEquals("Разрешить", text(R.string.onboarding_action_allow))
         assertEquals("Открыть настройки", text(R.string.onboarding_action_open_settings))
-        assertEquals(
-            "Проверить можно сразу: пришлём тестовое напоминание через минуту.",
-            text(R.string.onboarding_test_hint),
-        )
         assertEquals("Дальше", text(R.string.onboarding_action_next))
         assertEquals("Пропустить, настрою позже", text(R.string.onboarding_action_skip))
     }

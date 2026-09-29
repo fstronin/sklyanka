@@ -6,7 +6,6 @@ import ru.stohastika.sklyanka.domain.onboarding.OnboardingSource
 import ru.stohastika.sklyanka.domain.onboarding.PermissionChecklist
 import ru.stohastika.sklyanka.domain.onboarding.PermissionStep
 import ru.stohastika.sklyanka.domain.onboarding.StepState
-import java.time.Instant
 
 /**
  * Что показывает экран разрешений.
@@ -19,8 +18,6 @@ import java.time.Instant
 data class OnboardingUiState(
     val source: OnboardingSource,
     val checklist: PermissionChecklist? = null,
-    /** Момент, на который поставлено пробное напоминание — подтверждение нажатия (НАП-22). */
-    val testReminderAt: Instant? = null,
     /**
      * Показывать ли текстовую инструкцию вместо обещания открыть системный экран.
      *

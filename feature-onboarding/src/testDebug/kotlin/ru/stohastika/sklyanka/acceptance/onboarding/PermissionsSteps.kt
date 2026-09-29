@@ -198,11 +198,11 @@ class PermissionsSteps(private val world: AcceptanceWorld) {
         assertAutostartUnresolved()
     }
 
-    @И("^приложение объясняет, что проверить настройку можно только пробным напоминанием$")
+    @И("^приложение прямо говорит, что проверить эту настройку оно не может$")
     fun theAppExplainsTheOnlyProof() {
         assertTrue(
             showsText(string(R.string.onboarding_autostart_unverifiable)),
-            "the third step must say the test reminder is the only proof (НАП-20)",
+            "the third step must say the app cannot check it (НАП-20)",
         )
     }
 
@@ -346,12 +346,9 @@ class PermissionsSteps(private val world: AcceptanceWorld) {
                         actions = PermissionsActions(
                             onStepAction = {},
                             onAutostartConfirmed = {},
-                            onTestReminder = {},
                             onNext = {},
                             onSkip = {},
                         ),
-                        toLocal = { instant: Instant -> instant.atZone(world.clock.zone).toLocalDateTime() },
-                        modifier = Modifier.fillMaxSize(),
                     )
                 }
             }

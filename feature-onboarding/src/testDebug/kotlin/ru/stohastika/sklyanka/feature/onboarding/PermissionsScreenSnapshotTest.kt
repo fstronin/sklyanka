@@ -55,7 +55,6 @@ class PermissionsScreenSnapshotTest {
         PermissionsScreen(
             state = state,
             actions = PermissionsScreenFixtures.actions(),
-            toLocal = PermissionsScreenFixtures::toLocal,
         )
     }
 

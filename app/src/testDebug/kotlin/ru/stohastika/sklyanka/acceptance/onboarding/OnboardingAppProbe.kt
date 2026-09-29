@@ -103,11 +103,9 @@ internal object OnboardingAppProbe {
                         }
                     },
                     onAutostartConfirmed = { confirmed -> onAction { model(world).onAutostartConfirmed(confirmed) } },
-                    onTestReminder = { onAction { model(world).onTestReminder() } },
                     onNext = { onAction { model(world).onNext() } },
                     onSkip = { onAction { model(world).onSkip() } },
                 ),
-                toLocal = { instant: Instant -> instant.atZone(world.clock.zone).toLocalDateTime() },
             )
         }
     }
@@ -184,10 +182,8 @@ internal object OnboardingAppProbe {
         ),
         confirmAutostart = ConfirmAutostartUseCase(world.onboarding, world.onboarding),
         leaveOnboarding = LeaveOnboardingUseCase(world.onboarding, world.onboarding),
-        testReminder = TestReminderUseCase(world.reminders.alarms, world.clock.time),
         navigator = navigator,
         log = world.onboarding,
-        time = world.clock.time,
     )
 
     private fun buildDiagnostics(world: AcceptanceWorld): DiagnosticsViewModel = DiagnosticsViewModel(

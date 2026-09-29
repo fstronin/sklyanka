@@ -7,8 +7,6 @@ import ru.stohastika.sklyanka.domain.onboarding.PermissionChecklist
 import ru.stohastika.sklyanka.domain.onboarding.PermissionGrant
 import ru.stohastika.sklyanka.domain.onboarding.PermissionStep
 import java.time.Instant
-import java.time.LocalDateTime
-import java.time.ZoneId
 
 /**
  * Заготовки состояний экрана разрешений.
@@ -19,7 +17,6 @@ import java.time.ZoneId
 internal object PermissionsScreenFixtures {
 
     val READ_AT: Instant = Instant.parse("2026-09-25T07:00:00Z")
-    val ZONE: ZoneId = ZoneId.of("Europe/Moscow")
 
     /** Состояние макета: уведомления выданы, точные будильники нет, автозапуск не подтверждён. */
     fun asDrawn(): OnboardingUiState = state(
@@ -52,9 +49,6 @@ internal object PermissionsScreenFixtures {
     /** Прошивка, на которой системный раздел автозапуска не открылся. */
     fun withInstructions(): OnboardingUiState = state().copy(showAutostartInstructions = true)
 
-    /** Пробное напоминание поставлено: человек видит, когда оно придёт. */
-    fun testReminderScheduled(): OnboardingUiState = state().copy(testReminderAt = READ_AT.plusSeconds(SIXTY))
-
     /** Разрешение, выданное ранее, отозвано в системных настройках. */
     fun revoked(): OnboardingUiState = state(notifications = PermissionGrant.Denied(canAsk = true))
         .copy(revoked = listOf(PermissionStep.NOTIFICATIONS))
@@ -69,22 +63,16 @@ internal object PermissionsScreenFixtures {
         checklist = PermissionChecklist(notifications, exactAlarms, autostart),
     )
 
-    fun toLocal(instant: Instant): LocalDateTime = instant.atZone(ZONE).toLocalDateTime()
-
     /** Действия-заглушки: состав экрана проверяется отдельно от переходов. */
     fun actions(
         onStepAction: (PermissionStep) -> Unit = {},
         onAutostartConfirmed: (Boolean) -> Unit = {},
-        onTestReminder: () -> Unit = {},
         onNext: () -> Unit = {},
         onSkip: () -> Unit = {},
     ): PermissionsActions = PermissionsActions(
         onStepAction = onStepAction,
         onAutostartConfirmed = onAutostartConfirmed,
-        onTestReminder = onTestReminder,
         onNext = onNext,
         onSkip = onSkip,
     )
-
-    private const val SIXTY = 60L
 }

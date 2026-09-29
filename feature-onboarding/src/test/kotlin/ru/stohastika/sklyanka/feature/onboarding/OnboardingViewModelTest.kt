@@ -17,10 +17,6 @@ import ru.stohastika.sklyanka.domain.onboarding.AutostartHint
 import ru.stohastika.sklyanka.domain.onboarding.AutostartOpenResult
 import ru.stohastika.sklyanka.domain.onboarding.OnboardingSource
 import ru.stohastika.sklyanka.domain.onboarding.PermissionStep
-import ru.stohastika.sklyanka.domain.reminder.ReminderChannel
-import ru.stohastika.sklyanka.domain.reminder.ReminderEvent
-import ru.stohastika.sklyanka.domain.reminder.ReminderLogEntry
-import ru.stohastika.sklyanka.domain.reminder.TestReminderUseCase
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPermission
 
 /**
@@ -173,13 +169,12 @@ class OnboardingViewModelTest {
     }
 
     @Test
-    fun `the autostart step stays unresolved with every hint in place`() = runTest(dispatcher) {
+    fun `the autostart step stays unresolved with the battery hint in place`() = runTest(dispatcher) {
         world.hints.batteryIgnored = true
-        world.journal.record(deliveredTestReminder())
 
         val autostart = started().state.value.checklist!!.autostart
 
-        assertEquals(AutostartHint.entries.toSet(), autostart.hints)
+        assertEquals(setOf(AutostartHint.BATTERY_OPTIMIZATION_IGNORED), autostart.hints)
         assertFalse("REMINDER-20: hints never resolve the step", autostart.isResolved)
         assertFalse(autostart.verifiedBySystem)
     }
@@ -206,32 +201,6 @@ class OnboardingViewModelTest {
         model.settle()
 
         assertFalse(model.state.value.showAutostartInstructions)
-    }
-
-    @Test
-    fun `the test reminder goes through the operation of SKL-13 and lands a minute later`() = runTest(dispatcher) {
-        val model = started()
-
-        model.onTestReminder()
-        model.settle()
-
-        val expected = OnboardingTestWorld.NOW.plus(TestReminderUseCase.DELAY)
-        assertEquals(expected, world.alarms.test)
-        assertEquals(expected, model.state.value.testReminderAt)
-        assertTrue(world.log.records.any { it.startsWith("test:FIRST_LAUNCH:") })
-    }
-
-    @Test
-    fun `the test reminder creates no intake and touches no plan`() = runTest(dispatcher) {
-        val model = started()
-
-        model.onTestReminder()
-        model.settle()
-
-        // Записи приёма нет по построению: у сценария нет ни одного порта, умеющего
-        // писать в приёмы (НАП-22). Здесь проверяется, что и план он не трогает.
-        assertTrue(world.alarms.scheduled.isEmpty())
-        assertTrue(world.journal.entries.isEmpty())
     }
 
     @Test
@@ -315,16 +284,5 @@ class OnboardingViewModelTest {
 
         assertEquals(1, world.log.records.count { it.startsWith("opened:") })
         assertTrue(world.log.records.contains("opened:SETTINGS:1"))
-    }
-
-    private fun deliveredTestReminder() = ReminderLogEntry(
-        occurredAt = OnboardingTestWorld.NOW.minusSeconds(SOME_MINUTES),
-        event = ReminderEvent.TEST,
-        channel = ReminderChannel.REGULAR,
-        delivered = true,
-    )
-
-    private companion object {
-        const val SOME_MINUTES = 600L
     }
 }

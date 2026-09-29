@@ -41,7 +41,6 @@ import ru.stohastika.sklyanka.feature.settings.transfer.TransferReportScreen
 import ru.stohastika.sklyanka.feature.settings.transfer.TransferUiState
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import java.time.Instant
-import java.time.ZoneId
 
 /**
  * Стенд композиции переноса (SKL-19, группа `@composition`).
@@ -168,7 +167,6 @@ internal object TransferAppProbe {
                     PermissionsScreen(
                         state = permissionsState(),
                         actions = permissionsActions(),
-                        toLocal = { instant: Instant -> instant.atZone(ZONE).toLocalDateTime() },
                     )
                 }
             }
@@ -212,7 +210,6 @@ internal object TransferAppProbe {
     private fun permissionsActions(): PermissionsActions = PermissionsActions(
         onStepAction = {},
         onAutostartConfirmed = {},
-        onTestReminder = {},
         onNext = {},
         onSkip = {},
     )
@@ -259,8 +256,6 @@ internal object TransferAppProbe {
     fun dropMainDispatcher() {
         Dispatchers.resetMain()
     }
-
-    private val ZONE: ZoneId = ZoneId.of("Europe/Moscow")
 
     /** Контекст в шагах: строки экрана разрешений берутся из него. */
     val context: Context get() = ApplicationProvider.getApplicationContext()

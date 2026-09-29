@@ -32,32 +32,23 @@ import ru.stohastika.sklyanka.ui.component.CheckGlyph
 import ru.stohastika.sklyanka.ui.component.OnboardingSteps
 import ru.stohastika.sklyanka.ui.component.PrimaryButton
 import ru.stohastika.sklyanka.ui.component.QuietButton
-import ru.stohastika.sklyanka.ui.component.SecondaryButton
 import ru.stohastika.sklyanka.ui.component.SklyankaSwitchRow
-import ru.stohastika.sklyanka.ui.locale.InterfaceLocale
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaShapes
 import ru.stohastika.sklyanka.ui.token.SklyankaSizes
 import ru.stohastika.sklyanka.ui.token.SklyankaSpacing
 import ru.stohastika.sklyanka.ui.token.SklyankaType
-import java.time.Instant
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
 /**
- * Экран разрешений EMUI (НАП-19 … НАП-22, ПЛ-18, ПЛ-19).
+ * Экран разрешений EMUI (НАП-19 … НАП-21, ПЛ-18).
  *
- * Состав и тексты — из `design/screens/Onboarding.dc.html` (критерий приёмки 21). Три
+ * Состав и тексты — из `design/screens/Onboarding.dc.html` (критерий приёмки 21). Два
  * отступления от макета, каждое объявлено вслух:
  *
- * 1. **Кнопка запуска пробного напоминания.** Макет обещает напоминание плашкой и не содержит
- *    элемента, который бы его запустил (ОВ-50). Без такого элемента третий шаг нечем проверить
- *    (ПЛ-19), а автоматическая постановка превращала бы проверку в лотерею: человек не знает,
- *    что телефон зазвонит через минуту, и, убрав телефон, событие пропустит.
- * 2. **Подтверждение автозапуска переключателем** (ОВ-53). НАП-20 требует «предложить
+ * 1. **Подтверждение автозапуска переключателем** (ОВ-53). НАП-20 требует «предложить
  *    подтвердить выполнение вручную»; переключатель, а не кнопка, потому что подтверждение
  *    обязано сниматься.
- * 3. **Кнопка «Дальше» цвета акцента, а не тёмная.** В макете она `#241F1B`; роли «тёмная
+ * 2. **Кнопка «Дальше» цвета акцента, а не тёмная.** В макете она `#241F1B`; роли «тёмная
  *    кнопка» в дизайн-системе нет (`docs/spec/08-design-system.md` §4.3), а завести её здесь
  *    значило бы придумать токен по месту (НФТ-47).
  */
@@ -65,7 +56,6 @@ import java.time.format.DateTimeFormatter
 fun PermissionsScreen(
     state: OnboardingUiState,
     actions: PermissionsActions,
-    toLocal: (Instant) -> LocalDateTime,
     modifier: Modifier = Modifier,
 ) {
     val colors = SklyankaTheme.colors
@@ -92,7 +82,6 @@ fun PermissionsScreen(
                     showInstructions = state.showAutostartInstructions,
                 )
             }
-            TestReminderBlock(state, actions, toLocal)
             Revocations(state)
             if (state.checklist?.remindersUnreliable == true) {
                 Banner(
@@ -305,74 +294,10 @@ private fun HintRow(hint: AutostartHint) {
         val label = stringResource(R.string.cd_onboarding_hint)
         InfoGlyph(color = colors.textMuted, modifier = Modifier.semantics { contentDescription = label })
         Text(
-            text = stringResource(
-                when (hint) {
-                    AutostartHint.BATTERY_OPTIMIZATION_IGNORED -> R.string.onboarding_hint_battery
-                    AutostartHint.TEST_REMINDER_DELIVERED -> R.string.onboarding_hint_test_delivered
-                },
-            ),
+            text = stringResource(R.string.onboarding_hint_battery),
             style = SklyankaType.Caption,
             color = colors.textMuted,
         )
-    }
-}
-
-/**
- * Плашка «Проверить можно сразу…» и то, чем это делается (НАП-22, ПЛ-19, ОВ-50).
- *
- * Обещание стоит **выше** кнопки: человек узнаёт, что напоминание придёт через минуту,
- * до того как его поставит (критерий приёмки 8).
- */
-@Composable
-private fun TestReminderBlock(
-    state: OnboardingUiState,
-    actions: PermissionsActions,
-    toLocal: (Instant) -> LocalDateTime,
-) {
-    val colors = SklyankaTheme.colors
-    Column(verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Small)) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Default),
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(colors.neutralSoft, SklyankaShapes.Large)
-                .padding(
-                    horizontal = SklyankaSizes.BannerPaddingHorizontal,
-                    vertical = SklyankaSizes.BannerPaddingVertical,
-                )
-                .testTag(TAG_TEST_HINT),
-        ) {
-            InfoGlyph(color = colors.textMuted)
-            Text(
-                text = stringResource(R.string.onboarding_test_hint),
-                style = SklyankaType.Caption,
-                color = colors.textMuted,
-            )
-        }
-        SecondaryButton(
-            text = stringResource(R.string.onboarding_action_test_reminder),
-            onClick = actions.onTestReminder,
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag(TAG_TEST_REMINDER),
-        )
-        state.testReminderAt?.let { at ->
-            val pattern = DateTimeFormatter.ofPattern(
-                stringResource(R.string.onboarding_test_time_pattern),
-                InterfaceLocale.VALUE,
-            )
-            Text(
-                text = stringResource(R.string.onboarding_test_planned, toLocal(at).format(pattern)),
-                style = SklyankaType.Caption,
-                color = colors.textMuted,
-                modifier = Modifier.testTag(TAG_TEST_PLANNED),
-            )
-            Text(
-                text = stringResource(R.string.onboarding_test_not_delivered),
-                style = SklyankaType.Caption,
-                color = colors.textMuted,
-            )
-        }
     }
 }
 
@@ -435,7 +360,6 @@ private fun Footer(actions: PermissionsActions) {
 data class PermissionsActions(
     val onStepAction: (PermissionStep) -> Unit,
     val onAutostartConfirmed: (Boolean) -> Unit,
-    val onTestReminder: () -> Unit,
     val onNext: () -> Unit,
     val onSkip: () -> Unit,
 )
@@ -496,9 +420,6 @@ const val TAG_AUTOSTART_UNVERIFIABLE = "permissions_autostart_unverifiable"
 const val TAG_AUTOSTART_INSTRUCTIONS = "permissions_autostart_instructions"
 const val TAG_AUTOSTART_CONFIRM = "permissions_autostart_confirm"
 const val TAG_AUTOSTART_HINT = "permissions_autostart_hint"
-const val TAG_TEST_HINT = "permissions_test_hint"
-const val TAG_TEST_REMINDER = "permissions_test_reminder"
-const val TAG_TEST_PLANNED = "permissions_test_planned"
 const val TAG_UNRELIABLE = "permissions_unreliable"
 const val TAG_REVOKED = "permissions_revoked"
 const val TAG_NEXT = "permissions_next"

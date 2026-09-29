@@ -14,7 +14,6 @@ import ru.stohastika.sklyanka.domain.onboarding.port.OnboardingStateStore
 import ru.stohastika.sklyanka.domain.onboarding.port.PermissionRequestSupport
 import ru.stohastika.sklyanka.domain.reminder.ReminderEvent
 import ru.stohastika.sklyanka.domain.reminder.ReminderLogEntry
-import ru.stohastika.sklyanka.domain.reminder.TestReminderUseCase
 import ru.stohastika.sklyanka.domain.reminder.port.AlarmGateway
 import ru.stohastika.sklyanka.domain.reminder.port.PermissionState
 import ru.stohastika.sklyanka.domain.reminder.port.PermissionStateReader
@@ -55,10 +54,8 @@ internal class OnboardingTestWorld(now: Instant = NOW, zone: ZoneId = ZoneId.of(
         readChecklist = readChecklist,
         confirmAutostart = ConfirmAutostartUseCase(store, log),
         leaveOnboarding = LeaveOnboardingUseCase(store, log),
-        testReminder = TestReminderUseCase(alarms = alarms, time = time),
         navigator = navigator,
         log = log,
-        time = time,
     )
 
     companion object {

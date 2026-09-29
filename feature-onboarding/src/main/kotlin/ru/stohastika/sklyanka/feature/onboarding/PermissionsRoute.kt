@@ -50,11 +50,9 @@ fun PermissionsRoute(
                 if (viewModel.onStepAction(step)) requestNotifications.launch(POST_NOTIFICATIONS)
             },
             onAutostartConfirmed = viewModel::onAutostartConfirmed,
-            onTestReminder = viewModel::onTestReminder,
             onNext = viewModel::onNext,
             onSkip = viewModel::onSkip,
         ),
-        toLocal = viewModel::local,
         modifier = modifier,
     )
 }

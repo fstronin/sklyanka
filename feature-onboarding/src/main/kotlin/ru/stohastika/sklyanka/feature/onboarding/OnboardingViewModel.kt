@@ -20,35 +20,25 @@ import ru.stohastika.sklyanka.domain.onboarding.RevokedPermissions
 import ru.stohastika.sklyanka.domain.onboarding.StepAction
 import ru.stohastika.sklyanka.domain.onboarding.actionFor
 import ru.stohastika.sklyanka.domain.onboarding.port.OnboardingLog
-import ru.stohastika.sklyanka.domain.reminder.TestReminderUseCase
-import ru.stohastika.sklyanka.domain.time.TimeSource
-import java.time.Instant
-import java.time.LocalDateTime
 import javax.inject.Inject
 
 /**
- * Экран разрешений (НАП-19 … НАП-22).
+ * Экран разрешений (НАП-19 … НАП-21).
  *
- * Две вещи, которые эта модель делает и которые важнее остального кода задачи.
+ * Главное, что эта модель делает и что важнее остального кода задачи.
  *
  * **Состояние читается, а не помнится.** [refresh] спрашивает систему при открытии экрана
  * и при каждом возврате приложения на передний план: человек уходит выдавать разрешение
  * в системные настройки и возвращается, и карточка обязана измениться без перезахода
  * (критерии приёмки 4 и 16). Разрешение, отозванное через месяц, замечается тем же способом.
- *
- * **Пробное напоминание не переписывается.** Операция принадлежит SKL-13
- * ([TestReminderUseCase]); здесь только место вызова и обещание «придёт через минуту»,
- * данное человеку **до** постановки (НАП-22, ПЛ-19).
  */
 @HiltViewModel
 class OnboardingViewModel @Inject constructor(
     private val readChecklist: ReadPermissionChecklistUseCase,
     private val confirmAutostart: ConfirmAutostartUseCase,
     private val leaveOnboarding: LeaveOnboardingUseCase,
-    private val testReminder: TestReminderUseCase,
     private val navigator: SystemSettingsNavigator,
     private val log: OnboardingLog,
-    private val time: TimeSource,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(OnboardingUiState(source = OnboardingSource.FIRST_LAUNCH))
@@ -149,20 +139,6 @@ class OnboardingViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Пробное напоминание через минуту (НАП-22, ПЛ-19).
-     *
-     * Обещание «придёт через минуту» стоит на экране до нажатия — плашкой из макета, —
-     * поэтому человек знает, что телефон сейчас зазвонит (критерий приёмки 8).
-     */
-    fun onTestReminder() {
-        viewModelScope.launch {
-            val at = testReminder()
-            log.testReminderStarted(_state.value.source, at)
-            _state.update { it.copy(testReminderAt = at) }
-        }
-    }
-
     /** «Дальше»: при пройденной цепочке — подключение часов, иначе — «Сегодня». */
     fun onNext() {
         leave(OnboardingOutcome.NEXT)
@@ -172,9 +148,6 @@ class OnboardingViewModel @Inject constructor(
     fun onSkip() {
         leave(OnboardingOutcome.SKIPPED)
     }
-
-    /** Местное время момента: пробное напоминание человек читает в своём поясе. */
-    fun local(instant: Instant): LocalDateTime = instant.atZone(time.zone()).toLocalDateTime()
 
     private fun leave(outcome: OnboardingOutcome) {
         viewModelScope.launch {
