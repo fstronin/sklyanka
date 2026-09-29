@@ -97,6 +97,8 @@ internal class ReminderTestWorld(zone: ZoneId = MOSCOW) {
         cards = plan,
         notifications = notifications,
         watch = watch,
+        deferred = deferred,
+        alarms = alarms,
     )
 
     val diagnostics = BuildReminderDiagnosticsUseCase(

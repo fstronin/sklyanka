@@ -2,6 +2,7 @@ package ru.stohastika.sklyanka.domain.reminder
 
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -89,6 +90,58 @@ class DismissReminderUseCaseTest {
         assertEquals(IntakeStatus.TAKEN, world.stored().status)
         assertEquals(BigDecimal("29"), world.medication().stockLeft)
         assertTrue(world.notifications.cancelled.isNotEmpty())
+    }
+
+    // --- Отложенное срабатывание (SKL-35, ОВ-75) ----------------------------------------------
+
+    @Test
+    fun `a mark removes the deferred record and its alarm`() = runTest {
+        world.pending()
+        world.moveTo(LocalDateTime.of(2026, 9, 25, 14, 1))
+        world.snooze(Fixtures.INTAKE_ID, minutes = 15)
+        assertTrue(world.alarms.alarms.containsKey(Fixtures.INTAKE_ID), "the snooze must arm the repeat")
+
+        world.take()
+
+        assertTrue(world.deferred.stored.isEmpty(), "a closed intake has nothing to repeat")
+        assertNull(world.alarms.alarms[Fixtures.INTAKE_ID])
+    }
+
+    /**
+     * Обычный будильник будущего приёма отметка не трогает.
+     *
+     * Иначе отмена отметки (SKL-30) вернула бы приём ожидающимся без напоминания:
+     * будильник снят отметкой, а отмена его не ставит.
+     */
+    @Test
+    fun `a mark without a deferred record leaves the ordinary alarm alone`() = runTest {
+        world.pending(at = LocalDateTime.of(2026, 9, 25, 16, 0))
+        world.reschedule(RescheduleReason.APP_START)
+        world.moveTo(LocalDateTime.of(2026, 9, 25, 15, 0))
+
+        world.take()
+
+        assertEquals(
+            world.momentOf(LocalDateTime.of(2026, 9, 25, 16, 0)),
+            world.alarms.alarms[Fixtures.INTAKE_ID],
+            "an ordinary alarm of a future intake must survive the mark",
+        )
+        assertTrue(world.deferred.stored.isEmpty())
+    }
+
+    @Test
+    fun `a losing mark from the watch still closes the deferred reminder`() = runTest {
+        world.pending()
+        world.moveTo(LocalDateTime.of(2026, 9, 25, 14, 1))
+        world.snooze(Fixtures.INTAKE_ID, minutes = 15)
+        // Телефон отметил приём раньше, но последствий отметки в этом тесте не было:
+        // проверяется именно опоздавшая отметка с часов (гонка ПР-3, ЧАС-22).
+        world.intakes.put(world.stored().copy(status = IntakeStatus.TAKEN, actedAt = world.clock.now()))
+
+        world.takeOnWatch(at = world.momentOf(LocalDateTime.of(2026, 9, 25, 14, 2)))
+
+        assertTrue(world.deferred.stored.isEmpty(), "a late mark must still close the deferred reminder")
+        assertNull(world.alarms.alarms[Fixtures.INTAKE_ID])
     }
 }
 

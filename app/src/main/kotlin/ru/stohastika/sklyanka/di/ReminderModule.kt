@@ -151,11 +151,15 @@ object ReminderModule {
         cards: ReminderCardSource,
         notifications: NotificationGateway,
         watch: WatchGateway,
+        deferred: DeferredReminders,
+        alarms: AlarmGateway,
     ): DismissReminderUseCase = DismissReminderUseCase(
         plan = plan,
         cards = cards,
         notifications = notifications,
         watch = watch,
+        deferred = deferred,
+        alarms = alarms,
     )
 
     /**

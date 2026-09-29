@@ -259,10 +259,11 @@ class RescheduleKeepsDeferredAlarmsTest {
         world.snooze(Fixtures.INTAKE_ID, minutes = 15)
 
         world.take()
-        val outcome = world.reschedule(RescheduleReason.ALARM_FIRED)
 
+        // Отметка снимает отложенный будильник сама (SKL-35): к пересборке снимать нечего.
         assertTrue(world.alarms.alarms.isEmpty())
-        assertEquals(1, outcome.cancelled)
+        val outcome = world.reschedule(RescheduleReason.ALARM_FIRED)
+        assertEquals(0, outcome.cancelled, "the mark has already cancelled the deferred alarm")
     }
 
     @Test

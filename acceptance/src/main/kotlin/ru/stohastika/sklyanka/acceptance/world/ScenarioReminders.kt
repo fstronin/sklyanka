@@ -187,7 +187,7 @@ class ScenarioReminders(
      * отметку выполняет, а закрывает карточку она сама.
      */
     fun markSideEffects(): MarkSideEffects = MarkSideEffects { intakeId ->
-        DismissReminderUseCase(PlanSource(), PlanSource(), notifications, watch)(intakeId)
+        DismissReminderUseCase(PlanSource(), PlanSource(), notifications, watch, deferredStore, alarms)(intakeId)
     }
 
     /** Откладывание — тем же сценарием домена, что у экрана напоминания (НАП-30). */
