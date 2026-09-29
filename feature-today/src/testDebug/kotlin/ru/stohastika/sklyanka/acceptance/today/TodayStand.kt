@@ -21,6 +21,7 @@ import ru.stohastika.sklyanka.domain.today.TodayLayout
 import ru.stohastika.sklyanka.feature.today.TodayUiState
 import ru.stohastika.sklyanka.feature.today.TodayViewModel
 import ru.stohastika.sklyanka.feature.today.UndoNotice
+import java.time.LocalDateTime
 import java.time.LocalTime
 
 /**
@@ -92,12 +93,22 @@ internal object TodayStand {
                 layout = agenda.layout,
                 prn = agenda.prn,
                 toggledSections = toggles.toggledSections,
-                expandedGroups = toggles.expandedGroups,
+                confirmingGroup = toggles.confirmationAt(world.clock.nowLocal()),
                 prnCollapsed = toggles.prnCollapsed,
                 nothingToday = agenda.hasNothingToday,
             )
         }
     }
+
+    /**
+     * Подтверждение групповой отметки живо, пока часы стенда не дошли до дедлайна.
+     *
+     * Таймер живёт в `TodayViewModel` и в стенде не крутится: сценарий сам двигает
+     * `ScenarioClock`, а срок зеркалится дедлайном ([TodayScreenToggles.confirmingUntil],
+     * `TDD.md §14.2`).
+     */
+    private fun TodayScreenToggles.confirmationAt(now: LocalDateTime): LocalTime? =
+        confirming?.takeIf { confirmingUntil != null && now < confirmingUntil }
 
     /**
      * Надёжность напоминаний — тем же доменным сценарием, что в `TodayViewModel`.
@@ -168,9 +179,14 @@ internal object TodayStand {
  * В продукте они живут в потоке `TodayViewModel` и переживают пересборку повестки дня
  * (`TDD.md §5.2`). Стенд собирает экран заново на каждый шаг, поэтому накопленное
  * хранит [TodayScreenProbe] между шагами сценария, а состояние принимает готовым.
+ *
+ * Подтверждение групповой отметки — тоже зрительное состояние (`TDD.md §14.2`):
+ * [confirmingUntil] — зеркало десятисекундного срока `TodayViewModel`, а не второй
+ * таймер: часы двигает сам сценарий.
  */
 data class TodayScreenToggles(
     val toggledSections: Set<PartOfDay> = emptySet(),
-    val expandedGroups: Set<LocalTime> = emptySet(),
+    val confirming: LocalTime? = null,
+    val confirmingUntil: LocalDateTime? = null,
     val prnCollapsed: Boolean = false,
 )

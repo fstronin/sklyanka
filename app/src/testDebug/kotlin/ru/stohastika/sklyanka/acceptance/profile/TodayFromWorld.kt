@@ -56,7 +56,7 @@ internal object TodayFromWorld {
                 layout = agenda.layout,
                 prn = agenda.prn,
                 toggledSections = emptySet(),
-                expandedGroups = emptySet(),
+                confirmingGroup = null,
                 prnCollapsed = false,
                 nothingToday = agenda.hasNothingToday,
             )

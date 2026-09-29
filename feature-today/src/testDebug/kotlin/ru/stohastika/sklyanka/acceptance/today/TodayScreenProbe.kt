@@ -1,5 +1,6 @@
 package ru.stohastika.sklyanka.acceptance.today
 
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
@@ -21,7 +22,9 @@ import ru.stohastika.sklyanka.feature.today.TodayIntent
 import ru.stohastika.sklyanka.feature.today.TodayScreen
 import ru.stohastika.sklyanka.feature.today.TodayUiState
 import ru.stohastika.sklyanka.ui.component.TAG_INTAKE_CARD
+import ru.stohastika.sklyanka.ui.theme.ProfileAccent
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
+import java.time.LocalTime
 
 /**
  * Стенд главного экрана для шагов приёмки: собранная композиция и намерения человека.
@@ -56,6 +59,11 @@ internal object TodayScreenProbe {
     /** Состояние, которое продукт показал бы сейчас. */
     fun state(world: AcceptanceWorld): TodayUiState = TodayStand.state(world, togglesFor(world))
 
+    /** Уход с «Сегодня»: подтверждение гаснет тем же `onScreenLeft`, что в продукте (ОВ-32). */
+    fun leaveScreen() {
+        clearConfirmation()
+    }
+
     private fun togglesFor(world: AcceptanceWorld): TodayScreenToggles {
         if (lastWorld !== world) {
             lastWorld = world
@@ -73,6 +81,28 @@ internal object TodayScreenProbe {
         }
         @Suppress("UNCHECKED_CAST")
         return answer as T
+    }
+
+    /** Собрать экран в оформлении чужого профиля и задать вопрос его композиции (ПРФ-11). */
+    fun <T> askInProfile(world: AcceptanceWorld, accent: ProfileAccent, question: (ComposeUiTest) -> T): T {
+        var answer: T? = null
+        runComposeUiTest {
+            setContent {
+                SklyankaTheme(profile = accent) { TodayScreen(state = state(world), onIntent = {}) }
+            }
+            answer = question(this)
+        }
+        @Suppress("UNCHECKED_CAST")
+        return answer as T
+    }
+
+    /** Акцент темы в названном оформлении — так же, как его читает кнопка (ПРФ-11). */
+    fun accentIn(accent: ProfileAccent): Color {
+        var captured: Color? = null
+        runComposeUiTest {
+            setContent { SklyankaTheme(profile = accent) { captured = SklyankaTheme.colors.accent } }
+        }
+        return requireNotNull(captured) { "the theme did not provide the accent" }
     }
 
     /**
@@ -162,29 +192,89 @@ internal object TodayScreenProbe {
      */
     fun apply(world: AcceptanceWorld, intent: TodayIntent) {
         when (intent) {
-            is TodayIntent.MarkTaken -> mark(world, intent.intakeId, MarkResult.TAKEN)
-            is TodayIntent.MarkSkipped -> mark(world, intent.intakeId, MarkResult.SKIPPED)
-            is TodayIntent.MarkGroupTaken -> markTheGroup(world, intent.intakeIds)
-            is TodayIntent.UndoMark -> undo(world, intent.intakeIds)
-            is TodayIntent.TakePrn -> world.pressTakeOnDemand(nameOf(world, intent.medicationId))
+            is TodayIntent.MarkTaken -> {
+                clearConfirmation()
+                mark(world, intent.intakeId, MarkResult.TAKEN)
+            }
 
-            // Свёртка и разворот — зрительная часть состояния: в продукте её ведёт
-            // `TodayViewModel` (`TDD.md §5.2`), в стенде — сам стенд.
-            is TodayIntent.ExpandGroup -> toggles = toggles.copy(expandedGroups = toggles.expandedGroups + intent.time)
-            is TodayIntent.ToggleSection -> toggles = toggles.copy(
-                toggledSections = if (intent.partOfDay in toggles.toggledSections) {
-                    toggles.toggledSections - intent.partOfDay
-                } else {
-                    toggles.toggledSections + intent.partOfDay
-                },
-            )
+            is TodayIntent.MarkSkipped -> {
+                clearConfirmation()
+                mark(world, intent.intakeId, MarkResult.SKIPPED)
+            }
 
-            TodayIntent.TogglePrnBlock -> toggles = toggles.copy(prnCollapsed = !toggles.prnCollapsed)
+            is TodayIntent.MarkGroupTaken -> {
+                clearConfirmation()
+                markTheGroup(world, intent.intakeIds)
+            }
+
+            is TodayIntent.UndoMark -> {
+                clearConfirmation()
+                undo(world, intent.intakeIds)
+            }
+
+            is TodayIntent.TakePrn -> {
+                clearConfirmation()
+                world.pressTakeOnDemand(nameOf(world, intent.medicationId))
+            }
+
+            // Подтверждение, свёртка и разворот — зрительная часть состояния: в продукте
+            // её ведёт `TodayViewModel` (`TDD.md §5.2`), в стенде — сам стенд.
+            is TodayIntent.ArmGroupMark -> {
+                // Арм — первое действие сценария «подтверждение снимается»: снимок
+                // остатков берётся до него, им проверяется «остатки не изменились».
+                world.rememberState()
+                armConfirmation(world, intent.time)
+            }
+
+            TodayIntent.DismissGroupConfirm -> clearConfirmation()
+
+            is TodayIntent.ToggleSection -> {
+                clearConfirmation()
+                toggles = toggles.copy(
+                    toggledSections = if (intent.partOfDay in toggles.toggledSections) {
+                        toggles.toggledSections - intent.partOfDay
+                    } else {
+                        toggles.toggledSections + intent.partOfDay
+                    },
+                )
+            }
+
+            TodayIntent.TogglePrnBlock -> {
+                clearConfirmation()
+                toggles = toggles.copy(prnCollapsed = !toggles.prnCollapsed)
+            }
 
             // Переходы наружу состояние экрана не меняют: их разбирает маршрут, и
             // приёмка «Сегодня» их не проверяет.
             else -> Unit
         }
+    }
+
+    /**
+     * Арм батча: подтверждение с зеркальным дедлайном.
+     *
+     * Десять секунд — срок `TodayViewModel` (`CONFIRM_WINDOW_MS`); сам таймер в стенде
+     * не крутится, его заменяет сравнение с часами сценария ([TodayStand.state]).
+     */
+    private fun armConfirmation(world: AcceptanceWorld, time: LocalTime) {
+        toggles = toggles.copy(
+            confirming = time,
+            confirmingUntil = world.clock.nowLocal().plusSeconds(CONFIRM_WINDOW_SECONDS),
+        )
+        // Проверки «ни один из трёх не отмечен» стоят сразу после арма: домену группа
+        // ещё не предъявлена, и стенд запоминает её ожидающие приёмы сам (ОВ-32).
+        world.intakes.lastArmedIds = world.intakes.ofProfile(world.profiles, world.profiles.active)
+            .filter {
+                it.isPending &&
+                    it.scheduledAt.toLocalDate() == world.clock.today() &&
+                    it.scheduledAt.toLocalTime() == time
+            }
+            .map { it.id }
+    }
+
+    /** Снятие подтверждения молча, как в `TodayViewModel`: приёмы не трогаются (ОВ-32). */
+    private fun clearConfirmation() {
+        toggles = toggles.copy(confirming = null, confirmingUntil = null)
     }
 
     private fun mark(world: AcceptanceWorld, intakeId: String, result: MarkResult) {
@@ -228,4 +318,7 @@ internal object TodayScreenProbe {
     private fun nameOf(world: AcceptanceWorld, medicationId: String): String = requireNotNull(
         world.medications.names().firstOrNull { world.medications.get(it).id == medicationId },
     ) { "unknown medication id: $medicationId" }
+
+    /** Срок подтверждения — зеркало `TodayViewModel.CONFIRM_WINDOW_MS` (TDD §14.2). */
+    private const val CONFIRM_WINDOW_SECONDS = 10L
 }

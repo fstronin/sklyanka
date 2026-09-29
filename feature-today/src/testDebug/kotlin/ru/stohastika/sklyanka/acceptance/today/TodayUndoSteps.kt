@@ -87,7 +87,7 @@ class TodayUndoSteps(private val world: AcceptanceWorld) {
     fun thePersonMarkedItTakenAndTheSnackbarIsShown(medication: String) {
         // Сценарий говорит о замене снэкбара, а не о вёрстке карточки: отметка идёт
         // тем же намерением экрана, что у нажатия, но без поиска карточки по имени —
-        // два приёма на одно время показываются групповой карточкой.
+        // приёмы одного времени показаны строками по одной (ОВ-32).
         val intake = requireNotNull(
             world.intakes.pendingOf(world.medicationNamed(medication))
                 .firstOrNull { it.scheduledAt.toLocalDate() == world.clock.today() },
@@ -123,10 +123,14 @@ class TodayUndoSteps(private val world: AcceptanceWorld) {
     @Когда("^(.+?) в (\\d{2}:\\d{2}(?::\\d{2})?) (?:человек )?нажимает «Отменить»(?: в снэкбаре)?$")
     fun thePersonPressesUndoInTheSnackbar(date: String, time: String) {
         world.clock.moveTo(world.localMoment(date, time))
-        TodayScreenProbe.act(world) { test ->
-            test.onNodeWithText(context.getString(R.string.today_undo_action), useUnmergedTree = true).performClick()
-        }
+        pressUndo()
     }
+
+    // Вариант без момента: SKL-31 говорит «нажимает „Отменить“ в снэкбаре», и часы
+    // уже стоят там, где нужно сценарию (TDD §14.3). Отдельным объявлением, а не
+    // необязательной группой: Cucumber считает аргументы по группам захвата.
+    @Когда("^(?:человек )?нажимает «Отменить» в снэкбаре$")
+    fun thePersonPressesUndoInTheSnackbarWithoutMoment() = pressUndo()
 
     @Когда("^(.+?) в (\\d{2}:\\d{2}(?::\\d{2})?) человек отмечает приём «([^»]+)» пропущенным$")
     fun thePersonMarksThatIntakeSkipped(date: String, time: String, medication: String) {
@@ -135,8 +139,8 @@ class TodayUndoSteps(private val world: AcceptanceWorld) {
             world.intakes.pendingOf(world.medicationNamed(medication))
                 .firstOrNull { it.scheduledAt.toLocalDate() == world.clock.today() },
         ) { "no pending intake of $medication" }
-        // Отметка идёт намерением экрана: два приёма на одно время показаны групповой
-        // карточкой, и сценарий говорит о снэкбаре, а не о вёрстке группы.
+        // Отметка идёт намерением экрана: приёмы одного времени показаны строками
+        // по одной, и сценарий говорит о снэкбаре, а не о вёрстке группы.
         TodayScreenProbe.apply(world, TodayIntent.MarkSkipped(intake.id))
         assertEquals("intake of $medication", IntakeStatus.SKIPPED, world.intakes.get(intake.id)?.status)
     }
@@ -267,6 +271,13 @@ class TodayUndoSteps(private val world: AcceptanceWorld) {
     }
 
     // --- Обвязка ---------------------------------------------------------------------------
+
+    /** «Отменить» в снэкбаре: экран отдаёт намерение, стенд применяет его к миру. */
+    private fun pressUndo() {
+        TodayScreenProbe.act(world) { test ->
+            test.onNodeWithText(context.getString(R.string.today_undo_action), useUnmergedTree = true).performClick()
+        }
+    }
 
     /** Нажатие кнопки в карточке: экран отдаёт намерение, стенд применяет его к миру. */
     private fun pressInCard(medication: String, label: Int) {

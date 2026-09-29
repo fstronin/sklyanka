@@ -5,6 +5,7 @@ import io.cucumber.java.en.Then
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import ru.stohastika.sklyanka.acceptance.RussianDates
 import ru.stohastika.sklyanka.acceptance.RussianNames
@@ -221,6 +222,37 @@ class TodayDenseSteps(private val world: AcceptanceWorld) {
         assertEquals(IntakeStatus.SKIPPED, intake.status, "the intake of $medication")
     }
 
+    @Then("^приёмы «([^»]+)» и «([^»]+)» остаются ожидающимися$")
+    fun thoseTwoIntakesStayPending(first: String, second: String) {
+        listOf(first, second).forEach { name ->
+            val intake = todayIntakeOf(world.medicationNamed(name))
+            assertEquals(IntakeStatus.PENDING, intake.status, "the intake of $name")
+        }
+    }
+
+    @Then("^ни один приём не отмечен повторно$")
+    fun noIntakeIsMarkedAgain() {
+        // Повторная отметка уже принятого приёма отброшена доменом (ПР-2): состояние
+        // приёмов не изменилось — по-прежнему приняты, у каждого свой момент отметки.
+        val ids = groupIntakes()
+        assertTrue(ids.isNotEmpty(), "the scenario never marked a group")
+        ids.forEach { id ->
+            val intake = requireNotNull(world.intakes.get(id)) { "unknown intake: $id" }
+            assertEquals(IntakeStatus.TAKEN, intake.status, "intake $id")
+            assertNotNull(intake.actedAt, "intake $id must keep its mark moment")
+        }
+    }
+
+    @Then("^временем отметки каждого остаётся (.+?), (\\d{2}:\\d{2})$")
+    fun theMomentOfEachMarkStays(date: String, time: String) {
+        val moment = world.clock.momentOf(world.localMoment(date, time))
+        val ids = groupIntakes()
+        assertTrue(ids.isNotEmpty(), "the scenario never marked a group")
+        ids.forEach { id ->
+            assertEquals(moment, requireNotNull(world.intakes.get(id)).actedAt, "intake $id")
+        }
+    }
+
     @Then("^остатки всех трёх лекарств не изменились$")
     fun theStocksOfAllThreeStay() {
         val ids = groupIntakes()
@@ -306,21 +338,34 @@ class TodayDenseSteps(private val world: AcceptanceWorld) {
         "no intake of $name today"
     }
 
-    /** Приёмы последней групповой операции: «все три» и «каждый» говорят о ней. */
-    private fun groupIntakes(): List<String> = world.intakes.lastGroupIds
+    /**
+     * Приёмы группы, о которой говорит сценарий: «все три» и «каждый».
+     *
+     * После второго нажатия их называет домен (`lastGroupIds`), до него — арм кнопки
+     * (`lastArmedIds`): первое нажатие группе ещё ничего не отметило (ОВ-32).
+     */
+    private fun groupIntakes(): List<String> = world.intakes.lastGroupIds.ifEmpty { world.intakes.lastArmedIds }
 
     private fun statusOf(intakeId: String): IntakeStatus =
         requireNotNull(world.intakes.get(intakeId)) { "unknown intake: $intakeId" }.status
 
-    /** Лекарство из фразы сценария: известное — по падежу, новое — заводится на месте. */
+    /**
+     * Лекарство из фразы сценария — у **активного** профиля.
+     *
+     * Известное имя разрешается по падежу; если оно уже занято другим профилем,
+     * заводится своё: экран показывает приёмы активного профиля, и приёмы чужого
+     * группы не создадут (ПРФ-10). Новое имя заводится как есть.
+     */
     private fun ensureMedication(text: String): String {
-        RussianNames.resolve(text, world.medications.names())?.let { return it }
+        val key = RussianNames.resolve(text, world.medications.names()) ?: text
+        val owner = world.profiles.get(world.profiles.active).id
+        if (world.medications.has(key) && world.medications.get(key).profileId == owner) return key
         world.medications.add(
             profile = world.profiles,
             profileName = world.profiles.active,
-            name = text,
+            name = key,
         )
-        return text
+        return key
     }
 
     private fun schedule(name: String, moment: LocalDateTime) {
@@ -354,13 +399,18 @@ class TodayDenseSteps(private val world: AcceptanceWorld) {
          * планировщик не создал бы приём: его время уже прошло. Часы Предыстории
          * (08:00, 14:00, 21:00) занимать не обязательно — приёмы одного времени
          * идут одной группой, — но оставлены свободными ради читаемости сценария.
+         *
+         * Часов столько, сколько нужно самому скудному фону: у фона SKL-08 утро и вечер
+         * уже держат приёмы, у фона SKL-31 — нет, и добавка доводит сутки до восьми утра
+         * и тринадцати вечера. Новые часы дописаны в конец: сценарии предыдущих задач
+         * берут первые недостающие, и их сутки не меняются.
          */
         val SLOTS = mapOf(
-            PartOfDay.MORNING to listOf("08:30", "09:00", "09:30", "10:00", "10:30", "11:00"),
+            PartOfDay.MORNING to listOf("07:45", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30"),
             PartOfDay.DAY to listOf("12:00", "12:30", "13:00", "13:30", "15:00", "15:30", "16:00", "16:30"),
             PartOfDay.EVENING to listOf(
                 "18:00", "18:15", "18:30", "19:00", "19:30", "20:00",
-                "20:30", "21:15", "22:00", "22:30", "23:00",
+                "20:30", "21:15", "22:00", "22:30", "23:00", "18:45", "19:45",
             ),
         )
     }

@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import ru.stohastika.sklyanka.acceptance.RussianNames
 import ru.stohastika.sklyanka.acceptance.steps.localMoment
+import ru.stohastika.sklyanka.acceptance.steps.medicationNamed
 import ru.stohastika.sklyanka.acceptance.steps.resultOf
 import ru.stohastika.sklyanka.acceptance.steps.statusOf
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
@@ -186,5 +187,21 @@ class ProfileMarkingSteps(private val world: AcceptanceWorld) {
             ?: world.intakes.of(medication).last()
     }
 
-    private fun focused(medication: String): Intake = world.intakes.of(medication).last()
+    /**
+     * Приём лекарства, о котором говорит сценарий, — с разбором падежа.
+     *
+     * Сценарий называет лекарство так, как велит фраза («приём „Магния B6“ считается
+     * принятым»), а модель хранит имя в начальной форме: сверять имена дословно
+     * значило бы требовать от сценария канцелярита. Ищется приём последнего действия
+     * сценария: планировщик заводит записи и на следующие сутки, и «последний по
+     * расписанию» — не тот, о котором идёт речь.
+     */
+    private fun focused(medication: String): Intake {
+        val name = world.medicationNamed(medication)
+        val medicationId = world.medications.get(name).id
+        world.intakes.currentId?.let { world.intakes.get(it) }
+            ?.takeIf { it.medicationId == medicationId }
+            ?.let { return it }
+        return world.intakes.of(name).last { it.scheduledAt.toLocalDate() == world.clock.today() }
+    }
 }

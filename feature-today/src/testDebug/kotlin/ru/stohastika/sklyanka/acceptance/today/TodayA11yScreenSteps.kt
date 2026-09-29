@@ -1,8 +1,10 @@
 package ru.stohastika.sklyanka.acceptance.today
 
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
 import androidx.test.core.app.ApplicationProvider
 import io.cucumber.java.ru.Допустим
@@ -16,8 +18,10 @@ import ru.stohastika.sklyanka.acceptance.steps.dateOf
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
 import ru.stohastika.sklyanka.domain.model.Intake
 import ru.stohastika.sklyanka.domain.model.IntakeStatus
+import ru.stohastika.sklyanka.feature.today.TAG_GROUP_MARK_ALL
 import ru.stohastika.sklyanka.ui.component.TAG_MARK_BUTTON
 import ru.stohastika.sklyanka.ui.component.TAG_MISSED_STATUS
+import ru.stohastika.sklyanka.ui.component.TAG_PRIMARY_BUTTON
 import ru.stohastika.sklyanka.ui.component.TAG_TAKEN_STATUS
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -80,6 +84,25 @@ class TodayA11yScreenSteps(private val world: AcceptanceWorld) {
                 phrase.endsWith(suffix) &&
                 phrase.removePrefix(prefix).removeSuffix(suffix).isNotBlank(),
         )
+    }
+
+    // --- Вопрос подтверждения читается словами (НФТ-30/31, ОВ-32) ---------------------------
+
+    @Тогда("^программа чтения объявляет вопрос «([^»]+)»$")
+    fun theScreenReaderAnnouncesTheQuestion(question: String) {
+        TodayScreenProbe.ask(world) { test ->
+            val node = test.onNode(
+                hasTestTag(TAG_PRIMARY_BUTTON) and hasAnyAncestor(hasTestTag(TAG_GROUP_MARK_ALL)),
+                useUnmergedTree = true,
+            ).fetchSemanticsNode()
+            // Вопрос временный и фокус чтения не переводится: объявляется Polite,
+            // и только в подтверждении (08-design-system.md §4.3).
+            assertEquals(LiveRegionMode.Polite, node.config.getOrNull(SemanticsProperties.LiveRegion))
+            assertTrue(
+                "the announced question must be «$question»: ${TodayScreenProbe.textsOf(node)}",
+                question in TodayScreenProbe.textsOf(node),
+            )
+        }
     }
 
     // --- Статус без цвета ------------------------------------------------------

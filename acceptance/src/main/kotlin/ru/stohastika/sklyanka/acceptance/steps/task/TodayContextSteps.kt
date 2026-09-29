@@ -37,6 +37,21 @@ class TodayContextSteps(private val world: AcceptanceWorld) {
      * предмет строки карточки, и проверяют их сценарии состава карточки, а не эта
      * Предыстория. Выдумывать разбор «2 впрыска в каждый носовой ход» здесь незачем.
      */
+    /**
+     * Та же Предыстория, но профиль назван сценарием (SKL-31).
+     *
+     * Строка говорит о профиле, который сценарий только что объявил активным: заводить
+     * лекарства чужому профилю она не имеет права, и промах виден отказом.
+     */
+    @Given("^у профиля «([^»]+)» есть лекарства по расписанию:$")
+    fun theNamedProfileHasTheseScheduledMedications(profile: String, table: DataTable) {
+        assertTrue(
+            world.profiles.active == profile,
+            "the table must speak about the active profile «${world.profiles.active}»",
+        )
+        theProfileHasTheseScheduledMedications(table)
+    }
+
     @Given("^у профиля есть лекарства по расписанию:$")
     fun theProfileHasTheseScheduledMedications(table: DataTable) {
         table.entries().forEach { row ->
