@@ -203,5 +203,24 @@
                 <action android:name="android.intent.action.TIME_SET" />
             </intent-filter>
         </receiver>
+
+        <!--
+          Отдача PDF-отчёта врачу системному обмену (SKL-33, НФТ-17).
+
+          Файл лежит в приватном кеше приложения; получателю выдаётся доступ только
+          на чтение и только к одному файлу. Разрешений на внешнее хранилище у
+          приложения нет, и общедоступного каталога оно не касается вовсе.
+
+          exported="false": провайдер открывает сам продукт, снаружи к нему ходить некому.
+        -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
     </application>
 </manifest>

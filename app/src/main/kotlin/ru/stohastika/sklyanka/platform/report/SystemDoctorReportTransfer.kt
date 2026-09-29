@@ -1,8 +1,10 @@
 package ru.stohastika.sklyanka.platform.report
 
+import android.content.ClipData
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import androidx.core.content.FileProvider
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -16,19 +18,17 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Передача отчёта врачу средствами системы (SKL-18, НФТ-17, НФТ-18).
+ * Передача отчёта врачу средствами системы (SKL-33, НФТ-17, НФТ-18).
  *
  * Сети здесь нет ни в одном пути, и появиться ей неоткуда: приложение не объявляет
  * разрешения `INTERNET` (ПЛ-3, НФТ-15), а оба пути — системный обмен и системный выбор
  * места — исполняются самой системой.
  *
- * **Почему обмен идёт текстом, а не файлом через `FileProvider`.** Формат артефакта
- * не подтверждён (ОВ-15). Провайдер файлов — это запись во внешне доступный каталог и
- * `grantUriPermission` чужому приложению, то есть решение о том, где лежит документ
- * с медицинскими данными. Принимать его до подтверждения формата нельзя: сохранение
- * файлом уже работает через системный выбор места, где место выбирает человек, и файл
- * не остаётся в общедоступном каталоге (НФТ-17). Текстовый обмен ничего не оставляет
- * на диске вовсе.
+ * **Обмен отдаёт файл, а не текст.** Отчёт существует в PDF (ОВ-15), и текстовое
+ * намерение отдало бы получателю набор символов без документа. Файл ложится в приватный
+ * каталог кеша приложения и открывается получателю через `FileProvider` только на чтение:
+ * разрешений на внешнее хранилище приложение не запрашивает, в общедоступный каталог
+ * ничего не попадает (НФТ-17).
  */
 @Singleton
 class SystemDoctorReportTransfer @Inject constructor(@ApplicationContext private val context: Context) :
@@ -42,10 +42,19 @@ class SystemDoctorReportTransfer @Inject constructor(@ApplicationContext private
      * выдавать это за подтверждённую отправку нельзя.
      */
     override suspend fun share(document: ReportDocument): ReportTransferOutcome = withContext(Dispatchers.Main) {
+        val uri = try {
+            withContext(Dispatchers.IO) { stage(document) }
+        } catch (failure: IOException) {
+            return@withContext ReportTransferOutcome.Failed(failure.javaClass.simpleName)
+        }
         val send = Intent(Intent.ACTION_SEND).apply {
             type = document.mediaType
             putExtra(Intent.EXTRA_TITLE, document.fileName)
-            putExtra(Intent.EXTRA_TEXT, document.content)
+            putExtra(Intent.EXTRA_STREAM, uri)
+            // ClipData и флаг — способ выдать получателю доступ ровно к одному файлу
+            // и только на чтение, не открывая каталог кеша целиком.
+            clipData = ClipData.newRawUri(document.fileName, uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         // Диалог запускается из контекста приложения, а не из активности: отчёт
         // формируется в ViewModel, и активности у неё нет.
@@ -67,7 +76,7 @@ class SystemDoctorReportTransfer @Inject constructor(@ApplicationContext private
         withContext(Dispatchers.IO) {
             val staging = File(context.cacheDir, STAGING_NAME)
             try {
-                staging.writeText(document.content)
+                staging.writeBytes(document.bytes)
                 val output =
                     checkNotNull(context.contentResolver.openOutputStream(Uri.parse(target.handle), WRITE_MODE)) {
                         "The system did not open the chosen document for writing"
@@ -91,6 +100,21 @@ class SystemDoctorReportTransfer @Inject constructor(@ApplicationContext private
         }
 
     /**
+     * Положить документ в каталог передачи.
+     *
+     * Имя документа сохраняется: получатель видит осмысленное `sklyanka-report-ГГГГ-ММ.pdf`.
+     * Прежние файлы из каталога убираются: в нём лежит только последний отчёт, и копии
+     * медицинских данных не накапливаются (НФТ-18).
+     */
+    private fun stage(document: ReportDocument): Uri {
+        val directory = File(context.cacheDir, REPORT_DIRECTORY).apply { mkdirs() }
+        directory.listFiles()?.forEach { file -> file.delete() }
+        val file = File(directory, document.fileName)
+        file.writeBytes(document.bytes)
+        return FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+    }
+
+    /**
      * Снять недописанный документ.
      *
      * Документ человека остаётся пустым или исчезает: готового отчёта в выбранном месте
@@ -105,6 +129,7 @@ class SystemDoctorReportTransfer @Inject constructor(@ApplicationContext private
     private companion object {
         const val WRITE_MODE = "wt"
         const val STAGING_NAME = "doctor-report.staging"
+        const val REPORT_DIRECTORY = "reports"
         const val NO_TARGET = "no_activity_for_share"
     }
 }

@@ -46,8 +46,8 @@ import ru.stohastika.sklyanka.domain.today.BuildTodayAgenda
 import ru.stohastika.sklyanka.domain.today.MarkIntakeGroupUseCase
 import ru.stohastika.sklyanka.domain.today.ObserveTodayAgendaUseCase
 import ru.stohastika.sklyanka.feature.history.HistoryViewModel
+import ru.stohastika.sklyanka.feature.history.PdfDoctorReportRenderer
 import ru.stohastika.sklyanka.feature.history.TAG_HISTORY_SCREEN
-import ru.stohastika.sklyanka.feature.history.TextDoctorReportRenderer
 import ru.stohastika.sklyanka.feature.settings.R
 import ru.stohastika.sklyanka.feature.settings.SettingsIntent
 import ru.stohastika.sklyanka.feature.settings.SettingsScreen
@@ -206,7 +206,7 @@ class HistoryNavigationSteps(private val world: AcceptanceWorld) {
             activeProfile = world.profileSession.activeStore,
             log = world.log,
         ),
-        renderer = TextDoctorReportRenderer(context),
+        renderer = PdfDoctorReportRenderer(context),
         missedPattern = MissedPatternRule(),
         time = world.clock.time,
     )
