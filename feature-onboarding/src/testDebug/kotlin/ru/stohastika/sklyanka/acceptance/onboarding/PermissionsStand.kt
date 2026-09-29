@@ -1,9 +1,19 @@
 package ru.stohastika.sklyanka.acceptance.onboarding
 
+import androidx.activity.OnBackPressedDispatcher
+import androidx.activity.OnBackPressedDispatcherOwner
+import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.runComposeUiTest
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.LifecycleRegistry
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -19,6 +29,7 @@ import ru.stohastika.sklyanka.feature.onboarding.OnboardingExit
 import ru.stohastika.sklyanka.feature.onboarding.OnboardingUiState
 import ru.stohastika.sklyanka.feature.onboarding.OnboardingViewModel
 import ru.stohastika.sklyanka.feature.onboarding.PermissionsActions
+import ru.stohastika.sklyanka.feature.onboarding.PermissionsRoute
 import ru.stohastika.sklyanka.feature.onboarding.PermissionsScreen
 import ru.stohastika.sklyanka.feature.onboarding.SystemSettingsNavigator
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
@@ -71,6 +82,71 @@ internal object PermissionsStand {
     /** Открыть экран из названного источника — как это делает хозяин экрана. */
     fun open(world: AcceptanceWorld, source: OnboardingSource) {
         model(world).start(source)
+    }
+
+    /**
+     * Куда маршрут отдал исход хозяину (`onExit`); `null` — экран ещё не закрывался.
+     *
+     * Отдельно от `OnboardingViewModel.exit`: наблюдаемое «экран закрылся» — это вызов
+     * хозяина, а не значение в модели (ОВ-86). Именно его и проверяет приёмка.
+     */
+    var exitedTo: OnboardingExit? = null
+        private set
+
+    /**
+     * Системная «Назад» приходит отсюда: владелец диспетчера — единственная точка входа
+     * системного события, которую стенд может подставить вместо Activity.
+     */
+    private val backOwner = RecordingBackOwner()
+
+    /** Показать маршрут и ничего не нажимать: проверка «экран открыт». */
+    fun showRoute(world: AcceptanceWorld) {
+        reset(world)
+        exitedTo = null
+        runComposeUiTest {
+            setContent { RouteContent(world) }
+            waitForIdle()
+        }
+    }
+
+    /** Системная «Назад» через настоящий `BackHandler` маршрута. */
+    fun pressSystemBack(world: AcceptanceWorld) {
+        reset(world)
+        exitedTo = null
+        runComposeUiTest {
+            setContent { RouteContent(world) }
+            waitForIdle()
+            backOwner.onBackPressedDispatcher.onBackPressed()
+            waitForIdle()
+        }
+    }
+
+    /** Видимый выход экрана — тем же путём, что «Назад»: так проверяется «ведёт туда же». */
+    fun pressExitButton(world: AcceptanceWorld, tag: String) {
+        reset(world)
+        exitedTo = null
+        runComposeUiTest {
+            setContent { RouteContent(world) }
+            waitForIdle()
+            onNodeWithTag(tag).performClick()
+            waitForIdle()
+        }
+    }
+
+    @Composable
+    private fun RouteContent(world: AcceptanceWorld) {
+        CompositionLocalProvider(
+            LocalOnBackPressedDispatcherOwner provides backOwner,
+            LocalLifecycleOwner provides backOwner,
+        ) {
+            SklyankaTheme {
+                PermissionsRoute(
+                    viewModel = model(world),
+                    source = state(world).source,
+                    onExit = { exitedTo = it },
+                )
+            }
+        }
     }
 
     /** Системный диалог разрешения: результат приходит из системы, а не из ответа человека. */
@@ -170,5 +246,28 @@ internal class RecordingNavigator : SystemSettingsNavigator {
         const val NOTIFICATIONS = "notifications"
         const val EXACT_ALARMS = "exact-alarms"
         const val AUTOSTART = "autostart"
+    }
+}
+
+/**
+ * Владелец диспетчера системной «Назад» без Activity (ОВ-86).
+ *
+ * Настоящий `BackHandler` маршрута регистрируется на владельце, которого даёт композиция;
+ * стенд подставляет сюда свой, и нажатие идёт через обработчик продукта, а не через
+ * пересказ шага. Владельцем жизненного цикла он же и является: обработчик привязывается
+ * к нему, и подделка обязана быть в состоянии `RESUMED` — иначе он выключен.
+ */
+internal class RecordingBackOwner :
+    OnBackPressedDispatcherOwner,
+    LifecycleOwner {
+
+    override val onBackPressedDispatcher = OnBackPressedDispatcher()
+
+    private val registry = LifecycleRegistry(this)
+
+    override val lifecycle: Lifecycle get() = registry
+
+    init {
+        registry.currentState = Lifecycle.State.RESUMED
     }
 }
