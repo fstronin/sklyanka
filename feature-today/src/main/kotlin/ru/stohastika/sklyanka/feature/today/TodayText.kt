@@ -170,6 +170,18 @@ internal fun GroupLabelForm.label(count: Int): String = when (this) {
     GroupLabelForm.ALL_N -> stringResource(R.string.group_mark_all_n, count)
 }
 
+/** «3 приёма · отметьте по одному» — по числу приёмов, ожидающих отметки (НФТ-44). */
+@Composable
+internal fun groupCaption(count: Int): String = pluralStringResource(R.plurals.group_caption_by_one, count, count)
+
+/** Подпись подтверждения: «Подтвердить отметку всех трёх?» (НФТ-42). */
+@Composable
+internal fun GroupLabelForm.confirmLabel(count: Int): String = when (this) {
+    GroupLabelForm.BOTH -> stringResource(R.string.group_confirm_both)
+    GroupLabelForm.ALL_THREE -> stringResource(R.string.group_confirm_all_three)
+    GroupLabelForm.ALL_N -> stringResource(R.string.group_confirm_all_n, count)
+}
+
 /** «1», а не «1.00»: доза введена человеком и показывается так, как он её ввёл. */
 private fun BigDecimal.plain(): String = stripTrailingZeros().toPlainString()
 

@@ -27,6 +27,12 @@
     <!-- «Принято 11 из 30 приёмов · 12 лекарств» (ЭКР-2, MainDense.dc.html). -->
     <string name="today_progress_dense">%1$s · %2$s</string>
 
+    <!--
+      «История» — ссылка в строке подписи полосы прогресса (ОВ-84, SKL-31). Слово
+      ресурсом: «›» рядом рисуется значком и чтением с экрана не объявляется.
+    -->
+    <string name="today_history_link">История</string>
+
     <!-- ===== Плашка остатка (Main.dc.html) ===== -->
 
     <!-- «Магний B6 — осталось 9 таблеток, хватит на 4 дня». -->
@@ -97,6 +103,15 @@
     <string name="group_mark_all_three">Отметить все три</string>
     <string name="group_mark_all_n">Отметить все %1$d</string>
     <string name="group_mark_one_by_one">По одному</string>
+
+    <!--
+      Подписи подтверждения батч-отметки (ОВ-32, SKL-31). Формы как у кнопки:
+      «оба» и «все три» особыми ресурсами, потому что механически из plurals
+      не выводятся (НФТ-44).
+    -->
+    <string name="group_confirm_both">Подтвердить отметку обоих?</string>
+    <string name="group_confirm_all_three">Подтвердить отметку всех трёх?</string>
+    <string name="group_confirm_all_n">Подтвердить отметку всех %1$d?</string>
 
     <!-- «Магний B6 · Панангин · Омез» — перечисление лекарств одной строкой. -->
     <string name="group_medications_separator">" · "</string>

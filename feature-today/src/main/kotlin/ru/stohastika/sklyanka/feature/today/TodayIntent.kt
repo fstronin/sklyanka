@@ -22,6 +22,12 @@ sealed interface TodayIntent {
     /** «Отметить все три»: одна операция на всю группу (решение ОВ-32). */
     data class MarkGroupTaken(val intakeIds: List<String>) : TodayIntent
 
+    /** «Отметить все три»: первое нажатие заряжает кнопку, ничего не отмечая (ОВ-32). */
+    data class ArmGroupMark(val time: LocalTime) : TodayIntent
+
+    /** Нажатие вне кнопки подтверждения: вопрос снимается молча, приёмы не тронуты (ОВ-32). */
+    data object DismissGroupConfirm : TodayIntent
+
     /** «По одному»: групповая карточка разворачивается в строки, ничего не отмечая. */
     data class ExpandGroup(val time: LocalTime) : TodayIntent
 
@@ -54,4 +60,7 @@ sealed interface TodayIntent {
 
     /** «Настроить» в предупреждении о ненадёжности — экран разрешений (SKL-29, НАП-21). */
     data object OpenPermissions : TodayIntent
+
+    /** Строка прогресса дня — история приёмов (ОВ-84, SKL-31). */
+    data object OpenHistory : TodayIntent
 }

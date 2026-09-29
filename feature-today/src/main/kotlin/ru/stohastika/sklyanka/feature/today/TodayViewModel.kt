@@ -23,6 +23,7 @@ import ru.stohastika.sklyanka.domain.intake.UndoableMarkStore
 import ru.stohastika.sklyanka.domain.model.IntakeSource
 import ru.stohastika.sklyanka.domain.reminder.ReadReminderReliabilityUseCase
 import ru.stohastika.sklyanka.domain.time.TimeSource
+import ru.stohastika.sklyanka.domain.today.GroupAction
 import ru.stohastika.sklyanka.domain.today.GroupMarkOutcome
 import ru.stohastika.sklyanka.domain.today.MarkIntakeGroupUseCase
 import ru.stohastika.sklyanka.domain.today.ObserveTodayAgendaUseCase
@@ -72,6 +73,9 @@ class TodayViewModel @Inject constructor(
     /** Таймер текущего окна: замена отметки обязана погасить прошлый, а не ждать его. */
     private var undoJob: Job? = null
 
+    /** Таймер подтверждения: повторный арм обязан погасить прошлый срок, а не ждать его. */
+    private var confirmJob: Job? = null
+
     val state: StateFlow<TodayUiState> = combine(observeAgenda(), view) { agenda, current ->
         screen(agenda, current)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(SUBSCRIPTION_TIMEOUT_MS), TodayUiState.Opening)
@@ -90,23 +94,62 @@ class TodayViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Подтверждение групповой отметки снимает любое намерение, кроме арма: следующий
+     * шаг человека — отказ от вопроса, а не ответ на него (ОВ-32). Переходы наружу
+     * состояния не трогают и разбираются маршрутом — их гасит уход с экрана.
+     */
     fun onIntent(intent: TodayIntent) {
         when (intent) {
-            is TodayIntent.MarkTaken -> mark(intent.intakeId, MarkResult.TAKEN)
-            is TodayIntent.MarkSkipped -> mark(intent.intakeId, MarkResult.SKIPPED)
-            is TodayIntent.MarkGroupTaken -> viewModelScope.launch {
-                markTheGroup(intent.intakeIds)
+            is TodayIntent.MarkTaken -> {
+                clearConfirmation()
+                mark(intent.intakeId, MarkResult.TAKEN)
             }
 
-            is TodayIntent.UndoMark -> undo(intent.intakeIds)
-
-            is TodayIntent.TakePrn -> viewModelScope.launch {
-                createPrn(intent.medicationId, IntakeSource.PHONE)
+            is TodayIntent.MarkSkipped -> {
+                clearConfirmation()
+                mark(intent.intakeId, MarkResult.SKIPPED)
             }
 
-            is TodayIntent.ExpandGroup -> view.update { it.withExpandedGroup(intent.time) }
-            is TodayIntent.ToggleSection -> view.update { it.withToggledSection(intent.partOfDay) }
-            TodayIntent.TogglePrnBlock -> view.update { it.copy(prnCollapsed = !it.prnCollapsed) }
+            is TodayIntent.MarkGroupTaken -> {
+                // Второе нажатие батча: подтверждение снимается до запуска отметки,
+                // путь отметки группы не меняется.
+                clearConfirmation()
+                viewModelScope.launch {
+                    markTheGroup(intent.intakeIds)
+                }
+            }
+
+            is TodayIntent.ArmGroupMark -> armGroup(intent.time)
+
+            TodayIntent.DismissGroupConfirm -> clearConfirmation()
+
+            is TodayIntent.UndoMark -> {
+                clearConfirmation()
+                undo(intent.intakeIds)
+            }
+
+            is TodayIntent.TakePrn -> {
+                clearConfirmation()
+                viewModelScope.launch {
+                    createPrn(intent.medicationId, IntakeSource.PHONE)
+                }
+            }
+
+            is TodayIntent.ExpandGroup -> {
+                clearConfirmation()
+                view.update { it.withExpandedGroup(intent.time) }
+            }
+
+            is TodayIntent.ToggleSection -> {
+                clearConfirmation()
+                view.update { it.withToggledSection(intent.partOfDay) }
+            }
+
+            TodayIntent.TogglePrnBlock -> {
+                clearConfirmation()
+                view.update { it.copy(prnCollapsed = !it.prnCollapsed) }
+            }
 
             // Переходы наружу состояния экрана не меняют: их разбирает маршрут.
             is TodayIntent.OpenMedication,
@@ -115,18 +158,51 @@ class TodayViewModel @Inject constructor(
             TodayIntent.OpenMedicationList,
             TodayIntent.OpenSettings,
             TodayIntent.OpenPermissions,
+            TodayIntent.OpenHistory,
             -> Unit
         }
     }
 
     /**
-     * Конец окна отмены при уходе с «Сегодня».
+     * Конец окна отмены и подтверждения при уходе с «Сегодня».
      *
      * Уход — событие жизненного цикла маршрута, а не действие человека: его зовёт
      * `TodayRoute`, а не намерение (`TDD.md §5.4`).
      */
     fun onScreenLeft() {
+        clearConfirmation()
         undoMarks.clear()
+    }
+
+    /**
+     * Арм батч-кнопки: заряжает подтверждение и запускает его срок.
+     *
+     * Повторный арм перезапускает срок — прошлый таймер гасится. Дедлайна в состоянии
+     * нет: подтверждение не переживает уход с экрана и поворот (TDD §16.3), поэтому
+     * окно меряется монотонными секундами `viewModelScope`, а не `TimeSource`.
+     */
+    private fun armGroup(time: LocalTime) {
+        confirmJob?.cancel()
+        view.update { it.copy(confirmingGroup = time) }
+        confirmJob = viewModelScope.launch {
+            delay(CONFIRM_WINDOW_MS)
+            confirmJob = null
+            view.update { it.copy(confirmingGroup = null) }
+        }
+    }
+
+    /**
+     * Снятие подтверждения молча: приёмы не трогаются, записи в домен не идут.
+     *
+     * Идемпотентно: снятие намерением и уход с экрана не будят поток, когда
+     * подтверждения и не было.
+     */
+    private fun clearConfirmation() {
+        confirmJob?.cancel()
+        confirmJob = null
+        view.update { current ->
+            if (current.confirmingGroup == null) current else current.copy(confirmingGroup = null)
+        }
     }
 
     private fun mark(intakeId: String, result: MarkResult) {
@@ -230,6 +306,12 @@ class TodayViewModel @Inject constructor(
             layout = agenda.layout,
             prn = agenda.prn,
             toggledSections = current.toggledSections,
+            // Подтверждение, потерявшее предмет, не переносится в состояние: группа
+            // пропала, перестала быть наступившей или ожидающих в ней меньше двух.
+            // Это защищает от расхождения с чужой отметкой, оставившей одного (TDD §16.4).
+            confirmingGroup = current.confirmingGroup?.takeIf { time ->
+                agenda.layout.groups.any { it.time == time && it.isNow && GroupAction.of(it) != null }
+            },
             expandedGroups = current.expandedGroups,
             prnCollapsed = current.prnCollapsed,
             nothingToday = agenda.hasNothingToday,
@@ -237,16 +319,17 @@ class TodayViewModel @Inject constructor(
     }
 
     /**
-     * Чисто зрительная часть состояния: что человек развернул руками и что показывает
-     * снэкбар отмены.
+     * Чисто зрительная часть состояния: что человек развернул руками, какая группа
+     * ждёт подтверждения и что показывает снэкбар отмены.
      *
      * Отдельным потоком рядом с повесткой дня, а не полем внутри неё: повестку
-     * пересобирает домен при каждом изменении данных, и развёрнутая секция и окно отмены
-     * обязаны это пережить.
+     * пересобирает домен при каждом изменении данных, и развёрнутая секция, подтверждение
+     * и окно отмены обязаны это пережить.
      */
     private data class ViewState(
         val toggledSections: Set<PartOfDay> = emptySet(),
         val expandedGroups: Set<LocalTime> = emptySet(),
+        val confirmingGroup: LocalTime? = null,
         val prnCollapsed: Boolean = false,
         val undo: UndoNotice? = null,
     ) {
@@ -272,5 +355,14 @@ class TodayViewModel @Inject constructor(
          * просроченным приёмам.
          */
         const val SUBSCRIPTION_TIMEOUT_MS = 5_000L
+
+        /**
+         * Сколько ждёт подтверждение групповой отметки (ОВ-32).
+         *
+         * Десять секунд, а не пять секунд окна отмены (SKL-30): там узнают случившееся,
+         * здесь принимают решение, и при системном шрифте до 200 % вопрос обязан
+         * успеть прочитаться.
+         */
+        const val CONFIRM_WINDOW_MS = 10_000L
     }
 }

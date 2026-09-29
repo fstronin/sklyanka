@@ -93,6 +93,18 @@
         <item quantity="other">Сегодня уже принято %1$d раза — это предел на сутки</item>
     </plurals>
 
+    <!--
+      Подпись группы, время которой наступило: «3 приёма · отметьте по одному»
+      (ОВ-32, SKL-31). Склоняется по числу приёмов, ожидающих отметки; формы —
+      дословно из `03-screens.md` и записи решения.
+    -->
+    <plurals name="group_caption_by_one">
+        <item quantity="one">%1$d приём · отметьте по одному</item>
+        <item quantity="few">%1$d приёма · отметьте по одному</item>
+        <item quantity="many">%1$d приёмов · отметьте по одному</item>
+        <item quantity="other">%1$d приёма · отметьте по одному</item>
+    </plurals>
+
     <!-- Итоги свёрнутых секций плотного дня (MainDense.dc.html). -->
     <plurals name="dense_section_all_marked">
         <item quantity="one">%1$d приём, все отмечены</item>

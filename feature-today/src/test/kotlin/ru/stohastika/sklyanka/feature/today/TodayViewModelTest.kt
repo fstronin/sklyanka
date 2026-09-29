@@ -37,6 +37,7 @@ import java.time.LocalTime
  * приходит новым значением потока, как и в приложении (`TDD.md §3.1`).
  */
 @OptIn(ExperimentalCoroutinesApi::class)
+@Suppress("LargeClass")
 class TodayViewModelTest {
 
     private val dispatcher = kotlinx.coroutines.test.UnconfinedTestDispatcher()
@@ -533,6 +534,227 @@ class TodayViewModelTest {
             assertNull((viewModel.state.value as TodayUiState.Content).undo)
             assertNull(world.undoMarks.live())
             assertEquals(IntakeStatus.TAKEN, world.intakes.stored.getValue("i-magnesium").status)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    // --- Подтверждение групповой отметки (SKL-31) ------------------------------------
+
+    @Test
+    fun `arming the group mark marks nothing and expires exactly on the tenth second`() = runTest {
+        val world = worldWithSimultaneous(startAt = 14, minute = 5)
+        val viewModel = world.viewModel()
+
+        viewModel.state.test {
+            awaitContent()
+            viewModel.onIntent(TodayIntent.ArmGroupMark(LocalTime.of(14, 0)))
+
+            val armed = awaitContent()
+            assertEquals(LocalTime.of(14, 0), armed.confirmingGroup)
+            assertTrue(world.intakes.stored.values.all { it.status == IntakeStatus.PENDING })
+            assertTrue(world.log.events().isEmpty())
+            assertNull(world.undoMarks.live())
+
+            advanceTimeBy(9_999)
+            runCurrent()
+            assertEquals(LocalTime.of(14, 0), (viewModel.state.value as TodayUiState.Content).confirmingGroup)
+
+            advanceTimeBy(1)
+            runCurrent()
+            assertNull((viewModel.state.value as TodayUiState.Content).confirmingGroup)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `a repeated arm restarts the ten second window`() = runTest {
+        val world = worldWithSimultaneous(startAt = 14, minute = 5)
+        val viewModel = world.viewModel()
+
+        viewModel.state.test {
+            awaitContent()
+            viewModel.onIntent(TodayIntent.ArmGroupMark(LocalTime.of(14, 0)))
+            awaitContentWhere { it.confirmingGroup == LocalTime.of(14, 0) }
+
+            advanceTimeBy(6_000)
+            runCurrent()
+            viewModel.onIntent(TodayIntent.ArmGroupMark(LocalTime.of(14, 0)))
+
+            // Срок идёт от второго арма: к 9,999 от первого подтверждение ещё живо.
+            advanceTimeBy(9_999)
+            runCurrent()
+            assertEquals(LocalTime.of(14, 0), (viewModel.state.value as TodayUiState.Content).confirmingGroup)
+
+            advanceTimeBy(1)
+            runCurrent()
+            assertNull((viewModel.state.value as TodayUiState.Content).confirmingGroup)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `marking a row dismisses the confirmation`() = runTest {
+        val world = worldWithSimultaneous(startAt = 14, minute = 5)
+        val viewModel = world.viewModel()
+
+        viewModel.state.test {
+            awaitContent()
+            viewModel.onIntent(TodayIntent.ArmGroupMark(LocalTime.of(14, 0)))
+            awaitContentWhere { it.confirmingGroup == LocalTime.of(14, 0) }
+
+            viewModel.onIntent(TodayIntent.MarkTaken("i-a"))
+
+            awaitContentWhere { candidate ->
+                candidate.confirmingGroup == null &&
+                    candidate.layout.groups.single { it.time == LocalTime.of(14, 0) }
+                        .items.single { it.id == "i-a" }
+                        .presentation == IntakePresentation.TAKEN
+            }
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `the second press marks the group and dismisses the confirmation`() = runTest {
+        val world = worldWithSimultaneous(startAt = 14, minute = 5)
+        val viewModel = world.viewModel()
+
+        viewModel.state.test {
+            awaitContent()
+            viewModel.onIntent(TodayIntent.ArmGroupMark(LocalTime.of(14, 0)))
+            awaitContentWhere { it.confirmingGroup == LocalTime.of(14, 0) }
+
+            viewModel.onIntent(TodayIntent.MarkGroupTaken(listOf("i-a", "i-b", "i-c")))
+
+            awaitContentWhere { candidate ->
+                val group = candidate.layout.groups.single { it.time == LocalTime.of(14, 0) }
+                candidate.confirmingGroup == null &&
+                    group.items.all { it.presentation == IntakePresentation.TAKEN }
+            }
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `the undo action dismisses the confirmation`() = runTest {
+        val world = worldWithSimultaneous(startAt = 14, minute = 5)
+        val viewModel = world.viewModel()
+
+        viewModel.state.test {
+            awaitContent()
+            viewModel.onIntent(TodayIntent.MarkTaken("i-a"))
+            val undo = awaitUndo { it.intakeIds == listOf("i-a") }
+
+            viewModel.onIntent(TodayIntent.ArmGroupMark(LocalTime.of(14, 0)))
+            awaitContentWhere { it.confirmingGroup == LocalTime.of(14, 0) }
+
+            viewModel.onIntent(TodayIntent.UndoMark(undo.intakeIds))
+
+            assertEquals(IntakeStatus.PENDING, world.intakes.stored.getValue("i-a").status)
+            assertNull((viewModel.state.value as TodayUiState.Content).confirmingGroup)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `dismissing the confirmation leaves the intakes untouched`() = runTest {
+        val world = worldWithSimultaneous(startAt = 14, minute = 5)
+        val viewModel = world.viewModel()
+
+        viewModel.state.test {
+            awaitContent()
+            viewModel.onIntent(TodayIntent.ArmGroupMark(LocalTime.of(14, 0)))
+            awaitContentWhere { it.confirmingGroup == LocalTime.of(14, 0) }
+
+            viewModel.onIntent(TodayIntent.DismissGroupConfirm)
+
+            awaitContentWhere { it.confirmingGroup == null }
+            assertTrue(world.intakes.stored.values.all { it.status == IntakeStatus.PENDING })
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `leaving the screen dismisses the confirmation`() = runTest {
+        val world = worldWithSimultaneous(startAt = 14, minute = 5)
+        val viewModel = world.viewModel()
+
+        viewModel.state.test {
+            awaitContent()
+            viewModel.onIntent(TodayIntent.ArmGroupMark(LocalTime.of(14, 0)))
+            awaitContentWhere { it.confirmingGroup == LocalTime.of(14, 0) }
+
+            viewModel.onScreenLeft()
+
+            awaitContentWhere { it.confirmingGroup == null }
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `opening a section dismisses the confirmation`() = runTest {
+        val world = worldWithSimultaneous(startAt = 14, minute = 5)
+        val viewModel = world.viewModel()
+
+        viewModel.state.test {
+            awaitContent()
+            viewModel.onIntent(TodayIntent.ArmGroupMark(LocalTime.of(14, 0)))
+            awaitContentWhere { it.confirmingGroup == LocalTime.of(14, 0) }
+
+            viewModel.onIntent(TodayIntent.ToggleSection(PartOfDay.EVENING))
+
+            awaitContentWhere { it.confirmingGroup == null && PartOfDay.EVENING in it.toggledSections }
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `navigation intents leave the confirmation alone`() = runTest {
+        val world = worldWithSimultaneous(startAt = 14, minute = 5)
+        val viewModel = world.viewModel()
+
+        viewModel.state.test {
+            awaitContent()
+            viewModel.onIntent(TodayIntent.ArmGroupMark(LocalTime.of(14, 0)))
+            awaitContentWhere { it.confirmingGroup == LocalTime.of(14, 0) }
+
+            viewModel.onIntent(TodayIntent.OpenMedication("m-a"))
+            viewModel.onIntent(TodayIntent.OpenStock("m-a"))
+            viewModel.onIntent(TodayIntent.AddMedication)
+            viewModel.onIntent(TodayIntent.OpenMedicationList)
+            viewModel.onIntent(TodayIntent.OpenSettings)
+            viewModel.onIntent(TodayIntent.OpenPermissions)
+            viewModel.onIntent(TodayIntent.OpenHistory)
+
+            expectNoEvents()
+            assertEquals(LocalTime.of(14, 0), (viewModel.state.value as TodayUiState.Content).confirmingGroup)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `a group that lost its second pending intake does not hold the confirmation`() = runTest {
+        val world = worldWithSimultaneous(startAt = 14, minute = 5)
+        val viewModel = world.viewModel()
+
+        viewModel.state.test {
+            awaitContent()
+            viewModel.onIntent(TodayIntent.ArmGroupMark(LocalTime.of(14, 0)))
+            awaitContentWhere { it.confirmingGroup == LocalTime.of(14, 0) }
+
+            // Чужая отметка с часов: ожидающий в группе остаётся один, батч теряет
+            // предмет, и подтверждение гаснет реконсиляцией `screen()` (TDD §16.4).
+            listOf("i-a", "i-b").forEach { id ->
+                world.intakes.put(
+                    world.intakes.stored.getValue(id).copy(
+                        status = IntakeStatus.TAKEN,
+                        actedAt = TodayTest.moment(TodayTest.at(14, 6)),
+                    ),
+                )
+            }
+            runCurrent()
+
+            awaitContentWhere { it.confirmingGroup == null }
             cancelAndIgnoreRemainingEvents()
         }
     }

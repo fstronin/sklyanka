@@ -31,6 +31,7 @@ fun TodayRoute(viewModel: TodayViewModel, navigation: TodayNavigation, modifier:
                 TodayIntent.OpenMedicationList -> navigation.openMedicationList()
                 TodayIntent.OpenSettings -> navigation.openSettings()
                 TodayIntent.OpenPermissions -> navigation.openPermissions()
+                TodayIntent.OpenHistory -> navigation.openHistory()
                 else -> viewModel.onIntent(intent)
             }
         },
@@ -41,7 +42,7 @@ fun TodayRoute(viewModel: TodayViewModel, navigation: TodayNavigation, modifier:
 /**
  * Переходы экрана одним значением.
  *
- * Пять лямбд подряд в подписи маршрута путают местами на первом же вызове, а тип
+ * Лямбды подряд в подписи маршрута путают местами на первом же вызове, а тип
  * с именами полей — нет.
  */
 data class TodayNavigation(
@@ -55,4 +56,6 @@ data class TodayNavigation(
     val openSettings: () -> Unit = {},
     /** «Настроить» в предупреждении о ненадёжности — экран разрешений (SKL-29). */
     val openPermissions: () -> Unit = {},
+    /** «История» в строке прогресса дня — экран истории (ОВ-84, SKL-31). */
+    val openHistory: () -> Unit = {},
 )
