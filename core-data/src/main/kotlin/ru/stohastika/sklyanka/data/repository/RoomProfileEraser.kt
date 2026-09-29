@@ -20,8 +20,9 @@ import javax.inject.Singleton
  * от него ждут (`ReplaceAllDataTest` закрепляет тот же порядок для замены данных).
  * Отложенные срабатывания уходят каскадом вместе с приёмами.
  *
- * Профиль владельца не удаляется и на уровне запроса (`is_self = 0`): сценарий домена
- * проверяет то же правило явно, а база остаётся последней границей.
+ * Профиль владельца и уже исчезнувший профиль не трогаются вовсе: проверка стоит
+ * **до** удаления детей, иначе у владельца пропали бы данные, а строка осталась, —
+ * и условие `is_self = 0` в SQL остаётся последней границей того же правила.
  */
 @Singleton
 class RoomProfileEraser @Inject constructor(
@@ -33,6 +34,8 @@ class RoomProfileEraser @Inject constructor(
 
     override suspend fun erase(profileId: String) {
         transactor.inTransaction {
+            val profile = profiles.getById(profileId) ?: return@inTransaction
+            if (profile.isSelf) return@inTransaction
             intakes.deleteInProfile(profileId)
             medications.deleteInProfile(profileId)
             profiles.deleteById(profileId)
