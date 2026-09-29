@@ -16,9 +16,9 @@ import org.junit.runner.RunWith
  * Версия 1 — скелет SKL-02 с единственной технической таблицей-маркером; версия 2 —
  * схема данных «Склянки»; версия 3 — признак дублирования напоминаний на часы у лекарства
  * (SKL-10, ЧАС-15); версия 4 — журнал напоминаний (SKL-13); версия 5 — размер упаковки
- * у лекарства (SKL-34, ОВ-45). Тест доказывает заодно, что экспорт схемы действительно
- * работает: без файлов в `core-data/schemas` помощник не смог бы создать базу предыдущей
- * версии.
+ * у лекарства (SKL-34, ОВ-45); версия 6 — таблица отложенных срабатываний (SKL-35, ОВ-75).
+ * Тест доказывает заодно, что экспорт схемы действительно работает: без файлов
+ * в `core-data/schemas` помощник не смог бы создать базу предыдущей версии.
  *
  * Прогон требует устройства или эмулятора; в контейнере сборки тест компилируется,
  * но не выполняется.
@@ -149,6 +149,49 @@ class MigrationTest {
             db.query("SELECT COUNT(*) FROM `intake`").use { cursor ->
                 cursor.moveToFirst()
                 assertEquals("no intake record may be lost (MG-2)", 1, cursor.getInt(0))
+            }
+        }
+    }
+
+    /**
+     * Версия 5 → 6 на реальной базе с данными (МГ-3, ОВ-75).
+     *
+     * Таблица отложенных срабатываний появляется рядом с существующими, не трогая их:
+     * ни строка лекарства, ни история приёмов не меняются. Внешний ключ объявлен
+     * с `ON DELETE CASCADE` — запись уходит вместе с приёмом, что проверяется отдельно:
+     * без каскада удаление приёма при правке расписания оставило бы откладывание,
+     * которому больше нечего ждать.
+     */
+    @Test
+    fun theDeferredReminderTableArrivesAndFollowsItsIntake() {
+        helper.createDatabase(TEST_DB, 5).use { old ->
+            old.execSQL(INSERT_PROFILE)
+            old.execSQL(INSERT_MEDICATION)
+            old.execSQL(INSERT_INTAKE)
+        }
+
+        val migrated = helper.runMigrationsAndValidate(
+            TEST_DB,
+            SklyankaDatabase.VERSION,
+            true,
+            *SklyankaMigrations.ALL,
+        )
+
+        migrated.use { db ->
+            assertTrue("the deferred reminder table must appear", tableExists(db, "deferred_reminder"))
+            db.query("SELECT COUNT(*) FROM `intake`").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals("no intake record may be lost (MG-2)", 1, cursor.getInt(0))
+            }
+            db.execSQL("PRAGMA foreign_keys = ON")
+            db.execSQL(
+                "INSERT INTO `deferred_reminder` (`intake_id`, `fire_at`, `attempt`) " +
+                    "VALUES ('intake-1', 1000, 1)",
+            )
+            db.execSQL("DELETE FROM `intake` WHERE `id` = 'intake-1'")
+            db.query("SELECT COUNT(*) FROM `deferred_reminder`").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals("the reminder must follow its intake", 0, cursor.getInt(0))
             }
         }
     }

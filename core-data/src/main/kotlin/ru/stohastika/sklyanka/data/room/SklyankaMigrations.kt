@@ -77,8 +77,38 @@ object SklyankaMigrations {
         }
     }
 
+    /**
+     * Версия 5 → 6: появляется таблица отложенных срабатываний (SKL-35, ОВ-75).
+     *
+     * Отдельная таблица, а не колонки `intake`: откладывание — состояние доставки,
+     * а не медицинская запись. Существующие таблицы не трогаются вовсе, поэтому история
+     * приёмов физически не может пострадать (МГ-2). Внешний ключ с `ON DELETE CASCADE`
+     * уносит запись вместе с приёмом: пересоздание будущих приёмов при правке расписания
+     * и замена данных при переносе оставляют её без предмета.
+     */
+    val MIGRATION_5_6 = object : Migration(5, 6) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `deferred_reminder` (
+                    `intake_id` TEXT NOT NULL, `fire_at` INTEGER NOT NULL, `attempt` INTEGER NOT NULL,
+                    PRIMARY KEY(`intake_id`),
+                    FOREIGN KEY(`intake_id`) REFERENCES `intake`(`id`)
+                        ON UPDATE NO ACTION ON DELETE CASCADE
+                )
+                """.trimIndent(),
+            )
+        }
+    }
+
     /** Все миграции по порядку. Room выбирает путь сам; пропусков в цепочке быть не должно. */
-    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+    val ALL: Array<Migration> = arrayOf(
+        MIGRATION_1_2,
+        MIGRATION_2_3,
+        MIGRATION_3_4,
+        MIGRATION_4_5,
+        MIGRATION_5_6,
+    )
 
     /**
      * DDL версии 2 — дословно то, что Room ожидает увидеть при сверке схемы.
