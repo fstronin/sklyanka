@@ -1,10 +1,18 @@
 package ru.stohastika.sklyanka.feature.settings.transfer
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTextReplacement
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.assertEquals
@@ -17,6 +25,8 @@ import ru.stohastika.sklyanka.domain.transfer.TransferMode
 import ru.stohastika.sklyanka.domain.transfer.TransferReject
 import ru.stohastika.sklyanka.domain.transfer.TransferRejectReason
 import ru.stohastika.sklyanka.feature.settings.R
+import ru.stohastika.sklyanka.ui.component.TAG_TEXT_FIELD_ERROR
+import ru.stohastika.sklyanka.ui.component.TAG_TEXT_FIELD_INPUT
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 
 /**
@@ -142,23 +152,40 @@ class DataTransferScreenTest {
 
     @Test
     fun theReplacementConfirmationListsTheNumbersOnBothSidesAndTheSafetyCopy() {
-        composeRule.setContent {
-            SklyankaTheme {
-                ReplaceConfirmScreen(
-                    device = TransferScreenFixtures.DEVICE_COUNTS,
-                    file = TransferScreenFixtures.FILE_COUNTS,
-                    safetyCopyName = TransferScreenFixtures.SAFETY_COPY,
-                    onConfirm = {},
-                    onCancel = {},
-                )
-            }
-        }
+        showReplacementConfirmation()
 
         composeRule.onNodeWithTag(TAG_REPLACE_WARNING).assertIsDisplayed()
         composeRule.onNodeWithTag(TAG_COUNTS_NOW).assertIsDisplayed()
         composeRule.onNodeWithTag(TAG_COUNTS_AFTER).assertIsDisplayed()
         composeRule.onNodeWithTag(TAG_SAFETY_COPY).assertIsDisplayed()
         composeRule.onNodeWithTag(TAG_REPLACE_CONFIRM_ACTION).assertIsDisplayed()
+    }
+
+    @Test
+    fun theReplacementConfirmationShowsTheWordSample() {
+        showReplacementConfirmation()
+
+        val word = context.getString(R.string.transfer_replace_word)
+        composeRule
+            .onNodeWithText(context.getString(R.string.transfer_replace_word_label, word))
+            .assertIsDisplayed()
+        composeRule.onNodeWithTag(TAG_REPLACE_WORD_LABEL).assertIsDisplayed()
+    }
+
+    @Test
+    fun theReplacementActionStaysUnavailableUntilTheWordMatches() {
+        showReplacementConfirmationTyping()
+
+        composeRule.onNodeWithTag(TAG_REPLACE_CONFIRM_ACTION).assertIsNotEnabled()
+
+        composeRule.onNodeWithTag(TAG_TEXT_FIELD_INPUT).performTextInput("Udalit")
+        composeRule.onNodeWithTag(TAG_REPLACE_CONFIRM_ACTION).assertIsNotEnabled()
+        composeRule.onNodeWithTag(TAG_TEXT_FIELD_ERROR).assertDoesNotExist()
+
+        val word = context.getString(R.string.transfer_replace_word)
+        composeRule.onNodeWithTag(TAG_TEXT_FIELD_INPUT).performTextReplacement("  ${word.uppercase()}  ")
+        composeRule.onNodeWithTag(TAG_REPLACE_CONFIRM_ACTION).assertIsEnabled()
+        composeRule.onNodeWithTag(TAG_TEXT_FIELD_ERROR).assertDoesNotExist()
     }
 
     @Test
@@ -202,6 +229,41 @@ class DataTransferScreenTest {
 
         composeRule.onNodeWithTag(TAG_OLD_FORMAT).assertIsDisplayed()
         composeRule.onNodeWithTag(TAG_SUMMARY_CONTINUE).assertIsDisplayed()
+    }
+
+    /** Экран подтверждения замены без ввода: кнопка недоступна (ОВ-67). */
+    private fun showReplacementConfirmation() {
+        composeRule.setContent {
+            SklyankaTheme {
+                ReplaceConfirmScreen(
+                    device = TransferScreenFixtures.DEVICE_COUNTS,
+                    file = TransferScreenFixtures.FILE_COUNTS,
+                    safetyCopyName = TransferScreenFixtures.SAFETY_COPY,
+                    confirmationWord = "",
+                    onConfirmationWordChange = {},
+                    onConfirm = {},
+                    onCancel = {},
+                )
+            }
+        }
+    }
+
+    /** Экран подтверждения замены с живым полем: ввод двигает доступность кнопки (ОВ-67). */
+    private fun showReplacementConfirmationTyping() {
+        composeRule.setContent {
+            var word by remember { mutableStateOf("") }
+            SklyankaTheme {
+                ReplaceConfirmScreen(
+                    device = TransferScreenFixtures.DEVICE_COUNTS,
+                    file = TransferScreenFixtures.FILE_COUNTS,
+                    safetyCopyName = TransferScreenFixtures.SAFETY_COPY,
+                    confirmationWord = word,
+                    onConfirmationWordChange = { word = it },
+                    onConfirm = {},
+                    onCancel = {},
+                )
+            }
+        }
     }
 
     private fun showOverview(state: TransferUiState) {

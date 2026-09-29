@@ -308,6 +308,8 @@ internal object TransferScreenProbe {
                     device = state.deviceCounts ?: EMPTY_COUNTS,
                     file = state.fileCounts ?: EMPTY_COUNTS,
                     safetyCopyName = TransferFormat.SAFETY_COPY_NAME,
+                    confirmationWord = state.confirmationWord,
+                    onConfirmationWordChange = { onIntent(TransferIntent.ConfirmationWordChanged(it)) },
                     onConfirm = { onIntent(TransferIntent.Apply) },
                     onCancel = {},
                 )

@@ -82,6 +82,8 @@ fun DataTransferRoute(
             device = state.deviceCounts ?: EMPTY_COUNTS,
             file = state.fileCounts ?: EMPTY_COUNTS,
             safetyCopyName = TransferFormat.SAFETY_COPY_NAME,
+            confirmationWord = state.confirmationWord,
+            onConfirmationWordChange = { viewModel.onIntent(TransferIntent.ConfirmationWordChanged(it)) },
             onConfirm = { viewModel.onIntent(TransferIntent.Apply) },
             onCancel = { viewModel.onIntent(TransferIntent.Leave) },
             modifier = modifier,

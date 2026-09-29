@@ -79,6 +79,8 @@
     <string name="transfer_replace_safety_copy">Перед стиранием приложение сохранит страховочную копию текущих данных во внутреннюю память приложения, файл %1$s. Она недоступна другим приложениям и перезаписывается при следующей замене.</string>
     <string name="transfer_replace_confirm">Стереть и загрузить</string>
     <string name="transfer_replace_cancel">Не стирать</string>
+    <string name="transfer_replace_word">Заменить</string>
+    <string name="transfer_replace_word_label">Введите слово «%1$s», чтобы подтвердить</string>
 
     <!-- ===== Отчёт (ПЕР-15 п. 7, критерий 17) ===== -->
     <string name="transfer_report_title">Загрузка завершена</string>
