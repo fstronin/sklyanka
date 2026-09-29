@@ -12,6 +12,7 @@ import ru.stohastika.sklyanka.domain.model.Fixtures
 import ru.stohastika.sklyanka.domain.model.Intake
 import ru.stohastika.sklyanka.domain.model.IntakeSource
 import ru.stohastika.sklyanka.domain.model.Medication
+import ru.stohastika.sklyanka.domain.reminder.port.DeferredReminder
 import ru.stohastika.sklyanka.domain.schedule.FakeIntakeRepository
 import ru.stohastika.sklyanka.domain.schedule.FakeMedicationRepository
 import ru.stohastika.sklyanka.domain.schedule.FakeProfileRepository
@@ -75,6 +76,7 @@ internal class ReminderTestWorld(zone: ZoneId = MOSCOW) {
         watch = watch,
         alarms = alarms,
         journal = journal,
+        deferred = deferred,
         settings = settings,
         window = window,
         time = clock,
@@ -139,6 +141,17 @@ internal class ReminderTestWorld(zone: ZoneId = MOSCOW) {
         val intake = Fixtures.pendingIntake().copy(id = id, scheduledAt = at, medicationId = medicationId)
         intakes.put(intake)
         return intake
+    }
+
+    /**
+     * Положить запись отложенного срабатывания так, как её оставило бы нажатие «Отложить».
+     *
+     * Отдельный помощник, а не прямое обращение к хранилищу в каждом тесте: момент
+     * записывается от местных часов мира, и «через 15 минут» в тесте и в сценарии —
+     * одно и то же число.
+     */
+    suspend fun deferUntil(at: LocalDateTime, id: String = Fixtures.INTAKE_ID, attempt: Int = 0) {
+        deferred.put(DeferredReminder(id, momentOf(at), attempt))
     }
 
     /** Второе лекарство того же профиля на то же время — общая карточка (НАП-36). */

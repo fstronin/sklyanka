@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import ru.stohastika.sklyanka.domain.model.Fixtures
+import ru.stohastika.sklyanka.domain.reminder.port.DeferredReminder
 import ru.stohastika.sklyanka.domain.reminder.port.WatchSendResult
 import java.time.LocalDateTime
 
@@ -232,5 +233,94 @@ class HandleFiredReminderUseCaseTest {
             "a reminder that failed to appear is exactly when the next attempt matters (REM-1)",
         )
         assertEquals(1, world.alarms.attempts[Fixtures.INTAKE_ID])
+    }
+
+    // --- Судьба постоянной записи (SKL-35, ОВ-75) ----------------------------------------------
+
+    @Test
+    fun `a shown reminder spends its deferred record when no repeat follows`() = runTest {
+        world.pending()
+        world.deferUntil(LocalDateTime.of(2026, 9, 25, 14, 0))
+
+        fireAtFourteen()
+
+        assertTrue(world.deferred.stored.isEmpty(), "the show happened, the deferred promise is spent")
+    }
+
+    @Test
+    fun `a planned repeat rewrites the record with its moment and number`() = runTest {
+        world.pending()
+        world.settings.setPersistentEnabled(true)
+        world.deferUntil(LocalDateTime.of(2026, 9, 25, 14, 0))
+
+        fireAtFourteen()
+
+        assertEquals(
+            DeferredReminder(
+                intakeId = Fixtures.INTAKE_ID,
+                fireAt = world.momentOf(LocalDateTime.of(2026, 9, 25, 14, 15)),
+                attempt = 1,
+            ),
+            world.deferred.stored.getValue(Fixtures.INTAKE_ID),
+        )
+    }
+
+    @Test
+    fun `a second repeat rewrites the record with number two`() = runTest {
+        world.pending()
+        world.settings.setPersistentEnabled(true)
+        world.deferUntil(LocalDateTime.of(2026, 9, 25, 14, 0))
+        fireAtFourteen()
+
+        world.moveTo(LocalDateTime.of(2026, 9, 25, 14, 15))
+        world.fired(Fixtures.INTAKE_ID, attempt = 1)
+
+        assertEquals(
+            DeferredReminder(
+                intakeId = Fixtures.INTAKE_ID,
+                fireAt = world.momentOf(LocalDateTime.of(2026, 9, 25, 14, 30)),
+                attempt = 2,
+            ),
+            world.deferred.stored.getValue(Fixtures.INTAKE_ID),
+        )
+    }
+
+    @Test
+    fun `a show that never reached the shade keeps the planned repeat`() = runTest {
+        world.pending()
+        world.settings.setPersistentEnabled(true)
+        world.notifications.reachesTheShade = false
+        world.deferUntil(LocalDateTime.of(2026, 9, 25, 14, 0))
+
+        fireAtFourteen()
+
+        assertEquals(
+            DeferredReminder(
+                intakeId = Fixtures.INTAKE_ID,
+                fireAt = world.momentOf(LocalDateTime.of(2026, 9, 25, 14, 15)),
+                attempt = 1,
+            ),
+            world.deferred.stored.getValue(Fixtures.INTAKE_ID),
+        )
+    }
+
+    @Test
+    fun `an intake marked before the show loses its deferred record`() = runTest {
+        world.pending()
+        world.deferUntil(LocalDateTime.of(2026, 9, 25, 14, 0))
+        world.take()
+
+        fireAtFourteen()
+
+        assertTrue(world.deferred.stored.isEmpty(), "a marked intake has nothing to repeat")
+    }
+
+    @Test
+    fun `a suppression without a record touches nothing`() = runTest {
+        val outcome = world.fired("nobody")
+
+        assertEquals(FiredOutcome.Suppressed(SuppressReason.NOT_FOUND), outcome)
+        assertTrue(world.deferred.stored.isEmpty())
+        assertEquals(0, world.alarms.cancelCalls, "a suppression must not cancel alarms")
     }
 }

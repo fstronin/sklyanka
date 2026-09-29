@@ -4,6 +4,8 @@ import kotlinx.coroutines.delay
 import ru.stohastika.sklyanka.domain.intake.IntakeWindow
 import ru.stohastika.sklyanka.domain.model.IntakeStatus
 import ru.stohastika.sklyanka.domain.reminder.port.AlarmGateway
+import ru.stohastika.sklyanka.domain.reminder.port.DeferredReminder
+import ru.stohastika.sklyanka.domain.reminder.port.DeferredReminders
 import ru.stohastika.sklyanka.domain.reminder.port.NotificationGateway
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderCardSource
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderJournal
@@ -78,6 +80,7 @@ class HandleFiredReminderUseCase(
     private val watch: WatchGateway,
     private val alarms: AlarmGateway,
     private val journal: ReminderJournal,
+    private val deferred: DeferredReminders,
     private val settings: ReminderSettings,
     private val window: IntakeWindow,
     private val time: TimeSource,
@@ -87,6 +90,9 @@ class HandleFiredReminderUseCase(
         val now = time.now()
         val intake = plan.intake(intakeId)
         return if (intake == null) {
+            // Приёма нет — запись снята перепланированием или переносом данных;
+            // отложенному срабатыванию ждать больше нечего.
+            deferred.remove(intakeId)
             suppress(now, SuppressReason.NOT_FOUND, intakeId = intakeId)
         } else {
             deliver(intake, attempt, now)
@@ -104,6 +110,8 @@ class HandleFiredReminderUseCase(
             // Отметка опередила показ: заодно снимаем карточку, которая могла остаться
             // от предыдущего показа этого же слота (НАП-32).
             if (blocked == SuppressReason.ALREADY_MARKED) notifications.cancel(intake.slot)
+            // Срабатывание состоялось, но показа не будет: отложенному больше нечего ждать.
+            deferred.remove(intake.intakeId)
             suppress(now, blocked, intake, scheduledAt, deviation)
         }
     }
@@ -131,6 +139,9 @@ class HandleFiredReminderUseCase(
     ): FiredOutcome {
         val slotCard = cards.card(intake.slot, mirroredToWatch = false)
         return if (slotCard == null || slotCard.isEmpty) {
+            // Показывать нечего — запись снимается: следующий будильник о пустом слоте
+            // ничего бы не изменил.
+            deferred.remove(intake.intakeId)
             suppress(now, SuppressReason.EMPTY_SLOT, intake, scheduledAt, deviation)
         } else {
             show(intake, slotCard, attempt, now, scheduledAt, deviation)
@@ -218,7 +229,15 @@ class HandleFiredReminderUseCase(
         return null
     }
 
-    /** Повтор настойчивого напоминания, если он разрешён правилом (НАП-25, НАП-26). */
+    /**
+     * Повтор настойчивого напоминания, если он разрешён правилом (НАП-25, НАП-26).
+     *
+     * Здесь же судьба постоянной записи: она — тот же след решения о повторе, и держать
+     * правило и его след врозь нельзя — разъехавшиеся, они дали бы либо будильник без
+     * записи (повтор не переживёт перезагрузку), либо запись без будильника. Исход
+     * `NOT_PRESENTED` сюда тоже доходит: несостоявшийся показ — как раз случай, когда
+     * следующая попытка нужнее всего (НАП-1).
+     */
     private suspend fun planRepeat(intake: ReminderIntake, attempt: Int, now: Instant): RepeatDecision {
         val values = settings.read()
         val repeat = PersistentRepeatPolicy.decide(
@@ -231,7 +250,10 @@ class HandleFiredReminderUseCase(
             ),
         )
         if (repeat is RepeatDecision.Repeat) {
-            alarms.scheduleRepeat(intake.intakeId, repeat.at, repeat.attempt)
+            deferred.put(DeferredReminder(intake.intakeId, repeat.at, repeat.attempt))
+            alarms.schedule(intake.intakeId, repeat.at, repeat.attempt)
+        } else {
+            deferred.remove(intake.intakeId)
         }
         return repeat
     }

@@ -239,6 +239,7 @@ class ScenarioReminders(
             watch = watch,
             alarms = alarms,
             journal = journal,
+            deferred = deferredStore,
             settings = settingsStore,
             window = intakes.window,
             time = clock.time,
