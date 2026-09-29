@@ -1,6 +1,8 @@
 package ru.stohastika.sklyanka.feature.settings.transfer
 
 import android.content.ActivityNotFoundException
+import android.net.Uri
+import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
@@ -49,11 +51,11 @@ fun DataTransferRoute(
     }
 
     val overview: @Composable () -> Unit = {
-        DataTransferScreen(
+        TransferOverviewStep(
             state = state,
-            onIntent = viewModel::onIntent,
-            onSave = { withPicker(viewModel) { saveLauncher.launch(state.exportFileName) } },
-            onPickFile = { withPicker(viewModel) { pickLauncher.launch(arrayOf(MIME_JSON, MIME_ANY)) } },
+            viewModel = viewModel,
+            saveLauncher = saveLauncher,
+            pickLauncher = pickLauncher,
             onBack = onBack,
             modifier = modifier,
         )
@@ -105,6 +107,39 @@ fun DataTransferRoute(
 }
 
 /**
+ * Исходный шаг переноса: выгрузка, режим загрузки и выбор файла.
+ *
+ * Вынесен отдельной сборкой: маршрут держит все шаги сразу, и его длина — про число
+ * шагов, а не про обработку отсутствия системного выбора файлов, общую с SKL-36.
+ */
+@Composable
+private fun TransferOverviewStep(
+    state: TransferUiState,
+    viewModel: DataTransferViewModel,
+    saveLauncher: ManagedActivityResultLauncher<String, Uri?>,
+    pickLauncher: ManagedActivityResultLauncher<Array<String>, Uri?>,
+    onBack: () -> Unit,
+    modifier: Modifier,
+) {
+    DataTransferScreen(
+        state = state,
+        onIntent = viewModel::onIntent,
+        onSave = {
+            withPicker(onMissing = { viewModel.onIntent(TransferIntent.NoFilePicker) }) {
+                saveLauncher.launch(state.exportFileName)
+            }
+        },
+        onPickFile = {
+            withPicker(onMissing = { viewModel.onIntent(TransferIntent.NoFilePicker) }) {
+                pickLauncher.launch(arrayOf(MIME_JSON, MIME_ANY))
+            }
+        },
+        onBack = onBack,
+        modifier = modifier,
+    )
+}
+
+/**
  * Шаг подтверждения замены: числа, слово и опасное действие (ПЕР-16, ОВ-67).
  *
  * Вынесен из [DataTransferRoute] отдельной сборкой: маршрут держит все шаги сразу,
@@ -131,21 +166,30 @@ private fun ReplaceConfirmationStep(state: TransferUiState, onIntent: (TransferI
  * `ActivityNotFoundException` прямо в главный поток: приложение умирает по нажатию кнопки.
  * Так и происходило на образе без системного выбора файлов — то есть отказ этот не
  * умозрительный. Человеку вместо падения говорится, что выбрать файл нечем.
+ *
+ * Общий у переноса (SKL-19) и удаления профиля (SKL-36): выгрузка одна и та же,
+ * и второй обработчик отсутствия активности расходился бы с первым.
  */
-private inline fun withPicker(viewModel: DataTransferViewModel, launch: () -> Unit) {
+internal inline fun withPicker(onMissing: () -> Unit, launch: () -> Unit) {
     try {
         launch()
     } catch (_: ActivityNotFoundException) {
         // Исключение — единственный способ узнать об отсутствии активности заранее:
         // опрос PackageManager отвечает на другой вопрос и на части прошивок отвечает неверно.
-        viewModel.onIntent(TransferIntent.NoFilePicker)
+        onMissing()
     }
 }
 
 /** Пустая сводка: состояние допускает шаг без прочитанного файла, и падать на нём нельзя. */
 private val EMPTY_COUNTS = TransferCounts(profiles = 0, medications = 0, archived = 0, intakes = 0)
 
-private const val MIME_JSON = "application/json"
+/**
+ * Тип файла выгрузки, который предлагается системе.
+ *
+ * Общий у переноса (SKL-19) и удаления профиля (SKL-36): файл один и тот же, и двух
+ * констант с одним значением не заводится.
+ */
+internal const val MIME_JSON = "application/json"
 
 /**
  * Второй тип для выбора файла.
