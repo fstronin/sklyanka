@@ -5,14 +5,35 @@ package ru.stohastika.sklyanka.domain.history
  *
  * Домен знает о документе ровно три вещи: как он называется, какого он типа и что у него
  * внутри. Отрисовка — в экранном модуле (там живут ресурсы и формулировки), передача —
- * в `app` (там живут системный обмен и системный выбор места). Формат пока текстовый:
- * вид артефакта не подтверждён (ОВ-15), и всё, что от него зависит, собрано в этих трёх
- * полях, а не размазано по расчёту.
+ * в `app` (там живут системный обмен и системный выбор места). Содержимое — байты, а не
+ * строка: отчёт врачу существует в PDF (ОВ-15), и «содержимое как текст» перестало быть
+ * верным описанием артефакта.
+ *
+ * Обычный класс, а не `data class`: у массива ссылочное равенство, и две копии одного
+ * документа расходились бы в сравнении. Равенство задано по содержимому — документ
+ * сравнивают в тестах и при разборе исхода передачи.
  */
-data class ReportDocument(val fileName: String, val mediaType: String, val content: String) {
+class ReportDocument(val fileName: String, val mediaType: String, val bytes: ByteArray) {
 
     /** Размер в байтах: он уходит в журнал вместо содержимого (НФТ-19). */
-    val sizeBytes: Int get() = content.toByteArray(Charsets.UTF_8).size
+    val sizeBytes: Int get() = bytes.size
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is ReportDocument) return false
+        return fileName == other.fileName &&
+            mediaType == other.mediaType &&
+            bytes.contentEquals(other.bytes)
+    }
+
+    override fun hashCode(): Int {
+        var result = fileName.hashCode()
+        result = 31 * result + mediaType.hashCode()
+        result = 31 * result + bytes.contentHashCode()
+        return result
+    }
+
+    override fun toString(): String = "ReportDocument($fileName, $mediaType, ${bytes.size} bytes)"
 }
 
 /** Куда сохранить отчёт: непрозрачная ссылка системного выбора места (НФТ-17). */

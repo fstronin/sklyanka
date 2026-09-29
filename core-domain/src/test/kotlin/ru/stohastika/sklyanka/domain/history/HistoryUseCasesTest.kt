@@ -146,7 +146,7 @@ class HistoryUseCasesTest {
     fun `every outcome of the transfer is recorded including the cancellation`() = runTest {
         val transfer = RecordingTransfer()
         val useCase = TransferDoctorReportUseCase(transfer, activeProfile, log)
-        val document = ReportDocument(fileName = "report.txt", mediaType = "text/plain", content = "x")
+        val document = ReportDocument(fileName = "report.pdf", mediaType = "application/pdf", bytes = "x".toByteArray())
 
         transfer.next = ReportTransferOutcome.Shared
         assertEquals(ReportTransferOutcome.Shared, useCase.share(document))
