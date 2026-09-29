@@ -116,6 +116,7 @@ class TransferFileBuilder(private val clock: ScenarioClock) {
         device: Medication,
         times: List<LocalTime> = device.times,
         stockLeft: BigDecimal? = device.stockLeft,
+        packageSize: BigDecimal? = device.packageSize,
         id: String? = null,
         name: String? = null,
     ): TransferFileBuilder {
@@ -126,6 +127,7 @@ class TransferFileBuilder(private val clock: ScenarioClock) {
             name = name ?: device.name,
             times = times,
             stockLeft = stockLeft,
+            packageSize = packageSize,
         )
         medicationsByKey[key] = medication
         fileMedications += medication

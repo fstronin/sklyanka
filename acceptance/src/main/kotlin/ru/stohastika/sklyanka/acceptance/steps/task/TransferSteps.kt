@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import ru.stohastika.sklyanka.acceptance.RussianDates
 import ru.stohastika.sklyanka.acceptance.steps.dateOf
@@ -26,6 +27,7 @@ import ru.stohastika.sklyanka.domain.repository.IntakeRepository
 import ru.stohastika.sklyanka.domain.transfer.MatchDecision
 import ru.stohastika.sklyanka.domain.transfer.TransferFormat
 import ru.stohastika.sklyanka.domain.transfer.TransferMode
+import ru.stohastika.sklyanka.domain.transfer.TransferNotice
 import ru.stohastika.sklyanka.domain.transfer.TransferOutcome
 import java.math.BigDecimal
 import java.time.Instant
@@ -202,7 +204,7 @@ class TransferSteps(private val world: AcceptanceWorld) {
 
     @Допустим(
         "^файл содержит лекарство «(.+?)» дозировкой (\\S+) (\\S+) профиля «(.+?)» с приёмами в (.+?)" +
-            "(?: и остатком (\\d+) таблеток)?$",
+            "(?: и остатком (\\d+) таблеток)?(?: и размером упаковки (\\d+))?$",
     )
     @Suppress("LongParameterList")
     fun theFileHasAMatchingMedication(
@@ -212,6 +214,7 @@ class TransferSteps(private val world: AcceptanceWorld) {
         profile: String,
         times: String,
         stock: String?,
+        packageSize: String?,
     ) {
         val device = world.medications.get(world.medicationNamed(medication))
         assertEquals(
@@ -230,6 +233,7 @@ class TransferSteps(private val world: AcceptanceWorld) {
             device = device,
             times = RussianDates.times(times),
             stockLeft = stock?.let { BigDecimal(it) },
+            packageSize = packageSize?.let { BigDecimal(it) },
         )
         world.transfer.fileMedicationNames[medication] = device.name
         lastFileMedicationKey = medication
@@ -664,6 +668,26 @@ class TransferSteps(private val world: AcceptanceWorld) {
         val before = requireNotNull(world.transfer.medicationsBeforeApply.firstOrNull { it.id == id })
         val after = requireNotNull(world.medications.byId(id))
         assertEquals(before.stockLeft, after.stockLeft, "the stock must come from the accepted record, not the history")
+    }
+
+    @Тогда("^размер упаковки «(.+?)» на устройстве — (\\d+) таблет\\S+$")
+    fun thePackageSizeArrived(medication: String, units: Int) {
+        val after = world.medications.get(world.medicationNamed(medication))
+        assertEquals(BigDecimal(units), after.packageSize, "the package size of the accepted record must arrive")
+    }
+
+    @Тогда("^размер упаковки «(.+?)» на устройстве не задан$")
+    fun thePackageSizeStayedUnknown(medication: String) {
+        // Файл без необязательного поля — не потеря: размер остаётся «не задан», и человек
+        // не получает предупреждения о том, чего не терял (ОВ-45).
+        val after = world.medications.get(world.medicationNamed(medication))
+        assertNull(after.packageSize, "an absent optional field must stay unknown")
+    }
+
+    @Тогда("^загрузка не сопровождается замечаниями$")
+    fun theLoadHasNoNotices() {
+        val report = requireNotNull(world.transfer.lastReport) { "no report was produced" }
+        assertEquals(emptyList<TransferNotice>(), report.notices, "no notice was expected")
     }
 
     @Тогда("^у профиля «(.+?)» на устройстве напоминания по-прежнему дублируются владельцу телефона$")
