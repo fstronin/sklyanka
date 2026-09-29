@@ -56,8 +56,7 @@ class ScenarioProfileDeletion(
     )
 
     /** Подтверждение удаления профиля по имени сценария; исход — предмет шага. */
-    fun confirm(profileName: String): DeleteProfileOutcome =
-        runBlocking { useCase(profiles.get(profileName).id) }
+    fun confirm(profileName: String): DeleteProfileOutcome = runBlocking { useCase(profiles.get(profileName).id) }
 
     /** Числа потерь профиля по имени сценария — то же, что увидит экран. */
     fun lossesOf(profileName: String): ProfileLosses = readLosses(profiles.get(profileName).id)
