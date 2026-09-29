@@ -86,6 +86,7 @@ object ReminderModule {
         alarms: AlarmGateway,
         notifications: NotificationGateway,
         journal: ReminderJournal,
+        deferred: DeferredReminders,
         sweepMissed: SweepMissedIntakesUseCase,
         time: TimeSource,
     ): RescheduleRemindersUseCase = RescheduleRemindersUseCase(
@@ -93,6 +94,7 @@ object ReminderModule {
         alarms = alarms,
         notifications = notifications,
         journal = journal,
+        deferred = deferred,
         sweepMissed = sweepMissed,
         time = time,
     )

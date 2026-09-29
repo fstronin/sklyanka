@@ -123,9 +123,21 @@ class ScenarioReminders(
             alarms = alarms,
             notifications = notifications,
             journal = journal,
+            deferred = deferredStore,
             sweepMissed = SweepMissedIntakesUseCase(repositories.intakeStore, intakes.window, clock.time, log),
             time = clock.time,
         )(reason)
+    }
+
+    /**
+     * Перезагрузка без устройства: будильники системы стираются, записи базы остаются.
+     *
+     * `AlarmManager` после перезагрузки не хранит намерений приложения — поэтому
+     * `scheduled()` возвращает пусто, пока пересборка не поставит будильники заново;
+     * отложенные срабатывания живут в базе и переживают её (SKL-35, ОВ-75).
+     */
+    fun simulateReboot() {
+        alarmStore.wipe()
     }
 
     /** Что стоит в системе сейчас: идентификатор приёма → момент срабатывания. */
@@ -349,6 +361,12 @@ private class InMemoryAlarms : AlarmGateway {
     override fun canScheduleExact(): Boolean = true
 
     fun attemptOf(intakeId: String): Int? = attempts[intakeId]
+
+    /** Перезагрузка: система не хранит намерений приложения, будильников больше нет. */
+    fun wipe() {
+        byIntake.clear()
+        attempts.clear()
+    }
 }
 
 /**

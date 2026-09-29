@@ -56,6 +56,7 @@ internal class ReminderTestWorld(zone: ZoneId = MOSCOW) {
         alarms = alarms,
         notifications = notifications,
         journal = journal,
+        deferred = deferred,
         sweepMissed = sweep,
         time = clock,
     )
@@ -130,6 +131,19 @@ internal class ReminderTestWorld(zone: ZoneId = MOSCOW) {
 
     fun flyTo(zone: ZoneId) {
         clock.moveTo(zone)
+    }
+
+    /**
+     * Перезагрузка без устройства: будильники системы стираются, записи хранилища остаются.
+     *
+     * `AlarmManager` после перезагрузки не хранит намерений приложения, поэтому набор
+     * будильников пуст, пока пересборка не поставит их заново; постоянные записи — это
+     * база, и она переживает перезагрузку. Сама пересборка вызывается причиной `BOOT`,
+     * как её позвал бы приёмник системного события.
+     */
+    fun simulateReboot() {
+        alarms.alarms.clear()
+        alarms.attempts.clear()
     }
 
     /** Ожидающийся приём на указанное местное время. */

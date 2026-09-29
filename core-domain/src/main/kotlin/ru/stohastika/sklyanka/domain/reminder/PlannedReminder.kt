@@ -9,6 +9,10 @@ import java.time.LocalDateTime
  * [at] — момент срабатывания, вычисленный из локального [scheduledAt] и **текущего**
  * часового пояса. Пояс входит в вычисление, а не в хранение (НФТ-34), и именно поэтому
  * смена пояса требует полной пересборки окна (НАП-11).
+ *
+ * [attempt] — номер показа, который доедет до `AlarmGateway.schedule`: у срабатывания
+ * из окна он нулевой, у восстановленного откладывания или повтора — из записи (SKL-35).
+ * В сравнении с системой номера не участвуют: сравниваются моменты, а не номера.
  */
 data class PlannedReminder(
     val intakeId: String,
@@ -16,6 +20,7 @@ data class PlannedReminder(
     val scheduledAt: LocalDateTime,
     val medicationId: String,
     val profileId: String,
+    val attempt: Int = 0,
 )
 
 /**
