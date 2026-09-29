@@ -78,14 +78,9 @@ fun DataTransferRoute(
             modifier = modifier,
         )
 
-        TransferStep.REPLACE_CONFIRM -> ReplaceConfirmScreen(
-            device = state.deviceCounts ?: EMPTY_COUNTS,
-            file = state.fileCounts ?: EMPTY_COUNTS,
-            safetyCopyName = TransferFormat.SAFETY_COPY_NAME,
-            confirmationWord = state.confirmationWord,
-            onConfirmationWordChange = { viewModel.onIntent(TransferIntent.ConfirmationWordChanged(it)) },
-            onConfirm = { viewModel.onIntent(TransferIntent.Apply) },
-            onCancel = { viewModel.onIntent(TransferIntent.Leave) },
+        TransferStep.REPLACE_CONFIRM -> ReplaceConfirmationStep(
+            state = state,
+            onIntent = viewModel::onIntent,
             modifier = modifier,
         )
 
@@ -107,6 +102,30 @@ fun DataTransferRoute(
             )
         } ?: overview()
     }
+}
+
+/**
+ * Шаг подтверждения замены: числа, слово и опасное действие (ПЕР-16, ОВ-67).
+ *
+ * Вынесен из [DataTransferRoute] отдельной сборкой: маршрут держит все шаги сразу,
+ * и его длина — про число шагов, а не про устройство одного из них.
+ */
+@Composable
+private fun ReplaceConfirmationStep(
+    state: TransferUiState,
+    onIntent: (TransferIntent) -> Unit,
+    modifier: Modifier,
+) {
+    ReplaceConfirmScreen(
+        device = state.deviceCounts ?: EMPTY_COUNTS,
+        file = state.fileCounts ?: EMPTY_COUNTS,
+        safetyCopyName = TransferFormat.SAFETY_COPY_NAME,
+        confirmationWord = state.confirmationWord,
+        onConfirmationWordChange = { onIntent(TransferIntent.ConfirmationWordChanged(it)) },
+        onConfirm = { onIntent(TransferIntent.Apply) },
+        onCancel = { onIntent(TransferIntent.Leave) },
+        modifier = modifier,
+    )
 }
 
 /**

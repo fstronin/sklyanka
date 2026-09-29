@@ -47,6 +47,11 @@ import ru.stohastika.sklyanka.ui.token.SklyankaType
  *
  * Экрана в макетах нет; собран из существующих компонентов дизайн-системы (ОВ-67).
  */
+// Параметров восемь: числа с двух сторон, имя страховочной копии, слово и его обработчик,
+// два действия и модификатор. Свернуть их в контейнер можно, но контейнер здесь — тот же
+// список под другим именем, и он спрятал бы, что именно экран показывает. У `SklyankaTextField`
+// порог тот же и снят так же.
+@Suppress("LongParameterList")
 @Composable
 fun ReplaceConfirmScreen(
     device: TransferCounts,
@@ -94,19 +99,10 @@ fun ReplaceConfirmScreen(
                 color = colors.textMuted,
                 modifier = Modifier.testTag(TAG_SAFETY_COPY),
             )
-            // Подпись-образец, поле и основная кнопка — приём ОВ-7/ОВ-67: слово называет
-            // само действие, а поле не несёт состояния ошибки — неверный ввод виден
-            // недоступной кнопкой, а не красной рамкой.
-            Text(
-                text = stringResource(R.string.transfer_replace_word_label, word),
-                style = SklyankaType.BodyDefault,
-                color = colors.text,
-                modifier = Modifier.testTag(TAG_REPLACE_WORD_LABEL),
-            )
-            SklyankaTextField(
+            ConfirmationWordBlock(
+                word = word,
                 value = confirmationWord,
                 onValueChange = onConfirmationWordChange,
-                modifier = Modifier.fillMaxWidth().testTag(TAG_REPLACE_WORD_FIELD),
             )
             // Отступ перед подтверждающей кнопкой: она не должна оказаться под пальцем
             // там, где на прошлом экране была кнопка «Выбрать файл».
@@ -124,6 +120,30 @@ fun ReplaceConfirmScreen(
                 modifier = Modifier.fillMaxWidth().testTag(TAG_REPLACE_CONFIRM_ACTION),
             )
         }
+    }
+}
+
+/**
+ * Подпись-образец и поле слова-подтверждения (ОВ-7/ОВ-67).
+ *
+ * Поле не переводится в состояние ошибки никогда: неверный ввод виден недоступной
+ * кнопкой, а не красной рамкой (ОВ-38 к этому полю не применяется) — человеку нечего
+ * «исправлять», и подписи под полем не заводится.
+ */
+@Composable
+private fun ConfirmationWordBlock(word: String, value: String, onValueChange: (String) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Micro)) {
+        Text(
+            text = stringResource(R.string.transfer_replace_word_label, word),
+            style = SklyankaType.BodyDefault,
+            color = SklyankaTheme.colors.text,
+            modifier = Modifier.testTag(TAG_REPLACE_WORD_LABEL),
+        )
+        SklyankaTextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = Modifier.fillMaxWidth().testTag(TAG_REPLACE_WORD_FIELD),
+        )
     }
 }
 
