@@ -1,20 +1,29 @@
 package ru.stohastika.sklyanka.feature.today
 
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.click
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -40,17 +49,21 @@ import ru.stohastika.sklyanka.domain.today.TodayLayout
 import ru.stohastika.sklyanka.ui.component.TAG_INTAKE_CARD
 import ru.stohastika.sklyanka.ui.component.TAG_MARK_BUTTON
 import ru.stohastika.sklyanka.ui.component.TAG_MISSED_STATUS
+import ru.stohastika.sklyanka.ui.component.TAG_PRIMARY_BUTTON
+import ru.stohastika.sklyanka.ui.component.TAG_PROGRESS_LINK
 import ru.stohastika.sklyanka.ui.component.TAG_SCREEN_HEADER
+import ru.stohastika.sklyanka.ui.component.TAG_SECONDARY_BUTTON
 import ru.stohastika.sklyanka.ui.component.TAG_SNACKBAR
 import ru.stohastika.sklyanka.ui.component.TAG_TAKEN_STATUS
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
+import ru.stohastika.sklyanka.ui.token.SklyankaSizes
 import java.math.BigDecimal
 import java.time.LocalTime
 import ru.stohastika.sklyanka.ui.R as UiR
 
 /**
- * Экран «Сегодня»: четыре вида карточки приёма, групповая карточка, свёртка плотного
- * дня, блок «по потребности», плашка остатка и пустое состояние.
+ * Экран «Сегодня»: четыре вида карточки приёма, свёртка плотного дня, блок
+ * «по потребности», плашка остатка и пустое состояние.
  *
  * ПРОГОН НЕ ВЫПОЛНЯЛСЯ: эмулятора и устройства в среде задачи нет. Тест обязан
  * компилироваться (`assembleDebugAndroidTest`), прогон — на эталонном устройстве.
@@ -159,32 +172,162 @@ class TodayScreenTest {
         composeRule.onNodeWithTag(TAG_PRN_LIMIT_REASON).assertIsDisplayed()
     }
 
+    // --- Групповая отметка и ссылка на историю (SKL-31) -------------------------
+
     @Test
-    fun simultaneousIntakesAreShownAsOneCardWithTwoActions() {
+    fun simultaneousIntakesOfTheCurrentTimeAreRowsUnderAGroupCaption() {
         show(TodayFixtures.groupDay())
 
-        composeRule.onNodeWithTag(TAG_GROUP_CARD).assertIsDisplayed()
+        composeRule.onAllNodesWithTag(TAG_INTAKE_CARD).assertCountEquals(TodayFixtures.GROUP_SIZE)
+        composeRule.onAllNodesWithText(TIME_14).assertCountEquals(1)
+        composeRule.onNodeWithText(groupCaption(3)).assertIsDisplayed()
         composeRule.onNodeWithText(context.getString(R.string.group_mark_all_three)).assertIsDisplayed()
-        composeRule.onNodeWithText(context.getString(R.string.group_mark_one_by_one)).assertIsDisplayed()
     }
 
     @Test
-    fun oneByOneAsksToExpandTheGroupWithoutMarkingAnything() {
+    fun theGroupCaptionAndButtonCountOnlyTheAwaitingIntakes() {
+        show(TodayFixtures.groupDay(awaiting = 2))
+
+        composeRule.onNodeWithText(groupCaption(2)).assertIsDisplayed()
+        composeRule.onNodeWithText(context.getString(R.string.group_mark_both)).assertIsDisplayed()
+    }
+
+    @Test
+    fun withASingleAwaitingIntakeTheGroupCaptionAndButtonAreGone() {
+        show(TodayFixtures.groupDay(awaiting = 1))
+
+        composeRule.onAllNodesWithTag(TAG_GROUP_CAPTION, useUnmergedTree = true).assertCountEquals(0)
+        composeRule.onAllNodesWithTag(TAG_GROUP_MARK_ALL).assertCountEquals(0)
+    }
+
+    @Test
+    fun aheadSimultaneousIntakesCarryNoGroupCaptionOrBatch() {
+        show(TodayFixtures.groupDay(isNow = false))
+
+        composeRule.onAllNodesWithTag(TAG_GROUP_CAPTION, useUnmergedTree = true).assertCountEquals(0)
+        composeRule.onAllNodesWithTag(TAG_GROUP_MARK_ALL).assertCountEquals(0)
+    }
+
+    @Test
+    fun theFirstPressOnlyArmsTheButtonAndMarksNothing() {
         val intents = mutableListOf<TodayIntent>()
         show(TodayFixtures.groupDay(), onIntent = intents::add)
 
-        composeRule.onNodeWithTag(TAG_GROUP_ONE_BY_ONE).performClick()
+        composeRule.onNodeWithTag(TAG_GROUP_MARK_ALL).performClick()
 
-        assertEquals(listOf(TodayIntent.ExpandGroup(LocalTime.of(14, 0))), intents)
+        assertEquals(listOf(TodayIntent.ArmGroupMark(TodayFixtures.GROUP_TIME)), intents)
     }
 
     @Test
-    fun anExpandedGroupFallsApartIntoSeparateRows() {
-        show(TodayFixtures.groupDay().copy(expandedGroups = setOf(LocalTime.of(14, 0))))
+    fun theSecondPressAsksToMarkEveryAwaitingIntake() {
+        val intents = mutableListOf<TodayIntent>()
+        show(TodayFixtures.groupDay().copy(confirmingGroup = TodayFixtures.GROUP_TIME), onIntent = intents::add)
 
-        composeRule.onAllNodesWithTag(TAG_GROUP_CARD).assertCountEquals(0)
-        composeRule.onAllNodesWithTag(TAG_INTAKE_CARD).assertCountEquals(TodayFixtures.GROUP_SIZE)
+        composeRule.onNodeWithTag(TAG_GROUP_MARK_ALL).performClick()
+
+        assertEquals(listOf(TodayIntent.MarkGroupTaken(listOf("i-a", "i-b", "i-c"))), intents)
     }
+
+    @Test
+    fun theConfirmationIsAQuestionOnThePrimaryButtonAnnouncedPolitely() {
+        show(TodayFixtures.groupDay().copy(confirmingGroup = TodayFixtures.GROUP_TIME))
+
+        composeRule.onNodeWithText(context.getString(R.string.group_confirm_all_three)).assertIsDisplayed()
+        val node = composeRule.onNode(batchButton(TAG_PRIMARY_BUTTON), useUnmergedTree = true).fetchSemanticsNode()
+        // Вопрос объявляется чтением с экрана: live region стоит только в подтверждении.
+        assertEquals(LiveRegionMode.Polite, node.config.getOrNull(SemanticsProperties.LiveRegion))
+    }
+
+    @Test
+    fun theOrdinaryBatchButtonIsSecondaryAndNotALiveRegion() {
+        show(TodayFixtures.groupDay())
+
+        val node = composeRule.onNode(batchButton(TAG_SECONDARY_BUTTON), useUnmergedTree = true).fetchSemanticsNode()
+        assertNull(node.config.getOrNull(SemanticsProperties.LiveRegion))
+    }
+
+    @Test
+    fun theBatchKeepsThePrimaryHeightWhenOrdinary() {
+        show(TodayFixtures.groupDay())
+
+        assertBatchHeight()
+    }
+
+    @Test
+    fun theBatchKeepsThePrimaryHeightWhenConfirming() {
+        show(TodayFixtures.groupDay().copy(confirmingGroup = TodayFixtures.GROUP_TIME))
+
+        assertBatchHeight()
+    }
+
+    @Test
+    fun tappingOutsideTheButtonDismissesTheConfirmation() {
+        val intents = mutableListOf<TodayIntent>()
+        show(TodayFixtures.groupDay().copy(confirmingGroup = TodayFixtures.GROUP_TIME), onIntent = intents::add)
+
+        // Пустое место шапки: не кнопка и не карточка — значит, «вне кнопки» (ОВ-32).
+        composeRule.onNodeWithTag(TAG_TODAY_SCREEN).performTouchInput { click(Offset(2f, 2f)) }
+
+        assertEquals(listOf(TodayIntent.DismissGroupConfirm), intents)
+    }
+
+    @Test
+    fun tappingTheButtonItselfDoesNotDismissTheConfirmation() {
+        val intents = mutableListOf<TodayIntent>()
+        show(TodayFixtures.groupDay().copy(confirmingGroup = TodayFixtures.GROUP_TIME), onIntent = intents::add)
+
+        composeRule.onNodeWithTag(TAG_GROUP_MARK_ALL).performClick()
+
+        assertTrue(
+            "the button tap must not dismiss the confirmation: $intents",
+            intents.none { it == TodayIntent.DismissGroupConfirm },
+        )
+    }
+
+    @Test
+    fun theDayProgressRowAsksForHistory() {
+        val intents = mutableListOf<TodayIntent>()
+        show(TodayFixtures.plainDay(), onIntent = intents::add)
+
+        composeRule.onNodeWithTag(TAG_PROGRESS_LINK, useUnmergedTree = true).assertIsDisplayed()
+        composeRule.onNodeWithTag(TAG_PROGRESS_LINK, useUnmergedTree = true).performClick()
+
+        assertEquals(listOf(TodayIntent.OpenHistory), intents)
+    }
+
+    @Test
+    fun withoutADayPlanThereIsNoHistoryLink() {
+        show(
+            TodayFixtures.plainDay().copy(
+                progress = DayProgress(taken = 0, planned = 0, medicationCount = 1),
+                nothingToday = true,
+            ),
+        )
+
+        composeRule.onAllNodesWithTag(TAG_DAY_PROGRESS).assertCountEquals(0)
+        composeRule.onAllNodesWithTag(TAG_PROGRESS_LINK, useUnmergedTree = true).assertCountEquals(0)
+    }
+
+    /**
+     * Батч-кнопка группы в её нынешнем виде — по тегу вида под обёрткой батча.
+     *
+     * На экране есть и другие основные и второстепенные кнопки (пара карточки), поэтому
+     * вид ищется среди потомков тега батча, а не сам по себе.
+     */
+    private fun batchButton(tag: String): SemanticsMatcher =
+        hasTestTag(tag) and hasAnyAncestor(hasTestTag(TAG_GROUP_MARK_ALL))
+
+    private fun assertBatchHeight() {
+        val node = composeRule.onNodeWithTag(TAG_GROUP_MARK_ALL).fetchSemanticsNode()
+        val height = with(node.layoutInfo.density) { node.size.height.toDp() }
+        assertTrue(
+            "the batch button is $height, below ${SklyankaSizes.PrimaryButtonHeight}",
+            height >= SklyankaSizes.PrimaryButtonHeight - SklyankaSizes.BorderThin,
+        )
+    }
+
+    private fun groupCaption(count: Int): String =
+        context.resources.getQuantityString(R.plurals.group_caption_by_one, count, count)
 
     @Test
     fun theDenseDayCollapsesThePastAndTheFuture() {
@@ -387,12 +530,17 @@ class TodayScreenTest {
             SklyankaTheme { TodayScreen(state = state, onIntent = onIntent) }
         }
     }
+
+    private companion object {
+        const val TIME_14 = "14:00"
+    }
 }
 
 /** Расклады экрана для проверок: те же числа, что в `acceptance.feature` и макетах. */
 internal object TodayFixtures {
 
     val DATE: java.time.LocalDate = java.time.LocalDate.of(2026, 9, 25)
+    val GROUP_TIME: LocalTime = LocalTime.of(14, 0)
     const val LOSARTAN = "Лозартан"
     const val GROUP_SIZE = 3
 
@@ -437,22 +585,30 @@ internal object TodayFixtures {
         progress = DayProgress(taken = 1, planned = 4, medicationCount = 4),
     )
 
-    /** Три приёма на одно наступившее время — групповая карточка. */
-    fun groupDay(): TodayUiState.Content = content(
+    /**
+     * Три приёма на одно время: строки, подпись группы и батч-кнопка (ОВ-32).
+     *
+     * [awaiting] — сколько приёмов ещё ждут отметки; остальные отмечены принятыми.
+     * [isNow] — наступило ли время группы: у будущей батча и подписи нет вовсе.
+     */
+    fun groupDay(awaiting: Int = GROUP_SIZE, isNow: Boolean = true): TodayUiState.Content = content(
         layout = TodayLayout.Plain(
             listOf(
                 group(
-                    time = LocalTime.of(14, 0),
-                    isNow = true,
+                    time = GROUP_TIME,
+                    isNow = isNow,
                     items = listOf(
-                        item("i-a", "Магний B6", LocalTime.of(14, 0), IntakePresentation.DUE_NOW),
-                        item("i-b", "Панангин", LocalTime.of(14, 0), IntakePresentation.DUE_NOW),
-                        item("i-c", "Омез", LocalTime.of(14, 0), IntakePresentation.DUE_NOW),
+                        groupItem("i-a", "Магний B6", awaiting > 0),
+                        groupItem("i-b", "Панангин", awaiting > 1),
+                        groupItem("i-c", "Омез", awaiting > 2),
                     ),
                 ),
             ),
         ),
     )
+
+    private fun groupItem(id: String, name: String, awaiting: Boolean): IntakeItem =
+        item(id, name, GROUP_TIME, if (awaiting) IntakePresentation.DUE_NOW else IntakePresentation.TAKEN)
 
     /** Плотный день: утро свёрнуто и отмечено, день развёрнут, вечер впереди. */
     fun denseDay(): TodayUiState.Content = content(
@@ -503,7 +659,6 @@ internal object TodayFixtures {
         layout = layout,
         prn = prn,
         toggledSections = emptySet(),
-        expandedGroups = emptySet(),
         prnCollapsed = false,
         nothingToday = false,
     )

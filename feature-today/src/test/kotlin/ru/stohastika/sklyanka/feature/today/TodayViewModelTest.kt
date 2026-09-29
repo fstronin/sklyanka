@@ -157,24 +157,6 @@ class TodayViewModelTest {
     }
 
     @Test
-    fun `one by one expands the group without marking anything`() = runTest {
-        val world = worldWithSimultaneous(startAt = 14, minute = 5)
-        val viewModel = world.viewModel()
-
-        viewModel.state.test {
-            val before = awaitContent()
-            assertFalse(before.isGroupExpanded(before.layout.groups.single()))
-
-            viewModel.onIntent(TodayIntent.ExpandGroup(LocalTime.of(14, 0)))
-
-            val content = awaitItem() as TodayUiState.Content
-            assertTrue(content.isGroupExpanded(content.layout.groups.single()))
-            assertTrue(world.intakes.stored.values.all { it.status == IntakeStatus.PENDING })
-            cancelAndIgnoreRemainingEvents()
-        }
-    }
-
-    @Test
     fun `taking an on-demand medication creates an intake but not a plan`() = runTest {
         val world = worldWithDay(startAt = 16, minute = 40)
         world.medications.put(TodayTest.medication("m-prn", mode = ScheduleMode.PRN, maxPerDay = 3))
@@ -825,7 +807,7 @@ class TodayViewModelTest {
         return world
     }
 
-    /** Три приёма на одно время — расклад групповой карточки. */
+    /** Три приёма на одно время — расклад группы одновременных приёмов. */
     private fun TestScope.worldWithSimultaneous(startAt: Int, minute: Int): TodayTestWorld {
         val world = TodayTestWorld(testScheduler, TodayTest.at(startAt, minute))
         listOf("a", "b", "c").forEach { suffix ->

@@ -136,11 +136,6 @@ class TodayViewModel @Inject constructor(
                 }
             }
 
-            is TodayIntent.ExpandGroup -> {
-                clearConfirmation()
-                view.update { it.withExpandedGroup(intent.time) }
-            }
-
             is TodayIntent.ToggleSection -> {
                 clearConfirmation()
                 view.update { it.withToggledSection(intent.partOfDay) }
@@ -312,7 +307,6 @@ class TodayViewModel @Inject constructor(
             confirmingGroup = current.confirmingGroup?.takeIf { time ->
                 agenda.layout.groups.any { it.time == time && it.isNow && GroupAction.of(it) != null }
             },
-            expandedGroups = current.expandedGroups,
             prnCollapsed = current.prnCollapsed,
             nothingToday = agenda.hasNothingToday,
         )
@@ -328,7 +322,6 @@ class TodayViewModel @Inject constructor(
      */
     private data class ViewState(
         val toggledSections: Set<PartOfDay> = emptySet(),
-        val expandedGroups: Set<LocalTime> = emptySet(),
         val confirmingGroup: LocalTime? = null,
         val prnCollapsed: Boolean = false,
         val undo: UndoNotice? = null,
@@ -340,9 +333,6 @@ class TodayViewModel @Inject constructor(
                 toggledSections + partOfDay
             },
         )
-
-        /** «По одному» только разворачивает: свернуть группу обратно макет не предлагает. */
-        fun withExpandedGroup(time: LocalTime): ViewState = copy(expandedGroups = expandedGroups + time)
     }
 
     private companion object {

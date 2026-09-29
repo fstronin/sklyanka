@@ -1,6 +1,7 @@
 package ru.stohastika.sklyanka.feature.today
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -22,6 +24,7 @@ import ru.stohastika.sklyanka.domain.today.TodayLayout
 import ru.stohastika.sklyanka.ui.component.Banner
 import ru.stohastika.sklyanka.ui.component.BannerKind
 import ru.stohastika.sklyanka.ui.component.EmptyState
+import ru.stohastika.sklyanka.ui.component.ProgressAction
 import ru.stohastika.sklyanka.ui.component.ScreenHeader
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderLabels
 import ru.stohastika.sklyanka.ui.component.SklyankaProgressBar
@@ -114,7 +117,20 @@ private fun TodayEmpty(state: TodayUiState.Empty, onIntent: (TodayIntent) -> Uni
 
 @Composable
 private fun TodayContent(state: TodayUiState.Content, onIntent: (TodayIntent) -> Unit, modifier: Modifier = Modifier) {
-    Column(modifier = modifier.fillMaxWidth()) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .pointerInput(state.confirmingGroup) {
+                if (state.confirmingGroup != null) {
+                    // Наблюдатель стоит на родителе: в главном проходе указателя дети
+                    // получают событие раньше, и нажатие по карточке или кнопке уже
+                    // потреблено — сюда доходит только нажатие «в никуда», то есть
+                    // ровно «вне кнопки» (ОВ-32). Прокрутка — перетаскивание, а не тап:
+                    // `detectTapGestures` его не поймает.
+                    detectTapGestures { onIntent(TodayIntent.DismissGroupConfirm) }
+                }
+            },
+    ) {
         TodayHeader(state, onIntent)
         LazyColumn(
             modifier = Modifier.fillMaxWidth().weight(1f),
@@ -169,6 +185,10 @@ private fun TodayHeader(state: TodayUiState.Content, onIntent: (TodayIntent) -> 
             SklyankaProgressBar(
                 progress = state.progress.fraction,
                 label = state.progress.caption(dense = state.isDense),
+                action = ProgressAction(
+                    label = stringResource(R.string.today_history_link),
+                    onClick = { onIntent(TodayIntent.OpenHistory) },
+                ),
                 modifier = Modifier.testTag(TAG_DAY_PROGRESS),
             )
         }

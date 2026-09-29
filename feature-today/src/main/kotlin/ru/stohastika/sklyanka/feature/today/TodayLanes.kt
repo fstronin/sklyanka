@@ -1,7 +1,6 @@
 package ru.stohastika.sklyanka.feature.today
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -9,7 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -17,6 +16,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import ru.stohastika.sklyanka.domain.today.GroupAction
 import ru.stohastika.sklyanka.domain.today.IntakeItem
 import ru.stohastika.sklyanka.domain.today.IntakePresentation
@@ -34,21 +36,92 @@ import ru.stohastika.sklyanka.ui.token.SklyankaSpacing
 import ru.stohastika.sklyanka.ui.token.SklyankaType
 
 /**
- * Лента приёмов одного времени: разделитель и карточки (`Main.dc.html`).
+ * Лента приёмов одного времени: разделитель, строки, подпись и батч-кнопка
+ * (`Main.dc.html`, решение ОВ-32).
  *
- * Несколько приёмов на одно время, время которых наступило, собираются в одну
- * групповую карточку (`MainDense.dc.html`, решение ОВ-32). Отказ заказчика от групповой
- * отметки убирается невыдачей [GroupAction] — разметка при этом не правится вовсе.
+ * Строки — единственный вид одновременных приёмов: ни групповой карточки, ни ручного
+ * разворачивания «По одному» больше нет. Подпись и батч-кнопка выдаются только группе,
+ * время которой наступило, и только если ожидающих приёмов не меньше двух: у будущей
+ * группы батч отметил бы принятым то, что ещё не принято, а у группы с одним ожидающим
+ * описывать нечего.
  */
 @Composable
 internal fun TimeLane(group: TimeGroup, state: TodayUiState.Content, onIntent: (TodayIntent) -> Unit) {
-    val action = GroupAction.of(group).takeUnless { state.isGroupExpanded(group) }
+    val action = GroupAction.of(group).takeIf { group.isNow }
+    val confirming = action != null && state.confirmingGroup == group.time
     Column(verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Default)) {
         LaneHeader(group)
-        if (action != null && group.isNow) {
-            IntakeGroupCard(group, action, onIntent)
+        action?.let { GroupCaption(it.count) }
+        // Строки времени не повторяют — его сказал разделитель. Исключение —
+        // одновременные приёмы впереди: у них нет ни подписи, ни батча, и когда
+        // принять каждый, называет его строка (`03-screens.md` §7 «Сегодня — плотный
+        // день»; приёмка SKL-31 — «время в каждой строке»).
+        val rowsAreDense = !group.isNow && group.items.size > 1
+        group.items.forEach { item ->
+            if (rowsAreDense) DenseIntakeRow(item, onIntent) else IntakeRow(item, onIntent)
+        }
+        action?.let { batch ->
+            GroupMarkButton(
+                action = batch,
+                confirming = confirming,
+                onArm = { onIntent(TodayIntent.ArmGroupMark(group.time)) },
+                onConfirm = { onIntent(TodayIntent.MarkGroupTaken(batch.markableIntakeIds)) },
+                modifier = Modifier.testTag(TAG_GROUP_MARK_ALL),
+            )
+        }
+    }
+}
+
+/** «3 приёма · отметьте по одному» — подпись группы по числу ожидающих (НФТ-44). */
+@Composable
+private fun GroupCaption(count: Int, modifier: Modifier = Modifier) {
+    Text(
+        text = groupCaption(count),
+        style = SklyankaType.Caption,
+        color = SklyankaTheme.colors.textMuted,
+        modifier = modifier.testTag(TAG_GROUP_CAPTION),
+    )
+}
+
+/**
+ * Батч-кнопка группы: контурная «Отметить …» и акцентная «Подтвердить отметку …?».
+ *
+ * Габарит в обоих состояниях один — 52 dp и радиус `Large` 16: у второстепенной кнопки
+ * высота доводится `heightIn`, основная такова по построению. Иначе смена состояния
+ * сдвигала бы строки под пальцем (`design-decisions.md:293-295`). Состояние подтверждения
+ * читается и словом (видимая подпись-вопрос), и цветом (акцентная заливка) — НФТ-30/31.
+ */
+@Composable
+private fun GroupMarkButton(
+    action: GroupAction,
+    confirming: Boolean,
+    onArm: () -> Unit,
+    onConfirm: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val label = if (confirming) {
+        action.labelForm.confirmLabel(action.count)
+    } else {
+        action.labelForm.label(action.count)
+    }
+    val button = Modifier.fillMaxWidth().heightIn(min = SklyankaSizes.PrimaryButtonHeight)
+    // Тег батча стоит на обёртке: у самой кнопки он занят её видом
+    // (`TAG_PRIMARY_BUTTON`/`TAG_SECONDARY_BUTTON`), а два тега на одном узле
+    // не уживаются — выживает первый.
+    Box(modifier = modifier) {
+        if (confirming) {
+            PrimaryButton(
+                text = label,
+                onClick = onConfirm,
+                modifier = button.semantics { liveRegion = LiveRegionMode.Polite },
+            )
         } else {
-            group.items.forEach { item -> IntakeRow(item, onIntent) }
+            SecondaryButton(
+                text = label,
+                onClick = onArm,
+                shape = SklyankaShapes.Large,
+                modifier = button,
+            )
         }
     }
 }
@@ -108,60 +181,6 @@ internal fun IntakeRow(item: IntakeItem, onIntent: (TodayIntent) -> Unit, modifi
 }
 
 /**
- * Групповая карточка одновременных приёмов (`MainDense.dc.html`).
- *
- * Собрана из уже существующих частей дизайн-системы и отдельным компонентом каталога
- * не является (`docs/spec/08-design-system.md` §4.11): время с меткой «сейчас»,
- * перечисление лекарств одной строкой и две кнопки.
- */
-@Composable
-internal fun IntakeGroupCard(group: TimeGroup, action: GroupAction, onIntent: (TodayIntent) -> Unit) {
-    val colors = SklyankaTheme.colors
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(colors.surface, SklyankaShapes.Card)
-            .border(SklyankaSizes.BorderAccent, colors.accentBorder, SklyankaShapes.Card)
-            .padding(SklyankaSpacing.Large)
-            .testTag(TAG_GROUP_CARD),
-        verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Large),
-    ) {
-        Column(verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Hair)) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Small),
-                verticalAlignment = Alignment.Bottom,
-            ) {
-                Text(text = group.time.timeLabel(), style = SklyankaType.BodyDefaultStrong, color = colors.text)
-                Text(
-                    text = stringResource(R.string.today_now_inline),
-                    style = SklyankaType.CaptionStrong,
-                    color = colors.accent,
-                )
-            }
-            Text(
-                text = group.items.joinToString(stringResource(R.string.group_medications_separator)) {
-                    it.medication.name
-                },
-                style = SklyankaType.Caption,
-                color = colors.textMuted,
-            )
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Default)) {
-            PrimaryButton(
-                text = action.labelForm.label(action.count),
-                onClick = { onIntent(TodayIntent.MarkGroupTaken(action.markableIntakeIds)) },
-                modifier = Modifier.weight(1f).testTag(TAG_GROUP_MARK_ALL),
-            )
-            SecondaryButton(
-                text = stringResource(R.string.group_mark_one_by_one),
-                onClick = { onIntent(TodayIntent.ExpandGroup(group.time)) },
-                modifier = Modifier.testTag(TAG_GROUP_ONE_BY_ONE),
-            )
-        }
-    }
-}
-
-/**
  * Строка приёма плотного дня: время отдельной колонкой слева (`MainDense.dc.html`).
  *
  * Колонка шириной с цель нажатия: в плотном дне у каждой строки своё время, и без
@@ -193,6 +212,5 @@ private fun IntakePresentation.cardState(): IntakeCardState = when (this) {
 }
 
 const val TAG_LANE_HEADER = "lane_header"
-const val TAG_GROUP_CARD = "intake_group_card"
+const val TAG_GROUP_CAPTION = "group_caption"
 const val TAG_GROUP_MARK_ALL = "group_mark_all"
-const val TAG_GROUP_ONE_BY_ONE = "group_one_by_one"

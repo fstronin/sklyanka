@@ -24,7 +24,8 @@ import ru.stohastika.sklyanka.ui.R as UiR
  *
  * Расклады берутся из тех же заглушек, что и проверки состава экрана
  * (`TodayScreenTest`): снимок и проверка говорят об одном экране, а не о двух
- * похожих. Четыре режима наполнения плюс контекст чужого профиля.
+ * похожих. Пять режимов наполнения плюс контекст чужого профиля: подтверждение
+ * групповой отметки — второе состояние батч-кнопки (ОВ-32).
  *
  * Стенд — имитация Android, а не EMUI: снимок говорит, что вёрстка не изменилась,
  * и ничего не говорит о том, как экран выглядит на настоящем устройстве
@@ -38,6 +39,15 @@ class TodayScreenSnapshotTest {
 
     @Test
     fun aGroupedTime() = capture("grouped-time") { TodayScreen(state = TodayFixtures.groupDay(), onIntent = {}) }
+
+    /** Подтверждение групповой отметки: кнопка-вопрос акцентна (ОВ-32). */
+    @Test
+    fun aConfirmingGroup() = capture("group-confirm") {
+        TodayScreen(
+            state = TodayFixtures.groupDay().copy(confirmingGroup = TodayFixtures.GROUP_TIME),
+            onIntent = {},
+        )
+    }
 
     @Test
     fun aDenseDay() = capture("dense-day") { TodayScreen(state = TodayFixtures.denseDay(), onIntent = {}) }

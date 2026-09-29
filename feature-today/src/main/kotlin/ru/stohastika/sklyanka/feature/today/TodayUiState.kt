@@ -8,7 +8,6 @@ import ru.stohastika.sklyanka.domain.today.DaySection
 import ru.stohastika.sklyanka.domain.today.PartOfDay
 import ru.stohastika.sklyanka.domain.today.PrnEntry
 import ru.stohastika.sklyanka.domain.today.StockNotice
-import ru.stohastika.sklyanka.domain.today.TimeGroup
 import ru.stohastika.sklyanka.domain.today.TodayLayout
 import java.time.LocalDate
 import java.time.LocalTime
@@ -100,8 +99,6 @@ sealed interface TodayUiState {
          * «какая группа ждёт подтверждения».
          */
         val confirmingGroup: LocalTime? = null,
-        /** Группы, развёрнутые кнопкой «По одному»: групповая карточка стала списком. */
-        val expandedGroups: Set<LocalTime>,
         /** Блок «по потребности» в плотном дне свёрнут такой же секцией. */
         val prnCollapsed: Boolean,
         /** Лекарства есть, а приёмов на сегодня нет (ОВ-34). */
@@ -114,8 +111,5 @@ sealed interface TodayUiState {
         /** Начальное состояние секции, обращённое ручным переключением. */
         fun isExpanded(section: DaySection): Boolean =
             section.state.isExpanded != (section.partOfDay in toggledSections)
-
-        /** Групповая карточка развёрнута в отдельные строки кнопкой «По одному». */
-        fun isGroupExpanded(group: TimeGroup): Boolean = group.time in expandedGroups
     }
 }

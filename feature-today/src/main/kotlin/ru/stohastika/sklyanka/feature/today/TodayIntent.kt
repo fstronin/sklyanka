@@ -28,9 +28,6 @@ sealed interface TodayIntent {
     /** Нажатие вне кнопки подтверждения: вопрос снимается молча, приёмы не тронуты (ОВ-32). */
     data object DismissGroupConfirm : TodayIntent
 
-    /** «По одному»: групповая карточка разворачивается в строки, ничего не отмечая. */
-    data class ExpandGroup(val time: LocalTime) : TodayIntent
-
     /** Нажатие на строку секции плотного дня. */
     data class ToggleSection(val partOfDay: PartOfDay) : TodayIntent
 
