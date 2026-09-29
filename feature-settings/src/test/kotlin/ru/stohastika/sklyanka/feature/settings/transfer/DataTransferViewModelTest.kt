@@ -177,6 +177,32 @@ class DataTransferViewModelTest {
     }
 
     @Test
+    fun `the confirmation word of the replacement lives in the state`() = runTest(dispatcher) {
+        val model = replacementConfirmation()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        model.onIntent(TransferIntent.ConfirmationWordChanged("Zamenit"))
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals("Zamenit", model.state.value.confirmationWord)
+        assertTrue("typing the word must not apply anything", store.applied.isEmpty())
+    }
+
+    @Test
+    fun `leaving the screen clears the confirmation word`() = runTest(dispatcher) {
+        val model = replacementConfirmation()
+        dispatcher.scheduler.advanceUntilIdle()
+        model.onIntent(TransferIntent.ConfirmationWordChanged("Zamenit"))
+        dispatcher.scheduler.advanceUntilIdle()
+
+        model.onIntent(TransferIntent.Leave)
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals("", model.state.value.confirmationWord)
+        assertEquals(TransferStep.OVERVIEW, model.state.value.step)
+    }
+
+    @Test
     fun `the replacement makes a safety copy before erasing anything`() = runTest(dispatcher) {
         val model = viewModel()
         dispatcher.scheduler.advanceUntilIdle()
@@ -305,6 +331,18 @@ class DataTransferViewModelTest {
         assertEquals(false, journal.contains(TransferData.MEDICATION_NAME))
         assertEquals(false, journal.contains("Owner"))
         assertEquals(false, journal.contains(TransferData.STRENGTH_UNIT))
+    }
+
+    /** Экран подтверждения замены: файл выбран, слово ещё не введено (ОВ-67). */
+    private fun replacementConfirmation(): DataTransferViewModel {
+        val model = viewModel()
+        dispatcher.scheduler.advanceUntilIdle()
+        model.onIntent(TransferIntent.SelectMode(TransferMode.REPLACE_ALL))
+        model.onIntent(TransferIntent.FileChosen("content://file"))
+        dispatcher.scheduler.advanceUntilIdle()
+        model.onIntent(TransferIntent.ContinueFromSummary)
+        dispatcher.scheduler.advanceUntilIdle()
+        return model
     }
 
     private fun viewModel(): DataTransferViewModel {

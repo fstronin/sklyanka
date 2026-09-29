@@ -103,6 +103,16 @@ data class TransferUiState(
      */
     val medicationNames: Map<String, String> = emptyMap(),
     val decisions: Map<String, MatchDecision> = emptyMap(),
+    /**
+     * Набранное слово-подтверждение замены всего (ОВ-67).
+     *
+     * Живёт в состоянии, а не в памяти экрана: значение обязано переживать поворот,
+     * а состояние экрана — единственное место, где оно это делает по конвенции модуля.
+     * Доступность кнопки по нему считает экран: слово-образец — ресурс, а ViewModel
+     * ресурсов не читает (НФТ-42). Уход с экрана (`Leave`) начинается с нового
+     * состояния, и слово очищается вместе с переносом (ПЕР-17).
+     */
+    val confirmationWord: String = "",
     val report: TransferReport? = null,
     val safetyCopyName: String? = null,
     val failure: TransferFailure? = null,

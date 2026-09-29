@@ -75,6 +75,8 @@ class DataTransferViewModel @Inject constructor(
             TransferIntent.ContinueFromSummary -> continueFromSummary()
             is TransferIntent.Decide -> decide(intent)
             TransferIntent.DropAllMatches -> dropAllMatches()
+            is TransferIntent.ConfirmationWordChanged ->
+                mutable.update { it.copy(confirmationWord = intent.text) }
             TransferIntent.Apply -> apply()
             TransferIntent.AcknowledgeReport -> reset()
             TransferIntent.DismissFailure -> mutable.update { it.copy(failure = null) }

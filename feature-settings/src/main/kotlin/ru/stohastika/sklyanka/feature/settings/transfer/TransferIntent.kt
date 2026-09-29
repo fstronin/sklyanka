@@ -27,6 +27,14 @@ sealed interface TransferIntent {
     /** Выход из длинного списка совпадений: не загружать ничего из совпавших (ПЕР-22). */
     data object DropAllMatches : TransferIntent
 
+    /**
+     * Человек набрал слово-подтверждение замены (ОВ-67).
+     *
+     * Значение важно только состоянию экрана: доступность подтверждающей кнопки по нему
+     * считает экран, а слово-образец приходит ресурсом (НФТ-42).
+     */
+    data class ConfirmationWordChanged(val text: String) : TransferIntent
+
     /** Подтверждение загрузки: единственная точка, после которой что-то пишется. */
     data object Apply : TransferIntent
 
