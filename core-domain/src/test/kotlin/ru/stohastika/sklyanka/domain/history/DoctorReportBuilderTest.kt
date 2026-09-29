@@ -82,6 +82,44 @@ class DoctorReportBuilderTest {
         assertEquals(report.medications.sumOf { it.planned }, report.intakeCount)
     }
 
+    /**
+     * Сводка PDF — сумма строк, а не второй расчёт (решение дизайна по ОВ-15).
+     *
+     * В срезе: у активного лекарства принято 2 из 5, у архивного — 10 из 10; значит,
+     * «Принято: 12 из 15 приёмов (80 %)».
+     */
+    @Test
+    fun `the summary totals are the sum of the medication rows`() {
+        val report = build()
+
+        assertEquals(report.medications.sumOf { it.taken }, report.takenTotal)
+        assertEquals(report.medications.sumOf { it.planned }, report.plannedTotal)
+        assertEquals(12, report.takenTotal)
+        assertEquals(15, report.plannedTotal)
+        assertEquals(80, report.takenPercent)
+    }
+
+    /** Пустой отчёт: нули без деления на ноль — строка пустого состояния решает отрисовка. */
+    @Test
+    fun `an empty report has zero totals`() {
+        val empty = DoctorReportBuilder.build(
+            period = AdherenceCalculator().of(
+                HistorySlice.empty(Months.PROFILE_ID),
+                Months.WINDOW,
+                Months.TODAY,
+                Months.ZONE,
+            ),
+            slice = HistorySlice.empty(Months.PROFILE_ID),
+            profileName = PROFILE_NAME,
+            generatedAt = Months.instant(Months.TODAY.atTime(10, 0)),
+            zone = Months.ZONE,
+        )
+
+        assertEquals(0, empty.takenTotal)
+        assertEquals(0, empty.plannedTotal)
+        assertEquals(0, empty.takenPercent)
+    }
+
     private fun build(): DoctorReport {
         val slice = Months.slice(
             intakes = intakes(),

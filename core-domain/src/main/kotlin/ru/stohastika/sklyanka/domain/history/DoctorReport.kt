@@ -33,7 +33,23 @@ data class DoctorReport(
 ) {
 
     /** Сколько записей приёма легло в основу отчёта. Число уходит в журнал (НФТ-19). */
-    val intakeCount: Int get() = medications.sumOf { it.planned }
+    val intakeCount: Int get() = plannedTotal
+
+    /**
+     * Сводка «Принято: 86 из 100 приёмов (86 %)» — сумма по строкам лекарств, а не второй
+     * расчёт: строки уже посчитаны из тех же приёмов, и отдельная формула однажды
+     * разошлась бы с экраном истории (решение дизайна по ОВ-15).
+     */
+    val takenTotal: Int get() = medications.sumOf { it.taken }
+
+    val plannedTotal: Int get() = medications.sumOf { it.planned }
+
+    val takenPercent: Int
+        get() = if (plannedTotal == 0) 0 else Math.round(takenTotal.toDouble() / plannedTotal * PERCENT).toInt()
+
+    private companion object {
+        const val PERCENT = 100
+    }
 }
 
 /**
