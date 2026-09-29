@@ -7,6 +7,7 @@ import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
@@ -37,6 +38,9 @@ import ru.stohastika.sklyanka.feature.meds.form.TAG_INDEFINITE
 import ru.stohastika.sklyanka.feature.meds.form.TAG_MAX_PER_DAY
 import ru.stohastika.sklyanka.feature.meds.form.TAG_MODE_SWITCH
 import ru.stohastika.sklyanka.feature.meds.form.TAG_NAME_FIELD
+import ru.stohastika.sklyanka.feature.meds.form.TAG_PACKAGE_SIZE_FIELD
+import ru.stohastika.sklyanka.feature.meds.form.TAG_PACKAGE_SIZE_HINT
+import ru.stohastika.sklyanka.feature.meds.form.TAG_PACKAGE_SIZE_UNIT
 import ru.stohastika.sklyanka.feature.meds.form.TAG_RELEASE_FORM
 import ru.stohastika.sklyanka.feature.meds.form.TAG_SAVE_BUTTON
 import ru.stohastika.sklyanka.feature.meds.form.TAG_START_DATE
@@ -102,6 +106,41 @@ class MedsFormScreenSteps(private val world: AcceptanceWorld) {
         MedsFormStand.ask(world) { test ->
             test.onAllNodesWithTag(TAG_RELEASE_FORM, useUnmergedTree = true).assertCountEquals(expected.size)
             expected.forEach { label -> test.onNodeWithText(label).assertIsDisplayed() }
+        }
+    }
+
+    // --- Строка «Размер упаковки» (SKL-34) ------------------------------------------
+
+    @Тогда("^в блоке «Остаток в упаковке» есть строка «Сейчас есть» и под ней строка «Размер упаковки»$")
+    fun thePackageSizeRowStandsUnderTheStock() {
+        MedsFormStand.ask(world) { test ->
+            test.onNodeWithText(context.getString(R.string.form_stock_now)).assertIsDisplayed()
+            val stockY = test.onNodeWithTag(TAG_STOCK_FIELD, useUnmergedTree = true)
+                .fetchSemanticsNode().positionInRoot.y
+            val packageY = test.onNodeWithTag(TAG_PACKAGE_SIZE_FIELD, useUnmergedTree = true)
+                .fetchSemanticsNode().positionInRoot.y
+            assertTrue(
+                "the package size row must stand under «Сейчас есть»: $packageY < $stockY",
+                packageY > stockY,
+            )
+        }
+    }
+
+    @Тогда("^единицей в строке «Размер упаковки» показано «(.+)»$")
+    fun thePackageSizeUnitIs(unit: String) {
+        MedsFormStand.ask(world) { test ->
+            test.onNodeWithTag(TAG_PACKAGE_SIZE_UNIT, useUnmergedTree = true).assertTextEquals(unit)
+        }
+    }
+
+    @Тогда("^под ней показана подсказка «(.+)»$")
+    fun thePackageSizeHintIs(hint: String) {
+        MedsFormStand.ask(world) { test ->
+            test.onNodeWithTag(TAG_PACKAGE_SIZE_HINT, useUnmergedTree = true).assertIsDisplayed()
+            assertTrue(
+                "the hint must read «$hint»",
+                test.onAllNodesWithText(hint, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty(),
+            )
         }
     }
 

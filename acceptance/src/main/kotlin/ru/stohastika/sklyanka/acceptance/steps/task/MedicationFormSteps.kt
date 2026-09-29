@@ -134,6 +134,30 @@ class MedicationFormSteps {
         draft = draft.copy(stockLeft = decimal(amount))
     }
 
+    @Given("^в блоке «Остаток в упаковке» размер упаковки указан как (\\d+)$")
+    fun thePackageSizeIs(size: String) {
+        draft = draft.copy(packageSize = BigDecimal(size))
+    }
+
+    @Given("^в блоке «Остаток в упаковке» размер упаковки указан как (\\d+), а «Сейчас есть» пусто$")
+    fun thePackageSizeWithoutStockIs(size: String) {
+        draft = draft.copy(stockLeft = null, packageSize = BigDecimal(size))
+    }
+
+    @Then("^размер упаковки в форме не задан$")
+    fun thePackageSizeIsUnknown() {
+        // Знаменатель не подставляется из «Сейчас есть»: подставленное число выдавалось бы
+        // за измеренное (ОВ-45).
+        assertNull(draft.packageSize)
+    }
+
+    @Then("^у сохранённого лекарства размер упаковки — (\\d+) таблет\\S+$")
+    fun theSavedCourseHasThatPackageSize(size: String) {
+        submit()
+        assertEquals(emptyList<DraftViolation>(), violations)
+        assertEquals(BigDecimal(size), draft.toMedication(MEDICATION_ID).packageSize)
+    }
+
     // --- Вид таблетки ------------------------------------------------------------------------------
 
     @Given("^человек выбрал форму выпуска «(.+)» и вид «(.+)»$")
@@ -268,6 +292,11 @@ class MedicationFormSteps {
         assertTrue(DraftViolation.StockNegative in violations)
     }
 
+    @Then("^человеку указано, что размер упаковки должен быть больше нуля$")
+    fun theRefusalNamesThePackageSize() {
+        assertTrue(DraftViolation.PackageSizeNotPositive in violations)
+    }
+
     @Then("^все ранее введённые значения остаются в форме$")
     fun nothingTypedInIsLost() {
         // Отказ ничего не записывает и ничего не переписывает — он только называет правила.
@@ -289,9 +318,13 @@ class MedicationFormSteps {
     private fun quotedTimes(text: String): List<LocalTime> =
         QUOTED.findAll(text).map { LocalTime.parse(it.groupValues[1]) }.toList()
 
-    /** Число с минусом сценария: там стоит типографский минус, а не дефис. */
-    private fun decimal(text: String): BigDecimal =
-        BigDecimal(text.trim().trim('«', '»').replace(TYPOGRAPHIC_MINUS, '-'))
+    /** Число из строки сценария: «−5», «0», «9 таблеток» — единица словами не мешает. */
+    private fun decimal(text: String): BigDecimal {
+        // Минус сценария типографский, а не дефис: «−5», не «-5».
+        val cleaned = text.trim().trim('«', '»').replace(TYPOGRAPHIC_MINUS, '-')
+        val number = requireNotNull(SIGNED_NUMBER.find(cleaned)) { "no number in «$text»" }.value
+        return BigDecimal(number.replace(',', '.'))
+    }
 
     private fun releaseForm(label: String): MedicationForm = when (label) {
         "Таблетка" -> MedicationForm.TABLET
@@ -327,6 +360,9 @@ class MedicationFormSteps {
 
         /** «сейчас 25 сентября 2026, 10:00» из предыстории сценариев. */
         val REFERENCE_DATE: LocalDate = LocalDate.of(2026, 9, 25)
+
+        /** Число в начале строки: «−5», «9», «9,5» — с единицей словами после него. */
+        val SIGNED_NUMBER = Regex("""-?\d+(?:[.,]\d+)?""")
 
         val QUOTED = Regex("«(\\d{2}:\\d{2})»")
         const val TYPOGRAPHIC_MINUS = '−'
