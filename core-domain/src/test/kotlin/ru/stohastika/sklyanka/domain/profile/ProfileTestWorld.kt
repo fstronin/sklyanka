@@ -36,6 +36,16 @@ internal class ProfileTestWorld {
 
     val setMirror = SetMirrorRemindersUseCase(profiles = profiles, replan = replanner, log = log)
 
+    val eraser = RecordingProfileEraser()
+
+    val delete = DeleteProfileUseCase(
+        profiles = profiles,
+        eraser = eraser,
+        active = active,
+        replan = replanner,
+        log = log,
+    )
+
     val create = CreateProfileUseCase(
         profiles = profiles,
         palette = PALETTE,
@@ -127,6 +137,16 @@ internal class CountingReplanner : ProfileSetReplanner {
 
     override suspend fun onProfileSetChanged() {
         calls++
+    }
+}
+
+/** Стирание в памяти: помнит, кого и сколько раз стёрли. */
+internal class RecordingProfileEraser : ProfileEraser {
+
+    val erased: MutableList<String> = mutableListOf()
+
+    override suspend fun erase(profileId: String) {
+        erased += profileId
     }
 }
 
