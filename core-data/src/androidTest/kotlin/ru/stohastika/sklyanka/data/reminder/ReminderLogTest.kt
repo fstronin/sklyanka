@@ -6,12 +6,12 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import ru.stohastika.sklyanka.data.room.SklyankaDatabase
+import ru.stohastika.sklyanka.data.room.entity.ReminderLogEntity
 import ru.stohastika.sklyanka.domain.reminder.ReminderChannel
 import ru.stohastika.sklyanka.domain.reminder.ReminderEvent
 import ru.stohastika.sklyanka.domain.reminder.ReminderLogEntry
@@ -84,7 +84,42 @@ class ReminderLogTest {
         )
 
         assertEquals("manual", journal.last(ReminderEvent.RESCHEDULED)?.reason)
-        assertNull(journal.last(ReminderEvent.TEST))
+    }
+
+    /**
+     * Запись вида «пробное напоминание», оставленная прежней сборкой, переживает обновление:
+     * неизвестный вид выпадает из чтения (МГ-6), но в хранилище остаётся — миграции и
+     * удаления исторических строк задача не делает (`SKL-32/TDD.md §4`).
+     */
+    @Test
+    fun aTestRecordFromAnOlderBuildStaysInStorageAndOutOfSight() = runTest {
+        database.reminderLogDao().insert(
+            ReminderLogEntity(
+                occurredAt = NOW.toEpochMilli(),
+                event = "TEST",
+                intakeId = null,
+                medicationId = null,
+                profileId = null,
+                scheduledAt = null,
+                firedAt = NOW.toEpochMilli(),
+                deviationSeconds = 0,
+                channel = null,
+                delivered = true,
+                reason = null,
+                alarmsCancelled = null,
+                alarmsScheduled = null,
+                attempt = null,
+                snoozeMinutes = null,
+                watchResult = null,
+            ),
+        )
+        journal.record(
+            ReminderLogEntry(occurredAt = NOW.plusSeconds(1), event = ReminderEvent.SHOWN, intakeId = "intake-1"),
+        )
+
+        assertEquals("the old record must survive in storage", 2, database.reminderLogDao().count())
+        assertEquals(listOf("intake-1"), journal.recent(limit = 10).map { it.intakeId })
+        assertEquals(listOf("intake-1"), journal.since(NOW.minusSeconds(1)).map { it.intakeId })
     }
 
     @Test

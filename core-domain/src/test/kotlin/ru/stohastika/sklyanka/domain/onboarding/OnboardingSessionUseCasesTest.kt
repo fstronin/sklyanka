@@ -142,10 +142,6 @@ internal class RecordingOnboardingLog : OnboardingLog {
         records += "autostart confirmed=$confirmed"
     }
 
-    override fun testReminderStarted(source: OnboardingSource, at: Instant) {
-        records += "test reminder from $source at $at"
-    }
-
     override fun onboardingLeft(outcome: OnboardingOutcome, checklist: PermissionChecklist) {
         records += "left $outcome unresolved=${checklist.unresolvedCount}"
     }

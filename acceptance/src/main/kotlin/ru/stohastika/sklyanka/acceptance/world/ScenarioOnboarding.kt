@@ -9,7 +9,6 @@ import ru.stohastika.sklyanka.domain.onboarding.port.AutostartHintReader
 import ru.stohastika.sklyanka.domain.onboarding.port.OnboardingLog
 import ru.stohastika.sklyanka.domain.onboarding.port.OnboardingStateStore
 import ru.stohastika.sklyanka.domain.onboarding.port.PermissionRequestSupport
-import java.time.Instant
 
 /**
  * Состояние онбординга сценария (SKL-14): сохранённые факты, подсказки и журнал.
@@ -85,10 +84,6 @@ class ScenarioOnboarding :
 
     override fun autostartConfirmedByUser(confirmed: Boolean) {
         records += "confirmed:$confirmed"
-    }
-
-    override fun testReminderStarted(source: OnboardingSource, at: Instant) {
-        records += "test:$source:$at"
     }
 
     override fun onboardingLeft(outcome: OnboardingOutcome, checklist: PermissionChecklist) {

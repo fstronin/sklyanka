@@ -8,10 +8,6 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import ru.stohastika.sklyanka.domain.reminder.FakePermissionStateReader
-import ru.stohastika.sklyanka.domain.reminder.RecordingReminderJournal
-import ru.stohastika.sklyanka.domain.reminder.ReminderChannel
-import ru.stohastika.sklyanka.domain.reminder.ReminderEvent
-import ru.stohastika.sklyanka.domain.reminder.ReminderLogEntry
 import ru.stohastika.sklyanka.domain.reminder.port.PermissionState
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPermission
 import ru.stohastika.sklyanka.domain.time.FixedTimeSource
@@ -26,14 +22,12 @@ class ReadPermissionChecklistUseCaseTest {
     private val store = FakeOnboardingStateStore()
     private val hints = FakeAutostartHintReader()
     private val requests = FakePermissionRequestSupport()
-    private val journal = RecordingReminderJournal()
 
     private val read = ReadPermissionChecklistUseCase(
         permissions = permissions,
         store = store,
         hints = hints,
         requests = requests,
-        journal = journal,
         time = time,
     )
 
@@ -126,40 +120,6 @@ class ReadPermissionChecklistUseCaseTest {
     }
 
     @Test
-    fun `a delivered test reminder is an indirect hint and not a passed step`() = runTest {
-        journal.record(testEntry(at = now.minusSeconds(SOME_MINUTES), delivered = true))
-
-        val autostart = read().autostart
-
-        assertEquals(setOf(AutostartHint.TEST_REMINDER_DELIVERED), autostart.hints)
-        assertFalse(autostart.isResolved, "the strongest hint is still a hint (REMINDER-20)")
-    }
-
-    @Test
-    fun `a test reminder that did not reach the person is no hint`() = runTest {
-        journal.record(testEntry(at = now.minusSeconds(SOME_MINUTES), delivered = false))
-
-        assertTrue(read().autostart.hints.isEmpty())
-    }
-
-    @Test
-    fun `a test reminder delivered a week ago says nothing about the device today`() = runTest {
-        val old = now.minus(ReadPermissionChecklistUseCase.TEST_REMINDER_HINT_MAX_AGE).minusSeconds(1)
-        journal.record(testEntry(at = old, delivered = true))
-
-        assertTrue(read().autostart.hints.isEmpty(), "the hint has a named age limit (TDD §10)")
-    }
-
-    @Test
-    fun `a test reminder delivered right at the age limit still counts`() = runTest {
-        journal.record(
-            testEntry(at = now.minus(ReadPermissionChecklistUseCase.TEST_REMINDER_HINT_MAX_AGE), delivered = true),
-        )
-
-        assertEquals(setOf(AutostartHint.TEST_REMINDER_DELIVERED), read().autostart.hints)
-    }
-
-    @Test
     fun `manual confirmation is the only thing that resolves the autostart step`() = runTest {
         store.setAutostartConfirmed(true)
 
@@ -198,19 +158,5 @@ class ReadPermissionChecklistUseCaseTest {
         // (НАП-20), а вопрос в коде означал бы, что кто-то рассчитывает на ответ.
         assertEquals(PermissionState.UNKNOWN, permissions.state(ReminderPermission.AUTOSTART))
         assertFalse(read().autostart.verifiedBySystem)
-    }
-
-    private fun testEntry(at: Instant, delivered: Boolean) = ReminderLogEntry(
-        occurredAt = at,
-        event = ReminderEvent.TEST,
-        scheduledAt = at,
-        firedAt = at,
-        deviationSeconds = 0,
-        channel = ReminderChannel.REGULAR,
-        delivered = delivered,
-    )
-
-    private companion object {
-        const val SOME_MINUTES = 600L
     }
 }

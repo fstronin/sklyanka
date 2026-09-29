@@ -3,13 +3,10 @@ package ru.stohastika.sklyanka.domain.onboarding
 import ru.stohastika.sklyanka.domain.onboarding.port.AutostartHintReader
 import ru.stohastika.sklyanka.domain.onboarding.port.OnboardingStateStore
 import ru.stohastika.sklyanka.domain.onboarding.port.PermissionRequestSupport
-import ru.stohastika.sklyanka.domain.reminder.ReminderEvent
 import ru.stohastika.sklyanka.domain.reminder.port.PermissionState
 import ru.stohastika.sklyanka.domain.reminder.port.PermissionStateReader
-import ru.stohastika.sklyanka.domain.reminder.port.ReminderJournal
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPermission
 import ru.stohastika.sklyanka.domain.time.TimeSource
-import java.time.Duration
 
 /**
  * Сборка состояния цепочки (НАП-19, НФТ-52, `TDD.md §9.1`).
@@ -21,13 +18,11 @@ import java.time.Duration
  * Состояние автозапуска не читается ни здесь, ни где-либо ещё: оно не выставлено в публичный
  * API (НАП-20). Собирается только подтверждение человека и список косвенных признаков.
  */
-@Suppress("LongParameterList")
 class ReadPermissionChecklistUseCase(
     private val permissions: PermissionStateReader,
     private val store: OnboardingStateStore,
     private val hints: AutostartHintReader,
     private val requests: PermissionRequestSupport,
-    private val journal: ReminderJournal,
     private val time: TimeSource,
 ) {
 
@@ -57,34 +52,8 @@ class ReadPermissionChecklistUseCase(
             PermissionGrant.Denied(canAsk = requests.canRequestFromCode(step))
         }
 
-    private suspend fun collectHints(): Set<AutostartHint> = buildSet {
+    private fun collectHints(): Set<AutostartHint> = buildSet {
         if (hints.batteryOptimizationIgnored()) add(AutostartHint.BATTERY_OPTIMIZATION_IGNORED)
-        if (testReminderDeliveredRecently()) add(AutostartHint.TEST_REMINDER_DELIVERED)
-    }
-
-    /**
-     * Дошло ли пробное напоминание — и дошло ли недавно (`TDD.md §10`).
-     *
-     * Срок давности обязателен: пробное напоминание, доставленное неделю назад, ничего
-     * не говорит о состоянии устройства сегодня — прошивку могли обновить, а приложение
-     * выкинуть из списка ручного управления запуском.
-     */
-    private suspend fun testReminderDeliveredRecently(): Boolean {
-        // Недоставленное пробное напоминание признаком не является: оно говорит ровно то же,
-        // что его отсутствие, — цепочка до человека не дошла.
-        val last = journal.last(ReminderEvent.TEST)?.takeIf { it.delivered == true } ?: return false
-        val age = Duration.between(last.occurredAt, time.now())
-        return !age.isNegative && age <= TEST_REMINDER_HINT_MAX_AGE
-    }
-
-    companion object {
-        /**
-         * Давность, после которой дошедшее пробное напоминание перестаёт быть признаком.
-         *
-         * Одна именованная константа на весь расчёт: срок давности, разложенный по двум
-         * местам, разойдётся, и признак начнёт то появляться, то исчезать без причины.
-         */
-        val TEST_REMINDER_HINT_MAX_AGE: Duration = Duration.ofDays(1)
     }
 }
 

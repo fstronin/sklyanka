@@ -133,7 +133,6 @@ internal val EVENT_LABELS: Map<ReminderEvent, Int> = mapOf(
     ReminderEvent.SNOOZED to R.string.diagnostics_event_snoozed,
     ReminderEvent.RESCHEDULED to R.string.diagnostics_event_rescheduled,
     ReminderEvent.MISSED_SWEEP to R.string.diagnostics_event_missed_sweep,
-    ReminderEvent.TEST to R.string.diagnostics_event_test,
     ReminderEvent.OUTAGE to R.string.diagnostics_event_outage,
     ReminderEvent.SETTINGS_CHANGED to R.string.diagnostics_event_settings_changed,
 )

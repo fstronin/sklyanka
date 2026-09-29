@@ -5,7 +5,6 @@ import ru.stohastika.sklyanka.domain.onboarding.OnboardingOutcome
 import ru.stohastika.sklyanka.domain.onboarding.OnboardingSource
 import ru.stohastika.sklyanka.domain.onboarding.PermissionChecklist
 import ru.stohastika.sklyanka.domain.onboarding.PermissionStep
-import java.time.Instant
 
 /**
  * След онбординга (`TDD.md §11`).
@@ -39,9 +38,6 @@ interface OnboardingLog {
 
     /** Ручное подтверждение автозапуска человеком — или снятие подтверждения. */
     fun autostartConfirmedByUser(confirmed: Boolean)
-
-    /** Пробное напоминание поставлено: момент постановки и источник. */
-    fun testReminderStarted(source: OnboardingSource, at: Instant)
 
     /** Уход с экрана: «Дальше» или «Пропустить», и состояние шагов на этот момент. */
     fun onboardingLeft(outcome: OnboardingOutcome, checklist: PermissionChecklist)

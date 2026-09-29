@@ -12,12 +12,8 @@ import ru.stohastika.sklyanka.domain.onboarding.port.AutostartHintReader
 import ru.stohastika.sklyanka.domain.onboarding.port.OnboardingLog
 import ru.stohastika.sklyanka.domain.onboarding.port.OnboardingStateStore
 import ru.stohastika.sklyanka.domain.onboarding.port.PermissionRequestSupport
-import ru.stohastika.sklyanka.domain.reminder.ReminderEvent
-import ru.stohastika.sklyanka.domain.reminder.ReminderLogEntry
-import ru.stohastika.sklyanka.domain.reminder.port.AlarmGateway
 import ru.stohastika.sklyanka.domain.reminder.port.PermissionState
 import ru.stohastika.sklyanka.domain.reminder.port.PermissionStateReader
-import ru.stohastika.sklyanka.domain.reminder.port.ReminderJournal
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPermission
 import ru.stohastika.sklyanka.domain.time.FixedTimeSource
 import java.time.Instant
@@ -36,8 +32,6 @@ internal class OnboardingTestWorld(now: Instant = NOW, zone: ZoneId = ZoneId.of(
     val store = FakeStateStore()
     val hints = FakeHints()
     val requests = FakeRequestSupport()
-    val journal = FakeJournal()
-    val alarms = FakeAlarms()
     val navigator = FakeNavigator()
     val log = RecordingLog()
 
@@ -46,7 +40,6 @@ internal class OnboardingTestWorld(now: Instant = NOW, zone: ZoneId = ZoneId.of(
         store = store,
         hints = hints,
         requests = requests,
-        journal = journal,
         time = time,
     )
 
@@ -110,52 +103,6 @@ internal class FakeRequestSupport : PermissionRequestSupport {
     override fun canRequestFromCode(step: PermissionStep): Boolean = step in requestable
 }
 
-internal class FakeJournal : ReminderJournal {
-
-    val entries: MutableList<ReminderLogEntry> = mutableListOf()
-
-    override suspend fun record(entry: ReminderLogEntry) {
-        entries += entry
-    }
-
-    override suspend fun recent(limit: Int): List<ReminderLogEntry> = entries.takeLast(limit).reversed()
-
-    override suspend fun last(event: ReminderEvent): ReminderLogEntry? = entries.lastOrNull { it.event == event }
-
-    override suspend fun firedIntakeIds(since: Instant): Set<String> = emptySet()
-
-    override suspend fun prune(keepDays: Long, keepRecords: Int) = Unit
-}
-
-/** Будильники в памяти: экран разрешений ставит только пробное напоминание. */
-internal class FakeAlarms : AlarmGateway {
-
-    var test: Instant? = null
-    val scheduled: MutableMap<String, Instant> = linkedMapOf()
-
-    override suspend fun schedule(intakeId: String, at: Instant) {
-        scheduled[intakeId] = at
-    }
-
-    override suspend fun cancel(intakeId: String) {
-        scheduled.remove(intakeId)
-    }
-
-    override suspend fun scheduled(): Map<String, Instant> = scheduled.toMap()
-
-    override suspend fun scheduleAnchor(at: Instant) = Unit
-
-    override suspend fun scheduleDayBoundary(at: Instant) = Unit
-
-    override suspend fun scheduleRepeat(intakeId: String, at: Instant, attempt: Int) = Unit
-
-    override suspend fun scheduleTest(at: Instant) {
-        test = at
-    }
-
-    override fun canScheduleExact(): Boolean = true
-}
-
 internal class FakeNavigator(var autostartResult: AutostartOpenResult = AutostartOpenResult.OPENED) :
     SystemSettingsNavigator {
 
@@ -203,10 +150,6 @@ internal class RecordingLog : OnboardingLog {
 
     override fun autostartConfirmedByUser(confirmed: Boolean) {
         records += "confirmed:$confirmed"
-    }
-
-    override fun testReminderStarted(source: OnboardingSource, at: Instant) {
-        records += "test:$source:$at"
     }
 
     override fun onboardingLeft(outcome: OnboardingOutcome, checklist: PermissionChecklist) {

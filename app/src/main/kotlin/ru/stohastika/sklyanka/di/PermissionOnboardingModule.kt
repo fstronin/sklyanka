@@ -15,7 +15,6 @@ import ru.stohastika.sklyanka.domain.onboarding.port.OnboardingLog
 import ru.stohastika.sklyanka.domain.onboarding.port.OnboardingStateStore
 import ru.stohastika.sklyanka.domain.onboarding.port.PermissionRequestSupport
 import ru.stohastika.sklyanka.domain.reminder.port.PermissionStateReader
-import ru.stohastika.sklyanka.domain.reminder.port.ReminderJournal
 import ru.stohastika.sklyanka.domain.time.TimeSource
 import ru.stohastika.sklyanka.feature.onboarding.SystemSettingsNavigator
 import ru.stohastika.sklyanka.platform.onboarding.AndroidSystemSettingsNavigator
@@ -37,20 +36,17 @@ object PermissionOnboardingModule {
 
     @Provides
     @Singleton
-    @Suppress("LongParameterList")
     fun provideReadChecklist(
         permissions: PermissionStateReader,
         store: OnboardingStateStore,
         hints: AutostartHintReader,
         requests: PermissionRequestSupport,
-        journal: ReminderJournal,
         time: TimeSource,
     ): ReadPermissionChecklistUseCase = ReadPermissionChecklistUseCase(
         permissions = permissions,
         store = store,
         hints = hints,
         requests = requests,
-        journal = journal,
         time = time,
     )
 

@@ -7,7 +7,6 @@ import ru.stohastika.sklyanka.domain.onboarding.OnboardingSource
 import ru.stohastika.sklyanka.domain.onboarding.PermissionChecklist
 import ru.stohastika.sklyanka.domain.onboarding.PermissionStep
 import ru.stohastika.sklyanka.domain.onboarding.port.OnboardingLog
-import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -42,10 +41,6 @@ class OnboardingLogcat @Inject constructor() : OnboardingLog {
 
     override fun autostartConfirmedByUser(confirmed: Boolean) {
         Log.i(TAG, "autostart confirmed by the person (confirmed=$confirmed)")
-    }
-
-    override fun testReminderStarted(source: OnboardingSource, at: Instant) {
-        Log.i(TAG, "test reminder scheduled (source=$source, at=$at)")
     }
 
     override fun onboardingLeft(outcome: OnboardingOutcome, checklist: PermissionChecklist) {

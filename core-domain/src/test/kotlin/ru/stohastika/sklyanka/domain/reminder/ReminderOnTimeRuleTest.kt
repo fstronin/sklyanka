@@ -58,13 +58,12 @@ class ReminderOnTimeRuleTest {
     @Test
     fun `only presentations are counted`() {
         // Получение управления показом не является (`04-reminders.md` §1), повтор опаздывает
-        // от того же планового времени по построению, а пробное меряет нажатие кнопки.
+        // от того же планового времени по построению.
         val summary = ReminderOnTimeRule.summarize(
             listOf(
                 shown(10),
                 shown(10, ReminderEvent.FIRED),
                 shown(10, ReminderEvent.REPEATED),
-                shown(10, ReminderEvent.TEST),
                 shown(10, ReminderEvent.RESCHEDULED),
             ),
         )

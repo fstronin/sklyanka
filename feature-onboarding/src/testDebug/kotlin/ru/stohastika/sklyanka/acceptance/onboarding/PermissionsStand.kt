@@ -126,7 +126,6 @@ internal object PermissionsStand {
             store = world.onboarding,
             hints = world.onboarding,
             requests = world.onboarding,
-            journal = world.reminders.journal,
             time = world.clock.time,
         ),
         confirmAutostart = ConfirmAutostartUseCase(world.onboarding, world.onboarding),
