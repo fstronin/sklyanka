@@ -7,6 +7,7 @@ import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
@@ -40,8 +41,9 @@ import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
  *
  * Состояние списка собирается из мира сценария по тем же правилам, что в
  * `SettingsViewModel`: свой профиль первым, число лекарств — из активных лекарств
- * профиля, дублирование — свойством чужого профиля. Удаления или скрытия профиля
- * в продукте нет вовсе, и шаг это утверждает, а не создаёт.
+ * профиля, дублирование — свойством чужого профиля, удаляемый профиль — только
+ * активный чужой (ОВ-7, SKL-36). Свой профиль не убирается: его состояние удаляемого
+ * профиля не знает — и шаг это утверждает, а не создаёт.
  *
  * Русский текст в аннотациях — ключевые слова Gherkin, а не текст интерфейса.
  */
@@ -152,10 +154,13 @@ class ProfileSettingsSteps(private val world: AcceptanceWorld) {
     // --- Проверки: свой профиль не убирается (ПРФ-28) --------------------------
 
     /**
-     * Отсутствие действия проверяется там, где действие было бы: на экране и в его
-     * контракте намерений. Ни подписи, ни действия, ни варианта намерения «удалить»
-     * или «скрыть» в продукте нет — и это не «пока не нашли», а решение до закрытия
-     * `ОВ-7`. Модель профиля тоже не хранит состояния «скрыт»: скрывать нечего.
+     * Свой профиль не убирается ничем (ПРФ-28, ОВ-7).
+     *
+     * Проверка идёт по четырём местам, где действие могло бы жить: подписи на экране,
+     * действия семантики, намерения, которые экран шлёт по нажатиям, и поля модели
+     * профиля. Удаление чужого профиля в продукте есть (ОВ-7, SKL-36) — но у своего
+     * профиля удаляемого профиля нет вовсе: строки удаления состояние не содержит, и ни
+     * одно нажатие на экране не просит удаление.
      */
     @Тогда("^для профиля «([^»]+)» нет действия удаления или скрытия$")
     fun thereIsNoRemovalActionForThatProfile(profile: String) {
@@ -170,10 +175,14 @@ class ProfileSettingsSteps(private val world: AcceptanceWorld) {
             "a removal action is registered on the screen: ${actions.filter { it.hasRemovalWord() }}",
             actions.none { it.hasRemovalWord() },
         )
-        val intents = SettingsIntent::class.java.declaredClasses.map { it.simpleName }
         assertTrue(
-            "the screen can ask for a profile removal: ${intents.filter { it.hasRemovalWord() }}",
-            intents.none { it.hasRemovalWord() },
+            "the self-profile state offers a profile to delete: ${state.deletableProfile}",
+            state.deletableProfile == null,
+        )
+        val emitted = clicksOnTheScreen().map { it::class.java.simpleName }
+        assertTrue(
+            "the self-profile screen can ask for a removal: ${emitted.filter { it.hasRemovalWord() }}",
+            emitted.none { it.hasRemovalWord() },
         )
         val fields = Profile::class.java.declaredFields.map { it.name }
         assertTrue(
@@ -204,6 +213,32 @@ class ProfileSettingsSteps(private val world: AcceptanceWorld) {
     }
 
     /**
+     * Намерения, которые экран шлёт, если нажать всё нажимаемое.
+     *
+     * Строка удаления — такая же нажимаемая строка, как прочие: проверка «её нет»
+     * остаётся проверкой только тогда, когда перебраны все нажатия, а не когда
+     * спрошен список намерений в отрыве от экрана.
+     */
+    private fun clicksOnTheScreen(): List<SettingsIntent> {
+        val intents = mutableListOf<SettingsIntent>()
+        runComposeUiTest {
+            setContent {
+                val pinned = LocalContext.current.withInterfaceLocale()
+                CompositionLocalProvider(
+                    LocalContext provides pinned,
+                    LocalConfiguration provides pinned.resources.configuration,
+                ) {
+                    SklyankaTheme { SettingsScreen(state = state, onIntent = intents::add) }
+                }
+            }
+            val nodes = onAllNodes(hasClickAction(), useUnmergedTree = true)
+            repeat(nodes.fetchSemanticsNodes().size) { index -> nodes[index].performClick() }
+            waitForIdle()
+        }
+        return intents
+    }
+
+    /**
      * Список профилей из мира сценария — по правилам `SettingsViewModel`.
      *
      * Число лекарств берётся у профиля, а не у строки сценария: сценарий называет только
@@ -228,7 +263,13 @@ class ProfileSettingsSteps(private val world: AcceptanceWorld) {
                 mirrorReminders = !profile.isSelf && profile.mirrorReminders,
             )
         }
-        return SettingsUiState(profiles = rows, version = VERSION)
+        return SettingsUiState(
+            profiles = rows,
+            // Строка удаления — только у активного чужого профиля (ОВ-7, SKL-36):
+            // то же правило, что в SettingsViewModel. Свой профиль её не получает (ПРФ-28).
+            deletableProfile = rows.firstOrNull { it.isActive && !it.isSelf },
+            version = VERSION,
+        )
     }
 
     private fun subtitleOf(row: ProfileRowState): String {
