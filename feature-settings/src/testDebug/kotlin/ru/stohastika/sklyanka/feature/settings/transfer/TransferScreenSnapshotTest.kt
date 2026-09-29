@@ -1,6 +1,8 @@
 package ru.stohastika.sklyanka.feature.settings.transfer
 
+import android.content.Context
 import androidx.compose.runtime.Composable
+import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
 import com.github.takahirom.roborazzi.RoborazziComposeOptions
@@ -8,6 +10,7 @@ import com.github.takahirom.roborazzi.captureRoboImage
 import com.github.takahirom.roborazzi.size
 import org.junit.Test
 import org.junit.runner.RunWith
+import ru.stohastika.sklyanka.feature.settings.R
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import java.io.File
 
@@ -39,6 +42,31 @@ class TransferScreenSnapshotTest {
                 matches = listOf(TransferScreenFixtures.match()),
             ),
             onIntent = {},
+            onCancel = {},
+        )
+    }
+
+    /** Подтверждение замены без слова: опасная кнопка недоступна (ОВ-67). */
+    @Test
+    fun theReplaceConfirmation() = capture("transfer-replace-confirm") {
+        replaceConfirmation(word = "")
+    }
+
+    /** Подтверждение замены с верным словом: опасная кнопка доступна. */
+    @Test
+    fun theReplaceConfirmationWithTheWord() = capture("transfer-replace-confirm-word") {
+        replaceConfirmation(word = ApplicationProvider.getApplicationContext<Context>().getString(R.string.transfer_replace_word))
+    }
+
+    @Composable
+    private fun replaceConfirmation(word: String) {
+        ReplaceConfirmScreen(
+            device = TransferScreenFixtures.DEVICE_COUNTS,
+            file = TransferScreenFixtures.FILE_COUNTS,
+            safetyCopyName = TransferScreenFixtures.SAFETY_COPY,
+            confirmationWord = word,
+            onConfirmationWordChange = {},
+            onConfirm = {},
             onCancel = {},
         )
     }
