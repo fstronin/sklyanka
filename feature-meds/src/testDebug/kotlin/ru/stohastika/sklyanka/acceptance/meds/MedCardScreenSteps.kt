@@ -367,10 +367,11 @@ class MedCardScreenSteps(private val world: AcceptanceWorld) {
     @Тогда("^рядом со строкой пополнения есть «(.+)»$")
     fun theRefillRowOffers(label: String) {
         MedCardStand.ask(world, focusedMedication(), refill = RefillUi(text = "")) { test ->
-            test.onNode(
-                hasTestTag(TAG_REFILL_CANCEL) and hasText(label),
-                useUnmergedTree = true,
-            ).assertExists()
+            // Тег стоит на самой кнопке, подпись — на её текстовом узле: одной проверкой
+            // ищется кнопка, другой — что она подписана именно так.
+            test.onNodeWithTag(TAG_REFILL_CANCEL, useUnmergedTree = true).assertExists()
+            val texts = MedsProbe.texts(test, TAG_REFILL_ROW)
+            assertTrue("the refill row must offer «$label»: $texts", label in texts)
         }
     }
 
