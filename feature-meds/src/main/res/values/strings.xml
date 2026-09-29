@@ -163,6 +163,8 @@
     <string name="card_section_schedule">Расписание</string>
     <string name="card_section_course">Курс</string>
     <string name="card_section_stock">Остаток</string>
+    <!-- «9 таблеток из 60»: склонение единицы — по остатку, размер — числом (ОВ-45). -->
+    <string name="card_stock_of_package">%1$s из %2$s</string>
     <string name="card_section_week">Последние 7 дней</string>
     <string name="card_course_period">%1$s — %2$s</string>
     <string name="card_refill">Пополнить</string>

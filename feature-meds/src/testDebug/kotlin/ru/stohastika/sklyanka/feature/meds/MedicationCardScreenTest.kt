@@ -30,6 +30,7 @@ import ru.stohastika.sklyanka.feature.meds.card.TAG_COURSE_BLOCK
 import ru.stohastika.sklyanka.feature.meds.card.TAG_LIMIT_BLOCK
 import ru.stohastika.sklyanka.feature.meds.card.TAG_RESTORE
 import ru.stohastika.sklyanka.feature.meds.card.TAG_SCHEDULE_BLOCK
+import ru.stohastika.sklyanka.feature.meds.card.TAG_STOCK_BAR
 import ru.stohastika.sklyanka.feature.meds.card.TAG_STOCK_BLOCK
 import ru.stohastika.sklyanka.feature.meds.card.TAG_SUBTITLE
 import ru.stohastika.sklyanka.feature.meds.card.TAG_TIME_CHIP
@@ -115,6 +116,69 @@ class MedicationCardScreenTest {
                 useUnmergedTree = true,
             )
             .assertIsDisplayed()
+    }
+
+    @Test
+    fun theStockRowShowsTheShareOfThePackageAndTheBar() {
+        show(
+            state(
+                stock = StockPanel.Visible(
+                    unitsLeft = BigDecimal("9"),
+                    daysLeft = 4,
+                    warning = true,
+                    packageSize = BigDecimal("60"),
+                ),
+            ),
+        )
+
+        // «9 таблеток из 60» — число рядом с полосой (НФТ-33), собранное из ресурсов так же,
+        // как его собирает экран: склонение по остатку, размер — числом.
+        composeRule
+            .onNodeWithText(
+                context.getString(
+                    R.string.card_stock_of_package,
+                    context.resources.getQuantityString(R.plurals.stock_left_tablets, STOCK, STOCK),
+                    PACKAGE_SIZE,
+                ),
+                useUnmergedTree = true,
+            )
+            .assertIsDisplayed()
+        composeRule.onNodeWithTag(TAG_STOCK_BAR, useUnmergedTree = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun anUnknownPackageSizeKeepsThePlainStockAndNoBar() {
+        show(state(stock = StockPanel.Visible(unitsLeft = BigDecimal("9"), daysLeft = 4, warning = true)))
+
+        composeRule
+            .onNodeWithText(
+                context.resources.getQuantityString(R.plurals.stock_left_tablets, STOCK, STOCK),
+                useUnmergedTree = true,
+            )
+            .assertIsDisplayed()
+        composeRule.onAllNodesWithTag(TAG_STOCK_BAR, useUnmergedTree = true).assertCountEquals(0)
+    }
+
+    @Test
+    fun stockAboveThePackageKeepsThePlainStockAndNoBar() {
+        show(
+            state(
+                stock = StockPanel.Visible(
+                    unitsLeft = BigDecimal("90"),
+                    daysLeft = 45,
+                    warning = false,
+                    packageSize = BigDecimal("60"),
+                ),
+            ),
+        )
+
+        composeRule
+            .onNodeWithText(
+                context.resources.getQuantityString(R.plurals.stock_left_tablets, MANY, MANY),
+                useUnmergedTree = true,
+            )
+            .assertIsDisplayed()
+        composeRule.onAllNodesWithTag(TAG_STOCK_BAR, useUnmergedTree = true).assertCountEquals(0)
     }
 
     @Test
@@ -273,6 +337,9 @@ class MedicationCardScreenTest {
         const val EVENING_TEXT = "20:00"
         const val DAYS_LEFT = 17
         const val STOCK_DAYS = 4
+        const val STOCK = 9
+        const val MANY = 90
+        const val PACKAGE_SIZE = "60"
         const val COURSE_FRACTION = 0.43f
 
         /** Строки выбора звука на карточке нет: тега тоже нет ни в одном компоненте. */

@@ -23,6 +23,7 @@ import ru.stohastika.sklyanka.feature.meds.SectionLabel
 import ru.stohastika.sklyanka.feature.meds.dayAndMonth
 import ru.stohastika.sklyanka.feature.meds.formatted
 import ru.stohastika.sklyanka.feature.meds.stockLeftLabel
+import ru.stohastika.sklyanka.feature.meds.stockPackageLabel
 import ru.stohastika.sklyanka.ui.component.AdherenceWeek
 import ru.stohastika.sklyanka.ui.component.ProgressPurpose
 import ru.stohastika.sklyanka.ui.component.SecondaryButton
@@ -181,10 +182,12 @@ private fun courseTrailing(course: CourseProgress.Bounded): String = when {
 /**
  * Блок «Остаток».
  *
- * Знаменателя «из 60» здесь нет: размера упаковки в модели данных не существует (ОВ-45),
- * и SKL-12 уже решил показывать «осталось 9 таблеток» до ответа заказчика. Полосы
- * заполнения по той же причине нет — делить остаток не на что, а полоса, нарисованная
- * от выдуманного числа, врёт убедительнее текста.
+ * Два вида строки (ОВ-45). Оба числа заданы и N ≤ M — «9 таблеток из 60» и полоса доли
+ * N/M: высота 8 dp, дорожка `ProgressTrack`, заполнение акцентом, а при сработавшем
+ * пороге покупки — тревожным (`ProfileForeign`). Полоса всегда сопровождается тем же
+ * числом текстом, в том числе для чтения с экрана (НФТ-30, НФТ-33). Размер не задан
+ * (старые данные, файл без поля) или остаток больше упаковки — прежнее «осталось N»
+ * без полосы и без сообщений: знаменатель не выдумывается.
  *
  * Предупреждение «хватит на N дней» и тревожный цвет появляются и исчезают вместе:
  * цветом одним статус не передаётся (НФТ-33).
@@ -193,6 +196,12 @@ private fun courseTrailing(course: CourseProgress.Bounded): String = when {
 internal fun StockBlock(state: MedCardUiState, onIntent: (MedCardIntent) -> Unit, modifier: Modifier = Modifier) {
     val panel = state.stock as? StockPanel.Visible ?: return
     val colors = SklyankaTheme.colors
+    val fraction = panel.packageFraction
+    val packageShare = fraction?.let { share ->
+        // Доля существует только при заданном размере — это гарантирует packageFraction.
+        val label = stockPackageLabel(panel.unitsLeft, requireNotNull(panel.packageSize), state.stockUnit)
+        share to label
+    }
     CardBlock(
         label = stringResource(R.string.card_section_stock),
         modifier = modifier.testTag(TAG_STOCK_BLOCK),
@@ -205,7 +214,7 @@ internal fun StockBlock(state: MedCardUiState, onIntent: (MedCardIntent) -> Unit
             horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Medium),
         ) {
             Text(
-                text = stockLeftLabel(panel.unitsLeft, state.stockUnit),
+                text = packageShare?.second ?: stockLeftLabel(panel.unitsLeft, state.stockUnit),
                 style = SklyankaType.BodyStrong,
                 color = if (panel.warning) colors.warning else colors.text,
                 modifier = Modifier
@@ -216,6 +225,14 @@ internal fun StockBlock(state: MedCardUiState, onIntent: (MedCardIntent) -> Unit
                 text = stringResource(R.string.card_refill),
                 onClick = { onIntent(MedCardIntent.RefillRequested) },
                 modifier = Modifier.testTag(TAG_REFILL),
+            )
+        }
+        packageShare?.let { (share, label) ->
+            SklyankaProgressTrack(
+                progress = share,
+                description = label,
+                purpose = if (panel.warning) ProgressPurpose.StockCritical else ProgressPurpose.Stock,
+                modifier = Modifier.testTag(TAG_STOCK_BAR),
             )
         }
         state.refill?.let { refill -> RefillRow(refill, onIntent) }
@@ -273,6 +290,7 @@ const val TAG_COURSE_BLOCK = "med_card_course"
 const val TAG_COURSE_BAR = "med_card_course_bar"
 const val TAG_STOCK_BLOCK = "med_card_stock"
 const val TAG_STOCK_VALUE = "med_card_stock_value"
+const val TAG_STOCK_BAR = "med_card_stock_bar"
 const val TAG_REFILL = "med_card_refill"
 const val TAG_REFILL_ROW = "med_card_refill_row"
 const val TAG_REFILL_CONFIRM = "med_card_refill_confirm"

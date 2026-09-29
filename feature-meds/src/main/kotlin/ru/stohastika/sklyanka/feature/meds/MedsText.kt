@@ -95,6 +95,19 @@ internal fun stockLeftLabel(left: BigDecimal, unit: DoseUnit): String {
 }
 
 /**
+ * «9 таблеток из 60» — остаток с размером упаковки (ОВ-45).
+ *
+ * Склонение единицы — по N ([stockLeftLabel]), размер — числом: «из 60 таблеток»
+ * не говорят, а единица уже названа при остатке.
+ */
+@Composable
+internal fun stockPackageLabel(left: BigDecimal, packageSize: BigDecimal, unit: DoseUnit): String = stringResource(
+    R.string.card_stock_of_package,
+    stockLeftLabel(left, unit),
+    packageSize.stripTrailingZeros().toPlainString(),
+)
+
+/**
  * Единица дозировки препарата.
  *
  * Собственная форма пишет код `mg` и показывает его как «мг»; любое другое значение —
