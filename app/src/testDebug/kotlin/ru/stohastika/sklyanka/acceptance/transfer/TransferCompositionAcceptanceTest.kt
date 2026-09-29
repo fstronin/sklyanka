@@ -21,7 +21,7 @@ import ru.stohastika.sklyanka.acceptance.run.ScreenAcceptanceRun
  */
 @RunWith(AndroidJUnit4::class)
 // Экраны переноса и разрешений длиннее окна телефона: высоты с запасом хватает,
-// чтобы собирались и отчёт, и пробное напоминание под ним.
+// чтобы собирались и отчёт, и экран разрешений под ним.
 @Config(qualifiers = "ru-rRU-w390dp-h2400dp-mdpi")
 class TransferCompositionAcceptanceTest {
 

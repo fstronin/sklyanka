@@ -12,8 +12,7 @@ import ru.stohastika.sklyanka.acceptance.run.ScreenAcceptanceRun
  *
  * Модуль — `app`: сценариям нужны первый запуск (решение заставки), уход на «Сегодня»
  * и несколько экранов сразу (`SKL-26/TDD.md §4.3`). Экранные сценарии одного экрана
- * исполняет стенд `feature-onboarding`, строку настроек — `feature-settings`, повторное
- * пробное напоминание — `feature-reminder`.
+ * исполняет стенд `feature-onboarding`, строку настроек — `feature-settings`.
  */
 @RunWith(AndroidJUnit4::class)
 // Экраны высокие: карточки разрешений и нижняя панель «Сегодня» иначе не собираются.
