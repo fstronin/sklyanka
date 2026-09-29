@@ -21,6 +21,13 @@ sealed interface StockPanel {
         val daysLeft: Int?,
         /** Порог сработал: полоса и подпись показываются в тревожном виде (ПР-13). */
         val warning: Boolean,
+        /**
+         * Размер упаковки, если задан (ОВ-45); `null` — размер не задан.
+         *
+         * Значение по умолчанию — чтобы построение панели без размера (старые данные,
+         * тесты SKL-08) не менялось.
+         */
+        val packageSize: BigDecimal? = null,
     ) : StockPanel {
 
         /**
@@ -31,6 +38,21 @@ sealed interface StockPanel {
          * когда полоса тревожная: цветом одним статус не передаётся (НФТ-33).
          */
         val captionDays: Int? get() = daysLeft.takeIf { warning }
+
+        /**
+         * Доля остатка от размера упаковки для полосы; `null` — полосы нет.
+         *
+         * Полосы нет в двух случаях: размер не задан и остаток больше упаковки. Доля
+         * больше целого не существует, а «90 из 60» читалось бы как ошибка; запрещать
+         * такой запас форме нельзя — две упаковки законны. Размер ≤ 0 (битая запись
+         * из чужого файла) тоже даёт `null`: делить не на что.
+         */
+        val packageFraction: Float?
+            get() {
+                val size = packageSize ?: return null
+                if (size <= BigDecimal.ZERO || unitsLeft > size) return null
+                return unitsLeft.toFloat() / size.toFloat()
+            }
     }
 
     companion object {
@@ -41,6 +63,7 @@ sealed interface StockPanel {
                 unitsLeft = stock,
                 daysLeft = (StockForecast.of(medication) as? StockForecast.Days)?.value,
                 warning = StockWarning.of(medication) != null,
+                packageSize = medication.packageSize,
             )
         }
     }

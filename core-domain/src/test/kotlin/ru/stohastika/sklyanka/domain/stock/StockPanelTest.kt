@@ -67,6 +67,56 @@ class StockPanelTest {
         assertTrue(!panel.warning)
     }
 
+    // --- Доля от размера упаковки (ОВ-45) ---------------------------------------------------
+
+    @Test
+    fun `the share of the package is the stock over its size`() {
+        val panel = StockPanel.of(
+            twiceADay(stock = "9", threshold = FIVE_DAYS).copy(packageSize = BigDecimal("60")),
+        ) as StockPanel.Visible
+
+        assertEquals(BigDecimal("60"), panel.packageSize)
+        assertEquals(0.15f, panel.packageFraction!!, FRACTION_TOLERANCE)
+    }
+
+    @Test
+    fun `an unknown package size means no share and the plain stock`() {
+        val panel = StockPanel.of(twiceADay(stock = "9", threshold = FIVE_DAYS)) as StockPanel.Visible
+
+        assertNull(panel.packageSize)
+        assertNull(panel.packageFraction)
+    }
+
+    @Test
+    fun `stock above the package size has no share`() {
+        // Две упаковки — законный запас; доля больше целого не рисуется.
+        val panel = StockPanel.of(
+            twiceADay(stock = "90", threshold = FIVE_DAYS).copy(packageSize = BigDecimal("60")),
+        ) as StockPanel.Visible
+
+        assertNull(panel.packageFraction)
+    }
+
+    @Test
+    fun `a package size of zero or below has no share and does not divide by zero`() {
+        listOf("0", "-1").forEach { size ->
+            val panel = StockPanel.of(
+                twiceADay(stock = "9", threshold = FIVE_DAYS).copy(packageSize = BigDecimal(size)),
+            ) as StockPanel.Visible
+
+            assertNull(panel.packageFraction, "size $size must not produce a fraction")
+        }
+    }
+
+    @Test
+    fun `an empty package has a zero share and still draws the bar`() {
+        val panel = StockPanel.of(
+            twiceADay(stock = "0", threshold = FIVE_DAYS).copy(packageSize = BigDecimal("60")),
+        ) as StockPanel.Visible
+
+        assertEquals(0f, panel.packageFraction)
+    }
+
     private fun twiceADay(stock: String, threshold: Int): Medication = Fixtures.scheduledMedication().copy(
         doseAmount = BigDecimal.ONE,
         times = listOf(Fixtures.MORNING, EVENING),
@@ -78,5 +128,8 @@ class StockPanelTest {
         val EVENING: LocalTime = LocalTime.of(20, 0)
         const val FIVE_DAYS = 5
         const val FOUR_DAYS = 4
+
+        /** Float-доля рисуется, а не считается: 0,15 при делении float может не совпасть бит в бит. */
+        const val FRACTION_TOLERANCE = 0.0001f
     }
 }
