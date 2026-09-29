@@ -3,6 +3,8 @@ package ru.stohastika.sklyanka.domain.reminder
 import ru.stohastika.sklyanka.domain.medication.doseUnit
 import ru.stohastika.sklyanka.domain.model.IntakeStatus
 import ru.stohastika.sklyanka.domain.reminder.port.AlarmGateway
+import ru.stohastika.sklyanka.domain.reminder.port.DeferredReminder
+import ru.stohastika.sklyanka.domain.reminder.port.DeferredReminders
 import ru.stohastika.sklyanka.domain.reminder.port.NotificationGateway
 import ru.stohastika.sklyanka.domain.reminder.port.PermissionState
 import ru.stohastika.sklyanka.domain.reminder.port.PermissionStateReader
@@ -70,6 +72,26 @@ internal class FakeAlarmGateway : AlarmGateway {
     }
 
     override fun canScheduleExact(): Boolean = exactAllowed
+}
+
+/**
+ * Отложенные срабатывания в памяти: карта по идентификатору приёма.
+ *
+ * `remove` отвечает, была ли запись, — тем же ответом отметка решает, снимать ли
+ * будильник (SKL-35). Замена по ключу воспроизводит `REPLACE` схемы: двух записей
+ * об одном приёме не бывает.
+ */
+internal class FakeDeferredReminders : DeferredReminders {
+
+    val stored: MutableMap<String, DeferredReminder> = linkedMapOf()
+
+    override suspend fun all(): List<DeferredReminder> = stored.values.toList()
+
+    override suspend fun put(reminder: DeferredReminder) {
+        stored[reminder.intakeId] = reminder
+    }
+
+    override suspend fun remove(intakeId: String): Boolean = stored.remove(intakeId) != null
 }
 
 /** Показанные карточки и снятия — в порядке вызова. */
