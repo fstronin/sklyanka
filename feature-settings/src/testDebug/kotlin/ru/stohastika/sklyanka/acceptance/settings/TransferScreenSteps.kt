@@ -3,7 +3,10 @@ package ru.stohastika.sklyanka.acceptance.settings
 import android.content.Context
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ApplicationProvider
 import io.cucumber.java.ru.Допустим
 import io.cucumber.java.ru.Когда
@@ -51,6 +54,7 @@ import ru.stohastika.sklyanka.feature.settings.transfer.TAG_TRANSFER_SCREEN
 import ru.stohastika.sklyanka.feature.settings.transfer.TransferFailure
 import ru.stohastika.sklyanka.feature.settings.transfer.TransferStep
 import ru.stohastika.sklyanka.feature.settings.transfer.matchTag
+import ru.stohastika.sklyanka.ui.component.TAG_TEXT_FIELD_ERROR
 import java.io.File
 import java.math.BigDecimal
 import java.time.Instant
@@ -623,15 +627,66 @@ class TransferScreenSteps(private val world: AcceptanceWorld) {
         )
     }
 
-    @Тогда("^подтверждение требует отдельного действия, а не второго нажатия подряд с кнопкой «Выбрать файл»$")
-    fun theConfirmationIsSeparate() {
+    @Тогда("^подтверждение требует ввода слова «([^»]+)», а не второго нажатия подряд с кнопкой «Выбрать файл»$")
+    fun theConfirmationRequiresTheWord(word: String) {
         val state = TransferScreenProbe.state(world)
+        assertTrue(
+            TransferScreenProbe.hasText(state, string(R.string.transfer_replace_word_label, word)),
+            "the confirmation must show the word sample «$word»",
+        )
         assertTrue(TransferScreenProbe.hasTag(state, TAG_REPLACE_CONFIRM_ACTION))
         assertTrue(TransferScreenProbe.hasTag(state, TAG_COUNTS_AFTER), "the file side must be shown too")
         assertFalse(
             TransferScreenProbe.hasTag(state, TAG_PICK_FILE),
             "the confirmation screen must not carry the button of the previous step",
         )
+    }
+
+    @Тогда("^пока слово не введено верно, кнопка подтверждения недоступна$")
+    fun theConfirmationIsUnavailableUntilTheWord() {
+        theConfirmationActionIsUnavailable()
+    }
+
+    @Тогда("^кнопка подтверждения недоступна$")
+    fun theConfirmationActionIsUnavailable() {
+        TransferScreenProbe.ask(world) { onNodeWithTag(TAG_REPLACE_CONFIRM_ACTION).assertIsNotEnabled() }
+    }
+
+    @Тогда("^кнопка подтверждения доступна$")
+    fun theConfirmationActionIsAvailable() {
+        TransferScreenProbe.ask(world) { onNodeWithTag(TAG_REPLACE_CONFIRM_ACTION).assertIsEnabled() }
+    }
+
+    @Тогда("^поле подтверждения не подсвечено как ошибка$")
+    fun theConfirmationFieldIsNotAnError() {
+        // ОВ-38 к этому полю не применяется: неверный ввод виден недоступной кнопкой,
+        // и подписи ошибки под полем нет.
+        assertFalse(
+            TransferScreenProbe.hasTag(TransferScreenProbe.state(world), TAG_TEXT_FIELD_ERROR),
+            "the word field must not carry an error caption",
+        )
+    }
+
+    @Когда("^человек вводит в поле подтверждения «(.+)»$")
+    fun thePersonTypesTheConfirmationWord(word: String) {
+        TransferScreenProbe.typeConfirmationWord(world, word)
+    }
+
+    @Когда("^человек нажимает кнопку подтверждения$")
+    fun thePersonPressesTheConfirmation() {
+        TransferScreenProbe.act(world) {
+            onNodeWithTag(TAG_REPLACE_CONFIRM_ACTION).performClick()
+        }
+    }
+
+    @Тогда("^загрузка завершается отчётом$")
+    fun theImportFinishesWithTheReport() {
+        assertEquals(
+            TransferStep.REPORT,
+            TransferScreenProbe.state(world).step,
+            "the confirmation must start the replacement and lead to the report",
+        )
+        assertTrue(world.transfer.store.applied.isNotEmpty(), "the replacement must reach the store")
     }
 
     @Но("^пока человек не подтвердил, на устройстве ничего не изменилось$")
@@ -643,8 +698,8 @@ class TransferScreenSteps(private val world: AcceptanceWorld) {
         assertEquals(2, counts.profiles)
     }
 
-    @Допустим("^человек выбрал режим «Заменить всё» и подтвердил замену$")
-    fun thePersonConfirmedTheReplacement() {
+    @Допустим("^человек выбрал режим «Заменить всё» и ввёл слово «([^»]+)»$")
+    fun thePersonConfirmedTheReplacement(word: String) {
         prepareSimpleFile(SIMPLE_FILE_MEDICATION, listOf(EVENING), FILE_DATE)
         TransferScreenProbe.selectMode(world, TransferMode.REPLACE_ALL)
         TransferScreenProbe.chooseFileAndContinue(world)
@@ -652,6 +707,8 @@ class TransferScreenSteps(private val world: AcceptanceWorld) {
         medicationsBefore = world.medications.all()
         intakesBefore = world.intakes.all()
         assertEquals(TransferStep.REPLACE_CONFIRM, TransferScreenProbe.state(world).step)
+        thePersonTypesTheConfirmationWord(word)
+        TransferScreenProbe.ask(world) { onNodeWithTag(TAG_REPLACE_CONFIRM_ACTION).assertIsEnabled() }
     }
 
     @Когда("^загрузка начинается$")

@@ -31,6 +31,7 @@ import ru.stohastika.sklyanka.feature.settings.R
 import ru.stohastika.sklyanka.feature.settings.transfer.TAG_NOT_TRANSFERRED
 import ru.stohastika.sklyanka.feature.settings.transfer.TAG_REPORT
 import ru.stohastika.sklyanka.feature.settings.transfer.TAG_REPORT_CONTINUE
+import ru.stohastika.sklyanka.feature.settings.transfer.TransferIntent
 import ru.stohastika.sklyanka.feature.settings.transfer.TransferStep
 import java.io.File
 import java.time.LocalDate
@@ -64,9 +65,21 @@ class TransferCompositionSteps(private val world: AcceptanceWorld) {
 
     // --- После замены: содержимое файла и экран разрешений (S16) -------------------------------
 
-    @Допустим("^человек выбрал режим «Заменить всё» и подтвердил замену$")
-    fun thePersonConfirmedTheReplacement() {
+    @Допустим("^человек выбрал режим «Заменить всё»$")
+    fun thePersonChoseTheReplaceMode() {
         TransferAppProbe.selectMode(world, TransferMode.REPLACE_ALL)
+    }
+
+    /**
+     * Слово-подтверждение уходит в состояние тем же намерением, что шлёт поле (ОВ-67).
+     *
+     * Через собранный маршрут шаг не делается намеренно: маршрут на разборке зовёт
+     * `Leave` (ПЕР-17), и перенос начался бы заново — файла бы уже не было. Само поле
+     * и его связь с состоянием проверяет экранный прогон `feature-settings`.
+     */
+    @Допустим("^человек вводит в поле подтверждения «(.+)»$")
+    fun thePersonTypesTheConfirmationWord(word: String) {
+        TransferAppProbe.onIntent(world, TransferIntent.ConfirmationWordChanged(word))
     }
 
     @Допустим("^файл от (.+?) содержит три профиля, семь лекарств и историю с (.+)$")

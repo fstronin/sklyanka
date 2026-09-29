@@ -34,6 +34,7 @@ import ru.stohastika.sklyanka.domain.transfer.ValidateSnapshot
 import ru.stohastika.sklyanka.feature.onboarding.OnboardingUiState
 import ru.stohastika.sklyanka.feature.onboarding.PermissionsActions
 import ru.stohastika.sklyanka.feature.onboarding.PermissionsScreen
+import ru.stohastika.sklyanka.feature.settings.R
 import ru.stohastika.sklyanka.feature.settings.transfer.DataTransferRoute
 import ru.stohastika.sklyanka.feature.settings.transfer.DataTransferViewModel
 import ru.stohastika.sklyanka.feature.settings.transfer.TransferIntent
@@ -104,7 +105,14 @@ internal object TransferAppProbe {
         onIntent(world, TransferIntent.ContinueFromSummary)
     }
 
+    /**
+     * Подтверждение замены: слово введено, кнопка нажата (ОВ-67).
+     *
+     * Слово кладётся в состояние тем же намерением, что шлёт поле: без него кнопка
+     * недоступна, и «человек подтвердил» было бы неправдой.
+     */
     fun apply(world: AcceptanceWorld) {
+        onIntent(world, TransferIntent.ConfirmationWordChanged(context.getString(R.string.transfer_replace_word)))
         onIntent(world, TransferIntent.Apply)
     }
 

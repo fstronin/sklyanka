@@ -1,6 +1,11 @@
 package ru.stohastika.sklyanka.acceptance.settings
 
+import android.content.Context
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ComposeUiTest
@@ -10,7 +15,9 @@ import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.runComposeUiTest
+import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -28,6 +35,7 @@ import ru.stohastika.sklyanka.domain.transfer.TransferCounts
 import ru.stohastika.sklyanka.domain.transfer.TransferFormat
 import ru.stohastika.sklyanka.domain.transfer.TransferMode
 import ru.stohastika.sklyanka.domain.transfer.ValidateSnapshot
+import ru.stohastika.sklyanka.feature.settings.R
 import ru.stohastika.sklyanka.feature.settings.transfer.DataTransferScreen
 import ru.stohastika.sklyanka.feature.settings.transfer.DataTransferViewModel
 import ru.stohastika.sklyanka.feature.settings.transfer.MatchReviewScreen
@@ -37,6 +45,7 @@ import ru.stohastika.sklyanka.feature.settings.transfer.TransferReportScreen
 import ru.stohastika.sklyanka.feature.settings.transfer.TransferStep
 import ru.stohastika.sklyanka.feature.settings.transfer.TransferSummaryScreen
 import ru.stohastika.sklyanka.feature.settings.transfer.TransferUiState
+import ru.stohastika.sklyanka.ui.component.TAG_TEXT_FIELD_INPUT
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 
 /**
@@ -66,6 +75,39 @@ internal object TransferScreenProbe {
     /** Экран принял нажатие «Сохранить файл»: место выбирает система (ПЕР-32, НФТ-17). */
     var exportRequested: Boolean = false
         private set
+
+    /**
+     * Ввод слова-подтверждения на собранном экране (ОВ-67).
+     *
+     * Поле экрана без собственного состояния: замена текста меняет значение, только
+     * когда композиция перерисовывается с новым значением. Локальное состояние зеркалит
+     * поле, а намерение уходит в настоящий ViewModel — тот же путь, что у продукта.
+     */
+    fun typeConfirmationWord(world: AcceptanceWorld, word: String) {
+        reset(world)
+        runComposeUiTest {
+            val current = state(world)
+            setContent {
+                var typed by remember { mutableStateOf("") }
+                SklyankaTheme {
+                    ReplaceConfirmScreen(
+                        device = current.deviceCounts ?: EMPTY_COUNTS,
+                        file = current.fileCounts ?: EMPTY_COUNTS,
+                        safetyCopyName = TransferFormat.SAFETY_COPY_NAME,
+                        confirmationWord = typed,
+                        onConfirmationWordChange = {
+                            typed = it
+                            onIntent(world, TransferIntent.ConfirmationWordChanged(it))
+                        },
+                        onConfirm = {},
+                        onCancel = {},
+                    )
+                }
+            }
+            onNodeWithTag(TAG_TEXT_FIELD_INPUT).performTextReplacement(word)
+            waitForIdle()
+        }
+    }
 
     fun reset(world: AcceptanceWorld) {
         if (lastWorld !== world) {
@@ -129,7 +171,15 @@ internal object TransferScreenProbe {
         }
     }
 
+    /**
+     * Подтверждение замены: слово введено, кнопка нажата (ОВ-67).
+     *
+     * Слово кладётся в состояние тем же намерением, что шлёт поле: без него кнопка
+     * недоступна, и «человек подтвердил» было бы неправдой.
+     */
     fun apply(world: AcceptanceWorld) {
+        val word = ApplicationProvider.getApplicationContext<Context>().getString(R.string.transfer_replace_word)
+        onIntent(world, TransferIntent.ConfirmationWordChanged(word))
         onIntent(world, TransferIntent.Apply)
     }
 
