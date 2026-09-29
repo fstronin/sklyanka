@@ -75,15 +75,6 @@ interface MedicationDao {
     suspend fun countInProfile(profileId: String): Int
 
     /**
-     * Сколько лекарств профиля в архиве — числа потерь на экране удаления (SKL-36).
-     *
-     * Условие то же, что у [observeArchived]: «в архиве» на экране и «в архиве» в счёте —
-     * одно и то же множество.
-     */
-    @Query("SELECT COUNT(*) FROM medication WHERE profile_id = :profileId AND archived_at IS NOT NULL")
-    suspend fun countArchivedInProfile(profileId: String): Int
-
-    /**
      * Удаление всех лекарств профиля — активных и архивных (SKL-36, ОВ-7).
      *
      * Идёт после удаления приёмов: внешний ключ приёма стоит на RESTRICT, и обратный
