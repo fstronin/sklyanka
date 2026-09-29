@@ -4,6 +4,8 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import ru.stohastika.sklyanka.feature.history.HistoryViewModel
+import ru.stohastika.sklyanka.feature.settings.profile.DeleteProfileRoute
+import ru.stohastika.sklyanka.feature.settings.profile.DeleteProfileViewModel
 import ru.stohastika.sklyanka.feature.settings.transfer.DataTransferRoute
 import ru.stohastika.sklyanka.feature.settings.transfer.DataTransferViewModel
 
@@ -33,6 +35,9 @@ enum class SettingsDestination {
 
     /** Настройки → Данные → Перенос данных (SKL-19). */
     TRANSFER,
+
+    /** Настройки → Профили → удаление активного чужого профиля (ОВ-7, SKL-36). */
+    DELETE_PROFILE,
 }
 
 /**
@@ -49,8 +54,7 @@ enum class SettingsDestination {
 @Composable
 fun SettingsSection(
     destination: SettingsDestination,
-    history: HistoryViewModel,
-    transfer: DataTransferViewModel,
+    viewModels: SettingsViewModels,
     onLeave: () -> Unit,
     onOpenPermissions: () -> Unit,
     modifier: Modifier = Modifier,
@@ -58,7 +62,7 @@ fun SettingsSection(
     when (destination) {
         // История сама ставит перехват кнопки «Назад» и знает, откуда открыта.
         SettingsDestination.HISTORY -> HistorySection(
-            viewModel = history,
+            viewModel = viewModels.history,
             origin = HistoryOrigin.SETTINGS,
             onLeave = { onLeave() },
             modifier = modifier,
@@ -67,7 +71,7 @@ fun SettingsSection(
         SettingsDestination.TRANSFER -> {
             BackHandler(enabled = true) { onLeave() }
             DataTransferRoute(
-                viewModel = transfer,
+                viewModel = viewModels.transfer,
                 // «После загрузки откроется тот же экран настройки» (ПЕР-31): разрешения
                 // принадлежат системе, а не файлу, и на новом устройстве их выдают заново.
                 onOpenPermissions = onOpenPermissions,
@@ -75,5 +79,26 @@ fun SettingsSection(
                 modifier = modifier,
             )
         }
+
+        SettingsDestination.DELETE_PROFILE -> {
+            BackHandler(enabled = true) { onLeave() }
+            DeleteProfileRoute(
+                viewModel = viewModels.deleteProfile,
+                onLeave = onLeave,
+                modifier = modifier,
+            )
+        }
     }
 }
+
+/**
+ * Экранные состояния второго уровня настроек одним значением.
+ *
+ * Семь параметров подряд путаются местами на первом же вызове, а тип с именами полей —
+ * нет; тот же приём, что у [MedsViewModels].
+ */
+data class SettingsViewModels(
+    val history: HistoryViewModel,
+    val transfer: DataTransferViewModel,
+    val deleteProfile: DeleteProfileViewModel,
+)

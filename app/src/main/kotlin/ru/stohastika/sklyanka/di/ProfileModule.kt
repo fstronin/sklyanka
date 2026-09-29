@@ -6,7 +6,9 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import ru.stohastika.sklyanka.domain.log.OperationLog
 import ru.stohastika.sklyanka.domain.profile.CreateProfileUseCase
+import ru.stohastika.sklyanka.domain.profile.DeleteProfileUseCase
 import ru.stohastika.sklyanka.domain.profile.OpenReminderProfileUseCase
+import ru.stohastika.sklyanka.domain.profile.ProfileEraser
 import ru.stohastika.sklyanka.domain.profile.ProfileIdSource
 import ru.stohastika.sklyanka.domain.profile.ProfileSetReplanner
 import ru.stohastika.sklyanka.domain.profile.SetMirrorRemindersUseCase
@@ -55,6 +57,29 @@ object ProfileModule {
     @Singleton
     fun provideSwitchProfile(profiles: ProfileRepository, active: ActiveProfileRepository): SwitchProfileUseCase =
         SwitchProfileUseCase(profiles = profiles, active = active)
+
+    /**
+     * Удаление чужого профиля (ОВ-7, SKL-36).
+     *
+     * Стирание — портом [ProfileEraser] (транзакция поверх Room), перепланирование —
+     * тем же [ProfileSetReplanner], что у заведения профиля и переключения дублирования:
+     * состав профилей изменился, и будильники удалённого обязаны сняться немедленно.
+     */
+    @Provides
+    @Singleton
+    fun provideDeleteProfile(
+        profiles: ProfileRepository,
+        eraser: ProfileEraser,
+        active: ActiveProfileRepository,
+        replan: ProfileSetReplanner,
+        log: OperationLog,
+    ): DeleteProfileUseCase = DeleteProfileUseCase(
+        profiles = profiles,
+        eraser = eraser,
+        active = active,
+        replan = replan,
+        log = log,
+    )
 
     @Provides
     @Singleton

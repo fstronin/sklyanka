@@ -32,6 +32,7 @@ import ru.stohastika.sklyanka.feature.reminder.ReminderOutageNotice
 import ru.stohastika.sklyanka.feature.settings.SettingsNavigation
 import ru.stohastika.sklyanka.feature.settings.SettingsRoute
 import ru.stohastika.sklyanka.feature.settings.SettingsViewModel
+import ru.stohastika.sklyanka.feature.settings.profile.DeleteProfileViewModel
 import ru.stohastika.sklyanka.feature.settings.transfer.DataTransferViewModel
 import ru.stohastika.sklyanka.feature.today.TodayNavigation
 import ru.stohastika.sklyanka.feature.today.TodayRoute
@@ -44,6 +45,7 @@ import ru.stohastika.sklyanka.navigation.MedsViewModels
 import ru.stohastika.sklyanka.navigation.RootTab
 import ru.stohastika.sklyanka.navigation.SettingsDestination
 import ru.stohastika.sklyanka.navigation.SettingsSection
+import ru.stohastika.sklyanka.navigation.SettingsViewModels
 import ru.stohastika.sklyanka.platform.startup.StartupRouter
 import ru.stohastika.sklyanka.reminder.ReminderOutageAnnouncer
 import ru.stohastika.sklyanka.startup.SplashScreen
@@ -133,6 +135,7 @@ class MainActivity : ComponentActivity() {
     private val settings: SettingsViewModel by viewModels()
     private val history: HistoryViewModel by viewModels()
     private val transfer: DataTransferViewModel by viewModels()
+    private val deleteProfile: DeleteProfileViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val splash = installSplashScreen()
@@ -263,7 +266,7 @@ class MainActivity : ComponentActivity() {
      *
      * Граф собран здесь и только здесь: `feature-*` друг от друга не зависят, и решать,
      * куда ведут переходы, обязан `app` (`ADR-0007`). Библиотека навигации не подключена —
-     * состояний восемь, все внутри одной Activity.
+     * состояний девять, все внутри одной Activity.
      *
      * Раздел «Лекарства» и экраны второго уровня открываются **поверх** вкладки и возвращают
      * туда, откуда открыты: место входа хранится ([RootTab], [HistoryOrigin]), а не
@@ -294,8 +297,7 @@ class MainActivity : ComponentActivity() {
 
             secondLevel != null -> SettingsSection(
                 destination = secondLevel,
-                history = history,
-                transfer = transfer,
+                viewModels = SettingsViewModels(history, transfer, deleteProfile),
                 onLeave = { section = null },
                 onOpenPermissions = { startActivity(PermissionsActivity.intentFor(this)) },
             )
@@ -327,6 +329,10 @@ class MainActivity : ComponentActivity() {
                     openDiagnostics = { startActivity(DiagnosticsActivity.intentFor(this)) },
                     openHistory = { section = SettingsDestination.HISTORY },
                     openDataTransfer = { section = SettingsDestination.TRANSFER },
+                    // «Удалить профиль «Имя»» — экран второго уровня настроек (ОВ-7, SKL-36).
+                    // Строка появляется только у активного чужого профиля, и «Готово»
+                    // возвращает в настройки — туда, откуда человек пришёл.
+                    deleteProfile = { section = SettingsDestination.DELETE_PROFILE },
                     openToday = { tab = RootTab.TODAY },
                     openMedications = { meds = MedsDestination.List },
                 ),
