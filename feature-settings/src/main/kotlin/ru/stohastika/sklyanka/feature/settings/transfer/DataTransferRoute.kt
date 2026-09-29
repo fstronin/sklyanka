@@ -111,11 +111,7 @@ fun DataTransferRoute(
  * и его длина — про число шагов, а не про устройство одного из них.
  */
 @Composable
-private fun ReplaceConfirmationStep(
-    state: TransferUiState,
-    onIntent: (TransferIntent) -> Unit,
-    modifier: Modifier,
-) {
+private fun ReplaceConfirmationStep(state: TransferUiState, onIntent: (TransferIntent) -> Unit, modifier: Modifier) {
     ReplaceConfirmScreen(
         device = state.deviceCounts ?: EMPTY_COUNTS,
         file = state.fileCounts ?: EMPTY_COUNTS,
