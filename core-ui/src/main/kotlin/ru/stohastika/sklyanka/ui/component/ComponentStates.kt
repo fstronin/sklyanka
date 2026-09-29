@@ -41,6 +41,16 @@ data class IntakeCardLabels(val medication: String, val dose: String, val time: 
 data class IntakeCardActions(val onMark: (() -> Unit)? = null, val onSkip: (() -> Unit)? = null)
 
 /**
+ * Ссылка в строке подписи полосы прогресса: видимое слово и невидимо расширенная
+ * цель нажатия (ОВ-84).
+ *
+ * Готовая строка и готовое действие, как у [IntakeCardActions]: `core-ui` не знает
+ * ни про историю, ни про маршруты — куда ведёт ссылка, решает экран.
+ */
+@Immutable
+data class ProgressAction(val label: String, val onClick: () -> Unit)
+
+/**
  * Подписи шапки экрана.
  *
  * [overline] — дата над заголовком корневого экрана. Имени профиля здесь нет намеренно:

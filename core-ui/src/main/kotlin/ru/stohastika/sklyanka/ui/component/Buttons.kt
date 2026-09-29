@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -68,6 +69,11 @@ fun PrimaryButton(
  *
  * Прозрачного фона нет вовсе — не нарисован; граница `lineInteractive` заметнее
  * обычной линии, иначе кнопка не читается как кнопка.
+ *
+ * [shape] по умолчанию карточный: кнопка внутри карточки — 44 dp и радиус 13.
+ * Экранная кнопка задаёт `SklyankaShapes.Large` (16) и высоту
+ * `SklyankaSizes.PrimaryButtonHeight` (52) сама — дизайн-система допускает обе формы
+ * (§4.3), а значение по умолчанию не трогает ни один существующий вызов.
  */
 @Composable
 fun SecondaryButton(
@@ -75,6 +81,7 @@ fun SecondaryButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     state: ButtonState = ButtonState.Normal,
+    shape: RoundedCornerShape = SklyankaShapes.Button,
 ) {
     val colors = SklyankaTheme.colors
     val interactionSource = remember { MutableInteractionSource() }
@@ -89,7 +96,7 @@ fun SecondaryButton(
             background = if (showPressed && state.isActive) colors.neutralSoft else null,
             content = if (state.isActive) colors.text else colors.textDisabled,
             border = if (state.isActive) colors.lineInteractive else colors.line,
-            shape = SklyankaShapes.Button,
+            shape = shape,
         ),
         modifier = modifier
             .heightIn(min = SklyankaSizes.SecondaryButtonHeight)
