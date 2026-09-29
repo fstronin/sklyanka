@@ -43,6 +43,16 @@ data class SklyankaColors(
      * а предупреждение обязано оставаться предупреждением в любом профиле.
      */
     val warning: Color,
+    /**
+     * Цвет опасного действия: фон основной кнопки необратимого действия, рамка и подпись
+     * ошибки поля.
+     *
+     * Роль, а не новый цвет (ОВ-38, ОВ-67): значение — существующий `#8F3E23`. От
+     * [warning] роль отличается местом применения, и потому заведена отдельно: палитра
+     * закрыта, а опасность обязана читаться одинаково в любом профиле — в чужом профиле
+     * роль не тонируется (ПРФ-11 не распространяется на неё, см. `Tint.kt`).
+     */
+    val danger: Color,
     val taken: Color,
     val takenSoft: Color,
     val missed: Color,
@@ -87,6 +97,7 @@ fun lightColors(): SklyankaColors = SklyankaColors(
     accentBorder = Palette.AccentBorder,
     onAccentSoft = Palette.OnAccentSoft,
     warning = Palette.ProfileForeign,
+    danger = Palette.ProfileForeign,
     taken = Palette.Taken,
     takenSoft = Palette.TakenSoft,
     missed = Palette.Missed,

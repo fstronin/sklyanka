@@ -54,6 +54,9 @@ class TintTest {
         assertEquals(light.archiveBackground, tinted.archiveBackground)
         assertEquals(light.surface, tinted.surface)
         assertEquals(light.warning, tinted.warning)
+        // Опасность не становится цветом профиля: иначе кнопка необратимого действия
+        // перекрашивалась бы в чужом профиле (ОВ-67).
+        assertEquals(light.danger, tinted.danger)
     }
 
     @Test
