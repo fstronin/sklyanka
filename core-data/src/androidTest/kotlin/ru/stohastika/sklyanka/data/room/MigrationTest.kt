@@ -15,8 +15,10 @@ import org.junit.runner.RunWith
  *
  * Версия 1 — скелет SKL-02 с единственной технической таблицей-маркером; версия 2 —
  * схема данных «Склянки»; версия 3 — признак дублирования напоминаний на часы у лекарства
- * (SKL-10, ЧАС-15). Тест доказывает заодно, что экспорт схемы действительно работает:
- * без файлов в `core-data/schemas` помощник не смог бы создать базу предыдущей версии.
+ * (SKL-10, ЧАС-15); версия 4 — журнал напоминаний (SKL-13); версия 5 — размер упаковки
+ * у лекарства (SKL-34, ОВ-45). Тест доказывает заодно, что экспорт схемы действительно
+ * работает: без файлов в `core-data/schemas` помощник не смог бы создать базу предыдущей
+ * версии.
  *
  * Прогон требует устройства или эмулятора; в контейнере сборки тест компилируется,
  * но не выполняется.
@@ -108,6 +110,42 @@ class MigrationTest {
                 assertTrue("the medication row must survive the migration", cursor.moveToFirst())
                 assertEquals("existing courses mirror to the watch by default", 1, cursor.getInt(0))
             }
+            db.query("SELECT COUNT(*) FROM `intake`").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals("no intake record may be lost (MG-2)", 1, cursor.getInt(0))
+            }
+        }
+    }
+
+    /**
+     * Версия 4 → 5 на реальной базе с данными (МГ-3, ОВ-45).
+     *
+     * Старое лекарство не получает выдуманного размера упаковки: колонка nullable,
+     * и `NULL` — это ровно состояние «размер не задан», при котором карточка показывает
+     * «осталось N» без полосы. Ни строка лекарства, ни история приёмов не трогаются.
+     */
+    @Test
+    fun thePackageSizeArrivesAsUnknownWithoutTouchingAnyRow() {
+        helper.createDatabase(TEST_DB, 4).use { old ->
+            old.execSQL(INSERT_PROFILE)
+            old.execSQL(INSERT_MEDICATION)
+            old.execSQL(INSERT_INTAKE)
+        }
+
+        val migrated = helper.runMigrationsAndValidate(
+            TEST_DB,
+            SklyankaDatabase.VERSION,
+            true,
+            *SklyankaMigrations.ALL,
+        )
+
+        migrated.use { db ->
+            db.query("SELECT `package_size`, `stock_left` FROM `medication` WHERE `id` = 'medication-1'")
+                .use { cursor ->
+                    assertTrue("the medication row must survive the migration", cursor.moveToFirst())
+                    assertTrue("an old course must have no package size", cursor.isNull(0))
+                    assertTrue("the stock must stay untouched", cursor.isNull(1))
+                }
             db.query("SELECT COUNT(*) FROM `intake`").use { cursor ->
                 cursor.moveToFirst()
                 assertEquals("no intake record may be lost (MG-2)", 1, cursor.getInt(0))

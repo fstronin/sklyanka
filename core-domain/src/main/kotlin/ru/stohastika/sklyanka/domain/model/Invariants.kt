@@ -27,7 +27,7 @@ object Invariants {
         if (profile.name.isBlank()) add(PROFILE_NAME_BLANK)
     }
 
-    /** Лекарство: INV-4, INV-5, INV-6, INV-7, INV-8, INV-9, INV-16, INV-17. */
+    /** Лекарство: INV-4, INV-5, INV-6, INV-7, INV-8, INV-9, INV-16, INV-17, INV-20. */
     fun violations(medication: Medication): List<String> = buildList {
         if (medication.name.isBlank()) add(MEDICATION_NAME_BLANK)
         if (medication.doseAmount <= BigDecimal.ZERO) add("INV-4")
@@ -35,6 +35,7 @@ object Invariants {
         addAll(scheduleViolations(medication))
         if (medication.endDate != null && medication.endDate < medication.startDate) add("INV-7")
         if (medication.stockLeft != null && medication.stockLeft < BigDecimal.ZERO) add("INV-8")
+        if (medication.packageSize != null && medication.packageSize <= BigDecimal.ZERO) add("INV-20")
         if ((medication.archivedAt == null) != (medication.archiveReason == null)) add("INV-9")
         if (medication.shape != null && !medication.form.allowsShape) add("INV-16")
     }

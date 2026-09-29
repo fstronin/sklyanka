@@ -53,6 +53,13 @@ data class MedicationEntity(
     /** NULL означает бессрочный курс (ПР-6), а не «дату забыли указать». */
     @ColumnInfo(name = "end_date") val endDate: String?,
     @ColumnInfo(name = "stock_left") val stockLeft: String?,
+    /**
+     * Размер упаковки в тех же единицах, что и `dose_amount` (ОВ-45).
+     *
+     * Колонка добавлена миграцией 4 → 5, nullable и без значения по умолчанию:
+     * у уже заведённых курсов размер не задан — `NULL`, а не выдуманный из остатка.
+     */
+    @ColumnInfo(name = "package_size") val packageSize: String?,
     @ColumnInfo(name = "stock_threshold_days") val stockThresholdDays: Int?,
     @ColumnInfo(name = "archived_at") val archivedAt: Long?,
     @ColumnInfo(name = "archive_reason") val archiveReason: String?,

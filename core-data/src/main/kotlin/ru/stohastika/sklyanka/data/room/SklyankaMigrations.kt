@@ -63,8 +63,22 @@ object SklyankaMigrations {
         }
     }
 
+    /**
+     * Версия 4 → 5: у лекарства появляется размер упаковки (SKL-34, ОВ-45).
+     *
+     * Один `ALTER TABLE ADD COLUMN` без перестроения таблицы: строки не переписываются,
+     * индексы и внешние ключи остаются на месте, ни одна запись приёма не затрагивается
+     * (МГ-2). Старые строки получают `NULL` — «размер не задан»: знаменатель не выдуман
+     * из остатка, иначе полоса заполнения врала бы убедительнее текста.
+     */
+    val MIGRATION_4_5 = object : Migration(4, 5) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE `medication` ADD COLUMN `package_size` TEXT")
+        }
+    }
+
     /** Все миграции по порядку. Room выбирает путь сам; пропусков в цепочке быть не должно. */
-    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
 
     /**
      * DDL версии 2 — дословно то, что Room ожидает увидеть при сверке схемы.

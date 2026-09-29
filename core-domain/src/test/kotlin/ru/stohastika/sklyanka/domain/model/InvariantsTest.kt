@@ -82,6 +82,28 @@ class InvariantsTest {
     }
 
     @Test
+    fun `a non-positive package size is rejected`() {
+        val zero = Fixtures.scheduledMedication().copy(packageSize = BigDecimal.ZERO)
+        assertEquals(listOf("INV-20"), Invariants.violations(zero))
+
+        val negative = Fixtures.scheduledMedication().copy(packageSize = BigDecimal("-0.5"))
+        assertEquals(listOf("INV-20"), Invariants.violations(negative))
+    }
+
+    @Test
+    fun `an unknown package size is a valid state`() {
+        assertTrue(Invariants.violations(Fixtures.scheduledMedication()).isEmpty())
+        assertTrue(Invariants.violations(Fixtures.scheduledMedication().copy(packageSize = null)).isEmpty())
+    }
+
+    @Test
+    fun `a fractional package size passes`() {
+        val medication = Fixtures.scheduledMedication().copy(packageSize = BigDecimal("0.5"))
+
+        assertTrue(Invariants.violations(medication).isEmpty())
+    }
+
+    @Test
     fun `archive moment and archive reason are filled together`() {
         val medication = Fixtures.scheduledMedication().copy(archivedAt = Instant.EPOCH)
 

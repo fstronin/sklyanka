@@ -8,6 +8,7 @@ import ru.stohastika.sklyanka.data.DataFixtures
 import ru.stohastika.sklyanka.data.room.entity.IntakeEntity
 import ru.stohastika.sklyanka.data.room.entity.ProfileEntity
 import ru.stohastika.sklyanka.domain.model.ScheduleMode
+import java.math.BigDecimal
 
 /**
  * Пара «модель → строка → модель».
@@ -50,6 +51,27 @@ class MapperTest {
         val entity = medication.toEntity()
 
         assertNull(entity.endDate)
+        assertEquals(Decoded.Value(medication), entity.decode())
+    }
+
+    @Test
+    fun thePackageSizeSurvivesTheRoundTrip() {
+        val medication = DataFixtures.scheduledMedication().copy(packageSize = BigDecimal("60"))
+
+        val entity = medication.toEntity()
+
+        assertEquals("60", entity.packageSize)
+        assertEquals(Decoded.Value(medication), entity.decode())
+    }
+
+    /** Старая строка без размера упаковки остаётся «размер не задан», а не нулём. */
+    @Test
+    fun anUnknownPackageSizeStaysUnknown() {
+        val medication = DataFixtures.scheduledMedication().copy(packageSize = null)
+
+        val entity = medication.toEntity()
+
+        assertNull(entity.packageSize)
         assertEquals(Decoded.Value(medication), entity.decode())
     }
 
