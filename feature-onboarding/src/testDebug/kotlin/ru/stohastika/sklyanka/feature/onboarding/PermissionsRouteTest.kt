@@ -81,4 +81,21 @@ class PermissionsRouteTest {
         PermissionsStand.pressSystemBack(world)
         assertEquals(OnboardingExit.TODAY, PermissionsStand.exitedTo)
     }
+
+    @Test
+    fun reEnteringWithTheStaleExitStillInTheModelStaysOpen() {
+        PermissionsStand.open(world, OnboardingSource.FIRST_LAUNCH)
+        PermissionsStand.pressSystemBack(world)
+        assertEquals(OnboardingExit.TODAY, PermissionsStand.exitedTo)
+
+        // Продукт собирает маршрут, пока модель ещё хранит исход прошлого ухода: `start()`
+        // вызывается эффектом после первой композиции, а не до неё. Закрыть повторно
+        // открытый экран этот устаревший исход не должен (правка `start()`, `TDD.md §5.2`).
+        PermissionsStand.showRoute(world)
+
+        assertNull(
+            "the stale exit of the previous leave must not close the screen (SKL-40)",
+            PermissionsStand.exitedTo,
+        )
+    }
 }
