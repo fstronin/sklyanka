@@ -21,6 +21,8 @@ import ru.stohastika.sklyanka.domain.reminder.RescheduleRemindersUseCase
 import ru.stohastika.sklyanka.domain.reminder.SnoozeReminderUseCase
 import ru.stohastika.sklyanka.domain.reminder.SweepAtDayBoundaryUseCase
 import ru.stohastika.sklyanka.domain.reminder.port.AlarmGateway
+import ru.stohastika.sklyanka.domain.reminder.port.DeferredReminder
+import ru.stohastika.sklyanka.domain.reminder.port.DeferredReminders
 import ru.stohastika.sklyanka.domain.reminder.port.NotificationGateway
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderCardSource
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderJournal
@@ -72,6 +74,12 @@ class ScenarioReminders(
     private val alarmStore = InMemoryAlarms()
 
     val alarms: AlarmGateway = alarmStore
+
+    /**
+     * Отложенные срабатывания — в памяти, но переживают «перезагрузку» сценария:
+     * будильники очищаются, записи остаются (SKL-35, ОВ-75).
+     */
+    private val deferredStore = InMemoryDeferredReminders()
 
     /**
      * Часы: порт записывает отзыв карточки, отправка отвечает «не настроены» (SKL-16).
@@ -172,7 +180,7 @@ class ScenarioReminders(
 
     /** Откладывание — тем же сценарием домена, что у экрана напоминания (НАП-30). */
     fun snoozeReminder(): SnoozeReminderUseCase =
-        SnoozeReminderUseCase(PlanSource(), alarms, notifications, journal, clock.time)
+        SnoozeReminderUseCase(PlanSource(), alarms, notifications, journal, deferredStore, clock.time)
 
     /**
      * Граница суток: перевод просроченных в пропущенные и снятие их карточек (НАП-34).
@@ -340,6 +348,26 @@ private class InMemoryAlarms : AlarmGateway {
     override fun canScheduleExact(): Boolean = true
 
     fun attemptOf(intakeId: String): Int? = attempts[intakeId]
+}
+
+/**
+ * Отложенные срабатывания в памяти: карта по идентификатору приёма, как в схеме (SKL-35).
+ *
+ * Замена по ключу воспроизводит `REPLACE`: отложенное срабатывание у приёма ровно одно,
+ * и повторная запись не может дать второй будильник. Хранилище живёт дольше будильников —
+ * на этом и держится «переживает перезагрузку».
+ */
+private class InMemoryDeferredReminders : DeferredReminders {
+
+    val stored: MutableMap<String, DeferredReminder> = linkedMapOf()
+
+    override suspend fun all(): List<DeferredReminder> = stored.values.toList()
+
+    override suspend fun put(reminder: DeferredReminder) {
+        stored[reminder.intakeId] = reminder
+    }
+
+    override suspend fun remove(intakeId: String): Boolean = stored.remove(intakeId) != null
 }
 
 /**

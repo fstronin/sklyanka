@@ -21,6 +21,7 @@ import ru.stohastika.sklyanka.domain.reminder.RescheduleRemindersUseCase
 import ru.stohastika.sklyanka.domain.reminder.SnoozeReminderUseCase
 import ru.stohastika.sklyanka.domain.reminder.SweepAtDayBoundaryUseCase
 import ru.stohastika.sklyanka.domain.reminder.port.AlarmGateway
+import ru.stohastika.sklyanka.domain.reminder.port.DeferredReminders
 import ru.stohastika.sklyanka.domain.reminder.port.NoWatchGateway
 import ru.stohastika.sklyanka.domain.reminder.port.NotificationGateway
 import ru.stohastika.sklyanka.domain.reminder.port.PermissionStateReader
@@ -103,12 +104,14 @@ object ReminderModule {
         alarms: AlarmGateway,
         notifications: NotificationGateway,
         journal: ReminderJournal,
+        deferred: DeferredReminders,
         time: TimeSource,
     ): SnoozeReminderUseCase = SnoozeReminderUseCase(
         plan = plan,
         alarms = alarms,
         notifications = notifications,
         journal = journal,
+        deferred = deferred,
         time = time,
     )
 

@@ -44,6 +44,8 @@ import ru.stohastika.sklyanka.domain.reminder.ReminderLogEntry
 import ru.stohastika.sklyanka.domain.reminder.ReminderSlot
 import ru.stohastika.sklyanka.domain.reminder.SnoozeReminderUseCase
 import ru.stohastika.sklyanka.domain.reminder.port.AlarmGateway
+import ru.stohastika.sklyanka.domain.reminder.port.DeferredReminder
+import ru.stohastika.sklyanka.domain.reminder.port.DeferredReminders
 import ru.stohastika.sklyanka.domain.reminder.port.NotificationGateway
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderCardSource
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderJournal
@@ -198,7 +200,7 @@ private class ReminderTestWorld(withSecondRow: Boolean = false) {
     fun viewModel() = ReminderViewModel(
         cards = FakeCards(),
         mark = MarkIntakeUseCase(FakeIntakes(), FakeMedications(), FakeProfiles(), clock),
-        snooze = SnoozeReminderUseCase(NoSnoozePlan(), NoAlarms(), NoNotifications(), NoJournal(), clock),
+        snooze = SnoozeReminderUseCase(NoSnoozePlan(), NoAlarms(), NoNotifications(), NoJournal(), NoDeferred(), clock),
         settings = FakeSettings(),
         undoMarks = undoMarks,
     )
@@ -393,6 +395,16 @@ private class NoNotifications : NotificationGateway {
     override suspend fun retainOnly(pendingIntakeIds: Set<String>) = Unit
 
     override fun areNotificationsEnabled(): Boolean = true
+}
+
+/** Отложенное хранилище, которое тесту окна отмены не нужно: откладывать здесь нечего. */
+private class NoDeferred : DeferredReminders {
+
+    override suspend fun all(): List<DeferredReminder> = emptyList()
+
+    override suspend fun put(reminder: DeferredReminder) = Unit
+
+    override suspend fun remove(intakeId: String): Boolean = false
 }
 
 private class NoJournal : ReminderJournal {

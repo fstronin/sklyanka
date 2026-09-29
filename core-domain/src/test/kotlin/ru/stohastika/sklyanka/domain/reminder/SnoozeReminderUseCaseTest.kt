@@ -10,6 +10,7 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
 import ru.stohastika.sklyanka.domain.model.Fixtures
 import ru.stohastika.sklyanka.domain.model.IntakeStatus
+import ru.stohastika.sklyanka.domain.reminder.port.DeferredReminder
 import java.time.LocalDateTime
 
 @DisplayName("Snoozing moves the alarm and never rewrites the planned time")
@@ -44,6 +45,29 @@ class SnoozeReminderUseCaseTest {
         assertEquals(LocalDateTime.of(2026, 9, 25, 14, 0), world.stored().scheduledAt)
     }
 
+    /**
+     * Запись — обещание, что повтор переживёт перезагрузку (SKL-35, ОВ-75).
+     *
+     * Без неё восстановление собирало бы окно из приёмов, а `scheduled_at` отложенного
+     * приёма уже в прошлом и в окно не попадает: человек не получил бы обещанного повтора.
+     */
+    @Test
+    fun `a snooze leaves a deferred record with the moment and the first show number`() = runTest {
+        world.pending()
+        world.moveTo(LocalDateTime.of(2026, 9, 25, 14, 1))
+
+        world.snooze(Fixtures.INTAKE_ID, minutes = 15)
+
+        assertEquals(
+            DeferredReminder(
+                intakeId = Fixtures.INTAKE_ID,
+                fireAt = world.momentOf(LocalDateTime.of(2026, 9, 25, 14, 16)),
+                attempt = 0,
+            ),
+            world.deferred.stored.getValue(Fixtures.INTAKE_ID),
+        )
+    }
+
     @ParameterizedTest(name = "an interval of {0} minutes brings the reminder back at {1}")
     @CsvSource("15,14:15", "30,14:30", "60,15:00")
     fun `the interval of the repeat comes from the setting`(minutes: Int, expected: String) = runTest {
@@ -62,6 +86,7 @@ class SnoozeReminderUseCaseTest {
         world.take()
 
         assertFalse(world.snooze(Fixtures.INTAKE_ID, minutes = 15))
+        assertTrue(world.deferred.stored.isEmpty(), "a closed intake leaves no deferred promise")
     }
 
     @Test

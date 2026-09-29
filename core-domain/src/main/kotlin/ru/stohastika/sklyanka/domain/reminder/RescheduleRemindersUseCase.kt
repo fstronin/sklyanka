@@ -4,6 +4,8 @@ import ru.stohastika.sklyanka.domain.intake.SweepMissedIntakesUseCase
 import ru.stohastika.sklyanka.domain.intake.SweepReason
 import ru.stohastika.sklyanka.domain.model.IntakeStatus
 import ru.stohastika.sklyanka.domain.reminder.port.AlarmGateway
+import ru.stohastika.sklyanka.domain.reminder.port.DeferredReminder
+import ru.stohastika.sklyanka.domain.reminder.port.DeferredReminders
 import ru.stohastika.sklyanka.domain.reminder.port.NotificationGateway
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderJournal
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPlanSource
@@ -127,6 +129,7 @@ class SnoozeReminderUseCase(
     private val alarms: AlarmGateway,
     private val notifications: NotificationGateway,
     private val journal: ReminderJournal,
+    private val deferred: DeferredReminders,
     private val time: TimeSource,
 ) {
 
@@ -136,6 +139,11 @@ class SnoozeReminderUseCase(
         val now = time.now()
         val at = now.plus(Duration.ofMinutes(minutes.toLong()))
 
+        // Запись ставится **до** будильника: она и есть обещание, что повтор будет
+        // восстановлен. Процесс, убитый между шагами, оставит след, по которому следующая
+        // пересборка поставит будильник; лишняя запись безопасна, потерянная — потерянное
+        // обещание (SKL-35, `TDD.md §9.1`).
+        deferred.put(DeferredReminder(intakeId, at, attempt = 0))
         notifications.cancel(intake.slot)
         // Тот же адрес будильника — постановка заменяет предыдущий (НАП-9).
         alarms.schedule(intakeId, at)
