@@ -58,6 +58,12 @@ internal object SettingsScreenProbe {
         }
     }
 
+    /** Перезапуск приложения: ViewModel собирается заново над тем же миром (ПЕР-31). */
+    fun restart(world: AcceptanceWorld) {
+        reset(world)
+        viewModel = null
+    }
+
     fun state(world: AcceptanceWorld): SettingsUiState = model(world).state.value
 
     fun onIntent(world: AcceptanceWorld, intent: SettingsIntent) {
