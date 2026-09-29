@@ -27,6 +27,7 @@ import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
+import kotlin.math.roundToInt
 
 /**
  * Шаги приёмки SKL-12 — остаток упаковки и предупреждение о покупке.
@@ -359,6 +360,23 @@ class StockSteps(private val world: AcceptanceWorld) {
         assertTrue(panel(medication) is StockPanel.Visible, "the stock block of $medication is hidden")
     }
 
+    // --- Проверки: доля от размера упаковки (SKL-34, ОВ-45) --------------------------------------
+
+    @Then("^доля остатка «([^»]+)» от упаковки — (\\d+) %$")
+    fun thePackageShareOfThatMedication(medication: String, percent: Int) {
+        val visible = panel(medication) as StockPanel.Visible
+        val share = requireNotNull(visible.packageFraction) { "no package share for $medication" }
+        assertEquals(percent, (share * PERCENT).roundToInt(), "share of $medication")
+    }
+
+    @Then("^доли остатка «([^»]+)» нет$")
+    fun thePackageShareOfThatMedicationIsAbsent(medication: String) {
+        val visible = panel(medication) as StockPanel.Visible
+        // Доли нет, когда размер не задан или остаток больше упаковки: полоса не рисуется,
+        // а карточка показывает прежнее «осталось N».
+        assertNull(visible.packageFraction, "unexpected share of $medication")
+    }
+
     // --- Предыстория и действия задачи поверх общего мира ----------------------------------------
 
     /**
@@ -500,6 +518,9 @@ class StockSteps(private val world: AcceptanceWorld) {
     private companion object {
         const val SHOWN = "показано"
         const val MINUTES_AFTER = 5L
+
+        /** Доля полосы: 9/60 = 15 %. */
+        const val PERCENT = 100f
 
         val MORNING: LocalTime = LocalTime.of(8, 0)
 
