@@ -10,12 +10,17 @@ import ru.stohastika.sklyanka.domain.intake.PrnCommand
 import ru.stohastika.sklyanka.domain.intake.PrnDailyLimit
 import ru.stohastika.sklyanka.domain.intake.PrnOutcome
 import ru.stohastika.sklyanka.domain.intake.StockEffect
+import ru.stohastika.sklyanka.domain.intake.UndoCommand
+import ru.stohastika.sklyanka.domain.intake.UndoDecision
+import ru.stohastika.sklyanka.domain.intake.UndoOutcome
+import ru.stohastika.sklyanka.domain.log.OpEvent
 import ru.stohastika.sklyanka.domain.model.ArchiveReason
 import ru.stohastika.sklyanka.domain.model.Intake
 import ru.stohastika.sklyanka.domain.model.IntakeSource
 import ru.stohastika.sklyanka.domain.model.IntakeStatus
 import ru.stohastika.sklyanka.domain.model.Medication
 import ru.stohastika.sklyanka.domain.model.Profile
+import ru.stohastika.sklyanka.domain.model.ScheduleMode
 import ru.stohastika.sklyanka.domain.repository.IntakeRepository
 import ru.stohastika.sklyanka.domain.repository.MedicationRepository
 import ru.stohastika.sklyanka.domain.repository.ProfileRepository
@@ -47,6 +52,11 @@ class ScenarioRepositories(
     private val profiles: ScenarioProfiles,
     private val medications: ScenarioMedications,
     private val intakes: ScenarioIntakes,
+    /**
+     * Журнал сценария: след отмены пишет хранилище, как в `Room`-реализации (SKL-30),
+     * а не шаг приёмки — иначе проверялась бы копия правила, а не правило.
+     */
+    private val log: ScenarioLog,
 ) {
 
     val profileStore: ProfileRepository = Profiles()
@@ -193,6 +203,47 @@ class ScenarioRepositories(
                     }
                 }
             }
+        }
+
+        /**
+         * Та же последовательность, что и в транзакции Room (SKL-30): прочитать действие
+         * целиком, проверить режим и профили, отменить правилом домена, вернуть остаток
+         * и записать след. Отсутствие любого приёма отменяет всё действие.
+         */
+        override suspend fun undoAtomically(command: UndoCommand): UndoOutcome {
+            val current = command.intakeIds.map { intakeId -> intakes.get(intakeId) ?: return UndoOutcome.NotFound }
+            val medicationsById = current.map { it.medicationId }.distinct().associateWith { medicationId ->
+                requireNotNull(medications.byId(medicationId)) {
+                    "Undo refers to a medication that does not exist: $medicationId"
+                }
+            }
+            require(medicationsById.values.map { it.profileId }.distinct().size == 1) {
+                "Undo command spans several profiles"
+            }
+            require(medicationsById.values.all { it.scheduleMode == ScheduleMode.SCHEDULED }) {
+                "Undo addresses an on-demand intake"
+            }
+            var undone = 0
+            current.forEach { intake ->
+                when (val decision = IntakeTransition.undo(intake)) {
+                    is UndoDecision.Keep -> Unit
+                    is UndoDecision.Revert -> {
+                        intakes.store(decision.intake)
+                        applyStock(intake.medicationId, decision.stock)
+                        log.record(
+                            event = OpEvent.INTAKE_MARK_UNDONE,
+                            profileId = command.actorProfileId,
+                            medicationId = intake.medicationId,
+                            intakeId = intake.id,
+                            before = intake.status.name,
+                            after = IntakeStatus.PENDING.name,
+                            source = command.source.name,
+                        )
+                        undone++
+                    }
+                }
+            }
+            return UndoOutcome.Applied(undone)
         }
 
         override suspend fun createPrnAtomically(command: PrnCommand): PrnOutcome {

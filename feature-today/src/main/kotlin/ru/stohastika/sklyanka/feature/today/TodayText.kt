@@ -5,6 +5,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import ru.stohastika.sklyanka.domain.intake.MarkResult
 import ru.stohastika.sklyanka.domain.medication.DoseUnit
 import ru.stohastika.sklyanka.domain.medication.doseUnit
 import ru.stohastika.sklyanka.domain.model.FoodRelation
@@ -65,6 +66,33 @@ internal fun DayProgress.caption(dense: Boolean): String {
     if (!dense) return intakes
     val medications = pluralStringResource(R.plurals.today_medications, medicationCount, medicationCount)
     return stringResource(R.string.today_progress_dense, intakes, medications)
+}
+
+/**
+ * Текст снэкбара отмены: «Магний B6 — приём отмечен как принятый» (SKL-30).
+ *
+ * При одном приёме с известным именем — строковая форма с именем; иначе счётная
+ * по числу приёмов действия (нижние кнопки карточки отмечают весь слот). Шаблон всегда
+ * ресурс, имя — аргумент подстановки, а не склейка (НФТ-42).
+ */
+@Composable
+internal fun UndoNotice.text(): String = if (intakeIds.size == 1 && medicationNames.size == 1) {
+    stringResource(
+        when (result) {
+            MarkResult.TAKEN -> R.string.today_undo_taken_single
+            MarkResult.SKIPPED -> R.string.today_undo_skipped_single
+        },
+        medicationNames.single(),
+    )
+} else {
+    pluralStringResource(
+        when (result) {
+            MarkResult.TAKEN -> R.plurals.today_undo_taken
+            MarkResult.SKIPPED -> R.plurals.today_undo_skipped
+        },
+        intakeIds.size,
+        intakeIds.size,
+    )
 }
 
 /** «Магний B6 — осталось 9 таблеток, хватит на 4 дня». */

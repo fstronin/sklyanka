@@ -10,6 +10,8 @@ import ru.stohastika.sklyanka.domain.intake.IntakeWindow
 import ru.stohastika.sklyanka.domain.intake.MarkIntakeUseCase
 import ru.stohastika.sklyanka.domain.intake.MarkSideEffects
 import ru.stohastika.sklyanka.domain.intake.SweepMissedIntakesUseCase
+import ru.stohastika.sklyanka.domain.intake.UndoMarkUseCase
+import ru.stohastika.sklyanka.domain.intake.UndoableMarkStore
 import ru.stohastika.sklyanka.domain.log.OperationLog
 import ru.stohastika.sklyanka.domain.repository.IntakeRepository
 import ru.stohastika.sklyanka.domain.repository.MedicationRepository
@@ -60,6 +62,35 @@ object IntakeModule {
         time = time,
         sideEffects = sideEffects,
     )
+
+    /**
+     * Единственная точка отмены отметки (SKL-30).
+     *
+     * Отдельный сценарий рядом с отметкой: у отмены нет ни результата, ни момента
+     * действия, и слияние с [MarkIntakeUseCase] дало бы команду с полями, не участвующими
+     * в половине исходов.
+     */
+    @Provides
+    @Singleton
+    fun provideUndoMarkUseCase(
+        intakes: IntakeRepository,
+        medications: MedicationRepository,
+        profiles: ProfileRepository,
+    ): UndoMarkUseCase = UndoMarkUseCase(
+        intakes = intakes,
+        medications = medications,
+        profiles = profiles,
+    )
+
+    /**
+     * Носитель последнего действия: состояние процесса, а не базы.
+     *
+     * После смерти процесса отменять нечего, поэтому магазин живёт в памяти, а не
+     * в хранилище; время приходит из подменяемого источника (НФТ-48).
+     */
+    @Provides
+    @Singleton
+    fun provideUndoableMarkStore(time: TimeSource): UndoableMarkStore = UndoableMarkStore(time)
 
     @Provides
     @Singleton

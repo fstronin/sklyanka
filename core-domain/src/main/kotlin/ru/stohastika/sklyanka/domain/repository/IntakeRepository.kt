@@ -5,6 +5,8 @@ import ru.stohastika.sklyanka.domain.intake.MarkCommand
 import ru.stohastika.sklyanka.domain.intake.MarkOutcome
 import ru.stohastika.sklyanka.domain.intake.PrnCommand
 import ru.stohastika.sklyanka.domain.intake.PrnOutcome
+import ru.stohastika.sklyanka.domain.intake.UndoCommand
+import ru.stohastika.sklyanka.domain.intake.UndoOutcome
 import ru.stohastika.sklyanka.domain.model.Intake
 import ru.stohastika.sklyanka.domain.model.IntakeSource
 import ru.stohastika.sklyanka.domain.model.IntakeStatus
@@ -100,6 +102,17 @@ interface IntakeRepository {
      * замещать более позднюю отметку более ранней (ПР-3).
      */
     suspend fun markAtomically(command: MarkCommand): MarkOutcome
+
+    /**
+     * Отмена отметки целиком: чтение текущего состояния, решение правила отмены,
+     * запись и возврат дозы — одна транзакция (ПР-3, SKL-30).
+     *
+     * Действие либо отменяется целиком, либо не отменяется: отсутствие любого приёма —
+     * [UndoOutcome.NotFound] без единой записи. `MISSED` не воскрешается, ожидающий приём
+     * не трогается ([IntakeTransition.undo]): второй отмены не существует, а доза
+     * не возвращается дважды.
+     */
+    suspend fun undoAtomically(command: UndoCommand): UndoOutcome
 
     /**
      * Создание приёма по потребности: проверка суточного лимита и вставка — одна

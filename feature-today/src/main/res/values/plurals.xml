@@ -107,6 +107,24 @@
         <item quantity="other">%1$d приёма впереди</item>
     </plurals>
 
+    <!--
+      Счётные формы снэкбара отмены (НФТ-44, ОВ-81/ОВ-6): нижние кнопки карточки
+      напоминания отмечают весь слот, и текст с одним названием назвал бы одно лекарство
+      из трёх. Формы — дословно из таблицы записи решения.
+    -->
+    <plurals name="today_undo_taken">
+        <item quantity="one">%1$d приём отмечен как принятый</item>
+        <item quantity="few">%1$d приёма отмечены как принятые</item>
+        <item quantity="many">%1$d приёмов отмечены как принятые</item>
+        <item quantity="other">%1$d приёма отмечены как принятые</item>
+    </plurals>
+    <plurals name="today_undo_skipped">
+        <item quantity="one">%1$d приём отмечен как пропущенный</item>
+        <item quantity="few">%1$d приёма отмечены как пропущенные</item>
+        <item quantity="many">%1$d приёмов отмечены как пропущенные</item>
+        <item quantity="other">%1$d приёма отмечены как пропущенные</item>
+    </plurals>
+
     <!-- Свёрнутый блок «по потребности» в плотном дне (docs/spec/03-screens.md). -->
     <plurals name="today_prn_collapsed">
         <item quantity="one">%1$d лекарство без расписания</item>

@@ -19,6 +19,9 @@ import ru.stohastika.sklyanka.domain.intake.PrnCommand
 import ru.stohastika.sklyanka.domain.intake.PrnDailyLimit
 import ru.stohastika.sklyanka.domain.intake.PrnOutcome
 import ru.stohastika.sklyanka.domain.intake.StockEffect
+import ru.stohastika.sklyanka.domain.intake.UndoCommand
+import ru.stohastika.sklyanka.domain.intake.UndoDecision
+import ru.stohastika.sklyanka.domain.intake.UndoOutcome
 import ru.stohastika.sklyanka.domain.log.OpEvent
 import ru.stohastika.sklyanka.domain.log.OperationLog
 import ru.stohastika.sklyanka.domain.model.Intake
@@ -219,6 +222,70 @@ class IntakeRepositoryImpl @Inject constructor(
 
             is MarkDecision.Write -> writeMark(current, command, decision)
         }
+    }
+
+    /**
+     * Отмена отметки целиком одной транзакцией (SKL-30).
+     *
+     * Последовательность неразрывна: прочитать действие целиком, убедиться, что оно
+     * одного профиля и не «по потребности», отменить правилом домена и только затем
+     * вернуть дозу. Отсутствие любого приёма отменяет всё действие без единой записи —
+     * та же «вся группа или никак», что у групповой отметки.
+     *
+     * Защита от PRN стоит здесь, а не в UI: у «Принять» отмены нет, и `require` —
+     * защита от будущего четвёртого пути записи, а не рабочий сценарий.
+     */
+    override suspend fun undoAtomically(command: UndoCommand): UndoOutcome = transactor.inTransaction {
+        val current = command.intakeIds.map { intakeId ->
+            dao.getById(intakeId)?.let { decodeOrLog(it) }
+                ?: return@inTransaction UndoOutcome.NotFound
+        }
+        val medicationsById = current.map { it.medicationId }.distinct().associateWith { medicationId ->
+            requireNotNull(medications.getById(medicationId)) {
+                "Undo refers to a medication that does not exist: $medicationId"
+            }
+        }
+        val profiles = medicationsById.values.map { it.profileId }.distinct()
+        require(profiles.size == 1) { "Undo command spans several profiles: $profiles" }
+        medicationsById.values.forEach { stored ->
+            val mode = SklyankaConverters.textToEnum<ScheduleMode>(stored.scheduleMode) ?: ScheduleMode.SCHEDULED
+            require(mode == ScheduleMode.SCHEDULED) { "Undo addresses an on-demand intake: ${stored.id}" }
+        }
+
+        var undone = 0
+        current.forEach { intake ->
+            when (val decision = IntakeTransition.undo(intake)) {
+                is UndoDecision.Keep -> Unit
+                is UndoDecision.Revert -> {
+                    val changed = dao.unmark(intake.id)
+                    if (changed == 0) {
+                        log.record(
+                            event = OpEvent.DB_WRITE_FAILED,
+                            medicationId = intake.medicationId,
+                            intakeId = intake.id,
+                            before = intake.status.name,
+                            source = command.source.name,
+                            detail = STALE_READ,
+                        )
+                    } else {
+                        applyStock(intake.medicationId, intake.id, decision.stock)
+                        log.record(
+                            event = OpEvent.INTAKE_MARK_UNDONE,
+                            // Профиль того, кто отменил; пусто означает, что отменил
+                            // владелец профиля приёма (ПР-12). Имён профилей нет — только ids.
+                            profileId = command.actorProfileId,
+                            medicationId = intake.medicationId,
+                            intakeId = intake.id,
+                            before = intake.status.name,
+                            after = IntakeStatus.PENDING.name,
+                            source = command.source.name,
+                        )
+                        undone++
+                    }
+                }
+            }
+        }
+        UndoOutcome.Applied(undone)
     }
 
     /**

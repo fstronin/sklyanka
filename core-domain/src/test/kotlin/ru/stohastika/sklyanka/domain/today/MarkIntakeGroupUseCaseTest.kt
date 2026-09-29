@@ -50,7 +50,10 @@ class MarkIntakeGroupUseCaseTest {
 
         val outcome = useCase(groupIds(), IntakeSource.PHONE)
 
-        assertEquals(GroupMarkOutcome.Applied(marked = 3, alreadyMarked = 0), outcome)
+        assertEquals(
+            GroupMarkOutcome.Applied(marked = 3, alreadyMarked = 0, changedIntakeIds = groupIds()),
+            outcome,
+        )
         assertTrue(groupIds().all { intakes.stored.getValue(it).status == IntakeStatus.TAKEN })
     }
 
@@ -92,7 +95,16 @@ class MarkIntakeGroupUseCaseTest {
 
         val outcome = useCase(groupIds(), IntakeSource.PHONE)
 
-        assertEquals(GroupMarkOutcome.Applied(marked = 2, alreadyMarked = 1), outcome)
+        assertEquals(
+            GroupMarkOutcome.Applied(
+                marked = 2,
+                alreadyMarked = 1,
+                // Отменять можно ровно то, что изменило действие: приём, отмеченный
+                // часами, в него не входит (ПР-3, SKL-30).
+                changedIntakeIds = listOf("i-magnesium", "i-omez"),
+            ),
+            outcome,
+        )
         assertEquals(IntakeStatus.SKIPPED, intakes.stored.getValue("i-panangin").status)
         assertEquals(BigDecimal("20"), medications.stored.getValue(panangin.id).stockLeft)
     }
@@ -121,6 +133,17 @@ class MarkIntakeGroupUseCaseTest {
         val record = log.records.single { it.event == OpEvent.INTAKE_GROUP_MARKED }
         assertEquals("3", record.after)
         assertEquals("marked=3,already=0", record.detail)
+    }
+
+    @Test
+    fun `an empty group changes nothing and names no intakes`() = runTest {
+        val intakes = storeWithThreePending()
+        val useCase = useCaseOver(intakes, intakes)
+
+        val outcome = useCase(emptyList(), IntakeSource.PHONE)
+
+        assertEquals(GroupMarkOutcome.Applied(marked = 0, alreadyMarked = 0, changedIntakeIds = emptyList()), outcome)
+        assertTrue(intakes.stored.values.all { it.status == IntakeStatus.PENDING })
     }
 
     private fun groupIds() = listOf("i-magnesium", "i-panangin", "i-omez")

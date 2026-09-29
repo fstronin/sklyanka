@@ -3,10 +3,12 @@ package ru.stohastika.sklyanka.acceptance.profile
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
+import ru.stohastika.sklyanka.domain.reminder.ReadReminderReliabilityUseCase
 import ru.stohastika.sklyanka.domain.stock.StockWarning
 import ru.stohastika.sklyanka.domain.stock.StockWarningForProfileUseCase
 import ru.stohastika.sklyanka.domain.today.BuildTodayAgenda
 import ru.stohastika.sklyanka.feature.today.TodayUiState
+import ru.stohastika.sklyanka.feature.today.UndoNotice
 
 /**
  * Состояние экрана «Сегодня» из мира сценария приёмки.
@@ -43,6 +45,14 @@ internal object TodayFromWorld {
                 date = agenda.date,
                 progress = agenda.progress,
                 stockWarning = agenda.stockWarning,
+                // Причина ненадёжности читается у системы тем же доменным сценарием,
+                // что в `TodayViewModel` (НФТ-52, SKL-29).
+                reliability = ReadReminderReliabilityUseCase(world.system)().warning,
+                // Окно отмены — из того же магазина, что в продукте (SKL-30): срок
+                // проверяет магазин, а разметка показывает готовый факт.
+                undo = world.undoMarks.live()?.let { mark ->
+                    UndoNotice(mark.intakeIds, mark.result, mark.medicationNames)
+                },
                 layout = agenda.layout,
                 prn = agenda.prn,
                 toggledSections = emptySet(),

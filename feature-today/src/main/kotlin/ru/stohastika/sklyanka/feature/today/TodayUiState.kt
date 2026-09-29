@@ -1,6 +1,8 @@
 package ru.stohastika.sklyanka.feature.today
 
 import androidx.compose.runtime.Immutable
+import ru.stohastika.sklyanka.domain.intake.MarkResult
+import ru.stohastika.sklyanka.domain.reminder.ReminderWarning
 import ru.stohastika.sklyanka.domain.today.DayProgress
 import ru.stohastika.sklyanka.domain.today.DaySection
 import ru.stohastika.sklyanka.domain.today.PartOfDay
@@ -28,6 +30,20 @@ import java.time.LocalTime
  * профиль» экран вообще не хранит: он его не спрашивает, потому что ни одно его решение
  * от профиля не зависит.
  */
+/**
+ * Последнее действие, которое ещё можно отменить (SKL-30).
+ *
+ * Готовый к показу факт, а не магазин и не срок: срок — забота таймера `TodayViewModel`,
+ * а разметке нужен только текст снэкбара и идентификаторы для нажатия «Отменить».
+ */
+@Immutable
+data class UndoNotice(
+    val intakeIds: List<String>,
+    val result: MarkResult,
+    /** Имена для текста; у действия из нескольких приёмов текст счётный, имена не читаются. */
+    val medicationNames: List<String>,
+)
+
 sealed interface TodayUiState {
 
     /** Поток ещё не выдал ни одного значения. Живёт один кадр. */
@@ -46,6 +62,22 @@ sealed interface TodayUiState {
         val date: LocalDate,
         val progress: DayProgress,
         val stockWarning: StockNotice?,
+        /**
+         * Причина ненадёжности напоминаний; `null` — выдано всё (НАП-18, НАП-21).
+         *
+         * Состояние читается из системы при каждом построении экрана, а не хранится
+         * флагом (НФТ-52): отозванное разрешение обязано отразиться без перезапуска.
+         * Несётся свёрнутая причина, а не два флага: разметке нужен текст, а не правило
+         * «какая причина» — его уже решил домен (`ReminderReliability.warning`).
+         */
+        val reliability: ReminderWarning?,
+        /**
+         * Последнее действие и его окно отмены; `null` — отменять нечего.
+         *
+         * Та же форма, что у баннера надёжности: разметке нужен готовый факт. `expiresAt`
+         * сюда не попадает — срок живёт в таймере `TodayViewModel`, а не в состоянии.
+         */
+        val undo: UndoNotice? = null,
         val layout: TodayLayout,
         val prn: List<PrnEntry>,
         /**

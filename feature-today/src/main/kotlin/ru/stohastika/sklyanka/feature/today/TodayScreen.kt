@@ -17,12 +17,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import ru.stohastika.sklyanka.domain.reminder.ReminderWarning
 import ru.stohastika.sklyanka.domain.today.TodayLayout
 import ru.stohastika.sklyanka.ui.component.Banner
+import ru.stohastika.sklyanka.ui.component.BannerKind
 import ru.stohastika.sklyanka.ui.component.EmptyState
 import ru.stohastika.sklyanka.ui.component.ScreenHeader
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderLabels
 import ru.stohastika.sklyanka.ui.component.SklyankaProgressBar
+import ru.stohastika.sklyanka.ui.component.Snackbar
 import ru.stohastika.sklyanka.ui.profile.ProfileAvatar
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaSpacing
@@ -55,10 +58,28 @@ fun TodayScreen(state: TodayUiState, onIntent: (TodayIntent) -> Unit, modifier: 
             .background(colors.background)
             .testTag(TAG_TODAY_SCREEN),
     ) {
-        when (state) {
-            TodayUiState.Opening -> Box(Modifier.fillMaxSize().weight(1f))
-            is TodayUiState.Empty -> TodayEmpty(state, onIntent, Modifier.weight(1f))
-            is TodayUiState.Content -> TodayContent(state, onIntent, Modifier.weight(1f))
+        // Содержимое и снэкбар живут в одном Box над нижней панелью: снэкбар всплывает
+        // поверх контента, а панель остаётся видимой и нажимаемой (ОВ-81/ОВ-6, SKL-30).
+        Box(Modifier.fillMaxWidth().weight(1f)) {
+            when (state) {
+                TodayUiState.Opening -> Box(Modifier.fillMaxSize())
+                is TodayUiState.Empty -> TodayEmpty(state, onIntent, Modifier.fillMaxSize())
+                is TodayUiState.Content -> TodayContent(state, onIntent, Modifier.fillMaxSize())
+            }
+            (state as? TodayUiState.Content)?.undo?.let { notice ->
+                Snackbar(
+                    text = notice.text(),
+                    actionLabel = stringResource(R.string.today_undo_action),
+                    onAction = { onIntent(TodayIntent.UndoMark(notice.intakeIds)) },
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(
+                            start = SklyankaSpacing.Section,
+                            end = SklyankaSpacing.Section,
+                            bottom = SklyankaSpacing.Medium,
+                        ),
+                )
+            }
         }
         TodayBottomBar(onIntent)
     }
@@ -131,6 +152,17 @@ private fun TodayHeader(state: TodayUiState.Content, onIntent: (TodayIntent) -> 
         modifier = Modifier.fillMaxWidth().padding(horizontal = SklyankaSpacing.Section),
         verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Large),
     ) {
+        // Предупреждение о ненадёжности — первым в шапке, выше полосы прогресса и плашки
+        // остатка (ОВ-82): пока напоминания не придут, об этом надо сказать раньше всего.
+        state.reliability?.let { warning ->
+            Banner(
+                text = warning.text(),
+                kind = BannerKind.Warning,
+                actionLabel = stringResource(R.string.today_reliability_action),
+                onAction = { onIntent(TodayIntent.OpenPermissions) },
+                modifier = Modifier.testTag(TAG_RELIABILITY_BANNER),
+            )
+        }
         // Полоса дня показывается, только когда есть что считать: «Принято 0 из 0»
         // не сообщает ничего, а место занимает.
         if (state.progress.hasPlan) {
@@ -150,6 +182,21 @@ private fun TodayHeader(state: TodayUiState.Content, onIntent: (TodayIntent) -> 
         }
     }
 }
+
+/**
+ * Причина ненадёжности словами человека — одна формулировка на причину (ОВ-82).
+ *
+ * Текст берётся из ресурсов, а правило «какая причина» оставлено домену: разметка
+ * не пересобирает `ReminderReliability` из двух флагов (НФТ-42).
+ */
+@Composable
+private fun ReminderWarning.text(): String = stringResource(
+    when (this) {
+        ReminderWarning.NOTIFICATIONS_OFF -> R.string.today_reliability_notifications_off
+        ReminderWarning.EXACT_ALARMS_OFF -> R.string.today_reliability_exact_alarms_off
+        ReminderWarning.BOTH_OFF -> R.string.today_reliability_both_off
+    },
+)
 
 /**
  * Лекарства есть, а приёмов на сегодня нет (ОВ-34).
@@ -187,4 +234,5 @@ const val TAG_TODAY_SCREEN = "today_screen"
 const val TAG_TODAY_EMPTY = "today_empty"
 const val TAG_DAY_PROGRESS = "day_progress"
 const val TAG_STOCK_BANNER = "stock_banner"
+const val TAG_RELIABILITY_BANNER = "reliability_banner"
 const val TAG_NOTHING_TODAY = "nothing_today"

@@ -34,6 +34,9 @@ sealed interface TodayIntent {
     /** «Принять» в блоке «по потребности»: приём создаётся в момент нажатия (ПР-4). */
     data class TakePrn(val medicationId: String) : TodayIntent
 
+    /** «Отменить» в снэкбаре: ровно приёмы последнего действия (SKL-30). */
+    data class UndoMark(val intakeIds: List<String>) : TodayIntent
+
     // --- Переходы наружу: состояние экрана они не меняют, их разбирает маршрут ---
 
     /** Нажатие на строку приёма — карточка лекарства (SKL-10). */
@@ -48,4 +51,7 @@ sealed interface TodayIntent {
     data object OpenMedicationList : TodayIntent
 
     data object OpenSettings : TodayIntent
+
+    /** «Настроить» в предупреждении о ненадёжности — экран разрешений (SKL-29, НАП-21). */
+    data object OpenPermissions : TodayIntent
 }

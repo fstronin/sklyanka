@@ -8,6 +8,8 @@ import ru.stohastika.sklyanka.domain.intake.MarkCommand
 import ru.stohastika.sklyanka.domain.intake.MarkOutcome
 import ru.stohastika.sklyanka.domain.intake.PrnCommand
 import ru.stohastika.sklyanka.domain.intake.PrnOutcome
+import ru.stohastika.sklyanka.domain.intake.UndoCommand
+import ru.stohastika.sklyanka.domain.intake.UndoOutcome
 import ru.stohastika.sklyanka.domain.log.OpEvent
 import ru.stohastika.sklyanka.domain.log.OpLogRecord
 import ru.stohastika.sklyanka.domain.log.OperationLog
@@ -238,6 +240,9 @@ internal class FakeIntakes : IntakeRepository {
     override suspend fun expiredPending(before: LocalDateTime): List<Intake> = emptyList()
 
     override suspend fun markAtomically(command: MarkCommand): MarkOutcome = MarkOutcome.NotFound
+
+    /** Отмена — предмет SKL-30, и список лекарств её не вызывает: объявлена неиспользуемой. */
+    override suspend fun undoAtomically(command: UndoCommand): UndoOutcome = UndoOutcome.NotFound
 
     override suspend fun createPrnAtomically(command: PrnCommand): PrnOutcome = PrnOutcome.UnknownMedication
 

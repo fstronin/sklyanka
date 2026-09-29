@@ -165,6 +165,24 @@ interface IntakeDao {
         actorProfileId: String?,
     ): Int
 
+    /**
+     * Отмена состоявшейся отметки (SKL-30).
+     *
+     * Условие `status IN ('TAKEN', 'SKIPPED')` стоит в самом UPDATE по той же причине,
+     * что у отметки и замещения: между чтением и записью помещается отметка с часов.
+     * `MISSED` в условие не входит намеренно: «пропущено без отметки» — подпись
+     * приложения, и отмена не имеет права воскресить её задним числом. Ноль изменённых
+     * строк — не молчание: он попадает в журнал служебным кодом.
+     */
+    @Query(
+        """
+        UPDATE intake
+        SET status = 'PENDING', acted_at = NULL, source = NULL, actor_profile_id = NULL
+        WHERE id = :intakeId AND status IN ('TAKEN', 'SKIPPED')
+        """,
+    )
+    suspend fun unmark(intakeId: String): Int
+
     /** Просроченные ожидающие приёмы для перевода в MISSED (ПР-1); граница окна — параметр домена (ОВ-4). */
     @Query("SELECT * FROM intake WHERE status = 'PENDING' AND scheduled_at < :before")
     suspend fun selectExpiredPending(before: String): List<IntakeEntity>

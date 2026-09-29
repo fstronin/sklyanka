@@ -154,6 +154,11 @@ class MainActivity : ComponentActivity() {
                 // решает человек кнопкой, и решение живёт в состоянии экрана, а не в том,
                 // что система ответила про разрешения (НАП-21).
                 var onboardingDone by remember { mutableStateOf(false) }
+                // Предупреждение на «Сегодня» ведёт на тот же экран разрешений, что и первый
+                // запуск: источник TODAY_WARNING решает только одно — индикатора шагов нет
+                // (НАП-21, критерий приёмки 4 SKL-29). Экран показывается поверх всего, как
+                // первый запуск, и закрывается возвратом на «Сегодня».
+                var permissionsFromToday by remember { mutableStateOf(false) }
                 when {
                     // Кадр заставки средствами приложения: полотно и знак те же, что
                     // у системного, поэтому переход не мигает. Индикатора загрузки
@@ -175,13 +180,23 @@ class MainActivity : ComponentActivity() {
                             onExit = { onboardingDone = true },
                         )
 
+                    // «Настроить» в предупреждении на «Сегодня» — тот же экран разрешений,
+                    // что при первом запуске, но с источником TODAY_WARNING: индикатора
+                    // шагов на нём нет (НАП-21, критерий приёмки 4 SKL-29). Человек
+                    // возвращается на «Сегодня» — оттуда он и пришёл.
+                    permissionsFromToday -> PermissionsRoute(
+                        viewModel = onboarding,
+                        source = OnboardingSource.TODAY_WARNING,
+                        onExit = { permissionsFromToday = false },
+                    )
+
                     // Оформление активного профиля — вокруг всего, что человек видит
                     // в контексте профиля (ПРФ-12). Заставка и экран разрешений в него
                     // не входят: профиля на них ещё нет, а на первом запуске он всегда
                     // свой.
                     else -> ProfileChrome(profileChrome()) {
                         OutageNotice()
-                        Root()
+                        Root(onOpenPermissions = { permissionsFromToday = true })
                     }
                 }
             }
@@ -258,7 +273,7 @@ class MainActivity : ComponentActivity() {
      * и уведомление.
      */
     @Composable
-    private fun Root() {
+    private fun Root(onOpenPermissions: () -> Unit) {
         var tab by remember { mutableStateOf(RootTab.TODAY) }
         var meds by remember { mutableStateOf<MedsDestination?>(null) }
         var section by remember { mutableStateOf<SettingsDestination?>(null) }
@@ -317,6 +332,9 @@ class MainActivity : ComponentActivity() {
                     // Вкладка «Настройки» нижней панели и аватар профиля в шапке ведут
                     // в одно место — шестерёнки в шапке нет (ПРФ-19, критерий приёмки 14).
                     openSettings = { tab = RootTab.SETTINGS },
+                    // «Настроить» в предупреждении о ненадёжности: экран разрешений
+                    // с источником TODAY_WARNING (SKL-29, НАП-21).
+                    openPermissions = onOpenPermissions,
                 ),
             )
         }

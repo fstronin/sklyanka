@@ -3,14 +3,24 @@ package ru.stohastika.sklyanka.acceptance.today
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
+import ru.stohastika.sklyanka.acceptance.world.ScenarioTransactor
+import ru.stohastika.sklyanka.domain.intake.CreatePrnIntakeUseCase
+import ru.stohastika.sklyanka.domain.intake.MarkIntakeUseCase
+import ru.stohastika.sklyanka.domain.intake.SweepMissedIntakesUseCase
+import ru.stohastika.sklyanka.domain.intake.UndoMarkUseCase
+import ru.stohastika.sklyanka.domain.reminder.ReadReminderReliabilityUseCase
 import ru.stohastika.sklyanka.domain.stock.StockWarning
 import ru.stohastika.sklyanka.domain.stock.StockWarningForProfileUseCase
 import ru.stohastika.sklyanka.domain.today.BuildTodayAgenda
 import ru.stohastika.sklyanka.domain.today.DayProgress
+import ru.stohastika.sklyanka.domain.today.MarkIntakeGroupUseCase
+import ru.stohastika.sklyanka.domain.today.ObserveTodayAgendaUseCase
 import ru.stohastika.sklyanka.domain.today.PartOfDay
 import ru.stohastika.sklyanka.domain.today.TodayAgenda
 import ru.stohastika.sklyanka.domain.today.TodayLayout
 import ru.stohastika.sklyanka.feature.today.TodayUiState
+import ru.stohastika.sklyanka.feature.today.TodayViewModel
+import ru.stohastika.sklyanka.feature.today.UndoNotice
 import java.time.LocalTime
 
 /**
@@ -73,6 +83,12 @@ internal object TodayStand {
                 date = agenda.date,
                 progress = agenda.progress,
                 stockWarning = agenda.stockWarning,
+                reliability = reliability(world),
+                // Окно отмены — из того же магазина, что в продукте (SKL-30): срок
+                // проверяется магазином, а не таймером стенда.
+                undo = world.undoMarks.live()?.let { mark ->
+                    UndoNotice(mark.intakeIds, mark.result, mark.medicationNames)
+                },
                 layout = agenda.layout,
                 prn = agenda.prn,
                 toggledSections = toggles.toggledSections,
@@ -81,6 +97,68 @@ internal object TodayStand {
                 nothingToday = agenda.hasNothingToday,
             )
         }
+    }
+
+    /**
+     * Надёжность напоминаний — тем же доменным сценарием, что в `TodayViewModel`.
+     *
+     * Стенд не пересказывает правило «какая причина»: `ReminderReliability` сводит два
+     * состояния разрешений к причине в домене (SKL-13), и второй копии этого правила
+     * в приёмке нет.
+     */
+    private fun reliability(world: AcceptanceWorld) = ReadReminderReliabilityUseCase(world.system)().warning
+
+    /**
+     * Настоящий `TodayViewModel` на мире сценария — для проверок жизненного цикла окна
+     * отмены (SKL-30): уход с экрана проверяется на том же графе сценариев, что у продукта,
+     * а не на пересказе.
+     */
+    fun viewModel(world: AcceptanceWorld): TodayViewModel {
+        val time = world.clock.time
+        val markIntake = MarkIntakeUseCase(
+            world.repositories.intakeStore,
+            world.repositories.medicationStore,
+            world.repositories.profileStore,
+            time,
+            world.reminders.markSideEffects(),
+        )
+        return TodayViewModel(
+            observeAgenda = ObserveTodayAgendaUseCase(
+                activeProfile = world.profileSession.activeStore,
+                intakes = world.repositories.intakeStore,
+                medications = world.repositories.medicationStore,
+                sweepMissed = SweepMissedIntakesUseCase(
+                    world.repositories.intakeStore,
+                    world.intakes.window,
+                    time,
+                    world.log,
+                ),
+                stockWarnings = StockWarningForProfileUseCase(world.repositories.medicationStore, time, world.log),
+                time = time,
+                build = BuildTodayAgenda(),
+            ),
+            markIntake = markIntake,
+            markGroup = MarkIntakeGroupUseCase(
+                markIntake,
+                ScenarioTransactor(world.intakes, world.medications),
+                time,
+                world.log,
+            ),
+            createPrn = CreatePrnIntakeUseCase(
+                world.repositories.intakeStore,
+                world.repositories.medicationStore,
+                world.repositories.profileStore,
+                time,
+            ),
+            undoMark = UndoMarkUseCase(
+                world.repositories.intakeStore,
+                world.repositories.medicationStore,
+                world.repositories.profileStore,
+            ),
+            undoMarks = world.undoMarks,
+            time = time,
+            readReliability = ReadReminderReliabilityUseCase(world.system),
+        )
     }
 }
 

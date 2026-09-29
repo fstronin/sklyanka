@@ -48,6 +48,32 @@ object IntakeTransition {
     }
 
     /**
+     * Что делать с приёмом при отмене состоявшейся отметки (ОВ-6/ОВ-81, SKL-30).
+     *
+     * Отменяются только человеческие исходы: TAKEN и SKIPPED. «Пропущено без отметки» —
+     * подпись приложения (ПР-1), отменять её некому; ожидающий приём отменять нечего.
+     *
+     * Отмена — не отметка: она не несёт ни источника отметки, ни момента действия,
+     * ни результата и не участвует в сравнении `actedAt` (ПР-3). Поэтому это отдельная
+     * ветвь правила, а не команда к [decide] с несуществующими значениями.
+     */
+    fun undo(current: Intake): UndoDecision = when {
+        current.isPending -> UndoDecision.Keep(current)
+        current.status == IntakeStatus.MISSED -> UndoDecision.Keep(current)
+        else -> UndoDecision.Revert(
+            intake = current.copy(
+                status = IntakeStatus.PENDING,
+                actedAt = null,
+                source = null,
+                actorProfileId = null,
+            ),
+            // То же правило остатка, что у замещения (`stockEffect(before, PENDING)`):
+            // RESTORE ровно у TAKEN, NONE у SKIPPED. Второй формулы остатка не заводится.
+            stock = stockEffect(current.status, IntakeStatus.PENDING),
+        )
+    }
+
+    /**
      * Истекло ли окно приёма (ПР-1).
      *
      * Ровно на границе приём ещё ожидается: в 23:59 своих суток он жив, в 00:00 следующих

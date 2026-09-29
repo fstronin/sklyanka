@@ -4,18 +4,25 @@ import app.cash.turbine.test
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import ru.stohastika.sklyanka.domain.intake.MarkResult
 import ru.stohastika.sklyanka.domain.model.IntakeStatus
 import ru.stohastika.sklyanka.domain.model.ScheduleMode
+import ru.stohastika.sklyanka.domain.reminder.ReminderWarning
+import ru.stohastika.sklyanka.domain.reminder.port.ReminderPermission
+import ru.stohastika.sklyanka.domain.today.IntakeItem
 import ru.stohastika.sklyanka.domain.today.IntakePresentation
 import ru.stohastika.sklyanka.domain.today.PartOfDay
 import ru.stohastika.sklyanka.domain.today.TodayLayout
@@ -80,9 +87,8 @@ class TodayViewModelTest {
 
             viewModel.onIntent(TodayIntent.MarkTaken("i-magnesium"))
 
-            val content = awaitItem() as TodayUiState.Content
-            val item = content.layout.groups.single { it.time == LocalTime.of(14, 0) }.items.single()
-            assertEquals(IntakePresentation.TAKEN, item.presentation)
+            val content = awaitContentWhere { it.itemAt(LocalTime.of(14, 0)).presentation == IntakePresentation.TAKEN }
+            val item = content.itemAt(LocalTime.of(14, 0))
             assertEquals(LocalTime.of(14, 5), item.markedAt)
             assertEquals(BigDecimal("7"), world.medications.stored.getValue("m-magnesium").stockLeft)
             cancelAndIgnoreRemainingEvents()
@@ -99,10 +105,9 @@ class TodayViewModelTest {
 
             viewModel.onIntent(TodayIntent.MarkSkipped("i-magnesium"))
 
-            val content = awaitItem() as TodayUiState.Content
-            val item = content.layout.groups.single { it.time == LocalTime.of(14, 0) }.items.single()
-            assertEquals(IntakePresentation.MISSED, item.presentation)
+            val content = awaitContentWhere { it.itemAt(LocalTime.of(14, 0)).presentation == IntakePresentation.MISSED }
             assertEquals(BigDecimal("9"), world.medications.stored.getValue("m-magnesium").stockLeft)
+            assertEquals(IntakePresentation.MISSED, content.itemAt(LocalTime.of(14, 0)).presentation)
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -115,7 +120,10 @@ class TodayViewModelTest {
         viewModel.state.test {
             awaitContent()
             viewModel.onIntent(TodayIntent.MarkTaken("i-magnesium"))
-            val marked = awaitItem()
+            val marked = awaitContentWhere { content ->
+                content.itemAt(LocalTime.of(14, 0)).presentation == IntakePresentation.TAKEN &&
+                    content.undo?.intakeIds == listOf("i-magnesium")
+            }
 
             viewModel.onIntent(TodayIntent.MarkSkipped("i-magnesium"))
 
@@ -137,7 +145,10 @@ class TodayViewModelTest {
 
             viewModel.onIntent(TodayIntent.MarkGroupTaken(listOf("i-a", "i-b", "i-c")))
 
-            val content = awaitItem() as TodayUiState.Content
+            val content = awaitContentWhere { candidate ->
+                val group = candidate.layout.groups.single { it.time == LocalTime.of(14, 0) }
+                candidate.undo?.intakeIds?.size == 3 && group.items.all { it.presentation == IntakePresentation.TAKEN }
+            }
             val group = content.layout.groups.single { it.time == LocalTime.of(14, 0) }
             assertTrue(group.items.all { it.presentation == IntakePresentation.TAKEN })
             cancelAndIgnoreRemainingEvents()
@@ -232,9 +243,77 @@ class TodayViewModelTest {
             viewModel.onIntent(TodayIntent.AddMedication)
             viewModel.onIntent(TodayIntent.OpenMedicationList)
             viewModel.onIntent(TodayIntent.OpenSettings)
+            viewModel.onIntent(TodayIntent.OpenPermissions)
 
             expectNoEvents()
             assertEquals(before, viewModel.state.value)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    // --- Надёжность напоминаний (SKL-29) -----------------------------------------
+
+    @Test
+    fun `fully granted permissions leave no reliability warning`() = runTest {
+        val world = worldWithDay(startAt = 9, minute = 0)
+
+        world.viewModel().state.test {
+            assertNull(awaitContent().reliability)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `revoked notifications carry their own reason`() = runTest {
+        val world = worldWithDay(startAt = 9, minute = 0)
+        world.denyPermissions(ReminderPermission.NOTIFICATIONS)
+
+        world.viewModel().state.test {
+            assertEquals(ReminderWarning.NOTIFICATIONS_OFF, awaitContent().reliability)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `denied exact alarms carry their own reason`() = runTest {
+        val world = worldWithDay(startAt = 9, minute = 0)
+        world.denyPermissions(ReminderPermission.EXACT_ALARMS)
+
+        world.viewModel().state.test {
+            assertEquals(ReminderWarning.EXACT_ALARMS_OFF, awaitContent().reliability)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `both revoked permissions are named by a single reason`() = runTest {
+        val world = worldWithDay(startAt = 9, minute = 0)
+        world.denyPermissions(ReminderPermission.NOTIFICATIONS, ReminderPermission.EXACT_ALARMS)
+
+        world.viewModel().state.test {
+            assertEquals(ReminderWarning.BOTH_OFF, awaitContent().reliability)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    /**
+     * Ровно то, ради чего признак читается на каждой сборке: отозванное разрешение
+     * появляется без перезапуска экрана (НФТ-52, критерий приёмки 5 SKL-29).
+     */
+    @Test
+    fun `a revoked permission appears without restarting the screen`() = runTest {
+        val world = worldWithDay(startAt = 9, minute = 0)
+        val viewModel = world.viewModel()
+
+        viewModel.state.test {
+            assertNull(awaitContent().reliability)
+
+            world.denyPermissions(ReminderPermission.NOTIFICATIONS)
+            // Новая сборка состояния — следствие отметки, а не перезапуска.
+            viewModel.onIntent(TodayIntent.MarkTaken("i-magnesium"))
+
+            val content = awaitItem() as TodayUiState.Content
+            assertEquals(ReminderWarning.NOTIFICATIONS_OFF, content.reliability)
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -277,7 +356,219 @@ class TodayViewModelTest {
         }
     }
 
+    // --- Окно отмены (SKL-30) --------------------------------------------------------
+
+    @Test
+    fun `a taken mark publishes the undo notice with the medication name`() = runTest {
+        val world = worldWithDay(startAt = 14, minute = 5)
+        val viewModel = world.viewModel()
+
+        viewModel.state.test {
+            awaitContent()
+            viewModel.onIntent(TodayIntent.MarkTaken("i-magnesium"))
+
+            val undo = awaitUndo { it.result == MarkResult.TAKEN }
+            assertEquals(listOf("i-magnesium"), undo.intakeIds)
+            assertEquals(listOf("m-magnesium"), undo.medicationNames)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `a skipped mark publishes the skipped notice`() = runTest {
+        val world = worldWithDay(startAt = 14, minute = 5)
+        val viewModel = world.viewModel()
+
+        viewModel.state.test {
+            awaitContent()
+            viewModel.onIntent(TodayIntent.MarkSkipped("i-magnesium"))
+
+            val undo = awaitUndo { it.result == MarkResult.SKIPPED }
+            assertEquals(listOf("i-magnesium"), undo.intakeIds)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `a dropped second mark does not publish anything`() = runTest {
+        val world = worldWithDay(startAt = 14, minute = 5)
+        val viewModel = world.viewModel()
+
+        viewModel.state.test {
+            awaitContent()
+            viewModel.onIntent(TodayIntent.MarkTaken("i-magnesium"))
+            val published = awaitContentWhere { content ->
+                content.itemAt(LocalTime.of(14, 0)).presentation == IntakePresentation.TAKEN &&
+                    content.undo?.result == MarkResult.TAKEN
+            }.undo
+
+            // Повторная отметка того же приёма отброшена: это не новое действие,
+            // и срок снэкбара идёт от единственной состоявшейся отметки.
+            viewModel.onIntent(TodayIntent.MarkSkipped("i-magnesium"))
+
+            expectNoEvents()
+            assertEquals(published, (viewModel.state.value as TodayUiState.Content).undo)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `the snackbar disappears exactly on the fifth second`() = runTest {
+        val world = worldWithDay(startAt = 14, minute = 5)
+        val viewModel = world.viewModel()
+
+        viewModel.state.test {
+            awaitContent()
+            viewModel.onIntent(TodayIntent.MarkTaken("i-magnesium"))
+            awaitUndo { it.result == MarkResult.TAKEN }
+
+            advanceTimeBy(4_999)
+            runCurrent()
+            assertNotNull((viewModel.state.value as TodayUiState.Content).undo)
+
+            advanceTimeBy(1)
+            runCurrent()
+            assertNull((viewModel.state.value as TodayUiState.Content).undo)
+            assertNull(world.undoMarks.live())
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `a second mark replaces the notice and restarts the window from its own moment`() = runTest {
+        val world = worldWithDay(startAt = 14, minute = 5)
+        val viewModel = world.viewModel()
+
+        viewModel.state.test {
+            awaitContent()
+            viewModel.onIntent(TodayIntent.MarkTaken("i-magnesium"))
+            awaitUndo { it.intakeIds == listOf("i-magnesium") }
+
+            advanceTimeBy(3_000)
+            runCurrent()
+            viewModel.onIntent(TodayIntent.MarkSkipped("i-eutirox"))
+
+            val replaced = awaitUndo { it.intakeIds == listOf("i-eutirox") }
+            assertEquals(MarkResult.SKIPPED, replaced.result)
+
+            // Срок идёт от второго действия: к 07,999 от первой отметки окно ещё живо.
+            advanceTimeBy(4_999)
+            runCurrent()
+            assertNotNull((viewModel.state.value as TodayUiState.Content).undo)
+
+            advanceTimeBy(1)
+            runCurrent()
+            assertNull((viewModel.state.value as TodayUiState.Content).undo)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `the undo action returns the intake, restores the dose and closes the window`() = runTest {
+        val world = worldWithDay(startAt = 14, minute = 5)
+        val viewModel = world.viewModel()
+
+        viewModel.state.test {
+            awaitContent()
+            viewModel.onIntent(TodayIntent.MarkTaken("i-magnesium"))
+            val undo = awaitUndo { it.result == MarkResult.TAKEN }
+
+            viewModel.onIntent(TodayIntent.UndoMark(undo.intakeIds))
+
+            assertEquals(IntakeStatus.PENDING, world.intakes.stored.getValue("i-magnesium").status)
+            assertEquals(BigDecimal("9"), world.medications.stored.getValue("m-magnesium").stockLeft)
+            assertNull((viewModel.state.value as TodayUiState.Content).undo)
+            assertNull(world.undoMarks.live())
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `the group mark publishes exactly the intakes of the action`() = runTest {
+        val world = worldWithSimultaneous(startAt = 14, minute = 5)
+        val viewModel = world.viewModel()
+
+        viewModel.state.test {
+            awaitContent()
+            viewModel.onIntent(TodayIntent.MarkGroupTaken(listOf("i-a", "i-b", "i-c")))
+
+            val undo = awaitUndo { it.intakeIds.size == 3 }
+            assertEquals(MarkResult.TAKEN, undo.result)
+            assertEquals(listOf("m-a", "m-b", "m-c"), undo.medicationNames)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `taking an on-demand medication opens no undo window`() = runTest {
+        val world = worldWithDay(startAt = 16, minute = 40)
+        world.medications.put(TodayTest.medication("m-prn", mode = ScheduleMode.PRN, maxPerDay = 3))
+        val viewModel = world.viewModel()
+
+        viewModel.state.test {
+            awaitContent()
+            viewModel.onIntent(TodayIntent.TakePrn("m-prn"))
+            // Действие состоялось: блок «по потребности» пересобран.
+            var content = awaitItem() as TodayUiState.Content
+            while (content.prn.single().takenToday == 0) content = awaitItem() as TodayUiState.Content
+
+            assertNull(content.undo)
+            assertNull(world.undoMarks.live())
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `leaving the screen closes the undo window`() = runTest {
+        val world = worldWithDay(startAt = 14, minute = 5)
+        val viewModel = world.viewModel()
+
+        viewModel.state.test {
+            awaitContent()
+            viewModel.onIntent(TodayIntent.MarkTaken("i-magnesium"))
+            awaitUndo { it.result == MarkResult.TAKEN }
+
+            viewModel.onScreenLeft()
+
+            assertNull((viewModel.state.value as TodayUiState.Content).undo)
+            assertNull(world.undoMarks.live())
+            assertEquals(IntakeStatus.TAKEN, world.intakes.stored.getValue("i-magnesium").status)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
     // --- Обвязка ---------------------------------------------------------------------
+
+    /**
+     * Ждать состояние, удовлетворяющее условию.
+     *
+     * Окно отмены и повестка дня — два независимых источника состояния, и между их
+     * обновлениями возможен промежуточный кадр. Тест ждёт кадр, в котором видно
+     * следствие действия, а не первый попавшийся.
+     */
+    private suspend fun app.cash.turbine.TurbineTestContext<TodayUiState>.awaitContentWhere(
+        predicate: (TodayUiState.Content) -> Boolean,
+    ): TodayUiState.Content {
+        while (true) {
+            val content = awaitItem() as TodayUiState.Content
+            if (predicate(content)) return content
+        }
+    }
+
+    /** Ждать состояние с опубликованным окном, пропуская промежуточные пересборки. */
+    private suspend fun app.cash.turbine.TurbineTestContext<TodayUiState>.awaitUndo(
+        predicate: (UndoNotice) -> Boolean,
+    ): UndoNotice {
+        while (true) {
+            val content = awaitItem() as TodayUiState.Content
+            val undo = content.undo
+            if (undo != null && predicate(undo)) return undo
+        }
+    }
+
+    /** Приём указанного времени на собранном экране. */
+    private fun TodayUiState.Content.itemAt(time: LocalTime): IntakeItem =
+        layout.groups.single { it.time == time }.items.single()
 
     private suspend fun app.cash.turbine.TurbineTestContext<TodayUiState>.awaitContent(): TodayUiState.Content {
         var state = awaitItem()

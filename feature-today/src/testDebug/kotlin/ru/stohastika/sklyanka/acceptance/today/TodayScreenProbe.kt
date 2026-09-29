@@ -15,6 +15,7 @@ import androidx.compose.ui.test.runComposeUiTest
 import ru.stohastika.sklyanka.acceptance.steps.medicationNamed
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
 import ru.stohastika.sklyanka.domain.intake.MarkResult
+import ru.stohastika.sklyanka.domain.today.GroupMarkOutcome
 import ru.stohastika.sklyanka.feature.today.TAG_LANE_HEADER
 import ru.stohastika.sklyanka.feature.today.TodayIntent
 import ru.stohastika.sklyanka.feature.today.TodayScreen
@@ -144,16 +145,27 @@ internal object TodayScreenProbe {
         .fetchSemanticsNodes()
         .flatMap { textsOf(it) }
 
+    /** Тексты всех узлов с тегом на собранном экране — без открытия блока `runComposeUiTest` у шага. */
+    fun textsOnScreen(world: AcceptanceWorld, tag: String): List<String> = ask(world) { test -> texts(test, tag) }
+
     /** Весь текст узла и его поддерева, в порядке разметки. */
     fun textsOf(node: SemanticsNode): List<String> =
         node.config.getOrNull(SemanticsProperties.Text).orEmpty().map { it.text } +
             node.children.flatMap { textsOf(it) }
 
-    private fun apply(world: AcceptanceWorld, intent: TodayIntent) {
+    /**
+     * Применить намерение экрана к миру.
+     *
+     * Окно отмены публикуется тем же предикатом `isCompleted` и той же формой текста,
+     * что у `TodayViewModel` (SKL-30): стенд не пересказывает правило, а повторяет
+     * единственную его последовательность — отметить, затем открыть окно.
+     */
+    fun apply(world: AcceptanceWorld, intent: TodayIntent) {
         when (intent) {
             is TodayIntent.MarkTaken -> mark(world, intent.intakeId, MarkResult.TAKEN)
             is TodayIntent.MarkSkipped -> mark(world, intent.intakeId, MarkResult.SKIPPED)
-            is TodayIntent.MarkGroupTaken -> world.markGroup(intent.intakeIds, world.clock.nowLocal())
+            is TodayIntent.MarkGroupTaken -> markTheGroup(world, intent.intakeIds)
+            is TodayIntent.UndoMark -> undo(world, intent.intakeIds)
             is TodayIntent.TakePrn -> world.pressTakeOnDemand(nameOf(world, intent.medicationId))
 
             // Свёртка и разворот — зрительная часть состояния: в продукте её ведёт
@@ -177,6 +189,40 @@ internal object TodayScreenProbe {
 
     private fun mark(world: AcceptanceWorld, intakeId: String, result: MarkResult) {
         world.markFromScreen(intakeId, world.clock.nowLocal(), result)
+        val outcome = world.intakes.outcomes.last()
+        // Отброшенная отметка — не новое действие человека: окно не открывается,
+        // и срок снэкбара идёт от единственной состоявшейся (приёмка, строка 203).
+        if (!outcome.isCompleted) return
+        world.undoMarks.publish(
+            intakeIds = listOf(intakeId),
+            result = outcome.intake?.status?.let(MarkResult::of) ?: result,
+            medicationNames = listOfNotNull(medicationNameOfIntake(world, intakeId)),
+        )
+    }
+
+    private fun markTheGroup(world: AcceptanceWorld, intakeIds: List<String>) {
+        when (val outcome = world.markGroup(intakeIds, world.clock.nowLocal())) {
+            is GroupMarkOutcome.Applied -> if (outcome.changedIntakeIds.isNotEmpty()) {
+                world.undoMarks.publish(
+                    intakeIds = outcome.changedIntakeIds,
+                    result = MarkResult.TAKEN,
+                    medicationNames = outcome.changedIntakeIds.mapNotNull { medicationNameOfIntake(world, it) },
+                )
+            }
+
+            is GroupMarkOutcome.Rejected -> Unit
+        }
+    }
+
+    /** «Отменить»: окно закрывается синхронно, как в `TodayViewModel` (SKL-30). */
+    private fun undo(world: AcceptanceWorld, intakeIds: List<String>) {
+        world.undoMarks.clear()
+        world.undo(intakeIds, world.clock.nowLocal())
+    }
+
+    private fun medicationNameOfIntake(world: AcceptanceWorld, intakeId: String): String? {
+        val medicationId = world.intakes.get(intakeId)?.medicationId ?: return null
+        return world.medications.byId(medicationId)?.name
     }
 
     private fun nameOf(world: AcceptanceWorld, medicationId: String): String = requireNotNull(

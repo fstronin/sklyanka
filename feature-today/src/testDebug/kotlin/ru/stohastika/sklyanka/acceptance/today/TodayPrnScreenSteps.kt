@@ -49,6 +49,16 @@ class TodayPrnScreenSteps(private val world: AcceptanceWorld) {
     @Когда("^(.+?) в (\\d{2}:\\d{2}) человек нажимает «Принять» в карточке «([^»]+)»$")
     fun thePersonPressesTakeInTheOnDemandCard(date: String, time: String, medication: String) {
         world.clock.moveTo(world.localMoment(date, time))
+        pressTake(medication)
+    }
+
+    /** То же нажатие без переноса часов: Предыстория уже поставила момент сценария (SKL-30). */
+    @Когда("^человек нажимает «Принять» в карточке «([^»]+)»$")
+    fun thePersonPressesTakeInTheOnDemandCardNow(medication: String) {
+        pressTake(medication)
+    }
+
+    private fun pressTake(medication: String) {
         val medicationId = world.medications.get(world.medicationNamed(medication)).id
         val take = context.getString(UiR.string.action_take)
         val intents = TodayScreenProbe.act(world) { test ->

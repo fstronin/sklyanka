@@ -21,7 +21,9 @@ import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
  */
 class ClockSteps(private val world: AcceptanceWorld) {
 
-    @Given("^сейчас (.+), (\\d{2}:\\d{2})$")
+    // Секунды необязательны: сценарии короткого окна отмены сверяются с моментом
+    // «14:05:04», остальным задачам хватает минут (SKL-30).
+    @Given("^сейчас (.+), (\\d{2}:\\d{2}(?::\\d{2})?)$")
     fun theCurrentMomentIs(date: String, time: String) {
         world.clock.moveTo(world.localMoment(date, time))
     }

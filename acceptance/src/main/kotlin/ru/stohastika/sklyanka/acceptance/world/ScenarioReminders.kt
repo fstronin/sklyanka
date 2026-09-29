@@ -55,6 +55,14 @@ class ScenarioReminders(
     private val intakes: ScenarioIntakes,
     private val repositories: ScenarioRepositories,
     private val log: ScenarioLog,
+    /**
+     * Включены ли уведомления в системе — тот же ответ, что читает диагностика.
+     *
+     * Порт шторки отвечает им: пока разрешение отозвано, система молча роняет показ,
+     * и карточка в шторке не появляется (сценарий «ни одно уведомление не показывается»,
+     * SKL-29). Второй копии «что выдано» здесь нет — состояние живёт в [ScenarioSystemState].
+     */
+    private val notificationsAllowed: () -> Boolean = { true },
 ) {
 
     /**
@@ -77,7 +85,7 @@ class ScenarioReminders(
     /** Идентификаторы приёмов, чьи карточки на часах продукт отозвал. */
     val revokedWatchIntakeIds: List<String> get() = watch.revoked
 
-    private val notifications = InMemoryNotifications()
+    private val notifications = InMemoryNotifications(notificationsAllowed)
 
     val journal: ReminderJournal = InMemoryReminderJournal()
 
@@ -206,6 +214,9 @@ class ScenarioReminders(
         val intake = PlanSource().intake(intakeId) ?: return@runBlocking false
         notifications.isShown(intake.slot)
     }
+
+    /** Включены ли уведомления в системе: ответ платформы, а не сохранённый флаг. */
+    fun notificationsEnabled(): Boolean = notifications.areNotificationsEnabled()
 
     /** Показанные карточки с каналами: «первое обычным сигналом, повтор настойчивым». */
     fun shownWithChannels(): List<Pair<ReminderCard, ReminderChannel>> = notifications.shown.toList()
@@ -395,7 +406,7 @@ private class RecordingWatchGateway : WatchGateway {
 }
 
 /** Шторка в памяти: один слот — одна карточка, показ и снятие меняют видимое (НАП-36). */
-private class InMemoryNotifications : NotificationGateway {
+private class InMemoryNotifications(private val allowed: () -> Boolean) : NotificationGateway {
 
     val shown: MutableList<Pair<ReminderCard, ReminderChannel>> = mutableListOf()
 
@@ -405,7 +416,15 @@ private class InMemoryNotifications : NotificationGateway {
 
     private val visible: MutableSet<ReminderSlot> = mutableSetOf()
 
+    /**
+     * Показ идёт, только пока система разрешает уведомления.
+     *
+     * На Android `NotificationManager.notify` при отозванном разрешении не падает и ничего
+     * не показывает — молча роняет. Порт повторяет это поведение, а не изображает показ,
+     * которого человек не увидел бы (SKL-29, НАП-18).
+     */
     override suspend fun show(card: ReminderCard, channel: ReminderChannel) {
+        if (!allowed()) return
         shown += card to channel
         visible += card.slot
     }
@@ -422,11 +441,19 @@ private class InMemoryNotifications : NotificationGateway {
         }
     }
 
+    /**
+     * Пробное напоминание считается показанным независимо от разрешения.
+     *
+     * Такова семантика этого стенда: пробное напоминание — единственное доказательство
+     * работы механизма, и сценарии SKL-14 проверяют его в мире свежей установки, где
+     * уведомления ещё не выданы (Предыстория задачи). Боевой показ карточки о приёме
+     * разрешение учитывает — там цена вранья другая (SKL-29, НАП-18).
+     */
     override suspend fun showTest() {
         testShows += 1
     }
 
-    override fun areNotificationsEnabled(): Boolean = true
+    override fun areNotificationsEnabled(): Boolean = allowed()
 }
 
 /** Журнал срабатываний в памяти: след настоящего [HandleFiredReminderUseCase]. */

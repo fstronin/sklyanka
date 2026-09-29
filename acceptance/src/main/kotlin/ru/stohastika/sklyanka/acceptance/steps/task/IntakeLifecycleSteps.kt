@@ -68,7 +68,8 @@ class IntakeLifecycleSteps(private val world: AcceptanceWorld) {
 
     // --- Предыстория: приёмы --------------------------------------------------------------
 
-    @Given("^приём «(.+?)» на (.+?), (\\d{2}:\\d{2}) отмечен пропущенным человеком в (\\d{2}:\\d{2})$")
+    // «Человеком» необязательно: тот же переход пишут и без этого слова (SKL-30).
+    @Given("^приём «(.+?)» на (.+?), (\\d{2}:\\d{2}) отмечен пропущенным(?: человеком)? в (\\d{2}:\\d{2})$")
     fun thatIntakeIsAlreadySkipped(medication: String, date: String, time: String, markedAt: String) {
         world.markExisting(medication, moment(date, time), LocalTime.parse(markedAt), MarkResult.SKIPPED)
     }
@@ -243,7 +244,9 @@ class IntakeLifecycleSteps(private val world: AcceptanceWorld) {
      * статус приёмов, но и показ напоминаний. У сценариев без будильников и уведомлений
      * обе части ничего не делают.
      */
-    @When("^наступает (.+?), (\\d{2}:\\d{2})$")
+    // Секунды необязательны: сценарии короткого окна отмены двигают часы на «14:05:05»
+    // и «14:05:07» (SKL-30), остальным задачам хватает минут.
+    @When("^наступает (.+?), (\\d{2}:\\d{2}(?::\\d{2})?)$")
     fun thatMomentComes(date: String, time: String) {
         val at = moment(date, time)
         advanceAndSweep(at, SweepReason.TIMER)

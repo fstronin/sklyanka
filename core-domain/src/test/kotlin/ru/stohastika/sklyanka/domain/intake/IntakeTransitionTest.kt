@@ -130,6 +130,61 @@ class IntakeTransitionTest {
         assertEquals(StockEffect.DECREMENT, write.stock)
     }
 
+    // --- Отмена отметки (SKL-30) --------------------------------------------------
+
+    @Test
+    fun `undoing a taken intake returns it to pending with a stock restore and no mark fields`() {
+        val taken = Fixtures.takenIntake(actedAt = eightOhFive)
+            .copy(actorProfileId = Fixtures.OTHER_PROFILE_ID)
+
+        val revert = assertRevert(IntakeTransition.undo(taken))
+
+        assertEquals(IntakeStatus.PENDING, revert.intake.status)
+        assertNull(revert.intake.actedAt)
+        assertNull(revert.intake.source)
+        assertNull(revert.intake.actorProfileId)
+        assertEquals(StockEffect.RESTORE, revert.stock)
+        assertEquals(emptyList<String>(), Invariants.violations(revert.intake))
+    }
+
+    @Test
+    fun `undoing a deliberate skip returns it to pending and leaves the stock alone`() {
+        val skipped = Fixtures.pendingIntake().copy(
+            status = IntakeStatus.SKIPPED,
+            actedAt = eightOhFive,
+            source = IntakeSource.PHONE,
+        )
+
+        val revert = assertRevert(IntakeTransition.undo(skipped))
+
+        assertEquals(IntakeStatus.PENDING, revert.intake.status)
+        assertEquals(StockEffect.NONE, revert.stock)
+        assertEquals(emptyList<String>(), Invariants.violations(revert.intake))
+    }
+
+    @Test
+    fun `undoing never rewrites the scheduled moment`() {
+        val taken = Fixtures.takenIntake(actedAt = eightOhFive)
+
+        val revert = assertRevert(IntakeTransition.undo(taken))
+
+        assertEquals(taken.scheduledAt, revert.intake.scheduledAt)
+    }
+
+    @Test
+    fun `a pending intake has nothing to undo`() {
+        val pending = Fixtures.pendingIntake()
+
+        assertEquals(UndoDecision.Keep(pending), IntakeTransition.undo(pending))
+    }
+
+    @Test
+    fun `an automatically missed intake is not resurrected by an undo`() {
+        val missed = IntakeTransition.expire(Fixtures.pendingIntake(), eightTen)
+
+        assertEquals(UndoDecision.Keep(missed), IntakeTransition.undo(missed))
+    }
+
     private fun command(
         result: MarkResult,
         actedAt: Instant,
@@ -151,5 +206,10 @@ class IntakeTransitionTest {
     private fun assertKeep(decision: MarkDecision): MarkDecision.Keep {
         assertTrue(decision is MarkDecision.Keep, "expected the record to stay, got $decision")
         return decision as MarkDecision.Keep
+    }
+
+    private fun assertRevert(decision: UndoDecision): UndoDecision.Revert {
+        assertTrue(decision is UndoDecision.Revert, "expected a revert, got $decision")
+        return decision as UndoDecision.Revert
     }
 }

@@ -14,6 +14,15 @@ sealed interface MarkOutcome {
     /** Приём после операции — то, что показывается человеку в любом исходе. */
     val intake: Intake?
 
+    /**
+     * Отметка состоялась — записана впервые или заместила более раннюю.
+     *
+     * Общий предикат точек публикации окна отмены (SKL-30): `Ignored` и `NotFound` —
+     * не новое действие человека, и окно не открывают.
+     */
+    val isCompleted: Boolean
+        get() = this is Applied || this is Superseded
+
     /** Приём был ожидающимся, отметка записана. */
     data class Applied(override val intake: Intake) : MarkOutcome
 
@@ -79,4 +88,19 @@ sealed interface MarkDecision {
 
     /** Не трогать запись. */
     data class Keep(val intake: Intake, val reason: IgnoreReason) : MarkDecision
+}
+
+/**
+ * Решение чистого правила отмены — что именно записать, до всякого хранилища (SKL-30).
+ *
+ * Отделено от [MarkDecision] потому, что отмена — не отметка: она не несёт ни результата,
+ * ни момента действия, ни источника и не участвует в правиле первенства (ПР-3).
+ */
+sealed interface UndoDecision {
+
+    /** Записать приём обратно ожидающимся и (у TAKEN) вернуть дозу. */
+    data class Revert(val intake: Intake, val stock: StockEffect) : UndoDecision
+
+    /** Не трогать запись: отменять нечего. */
+    data class Keep(val intake: Intake) : UndoDecision
 }

@@ -106,6 +106,7 @@ internal object ReminderStand {
         ),
         snooze = world.reminders.snoozeReminder(),
         settings = world.reminders.settingsStore,
+        undoMarks = world.undoMarks,
     )
 
     /** Забыть подменённый главный диспетчер: стенд не должен влиять на соседние тесты. */

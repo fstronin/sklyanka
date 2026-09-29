@@ -19,8 +19,13 @@ sealed interface GroupMarkOutcome {
      *
      * [alreadyMarked] — приёмы, которые к моменту нажатия уже были отмечены: они молча
      * пропущены, и это прямое следствие идемпотентности (ПР-2), а не отдельная ветка.
+     *
+     * [changedIntakeIds] — точные идентификаторы изменившихся приёмов: отмена относит
+     * окно ровно к действию человека, а приём, отмеченный часами в момент нажатия,
+     * в действие не входит (ПР-3, SKL-30).
      */
-    data class Applied(val marked: Int, val alreadyMarked: Int) : GroupMarkOutcome
+    data class Applied(val marked: Int, val alreadyMarked: Int, val changedIntakeIds: List<String> = emptyList()) :
+        GroupMarkOutcome
 
     /**
      * Не отмечено ничего: отказ на любом приёме откатывает всю группу.
@@ -95,12 +100,17 @@ class MarkIntakeGroupUseCase(
     ): GroupMarkOutcome.Applied {
         var marked = 0
         var alreadyMarked = 0
+        val changedIntakeIds = mutableListOf<String>()
         intakeIds.forEach { intakeId ->
             val outcome = markIntake(
                 MarkRequest(intakeId = intakeId, result = result, source = source, actedAt = moment),
             )
             when (outcome) {
-                is MarkOutcome.Applied, is MarkOutcome.Superseded -> marked++
+                is MarkOutcome.Applied, is MarkOutcome.Superseded -> {
+                    marked++
+                    changedIntakeIds += intakeId
+                }
+
                 is MarkOutcome.Ignored -> alreadyMarked++
                 // Приёма нет: он снят перепланированием или переносом данных между
                 // отрисовкой карточки и нажатием. Записывать оставшиеся — значит
@@ -108,7 +118,11 @@ class MarkIntakeGroupUseCase(
                 MarkOutcome.NotFound -> throw GroupMarkAborted(intakeId)
             }
         }
-        return GroupMarkOutcome.Applied(marked = marked, alreadyMarked = alreadyMarked)
+        return GroupMarkOutcome.Applied(
+            marked = marked,
+            alreadyMarked = alreadyMarked,
+            changedIntakeIds = changedIntakeIds,
+        )
     }
 
     /**

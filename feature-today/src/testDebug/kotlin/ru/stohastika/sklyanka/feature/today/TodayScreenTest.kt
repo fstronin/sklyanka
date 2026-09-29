@@ -15,13 +15,16 @@ import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import ru.stohastika.sklyanka.domain.intake.MarkResult
 import ru.stohastika.sklyanka.domain.medication.DoseUnit
 import ru.stohastika.sklyanka.domain.model.IntakeStatus
 import ru.stohastika.sklyanka.domain.model.ScheduleMode
+import ru.stohastika.sklyanka.domain.reminder.ReminderWarning
 import ru.stohastika.sklyanka.domain.stock.StockWarning
 import ru.stohastika.sklyanka.domain.today.DayProgress
 import ru.stohastika.sklyanka.domain.today.DaySection
@@ -38,6 +41,7 @@ import ru.stohastika.sklyanka.ui.component.TAG_INTAKE_CARD
 import ru.stohastika.sklyanka.ui.component.TAG_MARK_BUTTON
 import ru.stohastika.sklyanka.ui.component.TAG_MISSED_STATUS
 import ru.stohastika.sklyanka.ui.component.TAG_SCREEN_HEADER
+import ru.stohastika.sklyanka.ui.component.TAG_SNACKBAR
 import ru.stohastika.sklyanka.ui.component.TAG_TAKEN_STATUS
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import java.math.BigDecimal
@@ -256,6 +260,128 @@ class TodayScreenTest {
         composeRule.onNodeWithText(context.getString(R.string.tab_settings)).assertIsDisplayed()
     }
 
+    // --- Предупреждение о ненадёжности (SKL-29) --------------------------------
+
+    @Test
+    fun revokedNotificationsAreNamedOnTheBanner() {
+        assertTheWarningIsShown(ReminderWarning.NOTIFICATIONS_OFF, R.string.today_reliability_notifications_off)
+    }
+
+    @Test
+    fun deniedExactAlarmsAreNamedOnTheBanner() {
+        assertTheWarningIsShown(ReminderWarning.EXACT_ALARMS_OFF, R.string.today_reliability_exact_alarms_off)
+    }
+
+    @Test
+    fun bothRevokedPermissionsAreNamedOnOneBanner() {
+        assertTheWarningIsShown(ReminderWarning.BOTH_OFF, R.string.today_reliability_both_off)
+    }
+
+    private fun assertTheWarningIsShown(warning: ReminderWarning, text: Int) {
+        show(TodayFixtures.plainDay().copy(reliability = warning))
+
+        composeRule.onNodeWithTag(TAG_RELIABILITY_BANNER).assertIsDisplayed()
+        composeRule.onNodeWithText(context.getString(text)).assertIsDisplayed()
+        composeRule.onNodeWithText(context.getString(R.string.today_reliability_action)).assertIsDisplayed()
+    }
+
+    @Test
+    fun theWarningStandsFirstInTheHeader() {
+        show(TodayFixtures.plainDay().copy(reliability = ReminderWarning.NOTIFICATIONS_OFF))
+
+        val banner = composeRule.onNodeWithTag(TAG_RELIABILITY_BANNER).fetchSemanticsNode()
+        val progress = composeRule.onNodeWithTag(TAG_DAY_PROGRESS).fetchSemanticsNode()
+        val stock = composeRule.onNodeWithTag(TAG_STOCK_BANNER).fetchSemanticsNode()
+        // Первым в шапке: выше полосы прогресса и плашки остатка (ОВ-82).
+        assertTrue("the banner must stand above the day progress", banner.boundsInRoot.top < progress.boundsInRoot.top)
+        assertTrue("the banner must stand above the stock plate", banner.boundsInRoot.top < stock.boundsInRoot.top)
+    }
+
+    @Test
+    fun withoutAReasonThereIsNoReliabilityBanner() {
+        show(TodayFixtures.plainDay().copy(reliability = null))
+
+        composeRule.onAllNodesWithTag(TAG_RELIABILITY_BANNER).assertCountEquals(0)
+    }
+
+    @Test
+    fun theWarningActionAsksForPermissions() {
+        val intents = mutableListOf<TodayIntent>()
+        show(TodayFixtures.plainDay().copy(reliability = ReminderWarning.NOTIFICATIONS_OFF), onIntent = intents::add)
+
+        composeRule.onNodeWithText(context.getString(R.string.today_reliability_action)).performClick()
+
+        assertEquals(listOf(TodayIntent.OpenPermissions), intents)
+    }
+
+    @Test
+    fun manualMarkingStaysAvailableNextToTheWarning() {
+        val intents = mutableListOf<TodayIntent>()
+        show(TodayFixtures.plainDay().copy(reliability = ReminderWarning.BOTH_OFF), onIntent = intents::add)
+
+        // Предупреждение не запирает экран: карточка приёма и её кнопки остаются (НАП-18).
+        composeRule.onNodeWithTag(TAG_RELIABILITY_BANNER).assertIsDisplayed()
+        composeRule.onNodeWithText(context.getString(UiR.string.action_taken)).performClick()
+
+        assertEquals(listOf(TodayIntent.MarkTaken("i-due")), intents)
+    }
+
+    // --- Снэкбар отмены (SKL-30) -----------------------------------------------
+
+    @Test
+    fun theUndoSnackbarNamesTheMedicationAndOffersOneAction() {
+        show(TodayFixtures.plainDay().copy(undo = TodayFixtures.undoNotice()))
+
+        composeRule.onNodeWithTag(TAG_SNACKBAR, useUnmergedTree = true).assertIsDisplayed()
+        composeRule
+            .onNodeWithText(context.getString(R.string.today_undo_taken_single, "Магний B6"), useUnmergedTree = true)
+            .assertIsDisplayed()
+        composeRule
+            .onNodeWithText(context.getString(R.string.today_undo_action), useUnmergedTree = true)
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun theSnackbarStandsAboveTheBottomBarWithoutCoveringIt() {
+        show(TodayFixtures.plainDay().copy(undo = TodayFixtures.undoNotice()))
+
+        val snackbar = composeRule.onNodeWithTag(TAG_SNACKBAR, useUnmergedTree = true).fetchSemanticsNode()
+        val bar = composeRule.onNodeWithTag(TAG_BOTTOM_BAR).fetchSemanticsNode()
+        // Панель остаётся видимой и нажимаемой: снэкбар выровнен по низу области
+        // контента, а не поверх панели (03-screens.md, SKL-30).
+        assertTrue(
+            "the snackbar must stand above the bar: ${snackbar.boundsInRoot.bottom} > ${bar.boundsInRoot.top}",
+            snackbar.boundsInRoot.bottom <= bar.boundsInRoot.top,
+        )
+    }
+
+    @Test
+    fun withoutAnUndoNoticeThereIsNoSnackbar() {
+        show(TodayFixtures.plainDay().copy(undo = null))
+
+        composeRule.onAllNodesWithTag(TAG_SNACKBAR, useUnmergedTree = true).assertCountEquals(0)
+    }
+
+    @Test
+    fun theEmptyStateCarriesNoSnackbar() {
+        show(TodayUiState.Empty(TodayFixtures.DATE))
+
+        composeRule.onAllNodesWithTag(TAG_SNACKBAR, useUnmergedTree = true).assertCountEquals(0)
+    }
+
+    @Test
+    fun theUndoActionNamesExactlyTheIntakesOfTheAction() {
+        val intents = mutableListOf<TodayIntent>()
+        show(
+            TodayFixtures.plainDay().copy(undo = TodayFixtures.undoNotice(intakeIds = listOf("i-a", "i-b"))),
+            onIntent = intents::add,
+        )
+
+        composeRule.onNodeWithText(context.getString(R.string.today_undo_action), useUnmergedTree = true).performClick()
+
+        assertEquals(listOf(TodayIntent.UndoMark(listOf("i-a", "i-b"))), intents)
+    }
+
     private fun show(state: TodayUiState, onIntent: (TodayIntent) -> Unit = {}) {
         composeRule.setContent {
             SklyankaTheme { TodayScreen(state = state, onIntent = onIntent) }
@@ -355,15 +481,25 @@ internal object TodayFixtures {
 
     fun exhaustedPrn(): PrnEntry = prn(canTake = false, takenToday = 3)
 
+    /** Окно отмены после отметки: текст называет лекарство, действие одно (SKL-30). */
+    fun undoNotice(intakeIds: List<String> = listOf("i-due"), names: List<String> = listOf("Магний B6")): UndoNotice =
+        UndoNotice(
+            intakeIds = intakeIds,
+            result = MarkResult.TAKEN,
+            medicationNames = names,
+        )
+
     private fun content(
         layout: TodayLayout,
         prn: List<PrnEntry> = emptyList(),
         stockWarning: StockNotice? = null,
         progress: DayProgress = DayProgress(taken = 0, planned = 1, medicationCount = 1),
+        reliability: ReminderWarning? = null,
     ) = TodayUiState.Content(
         date = DATE,
         progress = progress,
         stockWarning = stockWarning,
+        reliability = reliability,
         layout = layout,
         prn = prn,
         toggledSections = emptySet(),

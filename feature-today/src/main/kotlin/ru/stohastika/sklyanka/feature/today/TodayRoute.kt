@@ -1,6 +1,7 @@
 package ru.stohastika.sklyanka.feature.today
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -15,6 +16,11 @@ import androidx.compose.ui.Modifier
 @Composable
 fun TodayRoute(viewModel: TodayViewModel, navigation: TodayNavigation, modifier: Modifier = Modifier) {
     val state by viewModel.state.collectAsState()
+    // Уход с экрана любым путём — конец окна отмены (SKL-30): один механизм на все
+    // маршруты вместо пяти вызовов по местам навигации, где шестой о нём забыл бы.
+    DisposableEffect(Unit) {
+        onDispose { viewModel.onScreenLeft() }
+    }
     TodayScreen(
         state = state,
         onIntent = { intent ->
@@ -24,6 +30,7 @@ fun TodayRoute(viewModel: TodayViewModel, navigation: TodayNavigation, modifier:
                 TodayIntent.AddMedication -> navigation.addMedication()
                 TodayIntent.OpenMedicationList -> navigation.openMedicationList()
                 TodayIntent.OpenSettings -> navigation.openSettings()
+                TodayIntent.OpenPermissions -> navigation.openPermissions()
                 else -> viewModel.onIntent(intent)
             }
         },
@@ -46,4 +53,6 @@ data class TodayNavigation(
     val addMedication: () -> Unit = {},
     val openMedicationList: () -> Unit = {},
     val openSettings: () -> Unit = {},
+    /** «Настроить» в предупреждении о ненадёжности — экран разрешений (SKL-29). */
+    val openPermissions: () -> Unit = {},
 )

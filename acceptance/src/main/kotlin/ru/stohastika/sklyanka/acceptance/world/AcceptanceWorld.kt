@@ -13,6 +13,10 @@ import ru.stohastika.sklyanka.domain.intake.MarkSideEffects
 import ru.stohastika.sklyanka.domain.intake.PrnOutcome
 import ru.stohastika.sklyanka.domain.intake.SweepMissedIntakesUseCase
 import ru.stohastika.sklyanka.domain.intake.SweepReason
+import ru.stohastika.sklyanka.domain.intake.UndoMarkUseCase
+import ru.stohastika.sklyanka.domain.intake.UndoOutcome
+import ru.stohastika.sklyanka.domain.intake.UndoRequest
+import ru.stohastika.sklyanka.domain.intake.UndoableMarkStore
 import ru.stohastika.sklyanka.domain.medication.MedicationDraft
 import ru.stohastika.sklyanka.domain.medication.MedicationListRules
 import ru.stohastika.sklyanka.domain.medication.SaveMedicationUseCase
@@ -21,6 +25,8 @@ import ru.stohastika.sklyanka.domain.medication.ValidateMedicationDraft
 import ru.stohastika.sklyanka.domain.model.Intake
 import ru.stohastika.sklyanka.domain.model.IntakeSource
 import ru.stohastika.sklyanka.domain.reminder.RescheduleReason
+import ru.stohastika.sklyanka.domain.reminder.port.PermissionState
+import ru.stohastika.sklyanka.domain.reminder.port.ReminderPermission
 import ru.stohastika.sklyanka.domain.schedule.IntakeGenerationPolicy
 import ru.stohastika.sklyanka.domain.schedule.MedicationPlanner
 import ru.stohastika.sklyanka.domain.schedule.PlanIntakesUseCase
@@ -64,7 +70,7 @@ class AcceptanceWorld {
     val log = ScenarioLog(clock)
 
     /** Репозитории поверх состояния: под ними гоняются настоящие доменные сценарии. */
-    val repositories = ScenarioRepositories(profiles, medications, intakes)
+    val repositories = ScenarioRepositories(profiles, medications, intakes, log)
 
     /** Активный профиль как состояние приложения: переключение и перезапуск (ПРФ-17, ПРФ-18). */
     val profileSession = ScenarioProfileSession(profiles, repositories.profileStore)
@@ -79,15 +85,25 @@ class AcceptanceWorld {
         log = log,
     )
 
-    /** Подсистема напоминаний: будильники, карточки и журнал (SKL-13, ПРФ-6). */
-    val reminders = ScenarioReminders(clock, profiles, medications, intakes, repositories, log)
-
     /**
      * Чужое состояние системы: разрешения и связь с часами (SKL-20, НФТ-52).
      *
      * Читается настоящими портами экранов, а меняется строками Предыстории сценария.
+     * Порт шторки спрашивает его же: отозванное разрешение не оставляет показа,
+     * которого человек не увидел бы (SKL-29).
      */
     val system = ScenarioSystemState()
+
+    /** Подсистема напоминаний: будильники, карточки и журнал (SKL-13, ПРФ-6). */
+    val reminders = ScenarioReminders(
+        clock = clock,
+        profiles = profiles,
+        medications = medications,
+        intakes = intakes,
+        repositories = repositories,
+        log = log,
+        notificationsAllowed = { system.state(ReminderPermission.NOTIFICATIONS) == PermissionState.GRANTED },
+    )
 
     /**
      * Онбординг разрешений (SKL-14): что сохранено, что подсказано и что записано.
@@ -383,6 +399,46 @@ class AcceptanceWorld {
         val outcome = runBlocking { useCase(intakeIds, IntakeSource.PHONE, result, clock.momentOf(at)) }
         intakes.lastGroupOutcome = outcome
         intakes.lastGroupIds = intakeIds
+        if (outcome is GroupMarkOutcome.Applied) intakes.lastGroupChangedIds = outcome.changedIntakeIds
+        return outcome
+    }
+
+    // --- Действия: отмена отметки (SKL-30) ------------------------------------------------------
+
+    /** Окно отмены: последнее действие и его срок — той же ячейкой, что и на экране. */
+    val undoMarks = UndoableMarkStore(clock.time)
+
+    /** Чем кончилась последняя отмена: сценарий судит по этому исходу. */
+    var lastUndoOutcome: UndoOutcome? = null
+        private set
+
+    /** Идентификаторы приёмов последней отмены: «все три приёма снова ожидаются». */
+    var lastUndoneIds: List<String> = emptyList()
+        private set
+
+    /** Момент последней отмены в UTC — им сверяется время записи в журнале. */
+    var lastUndoAt: Instant? = null
+        private set
+
+    /**
+     * Отмена отметки настоящим `UndoMarkUseCase`.
+     *
+     * Момент действия переводит часы сценария: журнал пишет время отмены, и без этого
+     * запись получила бы момент Предыстории. Снимок состояния берётся перед действием —
+     * им проверяются «приём остаётся принятым» и «остаток не тронут».
+     */
+    fun undo(intakeIds: List<String>, at: LocalDateTime): UndoOutcome {
+        rememberState()
+        clock.moveTo(at)
+        val useCase = UndoMarkUseCase(
+            repositories.intakeStore,
+            repositories.medicationStore,
+            repositories.profileStore,
+        )
+        val outcome = runBlocking { useCase(UndoRequest(intakeIds = intakeIds, source = IntakeSource.PHONE)) }
+        lastUndoOutcome = outcome
+        lastUndoneIds = intakeIds
+        lastUndoAt = clock.now()
         return outcome
     }
 

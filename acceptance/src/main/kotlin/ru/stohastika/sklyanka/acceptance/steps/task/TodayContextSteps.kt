@@ -159,6 +159,25 @@ class TodayContextSteps(private val world: AcceptanceWorld) {
         world.plan()
     }
 
+    /**
+     * Ежедневный курс с дозой — Предыстория сценариев предупреждения на «Сегодня» (SKL-29).
+     *
+     * От [theProfileHasThatMedicationAt] отличается дозой: приёмы суток те же, но карточка
+     * называет дозу, и сценарий проверяет её наравне с предупреждением. Приёмы порождает
+     * планировщик, а не шаг (SKL-06).
+     */
+    @Given("^у профиля есть лекарство «([^»]+)» с приёмом в (\\d{2}:\\d{2}) ежедневно и дозой (\\S+) таблетк\\S*$")
+    fun theProfileHasADailyMedicationWithDose(medication: String, time: String, dose: String) {
+        world.medications.add(
+            profile = world.profiles,
+            profileName = world.profiles.active,
+            name = medication,
+            times = listOf(LocalTime.parse(time)),
+        )
+        world.medications.update(medication) { it.copy(doseAmount = RussianDates.amount(dose)) }
+        world.plan()
+    }
+
     @Given(
         "^(.+?) приём «([^»]+)» на (\\d{2}:\\d{2}) принят, " +
             "а приём «([^»]+)» на (\\d{2}:\\d{2}) пропущен без отметки$",

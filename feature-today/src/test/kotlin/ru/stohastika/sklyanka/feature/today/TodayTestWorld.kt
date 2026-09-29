@@ -19,6 +19,11 @@ import ru.stohastika.sklyanka.domain.intake.PrnDailyLimit
 import ru.stohastika.sklyanka.domain.intake.PrnOutcome
 import ru.stohastika.sklyanka.domain.intake.StockEffect
 import ru.stohastika.sklyanka.domain.intake.SweepMissedIntakesUseCase
+import ru.stohastika.sklyanka.domain.intake.UndoCommand
+import ru.stohastika.sklyanka.domain.intake.UndoDecision
+import ru.stohastika.sklyanka.domain.intake.UndoMarkUseCase
+import ru.stohastika.sklyanka.domain.intake.UndoOutcome
+import ru.stohastika.sklyanka.domain.intake.UndoableMarkStore
 import ru.stohastika.sklyanka.domain.log.OpEvent
 import ru.stohastika.sklyanka.domain.log.OpLogRecord
 import ru.stohastika.sklyanka.domain.log.OperationLog
@@ -28,6 +33,11 @@ import ru.stohastika.sklyanka.domain.model.IntakeSource
 import ru.stohastika.sklyanka.domain.model.IntakeStatus
 import ru.stohastika.sklyanka.domain.model.Medication
 import ru.stohastika.sklyanka.domain.model.Profile
+import ru.stohastika.sklyanka.domain.model.ScheduleMode
+import ru.stohastika.sklyanka.domain.reminder.ReadReminderReliabilityUseCase
+import ru.stohastika.sklyanka.domain.reminder.port.PermissionState
+import ru.stohastika.sklyanka.domain.reminder.port.PermissionStateReader
+import ru.stohastika.sklyanka.domain.reminder.port.ReminderPermission
 import ru.stohastika.sklyanka.domain.repository.ActiveProfileRepository
 import ru.stohastika.sklyanka.domain.repository.IntakeRepository
 import ru.stohastika.sklyanka.domain.repository.MedicationRepository
@@ -65,7 +75,27 @@ internal class TodayTestWorld(scheduler: TestCoroutineScheduler, startAt: LocalD
     val activeProfile = InMemoryActiveProfileRepository(TodayTest.PROFILE)
     val log = RecordingLog()
 
+    /**
+     * Разрешения «системы» теста: по умолчанию всё выдано.
+     *
+     * Сценарий, которому нужна ненадёжность, меняет карту до или между сборками
+     * состояния — `ReadReminderReliabilityUseCase` читает её при каждом вызове,
+     * а не запоминает флаг (НФТ-52).
+     */
+    private val permissions = mutableMapOf<ReminderPermission, PermissionState>()
+
+    private val permissionReader = object : PermissionStateReader {
+        override fun state(permission: ReminderPermission): PermissionState =
+            permissions[permission] ?: PermissionState.GRANTED
+    }
+
+    fun denyPermissions(vararg denied: ReminderPermission) {
+        denied.forEach { permissions[it] = PermissionState.DENIED }
+    }
+
     val markIntake = MarkIntakeUseCase(intakes, medications, profiles, clock)
+    val undoMark = UndoMarkUseCase(intakes, medications, profiles)
+    val undoMarks = UndoableMarkStore(clock)
 
     init {
         profiles.put(
@@ -86,6 +116,10 @@ internal class TodayTestWorld(scheduler: TestCoroutineScheduler, startAt: LocalD
         markIntake = markIntake,
         markGroup = MarkIntakeGroupUseCase(markIntake, DirectTransactor, clock, log),
         createPrn = CreatePrnIntakeUseCase(intakes, medications, profiles, clock),
+        undoMark = undoMark,
+        undoMarks = undoMarks,
+        time = clock,
+        readReliability = ReadReminderReliabilityUseCase(permissionReader),
     )
 }
 
@@ -184,6 +218,33 @@ internal class InMemoryIntakeRepository(
                 }
             }
         }
+    }
+
+    override suspend fun undoAtomically(command: UndoCommand): UndoOutcome {
+        val current = command.intakeIds.map { intakeId -> stored[intakeId] ?: return UndoOutcome.NotFound }
+        val medicationsById = current.map { it.medicationId }.distinct().associateWith { medicationId ->
+            requireNotNull(medications.stored[medicationId]) {
+                "Undo refers to a medication that does not exist: $medicationId"
+            }
+        }
+        require(medicationsById.values.map { it.profileId }.distinct().size == 1) {
+            "Undo command spans several profiles"
+        }
+        require(medicationsById.values.all { it.scheduleMode == ScheduleMode.SCHEDULED }) {
+            "Undo addresses an on-demand intake"
+        }
+        var undone = 0
+        current.forEach { intake ->
+            when (val decision = IntakeTransition.undo(intake)) {
+                is UndoDecision.Keep -> Unit
+                is UndoDecision.Revert -> {
+                    put(decision.intake)
+                    medications.applyStock(intake.medicationId, decision.stock)
+                    undone++
+                }
+            }
+        }
+        return UndoOutcome.Applied(undone)
     }
 
     override suspend fun createPrnAtomically(command: PrnCommand): PrnOutcome {

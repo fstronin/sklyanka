@@ -97,7 +97,8 @@ internal class ProfileTestWorld {
  * Причина нужна не для красоты: «почему я оказался в мамином профиле» — реальный вопрос
  * человека, и тест обязан утверждать, что ответ на него записан (`TDD.md §11.1`).
  */
-internal class RecordingActiveProfile(initial: String) : ru.stohastika.sklyanka.domain.repository.ActiveProfileRepository {
+internal class RecordingActiveProfile(initial: String) :
+    ru.stohastika.sklyanka.domain.repository.ActiveProfileRepository {
 
     var value: String = initial
         private set

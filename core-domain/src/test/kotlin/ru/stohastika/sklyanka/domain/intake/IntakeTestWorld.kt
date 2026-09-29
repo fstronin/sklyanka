@@ -28,11 +28,12 @@ internal class IntakeTestWorld {
 
     val profiles = FakeProfileRepository()
     val medications = FakeMedicationRepository(clock)
-    val intakes = FakeIntakeRepository(clock, medications)
     val log = RecordingOperationLog()
+    val intakes = FakeIntakeRepository(clock, medications, log)
     val window: IntakeWindow = EndOfDayIntakeWindow()
 
     val mark = MarkIntakeUseCase(intakes, medications, profiles, clock)
+    val undo = UndoMarkUseCase(intakes, medications, profiles)
     val createPrn = CreatePrnIntakeUseCase(intakes, medications, profiles, clock)
     val sweep = SweepMissedIntakesUseCase(intakes, window, clock, log)
 

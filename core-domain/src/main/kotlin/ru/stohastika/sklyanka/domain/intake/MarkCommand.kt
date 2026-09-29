@@ -14,6 +14,18 @@ import java.time.Instant
 enum class MarkResult(val status: IntakeStatus) {
     TAKEN(IntakeStatus.TAKEN),
     SKIPPED(IntakeStatus.SKIPPED),
+    ;
+
+    companion object {
+        /**
+         * Исход по **записанному** статусу приёма (SKL-30): текст подтверждения обязан
+         * говорить то, что легло в запись, а не то, какую кнопку нажали — при замещении
+         * отметки они расходятся.
+         *
+         * `PENDING` и `MISSED` отметкой не выбираются: у таких значений исхода нет.
+         */
+        fun of(status: IntakeStatus): MarkResult? = entries.firstOrNull { it.status == status }
+    }
 }
 
 /**

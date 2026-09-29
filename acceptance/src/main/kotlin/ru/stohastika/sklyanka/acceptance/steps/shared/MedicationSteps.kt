@@ -46,6 +46,21 @@ class MedicationSteps(private val world: AcceptanceWorld) {
         world.medications.update(world.medicationNamed(medication)) { it.copy(doseAmount = RussianDates.amount(dose)) }
     }
 
+    /**
+     * Ежедневный курс с дозой у названного профиля — Предыстория сценариев отмены (SKL-30).
+     *
+     * От [theProfileHasAScheduledMedication] отличается дозой, от задачи SKL-29 — профилем:
+     * приёмы те же, но сценарий называет и профиль, и дозу, из которой считается возврат.
+     */
+    @Given(
+        "^у профиля «(.+?)» есть лекарство «(.+?)» с приёмом в (\\d{2}:\\d{2}) " +
+            "ежедневно и дозой (\\S+) таблетк\\S*$",
+    )
+    fun theProfileHasADailyMedicationWithDose(profile: String, medication: String, time: String, dose: String) {
+        add(profile, medication, listOf(LocalTime.parse(time)))
+        world.medications.update(world.medicationNamed(medication)) { it.copy(doseAmount = RussianDates.amount(dose)) }
+    }
+
     @Given("^у профиля «(.+?)» есть лекарство «(.+?)» с приёмом в (\\d{2}:\\d{2}) и без учёта остатка$")
     fun theProfileHasAMedicationWithoutStockTracking(profile: String, medication: String, time: String) {
         add(profile, medication, listOf(LocalTime.parse(time)))
