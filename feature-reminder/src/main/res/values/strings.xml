@@ -87,10 +87,8 @@
     <string name="diagnostics_on_time_rule">Вовремя — отклонение не больше 120 секунд</string>
 
     <string name="diagnostics_action_check">Проверить сейчас</string>
-    <string name="diagnostics_action_test">Пробное напоминание через минуту</string>
     <string name="diagnostics_action_export">Выгрузить журнал</string>
     <string name="diagnostics_action_setup">Пройти настройку заново</string>
-    <string name="diagnostics_test_planned">Пробное напоминание придёт в %1$s</string>
 
     <!-- Исход выгрузки журнала файлом (НФТ-51). -->
     <string name="diagnostics_export_saved">Журнал выгружен · %1$s</string>

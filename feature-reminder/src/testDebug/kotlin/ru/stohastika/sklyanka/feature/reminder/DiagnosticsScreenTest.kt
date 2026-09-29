@@ -67,7 +67,6 @@ class DiagnosticsScreenTest {
                         exportOutcome = outcome,
                     ),
                     onCheckNow = {},
-                    onTestReminder = {},
                     onExportJournal = onExportJournal,
                     onRestartSetup = onRestartSetup,
                     onBack = {},

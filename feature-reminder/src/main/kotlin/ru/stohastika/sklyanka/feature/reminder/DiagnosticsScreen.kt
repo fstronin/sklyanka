@@ -50,7 +50,6 @@ import java.time.LocalDateTime
 fun DiagnosticsScreen(
     state: DiagnosticsUiState,
     onCheckNow: () -> Unit,
-    onTestReminder: () -> Unit,
     onExportJournal: () -> Unit,
     /**
      * «Пройти настройку заново» (НАП-21). `null` означает «экрана настройки нет»: кнопки
@@ -86,10 +85,8 @@ fun DiagnosticsScreen(
                 Actions(
                     state = state,
                     onCheckNow = onCheckNow,
-                    onTestReminder = onTestReminder,
                     onExportJournal = onExportJournal,
                     onRestartSetup = onRestartSetup,
-                    toLocal = toLocal,
                 )
             }
             item { LastShown(snapshot, toLocal) }
@@ -142,28 +139,17 @@ private fun Warnings(snapshot: ReminderDiagnostics, toLocal: (Instant) -> LocalD
 private fun Actions(
     state: DiagnosticsUiState,
     onCheckNow: () -> Unit,
-    onTestReminder: () -> Unit,
     onExportJournal: () -> Unit,
     onRestartSetup: (() -> Unit)?,
-    toLocal: (Instant) -> LocalDateTime,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Small)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Medium)) {
-            PrimaryButton(
-                text = stringResource(R.string.diagnostics_action_check),
-                onClick = onCheckNow,
-                modifier = Modifier
-                    .weight(1f)
-                    .testTag(TAG_CHECK_NOW),
-            )
-            SecondaryButton(
-                text = stringResource(R.string.diagnostics_action_test),
-                onClick = onTestReminder,
-                modifier = Modifier
-                    .weight(1f)
-                    .testTag(TAG_TEST_REMINDER),
-            )
-        }
+        PrimaryButton(
+            text = stringResource(R.string.diagnostics_action_check),
+            onClick = onCheckNow,
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag(TAG_CHECK_NOW),
+        )
         Row(horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Medium)) {
             SecondaryButton(
                 text = stringResource(R.string.diagnostics_action_export),
@@ -182,13 +168,6 @@ private fun Actions(
                         .testTag(TAG_RESTART_SETUP),
                 )
             }
-        }
-        state.testPlannedAt?.let { at ->
-            Text(
-                text = stringResource(R.string.diagnostics_test_planned, toLocal(at).journalMoment()),
-                style = SklyankaType.Caption,
-                color = SklyankaTheme.colors.textMuted,
-            )
         }
         // Исход выгрузки словами: отмолчаться нельзя ни при удаче, ни при отказе (НФТ-8).
         state.exportOutcome?.let { outcome ->
@@ -346,7 +325,6 @@ const val TAG_DIAGNOSTICS = "diagnostics"
 const val TAG_WARNING = "diagnostics_warning"
 const val TAG_OUTAGE = "diagnostics_outage"
 const val TAG_CHECK_NOW = "diagnostics_check_now"
-const val TAG_TEST_REMINDER = "diagnostics_test_reminder"
 const val TAG_LAST_SHOWN = "diagnostics_last_shown"
 const val TAG_NEXT = "diagnostics_next"
 const val TAG_RESCHEDULE = "diagnostics_reschedule"

@@ -63,7 +63,6 @@ class DiagnosticsActivity : ComponentActivity() {
                 DiagnosticsScreen(
                     state = state,
                     onCheckNow = viewModel::onCheckNow,
-                    onTestReminder = viewModel::onTestReminder,
                     onExportJournal = { saveLauncher.launch(state.exportFileName) },
                     onRestartSetup = {
                         startActivity(setupEntry.intentFor(this@DiagnosticsActivity))

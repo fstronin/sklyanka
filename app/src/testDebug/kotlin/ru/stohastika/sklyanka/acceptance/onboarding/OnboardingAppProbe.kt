@@ -20,7 +20,6 @@ import ru.stohastika.sklyanka.domain.onboarding.ReadPermissionChecklistUseCase
 import ru.stohastika.sklyanka.domain.reminder.BuildReminderDiagnosticsUseCase
 import ru.stohastika.sklyanka.domain.reminder.ExportReminderJournalUseCase
 import ru.stohastika.sklyanka.domain.reminder.ReadReminderReliabilityUseCase
-import ru.stohastika.sklyanka.domain.reminder.TestReminderUseCase
 import ru.stohastika.sklyanka.domain.schedule.PlanReason
 import ru.stohastika.sklyanka.domain.schedule.PlanScope
 import ru.stohastika.sklyanka.feature.onboarding.OnboardingExit
@@ -158,7 +157,6 @@ internal object OnboardingAppProbe {
                     DiagnosticsScreen(
                         state = snapshot,
                         onCheckNow = {},
-                        onTestReminder = {},
                         onExportJournal = {},
                         onRestartSetup = null,
                         onBack = {},
@@ -195,7 +193,6 @@ internal object OnboardingAppProbe {
             reliability = ReadReminderReliabilityUseCase(world.system),
             time = world.clock.time,
         ),
-        testReminder = TestReminderUseCase(world.reminders.alarms, world.clock.time),
         check = ReminderCheckNow { reason ->
             world.sweep(SweepReason.REPLAN)
             world.plan(PlanScope.AllProfiles, PlanReason.MANUAL_CHECK)

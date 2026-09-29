@@ -13,7 +13,6 @@ import ru.stohastika.sklyanka.domain.intake.SweepReason
 import ru.stohastika.sklyanka.domain.reminder.BuildReminderDiagnosticsUseCase
 import ru.stohastika.sklyanka.domain.reminder.ExportReminderJournalUseCase
 import ru.stohastika.sklyanka.domain.reminder.ReadReminderReliabilityUseCase
-import ru.stohastika.sklyanka.domain.reminder.TestReminderUseCase
 import ru.stohastika.sklyanka.domain.schedule.PlanReason
 import ru.stohastika.sklyanka.domain.schedule.PlanScope
 import ru.stohastika.sklyanka.feature.reminder.DiagnosticsScreen
@@ -70,7 +69,6 @@ internal object DiagnosticsStand {
             DiagnosticsScreen(
                 state = state(world),
                 onCheckNow = { onAction { model(world).onCheckNow() } },
-                onTestReminder = { onAction { model(world).onTestReminder() } },
                 onExportJournal = { onAction { exportJournal(world) } },
                 // «Пройти настройку заново» подключает `app`; сценарии SKL-20 его не трогают.
                 onRestartSetup = null,
@@ -110,7 +108,6 @@ internal object DiagnosticsStand {
             reliability = ReadReminderReliabilityUseCase(world.system),
             time = world.clock.time,
         ),
-        testReminder = TestReminderUseCase(world.reminders.alarms, world.clock.time),
         check = ReminderCheckNow { reason ->
             // Тот же порядок, что у `ReminderPlanningTrigger.planAll`: просроченные,
             // генерация окна, пересборка будильников (НАП-11, НАП-34).

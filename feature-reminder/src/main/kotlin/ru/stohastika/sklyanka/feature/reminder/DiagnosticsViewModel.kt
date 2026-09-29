@@ -14,7 +14,6 @@ import ru.stohastika.sklyanka.domain.reminder.ExportReminderJournalUseCase
 import ru.stohastika.sklyanka.domain.reminder.ReminderDiagnostics
 import ru.stohastika.sklyanka.domain.reminder.ReminderJournalExportOutcome
 import ru.stohastika.sklyanka.domain.reminder.RescheduleReason
-import ru.stohastika.sklyanka.domain.reminder.TestReminderUseCase
 import ru.stohastika.sklyanka.domain.time.TimeSource
 import ru.stohastika.sklyanka.domain.transfer.ExportTarget
 import java.time.Instant
@@ -26,8 +25,6 @@ import javax.inject.Inject
 data class DiagnosticsUiState(
     val snapshot: ReminderDiagnostics? = null,
     val zone: ZoneId,
-    /** Момент, на который поставлено пробное напоминание, — подтверждение нажатия (НАП-23). */
-    val testPlannedAt: Instant? = null,
     /**
      * Имя предлагаемого файла выгрузки журнала (НФТ-51).
      *
@@ -50,7 +47,6 @@ data class DiagnosticsUiState(
 @HiltViewModel
 class DiagnosticsViewModel @Inject constructor(
     private val diagnostics: BuildReminderDiagnosticsUseCase,
-    private val testReminder: TestReminderUseCase,
     private val check: ReminderCheckNow,
     private val exportJournal: ExportReminderJournalUseCase,
     time: TimeSource,
@@ -77,14 +73,6 @@ class DiagnosticsViewModel @Inject constructor(
             _state.value = _state.value.copy(busy = true)
             check(RescheduleReason.MANUAL)
             refresh()
-        }
-    }
-
-    /** «Пробное напоминание через минуту» (НАП-22, НАП-23). */
-    fun onTestReminder() {
-        viewModelScope.launch {
-            val at = testReminder()
-            _state.value = _state.value.copy(testPlannedAt = at)
         }
     }
 
