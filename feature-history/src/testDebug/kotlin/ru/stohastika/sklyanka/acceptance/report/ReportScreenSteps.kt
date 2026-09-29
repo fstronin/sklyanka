@@ -192,6 +192,23 @@ class ReportScreenSteps(private val world: AcceptanceWorld) {
         assertTrue(documentContent().medicationBlocks.isEmpty())
     }
 
+    /**
+     * Пустой месяц: сводки нет вместе с заголовком и числами.
+     *
+     * «Принято: 0 из 0 приёмов (0 %)» — вырожденная дробь, а «Дней без пропусков: 0» —
+     * наблюдение, которого не было (решение дизайна, ревизия 33-B SKL-33).
+     */
+    @Then("^сводки в отчёте нет$")
+    fun theSummaryIsAbsent() {
+        val content = documentContent()
+        assertNull("the summary block must not be printed", content.summaryTitle)
+        assertTrue("no summary line may be printed", content.summary.isEmpty())
+        val text = content.documentText()
+        SUMMARY_LABELS.forEach { label ->
+            assertFalse("no «$label» may reach the doctor: $text", text.contains(label))
+        }
+    }
+
     @Then("^оговорка «([^»]+)» есть на каждой странице отчёта$")
     fun everyPageCarriesTheDisclaimer(disclaimer: String) {
         val pages = pages()
@@ -279,6 +296,18 @@ class ReportScreenSteps(private val world: AcceptanceWorld) {
         assertTrue("the sheet must offer a file", intents.contains(HistoryIntent.SaveRequested))
     }
 
+    /** Шторка пустого месяца: та же фраза, что в документе, вместо вырожденной доли (33-B). */
+    @Then("^в шторке вместо числа принятых приёмов стоит «([^»]+)»$")
+    fun theSheetSaysThePhraseInsteadOfTheCount(phrase: String) {
+        assertTrue("the scenario must speak about an empty month", report().period.isEmpty)
+        val lines = HistoryScreenProbe.ask(world) { test -> sheetTexts(test) }.joinToString("\n")
+        assertTrue("the sheet must carry the phrase: $lines", lines.contains(phrase))
+        assertFalse(
+            "no count may be promised in an empty month: $lines",
+            lines.contains(context.getString(R.string.report_document_taken_label)),
+        )
+    }
+
     // --- Обвязка ---------------------------------------------------------------------
 
     private fun report(): DoctorReport = requireNotNull(world.history.report) { "the scenario never built a report" }
@@ -314,5 +343,14 @@ class ReportScreenSteps(private val world: AcceptanceWorld) {
 
         /** Геометрия документа: та же, что у painter'а; страницы приёмки считаются по ней. */
         val Page = PdfPageGeometry()
+
+        /** Ярлыки сводки: при пустом периоде в документе не должно быть ни одного. */
+        val SUMMARY_LABELS = listOf(
+            "СВОДКА",
+            "Принято:",
+            "Принято вовремя:",
+            "Дней без пропусков:",
+            "Пропусков за период:",
+        )
     }
 }

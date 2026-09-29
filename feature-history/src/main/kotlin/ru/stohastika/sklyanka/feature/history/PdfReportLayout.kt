@@ -75,9 +75,13 @@ internal class PdfReportLayout(
         fun paginate(): List<PdfReportPage> {
             place(content.header.flatMap { physicalLine(it, width) })
             place(listOf(rule(ReportPdfRole.HEADER_RULE)), gapBefore = RULE_GAP)
-            place(listOf(sectionLine(content.summaryTitle)), gapBefore = SECTION_GAP)
-            content.summary.forEach { line -> place(listOf(summaryLine(line)), gapBefore = SUMMARY_GAP) }
-            place(listOf(rule(ReportPdfRole.DIVIDER)), gapBefore = RULE_GAP)
+            // Пустой период: сводки нет вместе с заголовком, вместо неё — emptyNote
+            // (решение дизайна, ревизия 33-B SKL-33).
+            content.summaryTitle?.let { title ->
+                place(listOf(sectionLine(title)), gapBefore = SECTION_GAP)
+                content.summary.forEach { line -> place(listOf(summaryLine(line)), gapBefore = SUMMARY_GAP) }
+                place(listOf(rule(ReportPdfRole.DIVIDER)), gapBefore = RULE_GAP)
+            }
             content.medicationsTitle?.let { title -> place(listOf(sectionLine(title)), gapBefore = SECTION_GAP) }
             content.medicationBlocks.forEach { block -> placeBlock(block) }
             content.emptyNote?.let { note -> place(physicalLine(note, width), gapBefore = SECTION_GAP) }

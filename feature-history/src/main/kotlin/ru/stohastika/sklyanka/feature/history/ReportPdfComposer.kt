@@ -22,6 +22,10 @@ internal class ReportPdfComposer(private val context: Context) {
 
     fun compose(report: DoctorReport, zone: ZoneId): ReportPdfContent {
         val locale = context.resources.configuration.locales[0]
+        // Условие экранного `isEmptyMonth` (`AdherencePeriod.isEmpty`): при пустом периоде
+        // сводка и блок лекарств не печатаются вместе с заголовками, вместо всей сводки —
+        // одна фраза (решение дизайна, ревизия 33-B SKL-33).
+        val empty = report.period.isEmpty
         return ReportPdfContent(
             fileName = context.getString(
                 R.string.report_file_name,
@@ -29,15 +33,11 @@ internal class ReportPdfComposer(private val context: Context) {
             ),
             mediaType = context.getString(R.string.report_media_type),
             header = header(report, zone, locale),
-            summaryTitle = section(R.string.report_document_summary_title),
-            summary = summary(report),
-            medicationsTitle = if (report.medications.isEmpty()) {
-                null
-            } else {
-                section(R.string.report_document_medications_title)
-            },
-            medicationBlocks = report.medications.map { row -> text.block(row, locale) },
-            emptyNote = if (report.medications.isEmpty()) {
+            summaryTitle = if (empty) null else section(R.string.report_document_summary_title),
+            summary = if (empty) emptyList() else summary(report),
+            medicationsTitle = if (empty) null else section(R.string.report_document_medications_title),
+            medicationBlocks = if (empty) emptyList() else report.medications.map { row -> text.block(row, locale) },
+            emptyNote = if (empty) {
                 ReportPdfLine(context.getString(R.string.report_document_empty), ReportPdfRole.BODY_MUTED)
             } else {
                 null
@@ -52,13 +52,19 @@ internal class ReportPdfComposer(private val context: Context) {
      *
      * Тем же композером, что и документ: текстовой сводки в шторке больше нет (решение
      * дизайна), но человек обязан видеть, что именно отдаёт, до нажатия «Передать».
+     * Пустой период называет себя той же фразой, что стоит в документе, — человек
+     * перед отправкой видит то же, что получит врач (решение дизайна, ревизия 33-B).
      */
     fun composition(report: DoctorReport): String {
         val locale = context.resources.configuration.locales[0]
         return listOf(
             context.getString(R.string.report_document_composition_profile, report.profileName),
             text.period(report.period.from, report.period.to, locale),
-            context.getString(R.string.report_document_taken_label) + " " + text.takenValue(report),
+            if (report.period.isEmpty) {
+                context.getString(R.string.report_document_empty)
+            } else {
+                context.getString(R.string.report_document_taken_label) + " " + text.takenValue(report)
+            },
         ).joinToString("\n")
     }
 

@@ -72,6 +72,14 @@ class PdfReportLayoutTest {
             "no medication title may be printed without records",
             pages.single().body.any { it.text == MEDICATIONS_TITLE },
         )
+        assertFalse(
+            "no summary may be printed without records",
+            pages.single().body.any { it.text == SUMMARY_TITLE },
+        )
+        assertFalse(
+            "no divider may separate absent sections",
+            pages.single().body.any { it.role == ReportPdfRole.DIVIDER },
+        )
     }
 
     /**
@@ -97,8 +105,8 @@ class PdfReportLayoutTest {
             ReportPdfLine("Report on medication intake", ReportPdfRole.TITLE),
             ReportPdfLine("Sklyanka - profile", ReportPdfRole.SUBTITLE),
         ),
-        summaryTitle = ReportPdfLine("SUMMARY", ReportPdfRole.SECTION),
-        summary = listOf(ReportPdfSummaryLine("Taken:", "12 of 15")),
+        summaryTitle = if (blocks == 0) null else ReportPdfLine(SUMMARY_TITLE, ReportPdfRole.SECTION),
+        summary = if (blocks == 0) emptyList() else listOf(ReportPdfSummaryLine("Taken:", "12 of 15")),
         medicationsTitle = if (blocks == 0) null else ReportPdfLine(MEDICATIONS_TITLE, ReportPdfRole.SECTION),
         medicationBlocks = (1..blocks).map { index ->
             ReportPdfBlock(
@@ -134,6 +142,7 @@ class PdfReportLayoutTest {
         const val RULE = 1f
         const val DISCLAIMER = "Not a medical document"
         const val EMPTY_NOTE = "No records in the period"
+        const val SUMMARY_TITLE = "SUMMARY"
         const val MEDICATIONS_TITLE = "BY MEDICATION"
     }
 }

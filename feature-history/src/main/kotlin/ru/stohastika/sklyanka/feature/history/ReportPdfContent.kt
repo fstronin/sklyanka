@@ -17,7 +17,11 @@ internal data class ReportPdfContent(
     val mediaType: String,
     /** Шапка — только на первой странице документа (решение дизайна). */
     val header: List<ReportPdfLine>,
-    val summaryTitle: ReportPdfLine,
+    /**
+     * `null`, когда за период нет ни одной записи: сводка с заголовком не печатается
+     * вовсе, вместо неё стоит [emptyNote] (решение дизайна, ревизия 33-B SKL-33).
+     */
+    val summaryTitle: ReportPdfLine?,
     val summary: List<ReportPdfSummaryLine>,
     /** `null`, когда за период нет ни одной записи: блок «По лекарствам» не печатается. */
     val medicationsTitle: ReportPdfLine?,
@@ -115,7 +119,7 @@ internal data class PdfPageGeometry(
  */
 internal fun ReportPdfContent.documentText(): String = buildList {
     header.forEach { add(it.text) }
-    add(summaryTitle.text)
+    summaryTitle?.let { add(it.text) }
     summary.forEach { line ->
         val parts = listOfNotNull(line.label, line.value.takeIf { value -> value.isNotEmpty() })
         add(parts.joinToString(" "))

@@ -132,21 +132,62 @@ class ReportPdfComposerTest {
         assertTrue("a course without misses must say so", block.lines.any { it.text.contains("Пропусков нет") })
     }
 
+    /**
+     * Пустой месяц — одна фраза, ни сводки, ни блока лекарств.
+     *
+     * «Принято: 0 из 0 приёмов (0 %)» — вырожденная дробь, а «Дней без пропусков: 0» —
+     * наблюдение, которого не было; фраза называет факт, не выдавая его за измерение
+     * (решение дизайна, ревизия 33-B SKL-33).
+     */
     @Test
-    fun `a month without records says so and prints no medication block`() {
-        val empty = DoctorReportBuilder.build(
-            period = AdherenceCalculator().of(HistorySlice.empty(PROFILE_ID), WINDOW, TODAY, ZONE),
-            slice = HistorySlice.empty(PROFILE_ID),
+    fun `a month without records says so and prints neither summary nor medication block`() {
+        val content = composer.compose(emptyReport(), ZONE)
+
+        assertNull("the summary block must not be printed", content.summaryTitle)
+        assertTrue("no summary line may be printed", content.summary.isEmpty())
+        assertNull("the medication block must not be printed", content.medicationsTitle)
+        assertTrue(content.medicationBlocks.isEmpty())
+        assertEquals("За период нет ни одной записи о приёме", content.emptyNote?.text)
+
+        val text = content.documentText()
+        SUMMARY_LABELS.forEach { label ->
+            assertFalse("no «$label» may reach the doctor: $text", text.contains(label))
+        }
+        assertTrue("the header must stay", text.contains("Склянка · профиль «profile-a»"))
+        assertTrue("the phrase must stay", text.contains("За период нет ни одной записи о приёме"))
+        assertTrue("the disclaimer must stay", text.contains("Не является медицинским документом"))
+    }
+
+    /**
+     * Непустой период остаётся числами, даже если принятых приёмов нет: приёмы были
+     * запланированы и пропущены, и пропуски перечислены датами (решение дизайна, 33-B).
+     */
+    @Test
+    fun `a month where everything was planned and missed keeps its numbers`() {
+        val medication = medication()
+        val slice = HistorySlice(
+            profileId = PROFILE_ID,
+            intakes = listOf(
+                intake(LocalDate.of(2026, 9, 1).atTime(MORNING), IntakeStatus.MISSED),
+                intake(LocalDate.of(2026, 9, 2).atTime(MORNING), IntakeStatus.MISSED),
+            ),
+            medications = listOf(medication),
+            historyStartsAt = LocalDate.of(2026, 9, 1),
+        )
+        val report = DoctorReportBuilder.build(
+            period = AdherenceCalculator().of(slice, WINDOW, TODAY, ZONE),
+            slice = slice,
             profileName = PROFILE_NAME,
             generatedAt = GENERATED_AT,
             zone = ZONE,
         )
 
-        val content = composer.compose(empty, ZONE)
+        val content = composer.compose(report, ZONE)
 
-        assertNull("the medication block must not be printed", content.medicationsTitle)
-        assertTrue(content.medicationBlocks.isEmpty())
-        assertEquals("За период нет ни одной записи о приёме", content.emptyNote?.text)
+        assertFalse("the intakes happened and were missed", report.period.isEmpty)
+        assertNull("the phrase must not replace the numbers", content.emptyNote)
+        assertEquals("Принято: " + percent(0, 2, 0), content.summary.first().let { "${it.label} ${it.value}" })
+        assertTrue(content.documentText().contains("Пропусков за период: 2"))
     }
 
     /** Оговорка — часть состава документа, а не украшение: её печатает каждая страница. */
@@ -183,6 +224,19 @@ class ReportPdfComposerTest {
         )
     }
 
+    /** Человек перед отправкой видит то же, что получит врач: при пустом периоде — фразу. */
+    @Test
+    fun `the composition of an empty month keeps the phrase instead of a count`() {
+        val composition = composer.composition(emptyReport())
+
+        assertTrue(
+            "the phrase must replace the count: $composition",
+            composition.endsWith("За период нет ни одной записи о приёме"),
+        )
+        assertFalse("no degenerate share may be promised: $composition", composition.contains("Принято:"))
+        assertTrue("the sheet must still name the profile", composition.contains("Профиль: profile-a"))
+    }
+
     /**
      * Ожидаемые числа и доли — через те же ресурсы, что у документа.
      *
@@ -206,6 +260,14 @@ class ReportPdfComposerTest {
     )
 
     private fun content(report: DoctorReport = report()): ReportPdfContent = composer.compose(report, ZONE)
+
+    private fun emptyReport(): DoctorReport = DoctorReportBuilder.build(
+        period = AdherenceCalculator().of(HistorySlice.empty(PROFILE_ID), WINDOW, TODAY, ZONE),
+        slice = HistorySlice.empty(PROFILE_ID),
+        profileName = PROFILE_NAME,
+        generatedAt = GENERATED_AT,
+        zone = ZONE,
+    )
 
     private fun report(medication: Medication = medication()): DoctorReport {
         val slice = HistorySlice(
@@ -297,6 +359,15 @@ class ReportPdfComposerTest {
             "плохо",
             "нарушен",
             "риск",
+        )
+
+        /** Ярлыки сводки: при пустом периоде в документе не должно быть ни одного. */
+        val SUMMARY_LABELS = listOf(
+            "СВОДКА",
+            "Принято:",
+            "Принято вовремя:",
+            "Дней без пропусков:",
+            "Пропусков за период:",
         )
     }
 }
