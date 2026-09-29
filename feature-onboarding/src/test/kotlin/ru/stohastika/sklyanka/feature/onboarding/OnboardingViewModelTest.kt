@@ -2,6 +2,7 @@ package ru.stohastika.sklyanka.feature.onboarding
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -284,5 +285,41 @@ class OnboardingViewModelTest {
 
         assertEquals(1, world.log.records.count { it.startsWith("opened:") })
         assertTrue(world.log.records.contains("opened:SETTINGS:1"))
+    }
+
+    @Test
+    fun `entering the screen clears the exit left by the previous leave`() = runTest(dispatcher) {
+        val model = started()
+
+        model.onSkip()
+        model.settle()
+        assertEquals(OnboardingExit.TODAY, model.exit.value)
+
+        model.start(OnboardingSource.TODAY_WARNING)
+        model.settle()
+
+        // ОВ-86: исход — событие ухода, а не свойство экрана. Унаследованный исход закрыл бы
+        // повторно открытый экран сам или не дал бы закрыть его тем же исходом.
+        assertNull(model.exit.value)
+    }
+
+    @Test
+    fun `every entry emits the same exit again after the start reset`() = runTest(dispatcher) {
+        val exits = mutableListOf<OnboardingExit?>()
+        val model = started()
+        val observer = launch { model.exit.collect { exits += it } }
+        model.settle()
+
+        model.onSkip()
+        model.settle()
+        model.start(OnboardingSource.TODAY_WARNING)
+        model.settle()
+        model.onSkip()
+        model.settle()
+
+        // StateFlow не эмитит равное значение: без сброса второй onSkip не породил бы
+        // эмиссии, и LaunchedEffect(exit) в маршруте не перезапустился бы (ОВ-86).
+        assertEquals(listOf(null, OnboardingExit.TODAY, null, OnboardingExit.TODAY), exits)
+        observer.cancel()
     }
 }

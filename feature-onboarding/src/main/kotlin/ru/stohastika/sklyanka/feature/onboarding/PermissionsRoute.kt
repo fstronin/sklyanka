@@ -1,5 +1,6 @@
 package ru.stohastika.sklyanka.feature.onboarding
 
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
@@ -37,6 +38,13 @@ fun PermissionsRoute(
         // Отказ не закрывает экран и не мешает пройти остальные шаги (НАП-18, критерий 5).
         viewModel.onPermissionResult(PermissionStep.NOTIFICATIONS, granted)
     }
+
+    // Системная «Назад» — выход к точке входа, а не завершение приложения (ОВ-86). Отдельного
+    // исхода у неё нет: она делает то же, что видимый выход для данной точки входа, — идёт
+    // путём «Пропустить, настрою позже». Адрес возврата решает хозяин навигации: из баннера
+    // это «Сегодня» с оставшимся предупреждением, из настроек — закрытие экрана, при первом
+    // запуске — «Сегодня» с предупреждением и отметкой «видел онбординг».
+    BackHandler { viewModel.onSkip() }
 
     LaunchedEffect(source) { viewModel.start(source) }
     LaunchedEffect(exit) { exit?.let(onExit) }

@@ -57,6 +57,10 @@ class OnboardingViewModel @Inject constructor(
      * (критерий 15), и попадает в журнал (`TDD.md §11.1`).
      */
     fun start(source: OnboardingSource) {
+        // Исход — событие ухода, а не данные шага: при входе он обязан быть пустым. Без сброса
+        // повторный вход с тем же исходом не закрывает экран — StateFlow не эмитит равное
+        // значение, и LaunchedEffect(exit) не перезапускается (ОВ-86).
+        _exit.value = null
         _state.update { it.copy(source = source) }
         refresh(logOpening = true)
     }
