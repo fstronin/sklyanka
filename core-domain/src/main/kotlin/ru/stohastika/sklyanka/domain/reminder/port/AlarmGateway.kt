@@ -47,9 +47,6 @@ interface AlarmGateway {
     /** Будильник повтора настойчивого напоминания (НАП-25): тот же приём, другой номер показа. */
     suspend fun scheduleRepeat(intakeId: String, at: Instant, attempt: Int)
 
-    /** Пробное напоминание: боевой путь без записи приёма (НАП-22). */
-    suspend fun scheduleTest(at: Instant)
-
     /**
      * Выдано ли право на точные будильники (НАП-16).
      *

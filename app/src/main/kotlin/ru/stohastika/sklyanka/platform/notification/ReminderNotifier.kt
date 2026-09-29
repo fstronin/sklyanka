@@ -123,36 +123,6 @@ class ReminderNotifier @Inject constructor(
             }
     }
 
-    /**
-     * Пробное напоминание (НАП-22).
-     *
-     * Тот же канал, то же полноэкранное намерение, тот же звук — иначе проверка
-     * не доказывала бы работоспособность боевого пути. Приёма за ним не стоит,
-     * и его дополнения пусты: снятие по списку ожидающихся приёмов его не тронет.
-     */
-    override suspend fun showTest() {
-        channels.ensure()
-        val intent = ReminderActivity.testIntent(context)
-        val pending = PendingIntent.getActivity(
-            context,
-            TEST_REQUEST_CODE,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
-        val notification = NotificationCompat.Builder(context, ReminderChannel.REGULAR.id)
-            .setSmallIcon(R.drawable.ic_notification_mark)
-            .setContentTitle(context.getString(R.string.reminder_test_title))
-            .setContentText(context.getString(R.string.reminder_test_text))
-            .setCategory(NotificationCompat.CATEGORY_ALARM)
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setPriority(NotificationCompat.PRIORITY_MAX)
-            .setAutoCancel(true)
-            .setFullScreenIntent(pending, true)
-            .setContentIntent(pending)
-            .build()
-        manager.notify(TEST_NOTIFICATION_ID, notification)
-    }
-
     override fun areNotificationsEnabled(): Boolean = NotificationManagerCompat.from(context).areNotificationsEnabled()
 
     private fun fullScreen(slot: ReminderSlot): PendingIntent = PendingIntent.getActivity(
@@ -173,7 +143,5 @@ class ReminderNotifier @Inject constructor(
     private companion object {
         const val AT = "@"
         const val EXTRA_INTAKE_IDS = "ru.stohastika.sklyanka.reminder.intake_ids"
-        const val TEST_NOTIFICATION_ID = 1
-        const val TEST_REQUEST_CODE = 1
     }
 }

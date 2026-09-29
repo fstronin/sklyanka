@@ -342,8 +342,6 @@ private class InMemoryAlarms : AlarmGateway {
         attempts[intakeId] = attempt
     }
 
-    override suspend fun scheduleTest(at: Instant) = Unit
-
     override fun canScheduleExact(): Boolean = true
 
     fun attemptOf(intakeId: String): Int? = attempts[intakeId]
@@ -400,8 +398,6 @@ private class InMemoryNotifications(private val allowed: () -> Boolean) : Notifi
             shown.none { (card, _) -> card.slot == slot && card.items.any { it.intakeId in pendingIntakeIds } }
         }
     }
-
-    override suspend fun showTest() = Unit
 
     override fun areNotificationsEnabled(): Boolean = allowed()
 }

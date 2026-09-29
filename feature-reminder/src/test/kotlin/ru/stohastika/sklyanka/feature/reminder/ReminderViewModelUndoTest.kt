@@ -381,8 +381,6 @@ private class NoAlarms : AlarmGateway {
 
     override suspend fun scheduleRepeat(intakeId: String, at: Instant, attempt: Int) = Unit
 
-    override suspend fun scheduleTest(at: Instant) = Unit
-
     override fun canScheduleExact(): Boolean = true
 }
 
@@ -395,8 +393,6 @@ private class NoNotifications : NotificationGateway {
     override suspend fun isShown(slot: ReminderSlot): Boolean = false
 
     override suspend fun retainOnly(pendingIntakeIds: Set<String>) = Unit
-
-    override suspend fun showTest() = Unit
 
     override fun areNotificationsEnabled(): Boolean = true
 }

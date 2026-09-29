@@ -27,10 +27,6 @@
     <!-- «14:00 · Приём по расписанию» — вторая строка уведомления. -->
     <string name="reminder_notification_text">%1$s · %2$s</string>
 
-    <!-- Пробное напоминание (НАП-22). -->
-    <string name="reminder_test_title">Пробное напоминание</string>
-    <string name="reminder_test_text">Так будет выглядеть напоминание о приёме</string>
-
     <!-- Ярлык запуска на диагностику напоминаний (НАП-37). -->
     <string name="diagnostics_shortcut_label">Напоминания</string>
     <string name="diagnostics_shortcut_long_label">Диагностика напоминаний</string>

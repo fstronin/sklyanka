@@ -34,7 +34,6 @@ internal class FakeAlarmGateway : AlarmGateway {
     val repeats: MutableList<Triple<String, Instant, Int>> = mutableListOf()
     var anchor: Instant? = null
     var dayBoundary: Instant? = null
-    var test: Instant? = null
     var exactAllowed: Boolean = true
 
     /** Сколько раз будильники ставились и снимались — доказательство идемпотентности. */
@@ -70,10 +69,6 @@ internal class FakeAlarmGateway : AlarmGateway {
         alarms[intakeId] = at
     }
 
-    override suspend fun scheduleTest(at: Instant) {
-        test = at
-    }
-
     override fun canScheduleExact(): Boolean = exactAllowed
 }
 
@@ -83,8 +78,6 @@ internal class FakeNotificationGateway : NotificationGateway {
     val shown: MutableList<Pair<ReminderCard, ReminderChannel>> = mutableListOf()
     val cancelled: MutableList<ReminderSlot> = mutableListOf()
     var retained: Set<String>? = null
-    var tests: Int = 0
-        private set
     var enabled: Boolean = true
 
     val visible: List<ReminderCard> get() = shown.map { it.first }
@@ -138,10 +131,6 @@ internal class FakeNotificationGateway : NotificationGateway {
                 card.slot == slot && card.items.any { row -> row.intakeId in pendingIntakeIds }
             }
         }
-    }
-
-    override suspend fun showTest() {
-        tests++
     }
 
     override fun areNotificationsEnabled(): Boolean = enabled

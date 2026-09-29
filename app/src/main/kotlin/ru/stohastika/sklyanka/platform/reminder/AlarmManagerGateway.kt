@@ -84,10 +84,6 @@ class AlarmManagerGateway @Inject constructor(
         }
     }
 
-    override suspend fun scheduleTest(at: Instant) {
-        setExact(at, pendingIntent(ReminderAlarms.test(context, at)))
-    }
-
     /**
      * Право на точные будильники (НАП-16).
      *

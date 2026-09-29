@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import ru.stohastika.sklyanka.reminder.AlarmReceiver
-import java.time.Instant
 
 /**
  * Адресация будильников напоминаний.
@@ -23,11 +22,9 @@ internal object ReminderAlarms {
     const val ACTION_INTAKE = "ru.stohastika.sklyanka.action.REMINDER_INTAKE"
     const val ACTION_ANCHOR = "ru.stohastika.sklyanka.action.REMINDER_ANCHOR"
     const val ACTION_DAY_BOUNDARY = "ru.stohastika.sklyanka.action.REMINDER_DAY_BOUNDARY"
-    const val ACTION_TEST = "ru.stohastika.sklyanka.action.REMINDER_TEST"
 
     const val EXTRA_INTAKE_ID = "intake_id"
     const val EXTRA_ATTEMPT = "attempt"
-    const val EXTRA_PLANNED_AT = "planned_at"
 
     private const val SCHEME = "sklyanka"
 
@@ -47,10 +44,4 @@ internal object ReminderAlarms {
     fun dayBoundary(context: Context): Intent = Intent(context, AlarmReceiver::class.java)
         .setAction(ACTION_DAY_BOUNDARY)
         .setData(Uri.parse("$SCHEME://reminder/day-boundary"))
-
-    /** Пробное напоминание (НАП-22): плановый момент нужен для отклонения в журнале. */
-    fun test(context: Context, at: Instant): Intent = Intent(context, AlarmReceiver::class.java)
-        .setAction(ACTION_TEST)
-        .setData(Uri.parse("$SCHEME://reminder/test"))
-        .putExtra(EXTRA_PLANNED_AT, at.toEpochMilli())
 }
