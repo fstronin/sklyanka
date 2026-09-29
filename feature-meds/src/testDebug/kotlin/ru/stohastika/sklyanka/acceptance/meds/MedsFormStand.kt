@@ -180,6 +180,11 @@ internal object MedsFormStand {
                 inputs.copy(stockLeft = intent.text),
             )
 
+            is MedFormIntent.PackageSizeChanged -> current.with(
+                draft.copy(packageSize = decimalOf(intent.text)),
+                inputs.copy(packageSize = intent.text),
+            )
+
             is MedFormIntent.StockReminderToggled -> current.with(
                 draft.copy(stockThresholdDays = if (intent.enabled) DEFAULT_THRESHOLD_DAYS else null),
             )
@@ -210,6 +215,7 @@ internal object MedsFormStand {
         doseAmount = draft.doseAmount.plain(),
         strength = draft.strength.plain(),
         stockLeft = draft.stockLeft.plain(),
+        packageSize = draft.packageSize.plain(),
     )
 
     private fun BigDecimal?.plain(): String = this?.stripTrailingZeros()?.toPlainString().orEmpty()

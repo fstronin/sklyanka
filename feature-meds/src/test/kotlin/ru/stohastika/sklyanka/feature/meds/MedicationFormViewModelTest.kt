@@ -260,6 +260,56 @@ class MedicationFormViewModelTest {
         assertNull(model.state.value!!.draft.strength)
     }
 
+    @Test
+    fun `the package size is typed in and kept as text and as a number`() = runTest(dispatcher) {
+        open()
+
+        model.onIntent(MedFormIntent.PackageSizeChanged("60"))
+
+        val state = model.state.value!!
+        assertEquals(BigDecimal("60"), state.draft.packageSize)
+        assertEquals("60", state.inputs.packageSize)
+    }
+
+    @Test
+    fun `the package size is not filled in from the stock and stays unknown`() = runTest(dispatcher) {
+        open()
+
+        model.onIntent(MedFormIntent.StockChanged("9"))
+
+        val state = model.state.value!!
+        assertEquals(BigDecimal("9"), state.draft.stockLeft)
+        assertNull("the denominator must never be guessed from the stock", state.draft.packageSize)
+    }
+
+    @Test
+    fun `a zero package size is refused with the field named`() = runTest(dispatcher) {
+        open()
+        model.onIntent(MedFormIntent.NameChanged("med-a"))
+        model.onIntent(MedFormIntent.TimeAdded)
+        model.onIntent(MedFormIntent.DoseAmountChanged("2"))
+        model.onIntent(MedFormIntent.PackageSizeChanged("0"))
+
+        model.onIntent(MedFormIntent.Save)
+        advanceUntilIdle()
+
+        val state = model.state.value!!
+        assertFalse(state.saved)
+        assertTrue(DraftViolation.PackageSizeNotPositive in state.violations)
+        assertEquals(DraftField.PACKAGE_SIZE, state.firstViolationField)
+        assertEquals("what was typed must survive the refusal", "0", state.inputs.packageSize)
+    }
+
+    @Test
+    fun `editing fills the package size text from the stored course`() = runTest(dispatcher) {
+        medications.put(MedsTestData.medication(id = "magnesium", name = "med-a").copy(packageSize = BigDecimal("60")))
+
+        model.open("magnesium")
+        advanceUntilIdle()
+
+        assertEquals("60", model.state.value!!.inputs.packageSize)
+    }
+
     // --- Сохранение и отказ -------------------------------------------------------------------
 
     @Test

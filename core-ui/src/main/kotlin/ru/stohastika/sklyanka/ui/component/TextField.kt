@@ -180,13 +180,21 @@ private fun borderWidthOf(state: TextFieldState) =
         SklyankaSizes.BorderThin
     }
 
-/** Компактное числовое поле: счётчик приёмов в сутки, доза. */
+/**
+ * Компактное числовое поле: счётчик приёмов в сутки, доза, размер упаковки.
+ *
+ * [error] — состояние ошибки ОВ-38 для поля без собственной подписи под ним: рамка
+ * утолщается и окрашивается `warning` (та же пара, что у [SklyankaTextField]).
+ * Пояснение к ошибке рисует блок, в котором стоит поле, — у компактного поля нет
+ * места под текст.
+ */
 @Composable
 fun SklyankaNumberField(
     value: String,
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    error: Boolean = false,
 ) {
     val colors = SklyankaTheme.colors
     Box(
@@ -196,7 +204,11 @@ fun SklyankaNumberField(
             // нажатия, а не плотности вёрстки (см. `Modifier.minTouchTarget`, ОВ-17).
             .height(SklyankaSizes.CompactFieldHeight.coerceAtLeast(SklyankaSizes.MinTouchTarget))
             .background(colors.background, SklyankaShapes.Compact)
-            .border(SklyankaSizes.BorderThin, colors.line, SklyankaShapes.Compact)
+            .border(
+                if (error) SklyankaSizes.BorderAccent else SklyankaSizes.BorderThin,
+                if (error) colors.warning else colors.line,
+                SklyankaShapes.Compact,
+            )
             .padding(horizontal = SklyankaSizes.BannerPaddingVertical)
             .testTag(TAG_NUMBER_FIELD),
         contentAlignment = Alignment.Center,

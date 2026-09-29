@@ -17,6 +17,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import ru.stohastika.sklyanka.domain.medication.DraftViolation
 import ru.stohastika.sklyanka.domain.medication.MedicationDraft
 import ru.stohastika.sklyanka.domain.model.MedicationForm
 import ru.stohastika.sklyanka.domain.model.ScheduleMode
@@ -25,12 +26,17 @@ import ru.stohastika.sklyanka.feature.meds.form.FormMode
 import ru.stohastika.sklyanka.feature.meds.form.MedFormUiState
 import ru.stohastika.sklyanka.feature.meds.form.MedicationFormScreen
 import ru.stohastika.sklyanka.feature.meds.form.TAG_MAX_PER_DAY
+import ru.stohastika.sklyanka.feature.meds.form.TAG_PACKAGE_SIZE_FIELD
+import ru.stohastika.sklyanka.feature.meds.form.TAG_PACKAGE_SIZE_HINT
+import ru.stohastika.sklyanka.feature.meds.form.TAG_PACKAGE_SIZE_UNIT
 import ru.stohastika.sklyanka.feature.meds.form.TAG_SAVE_BUTTON
+import ru.stohastika.sklyanka.feature.meds.form.TAG_STOCK_FIELD
 import ru.stohastika.sklyanka.feature.meds.form.TAG_STOCK_UNIT
 import ru.stohastika.sklyanka.feature.meds.form.TAG_TABLET_SHAPE_ROW
 import ru.stohastika.sklyanka.feature.meds.form.TAG_TIMES_BLOCK
 import ru.stohastika.sklyanka.ui.component.TAG_SCREEN_HEADER
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
+import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalTime
 import ru.stohastika.sklyanka.ui.R as UiR
@@ -148,6 +154,43 @@ class MedicationFormScreenTest {
     }
 
     @Test
+    fun thePackageSizeRowStandsRightUnderTheCurrentStock() {
+        show(draft())
+
+        composeRule.onNodeWithText(context.getString(R.string.form_package_size)).assertIsDisplayed()
+        val stockY = composeRule.onNodeWithTag(TAG_STOCK_FIELD).fetchSemanticsNode().positionInRoot.y
+        val packageY = composeRule.onNodeWithTag(TAG_PACKAGE_SIZE_FIELD).fetchSemanticsNode().positionInRoot.y
+        assertTrue("the package size must stand under the stock: $packageY < $stockY", packageY > stockY)
+    }
+
+    @Test
+    fun thePackageSizeRowRepeatsTheStockUnit() {
+        show(draft(form = MedicationForm.SYRUP))
+
+        composeRule
+            .onNodeWithTag(TAG_PACKAGE_SIZE_UNIT)
+            .assertTextEquals(context.getString(R.string.stock_unit_millilitres))
+    }
+
+    @Test
+    fun thePackageSizeRowCarriesItsHint() {
+        show(draft())
+
+        composeRule.onNodeWithTag(TAG_PACKAGE_SIZE_HINT).assertIsDisplayed()
+        composeRule.onNodeWithText(context.getString(R.string.form_package_size_hint)).assertIsDisplayed()
+    }
+
+    @Test
+    fun thePackageSizeErrorIsSpelledOutUnderTheBlock() {
+        show(
+            draft().copy(packageSize = BigDecimal.ZERO),
+            violations = listOf(DraftViolation.PackageSizeNotPositive),
+        )
+
+        composeRule.onNodeWithText(context.getString(R.string.error_package_size_not_positive)).assertIsDisplayed()
+    }
+
+    @Test
     fun anOpenEndedCourseGreysOutTheEndDate() {
         show(draft())
 
@@ -215,11 +258,15 @@ class MedicationFormScreenTest {
         }
     }
 
-    private fun show(draft: MedicationDraft, mode: FormMode = FormMode.Create) {
+    private fun show(
+        draft: MedicationDraft,
+        mode: FormMode = FormMode.Create,
+        violations: List<DraftViolation> = emptyList(),
+    ) {
         composeRule.setContent {
             SklyankaTheme {
                 MedicationFormScreen(
-                    state = MedFormUiState.of(draft, mode, FormInputs()),
+                    state = MedFormUiState.of(draft, mode, FormInputs()).copy(violations = violations),
                     onIntent = {},
                     onCancel = {},
                     onPickDate = {},

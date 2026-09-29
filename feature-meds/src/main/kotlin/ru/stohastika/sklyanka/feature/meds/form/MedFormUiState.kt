@@ -29,7 +29,12 @@ sealed interface FormMode {
  * в сохранении — а критерий приёмки прямо требует, чтобы форма осталась заполненной.
  */
 @Immutable
-data class FormInputs(val doseAmount: String = "", val strength: String = "", val stockLeft: String = "")
+data class FormInputs(
+    val doseAmount: String = "",
+    val strength: String = "",
+    val stockLeft: String = "",
+    val packageSize: String = "",
+)
 
 /**
  * Состояние формы лекарства.

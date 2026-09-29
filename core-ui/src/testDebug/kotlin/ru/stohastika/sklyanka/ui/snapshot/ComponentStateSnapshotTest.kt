@@ -140,6 +140,15 @@ class ComponentStateSnapshotTest {
         capture("text-field-number") {
             SklyankaNumberField(value = context.getString(R.string.preview_time), onValueChange = {})
         }
+        // Ошибка компактного поля: рамка 1,5 dp цветом warning (ОВ-38), без подписи —
+        // пояснение рисует блок, в котором стоит поле (SKL-34).
+        capture("number-field-error") {
+            SklyankaNumberField(
+                value = context.getString(R.string.preview_time),
+                onValueChange = {},
+                error = true,
+            )
+        }
     }
 
     @Test

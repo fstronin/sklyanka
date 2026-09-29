@@ -35,38 +35,45 @@ import ru.stohastika.sklyanka.ui.token.SklyankaType
  * приём (ПР-6). Флаг рядом со значением позволил бы собрать «бессрочно, но до 30 сентября».
  */
 
-/** «Остаток в упаковке»: сколько есть сейчас и порог напоминания о покупке. */
+/**
+ * «Остаток в упаковке»: сколько есть сейчас, размер упаковки и порог напоминания о покупке.
+ *
+ * Строка «Размер упаковки» стоит сразу под «Сейчас есть» и повторяет её: компактное
+ * числовое поле с той же единицей. Порядок — решение ОВ-45: привычное первое число
+ * не двигается, а новое читается вместе с ним. Поле необязательное: пустое значит
+ * «размер не задан», автоматически из остатка не подставляется — подставленный
+ * знаменатель выдавался бы за измеренный.
+ */
 @Composable
 internal fun StockBlock(state: MedFormUiState, onIntent: (MedFormIntent) -> Unit, anchors: FormAnchors) {
-    val colors = SklyankaTheme.colors
     val threshold = state.draft.stockThresholdDays
+    val packageViolation = state.violationOf(DraftField.PACKAGE_SIZE)
     FormBlock(stringResource(R.string.form_label_stock), DraftField.STOCK, anchors) {
         SectionCard {
-            Row(
+            StockValueRow(
+                label = stringResource(R.string.form_stock_now),
+                value = state.inputs.stockLeft,
+                onValueChange = { onIntent(MedFormIntent.StockChanged(it)) },
+                unit = state.applicability.doseUnit.stockLabel(),
+                tags = StockRowTags(field = TAG_STOCK_FIELD, unit = TAG_STOCK_UNIT),
+            )
+            StockValueRow(
+                label = stringResource(R.string.form_package_size),
+                value = state.inputs.packageSize,
+                onValueChange = { onIntent(MedFormIntent.PackageSizeChanged(it)) },
+                unit = state.applicability.doseUnit.stockLabel(),
+                tags = StockRowTags(field = TAG_PACKAGE_SIZE_FIELD, unit = TAG_PACKAGE_SIZE_UNIT),
+                error = packageViolation != null,
+            )
+            Text(
+                text = stringResource(R.string.form_package_size_hint),
+                style = SklyankaType.CaptionSmall,
+                color = SklyankaTheme.colors.textMuted,
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = SklyankaSpacing.Block, vertical = SklyankaSpacing.Medium),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Medium),
-            ) {
-                Text(
-                    text = stringResource(R.string.form_stock_now),
-                    style = SklyankaType.BodyDefault,
-                    color = colors.text,
-                    modifier = Modifier.weight(1f),
-                )
-                SklyankaNumberField(
-                    value = state.inputs.stockLeft,
-                    onValueChange = { onIntent(MedFormIntent.StockChanged(it)) },
-                    modifier = Modifier.width(SklyankaSizes.StockField).testTag(TAG_STOCK_FIELD),
-                )
-                Text(
-                    text = state.applicability.doseUnit.stockLabel(),
-                    style = SklyankaType.Label,
-                    color = colors.textMuted,
-                    modifier = Modifier.testTag(TAG_STOCK_UNIT),
-                )
-            }
+                    .padding(horizontal = SklyankaSpacing.Block)
+                    .padding(bottom = SklyankaSpacing.Medium)
+                    .testTag(TAG_PACKAGE_SIZE_HINT),
+            )
             RowDivider(modifier = Modifier.padding(horizontal = SklyankaSpacing.Block))
             SklyankaSwitchRow(
                 label = stringResource(R.string.form_stock_reminder),
@@ -81,6 +88,49 @@ internal fun StockBlock(state: MedFormUiState, onIntent: (MedFormIntent) -> Unit
             )
         }
         state.violationOf(DraftField.STOCK)?.let { ViolationText(it.message()) }
+        packageViolation?.let { ViolationText(it.message()) }
+    }
+}
+
+/** Теги строки остатка: поле и его единица — их ищут экранные проверки. */
+private data class StockRowTags(val field: String, val unit: String)
+
+/** Строка «надпись — числовое поле — единица»: «Сейчас есть» и «Размер упаковки» устроены одинаково. */
+@Composable
+private fun StockValueRow(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    unit: String,
+    tags: StockRowTags,
+    error: Boolean = false,
+) {
+    val colors = SklyankaTheme.colors
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = SklyankaSpacing.Block, vertical = SklyankaSpacing.Medium),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Medium),
+    ) {
+        Text(
+            text = label,
+            style = SklyankaType.BodyDefault,
+            color = colors.text,
+            modifier = Modifier.weight(1f),
+        )
+        SklyankaNumberField(
+            value = value,
+            onValueChange = onValueChange,
+            error = error,
+            modifier = Modifier.width(SklyankaSizes.StockField).testTag(tags.field),
+        )
+        Text(
+            text = unit,
+            style = SklyankaType.Label,
+            color = colors.textMuted,
+            modifier = Modifier.testTag(tags.unit),
+        )
     }
 }
 
@@ -137,6 +187,9 @@ private const val DEFAULT_THRESHOLD_DAYS = 5
 const val TAG_STOCK_FIELD = "form_stock"
 const val TAG_STOCK_UNIT = "form_stock_unit"
 const val TAG_STOCK_REMINDER = "form_stock_reminder"
+const val TAG_PACKAGE_SIZE_FIELD = "form_package_size"
+const val TAG_PACKAGE_SIZE_UNIT = "form_package_size_unit"
+const val TAG_PACKAGE_SIZE_HINT = "form_package_size_hint"
 const val TAG_START_DATE = "form_start_date"
 const val TAG_INDEFINITE = "form_indefinite"
 const val TAG_END_DATE = "form_end_date"

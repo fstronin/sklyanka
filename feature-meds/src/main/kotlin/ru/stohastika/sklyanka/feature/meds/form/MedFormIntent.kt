@@ -49,6 +49,9 @@ sealed interface MedFormIntent {
 
     data class StockChanged(val text: String) : MedFormIntent
 
+    /** Размер упаковки (ОВ-45): необязательное числовое поле под остатком. */
+    data class PackageSizeChanged(val text: String) : MedFormIntent
+
     /** «Напомнить о покупке»: включает и выключает порог остатка. */
     data class StockReminderToggled(val enabled: Boolean) : MedFormIntent
 

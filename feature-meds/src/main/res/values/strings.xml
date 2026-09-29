@@ -58,6 +58,8 @@
     <string name="form_label_food_relation">Связь с едой</string>
     <string name="form_label_stock">Остаток в упаковке</string>
     <string name="form_stock_now">Сейчас есть</string>
+    <string name="form_package_size">Размер упаковки</string>
+    <string name="form_package_size_hint">Необязательно. Карточка покажет, сколько осталось от упаковки</string>
     <string name="form_stock_reminder">Напомнить о покупке</string>
     <string name="form_label_period">Период приёма</string>
     <string name="form_period_start">Начало</string>

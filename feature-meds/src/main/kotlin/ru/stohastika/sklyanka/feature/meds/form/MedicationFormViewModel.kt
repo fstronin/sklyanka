@@ -114,6 +114,12 @@ class MedicationFormViewModel @Inject constructor(
             is MedFormIntent.StockChanged ->
                 state.with(draft.copy(stockLeft = decimalOf(intent.text)), inputs.copy(stockLeft = intent.text))
 
+            is MedFormIntent.PackageSizeChanged ->
+                state.with(
+                    draft.copy(packageSize = decimalOf(intent.text)),
+                    inputs.copy(packageSize = intent.text),
+                )
+
             is MedFormIntent.StockReminderToggled -> state.with(
                 draft.copy(stockThresholdDays = if (intent.enabled) DEFAULT_THRESHOLD_DAYS else null),
             )
@@ -168,6 +174,7 @@ class MedicationFormViewModel @Inject constructor(
         doseAmount = draft.doseAmount.plain(),
         strength = draft.strength.plain(),
         stockLeft = draft.stockLeft.plain(),
+        packageSize = draft.packageSize.plain(),
     )
 
     private fun BigDecimal?.plain(): String = this?.stripTrailingZeros()?.toPlainString().orEmpty()
