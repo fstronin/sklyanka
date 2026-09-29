@@ -229,6 +229,32 @@ interface IntakeDao {
     )
     suspend fun countInProfile(profileId: String): Int
 
+    /**
+     * Число записей истории профиля потоком — числа потерь на экране удаления (SKL-36).
+     *
+     * То же соединение, что у [countInProfile] и у истории: отдельного учёта записей
+     * приложение не ведёт. Поток, потому что экран подтверждения остаётся открытым
+     * и во время выбора места выгрузки, и число обязано не разойтись со стираемым.
+     */
+    @Query(
+        """
+        SELECT COUNT(*) FROM intake i
+        JOIN medication m ON m.id = i.medication_id
+        WHERE m.profile_id = :profileId
+        """,
+    )
+    fun observeCountInProfile(profileId: String): Flow<Int>
+
+    /**
+     * Удаление всех приёмов профиля вместе с отложенными срабатываниями (SKL-36, ОВ-7).
+     *
+     * Профиля в `intake` нет — отбор идёт через лекарства (ПР-10). Порядок транзакции
+     * задаёт вызывающий: этот запрос идёт первым, иначе лекарство не удалить (RESTRICT).
+     * Записи `deferred_reminder` уходят каскадом: откладывать больше нечего.
+     */
+    @Query("DELETE FROM intake WHERE medication_id IN (SELECT id FROM medication WHERE profile_id = :profileId)")
+    suspend fun deleteInProfile(profileId: String): Int
+
     /** Только для режима «заменить всё» при переносе данных (ПЕР-16). */
     @Query("DELETE FROM intake")
     suspend fun deleteAll(): Int
