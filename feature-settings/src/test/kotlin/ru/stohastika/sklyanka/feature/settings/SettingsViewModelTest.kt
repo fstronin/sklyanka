@@ -9,6 +9,8 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -94,6 +96,38 @@ class SettingsViewModelTest {
         val rows = model.state.value.profiles
         assertTrue(rows.last().isActive)
         assertFalse(rows.first().isActive)
+    }
+
+    /** ОВ-7: строка удаления появляется у активного чужого профиля и называет его. */
+    @Test
+    fun theActiveForeignProfileOffersDeletion() = runTest(dispatcher) {
+        active.switchTo(SettingsFixtures.FOREIGN_ID)
+        val model = viewModel()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(SettingsFixtures.FOREIGN_ID, model.state.value.deletableProfile?.id)
+    }
+
+    /** ПРФ-28: у своего профиля строки удаления нет. */
+    @Test
+    fun theOwnProfileNeverOffersDeletion() = runTest(dispatcher) {
+        val model = viewModel()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertNull(model.state.value.deletableProfile)
+    }
+
+    @Test
+    fun switchingBackToTheOwnProfileRemovesTheDeletionRow() = runTest(dispatcher) {
+        active.switchTo(SettingsFixtures.FOREIGN_ID)
+        val model = viewModel()
+        dispatcher.scheduler.advanceUntilIdle()
+        assertNotNull(model.state.value.deletableProfile)
+
+        model.onIntent(SettingsIntent.SelectProfile(SettingsFixtures.SELF_ID))
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertNull(model.state.value.deletableProfile)
     }
 
     /** НАП-15, НФТ-8: отказы считаются отдельно от непроверяемого автозапуска (НАП-20). */

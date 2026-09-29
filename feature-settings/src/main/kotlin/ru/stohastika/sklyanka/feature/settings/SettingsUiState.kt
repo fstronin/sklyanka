@@ -19,6 +19,14 @@ import ru.stohastika.sklyanka.domain.watch.WatchLinkState
  */
 data class SettingsUiState(
     val profiles: List<ProfileRowState> = emptyList(),
+    /**
+     * Профиль, который можно удалить: активный и чужой (ОВ-7, SKL-36).
+     *
+     * Null в своём профиле: строки удаления у владельца нет никогда (ПРФ-28).
+     * Считается тем же проходом, что строки списка: второй ответ «кто сейчас активен»
+     * разошёлся бы с отметкой активного профиля, и строка удаления назвала бы не того.
+     */
+    val deletableProfile: ProfileRowState? = null,
     val reminders: ReminderSettingsValues = ReminderSettingsValues(),
     val watch: WatchLinkState = WatchLinkState.NotConfigured,
     val permissions: PermissionsSummary = PermissionsSummary(),

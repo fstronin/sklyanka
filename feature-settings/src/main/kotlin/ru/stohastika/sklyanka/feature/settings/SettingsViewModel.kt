@@ -111,7 +111,14 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             combine(profiles.observeAll(), context.current) { all, active -> all to active.id }
                 .flatMapLatest { (all, activeId) -> rows(all, activeId, medications) }
-                .collect { rows -> _state.value = _state.value.copy(profiles = rows) }
+                .collect { rows ->
+                    _state.value = _state.value.copy(
+                        profiles = rows,
+                        // Удалить можно ровно тот профиль, в контексте которого человек
+                        // находится: чужой и активный (ОВ-7). Свой сюда не попадает (ПРФ-28).
+                        deletableProfile = rows.firstOrNull { it.isActive && !it.isSelf },
+                    )
+                }
         }
     }
 
