@@ -31,6 +31,10 @@ import ru.stohastika.sklyanka.ui.token.pressedTint
  * Фон — роль `accent`, то есть в чужом профиле автоматически цвет профиля (ПРФ-11).
  * Цвет параметром не принимается: параметр цвета — это тот же хардкод, только
  * переехавший на этаж выше (TDD §6.1).
+ *
+ * [kind] — вид, а не цвет: `Danger` берёт роль `danger`, которая в чужом профиле
+ * не тонируется (ОВ-67). Нажатие затемняет базовый цвет вида; недоступное состояние
+ * у обоих видов одинаковое — `progressTrack` + `textDisabled` (§4.3).
  */
 @Composable
 fun PrimaryButton(
@@ -38,11 +42,16 @@ fun PrimaryButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     state: ButtonState = ButtonState.Normal,
+    kind: PrimaryButtonKind = PrimaryButtonKind.Accent,
 ) {
     val colors = SklyankaTheme.colors
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
     val showPressed = state == ButtonState.Pressed || pressed
+    val base = when (kind) {
+        PrimaryButtonKind.Accent -> colors.accent
+        PrimaryButtonKind.Danger -> colors.danger
+    }
     ButtonSurface(
         text = text,
         onClick = onClick,
@@ -51,8 +60,8 @@ fun PrimaryButton(
         skin = ButtonSkin(
             background = when {
                 !state.isActive -> colors.progressTrack
-                showPressed -> pressedTint(colors.accent)
-                else -> colors.accent
+                showPressed -> pressedTint(base)
+                else -> base
             },
             content = if (state.isActive) colors.surface else colors.textDisabled,
             border = null,

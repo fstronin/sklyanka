@@ -98,6 +98,7 @@
     <string name="preview_marked_time">08:05</string>
     <string name="preview_profile_name">Образец</string>
     <string name="preview_primary_action">Добавить лекарство</string>
+    <string name="preview_danger_action">Заменить всё</string>
     <string name="preview_secondary_action">В архив</string>
     <string name="preview_quiet_action">Изменить</string>
     <string name="preview_field_label">Название</string>

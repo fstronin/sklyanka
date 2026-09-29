@@ -27,6 +27,7 @@ import ru.stohastika.sklyanka.ui.component.IntakeCardLabels
 import ru.stohastika.sklyanka.ui.component.IntakeCardState
 import ru.stohastika.sklyanka.ui.component.OnboardingSteps
 import ru.stohastika.sklyanka.ui.component.PrimaryButton
+import ru.stohastika.sklyanka.ui.component.PrimaryButtonKind
 import ru.stohastika.sklyanka.ui.component.ProfileStripe
 import ru.stohastika.sklyanka.ui.component.ProgressPurpose
 import ru.stohastika.sklyanka.ui.component.QuietButton
@@ -110,11 +111,17 @@ fun ChipGallery(modifier: Modifier = Modifier) {
 @Composable
 fun ButtonGallery(modifier: Modifier = Modifier) {
     val primary = stringResource(R.string.preview_primary_action)
+    val danger = stringResource(R.string.preview_danger_action)
     val secondary = stringResource(R.string.preview_secondary_action)
     val quiet = stringResource(R.string.preview_quiet_action)
     GallerySection(stringResource(R.string.catalog_buttons), modifier) {
         ButtonState.entries.forEach { state ->
             PrimaryButton(text = primary, onClick = {}, state = state)
+        }
+        // Опасный вид основной кнопки: та же кнопка, другой вид — не отдельный
+        // компонент (ОВ-67, §4.3).
+        ButtonState.entries.forEach { state ->
+            PrimaryButton(text = danger, onClick = {}, state = state, kind = PrimaryButtonKind.Danger)
         }
         ButtonState.entries.filter { it != ButtonState.Busy }.forEach { state ->
             SecondaryButton(text = secondary, onClick = {}, state = state)

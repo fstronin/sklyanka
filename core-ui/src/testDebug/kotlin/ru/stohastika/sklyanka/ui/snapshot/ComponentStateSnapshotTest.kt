@@ -22,6 +22,7 @@ import ru.stohastika.sklyanka.ui.component.IntakeCardLabels
 import ru.stohastika.sklyanka.ui.component.IntakeCardState
 import ru.stohastika.sklyanka.ui.component.OnboardingSteps
 import ru.stohastika.sklyanka.ui.component.PrimaryButton
+import ru.stohastika.sklyanka.ui.component.PrimaryButtonKind
 import ru.stohastika.sklyanka.ui.component.ProfileStripe
 import ru.stohastika.sklyanka.ui.component.ProgressPurpose
 import ru.stohastika.sklyanka.ui.component.QuietButton
@@ -113,6 +114,16 @@ class ComponentStateSnapshotTest {
             }
         }
         capture("button-quiet-muted") { QuietButton(text = quiet, onClick = {}, muted = true) }
+    }
+
+    @Test
+    fun dangerButtonInEveryState() {
+        val danger = context.getString(R.string.preview_danger_action)
+        ButtonState.entries.forEach { state ->
+            capture("button-danger-${state.name.lowercase()}") {
+                PrimaryButton(text = danger, onClick = {}, state = state, kind = PrimaryButtonKind.Danger)
+            }
+        }
     }
 
     @Test
