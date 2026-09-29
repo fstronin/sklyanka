@@ -202,6 +202,37 @@ class SettingsScreenTest {
     }
 
     /**
+     * ОВ-7: строка удаления — только у активного чужого профиля и последней в разделе.
+     *
+     * «Последняя» проверяется положением: строка стоит ниже и «Добавить профиль»,
+     * и разделителя перед ней — как в решении по ОВ-7.
+     */
+    @Test
+    fun theForeignActiveProfileOffersDeletionAsTheLastRowOfTheBlock() {
+        val intents = mutableListOf<SettingsIntent>()
+        show(SettingsScreenFixtures.state(activeIsSelf = false), onIntent = intents::add)
+
+        val title = context.getString(R.string.settings_profile_delete, SettingsScreenFixtures.FOREIGN_NAME)
+        composeRule.onNodeWithText(title, useUnmergedTree = true).assertExists()
+        val add = composeRule.onNodeWithTag(TAG_ADD_PROFILE).fetchSemanticsNode()
+        val divider = composeRule.onNodeWithTag(TAG_DELETE_DIVIDER).fetchSemanticsNode()
+        val delete = composeRule.onNodeWithTag(TAG_DELETE_PROFILE_ROW).fetchSemanticsNode()
+        assertTrue("the deletion row must stand behind a divider", delete.boundsInRoot.top > divider.boundsInRoot.top)
+        assertTrue("the deletion row must be the last of the block", delete.boundsInRoot.top > add.boundsInRoot.top)
+
+        composeRule.onNodeWithTag(TAG_DELETE_PROFILE_ROW).performClick()
+        assertEquals(listOf(SettingsIntent.DeleteProfile), intents)
+    }
+
+    /** ПРФ-28: у своего профиля строки удаления нет вовсе. */
+    @Test
+    fun theOwnProfileHasNoDeletionRow() {
+        show()
+
+        composeRule.onAllNodesWithTag(TAG_DELETE_PROFILE_ROW).assertCountEquals(0)
+    }
+
+    /**
      * Приложение прямо говорит, чем оно не является (`П-4`).
      *
      * Формулировка видна сразу: ни нажатия, ни раскрытия, ни прокрутки длинного текста.

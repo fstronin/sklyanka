@@ -84,8 +84,10 @@ fun SettingsScreen(state: SettingsUiState, onIntent: (SettingsIntent) -> Unit, m
  * Раздел «Профили» (ПРФ-19, ПРФ-26, ПРФ-7).
  *
  * Свой профиль первым с подписью «Мои лекарства», чужой — с числом лекарств и состоянием
- * дублирования, последней строкой «Добавить профиль». Само переключение — SKL-15: экран
- * только сообщает, какую строку нажали.
+ * дублирования, последней строкой «Добавить профиль». У активного чужого профиля следом,
+ * за разделителем, стоит строка удаления (ОВ-7, SKL-36): удалить можно ровно того,
+ * в чьём контексте человек находится, и только его одного. Само переключение — SKL-15:
+ * экран только сообщает, какую строку нажали.
  */
 private fun LazyListScope.profilesBlock(state: SettingsUiState, onIntent: (SettingsIntent) -> Unit) {
     item {
@@ -96,8 +98,28 @@ private fun LazyListScope.profilesBlock(state: SettingsUiState, onIntent: (Setti
             }
             if (state.profiles.isNotEmpty()) RowDivider()
             AddProfileRow { onIntent(SettingsIntent.AddProfile) }
+            state.deletableProfile?.let { profile ->
+                RowDivider(modifier = Modifier.testTag(TAG_DELETE_DIVIDER))
+                DeleteProfileRow(profile) { onIntent(SettingsIntent.DeleteProfile) }
+            }
         }
     }
+}
+
+/**
+ * Строка удаления чужого профиля (ОВ-7, SKL-36).
+ *
+ * Последняя строка раздела, за разделителем, и только у активного чужого профиля: свой
+ * не удаляется никогда (ПРФ-28). Строка называет профиль по имени — «тот самый» виден
+ * до нажатия, а не выясняется на экране подтверждения.
+ */
+@Composable
+private fun DeleteProfileRow(profile: ProfileRowState, onClick: () -> Unit) {
+    SettingsRow(
+        title = stringResource(R.string.settings_profile_delete, profile.name),
+        onClick = onClick,
+        modifier = Modifier.testTag(TAG_DELETE_PROFILE_ROW),
+    )
 }
 
 @Composable
@@ -330,5 +352,7 @@ private fun SettingsBlock(rubric: String, content: @Composable () -> Unit) {
 }
 
 internal const val TAG_ADD_PROFILE = "settings_add_profile"
+internal const val TAG_DELETE_PROFILE_ROW = "settings_delete_profile_row"
+internal const val TAG_DELETE_DIVIDER = "settings_delete_divider"
 internal const val TAG_HISTORY_ROW = "settings_history_row"
 internal const val TAG_TRANSFER_ROW = "settings_transfer_row"

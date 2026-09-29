@@ -14,6 +14,14 @@ sealed interface SettingsIntent {
 
     data object AddProfile : SettingsIntent
 
+    /**
+     * «Удалить профиль «Имя»» — переход на экран подтверждения (ОВ-7, SKL-36).
+     *
+     * Строка появляется только у активного чужого профиля: удалить можно ровно тот,
+     * в контексте которого человек находится, — а свой не удаляется вовсе (ПРФ-28).
+     */
+    data object DeleteProfile : SettingsIntent
+
     data class SetPersistentReminder(val enabled: Boolean) : SettingsIntent
 
     data object OpenSound : SettingsIntent

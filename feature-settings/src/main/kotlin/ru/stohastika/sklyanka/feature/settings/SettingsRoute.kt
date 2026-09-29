@@ -20,6 +20,7 @@ fun SettingsRoute(viewModel: SettingsViewModel, navigation: SettingsNavigation, 
         onIntent = { intent ->
             when (intent) {
                 SettingsIntent.AddProfile -> navigation.addProfile()
+                SettingsIntent.DeleteProfile -> navigation.deleteProfile()
                 // Строка часов из состава первой версии снята (`ADR-0009`), но намерение
                 // и переход сохранены швом пост-MVP: экран их сейчас не порождает.
                 SettingsIntent.OpenWatchSetup -> navigation.openWatchSetup?.invoke()
@@ -45,6 +46,13 @@ fun SettingsRoute(viewModel: SettingsViewModel, navigation: SettingsNavigation, 
 data class SettingsNavigation(
     /** Список профилей → добавление профиля (`ОВ-3`, механика SKL-15). */
     val addProfile: () -> Unit = {},
+    /**
+     * «Удалить профиль «Имя»» → экран подтверждения удаления (`ОВ-7`, SKL-36).
+     *
+     * Строка появляется только у активного чужого профиля: сюда ведёт ровно одно
+     * действие, и оно необратимо.
+     */
+    val deleteProfile: () -> Unit = {},
     /**
      * «Часы Huawei» → подключение часов (SKL-17, пост-MVP).
      *

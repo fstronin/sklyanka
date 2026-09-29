@@ -21,8 +21,8 @@ internal object SettingsScreenFixtures {
         manual: Int = 1,
         reminders: ReminderSettingsValues = ReminderSettingsValues(persistentEnabled = true),
         activeIsSelf: Boolean = true,
-    ) = SettingsUiState(
-        profiles = listOf(
+    ): SettingsUiState {
+        val profiles = listOf(
             ProfileRowState(
                 id = "self",
                 name = "Владелец",
@@ -41,9 +41,14 @@ internal object SettingsScreenFixtures {
                 medicationCount = FOREIGN_MEDICATIONS,
                 mirrorReminders = true,
             ),
-        ),
-        reminders = reminders,
-        permissions = PermissionsSummary(denied = denied, manual = manual),
-        version = VERSION,
-    )
+        )
+        return SettingsUiState(
+            profiles = profiles,
+            // Как у ViewModel: удаляемым считается активный чужой профиль, и только он.
+            deletableProfile = profiles.firstOrNull { it.isActive && !it.isSelf },
+            reminders = reminders,
+            permissions = PermissionsSummary(denied = denied, manual = manual),
+            version = VERSION,
+        )
+    }
 }
