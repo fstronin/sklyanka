@@ -139,6 +139,22 @@ class AcceptanceWorld {
     /** Глубина окна генерации приёмов: значение приходит из Предыстории, а не из кода. */
     var depthDays: Int = DEFAULT_DEPTH_DAYS
 
+    /**
+     * Удаление профиля настоящим доменным сценарием (SKL-36, ОВ-7).
+     *
+     * Числа потерь — тем же соединением приёмов с лекарствами, что история; снятие
+     * будильников — настоящей пересборкой окна через перепланировщик мира.
+     */
+    val profileDeletion = ScenarioProfileDeletion(
+        profiles = profiles,
+        medications = medications,
+        intakes = intakes,
+        store = repositories.profileStore,
+        active = profileSession.activeStore,
+        replan = reminders.replanner,
+        log = log,
+    )
+
     // --- Снимок состояния до действия -------------------------------------------------------
 
     /**

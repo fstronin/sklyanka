@@ -136,6 +136,17 @@ class ScenarioMedications(private val clock: ScenarioClock) {
         byName.remove(name)
     }
 
+    /**
+     * Удаление лекарства по идентификатору (SKL-36).
+     *
+     * Данность стирания профиля: его лекарства уходят вместе с ним, активные и архивные.
+     */
+    fun removeById(medicationId: String) {
+        val entry = byName.entries.firstOrNull { it.value.id == medicationId } ?: return
+        byName.remove(entry.key)
+        if (last == entry.key) last = ""
+    }
+
     fun archive(name: String, at: Instant) {
         update(name) { it.copy(archivedAt = at, archiveReason = ArchiveReason.MANUAL) }
     }

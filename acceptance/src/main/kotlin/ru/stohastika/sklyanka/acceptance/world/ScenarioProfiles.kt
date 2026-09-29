@@ -58,6 +58,18 @@ class ScenarioProfiles {
         byName[name] = get(name).copy(mirrorReminders = enabled)
     }
 
+    /**
+     * Удаление профиля из мира (SKL-36).
+     *
+     * Это не действие продукта, а следствие стирания: профиль уходит последним после
+     * своих лекарств и истории — так же, как в транзакции `RoomProfileEraser`.
+     */
+    fun removeById(profileId: String) {
+        val name = byName.entries.firstOrNull { it.value.id == profileId }?.key ?: return
+        byName.remove(name)
+        declaredCounts.remove(name)
+    }
+
     /** Запись профиля хранилищем: им пользуются настоящие сценарии домена. */
     fun replace(profile: Profile) {
         val name = byName.entries.firstOrNull { it.value.id == profile.id }?.key ?: return
