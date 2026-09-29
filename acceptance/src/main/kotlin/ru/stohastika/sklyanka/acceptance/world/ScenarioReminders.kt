@@ -143,6 +143,9 @@ class ScenarioReminders(
     /** Что стоит в системе сейчас: идентификатор приёма → момент срабатывания. */
     fun scheduled(): Map<String, Instant> = runBlocking { alarms.scheduled() }
 
+    /** Отложенные срабатывания сейчас — по ним проверяются «один повтор» и «не переезжают» (SKL-35). */
+    fun deferredRecords(): List<DeferredReminder> = deferredStore.stored.values.toList()
+
     /** Момент срабатывания будильника приёма либо `null`, если напоминания нет. */
     fun alarmOf(intakeId: String): Instant? = scheduled()[intakeId]
 

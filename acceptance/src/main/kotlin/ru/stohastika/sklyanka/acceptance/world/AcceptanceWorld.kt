@@ -315,7 +315,10 @@ class AcceptanceWorld {
     fun markCurrent(result: MarkResult, source: IntakeSource, at: LocalDateTime): MarkOutcome {
         val intake = intakes.currentOrScheduled()
         clock.moveTo(at)
-        return mark(intake.id, result, source, clock.momentOf(at))
+        // Последствия — часть продукта, а не удобство шага: `ReminderModule` подставляет
+        // их единственной точке отметки. Без них шаг приёмки закрывал бы приём, оставляя
+        // карточку и отложенное срабатывание живыми (SKL-35, ОВ-75).
+        return markWithSideEffects(intake.id, result, source, clock.momentOf(at))
     }
 
     /**
