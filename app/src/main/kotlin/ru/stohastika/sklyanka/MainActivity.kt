@@ -36,6 +36,8 @@ import ru.stohastika.sklyanka.feature.settings.transfer.DataTransferViewModel
 import ru.stohastika.sklyanka.feature.today.TodayNavigation
 import ru.stohastika.sklyanka.feature.today.TodayRoute
 import ru.stohastika.sklyanka.feature.today.TodayViewModel
+import ru.stohastika.sklyanka.navigation.HistoryOrigin
+import ru.stohastika.sklyanka.navigation.HistorySection
 import ru.stohastika.sklyanka.navigation.MedsDestination
 import ru.stohastika.sklyanka.navigation.MedsSection
 import ru.stohastika.sklyanka.navigation.MedsViewModels
@@ -261,7 +263,7 @@ class MainActivity : ComponentActivity() {
      *
      * Граф собран здесь и только здесь: `feature-*` друг от друга не зависят, и решать,
      * куда ведут переходы, обязан `app` (`ADR-0007`). Библиотека навигации не подключена —
-     * состояний семь, все внутри одной Activity.
+     * состояний восемь, все внутри одной Activity.
      *
      * Раздел «Лекарства» и экраны второго уровня открываются **поверх** вкладки и возвращают
      * туда, откуда открыты: место входа хранится ([RootTab], [HistoryOrigin]), а не
@@ -277,9 +279,19 @@ class MainActivity : ComponentActivity() {
         var tab by remember { mutableStateOf(RootTab.TODAY) }
         var meds by remember { mutableStateOf<MedsDestination?>(null) }
         var section by remember { mutableStateOf<SettingsDestination?>(null) }
+        // История, открытая с «Сегодня» (ОВ-84, SKL-31): тот же второй уровень, что
+        // из настроек, но место входа — строка прогресса дня. Ветка стоит рядом
+        // с `section`/`meds`: возврат обязан вести туда, откуда открыли.
+        var historyFromToday by remember { mutableStateOf(false) }
         val medsDestination = meds
         val secondLevel = section
         when {
+            historyFromToday -> HistorySection(
+                viewModel = history,
+                origin = HistoryOrigin.TODAY,
+                onLeave = { historyFromToday = false },
+            )
+
             secondLevel != null -> SettingsSection(
                 destination = secondLevel,
                 history = history,
@@ -335,6 +347,9 @@ class MainActivity : ComponentActivity() {
                     // «Настроить» в предупреждении о ненадёжности: экран разрешений
                     // с источником TODAY_WARNING (SKL-29, НАП-21).
                     openPermissions = onOpenPermissions,
+                    // «История» в строке прогресса дня — история с местом входа TODAY
+                    // (ОВ-84, SKL-31).
+                    openHistory = { historyFromToday = true },
                 ),
             )
         }
