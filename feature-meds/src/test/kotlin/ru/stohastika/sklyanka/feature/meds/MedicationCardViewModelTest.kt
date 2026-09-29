@@ -285,6 +285,25 @@ class MedicationCardViewModelTest {
         assertEquals("9", medications.snapshot().single().stockLeft?.toPlainString())
     }
 
+    @Test
+    fun `refilling replaces the stock and leaves the package size alone`() = runTest(dispatcher) {
+        medications.put(scheduled(packageSize = "60"))
+        val model = viewModel()
+        advanceUntilIdle()
+        model.open(MEDICATION_ID)
+        advanceUntilIdle()
+
+        model.onIntent(MedCardIntent.RefillRequested)
+        model.onIntent(MedCardIntent.RefillValueChanged("6"))
+        model.onIntent(MedCardIntent.RefillConfirmed)
+        advanceUntilIdle()
+
+        // Размер упаковки — свойство упаковки, а не остатка (ОВ-13, ОВ-45):
+        // пополнение его не трогает, а строка «N из M» пересчитывается от нового остатка.
+        assertEquals("6", medications.snapshot().single().stockLeft?.toPlainString())
+        assertEquals("60", medications.snapshot().single().packageSize?.toPlainString())
+    }
+
     /** Открыть карточку и дать потокам дойти до первого значения. */
     private fun TestScope.open(): MedCardUiState? {
         val model = viewModel()
@@ -299,6 +318,7 @@ class MedicationCardViewModelTest {
         profileId: String = MedsTestData.PROFILE_ID,
         endDate: LocalDate? = END_DATE,
         stockLeft: String? = "9",
+        packageSize: String? = null,
         archivedAt: java.time.Instant? = null,
         mirrorToWatch: Boolean = true,
     ) = MedsTestData.medication(
@@ -306,6 +326,7 @@ class MedicationCardViewModelTest {
         profileId = profileId,
         times = listOf(MedsTestData.MORNING, MedsTestData.EVENING),
         stockLeft = stockLeft,
+        packageSize = packageSize,
         thresholdDays = 5,
         startDate = START_DATE,
         endDate = endDate,
