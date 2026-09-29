@@ -67,6 +67,46 @@ class JsonTransferCodecTest {
     }
 
     @Test
+    fun `a known package size is written into the file`() {
+        val text = codec.encode(TransferFixtures.snapshot())
+
+        assertTrue(text.contains("\"package_size\": 60"))
+    }
+
+    @Test
+    fun `an unknown package size is omitted from the file`() {
+        val original = TransferFixtures.snapshot()
+        val snapshot = original.copy(
+            medications = original.medications.map { medication -> medication.copy(packageSize = null) },
+        )
+
+        val text = codec.encode(snapshot)
+
+        // Остальные пустые поля пишутся как null (encodeDefaults), а размер — опускается:
+        // так требует решение по ОВ-45.
+        assertTrue("an unknown size must not be written as null", !text.contains("package_size"))
+    }
+
+    @Test
+    fun `a file without the package size reads it as unknown and says nothing`() {
+        val original = TransferFixtures.snapshot()
+        val text = codec.encode(
+            original.copy(
+                medications = listOf(TransferFixtures.active().copy(packageSize = null)),
+            ),
+        )
+        assertTrue(!text.contains("package_size"))
+
+        val decoded = codec.decode(text) as TransferDecoded.Loaded
+
+        assertTrue(
+            "a file without the field means an unknown size",
+            decoded.snapshot.medications.all { it.packageSize == null },
+        )
+        assertTrue("an absent optional field is not a loss and needs no notice", decoded.notices.isEmpty())
+    }
+
+    @Test
     fun `dates are calendar dates and moments carry the offset`() {
         val text = codec.encode(TransferFixtures.snapshot())
 

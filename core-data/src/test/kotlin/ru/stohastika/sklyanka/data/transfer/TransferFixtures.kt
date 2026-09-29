@@ -80,6 +80,7 @@ internal object TransferFixtures {
         startDate = LocalDate.of(2026, 2, 12),
         endDate = LocalDate.of(2026, 10, 12),
         stockLeft = BigDecimal("9.5"),
+        packageSize = BigDecimal("60"),
         stockThresholdDays = THRESHOLD_DAYS,
         archivedAt = null,
         archiveReason = null,

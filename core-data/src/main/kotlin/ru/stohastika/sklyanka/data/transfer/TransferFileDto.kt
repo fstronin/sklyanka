@@ -1,5 +1,7 @@
 package ru.stohastika.sklyanka.data.transfer
 
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
@@ -83,6 +85,19 @@ internal data class MedicationDto(
     @SerialName("start_date") val startDate: String,
     @SerialName("end_date") val endDate: String? = null,
     @SerialName("stock_left") val stockLeft: JsonElement? = null,
+    /**
+     * Размер упаковки (ОВ-45); `null` — размер не задан.
+     *
+     * Единственное поле файла, которое при пустом значении **опускается**, а не пишется
+     * как `null` (остальные пишутся: `encodeDefaults = true`). Так требует решение
+     * по ОВ-45: выгрузка пишет размер, если он задан, и опускает, если нет, а файл без
+     * поля читается как «размер не задан» — ровно состояние лекарства, заведённого
+     * до появления размера. `@EncodeDefault(NEVER)` делает это точечно, не меняя
+     * поведение остальных полей.
+     */
+    @OptIn(ExperimentalSerializationApi::class)
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    @SerialName("package_size") val packageSize: JsonElement? = null,
     @SerialName("stock_threshold_days") val stockThresholdDays: Int? = null,
     /** Архив — состояние записи, а не отдельный раздел (ПЕР-10). */
     @SerialName("archived_at") val archivedAt: String? = null,
