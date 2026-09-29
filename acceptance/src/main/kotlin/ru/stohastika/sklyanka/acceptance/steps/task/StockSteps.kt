@@ -94,6 +94,37 @@ class StockSteps(private val world: AcceptanceWorld) {
         assertEquals(StockForecast.Days(days), forecast(name), "forecast of $name")
     }
 
+    /**
+     * «Остатка „Магния B6“ хватает на 4 дня при пороге 5 дней» — без числа остатка.
+     *
+     * Шаг **обеспечивает** факт, а не проверяет его: если текущего остатка на названное
+     * число дней не хватает, он достраивает остаток до ровно этого прогноза (суточный
+     * расход × дни). Предыстория карточки задаёт остаток «9 таблеток из 60» — при двух
+     * приёмах в сутки это ровно 4 дня, и первый сценарий SKL-10 остаётся при своих числах.
+     */
+    @Given("^остатка «([^»]+)» хватает на (\\d+) дн\\S+ при пороге (\\d+) дн\\S+$")
+    fun theStockLastsExactlyThoseDays(medication: String, days: Int, thresholdDays: Int) {
+        val name = world.medicationNamed(medication)
+        threshold(name, thresholdDays)
+        if (forecast(name) != StockForecast.Days(days)) {
+            val daily = requireNotNull(StockForecast.dailyUse(world.medications.get(name))) {
+                "«$name» must have a known daily use for this step"
+            }
+            stock(name, daily * BigDecimal(days))
+        }
+        assertEquals(StockForecast.Days(days), forecast(name), "forecast of $name")
+    }
+
+    @Given("^размер упаковки «([^»]+)» — (\\d+) таблет\\S+$")
+    fun thePackageSizeOfThatMedication(medication: String, units: Int) {
+        val name = world.medicationNamed(medication)
+        if (world.acted) {
+            assertEquals(BigDecimal(units), world.medications.packageSizeOf(name), "package size of $name")
+        } else {
+            world.medications.update(name) { it.copy(packageSize = BigDecimal(units)) }
+        }
+    }
+
     @Given("^ни у одного активного лекарства порог остатка не сработал$")
     fun noThresholdOfTheActiveProfileHasFired() {
         assertNull(warningOnToday(), "the scenario needs no stock warning at all")

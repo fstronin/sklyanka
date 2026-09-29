@@ -23,6 +23,7 @@ import ru.stohastika.sklyanka.domain.stock.StockPanel
 import ru.stohastika.sklyanka.feature.meds.card.MedCardIntent
 import ru.stohastika.sklyanka.feature.meds.card.MedCardUiState
 import ru.stohastika.sklyanka.feature.meds.card.MedicationCardScreen
+import ru.stohastika.sklyanka.feature.meds.card.RefillUi
 import ru.stohastika.sklyanka.feature.meds.card.ScheduleBlockUi
 import ru.stohastika.sklyanka.feature.meds.card.WatchMirrorUi
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
@@ -65,10 +66,22 @@ internal object MedCardStand {
     ) { "the card of «$medication» does not open in the active profile (ПР-10)" }
 
     /** Собрать экран и задать вопрос его композиции. */
-    fun <T> ask(world: AcceptanceWorld, medication: String, question: (ComposeUiTest) -> T): T {
+    fun <T> ask(
+        world: AcceptanceWorld,
+        medication: String,
+        refill: RefillUi? = null,
+        question: (ComposeUiTest) -> T,
+    ): T {
         var answer: T? = null
         runComposeUiTest {
-            setContent { SklyankaTheme { MedicationCardScreen(state = state(world, medication), onIntent = {}) } }
+            setContent {
+                SklyankaTheme {
+                    MedicationCardScreen(
+                        state = state(world, medication).copy(refill = refill),
+                        onIntent = {},
+                    )
+                }
+            }
             answer = question(this)
         }
         @Suppress("UNCHECKED_CAST")

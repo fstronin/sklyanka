@@ -161,6 +161,8 @@ class ScenarioMedications(private val clock: ScenarioClock) {
 
     fun stockOf(name: String): BigDecimal? = get(name).stockLeft
 
+    fun packageSizeOf(name: String): BigDecimal? = get(name).packageSize
+
     private var stockBeforeAction: Map<String, BigDecimal?> = emptyMap()
 
     /** Остаток на момент последнего действия: им проверяется «отметка не изменила остаток». */

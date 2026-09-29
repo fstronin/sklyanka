@@ -63,6 +63,8 @@ class MedCardContextSteps(private val world: AcceptanceWorld) {
         )
         focused = medication
         val strength = requireNotNull(facts[STRENGTH]) { "no «$STRENGTH» in ${facts.keys}" }
+        // «9 таблеток из 60»: числитель — остаток, знаменатель (после «из») — размер упаковки.
+        val stockFact = requireNotNull(facts[STOCK]) { "no «$STOCK» in ${facts.keys}" }
         val period = requireNotNull(facts[PERIOD]) { "no «$PERIOD» in ${facts.keys}" }
             .split(PERIOD_SEPARATOR).map { it.trim() }
         world.medications.update(medication) {
@@ -76,7 +78,8 @@ class MedCardContextSteps(private val world: AcceptanceWorld) {
                 times = RussianDates.times(requireNotNull(facts[SCHEDULE])),
                 startDate = world.dateOf(period[0]),
                 endDate = world.dateOf(period[1]),
-                stockLeft = leadingNumber(requireNotNull(facts[STOCK])),
+                stockLeft = leadingNumber(stockFact),
+                packageSize = packageSizeOf(stockFact),
                 stockThresholdDays = leadingNumber(requireNotNull(facts[THRESHOLD])).toInt(),
             )
         }
@@ -392,6 +395,10 @@ class MedCardContextSteps(private val world: AcceptanceWorld) {
     private fun leadingNumber(text: String): BigDecimal =
         BigDecimal(requireNotNull(LEADING_NUMBER.find(text.trim())) { "no number in «$text»" }.value)
 
+    /** Размер упаковки из строки «9 таблеток из 60»; `null`, если «из» нет — размер не задан. */
+    private fun packageSizeOf(text: String): BigDecimal? =
+        PACKAGE_SIZE.find(text)?.groupValues?.get(1)?.let(::BigDecimal)
+
     private fun clockTime(time: String?): LocalTime = time?.let(LocalTime::parse) ?: DEFAULT_TIME
 
     private fun releaseForm(label: String): MedicationForm = when (label) {
@@ -444,5 +451,8 @@ class MedCardContextSteps(private val world: AcceptanceWorld) {
 
         val DEFAULT_TIME: LocalTime = LocalTime.of(8, 0)
         val LEADING_NUMBER = Regex("""^\d+(?:[.,]\d+)?""")
+
+        /** «… из 60»: знаменатель карточки в таблице Предыстории. */
+        val PACKAGE_SIZE = Regex("""из\s+(\d+(?:[.,]\d+)?)""")
     }
 }

@@ -9,6 +9,7 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -28,9 +29,12 @@ import ru.stohastika.sklyanka.acceptance.steps.medicationNamed
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
 import ru.stohastika.sklyanka.domain.medication.CourseProgress
 import ru.stohastika.sklyanka.domain.medication.DayCell
+import ru.stohastika.sklyanka.domain.medication.DoseUnit
+import ru.stohastika.sklyanka.domain.stock.StockPanel
 import ru.stohastika.sklyanka.feature.meds.R
 import ru.stohastika.sklyanka.feature.meds.card.MedCardIntent
 import ru.stohastika.sklyanka.feature.meds.card.MedCardUiState
+import ru.stohastika.sklyanka.feature.meds.card.RefillUi
 import ru.stohastika.sklyanka.feature.meds.card.TAG_ARCHIVE
 import ru.stohastika.sklyanka.feature.meds.card.TAG_BACK
 import ru.stohastika.sklyanka.feature.meds.card.TAG_BLOCK_TRAILING
@@ -38,8 +42,13 @@ import ru.stohastika.sklyanka.feature.meds.card.TAG_COURSE_BAR
 import ru.stohastika.sklyanka.feature.meds.card.TAG_COURSE_BLOCK
 import ru.stohastika.sklyanka.feature.meds.card.TAG_EDIT
 import ru.stohastika.sklyanka.feature.meds.card.TAG_LIMIT_BLOCK
+import ru.stohastika.sklyanka.feature.meds.card.TAG_REFILL
+import ru.stohastika.sklyanka.feature.meds.card.TAG_REFILL_CANCEL
+import ru.stohastika.sklyanka.feature.meds.card.TAG_REFILL_ROW
 import ru.stohastika.sklyanka.feature.meds.card.TAG_SCHEDULE_BLOCK
+import ru.stohastika.sklyanka.feature.meds.card.TAG_STOCK_BAR
 import ru.stohastika.sklyanka.feature.meds.card.TAG_STOCK_BLOCK
+import ru.stohastika.sklyanka.feature.meds.card.TAG_STOCK_VALUE
 import ru.stohastika.sklyanka.feature.meds.card.TAG_SUBTITLE
 import ru.stohastika.sklyanka.feature.meds.card.TAG_TIME_CHIP
 import ru.stohastika.sklyanka.feature.meds.form.FormMode
@@ -246,6 +255,141 @@ class MedCardScreenSteps(private val world: AcceptanceWorld) {
         MedCardStand.ask(world, focusedMedication()) { test ->
             test.onAllNodesWithTag(TAG_STOCK_BLOCK, useUnmergedTree = true).assertCountEquals(0)
         }
+    }
+
+    // --- Остаток: размер упаковки и полоса (SKL-34) ------------------------------------
+
+    @Тогда("^в блоке «Остаток» справа от заголовка показано «(.+)»$")
+    fun theStockBlockTrailingShows(text: String) {
+        MedCardStand.ask(world, focusedMedication()) { test ->
+            test.onNode(
+                hasTestTag(TAG_BLOCK_TRAILING) and hasText(text) and
+                    hasAnyAncestor(hasTestTag(TAG_STOCK_BLOCK)),
+                useUnmergedTree = true,
+            ).assertExists()
+        }
+    }
+
+    @Тогда("^предупреждения «хватит на N дней» нет$")
+    fun thereIsNoDaysLeftWarning() {
+        val panel = state().stock as StockPanel.Visible
+        assertNull("the caption belongs to a fired threshold only", panel.captionDays)
+        MedCardStand.ask(world, focusedMedication()) { test ->
+            val texts = MedsProbe.texts(test, TAG_STOCK_BLOCK)
+            assertTrue("no caption must be shown: $texts", texts.none { it.contains(DAYS_LEFT_WORD) })
+        }
+    }
+
+    @Тогда("^показано значение «(\\d+) таблет\\S+ из (\\d+)»$")
+    fun theStockValueWithThePackageIsShown(units: Int, packageSize: Int) {
+        val expected = context.getString(
+            R.string.card_stock_of_package,
+            context.resources.getQuantityString(stockPlural(state().stockUnit), units, units),
+            packageSize.toString(),
+        )
+        MedCardStand.ask(world, focusedMedication()) { test ->
+            val texts = MedsProbe.texts(test, TAG_STOCK_VALUE)
+            assertTrue("the stock row must read «$expected»: $texts", expected in texts)
+        }
+    }
+
+    @Тогда("^карточка показывает «(.+)»$")
+    fun theStockRowShows(text: String) {
+        MedCardStand.ask(world, focusedMedication()) { test ->
+            val texts = MedsProbe.texts(test, TAG_STOCK_VALUE)
+            assertTrue("the stock row must read «$text»: $texts", text in texts)
+        }
+    }
+
+    @Тогда("^показана полоса остатка$")
+    fun theStockBarIsShown() = assertStockBar(present = true)
+
+    @Тогда("^полосы остатка нет$")
+    fun theStockBarIsAbsent() = assertStockBar(present = false)
+
+    @Тогда("^полоса остатка окрашена тревожно$")
+    fun theStockBarIsCritical() {
+        val panel = state().stock as StockPanel.Visible
+        assertTrue("the bar is critical only when the threshold fired (ПР-13)", panel.warning)
+        assertStockBar(present = true)
+    }
+
+    @Тогда("^полоса остатка нарисована обычным акцентом$")
+    fun theStockBarKeepsTheAccent() {
+        val panel = state().stock as StockPanel.Visible
+        assertTrue("the bar keeps the accent when no threshold fired", !panel.warning)
+        assertStockBar(present = true)
+    }
+
+    @Тогда("^рядом есть кнопка «Пополнить»$")
+    fun theRefillButtonIsNearby() {
+        MedCardStand.ask(world, focusedMedication()) { test ->
+            test.onNodeWithTag(TAG_REFILL, useUnmergedTree = true).assertExists()
+        }
+    }
+
+    @Тогда("^никакого сообщения о размере упаковки нет$")
+    fun thereIsNoMessageAboutThePackageSize() {
+        val panel = state().stock as StockPanel.Visible
+        assertNull("the package size must be unknown, not zero", panel.packageSize)
+        MedCardStand.ask(world, focusedMedication()) { test ->
+            test.onAllNodes(hasText(PACKAGE_SIZE_WORD, substring = true, ignoreCase = true), useUnmergedTree = true)
+                .assertCountEquals(0)
+        }
+    }
+
+    @Когда("^человек нажимает «Пополнить»$")
+    fun thePersonPressesRefill() {
+        val intents = MedCardStand.act(world, focusedMedication()) { test ->
+            test.onNodeWithTag(TAG_REFILL).performClick()
+        }
+        assertTrue("the button must open the refill row: $intents", MedCardIntent.RefillRequested in intents)
+    }
+
+    @Тогда("^в блоке «Остаток» открыта строка пополнения$")
+    fun theRefillRowIsOpenInTheStockBlock() {
+        MedCardStand.ask(world, focusedMedication(), refill = RefillUi(text = "")) { test ->
+            test.onNode(
+                hasTestTag(TAG_REFILL_ROW) and hasAnyAncestor(hasTestTag(TAG_STOCK_BLOCK)),
+                useUnmergedTree = true,
+            ).assertExists()
+        }
+    }
+
+    @Тогда("^в строке пополнения показана единица «(.+)»$")
+    fun theRefillRowShowsTheUnit(unit: String) {
+        MedCardStand.ask(world, focusedMedication(), refill = RefillUi(text = "")) { test ->
+            val texts = MedsProbe.texts(test, TAG_REFILL_ROW)
+            assertTrue("the refill row must carry the unit «$unit»: $texts", unit in texts)
+        }
+    }
+
+    @Тогда("^рядом со строкой пополнения есть «(.+)»$")
+    fun theRefillRowOffers(label: String) {
+        MedCardStand.ask(world, focusedMedication(), refill = RefillUi(text = "")) { test ->
+            test.onNode(
+                hasTestTag(TAG_REFILL_CANCEL) and hasText(label),
+                useUnmergedTree = true,
+            ).assertExists()
+        }
+    }
+
+    private fun assertStockBar(present: Boolean) {
+        MedCardStand.ask(world, focusedMedication()) { test ->
+            if (present) {
+                test.onNodeWithTag(TAG_STOCK_BAR, useUnmergedTree = true).assertExists()
+            } else {
+                test.onAllNodesWithTag(TAG_STOCK_BAR, useUnmergedTree = true).assertCountEquals(0)
+            }
+        }
+    }
+
+    /** Числительное остатка по единице: та же четвёрка, что у `MedsText.stockLeftLabel`. */
+    private fun stockPlural(unit: DoseUnit): Int = when (unit) {
+        DoseUnit.TABLET -> R.plurals.stock_left_tablets
+        DoseUnit.CAPSULE -> R.plurals.stock_left_capsules
+        DoseUnit.MILLILITRE -> R.plurals.stock_left_millilitres
+        DoseUnit.DOSE -> R.plurals.stock_left_doses
     }
 
     // --- Неделя приёмов ----------------------------------------------------------------
@@ -573,5 +717,11 @@ class MedCardScreenSteps(private val world: AcceptanceWorld) {
 
         /** Формулировка строки часов из сценария; на карточке её нет (`ADR-0009`). */
         const val WATCH_ROW = "Напоминать на часах"
+
+        /** Как карточка назвала бы недостающий размер упаковки, если бы о нём сообщала. */
+        const val PACKAGE_SIZE_WORD = "размер упаковки"
+
+        /** Начало подписи «хватит на N дней»: её отсутствие проверяется по всему блоку. */
+        const val DAYS_LEFT_WORD = "хватит на"
     }
 }
