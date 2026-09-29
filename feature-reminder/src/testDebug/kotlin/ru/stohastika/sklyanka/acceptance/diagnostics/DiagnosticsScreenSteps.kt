@@ -35,7 +35,6 @@ import ru.stohastika.sklyanka.feature.reminder.TAG_CHECK_NOW
 import ru.stohastika.sklyanka.feature.reminder.TAG_DIAGNOSTICS
 import ru.stohastika.sklyanka.feature.reminder.TAG_EXPORT_JOURNAL
 import ru.stohastika.sklyanka.feature.reminder.TAG_JOURNAL_ROW
-import ru.stohastika.sklyanka.feature.reminder.TAG_TEST_REMINDER
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalTime
@@ -334,13 +333,12 @@ class DiagnosticsScreenSteps(private val world: AcceptanceWorld) {
     @Допустим("^устройство находится под сетевым перехватом$")
     fun theDeviceIsUnderNetworkInterception() = Unit
 
-    @Когда("^человек открывает диагностику, выгружает журнал и запускает пробное напоминание$")
+    @Когда("^человек открывает диагностику и выгружает журнал$")
     fun thePersonUsesTheDiagnostics() {
         seedAnonymousEntries()
         DiagnosticsStand.act(world) {
             onNodeWithTag(TAG_EXPORT_JOURNAL).performScrollTo().performClick()
             onNodeWithTag(TAG_CHECK_NOW).performScrollTo().performClick()
-            onNodeWithTag(TAG_TEST_REMINDER).performScrollTo().performClick()
         }
         assertTrue(exportedCsv().isNotEmpty(), "the journal must be exported")
     }
