@@ -102,7 +102,15 @@ class HistoryViewModel @Inject constructor(
     private fun prepareReport() {
         viewModelScope.launch {
             val report = buildReport(month.value) ?: return@launch
-            local.value = local.value.copy(report = ReportUi(renderer.render(report, time.zone())))
+            val zone = time.zone()
+            local.value = local.value.copy(
+                report = ReportUi(
+                    document = renderer.render(report, zone),
+                    // Состав собирается тем же композером, что и PDF: двух версий одного
+                    // содержания в продукте не остаётся.
+                    summary = renderer.composition(report),
+                ),
+            )
         }
     }
 

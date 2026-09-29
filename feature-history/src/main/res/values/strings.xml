@@ -36,6 +36,8 @@
       именительный.
     -->
     <string name="history_month_pattern" translatable="false">LLLL yyyy</string>
+    <!-- Имя месяца в родительном падеже: «6, 9, 14 сентября» в списке дат документа. -->
+    <string name="history_month_name_pattern" translatable="false">MMMM</string>
     <string name="history_date_pattern" translatable="false">d MMMM</string>
     <string name="history_date_pattern_full" translatable="false">d MMMM yyyy</string>
     <string name="history_time_pattern" translatable="false">HH:mm</string>
@@ -93,7 +95,7 @@
     <string name="history_insight_evening">Чаще всего пропускается вечерний приём в %1$s.</string>
     <string name="history_insight_night">Чаще всего пропускается ночной приём в %1$s.</string>
 
-    <!-- Отчёт врачу: показ с экрана, передача и сохранение -->
+    <!-- Отчёт врачу: шторка, передача и сохранение -->
     <string name="history_report_title">Отчёт врачу</string>
     <string name="history_report_warning">Отчёт содержит медицинские данные в открытом виде.</string>
     <string name="history_report_share">Передать</string>
@@ -105,37 +107,51 @@
     <string name="history_notice_dismiss">Понятно</string>
 
     <!--
-      Документ отчёта.
+      Короткий состав отчёта в шторке.
 
-      Формат артефакта не подтверждён (ОВ-15), поэтому документ собирается из тех же
-      строк, что читает человек с экрана: подтверждение формата меняет отрисовку,
-      а не состав. Выводов и рекомендаций в документе нет — по той же причине, что
-      и в строке-выводе.
+      Текстовой сводки в шторке больше нет: документ один (PDF), и двух версий одного
+      содержания не остаётся. Строка называет, что именно человек отдаёт: профиль,
+      период и число принятых приёмов.
+    -->
+    <string name="report_document_composition_profile">Профиль: %1$s</string>
+
+    <!--
+      Документ отчёта — PDF A4 (ОВ-15, решение дизайна 29.09.2026).
+
+      Подпись сводки и её значение разведены: подпись набирается Golos Text, числа —
+      Literata 600 (правило пары шрифтов §2.3). Склонения — `plurals` (НФТ-44), даты —
+      форматтером локали (НФТ-43), русского текста в Kotlin нет (НФТ-42). Выводов
+      и рекомендаций в документе нет: приложение не медицинское изделие.
     -->
     <string name="report_document_title">Отчёт о приёме лекарств</string>
-    <string name="report_document_profile">Профиль: %1$s</string>
+    <string name="report_document_profile">Склянка · профиль «%1$s»</string>
     <string name="report_document_period">Период: %1$s — %2$s</string>
     <string name="report_document_generated">Сформирован: %1$s</string>
-    <string name="report_document_summary">Сводка</string>
-    <string name="report_document_on_time">Принято вовремя: %1$s</string>
-    <string name="report_document_days_without_misses">Дней без пропусков: %1$d</string>
-    <string name="report_document_misses">Пропусков за период: %1$d</string>
-    <string name="report_document_medications">По лекарствам</string>
-    <string name="report_document_medication">%1$s — принято %2$d из %3$d (%4$s)</string>
-    <string name="report_document_strength">Дозировка: %1$s %2$s</string>
-    <string name="report_document_schedule">Приём: %1$s</string>
+    <string name="report_document_summary_title">СВОДКА</string>
+    <string name="report_document_taken_label">Принято:</string>
+    <string name="report_document_on_time_label">Принято вовремя:</string>
+    <string name="report_document_days_without_misses_label">Дней без пропусков:</string>
+    <string name="report_document_misses_label">Пропусков за период:</string>
+    <string name="report_document_medications_title">ПО ЛЕКАРСТВАМ</string>
+    <string name="report_document_medication_share">%1$d из %2$d (%3$s)</string>
     <string name="report_document_as_needed">Приём по потребности</string>
-    <string name="report_document_course">Курс: %1$s — %2$s</string>
-    <string name="report_document_course_open">Курс: с %1$s, бессрочно</string>
+    <string name="report_document_course">%1$s — %2$s</string>
+    <string name="report_document_course_open">с %1$s, бессрочно</string>
     <string name="report_document_archived">Курс в архиве</string>
-    <string name="report_document_missed_dates">Даты пропусков: %1$s</string>
     <string name="report_document_no_misses">Пропусков нет</string>
-    <string name="report_document_empty">За период нет ни одной записи о приёме.</string>
-    <!-- Разделитель перечисления: кавычки сохраняют пробел, который AAPT иначе обрежет. -->
-    <string name="report_document_separator" translatable="false">", "</string>
-    <string name="report_file_name" translatable="false">sklyanka-report-%1$s.txt</string>
+    <string name="report_document_missed_dates">Пропуски: %1$s</string>
+    <string name="report_document_missed_both">%1$s; из них %2$s, %3$s</string>
+    <string name="report_document_missed_single">%1$s; %2$s</string>
+    <string name="report_document_missed_without_mark">%1$d — без отметки</string>
+    <string name="report_document_empty">За период нет ни одной записи о приёме</string>
+    <string name="report_document_disclaimer">Не является медицинским документом</string>
+    <string name="report_document_page">Склянка · стр. %1$d</string>
+    <!-- Разделители: « · » разделяет части строки лекарства, «, » — перечисление. -->
+    <string name="report_document_part_separator" translatable="false">" · "</string>
+    <string name="report_document_list_separator" translatable="false">", "</string>
+    <string name="report_file_name" translatable="false">sklyanka-report-%1$s.pdf</string>
     <string name="report_file_pattern" translatable="false">yyyy-MM</string>
-    <string name="report_media_type" translatable="false">text/plain</string>
+    <string name="report_media_type" translatable="false">application/pdf</string>
 
     <!-- Единица дозировки в документе отчёта -->
     <string name="strength_unit_milligram">мг</string>

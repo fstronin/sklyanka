@@ -49,6 +49,8 @@ import ru.stohastika.sklyanka.domain.today.PartOfDay
 import ru.stohastika.sklyanka.feature.history.HistoryIntent
 import ru.stohastika.sklyanka.feature.history.MedicationBreakdown
 import ru.stohastika.sklyanka.feature.history.R
+import ru.stohastika.sklyanka.feature.history.ReportPdfComposer
+import ru.stohastika.sklyanka.feature.history.ReportPdfContent
 import ru.stohastika.sklyanka.feature.history.TAG_ARCHIVED_MARK
 import ru.stohastika.sklyanka.feature.history.TAG_BREAKDOWN
 import ru.stohastika.sklyanka.feature.history.TAG_BREAKDOWN_ROW
@@ -61,12 +63,12 @@ import ru.stohastika.sklyanka.feature.history.TAG_MARKED_BY_YOU
 import ru.stohastika.sklyanka.feature.history.TAG_MONTH_LABEL
 import ru.stohastika.sklyanka.feature.history.TAG_PREVIOUS_MONTH
 import ru.stohastika.sklyanka.feature.history.TAG_REPORT_ACTION
-import ru.stohastika.sklyanka.feature.history.TAG_REPORT_CONTENT
 import ru.stohastika.sklyanka.feature.history.TAG_REPORT_SHARE
 import ru.stohastika.sklyanka.feature.history.TAG_REPORT_SHEET
 import ru.stohastika.sklyanka.feature.history.TAG_REPORT_WARNING
 import ru.stohastika.sklyanka.feature.history.TAG_TILE_DAYS_WITHOUT_MISSES
 import ru.stohastika.sklyanka.feature.history.TAG_TILE_MISSES
+import ru.stohastika.sklyanka.feature.history.documentText
 import ru.stohastika.sklyanka.ui.component.TAG_PROFILE_LABEL
 import ru.stohastika.sklyanka.ui.component.TAG_PROFILE_STRIPE
 import ru.stohastika.sklyanka.ui.profile.ProfileChrome
@@ -586,31 +588,28 @@ class HistoryScreenSteps(private val world: AcceptanceWorld) {
             document.contains(context.getString(R.string.report_document_profile, report.profileName)),
         )
         assertTrue(
-            "the report must name its period",
-            document.contains(
-                context.getString(
-                    R.string.report_document_period,
-                    fullDate(report.period.from),
-                    fullDate(report.period.to),
-                ),
-            ),
+            "the report must name the end of its period",
+            document.contains(fullDate(report.period.to)),
         )
+        assertTrue(
+            "the report must open the period with its first day",
+            document.contains(report.period.from.dayOfMonth.toString()),
+        )
+        assertTrue("the period must carry its own label", document.contains(periodLabel()))
     }
 
     @Then("^в отчёте есть сводные числа за месяц$")
     fun theReportCarriesTheSummaryNumbers() {
         val report = report()
         val document = shownDocument()
-        assertTrue(document.contains(context.getString(R.string.report_document_summary)))
+        assertTrue(document.contains(context.getString(R.string.report_document_taken_label)))
         assertTrue(
             "the report must repeat the number of days without misses",
-            document.contains(
-                context.getString(R.string.report_document_days_without_misses, report.period.daysWithoutMisses),
-            ),
+            document.contains(report.period.daysWithoutMisses.toString()),
         )
         assertTrue(
             "the report must repeat the number of misses",
-            document.contains(context.getString(R.string.report_document_misses, report.period.missesInPeriod)),
+            document.contains(report.period.missesInPeriod.toString()),
         )
     }
 
@@ -623,7 +622,7 @@ class HistoryScreenSteps(private val world: AcceptanceWorld) {
         }
         assertTrue("the archived course must be marked in the report", row.archived)
         val document = shownDocument()
-        assertTrue(document.contains(context.getString(R.string.report_document_medications)))
+        assertTrue(document.contains(context.getString(R.string.report_document_medications_title)))
         assertTrue("the report must name «${row.name}»", document.contains(row.name))
         assertTrue(
             "the report must say the course is archived",
@@ -636,15 +635,22 @@ class HistoryScreenSteps(private val world: AcceptanceWorld) {
         val report = report()
         val rows = report.medications.filter { it.missedDates.isNotEmpty() }
         assertTrue("the scenario must leave a medication with missed dates", rows.isNotEmpty())
-        val document = shownDocument()
+        val blocks = document().medicationBlocks
         rows.forEach { row ->
-            val dates = row.missedDates.joinToString(context.getString(R.string.report_document_separator)) {
-                fullDate(it)
+            val block = requireNotNull(blocks.firstOrNull { it.lines.first().text.startsWith(row.name) }) {
+                "the report must have a block for «${row.name}»"
             }
+            val blockText = block.lines.joinToString("\n") { it.text }
             assertTrue(
-                "the report must list the missed dates of «${row.name}»: $document",
-                document.contains(context.getString(R.string.report_document_missed_dates, dates)),
+                "the report must label the misses of «${row.name}»: $blockText",
+                blockText.contains(missesLabel()),
             )
+            row.missedDates.forEach { date ->
+                assertTrue(
+                    "the report must list day ${date.dayOfMonth} of «${row.name}»: $blockText",
+                    blockText.contains(date.dayOfMonth.toString()),
+                )
+            }
         }
     }
 
@@ -716,8 +722,23 @@ class HistoryScreenSteps(private val world: AcceptanceWorld) {
         descriptionsOf(test.onRoot(useUnmergedTree = true).fetchSemanticsNode())
     }
 
-    private fun shownDocument(): String =
-        HistoryScreenProbe.ask(world) { test -> texts(test, TAG_REPORT_CONTENT).joinToString("\n") }
+    /**
+     * Документ отчёта собирается настоящим композером, а не читается со шторки.
+     *
+     * В шторке состава документа больше нет (решение дизайна по ОВ-15), а байты PDF
+     * текстом не являются вовсе: приёмка говорит о документе, а не о способе его показа.
+     */
+    private fun document(): ReportPdfContent = ReportPdfComposer(context).compose(report(), world.clock.zone)
+
+    private fun shownDocument(): String = document().documentText()
+
+    /** Подпись периода из шаблона ресурса: «Период:» до первого подстановочного знака. */
+    private fun periodLabel(): String =
+        context.getString(R.string.report_document_period).substringBefore("%1\$s").trim()
+
+    /** Подпись пропусков из шаблона ресурса: «Пропуски:» до первого подстановочного знака. */
+    private fun missesLabel(): String =
+        context.getString(R.string.report_document_missed_dates).substringBefore("%1\$s").trim()
 
     private fun texts(test: ComposeUiTest, tag: String): List<String> = test
         .onAllNodesWithTag(tag, useUnmergedTree = true)

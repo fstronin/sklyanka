@@ -15,11 +15,14 @@ import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.R as UiR
 
 /**
- * Отчёт врачу с экрана: предупреждение, состав и способы передать.
+ * Отчёт врачу в шторке: предупреждение, короткий состав и способы передать.
  *
  * Главное здесь — предупреждение (НФТ-18). Файл содержит медицинские данные в открытом
  * виде, и человек обязан прочитать об этом **до** того, как отдаст его: проверка стоит
  * на том, что предупреждение показано вместе с действиями, а не после них.
+ *
+ * Полного текста документа в шторке нет: документ один — PDF (решение дизайна по ОВ-15),
+ * и двух версий одного содержания не остаётся. Человек видит состав.
  */
 @RunWith(AndroidJUnit4::class)
 class DoctorReportSheetTest {
@@ -40,12 +43,12 @@ class DoctorReportSheetTest {
             .assertIsDisplayed()
     }
 
-    /** Показ с экрана — один из способов отдать отчёт, а не предварительный просмотр. */
+    /** Состав, а не текст документа: человек видит, что отдаёт, до нажатия «Передать». */
     @Test
-    fun theReportIsShownOnTheScreenItself() {
-        show(HistoryStates.withReport(content = CONTENT))
+    fun theReportShowsTheCompositionOfTheDocument() {
+        show(HistoryStates.withReport(summary = SUMMARY))
 
-        composeRule.onNodeWithText(CONTENT, useUnmergedTree = true).assertIsDisplayed()
+        composeRule.onNodeWithText(SUMMARY, useUnmergedTree = true).assertIsDisplayed()
     }
 
     @Test
@@ -87,6 +90,6 @@ class DoctorReportSheetTest {
     }
 
     private companion object {
-        const val CONTENT = "report-body"
+        const val SUMMARY = "report-composition"
     }
 }

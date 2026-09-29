@@ -18,7 +18,7 @@ import ru.stohastika.sklyanka.domain.repository.HistoryRepository
 import ru.stohastika.sklyanka.domain.repository.ProfileRepository
 import ru.stohastika.sklyanka.domain.time.TimeSource
 import ru.stohastika.sklyanka.feature.history.DoctorReportRenderer
-import ru.stohastika.sklyanka.feature.history.TextDoctorReportRenderer
+import ru.stohastika.sklyanka.feature.history.PdfDoctorReportRenderer
 import ru.stohastika.sklyanka.platform.report.SystemDoctorReportTransfer
 import javax.inject.Singleton
 
@@ -40,12 +40,12 @@ abstract class HistoryModule {
     /**
      * Отрисовка отчёта.
      *
-     * Текстовый документ — пока формат не подтверждён (ОВ-15). Подтверждённый формат
-     * подставляется здесь: ни расчёт, ни экран этого не заметят.
+     * PDF — подтверждённый дизайном формат (ОВ-15). Замена отрисовки — ровно эта
+     * строка: ни расчёт, ни экран формата не знают.
      */
     @Binds
     @Singleton
-    abstract fun bindDoctorReportRenderer(impl: TextDoctorReportRenderer): DoctorReportRenderer
+    abstract fun bindDoctorReportRenderer(impl: PdfDoctorReportRenderer): DoctorReportRenderer
 
     companion object {
 

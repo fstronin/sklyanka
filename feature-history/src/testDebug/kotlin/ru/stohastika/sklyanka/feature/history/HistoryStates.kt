@@ -118,10 +118,15 @@ internal object HistoryStates {
         )
     }
 
-    /** Открытый отчёт врачу: предупреждение, состав и три действия. */
-    fun withReport(content: String = REPORT_CONTENT): HistoryUiState = september().copy(
+    /** Открытый отчёт врачу: предупреждение, строка состава и два действия. */
+    fun withReport(summary: String = REPORT_SUMMARY): HistoryUiState = september().copy(
         report = ReportUi(
-            ReportDocument(fileName = "sklyanka-report-2026-09.txt", mediaType = "text/plain", content = content),
+            document = ReportDocument(
+                fileName = "sklyanka-report-2026-09.pdf",
+                mediaType = "application/pdf",
+                bytes = ByteArray(0),
+            ),
+            summary = summary,
         ),
     )
 
@@ -167,6 +172,6 @@ internal object HistoryStates {
 
     private const val PROFILE_ID = "11111111-1111-4111-8111-111111111111"
 
-    /** Заглушка документа: состав проверяется отрисовкой, а не этим текстом. */
-    private const val REPORT_CONTENT = "report-content"
+    /** Заглушка состава: сам документ проверяется композером, а не этим текстом. */
+    private const val REPORT_SUMMARY = "report-summary"
 }

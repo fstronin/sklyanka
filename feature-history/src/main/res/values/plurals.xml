@@ -9,44 +9,58 @@
 -->
 <resources>
 
-    <!-- Строка пропусков по лекарству в документе отчёта. -->
-    <plurals name="report_document_medication_misses">
-        <item quantity="one">%1$d пропуск (отмечено человеком: %2$d, без отметки: %3$d)</item>
-        <item quantity="few">%1$d пропуска (отмечено человеком: %2$d, без отметки: %3$d)</item>
-        <item quantity="many">%1$d пропусков (отмечено человеком: %2$d, без отметки: %3$d)</item>
-        <item quantity="other">%1$d пропуска (отмечено человеком: %2$d, без отметки: %3$d)</item>
+    <!--
+      Число принятых приёмов в сводке документа: «86 из 100 приёмов (86 %)».
+
+      После «из» числительное требует родительного падежа, и для 2–4 он тоже
+      множественный: «из 22 приёмов», а не «из 22 приёма». Поэтому формы `few`
+      и `many` совпадают — это норма русского языка, а не ошибка.
+    -->
+    <plurals name="report_document_intakes_of_total">
+        <item quantity="one">%1$d из %2$d приёма (%3$s)</item>
+        <item quantity="few">%1$d из %2$d приёмов (%3$s)</item>
+        <item quantity="many">%1$d из %2$d приёмов (%3$s)</item>
+        <item quantity="other">%1$d из %2$d приёмов (%3$s)</item>
+    </plurals>
+
+    <!-- Строка пропусков по лекарству в документе отчёта (НФТ-44). -->
+    <plurals name="report_document_missed_by_person">
+        <item quantity="one">%1$d отмечен человеком</item>
+        <item quantity="few">%1$d отмечены человеком</item>
+        <item quantity="many">%1$d отмечены человеком</item>
+        <item quantity="other">%1$d отмечены человеком</item>
     </plurals>
 
     <!--
-      Доза одного приёма в документе отчёта: «Доза: по 1 таблетке», «по 2 таблетки».
+      Доза одного приёма в документе отчёта: «1 таблетка», «2 таблетки».
 
       Формулировки те же, что в карточке лекарства: одна и та же доза не должна
       называться по-разному на экране и в отчёте, который человек отдаёт врачу.
       Количество приходит строкой, потому что доза бывает дробной («0,5»).
     -->
     <plurals name="report_document_dose_tablets">
-        <item quantity="one">Доза: по %1$s таблетке</item>
-        <item quantity="few">Доза: по %1$s таблетки</item>
-        <item quantity="many">Доза: по %1$s таблеток</item>
-        <item quantity="other">Доза: по %1$s таблетки</item>
+        <item quantity="one">%1$s таблетка</item>
+        <item quantity="few">%1$s таблетки</item>
+        <item quantity="many">%1$s таблеток</item>
+        <item quantity="other">%1$s таблетки</item>
     </plurals>
     <plurals name="report_document_dose_capsules">
-        <item quantity="one">Доза: по %1$s капсуле</item>
-        <item quantity="few">Доза: по %1$s капсулы</item>
-        <item quantity="many">Доза: по %1$s капсул</item>
-        <item quantity="other">Доза: по %1$s капсулы</item>
+        <item quantity="one">%1$s капсула</item>
+        <item quantity="few">%1$s капсулы</item>
+        <item quantity="many">%1$s капсул</item>
+        <item quantity="other">%1$s капсулы</item>
     </plurals>
     <plurals name="report_document_dose_millilitres">
-        <item quantity="one">Доза: по %1$s мл</item>
-        <item quantity="few">Доза: по %1$s мл</item>
-        <item quantity="many">Доза: по %1$s мл</item>
-        <item quantity="other">Доза: по %1$s мл</item>
+        <item quantity="one">%1$s мл</item>
+        <item quantity="few">%1$s мл</item>
+        <item quantity="many">%1$s мл</item>
+        <item quantity="other">%1$s мл</item>
     </plurals>
     <plurals name="report_document_dose_doses">
-        <item quantity="one">Доза: по %1$s дозе</item>
-        <item quantity="few">Доза: по %1$s дозы</item>
-        <item quantity="many">Доза: по %1$s доз</item>
-        <item quantity="other">Доза: по %1$s дозы</item>
+        <item quantity="one">%1$s доза</item>
+        <item quantity="few">%1$s дозы</item>
+        <item quantity="many">%1$s доз</item>
+        <item quantity="other">%1$s дозы</item>
     </plurals>
 
     <!-- Подпись плитки «дней без пропусков» для чтения с экрана. -->

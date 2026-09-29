@@ -192,14 +192,19 @@ internal class FakeRenderer : DoctorReportRenderer {
 
     val rendered: MutableList<DoctorReport> = mutableListOf()
 
+    /** Короткий состав шторки: подставляется проверкой, а не собирается из ресурсов. */
+    var summary: String = "report-summary"
+
     override fun render(report: DoctorReport, zone: ZoneId): ReportDocument {
         rendered += report
         return ReportDocument(
-            fileName = "report.txt",
-            mediaType = "text/plain",
-            content = "medications=${report.medications.size}",
+            fileName = "report.pdf",
+            mediaType = "application/pdf",
+            bytes = "medications=${report.medications.size}".toByteArray(),
         )
     }
+
+    override fun composition(report: DoctorReport): String = summary
 }
 
 /** Передача отчёта, которой можно назначить исход: настоящая живёт в `app`. */

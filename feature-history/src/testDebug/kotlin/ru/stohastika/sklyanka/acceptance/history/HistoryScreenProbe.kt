@@ -10,13 +10,15 @@ import androidx.compose.ui.test.runComposeUiTest
 import androidx.test.core.app.ApplicationProvider
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
 import ru.stohastika.sklyanka.domain.history.MissedPatternRule
+import ru.stohastika.sklyanka.domain.history.ReportDocument
 import ru.stohastika.sklyanka.feature.history.HistoryIntent
 import ru.stohastika.sklyanka.feature.history.HistoryScreen
 import ru.stohastika.sklyanka.feature.history.HistoryUiState
+import ru.stohastika.sklyanka.feature.history.PdfDoctorReportRenderer
+import ru.stohastika.sklyanka.feature.history.ReportPdfComposer
 import ru.stohastika.sklyanka.feature.history.ReportUi
 import ru.stohastika.sklyanka.feature.history.TAG_NEXT_MONTH
 import ru.stohastika.sklyanka.feature.history.TAG_PREVIOUS_MONTH
-import ru.stohastika.sklyanka.feature.history.TextDoctorReportRenderer
 import ru.stohastika.sklyanka.ui.profile.ProfileChrome
 import ru.stohastika.sklyanka.ui.profile.ProfileChromeState
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
@@ -28,7 +30,7 @@ import java.time.YearMonth
  * Состояние собирает настоящий домен из мира сценария ([HistoryFromWorld]), а нажатия
  * уходят намерениями и применяются к миру тем же, чем в продукте: переключение месяца —
  * арифметикой `HistoryViewModel`, «Отчёт врачу» — настоящим `BuildDoctorReportUseCase`,
- * отрисовка документа — настоящим `TextDoctorReportRenderer`. Копии правил в стенде нет;
+ * состав документа — настоящим `ReportPdfComposer`. Копии правил в стенде нет;
  * повторено только отображение намерений на состояние — это разметка, а не правило.
  *
  * Месяц переживает отдельные вызовы шагов: сессия `runComposeUiTest` живёт внутри одного
@@ -75,7 +77,14 @@ internal object HistoryScreenProbe {
             period = period,
             insightTime = MissedPatternRule().dominantMissedTime(period),
             report = world.history.report?.let { report ->
-                ReportUi(TextDoctorReportRenderer(context).render(report, world.clock.zone))
+                // Документ собирается настоящим композером, а байты PDF здесь не рисуются:
+                // `PdfDocument` работает только на платформе. Шторка показывает состав
+                // и передаёт документ, не заглядывая в его содержимое.
+                val content = ReportPdfComposer(context).compose(report, world.clock.zone)
+                ReportUi(
+                    document = ReportDocument(content.fileName, content.mediaType, ByteArray(0)),
+                    summary = PdfDoctorReportRenderer(context).composition(report),
+                )
             },
         )
     }

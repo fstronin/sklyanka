@@ -58,7 +58,7 @@ class HistoryScreenSnapshotTest {
 
     @Test
     fun theDoctorReportOnTheScreen() = capture("history-report") {
-        HistoryScreen(state = HistoryStates.withReport(content = REPORT_SAMPLE), onIntent = {})
+        HistoryScreen(state = HistoryStates.withReport(summary = REPORT_SAMPLE), onIntent = {})
     }
 
     /**
@@ -118,7 +118,7 @@ class HistoryScreenSnapshotTest {
 
         const val PROFILE_NAME = "profile-b"
 
-        /** Заглушка документа: состав отчёта проверяет `DoctorReportRendererTest`. */
+        /** Заглушка состава: сам документ проверяет `ReportPdfComposerTest`. */
         const val REPORT_SAMPLE = "report-line-1\nreport-line-2\nreport-line-3"
     }
 }
