@@ -219,5 +219,34 @@
     <string name="settings_tab_today">Сегодня</string>
     <string name="settings_tab_meds">Лекарства</string>
     <string name="settings_tab_settings">Настройки</string>
+
+    <!-- ==================================================================== -->
+    <!-- Удаление профиля (ОВ-7, SKL-36). Экран собран по образцу «Заменить  -->
+    <!-- всё»: шапка с возвратом, числа потерь, предупреждение, выгрузка      -->
+    <!-- и слово-подтверждение. Числа — те же запросы, что список и история.  -->
+    <!-- ==================================================================== -->
+    <string name="profile_delete_title">Удалить профиль?</string>
+    <string name="profile_delete_intro">Профиль «%1$s» будет удалён вместе с данными:</string>
+    <!-- «Всего (в архиве)»: лекарства профиля целиком — активные и архивные. -->
+    <string name="profile_delete_medications">Лекарства: %1$d (в архиве %2$d)</string>
+    <string name="profile_delete_history">Записи истории: %1$d</string>
+    <string name="profile_delete_reminders">Напоминания о приёмах этого профиля будут сняты</string>
+    <string name="profile_delete_warning">Удаление необратимо: профиль и все его данные будут стёрты с этого устройства. Вернуть их будет нельзя</string>
+    <string name="profile_delete_export">Сохранить файл переноса</string>
+    <string name="profile_delete_export_note">Файл содержит все профили. Вернуть «%1$s» можно будет только загрузкой всего файла</string>
+    <string name="profile_delete_export_saved">Файл сохранён — %1$s</string>
+    <!--
+      Слово-подтверждение своё: здесь «Удалить», в «Заменить всё» — «Заменить».
+      Правило сравнения общее (ConfirmationWord.matches), и подпись-образец тоже:
+      transfer_replace_word_label («Введите слово «%1$s», чтобы подтвердить»).
+    -->
+    <string name="profile_delete_word">Удалить</string>
+    <string name="profile_delete_confirm">Удалить профиль</string>
+    <string name="profile_delete_done">Готово</string>
+    <string name="profile_delete_result_title">Профиль «%1$s» удалён</string>
+    <string name="profile_delete_result_active">Активным стал ваш профиль</string>
+    <!-- Отказы выгрузки: удаление в этой точке ещё не начато, и так и говорится. -->
+    <string name="profile_delete_no_space">Места недостаточно. Файл не сохранён, профиль не удалён.</string>
+    <string name="profile_delete_no_picker">На устройстве нет приложения для выбора файлов. Сохранить файл переноса без него невозможно.</string>
 </resources>
 
