@@ -2,8 +2,6 @@ package ru.stohastika.sklyanka.acceptance.onboarding
 
 import android.content.Context
 import android.graphics.BitmapFactory
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsMatcher

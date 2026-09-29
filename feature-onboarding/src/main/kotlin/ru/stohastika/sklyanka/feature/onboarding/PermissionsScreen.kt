@@ -53,11 +53,7 @@ import ru.stohastika.sklyanka.ui.token.SklyankaType
  *    значило бы придумать токен по месту (НФТ-47).
  */
 @Composable
-fun PermissionsScreen(
-    state: OnboardingUiState,
-    actions: PermissionsActions,
-    modifier: Modifier = Modifier,
-) {
+fun PermissionsScreen(state: OnboardingUiState, actions: PermissionsActions, modifier: Modifier = Modifier) {
     val colors = SklyankaTheme.colors
     Column(
         modifier = modifier
@@ -294,7 +290,11 @@ private fun HintRow(hint: AutostartHint) {
         val label = stringResource(R.string.cd_onboarding_hint)
         InfoGlyph(color = colors.textMuted, modifier = Modifier.semantics { contentDescription = label })
         Text(
-            text = stringResource(R.string.onboarding_hint_battery),
+            text = stringResource(
+                when (hint) {
+                    AutostartHint.BATTERY_OPTIMIZATION_IGNORED -> R.string.onboarding_hint_battery
+                },
+            ),
             style = SklyankaType.Caption,
             color = colors.textMuted,
         )
