@@ -119,7 +119,7 @@ class IntakeRepositoryUndoTest {
 
         // Возвращается ровно доза одного приёма (ПР-5): счётчик может превысить упаковку,
         // и пара записей журнала — тот след, по которому это разбирается (TDD.md §3.5).
-        assertEquals("1.5", db.medications.getById(TestData.OWNER_MEDICATION_ID)?.stockLeft)
+        assertEquals("1", db.medications.getById(TestData.OWNER_MEDICATION_ID)?.stockLeft)
         val records = log.recent(RECENT_LIMIT)
         assertTrue(records.any { it.event == OpEvent.STOCK_DECREMENTED && it.detail == "clamped_at_zero" })
         assertTrue(records.any { it.event == OpEvent.STOCK_RESTORED })
