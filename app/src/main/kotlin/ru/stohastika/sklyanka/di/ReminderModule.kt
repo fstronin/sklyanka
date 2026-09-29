@@ -81,6 +81,7 @@ object ReminderModule {
 
     @Provides
     @Singleton
+    @Suppress("LongParameterList")
     fun provideReschedule(
         plan: ReminderPlanSource,
         alarms: AlarmGateway,

@@ -6,7 +6,6 @@ import io.cucumber.java.ru.Тогда
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
-import ru.stohastika.sklyanka.acceptance.steps.dateOf
 import ru.stohastika.sklyanka.acceptance.steps.localMoment
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
 import ru.stohastika.sklyanka.domain.intake.UndoOutcome
@@ -53,7 +52,10 @@ class DeferredReminderSteps(private val world: AcceptanceWorld) {
      * Дублирование задаётся данностью строки: строка Предыстории описывает, с чем сценарий
      * начинается, а не действие человека.
      */
-    @Допустим("^у профиля «([^»]+)» есть лекарство «([^»]+)» с приёмом в (\\d{2}:\\d{2}) и включённым дублированием напоминаний$")
+    @Допустим(
+        "^у профиля «([^»]+)» есть лекарство «([^»]+)» с приёмом в " +
+            "(\\d{2}:\\d{2}) и включённым дублированием напоминаний$",
+    )
     fun theForeignProfileHasAMedicationWithMirroredReminders(profile: String, name: String, time: String) {
         world.profiles.get(profile)
         world.profiles.setMirrorReminders(profile, enabled = true)

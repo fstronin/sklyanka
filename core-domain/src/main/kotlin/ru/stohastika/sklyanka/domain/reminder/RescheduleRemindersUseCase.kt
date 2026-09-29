@@ -52,19 +52,7 @@ class RescheduleRemindersUseCase(
         // ожидающиеся приёмы попали бы в окно и напомнили о себе задним числом.
         sweepMissed(SweepReason.REPLAN)
 
-        // Записи читаются по приёму, а не через окно: `scheduled_at` отложенного приёма
-        // уже в прошлом, и в выборке кандидатов его бы не было (`TDD.md §9.3`).
-        val records = deferred.all()
-        val paired = records.mapNotNull { record -> plan.intake(record.intakeId)?.let { it to record } }
-        val liveRecordIds = WindowIntakeSelector.remindable(paired.map { it.first }).map { it.intakeId }.toSet()
-        val pairedById = paired.associateBy { (intake, _) -> intake.intakeId }
-
-        // Неживые записи снимаются с журнальным следом: их приём больше не ожидается —
-        // отмечен, истёк, в архиве, «по потребности» или в чужом профиле без дублирования.
-        records.filter { it.intakeId !in liveRecordIds }.forEach { record ->
-            deferred.remove(record.intakeId)
-            journalDropped(now, record, pairedById[record.intakeId]?.first, zone)
-        }
+        val deferredPlan = reconcileDeferred(now, zone)
 
         val window = ReminderWindow.startingAt(now)
         // Нижняя граница выборки уходит в прошлое на сутки, а планируется только окно:
@@ -76,28 +64,14 @@ class RescheduleRemindersUseCase(
         )
         val live = WindowIntakeSelector.remindable(candidates)
         val wantedWindow = WindowIntakeSelector.select(candidates, window, zone)
-        val wantedDeferred = paired
-            .filter { (intake, _) -> intake.intakeId in liveRecordIds }
-            .map { (intake, record) ->
-                PlannedReminder(
-                    intakeId = intake.intakeId,
-                    at = record.fireAt,
-                    scheduledAt = intake.scheduledAt,
-                    medicationId = intake.medicationId,
-                    profileId = intake.profileId,
-                    attempt = record.attempt,
-                )
-            }
 
         // Отложенное срабатывание важнее окна: после перелёта на запад приём может снова
         // попасть в окно, и для одного `intake_id` оказались бы два намерения — плановое
         // и отложенное. Выбирается отложенное: человек (или правило повтора) уже решил
         // сдвинуть именно его, а `scheduled_at` остаётся прежним (НАП-31).
-        val planned = (wantedWindow.associateBy { it.intakeId } + wantedDeferred.associateBy { it.intakeId })
-            .values
-            .sortedWith(compareBy({ it.at }, { it.intakeId }))
+        val planned = merge(wantedWindow, deferredPlan.wanted)
         val plannedById = planned.associateBy { it.intakeId }
-        val liveIds = live.map { it.intakeId }.toSet() + liveRecordIds
+        val liveIds = live.map { it.intakeId }.toSet() + deferredPlan.liveIds
 
         val actual = alarms.scheduled()
 
@@ -145,7 +119,7 @@ class RescheduleRemindersUseCase(
         )
         // След восстановления — только на действительно поставленное заново: иначе журнал
         // превратился бы в журнал пересборок, а не изменений (SKL-35, `TDD.md §5.3`).
-        toSchedule.filter { it.intakeId in liveRecordIds }.forEach { journalRestored(now, it, zone) }
+        toSchedule.filter { it.intakeId in deferredPlan.liveIds }.forEach { journalRestored(now, it, zone) }
 
         return RescheduleOutcome(
             reason = reason,
@@ -159,13 +133,49 @@ class RescheduleRemindersUseCase(
         )
     }
 
+    /**
+     * Живучесть постоянных записей и план отложенных срабатываний (`TDD.md §9.3`, шаги 2–4, 6).
+     *
+     * Записи читаются по приёму, а не через окно: `scheduled_at` отложенного приёма уже
+     * в прошлом, и в выборке кандидатов его бы не было. Неживые записи снимаются с журнальным
+     * следом: их приём больше не ожидается — отмечен, истёк, в архиве, «по потребности»
+     * или в чужом профиле без дублирования. Живучесть решает то же правило
+     * `WindowIntakeSelector.remindable`, что пускает приёмы в план.
+     */
+    private suspend fun reconcileDeferred(now: Instant, zone: ZoneId): DeferredPlan {
+        val records = deferred.all()
+        val paired = records.mapNotNull { record -> plan.intake(record.intakeId)?.let { it to record } }
+        val liveIds = WindowIntakeSelector.remindable(paired.map { it.first }).map { it.intakeId }.toSet()
+        val pairedById = paired.associateBy { (intake, _) -> intake.intakeId }
+
+        records.filter { it.intakeId !in liveIds }.forEach { record ->
+            deferred.remove(record.intakeId)
+            journalDropped(now, record, pairedById[record.intakeId]?.first, zone)
+        }
+
+        val wanted = paired
+            .filter { (intake, _) -> intake.intakeId in liveIds }
+            .map { (intake, record) ->
+                PlannedReminder(
+                    intakeId = intake.intakeId,
+                    at = record.fireAt,
+                    scheduledAt = intake.scheduledAt,
+                    medicationId = intake.medicationId,
+                    profileId = intake.profileId,
+                    attempt = record.attempt,
+                )
+            }
+        return DeferredPlan(liveIds = liveIds, wanted = wanted)
+    }
+
+    /** Слияние плана окна и отложенных срабатываний: при совпадении побеждает отложенное. */
+    private fun merge(window: List<PlannedReminder>, deferred: List<PlannedReminder>): List<PlannedReminder> =
+        (window.associateBy { it.intakeId } + deferred.associateBy { it.intakeId })
+            .values
+            .sortedWith(compareBy({ it.at }, { it.intakeId }))
+
     /** След снятой записи: приём больше не ожидается, повтору ждать нечего. */
-    private suspend fun journalDropped(
-        now: Instant,
-        record: DeferredReminder,
-        intake: ReminderIntake?,
-        zone: ZoneId,
-    ) {
+    private suspend fun journalDropped(now: Instant, record: DeferredReminder, intake: ReminderIntake?, zone: ZoneId) {
         journal.record(
             ReminderLogEntry(
                 occurredAt = now,
@@ -198,6 +208,15 @@ class RescheduleRemindersUseCase(
         )
     }
 }
+
+/**
+ * Итог проверки постоянных записей (`TDD.md §9.3`, шаги 3–4).
+ *
+ * [liveIds] — приёмы, о которых напоминать ещё есть кому; [wanted] — отложенные
+ * срабатывания, которые обязаны стоять в системе. Разделение на два поля, а не на карту
+ * «приём — запись»: пересборке нужны и записи, и ответ «чья запись жива» отдельно.
+ */
+private data class DeferredPlan(val liveIds: Set<String>, val wanted: List<PlannedReminder>)
 
 /**
  * Откладывание напоминания человеком (НАП-30).
