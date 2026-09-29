@@ -116,10 +116,17 @@ class ComponentStateSnapshotTest {
         capture("button-quiet-muted") { QuietButton(text = quiet, onClick = {}, muted = true) }
     }
 
+    /**
+     * Опасный вид основной кнопки — в состояниях, названных дизайн-системой поимённо.
+     *
+     * Нажатое и «в работе» не снимаются: потолок эталонов — сто файлов (SKL-24,
+     * критерий 9), а затемнение и дорожка у опасного вида те же, что у основной кнопки,
+     * и уже закреплены её снимками. Каталог показывает все четыре состояния.
+     */
     @Test
-    fun dangerButtonInEveryState() {
+    fun dangerButtonInTheNamedStates() {
         val danger = context.getString(R.string.preview_danger_action)
-        ButtonState.entries.forEach { state ->
+        listOf(ButtonState.Normal, ButtonState.Disabled).forEach { state ->
             capture("button-danger-${state.name.lowercase()}") {
                 PrimaryButton(text = danger, onClick = {}, state = state, kind = PrimaryButtonKind.Danger)
             }

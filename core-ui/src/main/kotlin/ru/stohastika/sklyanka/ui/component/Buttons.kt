@@ -42,14 +42,14 @@ fun PrimaryButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     state: ButtonState = ButtonState.Normal,
-    kind: PrimaryButtonKind = PrimaryButtonKind.Accent,
+    kind: PrimaryButtonKind = PrimaryButtonKind.Primary,
 ) {
     val colors = SklyankaTheme.colors
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
     val showPressed = state == ButtonState.Pressed || pressed
     val base = when (kind) {
-        PrimaryButtonKind.Accent -> colors.accent
+        PrimaryButtonKind.Primary -> colors.accent
         PrimaryButtonKind.Danger -> colors.danger
     }
     ButtonSurface(
