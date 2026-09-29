@@ -8,11 +8,9 @@ import kotlinx.coroutines.launch
 import ru.stohastika.sklyanka.di.ReminderEntryPoint
 import ru.stohastika.sklyanka.domain.reminder.RescheduleReason
 import ru.stohastika.sklyanka.platform.reminder.ReminderAlarms
-import java.time.Instant
 
 /**
- * Сработавший будильник: показ напоминания, якорь, граница суток и пробное напоминание
- * (`TDD.md §9.1`).
+ * Сработавший будильник: показ напоминания, якорь и граница суток (`TDD.md §9.1`).
  *
  * Разделение работы здесь не произвольно. **Показ** обязан случиться сейчас и именно в
  * приёмнике: отклонение от планового времени считается от момента предъявления уведомления
@@ -56,11 +54,6 @@ class AlarmReceiver : BroadcastReceiver() {
             // Граница суток: неотмеченные приёмы прошедших суток становятся пропущенными,
             // их карточки снимаются, новых уведомлений не появляется (НАП-34).
             ReminderAlarms.ACTION_DAY_BOUNDARY -> ReminderWork.enqueueDayBoundary(context).await()
-
-            ReminderAlarms.ACTION_TEST -> {
-                val planned = intent.getLongExtra(ReminderAlarms.EXTRA_PLANNED_AT, 0L)
-                graph.showTestReminder()(Instant.ofEpochMilli(planned))
-            }
         }
     }
 }

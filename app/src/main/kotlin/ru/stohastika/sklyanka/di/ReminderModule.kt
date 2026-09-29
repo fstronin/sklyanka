@@ -18,10 +18,8 @@ import ru.stohastika.sklyanka.domain.reminder.HandleFiredReminderUseCase
 import ru.stohastika.sklyanka.domain.reminder.ReadReminderReliabilityUseCase
 import ru.stohastika.sklyanka.domain.reminder.RecordReminderOutageUseCase
 import ru.stohastika.sklyanka.domain.reminder.RescheduleRemindersUseCase
-import ru.stohastika.sklyanka.domain.reminder.ShowTestReminderUseCase
 import ru.stohastika.sklyanka.domain.reminder.SnoozeReminderUseCase
 import ru.stohastika.sklyanka.domain.reminder.SweepAtDayBoundaryUseCase
-import ru.stohastika.sklyanka.domain.reminder.TestReminderUseCase
 import ru.stohastika.sklyanka.domain.reminder.port.AlarmGateway
 import ru.stohastika.sklyanka.domain.reminder.port.NoWatchGateway
 import ru.stohastika.sklyanka.domain.reminder.port.NotificationGateway
@@ -163,23 +161,6 @@ object ReminderModule {
     @Singleton
     fun provideMarkSideEffects(dismiss: DismissReminderUseCase): MarkSideEffects =
         MarkSideEffects { intakeId -> dismiss(intakeId) }
-
-    @Provides
-    @Singleton
-    fun provideTestReminder(alarms: AlarmGateway, time: TimeSource): TestReminderUseCase =
-        TestReminderUseCase(alarms = alarms, time = time)
-
-    @Provides
-    @Singleton
-    fun provideShowTestReminder(
-        notifications: NotificationGateway,
-        journal: ReminderJournal,
-        time: TimeSource,
-    ): ShowTestReminderUseCase = ShowTestReminderUseCase(
-        notifications = notifications,
-        journal = journal,
-        time = time,
-    )
 
     /**
      * «Проверить сейчас» для экрана диагностики (НАП-37).

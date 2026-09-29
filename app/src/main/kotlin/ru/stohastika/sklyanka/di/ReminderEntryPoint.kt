@@ -7,7 +7,6 @@ import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineScope
 import ru.stohastika.sklyanka.domain.reminder.HandleFiredReminderUseCase
-import ru.stohastika.sklyanka.domain.reminder.ShowTestReminderUseCase
 import ru.stohastika.sklyanka.domain.reminder.SweepAtDayBoundaryUseCase
 import ru.stohastika.sklyanka.reminder.ReminderPlanningTrigger
 
@@ -25,8 +24,6 @@ import ru.stohastika.sklyanka.reminder.ReminderPlanningTrigger
 interface ReminderEntryPoint {
 
     fun handleFiredReminder(): HandleFiredReminderUseCase
-
-    fun showTestReminder(): ShowTestReminderUseCase
 
     fun reminderPlanning(): ReminderPlanningTrigger
 
