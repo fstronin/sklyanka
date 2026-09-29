@@ -4,6 +4,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -32,6 +33,11 @@ fun DeleteProfileRoute(viewModel: DeleteProfileViewModel, onLeave: () -> Unit, m
         // не контролирует, куда попадёт файл, и не сохраняет выбранный путь (ПЕР-36).
         contract = ActivityResultContracts.CreateDocument(MIME_JSON),
     ) { uri -> uri?.let { viewModel.onIntent(DeleteProfileIntent.ExportTargetChosen(it.toString())) } }
+
+    // Вход сверяет удаляемый профиль с активным: ViewModel живёт в Activity и могла быть
+    // создана другим экраном второго уровня, когда активным был прежний профиль. Поворот
+    // сверку повторяет, но профиль при нём тот же — состояние со словом остаётся.
+    LaunchedEffect(Unit) { viewModel.onIntent(DeleteProfileIntent.Refresh) }
 
     DisposableEffect(Unit) {
         onDispose { viewModel.onIntent(DeleteProfileIntent.Leave) }

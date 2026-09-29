@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import ru.stohastika.sklyanka.domain.profile.DeleteProfileOutcome
 import ru.stohastika.sklyanka.domain.profile.DeleteProfileUseCase
+import ru.stohastika.sklyanka.domain.profile.ProfileContext
 import ru.stohastika.sklyanka.domain.profile.ProfileContextProvider
 import ru.stohastika.sklyanka.domain.profile.ProfileLossesSource
 import ru.stohastika.sklyanka.domain.time.TimeSource
@@ -25,7 +26,8 @@ import javax.inject.Inject
  * Удаляемый профиль читается разово — [ProfileContextProvider.snapshot]: экран
  * открывается в контексте ровно того чужого профиля, которого называет строка настроек,
  * и пока экран открыт, контекст смениться сам не может (после удаления шаг уже `RESULT`).
- * Второго ответа «кого удаляем» не заводится.
+ * Второго ответа «кого удаляем» не заводится, но вход сверяет снимок с активным профилем:
+ * ViewModel живёт в Activity и могла быть создана другим экраном раньше (см. [refresh]).
  *
  * Числа потерь приходят потоком тем же запросом, что список и история: экран остаётся
  * открытым и во время системного выбора места выгрузки, и число обязано не разойтись
@@ -61,6 +63,7 @@ class DeleteProfileViewModel @Inject constructor(
             DeleteProfileIntent.NoFilePicker ->
                 mutable.update { it.copy(failure = DeleteProfileFailure.NoFilePicker) }
 
+            DeleteProfileIntent.Refresh -> refresh()
             DeleteProfileIntent.Confirm -> confirm()
             DeleteProfileIntent.DismissFailure -> mutable.update { it.copy(failure = null) }
             DeleteProfileIntent.Leave -> reset()
@@ -70,16 +73,40 @@ class DeleteProfileViewModel @Inject constructor(
     private fun load() {
         viewModelScope.launch {
             val profile = context.snapshot() ?: return@launch
-            mutable.update {
-                it.copy(
-                    profileId = profile.id,
-                    profileName = profile.name,
-                    exportFileName = exportData.fileName(),
-                    zone = time.zone(),
-                )
-            }
-            observeLosses(profile.id)
+            apply(profile)
         }
+    }
+
+    /**
+     * Вход на экран: сверить удаляемый профиль с активным.
+     *
+     * ViewModel живёт в Activity и создаётся, как только открыт любой экран второго уровня
+     * настроек, поэтому к моменту открытия удаления состояние могло быть снято для другого
+     * профиля (или для владельца). Профиль тот же — состояние не трогается: набранное слово
+     * и факт выгрузки переживают поворот. Профиль другой — состояние начинается заново.
+     * Итог удаления входом не сбрасывается: активным после него уже стал владелец, и сверка
+     * с ним вернула бы экран к подтверждению вместо прочитанного итога.
+     */
+    private fun refresh() {
+        if (mutable.value.step == DeleteProfileStep.RESULT) return
+        viewModelScope.launch {
+            val profile = context.snapshot() ?: return@launch
+            if (profile.id == mutable.value.profileId) return@launch
+            mutable.value = DeleteProfileUiState()
+            apply(profile)
+        }
+    }
+
+    private suspend fun apply(profile: ProfileContext) {
+        mutable.update {
+            it.copy(
+                profileId = profile.id,
+                profileName = profile.name,
+                exportFileName = exportData.fileName(),
+                zone = time.zone(),
+            )
+        }
+        observeLosses(profile.id)
     }
 
     private fun observeLosses(profileId: String) {

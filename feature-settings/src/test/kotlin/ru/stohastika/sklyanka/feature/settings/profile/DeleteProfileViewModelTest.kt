@@ -53,7 +53,13 @@ class DeleteProfileViewModelTest {
     private val zone = ZoneId.of("Europe/Moscow")
     private val clock = FixedTimeSource(Instant.parse("2026-09-30T12:34:00Z"), zone)
 
-    private val profiles = FakeProfiles(listOf(SettingsFixtures.foreign("Mother"), SettingsFixtures.self("Owner")))
+    private val profiles = FakeProfiles(
+        listOf(
+            SettingsFixtures.foreign("Mother"),
+            SettingsFixtures.foreign("Grandma").copy(id = SECOND_FOREIGN_ID),
+            SettingsFixtures.self("Owner"),
+        ),
+    )
     private val active = FakeActiveProfile(SettingsFixtures.FOREIGN_ID)
     private val eraser = RecordingEraser()
     private val planning = CountingReplanner()
@@ -190,6 +196,62 @@ class DeleteProfileViewModelTest {
         assertEquals(SettingsFixtures.FOREIGN_ID, state.profileId)
     }
 
+    /**
+     * Повторный вход после смены профиля читает новый профиль (SKL-36).
+     *
+     * ViewModel живёт в Activity и создаётся, как только открыт любой экран второго
+     * уровня настроек: к новому входу состояние могло быть снято для другого профиля.
+     * Вход обязан сверить снимок с активным — иначе экран назовёт и удалит не того,
+     * кого нажали.
+     */
+    @Test
+    fun enteringAgainAfterTheProfileChangedLoadsTheNewProfile() = runTest(dispatcher) {
+        val model = viewModel()
+        dispatcher.scheduler.advanceUntilIdle()
+        model.onIntent(DeleteProfileIntent.Leave)
+        dispatcher.scheduler.advanceUntilIdle()
+
+        active.switchTo(SECOND_FOREIGN_ID)
+        model.onIntent(DeleteProfileIntent.Refresh)
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(SECOND_FOREIGN_ID, model.state.value.profileId)
+        assertEquals("Grandma", model.state.value.profileName)
+    }
+
+    /** Поворот экрана: профиль тот же — набранное слово и факт выгрузки остаются. */
+    @Test
+    fun enteringWithTheSameProfileKeepsTheTypedWordAndTheExportFact() = runTest(dispatcher) {
+        val model = viewModel()
+        dispatcher.scheduler.advanceUntilIdle()
+        model.onIntent(DeleteProfileIntent.WordChanged("confirm"))
+        model.onIntent(DeleteProfileIntent.ExportTargetChosen("handle"))
+        dispatcher.scheduler.advanceUntilIdle()
+
+        model.onIntent(DeleteProfileIntent.Refresh)
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals("confirm", model.state.value.word)
+        assertEquals(clock.now(), model.state.value.exportedAt)
+        assertEquals(SettingsFixtures.FOREIGN_ID, model.state.value.profileId)
+    }
+
+    /** Итог удаления не сбрасывается повторным входом (поворот после подтверждения). */
+    @Test
+    fun enteringAfterTheDeletionKeepsTheResult() = runTest(dispatcher) {
+        val model = viewModel()
+        dispatcher.scheduler.advanceUntilIdle()
+        model.onIntent(DeleteProfileIntent.Confirm)
+        dispatcher.scheduler.advanceUntilIdle()
+        assertEquals(DeleteProfileStep.RESULT, model.state.value.step)
+
+        model.onIntent(DeleteProfileIntent.Refresh)
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(DeleteProfileStep.RESULT, model.state.value.step)
+        assertEquals("Mother", model.state.value.profileName)
+    }
+
     private fun viewModel() = DeleteProfileViewModel(
         context = FakeProfileContext(profiles, active),
         deleteProfile = DeleteProfileUseCase(
@@ -204,6 +266,8 @@ class DeleteProfileViewModelTest {
         time = clock,
     )
 }
+
+private const val SECOND_FOREIGN_ID = "grandma"
 
 /** Стирание в памяти: помнит, кого стёрли; больше о нём знать нечего. */
 private class RecordingEraser : ProfileEraser {
