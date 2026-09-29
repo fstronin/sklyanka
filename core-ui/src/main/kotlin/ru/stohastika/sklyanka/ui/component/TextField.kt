@@ -115,7 +115,7 @@ fun SklyankaTextField(
             Text(
                 text = errorText,
                 style = SklyankaType.CaptionSmall,
-                color = colors.warning,
+                color = colors.danger,
                 modifier = Modifier.testTag(TAG_TEXT_FIELD_ERROR),
             )
         }
@@ -162,13 +162,13 @@ private fun FieldInput(
 /**
  * Граница по состоянию.
  *
- * Ошибка окрашивается ролью `warning`, а не акцентом: акцент в чужом профиле подменяется
- * цветом профиля, и красная рамка стала бы там фиолетовой — предупреждение обязано
- * оставаться предупреждением в любом профиле.
+ * Ошибка окрашивается ролью `danger`, а не акцентом: акцент в чужом профиле подменяется
+ * цветом профиля, и красная рамка стала бы там фиолетовой — опасность обязана
+ * оставаться опасностью в любом профиле (ОВ-38, ОВ-67).
  */
 private fun borderOf(state: TextFieldState, colors: SklyankaColors): Color = when (state) {
     TextFieldState.Focused -> colors.accent
-    TextFieldState.Error -> colors.warning
+    TextFieldState.Error -> colors.danger
     else -> colors.line
 }
 
@@ -184,7 +184,7 @@ private fun borderWidthOf(state: TextFieldState) =
  * Компактное числовое поле: счётчик приёмов в сутки, доза, размер упаковки.
  *
  * [error] — состояние ошибки ОВ-38 для поля без собственной подписи под ним: рамка
- * утолщается и окрашивается `warning` (та же пара, что у [SklyankaTextField]).
+ * утолщается и окрашивается `danger` (та же пара, что у [SklyankaTextField]).
  * Пояснение к ошибке рисует блок, в котором стоит поле, — у компактного поля нет
  * места под текст.
  */
@@ -206,7 +206,7 @@ fun SklyankaNumberField(
             .background(colors.background, SklyankaShapes.Compact)
             .border(
                 if (error) SklyankaSizes.BorderAccent else SklyankaSizes.BorderThin,
-                if (error) colors.warning else colors.line,
+                if (error) colors.danger else colors.line,
                 SklyankaShapes.Compact,
             )
             .padding(horizontal = SklyankaSizes.BannerPaddingVertical)
