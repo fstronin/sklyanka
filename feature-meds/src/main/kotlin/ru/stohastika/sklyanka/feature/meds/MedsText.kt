@@ -118,6 +118,7 @@ internal fun DraftViolation.message(): String = when (this) {
     DraftViolation.MaxPerDayMissing -> stringResource(R.string.error_max_per_day_missing)
     DraftViolation.MaxPerDayNotPositive -> stringResource(R.string.error_max_per_day_not_positive)
     DraftViolation.StockNegative -> stringResource(R.string.error_stock_negative)
+    DraftViolation.PackageSizeNotPositive -> stringResource(R.string.error_package_size_not_positive)
 }
 
 /** «08:00». */

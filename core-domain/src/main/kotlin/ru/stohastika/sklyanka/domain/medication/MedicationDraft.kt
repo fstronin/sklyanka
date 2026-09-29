@@ -48,6 +48,11 @@ data class MedicationDraft(
     /** Пустое значение означает бессрочный приём (ПР-6), а не неполные данные. */
     val endDate: LocalDate? = null,
     val stockLeft: BigDecimal? = null,
+    /**
+     * Размер упаковки (ОВ-45). Пустое значение — «размер не задан»; из [stockLeft]
+     * не подставляется: подставленный знаменатель выдавался бы за измеренный.
+     */
+    val packageSize: BigDecimal? = null,
     val stockThresholdDays: Int? = null,
 ) {
 
@@ -81,6 +86,7 @@ data class MedicationDraft(
         startDate = startDate,
         endDate = endDate,
         stockLeft = stockLeft,
+        packageSize = packageSize,
         stockThresholdDays = stockThresholdDays,
         // Архивация черновиком не управляется: в архив и обратно курс уходит с карточки
         // лекарства (SKL-10) и из архива (SKL-11), а не правкой формы.
@@ -117,6 +123,7 @@ data class MedicationDraft(
             startDate = medication.startDate,
             endDate = medication.endDate,
             stockLeft = medication.stockLeft,
+            packageSize = medication.packageSize,
             stockThresholdDays = medication.stockThresholdDays,
         )
     }

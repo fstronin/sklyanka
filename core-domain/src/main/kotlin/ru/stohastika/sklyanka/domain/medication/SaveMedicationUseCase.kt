@@ -153,6 +153,7 @@ class SaveMedicationUseCase(
             "start_date" to { it.startDate },
             "end_date" to { it.endDate },
             "stock_left" to { it.stockLeft },
+            "package_size" to { it.packageSize },
             "stock_threshold_days" to { it.stockThresholdDays },
         )
     }

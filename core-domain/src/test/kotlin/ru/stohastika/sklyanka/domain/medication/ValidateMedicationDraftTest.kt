@@ -158,6 +158,32 @@ class ValidateMedicationDraftTest {
         assertTrue(validate(Drafts.valid().copy(stockLeft = null)).isEmpty())
     }
 
+    @Test
+    fun `a positive package size passes`() {
+        assertTrue(validate(Drafts.valid().copy(packageSize = BigDecimal("60"))).isEmpty())
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["0", "-0.5"])
+    fun `a non-positive package size is rejected`(size: String) {
+        val violations = validate(Drafts.valid().copy(packageSize = BigDecimal(size)))
+
+        assertEquals(listOf(DraftViolation.PackageSizeNotPositive), violations)
+        assertEquals(DraftField.PACKAGE_SIZE, violations.first().field)
+    }
+
+    @Test
+    fun `an empty package size means it is unknown and is not a violation`() {
+        assertTrue(validate(Drafts.valid().copy(packageSize = null)).isEmpty())
+    }
+
+    @Test
+    fun `a package size without any stock is not a violation`() {
+        // Без остатка размер ни на что не влияет; блок остатка появится, когда появится
+        // остаток (ОВ-45).
+        assertTrue(validate(Drafts.valid().copy(stockLeft = null, packageSize = BigDecimal("60"))).isEmpty())
+    }
+
     // --- Вместе ---------------------------------------------------------------------------
 
     @Test

@@ -245,6 +245,31 @@ class SaveMedicationUseCaseTest {
     }
 
     @Test
+    fun `a saved package size is stored and its change is logged by name only`() = runTest {
+        save(Drafts.valid().copy(packageSize = BigDecimal("60")))
+        assertEquals(BigDecimal("60"), medications.stored.getValue(Drafts.NEW_ID).packageSize)
+
+        val stored = medications.stored.getValue(Drafts.NEW_ID)
+        save(MedicationDraft.of(stored).copy(packageSize = BigDecimal("90")))
+
+        val record = log.records.single { it.event == OpEvent.MEDICATION_UPDATED }
+        assertEquals("package_size", record.after)
+        // Размер упаковки не входит в расписание: состав приёмов он не меняет (НАП-11).
+        assertNull(record.detail)
+        assertEquals(BigDecimal("90"), medications.stored.getValue(Drafts.NEW_ID).packageSize)
+    }
+
+    @Test
+    fun `editing a package size only does not replan`() = runTest {
+        save(Drafts.valid())
+        val stored = medications.stored.getValue(Drafts.NEW_ID)
+
+        save(MedicationDraft.of(stored).copy(packageSize = BigDecimal("60")))
+
+        assertEquals(listOf(Drafts.NEW_ID to PlanReason.MEDICATION_ADDED), planReasons)
+    }
+
+    @Test
     fun `a rejected save never touches the planner`() = runTest {
         save(Drafts.valid().copy(name = ""))
 

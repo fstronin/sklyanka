@@ -144,6 +144,7 @@
     <string name="error_max_per_day_missing">Задайте, не чаще скольких раз в сутки принимать</string>
     <string name="error_max_per_day_not_positive">Ограничение должно быть больше нуля</string>
     <string name="error_stock_negative">Остаток не может быть отрицательным</string>
+    <string name="error_package_size_not_positive">Размер упаковки должен быть больше нуля</string>
     <!-- Причина недоступной кнопки сохранения: молча недоступная кнопка ничего не объясняет. -->
     <string name="form_save_blocked">Укажите название, чтобы сохранить лекарство</string>
 

@@ -73,9 +73,17 @@ class ValidateMedicationDraft {
         if (end != null && end < draft.startDate) add(DraftViolation.EndDateBeforeStart)
     }
 
-    /** ИНВ-8: остаток не отрицателен. Пустой остаток — «человек остаток не ведёт», не ошибка. */
+    /**
+     * ИНВ-8 и ИНВ-20: остаток не отрицателен, заполненный размер упаковки больше нуля.
+     *
+     * Пустой остаток — «человек остаток не ведёт», пустой размер — «размер не задан»:
+     * оба не ошибки. Размер без остатка тоже не ошибка: без остатка он ни на что
+     * не влияет, а блок появится, когда появится остаток (ОВ-45).
+     */
     private fun stockViolations(draft: MedicationDraft): List<DraftViolation> = buildList {
         val stock = draft.stockLeft
         if (stock != null && stock < BigDecimal.ZERO) add(DraftViolation.StockNegative)
+        val size = draft.packageSize
+        if (size != null && size <= BigDecimal.ZERO) add(DraftViolation.PackageSizeNotPositive)
     }
 }

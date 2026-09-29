@@ -17,6 +17,9 @@ enum class DraftField {
     MAX_PER_DAY,
     PERIOD,
     STOCK,
+
+    /** «Размер упаковки»: та же строка блока, что остаток, но своё поле ошибки. */
+    PACKAGE_SIZE,
 }
 
 /**
@@ -89,5 +92,15 @@ sealed interface DraftViolation {
     /** Остаток в упаковке отрицателен (ИНВ-8). */
     data object StockNegative : DraftViolation {
         override val field: DraftField get() = DraftField.STOCK
+    }
+
+    /**
+     * Заполненный размер упаковки не больше нуля (ИНВ-20).
+     *
+     * Единственное правило размера: пустое значение — «размер не задан», и оно
+     * ошибкой не считается, даже если остаток при этом задан.
+     */
+    data object PackageSizeNotPositive : DraftViolation {
+        override val field: DraftField get() = DraftField.PACKAGE_SIZE
     }
 }
