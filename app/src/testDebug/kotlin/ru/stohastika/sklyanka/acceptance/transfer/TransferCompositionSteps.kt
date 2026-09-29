@@ -27,7 +27,6 @@ import ru.stohastika.sklyanka.domain.transfer.TransferReport
 import ru.stohastika.sklyanka.domain.transfer.TransferSnapshot
 import ru.stohastika.sklyanka.feature.onboarding.PermissionsActivity
 import ru.stohastika.sklyanka.feature.onboarding.TAG_PERMISSIONS_SCREEN
-import ru.stohastika.sklyanka.feature.onboarding.TAG_TEST_REMINDER
 import ru.stohastika.sklyanka.feature.settings.R
 import ru.stohastika.sklyanka.feature.settings.transfer.TAG_NOT_TRANSFERRED
 import ru.stohastika.sklyanka.feature.settings.transfer.TAG_REPORT
@@ -201,15 +200,6 @@ class TransferCompositionSteps(private val world: AcceptanceWorld) {
         pressContinueOnTheReport()
         TransferAppProbe.askPermissions { onNodeWithTag(TAG_PERMISSIONS_SCREEN).assertIsDisplayed() }
         assertSameEntryAsFirstInstall()
-    }
-
-    @Тогда("^на нём доступно пробное напоминание через минуту$")
-    fun theTestReminderIsAvailable() {
-        val hint = context.getString(ru.stohastika.sklyanka.feature.onboarding.R.string.onboarding_test_hint)
-        TransferAppProbe.askPermissions {
-            onNodeWithTag(TAG_TEST_REMINDER).assertIsDisplayed()
-            onNodeWithText(hint).assertIsDisplayed()
-        }
     }
 
     // --- Обвязка -------------------------------------------------------------------------------

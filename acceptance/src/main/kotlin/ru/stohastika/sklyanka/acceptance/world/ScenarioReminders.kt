@@ -18,7 +18,6 @@ import ru.stohastika.sklyanka.domain.reminder.ReminderSlot
 import ru.stohastika.sklyanka.domain.reminder.RescheduleOutcome
 import ru.stohastika.sklyanka.domain.reminder.RescheduleReason
 import ru.stohastika.sklyanka.domain.reminder.RescheduleRemindersUseCase
-import ru.stohastika.sklyanka.domain.reminder.ShowTestReminderUseCase
 import ru.stohastika.sklyanka.domain.reminder.SnoozeReminderUseCase
 import ru.stohastika.sklyanka.domain.reminder.SweepAtDayBoundaryUseCase
 import ru.stohastika.sklyanka.domain.reminder.port.AlarmGateway
@@ -158,23 +157,6 @@ class ScenarioReminders(
         clock.moveTo(until)
     }
 
-    /**
-     * Пробное напоминание: его будильник сработал — показ идёт боевым путём (НАП-22).
-     *
-     * @return true, если пробное напоминание было поставлено и уже сработало
-     */
-    fun deliverTest(): Boolean {
-        val at = alarmStore.testAt
-        val fired = at != null && !at.isAfter(clock.now())
-        if (fired) {
-            alarmStore.clearTest()
-            runBlocking { ShowTestReminderUseCase(notifications, journal, clock.time)(requireNotNull(at)) }
-        }
-        return fired
-    }
-
-    fun testReminderAt(): Instant? = alarmStore.testAt
-
     /** Карточка приёма — тот же источник, что у показа: второй копии состава карточки нет. */
     fun cardSource(): ReminderCardSource = PlanSource()
 
@@ -220,14 +202,6 @@ class ScenarioReminders(
 
     /** Показанные карточки с каналами: «первое обычным сигналом, повтор настойчивым». */
     fun shownWithChannels(): List<Pair<ReminderCard, ReminderChannel>> = notifications.shown.toList()
-
-    /**
-     * Показано ли пробное напоминание (НАП-22).
-     *
-     * Пробное идёт тем же портом уведомлений, что настоящее, и его показ считается здесь:
-     * без этого «приходит полноэкранное напоминание» нечем отличить от «будильник поставлен».
-     */
-    fun testReminderShown(): Boolean = notifications.testShows > 0
 
     private fun deliver(intakeId: String) {
         runBlocking {
@@ -347,10 +321,6 @@ private class InMemoryAlarms : AlarmGateway {
     /** Номер показа у повторов: по нему срабатывание идёт настойчивым каналом (НАП-25). */
     private val attempts = linkedMapOf<String, Int>()
 
-    /** Момент пробного напоминания: показ идёт боевым путём, приёма за ним нет (НАП-22). */
-    var testAt: Instant? = null
-        private set
-
     override suspend fun schedule(intakeId: String, at: Instant) {
         byIntake[intakeId] = at
         attempts.remove(intakeId)
@@ -372,17 +342,11 @@ private class InMemoryAlarms : AlarmGateway {
         attempts[intakeId] = attempt
     }
 
-    override suspend fun scheduleTest(at: Instant) {
-        testAt = at
-    }
+    override suspend fun scheduleTest(at: Instant) = Unit
 
     override fun canScheduleExact(): Boolean = true
 
     fun attemptOf(intakeId: String): Int? = attempts[intakeId]
-
-    fun clearTest() {
-        testAt = null
-    }
 }
 
 /**
@@ -409,10 +373,6 @@ private class RecordingWatchGateway : WatchGateway {
 private class InMemoryNotifications(private val allowed: () -> Boolean) : NotificationGateway {
 
     val shown: MutableList<Pair<ReminderCard, ReminderChannel>> = mutableListOf()
-
-    /** Сколько раз показано пробное напоминание: его карточки за приёмом нет (НАП-22). */
-    var testShows: Int = 0
-        private set
 
     private val visible: MutableSet<ReminderSlot> = mutableSetOf()
 
@@ -441,17 +401,7 @@ private class InMemoryNotifications(private val allowed: () -> Boolean) : Notifi
         }
     }
 
-    /**
-     * Пробное напоминание считается показанным независимо от разрешения.
-     *
-     * Такова семантика этого стенда: пробное напоминание — единственное доказательство
-     * работы механизма, и сценарии SKL-14 проверяют его в мире свежей установки, где
-     * уведомления ещё не выданы (Предыстория задачи). Боевой показ карточки о приёме
-     * разрешение учитывает — там цена вранья другая (SKL-29, НАП-18).
-     */
-    override suspend fun showTest() {
-        testShows += 1
-    }
+    override suspend fun showTest() = Unit
 
     override fun areNotificationsEnabled(): Boolean = allowed()
 }

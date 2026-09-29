@@ -26,18 +26,14 @@ import io.cucumber.java.ru.И
 import io.cucumber.java.ru.Когда
 import io.cucumber.java.ru.Но
 import io.cucumber.java.ru.Тогда
-import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import ru.stohastika.sklyanka.acceptance.steps.localMoment
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
 import ru.stohastika.sklyanka.domain.onboarding.OnboardingSource
 import ru.stohastika.sklyanka.domain.onboarding.PermissionGrant
 import ru.stohastika.sklyanka.domain.onboarding.PermissionStep
-import ru.stohastika.sklyanka.domain.reminder.ReminderEvent
-import ru.stohastika.sklyanka.domain.reminder.TestReminderUseCase
 import ru.stohastika.sklyanka.domain.reminder.port.PermissionState
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPermission
 import ru.stohastika.sklyanka.feature.onboarding.OnboardingUiState
@@ -52,8 +48,6 @@ import ru.stohastika.sklyanka.feature.onboarding.TAG_CARD_AUTOSTART
 import ru.stohastika.sklyanka.feature.onboarding.TAG_CARD_EXACT_ALARMS
 import ru.stohastika.sklyanka.feature.onboarding.TAG_CARD_NOTIFICATIONS
 import ru.stohastika.sklyanka.feature.onboarding.TAG_PERMISSIONS_SCREEN
-import ru.stohastika.sklyanka.feature.onboarding.TAG_TEST_HINT
-import ru.stohastika.sklyanka.feature.onboarding.TAG_TEST_REMINDER
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.lightColors
 import java.io.File
@@ -210,55 +204,6 @@ class PermissionsSteps(private val world: AcceptanceWorld) {
             showsText(string(R.string.onboarding_autostart_unverifiable)),
             "the third step must say the test reminder is the only proof (НАП-20)",
         )
-    }
-
-    // --- Пробное напоминание -------------------------------------------------------------------
-
-    @Тогда("^он видит пояснение «Проверить можно сразу: пришлём тестовое напоминание через минуту.»$")
-    fun theTestReminderPromiseIsShown() {
-        assertTrue(showsText(string(R.string.onboarding_test_hint)), "the promise must stand before the button")
-        assertTrue(hasTag(TAG_TEST_HINT), "the promise is the mockup plate")
-    }
-
-    @И("^на экране есть чем запустить пробное напоминание$")
-    fun theScreenCanStartTheTestReminder() {
-        assertTrue(hasTag(TAG_TEST_REMINDER), "the onboarding must have a control to start the test reminder (ОВ-50)")
-    }
-
-    @Когда("^(.+?) в (\\d{2}:\\d{2}) человек запускает пробное напоминание$")
-    fun thePersonStartsTheTestReminder(date: String, time: String) {
-        val moment = world.localMoment(date, time)
-        world.clock.moveTo(moment)
-        // Снимок до действия: «пробное не оставляет следа» проверяют общие шаги.
-        world.rememberState()
-        world.rememberAdherence()
-        PermissionsStand.act(world) { onNodeWithTag(TAG_TEST_REMINDER).performScrollTo().performClick() }
-        assertEquals(
-            world.clock.momentOf(moment).plus(TestReminderUseCase.DELAY),
-            world.reminders.testReminderAt(),
-            "the test reminder is scheduled exactly one minute ahead (НАП-22)",
-        )
-    }
-
-    @Тогда("^в (.+?), (\\d{2}:\\d{2}) приходит полноэкранное напоминание$")
-    fun theFullScreenReminderArrives(date: String, time: String) {
-        world.clock.moveTo(world.localMoment(date, time))
-        assertTrue(world.reminders.deliverTest(), "the test alarm must fire at its minute")
-        assertTrue(world.reminders.testReminderShown(), "the test reminder must be presented as a full-screen card")
-    }
-
-    @И("^оно приходит тем же способом, что и настоящее напоминание о приёме$")
-    fun theTestReminderGoesTheSameWay() {
-        val entry = requireNotNull(runBlocking { world.reminders.journal.last(ReminderEvent.TEST) }) {
-            "the test reminder must leave a TEST record in the journal"
-        }
-        assertEquals(true, entry.delivered, "the record must say the card was presented")
-        assertEquals(0, entry.deviationSeconds, "the test reminder fires on its own minute")
-        assertNotNull(entry.scheduledAt, "the record must carry the planned moment")
-        assertNotNull(entry.firedAt, "the record must carry the actual moment")
-        // Тем же способом — значит через тот же порт уведомлений, что боевое срабатывание
-        // (`NotificationGateway.showTest`), а не отдельным путём в обход подсистемы.
-        assertTrue(world.reminders.testReminderShown(), "the same notification gateway must have been used")
     }
 
     // --- Границы цепочки -----------------------------------------------------------------------

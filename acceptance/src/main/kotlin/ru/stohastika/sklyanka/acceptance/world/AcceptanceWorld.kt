@@ -1,9 +1,6 @@
 package ru.stohastika.sklyanka.acceptance.world
 
 import kotlinx.coroutines.runBlocking
-import ru.stohastika.sklyanka.domain.history.AdherenceCalculator
-import ru.stohastika.sklyanka.domain.history.AdherencePeriod
-import ru.stohastika.sklyanka.domain.history.HistoryWindow
 import ru.stohastika.sklyanka.domain.intake.CreatePrnIntakeUseCase
 import ru.stohastika.sklyanka.domain.intake.MarkIntakeUseCase
 import ru.stohastika.sklyanka.domain.intake.MarkOutcome
@@ -36,10 +33,8 @@ import ru.stohastika.sklyanka.domain.schedule.PlanScope
 import ru.stohastika.sklyanka.domain.today.GroupMarkOutcome
 import ru.stohastika.sklyanka.domain.today.MarkIntakeGroupUseCase
 import java.time.Instant
-import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
-import java.time.YearMonth
 
 /**
  * Состояние одного сценария приёмки: создаётся на сценарий и живёт ровно его.
@@ -168,28 +163,6 @@ class AcceptanceWorld {
         acted = true
         intakes.remember()
         medications.rememberStock()
-    }
-
-    /**
-     * Приверженность на момент до действия: ею проверяется «пробное не меняет историю» (НАП-22).
-     *
-     * Снимок берётся не из кольца приёмов, а настоящим доменным расчётом (SKL-18): второй
-     * копии правила «что считается приверженностью» в приёмке нет.
-     */
-    var adherenceBefore: AdherencePeriod? = null
-        private set
-
-    fun rememberAdherence() {
-        adherenceBefore = adherenceOn(clock.today())
-    }
-
-    /** Приверженность за месяц названной даты — тем же `AdherenceCalculator`, что в истории. */
-    fun adherenceOn(date: LocalDate): AdherencePeriod {
-        val active = profiles.active
-        require(active.isNotEmpty()) { "the scenario names no profile" }
-        val window = HistoryWindow.of(YearMonth.from(date))
-        val profileId = profiles.get(active).id
-        return AdherenceCalculator().of(history.slice(profileId, window), window, date, clock.zone)
     }
 
     // --- Действия: планирование --------------------------------------------------------------

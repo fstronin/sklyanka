@@ -33,7 +33,6 @@ import ru.stohastika.sklyanka.feature.reminder.R
 import ru.stohastika.sklyanka.feature.reminder.TAG_CHECK_NOW
 import ru.stohastika.sklyanka.feature.reminder.TAG_DIAGNOSTICS
 import ru.stohastika.sklyanka.feature.reminder.TAG_JOURNAL_ROW
-import ru.stohastika.sklyanka.feature.reminder.TAG_TEST_REMINDER
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalTime
@@ -210,31 +209,6 @@ class ReminderDiagnosticsSteps(private val world: AcceptanceWorld) {
     fun theMomentIs(date: String, time: String) {
         world.clock.moveTo(world.localMoment(date, time))
     }
-
-    @Когда("^человек нажимает «Пробное напоминание через минуту» в диагностике$")
-    fun thePersonPressesTestReminder() {
-        // Снимок до действия: «пробное не оставляет следа» проверяется общими шагами
-        // (TestReminderSteps) против него, а не против второй копии состояния.
-        world.rememberState()
-        world.rememberAdherence()
-        DiagnosticsStand.ask(world) { assertTag(TAG_DIAGNOSTICS) }
-        DiagnosticsStand.act(world) { onNodeWithTag(TAG_TEST_REMINDER).performScrollTo().performClick() }
-        assertNotNull(world.reminders.testReminderAt(), "the test reminder must be scheduled")
-    }
-
-    @И("^в (.+?), (\\d{2}:\\d{2}) приходит напоминание тем же способом, что и настоящее$")
-    fun theTestReminderArrives(date: String, time: String) {
-        val at = world.localMoment(date, time)
-        world.clock.moveTo(at)
-        assertTrue(world.reminders.deliverTest(), "the test alarm must fire")
-        val entry = requireNotNull(runBlocking { world.reminders.journal.last(ReminderEvent.TEST) })
-        assertEquals(0, entry.deviationSeconds, "the test reminder fires on its own minute")
-        assertEquals(world.clock.now(), entry.firedAt)
-    }
-
-    // «Записи о приёме не появляется», «приверженность … не меняется» и «остаток ни одной
-    // упаковки не меняется» живут в общем словаре (TestReminderSteps): те же строки стоят
-    // в сценариях SKL-14, и два объявления одного текста погасили бы прогон целиком.
 
     // --- Журнал срабатываний -------------------------------------------------------------------
 
