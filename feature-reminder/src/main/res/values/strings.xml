@@ -34,12 +34,6 @@
     <string name="reminder_row_taken">Принято</string>
     <string name="reminder_row_skip">Пропустить</string>
 
-    <!-- ===== Пробное напоминание (НАП-22) ===== -->
-
-    <string name="reminder_test_card_title">Пробное напоминание</string>
-    <string name="reminder_test_card_text">Так будет выглядеть напоминание о приёме. Записи о приёме не появится.</string>
-    <string name="reminder_test_card_action">Понятно</string>
-
     <!-- ===== Диагностика напоминаний (НАП-37) ===== -->
 
     <string name="diagnostics_title">Напоминания</string>

@@ -53,10 +53,10 @@ class ReminderViewModel @Inject constructor(
         viewModelScope.launch { reload() }
     }
 
-    /** Пробное напоминание: приёма за ним нет, и отмечать в нём нечего (НАП-22). */
-    fun openTest() {
+    /** Намерение без слота: показывать нечего, карточка закрывается (SKL-32). */
+    fun close() {
         slot = null
-        _state.value = ReminderUiState.Test
+        _state.value = ReminderUiState.Closed
     }
 
     fun onTaken(intakeId: String) = markOne(intakeId, MarkResult.TAKEN)

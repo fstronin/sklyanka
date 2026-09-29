@@ -231,48 +231,6 @@ private fun Actions(state: ReminderUiState.Card, actions: ReminderActions) {
     }
 }
 
-/**
- * Пробное напоминание (НАП-22).
- *
- * Тот же экран и тот же путь доставки, но записи приёма за ним нет, поэтому и действий
- * у него нет: человек убеждается, что механизм работает, и закрывает карточку.
- */
-@Composable
-fun TestReminderScreen(onClose: () -> Unit, modifier: Modifier = Modifier) {
-    val colors = SklyankaTheme.colors
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(colors.background)
-            .padding(horizontal = SklyankaSpacing.Screen)
-            .testTag(TAG_TEST),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Mark()
-        Text(
-            text = stringResource(R.string.reminder_test_card_title),
-            style = SklyankaType.Headline,
-            color = colors.text,
-            textAlign = TextAlign.Center,
-        )
-        Text(
-            text = stringResource(R.string.reminder_test_card_text),
-            style = SklyankaType.Body,
-            color = colors.textMuted,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = SklyankaSpacing.Medium),
-        )
-        PrimaryButton(
-            text = stringResource(R.string.reminder_test_card_action),
-            onClick = onClose,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = SklyankaSpacing.Section),
-        )
-    }
-}
-
 const val TAG_REMINDER = "reminder_card"
 const val TAG_OVERLINE = "reminder_overline"
 const val TAG_TIME = "reminder_time"
@@ -283,4 +241,3 @@ const val TAG_ROW = "reminder_row"
 const val TAG_ACTION_TAKEN = "reminder_action_taken"
 const val TAG_ACTION_SNOOZE = "reminder_action_snooze"
 const val TAG_ACTION_SKIP = "reminder_action_skip"
-const val TAG_TEST = "reminder_test"

@@ -64,8 +64,6 @@ class ReminderActivity : ComponentActivity() {
                         ),
                     )
 
-                    ReminderUiState.Test -> TestReminderScreen(onClose = ::finish)
-
                     // Приём отмечен — в том числе с часов, пока карточка была открыта:
                     // экран закрывается сам, повторной отметки не создаётся (НАП-32).
                     ReminderUiState.Closed -> LaunchedEffect(Unit) { finish() }
@@ -85,8 +83,10 @@ class ReminderActivity : ComponentActivity() {
     private fun open(intent: Intent) {
         val profileId = intent.getStringExtra(EXTRA_PROFILE_ID)
         val scheduledAt = intent.getStringExtra(EXTRA_SCHEDULED_AT)
-        if (intent.getBooleanExtra(EXTRA_TEST, false) || profileId == null || scheduledAt == null) {
-            viewModel.openTest()
+        // Намерение без слота показывать нечего: карточка закрывается, а не гадает,
+        // какой приём человек имел в виду (SKL-32).
+        if (profileId == null || scheduledAt == null) {
+            viewModel.close()
         } else {
             viewModel.open(profileId, LocalDateTime.parse(scheduledAt))
         }
@@ -108,7 +108,6 @@ class ReminderActivity : ComponentActivity() {
     companion object {
         private const val EXTRA_PROFILE_ID = "ru.stohastika.sklyanka.reminder.profile_id"
         private const val EXTRA_SCHEDULED_AT = "ru.stohastika.sklyanka.reminder.scheduled_at"
-        private const val EXTRA_TEST = "ru.stohastika.sklyanka.reminder.test"
 
         /**
          * Намерение карточки приёма.
@@ -122,10 +121,5 @@ class ReminderActivity : ComponentActivity() {
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
                 .putExtra(EXTRA_PROFILE_ID, profileId)
                 .putExtra(EXTRA_SCHEDULED_AT, scheduledAt.toString())
-
-        /** Намерение пробного напоминания (НАП-22): того же вида, без записи приёма. */
-        fun testIntent(context: Context): Intent = Intent(context, ReminderActivity::class.java)
-            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-            .putExtra(EXTRA_TEST, true)
     }
 }

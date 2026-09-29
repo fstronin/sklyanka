@@ -24,9 +24,6 @@ sealed interface ReminderUiState {
         val foreignProfileName: String?,
     ) : ReminderUiState
 
-    /** Пробное напоминание (НАП-22): того же вида, но за ним не стоит приёма. */
-    data object Test : ReminderUiState
-
     data object Closed : ReminderUiState
 }
 
