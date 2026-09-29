@@ -71,12 +71,15 @@ class ProfileDeletionTest {
     @Test
     fun anUnknownProfileErasesNothing() = runTest {
         seedBothProfiles()
+        val profilesSeeded = db.profiles.count()
+        val medicationsSeeded = db.medications.countInProfile(TestData.RELATIVE_ID)
+        val intakesSeeded = db.intakes.countInProfile(TestData.RELATIVE_ID)
 
         eraser.erase(MISSING_ID)
 
-        assertEquals(2, db.profiles.count())
-        assertEquals(1, db.medications.countInProfile(TestData.RELATIVE_ID))
-        assertEquals(2, db.intakes.countInProfile(TestData.RELATIVE_ID))
+        assertEquals(profilesSeeded, db.profiles.count())
+        assertEquals(medicationsSeeded, db.medications.countInProfile(TestData.RELATIVE_ID))
+        assertEquals(intakesSeeded, db.intakes.countInProfile(TestData.RELATIVE_ID))
     }
 
     @Test
