@@ -68,6 +68,7 @@ class HistoryViewModel @Inject constructor(
             HistoryIntent.ShareReport -> share()
             is HistoryIntent.SaveTo -> save(ReportTarget(intent.target))
             HistoryIntent.SaveCancelled -> cancelSave()
+            HistoryIntent.SaveUnavailable -> saveUnavailable()
             HistoryIntent.NoticeDismissed -> local.value = local.value.copy(notice = null)
             // Переход наружу и системный выбор места экран не исполняет: первое решает
             // маршрут, второе — системный диалог, чей результат приходит обратно как SaveTo.
@@ -127,6 +128,18 @@ class HistoryViewModel @Inject constructor(
     private fun cancelSave() {
         val document = local.value.report?.document ?: return
         viewModelScope.launch { notice(transferReport.cancelled(document)) }
+    }
+
+    /**
+     * Сохранить некому: системного выбора места в устройстве нет.
+     *
+     * Исход тот же, что у сорванной записи, — отказ, — но причина другая: диалог
+     * не открывался. Шторка остаётся открытой: человек хотел сохранить и вправе
+     * попробовать снова (SKL-46).
+     */
+    private fun saveUnavailable() {
+        val document = local.value.report?.document ?: return
+        viewModelScope.launch { notice(transferReport.saveUnavailable(document)) }
     }
 
     /**

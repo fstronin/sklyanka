@@ -308,6 +308,34 @@ class HistoryViewModelTest {
     }
 
     /**
+     * Сохранить некому — честный отказ, а не падение (SKL-46).
+     *
+     * Шторка остаётся открытой: человек хотел сохранить и попробует снова там, где
+     * системный выбор места есть. След в журнале — тот же, что у сорванной записи,
+     * с платформенной причиной.
+     */
+    @Test
+    fun `a missing place chooser refuses honestly`() = runTest(dispatcher) {
+        fillSeptember()
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        viewModel.onIntent(HistoryIntent.ReportRequested)
+        advanceUntilIdle()
+
+        viewModel.onIntent(HistoryIntent.SaveUnavailable)
+        advanceUntilIdle()
+
+        assertEquals(HistoryNotice.REPORT_FAILED, viewModel.state.value.notice)
+        assertNotNull(viewModel.state.value.report)
+        assertTrue(transfer.saved.isEmpty())
+        val transferRecord = log.records.last { it.event == OpEvent.DOCTOR_REPORT_TRANSFERRED }
+        assertTrue(
+            "the journal must name the platform cause: ${transferRecord.detail}",
+            transferRecord.detail?.startsWith("failed:no_activity_for_create_document") == true,
+        )
+    }
+
+    /**
      * Журнал: след есть, медицинских данных в нём нет (НФТ-19).
      *
      * Ни названий лекарств, ни имён профилей, ни агрегированных чисел приверженности:

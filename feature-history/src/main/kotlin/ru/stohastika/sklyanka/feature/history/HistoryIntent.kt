@@ -37,5 +37,13 @@ sealed interface HistoryIntent {
      */
     data object SaveCancelled : HistoryIntent
 
+    /**
+     * Сохранить файл некому: в устройстве нет обработчика системного выбора места.
+     *
+     * Маршрут решает это до запуска и отдаёт готовый исход: сам системный диалог —
+     * чужая активность, и получить отказ можно только у системы (SKL-46).
+     */
+    data object SaveUnavailable : HistoryIntent
+
     data object NoticeDismissed : HistoryIntent
 }

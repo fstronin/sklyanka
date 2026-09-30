@@ -86,6 +86,17 @@ class TransferDoctorReportUseCase(
     suspend fun cancelled(document: ReportDocument): ReportTransferOutcome =
         record(ReportTransferOutcome.Cancelled, document)
 
+    /**
+     * Сохранить отчёт некому: в устройстве нет обработчика системного выбора места.
+     *
+     * Исход — отказ, а не отмена: системный диалог не открывался вовсе, и человеку
+     * говорится то же, что при сорванной записи, — «отчёт не сохранён». След в журнале
+     * остаётся по той же причине, что у отмены: без него этот исход неотличим от
+     * «человек не дошёл до кнопки» (`TDD.md §11`).
+     */
+    suspend fun saveUnavailable(document: ReportDocument): ReportTransferOutcome =
+        record(ReportTransferOutcome.Failed(NO_SAVE_HANDLER), document)
+
     private suspend fun record(outcome: ReportTransferOutcome, document: ReportDocument): ReportTransferOutcome {
         val detail = when (outcome) {
             ReportTransferOutcome.Shared -> "shared"
@@ -102,3 +113,11 @@ class TransferDoctorReportUseCase(
         return outcome
     }
 }
+
+/**
+ * Причина отказа в журнале: обработчика `CREATE_DOCUMENT` в устройстве нет.
+ *
+ * Строка называет платформенный факт, а не решение продукта: системный диалог
+ * не открывался, и запускать его было нечем (SKL-46).
+ */
+private const val NO_SAVE_HANDLER = "no_activity_for_create_document"
