@@ -75,10 +75,10 @@ import javax.inject.Inject
  *
  * **Заставка.** Первый кадр рисует система по теме `Theme.Sklyanka.Splash` — полотно
  * и знак появляются до того, как выполнится хоть одна строка приложения, и потому
- * не добавляют к холодному старту ничего (НФТ-21). [installSplashScreen] держит этот
- * кадр ровно до первого кадра приложения: как только [StartupFrames] нарисовал свой
- * кадр, система снимает свой, и под ним уже стоит заставка приложения. Она и держится,
- * пока первый экран не готов показать своё содержимое, — и ни кадром дольше (ОВ-87).
+ * не добавляют к холодному старту ничего (НФТ-21). Системный кадр платформа держит
+ * до первого кадра приложения и снимает сама; приложение его не удерживает, поэтому
+ * под ним уже стоит заставка приложения ([StartupFrames]). Она и держится, пока
+ * первый экран не готов показать своё содержимое, — и ни кадром дольше (ОВ-87).
  * Собственной паузы у заставки нет: дольше она живёт только если дольше поднимается
  * то, что и так нужно первому экрану.
  */
@@ -141,16 +141,15 @@ class MainActivity : ComponentActivity() {
     private val deleteProfile: DeleteProfileViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        val splash = installSplashScreen()
+        installSplashScreen()
         super.onCreate(savedInstanceState)
 
         var destination by mutableStateOf<StartDestination?>(null)
         var onboardingUnseen by mutableStateOf(false)
-        // Признак «приложение нарисовало свой первый кадр». Системный кадр держится
-        // ровно до него — не до решения о маршруте: решение читает систему и может
-        // занять время, а рисовать приложению уже есть что.
-        var firstAppFrameDrawn = false
-        splash.setKeepOnScreenCondition { !firstAppFrameDrawn }
+        // Системный кадр приложение не удерживает: на Android 12+ платформа держит его
+        // до первого кадра приложения и снимает сама — это и есть передача кадра.
+        // `setKeepOnScreenCondition` только отложил бы снятие, а завязанный на отрисовку
+        // сигнал «кадр нарисован» заблокировал бы её насмерть (`TDD.md` §3.1).
         lifecycleScope.launch {
             // Оба признака читаются в одном заходе: решение о первом экране принимается
             // один раз, и второе чтение дало бы другой ответ — первый запуск перестаёт
@@ -182,7 +181,6 @@ class MainActivity : ComponentActivity() {
                         onboardingDone = onboardingDone,
                         today = todayState,
                     ),
-                    onFirstFrameDrawn = { firstAppFrameDrawn = true },
                 ) {
                     when {
                         // Экран разрешений EMUI (SKL-14): запуск, на котором с разрешениями

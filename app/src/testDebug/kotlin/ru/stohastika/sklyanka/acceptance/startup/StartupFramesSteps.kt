@@ -122,7 +122,7 @@ class StartupFramesSteps(private val world: AcceptanceWorld) {
         runComposeUiTest {
             setContent {
                 SklyankaTheme {
-                    StartupFrames(frame = frame, onFirstFrameDrawn = {}) {
+                    StartupFrames(frame = frame) {
                         if (permissionsFirst) {
                             PermissionsFirstScreen()
                         } else {

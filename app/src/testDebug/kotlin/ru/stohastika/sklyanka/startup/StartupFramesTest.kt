@@ -1,15 +1,12 @@
 package ru.stohastika.sklyanka.startup
 
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -21,10 +18,10 @@ import org.junit.runner.RunWith
 /**
  * Кадры запуска на экранном стенде (SKL-42, ОВ-87).
  *
- * Проверяются два наблюдаемых свойства механики: на экране ровно один кадр — или
- * заставка, или первый экран, — и системный кадр снимается по **отрисовке** первого
- * кадра приложения, а не по композиции. Второе доказывается настоящей отрисовкой
- * корня: до неё оповещения нет, после — ровно одно, повторная отрисовка его не повторяет.
+ * Проверяется наблюдаемое свойство механики: на экране ровно один кадр — или заставка,
+ * или первый экран, и неготовый «Сегодня» (`Opening`) не показывается. Снятие системного
+ * кадра — правило платформы Android 12+, и на JVM его нет; оно остаётся проверкой
+ * устройства (`TDD.md` §3.1).
  *
  * Состав заставки здесь не проверяется — он закреплён `SplashScreenTest` и снимком
  * SKL-21.
@@ -33,12 +30,12 @@ import org.junit.runner.RunWith
 class StartupFramesTest {
 
     @get:Rule
-    val composeTestRule = createAndroidComposeRule<ComponentActivity>()
+    val composeTestRule = createComposeRule()
 
     @Test
     fun theSplashFrameIsShownWhileTheFirstScreenIsNotReady() {
         composeTestRule.setContent {
-            StartupFrames(frame = StartupFrame.AppSplash, onFirstFrameDrawn = {}, firstScreen = { FirstScreen() })
+            StartupFrames(frame = StartupFrame.AppSplash, firstScreen = { FirstScreen() })
         }
 
         composeTestRule.onNodeWithTag(TAG_SPLASH).assertIsDisplayed()
@@ -52,7 +49,7 @@ class StartupFramesTest {
     @Test
     fun theFirstScreenReplacesTheSplashWhenItIsReady() {
         composeTestRule.setContent {
-            StartupFrames(frame = StartupFrame.FirstScreen, onFirstFrameDrawn = {}, firstScreen = { FirstScreen() })
+            StartupFrames(frame = StartupFrame.FirstScreen, firstScreen = { FirstScreen() })
         }
 
         composeTestRule.onNodeWithTag(TAG_FIRST_SCREEN).assertIsDisplayed()
@@ -61,33 +58,6 @@ class StartupFramesTest {
             0,
             composeTestRule.onAllNodesWithTag(TAG_SPLASH).fetchSemanticsNodes().size,
         )
-    }
-
-    @Test
-    fun theFirstOwnFrameIsReportedOnceAfterDrawing() {
-        var reported = 0
-        composeTestRule.setContent {
-            StartupFrames(
-                frame = StartupFrame.AppSplash,
-                onFirstFrameDrawn = { reported++ },
-                firstScreen = { FirstScreen() },
-            )
-        }
-        composeTestRule.waitForIdle()
-        assertEquals("composition alone must not report the frame", 0, reported)
-
-        drawRoot()
-        assertEquals("the drawn frame must be reported exactly once", 1, reported)
-
-        drawRoot()
-        assertEquals("a repeated draw must not report the frame again", 1, reported)
-    }
-
-    /** Отрисовать корень так, как это делает система: одной настоящей отрисовкой. */
-    private fun drawRoot() {
-        val view = composeTestRule.activity.window.decorView
-        val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
-        view.draw(Canvas(bitmap))
     }
 
     @Composable

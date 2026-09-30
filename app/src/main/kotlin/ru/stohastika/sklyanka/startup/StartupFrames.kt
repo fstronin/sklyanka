@@ -1,13 +1,7 @@
 package ru.stohastika.sklyanka.startup
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawWithContent
 import ru.stohastika.sklyanka.feature.today.TodayUiState
-import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Какой кадр запуска рисуется прямо сейчас.
@@ -57,17 +51,13 @@ fun startupFrame(
 /**
  * Один кадр запуска на экране: заставка приложения или первый экран.
  *
- * Оповещение о первом нарисованном кадре — сигнал системе снять свой кадр
- * (`setKeepOnScreenCondition`): пока оно не прозвучало, системный кадр держится,
- * а нарисованный под ним кадр приложения ждёт. Поэтому признак ставится в фазе
- * **отрисовки**, после `drawContent()`: снятие системного кадра обязано открыть
- * уже нарисованное содержимое, иначе между кадрами мелькнёт светлый фон окна
- * (`postSplashScreenTheme` — светлая тема).
- *
- * Оповещение приходит ровно один раз за запуск: дальше оно не нужно, а повторные
- * вызовы на каждом кадре — лишняя работа в горячем пути отрисовки. Флаг — не
- * состояние Compose: условие снятия системного кадра опрашивается предрисовочным
- * слушателем платформы и в композиции не участвует.
+ * Снятием системного кадра приложение не управляет и не должно: на Android 12+
+ * платформа держит свой кадр до первого кадра приложения и снимает его сама —
+ * это и есть требуемая передача (ОВ-87, условие 1). `setKeepOnScreenCondition`
+ * здесь не зовётся намеренно: предрисовочный слушатель библиотеки, пока условие
+ * истинно, отменяет отрисовку окна, поэтому сигнал «кадр приложения нарисован»
+ * из фазы отрисовки к нему не доходит — получается взаимная блокировка
+ * (проверено на устройстве; `TDD.md` §3.1).
  *
  * В ветке заставки [firstScreen] не компонуется вовсе: пустой кадр первого экрана
  * (например, «Сегодня» в `Opening`) не может мелькнуть даже на один кадр.
@@ -75,23 +65,10 @@ fun startupFrame(
 @Composable
 fun StartupFrames(
     frame: StartupFrame,
-    onFirstFrameDrawn: () -> Unit,
     firstScreen: @Composable () -> Unit,
 ) {
-    val drawn = remember { AtomicBoolean(false) }
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .drawWithContent {
-                drawContent()
-                if (drawn.compareAndSet(false, true)) {
-                    onFirstFrameDrawn()
-                }
-            },
-    ) {
-        when (frame) {
-            StartupFrame.AppSplash -> SplashScreen()
-            StartupFrame.FirstScreen -> firstScreen()
-        }
+    when (frame) {
+        StartupFrame.AppSplash -> SplashScreen()
+        StartupFrame.FirstScreen -> firstScreen()
     }
 }
