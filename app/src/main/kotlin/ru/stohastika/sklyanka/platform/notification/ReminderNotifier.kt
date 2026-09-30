@@ -80,9 +80,11 @@ class ReminderNotifier @Inject constructor(
             // отметкой, откладыванием или истечением окна — но не смахиванием.
             .setAutoCancel(false)
             .setOngoing(false)
-            // Повторный показ того же слота обновляет карточку и не звучит второй раз:
-            // звучит повтор, который приходит отдельным будильником (НАП-25).
-            .setOnlyAlertOnce(true)
+            // Повторный показ того же слота обновляет карточку, а не добавляет вторую
+            // (НАП-36). Обновление живой карточки молчит, но настойчивый повтор звучит
+            // и вибрирует даже поверх неё: это новое обращение к человеку (НАП-25).
+            // Флаг действует на обновление — не выставлять его повтору обязательно.
+            .setOnlyAlertOnce(onlyAlertOnce(channel))
             .setFullScreenIntent(fullScreen(card.slot), true)
             .setContentIntent(fullScreen(card.slot))
             .addExtras(
