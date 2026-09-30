@@ -93,7 +93,12 @@ fun MedicationFormScreen(
             DoseBlock(state, onIntent, anchors)
             ModeBlock(state, onIntent, anchors)
             ScheduleBlock(state, onIntent, anchors, onPickTime)
-            FoodRelationBlock(state, onIntent, anchors)
+            // «Связь с едой» существует только при «по расписанию» (ОВ-83): приём
+            // «по потребности» ею не управляет, и решение дизайна предписывает блок
+            // скрыть — как скрыто время. Выбранное значение при этом не сбрасывается.
+            if (state.applicability.foodRelationVisible) {
+                FoodRelationBlock(state, onIntent, anchors)
+            }
             StockBlock(state, onIntent, anchors)
             PeriodBlock(state, onIntent, anchors, onPickDate)
         }

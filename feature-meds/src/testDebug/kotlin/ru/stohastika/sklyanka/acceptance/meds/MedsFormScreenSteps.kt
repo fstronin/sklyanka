@@ -19,7 +19,9 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ApplicationProvider
 import io.cucumber.java.ru.Допустим
+import io.cucumber.java.ru.И
 import io.cucumber.java.ru.Когда
+import io.cucumber.java.ru.Но
 import io.cucumber.java.ru.Тогда
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -27,6 +29,7 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
+import ru.stohastika.sklyanka.domain.model.FoodRelation
 import ru.stohastika.sklyanka.domain.model.MedicationForm
 import ru.stohastika.sklyanka.feature.meds.R
 import ru.stohastika.sklyanka.feature.meds.TAG_COUNTER_CARD
@@ -236,6 +239,62 @@ class MedsFormScreenSteps(private val world: AcceptanceWorld) {
         MedsFormStand.ask(world) { test -> test.onNodeWithText(text).assertIsDisplayed() }
     }
 
+    // --- Связь с едой в режиме «По потребности» (SKL-49, ОВ-83) ----------------------
+
+    @Допустим("^человек выбрал связь с едой «([^»]+)»$")
+    fun thePersonHasChosenTheFoodRelation(label: String) {
+        MedsFormStand.open(world)
+        val intents = MedsFormStand.act(world) { test ->
+            test.onNode(
+                hasText(label) and hasAnyAncestor(hasTestTag(TAG_FOOD_RELATION)),
+                useUnmergedTree = true,
+            ).performClick()
+        }
+        assertTrue(
+            "the food relation tile «$label» must choose the relation: $intents",
+            intents.any { it is MedFormIntent.FoodRelationChanged && it.relation == foodRelationOf(label) },
+        )
+        assertEquals(foodRelationOf(label), MedsFormStand.open(world).draft.foodRelation)
+    }
+
+    @Тогда("^блока «Связь с едой» на форме нет$")
+    fun theFoodRelationBlockIsGone() {
+        MedsFormStand.ask(world) { test ->
+            test.onAllNodesWithTag(TAG_FOOD_RELATION, useUnmergedTree = true).assertCountEquals(0)
+        }
+    }
+
+    @Но("^блок «Остаток в упаковке» показан$")
+    fun theStockBlockIsShown() {
+        MedsFormStand.ask(world) { test -> test.onNodeWithTag(TAG_STOCK_FIELD).assertIsDisplayed() }
+    }
+
+    @Тогда("^блок «Связь с едой» снова показан$")
+    fun theFoodRelationBlockIsBack() {
+        // Блок — ряд из четырёх плиток; тег стоит на каждой, и проверка адресует состав.
+        MedsFormStand.ask(world) { test ->
+            test.onAllNodesWithTag(TAG_FOOD_RELATION, useUnmergedTree = true).assertCountEquals(4)
+        }
+    }
+
+    @Тогда("^блок «Связь с едой» показан$")
+    fun theFoodRelationBlockIsShown() {
+        MedsFormStand.ask(world) { test ->
+            test.onAllNodesWithTag(TAG_FOOD_RELATION, useUnmergedTree = true).assertCountEquals(4)
+        }
+    }
+
+    @И("^выбранной связью с едой остаётся «([^»]+)»$")
+    fun theFoodRelationChoiceStays(label: String) {
+        // Режим делает выбор нередактируемым, а не отменяет его: возврат к расписанию
+        // показывает прежнюю связь с едой (SKL-49).
+        assertEquals(
+            "the mode switch must not lose the choice",
+            foodRelationOf(label),
+            MedsFormStand.open(world).draft.foodRelation,
+        )
+    }
+
     // --- Счётчик приёмов и список времён ----------------------------------------------
 
     @Когда("^человек нажимает «Увеличить»$")
@@ -423,6 +482,16 @@ class MedsFormScreenSteps(private val world: AcceptanceWorld) {
 
     private fun formOf(label: String): MedicationForm =
         MedicationForm.entries.first { context.getString(formLabel(it)) == label }
+
+    private fun foodRelationOf(label: String): FoodRelation =
+        FoodRelation.entries.first { context.getString(foodLabel(it)) == label }
+
+    private fun foodLabel(relation: FoodRelation): Int = when (relation) {
+        FoodRelation.ANY -> R.string.food_relation_any
+        FoodRelation.BEFORE_MEAL -> R.string.food_relation_before
+        FoodRelation.WITH_MEAL -> R.string.food_relation_with
+        FoodRelation.AFTER_MEAL -> R.string.food_relation_after
+    }
 
     private fun formLabel(form: MedicationForm): Int = when (form) {
         MedicationForm.TABLET -> R.string.med_form_tablet

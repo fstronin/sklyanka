@@ -8,6 +8,7 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
+import ru.stohastika.sklyanka.domain.model.FoodRelation
 import ru.stohastika.sklyanka.domain.model.MedicationForm
 import ru.stohastika.sklyanka.domain.model.ScheduleMode
 import ru.stohastika.sklyanka.domain.model.TabletShape
@@ -43,6 +44,13 @@ class FieldApplicabilityTest {
 
         assertFalse(applicability.timesVisible)
         assertTrue(applicability.maxPerDayVisible)
+    }
+
+    @Test
+    fun `the food relation block exists only for a scheduled course`() {
+        // ОВ-83: приём «по потребности» связью с едой не управляет.
+        assertTrue(Drafts.valid().applicability().foodRelationVisible)
+        assertFalse(Drafts.validPrn().applicability().foodRelationVisible)
     }
 
     @ParameterizedTest
@@ -104,6 +112,15 @@ class FieldApplicabilityTest {
 
         assertEquals(emptyList<Nothing>(), normalized.times)
         assertEquals(3, normalized.maxPerDay)
+    }
+
+    @Test
+    fun `switching to as needed keeps the chosen food relation`() {
+        // Режим делает выбор нередактируемым, а не отменяет его: возврат к расписанию
+        // обязан показать прежнюю связь с едой (SKL-49).
+        val draft = Drafts.valid().copy(scheduleMode = ScheduleMode.PRN, foodRelation = FoodRelation.BEFORE_MEAL)
+
+        assertEquals(FoodRelation.BEFORE_MEAL, draft.normalized().foodRelation)
     }
 
     @Test

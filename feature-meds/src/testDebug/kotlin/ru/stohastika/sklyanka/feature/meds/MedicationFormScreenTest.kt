@@ -1,6 +1,7 @@
 package ru.stohastika.sklyanka.feature.meds
 
 import androidx.compose.ui.test.SemanticsNodeInteraction
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextEquals
@@ -8,6 +9,7 @@ import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -25,6 +27,8 @@ import ru.stohastika.sklyanka.feature.meds.form.FormInputs
 import ru.stohastika.sklyanka.feature.meds.form.FormMode
 import ru.stohastika.sklyanka.feature.meds.form.MedFormUiState
 import ru.stohastika.sklyanka.feature.meds.form.MedicationFormScreen
+import ru.stohastika.sklyanka.feature.meds.form.TAG_DOSE_FIELD
+import ru.stohastika.sklyanka.feature.meds.form.TAG_FOOD_RELATION
 import ru.stohastika.sklyanka.feature.meds.form.TAG_MAX_PER_DAY
 import ru.stohastika.sklyanka.feature.meds.form.TAG_PACKAGE_SIZE_FIELD
 import ru.stohastika.sklyanka.feature.meds.form.TAG_PACKAGE_SIZE_HINT
@@ -139,6 +143,24 @@ class MedicationFormScreenTest {
         show(draft())
 
         composeRule.onNodeWithText(context.getString(R.string.form_mode_as_needed_hint)).assertIsDisplayed()
+    }
+
+    @Test
+    fun anAsNeededCourseHidesTheFoodRelationBlock() {
+        // ОВ-83: к приёму «по потребности» связь с едой не относится; остаток остаётся.
+        show(draft(mode = ScheduleMode.PRN))
+
+        composeRule.onNodeWithTag(TAG_FOOD_RELATION).assertDoesNotExistInTree()
+        composeRule.onNodeWithTag(TAG_STOCK_FIELD).assertIsDisplayed()
+    }
+
+    @Test
+    fun aScheduledCourseKeepsTheFoodRelationBlock() {
+        show(draft())
+
+        // Блок — ряд из четырёх плиток: проверка адресует состав блока, а не первую
+        // попавшуюся плитку.
+        composeRule.onAllNodesWithTag(TAG_FOOD_RELATION).assertCountEquals(4)
     }
 
     @Test

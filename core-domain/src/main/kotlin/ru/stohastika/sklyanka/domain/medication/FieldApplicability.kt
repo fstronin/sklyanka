@@ -15,6 +15,14 @@ data class FieldApplicability(
     val timesVisible: Boolean,
     /** «Не чаще N раз в сутки»: только при «по потребности» (ПР-7, ИНВ-17). */
     val maxPerDayVisible: Boolean,
+    /**
+     * «Связь с едой»: только при «по расписанию» (ОВ-83).
+     *
+     * Отдельным признаком, а не переиспользованием [timesVisible]: блоков, зависящих
+     * от режима, теперь два, и связь с едой скрыта не потому, что скрыто время,
+     * а потому, что приём «по потребности» ею не управляет.
+     */
+    val foodRelationVisible: Boolean,
     /** Строка «Окончание» активна, когда «Принимать бессрочно» выключено. */
     val endDateEnabled: Boolean,
     /** Порог остатка действует, когда «Напомнить о покупке» включено. */
@@ -28,6 +36,7 @@ fun MedicationDraft.applicability(): FieldApplicability = FieldApplicability(
     shapeVisible = form.allowsShape,
     timesVisible = scheduleMode == ScheduleMode.SCHEDULED,
     maxPerDayVisible = scheduleMode == ScheduleMode.PRN,
+    foodRelationVisible = scheduleMode == ScheduleMode.SCHEDULED,
     endDateEnabled = endDate != null,
     stockThresholdEnabled = stockThresholdDays != null,
     doseUnit = doseUnit,

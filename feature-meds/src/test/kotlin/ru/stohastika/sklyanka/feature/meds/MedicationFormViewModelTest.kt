@@ -153,6 +153,32 @@ class MedicationFormViewModelTest {
         assertEquals(emptyList<LocalTime>(), state.draft.times)
     }
 
+    @Test
+    fun `as needed hides the food relation block but keeps the choice`() = runTest(dispatcher) {
+        // ОВ-83: блок скрыт; выбранное значение остаётся в черновике (SKL-49).
+        open()
+        model.onIntent(MedFormIntent.FoodRelationChanged(FoodRelation.AFTER_MEAL))
+
+        model.onIntent(MedFormIntent.ModeChanged(ScheduleMode.PRN))
+
+        val state = model.state.value!!
+        assertFalse(state.applicability.foodRelationVisible)
+        assertEquals(FoodRelation.AFTER_MEAL, state.draft.foodRelation)
+    }
+
+    @Test
+    fun `switching back to a schedule brings the food relation choice back`() = runTest(dispatcher) {
+        open()
+        model.onIntent(MedFormIntent.FoodRelationChanged(FoodRelation.AFTER_MEAL))
+        model.onIntent(MedFormIntent.ModeChanged(ScheduleMode.PRN))
+
+        model.onIntent(MedFormIntent.ModeChanged(ScheduleMode.SCHEDULED))
+
+        val state = model.state.value!!
+        assertTrue(state.applicability.foodRelationVisible)
+        assertEquals(FoodRelation.AFTER_MEAL, state.draft.foodRelation)
+    }
+
     // --- Счётчик приёмов и список времён ----------------------------------------------------
 
     @Test
