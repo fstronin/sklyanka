@@ -84,6 +84,68 @@ class RestoreDeferredRemindersTest {
     }
 
     /**
+     * Две пересборки, начавшиеся одновременно, видят один и тот же пустой набор будильников.
+     *
+     * Модель гонки — второе стирание, а не вторая запись: пересборка по запуску считает
+     * разницу по состоянию, которое ещё не увидело будильник пересборки по перезагрузке.
+     * Оба прохода ставят будильник, а факт восстановления один — и запись журнала одна
+     * (SKL-47).
+     */
+    @Test
+    fun `two rebuilds from one empty set of alarms leave one restored entry`() = runTest {
+        world.pending()
+        snoozeAtOnePastTwo()
+        world.simulateReboot()
+        world.reschedule(RescheduleReason.BOOT)
+        world.simulateReboot()
+
+        world.reschedule(RescheduleReason.APP_START)
+
+        assertEquals(
+            1,
+            world.journal.of(ReminderEvent.DEFERRED).count { it.reason == DeferredReason.RESTORED },
+            "one restoration fact is one journal entry, whatever the number of rebuilds",
+        )
+        assertEquals(
+            world.momentOf(LocalDateTime.of(2026, 9, 25, 14, 16)),
+            world.alarms.alarms[Fixtures.INTAKE_ID],
+        )
+    }
+
+    /**
+     * Разные факты не подавляются: у нового откладывания другой момент срабатывания.
+     *
+     * Идемпотентность журнала — «один факт — одна запись», а не «один приём — одна
+     * запись»: человек может отложить напоминание снова, и это новое восстановление.
+     */
+    @Test
+    fun `a new deferral is a new restoration fact`() = runTest {
+        world.pending()
+        snoozeAtOnePastTwo()
+        world.simulateReboot()
+        world.reschedule(RescheduleReason.BOOT)
+        world.moveTo(LocalDateTime.of(2026, 9, 25, 14, 20))
+        world.snooze(Fixtures.INTAKE_ID, minutes = 15)
+        world.simulateReboot()
+
+        world.reschedule(RescheduleReason.APP_START)
+
+        val restored = world.journal.of(ReminderEvent.DEFERRED).filter { it.reason == DeferredReason.RESTORED }
+        assertEquals(2, restored.size, "a new deferral restores as its own fact")
+        assertEquals(
+            setOf(
+                world.momentOf(LocalDateTime.of(2026, 9, 25, 14, 16)),
+                world.momentOf(LocalDateTime.of(2026, 9, 25, 14, 35)),
+            ),
+            restored.mapNotNull { it.firedAt }.toSet(),
+        )
+        assertEquals(
+            world.momentOf(LocalDateTime.of(2026, 9, 25, 14, 35)),
+            world.alarms.alarms[Fixtures.INTAKE_ID],
+        )
+    }
+
+    /**
      * Включение в тот же день: момент повтора ушёл в прошлое, но окно приёма ещё открыто.
      *
      * Будильник ставится на прошедший момент — `setExactAndAllowWhileIdle` предъявляет

@@ -191,9 +191,14 @@ class RescheduleRemindersUseCase(
         )
     }
 
-    /** След восстановленного срабатывания: будильник поставлен на момент из записи. */
+    /**
+     * След восстановленного срабатывания: будильник поставлен на момент из записи.
+     *
+     * Запись идёт идемпотентным контрактом (SKL-47): пересборок может быть две
+     * одновременно (запуск и перезагрузка), а факт восстановления — один.
+     */
     private suspend fun journalRestored(now: Instant, planned: PlannedReminder, zone: ZoneId) {
-        journal.record(
+        journal.recordRestored(
             ReminderLogEntry(
                 occurredAt = now,
                 event = ReminderEvent.DEFERRED,
