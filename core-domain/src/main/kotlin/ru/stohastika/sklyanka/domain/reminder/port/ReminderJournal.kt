@@ -23,6 +23,7 @@ data class RestoredDeferredFact(val intakeId: String, val firedAt: Instant, val 
  * Момент записи (`occurredAt`) в ключ не входит тоже: у двух одновременных пересборок он
  * разный, а факт один.
  */
+@Suppress("ReturnCount")
 fun ReminderLogEntry.restoredDeferredFact(): RestoredDeferredFact? {
     if (event != ReminderEvent.DEFERRED || reason != DeferredReason.RESTORED) return null
     return RestoredDeferredFact(
