@@ -1,8 +1,40 @@
 package ru.stohastika.sklyanka.domain.reminder.port
 
+import ru.stohastika.sklyanka.domain.reminder.DeferredReason
 import ru.stohastika.sklyanka.domain.reminder.ReminderEvent
 import ru.stohastika.sklyanka.domain.reminder.ReminderLogEntry
 import java.time.Instant
+
+/**
+ * Факт восстановления отложенного срабатывания (SKL-47).
+ *
+ * Восстановление описывается приёмом, моментом из постоянной записи и номером показа:
+ * две пересборки, поднявшие один и тот же отложенный повтор, говорят об одном факте,
+ * даже если прошли по отдельности. Другое откладывание, другой момент или другой номер
+ * показа — другой факт.
+ */
+data class RestoredDeferredFact(
+    val intakeId: String,
+    val firedAt: Instant,
+    val attempt: Int,
+)
+
+/**
+ * Факт восстановления, о котором запись журнала, или `null` — запись не о восстановлении.
+ *
+ * Исход `dropped` пишется по тому же приёму и тому же срабатыванию, что и `restored`,
+ * и в ключ факта не входит: снятие записи не имеет права подавить её восстановление.
+ * Момент записи (`occurredAt`) в ключ не входит тоже: у двух одновременных пересборок он
+ * разный, а факт один.
+ */
+fun ReminderLogEntry.restoredDeferredFact(): RestoredDeferredFact? {
+    if (event != ReminderEvent.DEFERRED || reason != DeferredReason.RESTORED) return null
+    return RestoredDeferredFact(
+        intakeId = intakeId ?: return null,
+        firedAt = firedAt ?: return null,
+        attempt = attempt ?: return null,
+    )
+}
 
 /**
  * Журнал срабатываний (НАП-4, НФТ-50).
@@ -13,6 +45,23 @@ import java.time.Instant
 interface ReminderJournal {
 
     suspend fun record(entry: ReminderLogEntry)
+
+    /**
+     * Записать след восстановления отложенного срабатывания — не более одного на факт.
+     *
+     * Пересборки могут идти одновременно (запуск и перезагрузка): обе видят запись
+     * и обе ставят будильник, потому что состояние и будильники идемпотентны, — а журнал
+     * обязан остаться журналом изменений, а не повторов (SKL-47). Ключ факта —
+     * [restoredDeferredFact]; разные факты не подавляются.
+     *
+     * Реализация по умолчанию выражена через [recent] и годится хранилищам в памяти;
+     * реализация на Room переопределяет её одной транзакцией «проверить и вставить».
+     */
+    suspend fun recordRestored(entry: ReminderLogEntry) {
+        val fact = entry.restoredDeferredFact() ?: return record(entry)
+        val known = recent(FALLBACK_LIMIT).any { it.restoredDeferredFact() == fact }
+        if (!known) record(entry)
+    }
 
     /** Последние записи для диагностики — не менее 50 (НАП-37). */
     suspend fun recent(limit: Int): List<ReminderLogEntry>
