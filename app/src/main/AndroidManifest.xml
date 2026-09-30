@@ -80,6 +80,21 @@
     -->
     <queries>
         <package android:name="com.huawei.systemmanager" />
+
+        <!--
+          Системный выбор места для файла отчёта (SKL-46).
+
+          Перед запуском SAF приложение спрашивает `resolveActivity`, чтобы отсутствие
+          обработчика было честным отказом, а не падением. С Android 11 запросы
+          видимости фильтруются, и без этого объявления проверка не увидела бы
+          `DocumentsUI` даже там, где он есть, — сохранение файла было бы объявлено
+          недоступным на любом телефоне.
+        -->
+        <intent>
+            <action android:name="android.intent.action.CREATE_DOCUMENT" />
+            <category android:name="android.intent.category.OPENABLE" />
+            <data android:mimeType="application/pdf" />
+        </intent>
     </queries>
 
     <application

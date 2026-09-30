@@ -1,11 +1,13 @@
 package ru.stohastika.sklyanka.feature.history
 
+import android.content.ActivityNotFoundException
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 
 /**
@@ -20,10 +22,15 @@ import androidx.compose.ui.res.stringResource
  * чужой активности, и получить его может только composable. Наружу уходит непрозрачная
  * ссылка строкой — домен про `Uri` не знает (НФТ-46). Разрешений на внешнее хранилище
  * приложение не запрашивает (НФТ-17).
+ *
+ * **Запуск системного выбора места — только при наличии обработчика** (SKL-46): без него
+ * запуск завершается `ActivityNotFoundException` раньше, чем человек увидит хоть что-то,
+ * и честный отказ «Отчёт не сохранён» остаётся недостижимым.
  */
 @Composable
 fun HistoryRoute(viewModel: HistoryViewModel, onBack: () -> Unit, modifier: Modifier = Modifier) {
     val state by viewModel.state.collectAsState()
+    val context = LocalContext.current
     val mediaType = stringResource(R.string.report_media_type)
 
     val saveLauncher = rememberLauncherForActivityResult(
@@ -42,7 +49,20 @@ fun HistoryRoute(viewModel: HistoryViewModel, onBack: () -> Unit, modifier: Modi
         onIntent = { intent ->
             when (intent) {
                 HistoryIntent.Back -> onBack()
-                HistoryIntent.SaveRequested -> state.report?.let { saveLauncher.launch(it.document.fileName) }
+                HistoryIntent.SaveRequested -> state.report?.let { report ->
+                    if (canCreateDocument(context, report.document)) {
+                        try {
+                            saveLauncher.launch(report.document.fileName)
+                        } catch (_: ActivityNotFoundException) {
+                            // Обработчик исчез между проверкой и запуском: исход тот же —
+                            // честный отказ, а не падение.
+                            viewModel.onIntent(HistoryIntent.SaveUnavailable)
+                        }
+                    } else {
+                        viewModel.onIntent(HistoryIntent.SaveUnavailable)
+                    }
+                }
+
                 else -> viewModel.onIntent(intent)
             }
         },
