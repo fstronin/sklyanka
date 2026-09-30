@@ -15,6 +15,7 @@ import androidx.compose.ui.test.performTextReplacement
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -27,6 +28,7 @@ import ru.stohastika.sklyanka.feature.settings.R
 import ru.stohastika.sklyanka.ui.component.TAG_TEXT_FIELD_ERROR
 import ru.stohastika.sklyanka.ui.component.TAG_TEXT_FIELD_INPUT
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
+import ru.stohastika.sklyanka.ui.R as UiR
 
 /**
  * Экран «Перенос данных» и экраны, которых нет в макетах и которые собраны из компонентов
@@ -61,6 +63,50 @@ class DataTransferScreenTest {
 
         composeRule.onNodeWithTag(TAG_COMPOSITION).assertIsDisplayed()
         composeRule.onNodeWithText(context.getString(R.string.transfer_export_chip_settings)).assertIsDisplayed()
+    }
+
+    /**
+     * Чипы состава переносятся целыми, а не сжимаются в колонки (SKL-60, дефект пилота).
+     *
+     * Пять чипов не умещаются в два фиксированных ряда: последний получал нулевую
+     * ширину и разворачивался по одной букве. Проверяется по геометрии: у каждого
+     * чипа своя ширина, достаточная для его подписи.
+     */
+    @Test
+    fun everyCompositionChipKeepsItsOwnWidth() {
+        showOverview(TransferScreenFixtures.overview())
+
+        val chips = listOf(
+            context.resources.getQuantityString(R.plurals.transfer_chip_medications, CHIP_MEDICATIONS, CHIP_MEDICATIONS),
+            context.resources.getQuantityString(R.plurals.transfer_chip_archived, CHIP_ARCHIVED, CHIP_ARCHIVED),
+            context.resources.getQuantityString(R.plurals.transfer_chip_history_months, CHIP_MONTHS, CHIP_MONTHS),
+            context.resources.getQuantityString(R.plurals.transfer_chip_profiles, CHIP_PROFILES, CHIP_PROFILES),
+            context.getString(R.string.transfer_export_chip_settings),
+        )
+        chips.forEach { text ->
+            val node = composeRule.onNodeWithText(text, useUnmergedTree = true).fetchSemanticsNode()
+            val width = with(composeRule.density) { node.size.width.toDp().value }
+            assertTrue("чип «$text» сжат до ${width}dp", width >= MIN_CHIP_WIDTH_DP)
+        }
+    }
+
+    /**
+     * Заголовок вложенного экрана стоит на своей строке, а не висит после «Назад» (SKL-60).
+     */
+    @Test
+    fun theTitleStandsOnItsOwnLineUnderTheBackLabel() {
+        showOverview(TransferScreenFixtures.overview())
+
+        val back = composeRule
+            .onNodeWithText(context.getString(UiR.string.action_back), useUnmergedTree = true)
+            .fetchSemanticsNode()
+        val title = composeRule
+            .onNodeWithText(context.getString(R.string.transfer_title), useUnmergedTree = true)
+            .fetchSemanticsNode()
+        assertTrue(
+            "заголовок делит строку с «Назад»: back=${back.boundsInRoot}, title=${title.boundsInRoot}",
+            title.boundsInRoot.top >= back.boundsInRoot.bottom,
+        )
     }
 
     @Test
@@ -277,6 +323,16 @@ class DataTransferScreenTest {
                 )
             }
         }
+    }
+
+    private companion object {
+        const val CHIP_MEDICATIONS = 5
+        const val CHIP_ARCHIVED = 12
+        const val CHIP_MONTHS = 8
+        const val CHIP_PROFILES = 2
+
+        /** Ширина текста «настройки» на 12 sp; сжатая колонка до неё не дотягивает. */
+        const val MIN_CHIP_WIDTH_DP = 40f
     }
 
     private fun showMatches(state: TransferUiState) {

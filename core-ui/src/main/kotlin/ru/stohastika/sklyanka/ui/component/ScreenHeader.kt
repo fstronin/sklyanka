@@ -51,6 +51,11 @@ fun ScreenHeader(
     val profileName = LocalProfileChrome.current.foreignName
     val overline = labels.overline
     val foreign = profileName != null
+    // Вложенная шапка с действием «Назад» разводит действие и заголовок по строкам:
+    // так нарисованы макеты вложенных экранов (`DataTransfer.dc.html`, `History.dc.html`,
+    // `MedCard.dc.html`). В одной строке заголовок «Перенос данных» не помещался рядом
+    // с кнопкой и переносился с висячим отступом (SKL-60, дефект пилота).
+    val nestedWithBack = kind == ScreenHeaderKind.Nested && onBack != null
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -66,12 +71,23 @@ fun ScreenHeader(
         // ровно один, и зазор ни на что не влияет.
         verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Large),
     ) {
+        if (nestedWithBack) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Medium),
+            ) {
+                BackAction(kind, onBack)
+                Box(modifier = Modifier.weight(1f))
+                trailing?.invoke()
+            }
+        }
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.Top,
             horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Medium),
         ) {
-            if (kind != ScreenHeaderKind.Root && onBack != null) {
+            if (!nestedWithBack && kind != ScreenHeaderKind.Root && onBack != null) {
                 BackAction(kind, onBack)
             }
             Column(
@@ -93,7 +109,7 @@ fun ScreenHeader(
                     color = colors.text,
                 )
             }
-            trailing?.invoke()
+            if (!nestedWithBack) trailing?.invoke()
         }
         if (profileName != null) {
             // Баннер стоит внутри подкрашенной шапки — так он нарисован в макете

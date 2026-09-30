@@ -13,6 +13,15 @@ sealed interface TransferIntent {
 
     data class SelectMode(val mode: TransferMode) : TransferIntent
 
+    /**
+     * Экран появился: состав устройства перечитывается.
+     *
+     * Состояние экрана живёт дольше одного захода, а данные меняются, пока его не было.
+     * Без этого чипы состава показывали вчерашние числа, то есть врали в месте, где
+     * человек решает, что попадёт в его резервную копию (SKL-60, ПЕР-3).
+     */
+    data object Refresh : TransferIntent
+
     /** Место сохранения выбрано системой; путь нигде не сохраняется (ПЕР-36). */
     data class SaveTo(val target: String) : TransferIntent
 

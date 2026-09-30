@@ -4,6 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -96,6 +98,7 @@ internal fun ModeOption(
  * «N в архиве», «история за N месяцев», «N профиля», «настройки». Чипа «звуки» из макета
  * здесь нет, а чип «настройки» есть — решение ОВ-66, `task.md` «Дефекты постановки».
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun CompositionChips(
     medications: Int,
@@ -105,21 +108,19 @@ internal fun CompositionChips(
     settingsLabel: String,
     modifier: Modifier = Modifier,
 ) {
-    Row(
+    // Поток, а не два фиксированных ряда: число и длина чипов зависят от данных, и на
+    // реальной ширине последний чип получал нулевую ширину и разворачивался по буквам
+    // (SKL-60, дефект пилота). Чип переносится целиком.
+    FlowRow(
         modifier = modifier.fillMaxWidth().testTag(TAG_COMPOSITION),
         horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Small),
+        verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Small),
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Small)) {
-            Row(horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Small)) {
-                InfoChip(medicationsChip(medications))
-                InfoChip(archivedChip(archived))
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Small)) {
-                if (historyMonths != null) InfoChip(historyChip(historyMonths))
-                InfoChip(profilesChip(profiles))
-                InfoChip(settingsLabel)
-            }
-        }
+        InfoChip(medicationsChip(medications))
+        InfoChip(archivedChip(archived))
+        if (historyMonths != null) InfoChip(historyChip(historyMonths))
+        InfoChip(profilesChip(profiles))
+        InfoChip(settingsLabel)
     }
 }
 

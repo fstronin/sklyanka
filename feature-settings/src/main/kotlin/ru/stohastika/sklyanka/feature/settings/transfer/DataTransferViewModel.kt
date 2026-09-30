@@ -69,6 +69,7 @@ class DataTransferViewModel @Inject constructor(
 
     fun onIntent(intent: TransferIntent) {
         when (intent) {
+            TransferIntent.Refresh -> refreshOverview()
             is TransferIntent.SelectMode -> mutable.update { it.copy(mode = intent.mode, failure = null) }
             is TransferIntent.SaveTo -> save(ExportTarget(intent.target))
             is TransferIntent.FileChosen -> openFile(ImportSource(intent.source))

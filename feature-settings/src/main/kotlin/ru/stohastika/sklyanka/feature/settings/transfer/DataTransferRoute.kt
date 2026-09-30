@@ -7,6 +7,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -43,6 +44,11 @@ fun DataTransferRoute(
     val pickLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument(),
     ) { uri -> uri?.let { viewModel.onIntent(TransferIntent.FileChosen(it.toString())) } }
+
+    // Появление экрана: состав устройства мог измениться, пока его не было. Состояние
+    // экрана живёт дольше одного захода, и без перечитывания чипы показывали вчерашние
+    // числа (SKL-60, ПЕР-3).
+    LaunchedEffect(Unit) { viewModel.onIntent(TransferIntent.Refresh) }
 
     // Загрузка не переживает уход с экрана (ПЕР-17): при возвращении перенос начинается
     // сначала, и разобранный файл не остаётся висеть в памяти вместе с историей человека.
