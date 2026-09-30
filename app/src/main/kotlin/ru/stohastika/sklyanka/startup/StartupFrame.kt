@@ -63,10 +63,7 @@ fun startupFrame(
  * (например, «Сегодня» в `Opening`) не может мелькнуть даже на один кадр.
  */
 @Composable
-fun StartupFrames(
-    frame: StartupFrame,
-    firstScreen: @Composable () -> Unit,
-) {
+fun StartupFrames(frame: StartupFrame, firstScreen: @Composable () -> Unit) {
     when (frame) {
         StartupFrame.AppSplash -> SplashScreen()
         StartupFrame.FirstScreen -> firstScreen()
