@@ -87,7 +87,13 @@ abstract class ReminderLogDao {
           AND fired_at = :firedAt AND attempt = :attempt
         """,
     )
-    abstract suspend fun restoredFacts(event: String, reason: String, intakeId: String, firedAt: Long, attempt: Int): Int
+    abstract suspend fun restoredFacts(
+        event: String,
+        reason: String,
+        intakeId: String,
+        firedAt: Long,
+        attempt: Int,
+    ): Int
 
     /**
      * Записать восстановление, если такого факта ещё нет.
@@ -103,7 +109,10 @@ abstract class ReminderLogDao {
         val intakeId = entry.intakeId
         val firedAt = entry.firedAt
         val attempt = entry.attempt
-        val known = reason != null && intakeId != null && firedAt != null && attempt != null &&
+        val known = reason != null &&
+            intakeId != null &&
+            firedAt != null &&
+            attempt != null &&
             restoredFacts(event, reason, intakeId, firedAt, attempt) > 0
         if (!known) insert(entry)
     }

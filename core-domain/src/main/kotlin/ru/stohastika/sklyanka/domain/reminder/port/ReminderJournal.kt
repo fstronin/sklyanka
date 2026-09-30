@@ -13,11 +13,7 @@ import java.time.Instant
  * даже если прошли по отдельности. Другое откладывание, другой момент или другой номер
  * показа — другой факт.
  */
-data class RestoredDeferredFact(
-    val intakeId: String,
-    val firedAt: Instant,
-    val attempt: Int,
-)
+data class RestoredDeferredFact(val intakeId: String, val firedAt: Instant, val attempt: Int)
 
 /**
  * Факт восстановления, о котором запись журнала, или `null` — запись не о восстановлении.
