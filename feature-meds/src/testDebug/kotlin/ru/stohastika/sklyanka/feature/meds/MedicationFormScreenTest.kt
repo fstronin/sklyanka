@@ -27,7 +27,6 @@ import ru.stohastika.sklyanka.feature.meds.form.FormInputs
 import ru.stohastika.sklyanka.feature.meds.form.FormMode
 import ru.stohastika.sklyanka.feature.meds.form.MedFormUiState
 import ru.stohastika.sklyanka.feature.meds.form.MedicationFormScreen
-import ru.stohastika.sklyanka.feature.meds.form.TAG_DOSE_FIELD
 import ru.stohastika.sklyanka.feature.meds.form.TAG_FOOD_RELATION
 import ru.stohastika.sklyanka.feature.meds.form.TAG_MAX_PER_DAY
 import ru.stohastika.sklyanka.feature.meds.form.TAG_PACKAGE_SIZE_FIELD
