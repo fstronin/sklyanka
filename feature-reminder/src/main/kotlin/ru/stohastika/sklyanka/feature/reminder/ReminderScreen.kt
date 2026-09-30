@@ -21,6 +21,7 @@ import androidx.compose.ui.text.style.TextAlign
 import ru.stohastika.sklyanka.ui.component.PrimaryButton
 import ru.stohastika.sklyanka.ui.component.SecondaryButton
 import ru.stohastika.sklyanka.ui.component.SklyankaMark
+import ru.stohastika.sklyanka.ui.component.StackingEqualButtons
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaShapes
 import ru.stohastika.sklyanka.ui.token.SklyankaSizes
@@ -212,22 +213,25 @@ private fun Actions(state: ReminderUiState.Card, actions: ReminderActions) {
                 .fillMaxWidth()
                 .testTag(TAG_ACTION_TAKEN),
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Medium)) {
-            SecondaryButton(
-                text = snoozeLabel(state.snoozeMinutes),
-                onClick = actions.onSnooze,
-                modifier = Modifier
-                    .weight(1f)
-                    .testTag(TAG_ACTION_SNOOZE),
-            )
-            SecondaryButton(
-                text = stringResource(ru.stohastika.sklyanka.ui.R.string.action_skip),
-                onClick = actions.onSkippedAll,
-                modifier = Modifier
-                    .weight(1f)
-                    .testTag(TAG_ACTION_SKIP),
-            )
-        }
+        // При крупном шрифте кнопки встают друг под друга во всю ширину: сжатые
+        // до половин, они переносили «Отложить 15 мин» на вторую строку (§6.3, SKL-61).
+        StackingEqualButtons(
+            first = {
+                SecondaryButton(
+                    text = snoozeLabel(state.snoozeMinutes),
+                    onClick = actions.onSnooze,
+                    modifier = Modifier.testTag(TAG_ACTION_SNOOZE),
+                )
+            },
+            second = {
+                SecondaryButton(
+                    text = stringResource(ru.stohastika.sklyanka.ui.R.string.action_skip),
+                    onClick = actions.onSkippedAll,
+                    modifier = Modifier.testTag(TAG_ACTION_SKIP),
+                )
+            },
+            gap = SklyankaSpacing.Medium,
+        )
     }
 }
 

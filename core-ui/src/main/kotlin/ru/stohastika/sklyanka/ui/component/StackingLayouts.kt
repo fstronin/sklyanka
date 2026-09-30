@@ -158,6 +158,71 @@ internal fun StackingButtons(
 }
 
 /**
+ * Пара равных кнопок, встающая в столбец, когда подписи перестают помещаться
+ * в равные половины (§6.3).
+ *
+ * Во встроенном виде доли равны — как `weight(1f)` в макете напоминания
+ * (`design/screens/Reminder.dc.html`, `flex-grow: 1`). Как только полной подписи
+ * кнопки перестаёт хватать половины строки, кнопки встают друг под друга во всю
+ * ширину: подпись не переносится и не рвётся.
+ *
+ * Порог считается по полной ширине подписи, а не по самому длинному слову: подпись,
+ * разложенная на две строки, человеком читается как поломка кнопки — ровно это
+ * и увидел пилот («Отложить 15 мин» на двух строках, SKL-61).
+ */
+@Composable
+fun StackingEqualButtons(
+    first: @Composable () -> Unit,
+    second: @Composable () -> Unit,
+    gap: Dp,
+    modifier: Modifier = Modifier,
+) {
+    Layout(
+        contents = listOf(first, second),
+        modifier = modifier.fillMaxWidth(),
+    ) { (firstMeasurables, secondMeasurables), constraints ->
+        val gapPx = gap.roundToPx()
+        val firstMeasurable = firstMeasurables.first()
+        val secondMeasurable = secondMeasurables.first()
+        // Полная ширина подписи без измерения: `measure()` у Measurable вызывается
+        // ровно один раз — при окончательной укладке ниже.
+        val firstFull = firstMeasurable.maxIntrinsicWidth(0)
+        val secondFull = secondMeasurable.maxIntrinsicWidth(0)
+        val available = if (constraints.hasBoundedWidth) {
+            constraints.maxWidth
+        } else {
+            firstFull + gapPx + secondFull
+        }
+        val stacked = maxOf(firstFull, secondFull) * 2 + gapPx > available
+        val share = ((available - gapPx) / 2).coerceAtLeast(0)
+
+        val firstPlaceable: Placeable
+        val secondPlaceable: Placeable
+        if (stacked) {
+            firstPlaceable = firstMeasurable.measure(Constraints.fixedWidth(available))
+            secondPlaceable = secondMeasurable.measure(Constraints.fixedWidth(available))
+        } else {
+            firstPlaceable = firstMeasurable.measure(Constraints.fixedWidth(share))
+            secondPlaceable = secondMeasurable.measure(Constraints.fixedWidth(share))
+        }
+
+        val height = if (stacked) {
+            firstPlaceable.height + gapPx + secondPlaceable.height
+        } else {
+            maxOf(firstPlaceable.height, secondPlaceable.height)
+        }
+        layout(available, height) {
+            firstPlaceable.place(0, 0)
+            if (stacked) {
+                secondPlaceable.place(0, firstPlaceable.height + gapPx)
+            } else {
+                secondPlaceable.place(firstPlaceable.width + gapPx, 0)
+            }
+        }
+    }
+}
+
+/**
  * Ширина самого длинного слова содержимого.
  *
  * У текста минимальная внутренняя ширина — это ширина, ниже которой строка перестаёт
