@@ -3,8 +3,11 @@ package ru.stohastika.sklyanka.feature.meds.form
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import ru.stohastika.sklyanka.domain.medication.MedicationDraft
@@ -44,12 +47,28 @@ class MedicationFormViewModel @Inject constructor(
     /** `null` — форма ещё не открыта: профиль и правящийся курс читаются из хранилища. */
     val state: StateFlow<MedFormUiState?> = _state.asStateFlow()
 
+    private val _closed = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+
+    /**
+     * Успешное сохранение закрывает форму один раз.
+     *
+     * Событие, а не состояние: открытие формы после сохранения — новая подписка, и
+     * прошлое сохранение ей не принадлежит. Состояние с флагом «сохранено» читалось
+     * при повторном открытии как только что наступившее, и форма закрывалась сама
+     * на первом кадре (SKL-57).
+     */
+    val closed: SharedFlow<Unit> = _closed.asSharedFlow()
+
     /**
      * Открыть форму.
+     *
+     * Состояние гасится синхронно, до чтения хранилища: иначе первый кадр формы
+     * показывал предыдущий черновик, пока асинхронное чтение не заменит его.
      *
      * @param medicationId `null` — новое лекарство; иначе правка существующего той же формой.
      */
     fun open(medicationId: String? = null) {
+        _state.value = null
         viewModelScope.launch {
             val existing = medicationId?.let { medications.get(it) }
             if (existing == null) {
@@ -161,7 +180,7 @@ class MedicationFormViewModel @Inject constructor(
     private fun save(state: MedFormUiState) {
         viewModelScope.launch {
             when (val result = saveMedication(state.draft)) {
-                is SaveResult.Saved -> _state.value = _state.value?.copy(saved = true)
+                is SaveResult.Saved -> _closed.tryEmit(Unit)
                 // Черновик не трогается: сохраняется всё, что человек ввёл, включая
                 // текст числовых полей, который в число не разобрался.
                 is SaveResult.Rejected -> _state.value = _state.value?.copy(violations = result.violations)

@@ -36,8 +36,9 @@ fun MedicationFormRoute(
     val context = LocalContext.current
 
     // Успешное сохранение закрывает форму: список и карточка пересобираются потоком,
-    // и перечитывать их отдельно не нужно.
-    LaunchedEffect(state?.saved) { if (state?.saved == true) onDone() }
+    // и перечитывать их отдельно не нужно. Событие не повторяется при новой подписке,
+    // поэтому открытие формы после сохранения закрыться от него не может (SKL-57).
+    LaunchedEffect(Unit) { viewModel.closed.collect { onDone() } }
 
     val current = state ?: return
     MedicationFormScreen(

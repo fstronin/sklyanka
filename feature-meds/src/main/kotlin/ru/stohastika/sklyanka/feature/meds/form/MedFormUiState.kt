@@ -52,8 +52,6 @@ data class MedFormUiState(
     val applicability: FieldApplicability,
     /** Нарушенные правила последней попытки сохранения; до неё список пуст. */
     val violations: List<DraftViolation> = emptyList(),
-    /** Сохранение состоялось: маршрут закрывает форму и возвращает в список. */
-    val saved: Boolean = false,
 ) {
 
     /**

@@ -2,7 +2,10 @@ package ru.stohastika.sklyanka.feature.meds
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -320,7 +323,6 @@ class MedicationFormViewModelTest {
         advanceUntilIdle()
 
         val state = model.state.value!!
-        assertFalse(state.saved)
         assertTrue(DraftViolation.PackageSizeNotPositive in state.violations)
         assertEquals(DraftField.PACKAGE_SIZE, state.firstViolationField)
         assertEquals("what was typed must survive the refusal", "0", state.inputs.packageSize)
@@ -368,7 +370,6 @@ class MedicationFormViewModelTest {
         advanceUntilIdle()
 
         val state = model.state.value!!
-        assertFalse(state.saved)
         assertEquals("med-a", state.draft.name)
         assertEquals("2", state.inputs.doseAmount)
         // Набранное в поле остатка не стирается — именно поэтому текст хранится рядом с числом.
@@ -409,9 +410,55 @@ class MedicationFormViewModelTest {
         model.onIntent(MedFormIntent.Save)
         advanceUntilIdle()
 
-        assertTrue(model.state.value!!.saved)
         assertEquals(1, medications.snapshot().size)
         assertTrue(intakes.snapshot().isNotEmpty())
+    }
+
+    @Test
+    fun `a saved course tells the form to close exactly once`() = runTest(dispatcher) {
+        val closes = mutableListOf<Unit>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { model.closed.toList(closes) }
+        open()
+        fillValidSchedule()
+
+        model.onIntent(MedFormIntent.Save)
+        advanceUntilIdle()
+
+        assertEquals(1, closes.size)
+    }
+
+    @Test
+    fun `a refusal tells the form nothing about closing`() = runTest(dispatcher) {
+        val closes = mutableListOf<Unit>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { model.closed.toList(closes) }
+        open()
+        model.onIntent(MedFormIntent.NameChanged("med-a"))
+
+        model.onIntent(MedFormIntent.Save)
+        advanceUntilIdle()
+
+        assertTrue(closes.isEmpty())
+        assertTrue(model.state.value!!.violations.isNotEmpty())
+    }
+
+    @Test
+    fun `opening the form again does not replay the previous save`() = runTest(dispatcher) {
+        val first = mutableListOf<Unit>()
+        val firstJob = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { model.closed.toList(first) }
+        open()
+        fillValidSchedule()
+        model.onIntent(MedFormIntent.Save)
+        advanceUntilIdle()
+        assertEquals(1, first.size)
+        firstJob.cancel()
+
+        val replayed = mutableListOf<Unit>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { model.closed.toList(replayed) }
+        model.open()
+        advanceUntilIdle()
+
+        assertTrue("a new opening must not close from the previous save", replayed.isEmpty())
+        assertNotNull(model.state.value)
     }
 
     @Test
@@ -425,7 +472,6 @@ class MedicationFormViewModelTest {
         model.onIntent(MedFormIntent.Save)
         advanceUntilIdle()
 
-        assertTrue(model.state.value!!.saved)
         assertEquals(3, medications.snapshot().single().maxPerDay)
         assertTrue(intakes.snapshot().isEmpty())
     }
