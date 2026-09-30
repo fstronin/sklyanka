@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Прогон инструментальных проверок на образе (SKL-27).
 #
-# Все 22 файла проверок устройства живут в одном модуле — core-data (SKL-24 §5.2),
-# поэтому прогон адресуется модулю, а фильтр задаёт группу.
+# Проверки устройства живут в двух модулях (SKL-24 §5.2): core-data — настоящая база,
+# feature-history — байты отчёта врачу (SKL-41). Прогон адресуется модулям из
+# SKL_TEST_MODULES, а фильтр задаёт группу.
 #
 #   ./run-tests.sh [API] [группа]
 #
@@ -12,6 +13,9 @@
 #   heavy      объём и гонки: тысяча повторов в двух потоках, база годового объёма
 #   migration  миграции из экспортированных схем (МГ-3) — отдельно от всего
 #   all        всё подряд, одной задачей (по умолчанию)
+#
+# Группы fast/heavy/migration описывают базу и адресуются core-data; data и all идут
+# по всем модулям: отчёту врачу тоже нужна настоящая платформа, а не JVM.
 set -euo pipefail
 
 SKL_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
@@ -40,24 +44,38 @@ case "$group" in
     *) skl_die "неизвестная группа: $group (fast|data|heavy|migration|all)" ;;
 esac
 
+# Какие модули исполняют группу: heavy, migration и fast — предмет core-data,
+# data и all — все модули проверок.
+case "$group" in
+    data | all) modules=("${SKL_TEST_MODULES[@]}") ;;
+    *) modules=("${SKL_TEST_MODULES[0]}") ;;
+esac
+
 results="$(skl_results_dir "$api")"
 log_file="$results/tests-$group.log"
 skl_log "прогон группы «${group}» на $(skl_serial "$api"); лог: $log_file"
+: >"$log_file"
 
 status=0
-# Пустой фильтр (группа all) разворачивается через ${name[@]+...}: bash 3.2 — а это
-# системный bash macOS — считает разворот пустого массива обращением к неназначенной
-# переменной и с set -u прекращает работу. Прогон «всё подряд» на такой машине
-# не запускался вовсе.
-skl_gradle "$api" "$SKL_TEST_MODULE:$SKL_TEST_TASK" ${filter[@]+"${filter[@]}"} 2>&1 |
-    tee "$log_file" || status=$?
+for module in "${modules[@]}"; do
+    skl_log "модуль $module"
+    # Пустой фильтр (группа all) разворачивается через ${name[@]+...}: bash 3.2 — а это
+    # системный bash macOS — считает разворот пустого массива обращением к неназначенной
+    # переменной и с set -u прекращает работу. Прогон «всё подряд» на такой машине
+    # не запускался вовсе.
+    skl_gradle "$api" "$module:$SKL_TEST_TASK" ${filter[@]+"${filter[@]}"} 2>&1 |
+        tee -a "$log_file" || status=$?
 
-# Отчёты AGP — машинно читаемые XML; они и есть результат прогона проверок,
-# а не то, что осталось в терминале.
-xml_dir="$SKL_REPO_ROOT/core-data/build/outputs/androidTest-results/connected"
-if [[ -d "$xml_dir" ]]; then
-    mkdir -p "$results/androidTest-results/$group"
-    cp -R "$xml_dir/." "$results/androidTest-results/$group/" 2>/dev/null || true
+    # Отчёты AGP — машинно читаемые XML; они и есть результат прогона проверок,
+    # а не то, что осталось в терминале. У каждого модуля свой каталог отчётов,
+    # и они складываются рядом, а не затирают друг друга.
+    xml_dir="$SKL_REPO_ROOT/${module#:}/build/outputs/androidTest-results/connected"
+    if [[ -d "$xml_dir" ]]; then
+        mkdir -p "$results/androidTest-results/$group"
+        cp -R "$xml_dir/." "$results/androidTest-results/$group/" 2>/dev/null || true
+    fi
+done
+if [[ -d "$results/androidTest-results/$group" ]]; then
     skl_log "отчёты проверок: $results/androidTest-results/$group"
 fi
 

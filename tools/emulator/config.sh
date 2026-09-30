@@ -125,12 +125,13 @@ SKL_ADB_TIMEOUT=60
 # --- Прогон проверок -----------------------------------------------------------
 #
 # Группы прогона (TDD §6): быстрое отдельно от объёмного, миграции отдельно.
-# Модуль один — все 22 файла проверок устройства живут в core-data (SKL-24 §5.2).
-SKL_TEST_MODULE=":core-data"
+# Проверок устройства два модуля (SKL-24 §5.2): core-data — настоящая база,
+# feature-history — байты отчёта врачу (SKL-41, PdfDocument живёт только на устройстве).
+SKL_TEST_MODULES=(":core-data" ":feature-history")
 SKL_TEST_TASK="connectedDebugAndroidTest"
 
 SKL_GROUP_FAST_PACKAGES="ru.stohastika.sklyanka.data.repository"
-SKL_GROUP_DATA_PACKAGES="ru.stohastika.sklyanka.data.room,ru.stohastika.sklyanka.data.transfer,ru.stohastika.sklyanka.data.reminder,ru.stohastika.sklyanka.data.history"
+SKL_GROUP_DATA_PACKAGES="ru.stohastika.sklyanka.data.room,ru.stohastika.sklyanka.data.transfer,ru.stohastika.sklyanka.data.reminder,ru.stohastika.sklyanka.data.history,ru.stohastika.sklyanka.feature.history"
 # Объёмные и гоночные проверки: тысяча повторов в двух потоках и база годового объёма.
 SKL_GROUP_HEAVY_CLASSES="ru.stohastika.sklyanka.data.room.VolumeTest,ru.stohastika.sklyanka.data.room.ConcurrencyTest,ru.stohastika.sklyanka.data.history.HistoryQueriesTest"
 # Миграции — отдельной группой: они поднимают базу предыдущей версии из экспортированных
