@@ -1,0 +1,48 @@
+package ru.stohastika.sklyanka.startup
+
+import ru.stohastika.sklyanka.feature.today.TodayUiState
+
+/**
+ * Какой кадр запуска рисуется прямо сейчас.
+ *
+ * На холодном старте кадров три: системный (его рисует платформа по теме
+ * `Theme.Sklyanka.Splash`, приложению он не подчиняется), заставка приложения
+ * и первый экран. Здесь названы два последних — то, чем распоряжается приложение.
+ */
+enum class StartupFrame {
+
+    /**
+     * Заставка приложения: экран удержания от снятия системного кадра до готовности
+     * первого экрана показать своё содержимое (`docs/spec/03-screens.md` «Заставка»).
+     */
+    AppSplash,
+
+    /** Первый экран запуска: разрешения, онбординг или «Сегодня» с содержимым. */
+    FirstScreen,
+}
+
+/**
+ * Правило показа кадров запуска — единственное место, где оно записано.
+ *
+ * Заставка приложения держится, пока первый экран не готов показать своё содержимое,
+ * и ни кадром дольше; собственной паузы у неё нет (НФТ-21). Готовность «Сегодня» —
+ * это не [TodayUiState.Opening]: `Opening` — пустой кадр до первого значения потока,
+ * и показывать его человеку вместо заставки нельзя. Экран разрешений содержимое
+ * показывает сразу, поэтому его ветка готовности не ждёт.
+ *
+ * [destination] == `null` означает «маршрут ещё не решён»: первый экран неизвестен,
+ * значит не готов, и на экране заставка. Правило сознательно читает состояние,
+ * а не получает событий готовности из экранов: иначе каждый экран завёл бы свой
+ * сигнал, и один из них однажды не позвали бы.
+ */
+fun startupFrame(
+    destination: StartDestination?,
+    onboardingUnseen: Boolean,
+    onboardingDone: Boolean,
+    today: TodayUiState,
+): StartupFrame = when {
+    destination == null -> StartupFrame.AppSplash
+    destination == StartDestination.Onboarding && onboardingUnseen && !onboardingDone -> StartupFrame.FirstScreen
+    today is TodayUiState.Opening -> StartupFrame.AppSplash
+    else -> StartupFrame.FirstScreen
+}
