@@ -3,6 +3,7 @@ package ru.stohastika.sklyanka.feature.history
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -53,37 +54,45 @@ import ru.stohastika.sklyanka.ui.R as UiR
  *
  * Экран прокручивается целиком: при крупном системном шрифте блоки растут по высоте,
  * и кнопка «Отчёт врачу» обязана остаться достижимой (НФТ-31).
+ *
+ * **Шторка отчёта лежит поверх содержимого, а не рядом с ним.** Корень экрана — `Box`:
+ * соседом в столбце шторка получала нулевой остаток высоты (`Column` меряет детей без
+ * веса после `fillMaxSize`-сына), и на устройстве «Отчёт врачу» строил документ молча —
+ * шторка не предъявлялась вовсе (находка прогона SKL-41, фикс SKL-44). Тот же способ
+ * наложения, что у снэкбара «Сегодня» (`TodayScreen.kt`).
  */
 @Composable
 fun HistoryScreen(state: HistoryUiState, onIntent: (HistoryIntent) -> Unit, modifier: Modifier = Modifier) {
     val colors = SklyankaTheme.colors
-    Column(
+    Box(
         modifier = modifier
             .fillMaxSize()
             .background(colors.background)
             .testTag(TAG_HISTORY_SCREEN),
     ) {
-        HistoryTopBar(onIntent)
-        ScreenHeader(labels = ScreenHeaderLabels(title = stringResource(R.string.history_title)))
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = SklyankaSpacing.Section)
-                .padding(bottom = SklyankaSpacing.Screen),
-            verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Large),
-        ) {
-            state.notice?.let { notice -> NoticeBanner(notice, onIntent) }
-            SummaryTiles(state)
-            CalendarMonth(month = state.month, days = state.period.days, onIntent = onIntent)
-            // Блок «По лекарствам» скрыт, когда за месяц нет ни одной записи: пустая
-            // карточка с заголовком сообщает человеку, что экран сломан.
-            if (state.period.byMedication.isNotEmpty()) {
-                MedicationBreakdown(rows = state.period.byMedication, insightTime = state.insightTime)
+        Column(modifier = Modifier.fillMaxSize()) {
+            HistoryTopBar(onIntent)
+            ScreenHeader(labels = ScreenHeaderLabels(title = stringResource(R.string.history_title)))
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = SklyankaSpacing.Section)
+                    .padding(bottom = SklyankaSpacing.Screen),
+                verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Large),
+            ) {
+                state.notice?.let { notice -> NoticeBanner(notice, onIntent) }
+                SummaryTiles(state)
+                CalendarMonth(month = state.month, days = state.period.days, onIntent = onIntent)
+                // Блок «По лекарствам» скрыт, когда за месяц нет ни одной записи: пустая
+                // карточка с заголовком сообщает человеку, что экран сломан.
+                if (state.period.byMedication.isNotEmpty()) {
+                    MedicationBreakdown(rows = state.period.byMedication, insightTime = state.insightTime)
+                }
             }
         }
+        state.report?.let { report -> DoctorReportSheet(report, onIntent) }
     }
-    state.report?.let { report -> DoctorReportSheet(report, onIntent) }
 }
 
 /**
