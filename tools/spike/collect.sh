@@ -2,6 +2,10 @@
 # Снятие журнала напоминаний и расчёт чисел гейта (SKL-03).
 #
 #   ./collect.sh [--serial S] [--csv FILE] [--out DIR] [--platform ТЕКСТ] [--marks FILE]
+#                [--zone IANA] [--times "ЧЧ:ММ,…"] [--per-slot N] [--run-kind ТЕКСТ]
+#
+# --times и --per-slot по умолчанию берутся из config.sh (нагрузка И-16: пять лекарств,
+# восемь времён); переопределение нужно ускоренным самопроверкам с другим расписанием.
 #
 # Основной путь заказчика — выгрузить журнал из приложения (Диагностика → «Выгрузить
 # журнал») и передать CSV сюда ключом --csv: ни компьютер, ни adb для этого не нужны.
@@ -28,6 +32,9 @@ out=""
 platform=""
 marks=""
 zone=""
+times="$SPIKE_TIMES"
+per_slot="$SPIKE_MEDICATIONS"
+run_kind="эталонный Huawei, EMUI 15 (SKL-03)"
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --serial) serial="$2"; shift 2 ;;
@@ -36,6 +43,9 @@ while [[ $# -gt 0 ]]; do
         --platform) platform="$2"; shift 2 ;;
         --marks) marks="$2"; shift 2 ;;
         --zone) zone="$2"; shift 2 ;;
+        --times) times="$2"; shift 2 ;;
+        --per-slot) per_slot="$2"; shift 2 ;;
+        --run-kind) run_kind="$2"; shift 2 ;;
         *) skl_die "неизвестный аргумент: $1" ;;
     esac
 done
@@ -114,8 +124,8 @@ printf '%s\n' "$platform" >"$out/platform.txt"
 
 [[ -n "$marks" ]] || marks="$out/marks.tsv"
 
-set -- --platform "$platform" --run-kind "эталонный Huawei, EMUI 15 (SKL-03)" --out-dir "$out" \
-    --times "$SPIKE_TIMES" --per-slot "$SPIKE_MEDICATIONS"
+set -- --platform "$platform" --run-kind "$run_kind" --out-dir "$out" \
+    --times "$times" --per-slot "$per_slot"
 if [[ -n "$zone" ]]; then
     set -- "$@" --zone "$zone"
 fi

@@ -447,6 +447,7 @@ def scenario_evidence(entries: list[dict], start: int, end: int) -> dict:
     reasons: dict[str, int] = {}
     suppress_reasons: dict[str, int] = {}
     zero_alarms = 0
+    exact_denied = 0
     for entry in entries:
         at = entry["occurred_at"]
         if at < start or at > end:
@@ -457,13 +458,18 @@ def scenario_evidence(entries: list[dict], start: int, end: int) -> dict:
             reasons[entry["reason"]] = reasons.get(entry["reason"], 0) + 1
             if entry["alarms_scheduled"] == 0:
                 zero_alarms += 1
+            # У записи пересборки `delivered` — признак «точные будильники разрешены»
+            # (`RescheduleRemindersUseCase`): false и есть обнаруженный отказ И-15.
+            if entry["delivered"] is False:
+                exact_denied += 1
         if event == "suppressed" and entry["reason"]:
             suppress_reasons[entry["reason"]] = suppress_reasons.get(entry["reason"], 0) + 1
     return {
         "events": events,
         "reschedule_reasons": reasons,
         "suppress_reasons": suppress_reasons,
-        "rescheduled_without_alarms": zero_alarms,
+        "reschedules_with_nothing_new": zero_alarms,
+        "exact_alarms_denied": exact_denied,
     }
 
 
@@ -555,7 +561,8 @@ def human(summary: dict, reminders: list[dict], windows: list[dict], scenarios: 
             )
             lines.append(
                 f"    признаки: пересборки {reasons or '—'}; подавления {suppressed or '—'}; "
-                f"пересборок без будильников {evidence['rescheduled_without_alarms']}"
+                f"пересборок без новых будильников {evidence['reschedules_with_nothing_new']}; "
+                f"отказов в точных будильниках {evidence['exact_alarms_denied']}"
             )
     else:
         lines += ["", "Отметки сценариев не найдены: разбивки по И-1 … И-16 в этом разборе нет."]
