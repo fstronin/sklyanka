@@ -15,6 +15,7 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import ru.stohastika.sklyanka.domain.intake.UndoableMarkStore
 import ru.stohastika.sklyanka.domain.onboarding.OnboardingSource
 import ru.stohastika.sklyanka.domain.onboarding.ShouldShowOnboardingUseCase
 import ru.stohastika.sklyanka.domain.profile.ProfileContextProvider
@@ -42,10 +43,12 @@ import ru.stohastika.sklyanka.navigation.HistorySection
 import ru.stohastika.sklyanka.navigation.MedsDestination
 import ru.stohastika.sklyanka.navigation.MedsSection
 import ru.stohastika.sklyanka.navigation.MedsViewModels
+import ru.stohastika.sklyanka.navigation.RootNavigation
 import ru.stohastika.sklyanka.navigation.RootTab
 import ru.stohastika.sklyanka.navigation.SettingsDestination
 import ru.stohastika.sklyanka.navigation.SettingsSection
 import ru.stohastika.sklyanka.navigation.SettingsViewModels
+import ru.stohastika.sklyanka.navigation.UndoReturn
 import ru.stohastika.sklyanka.platform.startup.StartupRouter
 import ru.stohastika.sklyanka.reminder.ReminderOutageAnnouncer
 import ru.stohastika.sklyanka.startup.StartDestination
@@ -129,6 +132,24 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var time: TimeSource
 
+    /**
+     * Живое окно отмены: по нему `onResume` решает, что человеку место на «Сегодня»
+     * (SKL-43, дополнение ОВ-81).
+     */
+    @Inject
+    lateinit var undoMarks: UndoableMarkStore
+
+    /** Состояние корня приложения — маршрут и возврат из `onResume` (SKL-43). */
+    private val rootNavigation = RootNavigation()
+
+    /**
+     * Экран разрешений поверх «Сегодня» (НАП-21, SKL-29).
+     *
+     * Поле активности, а не `remember` композиции: возврат под живым окном отмены обязан
+     * закрыть этот экран из `onResume`, иначе «Сегодня» осталось бы под ним (SKL-43).
+     */
+    private var permissionsFromToday by mutableStateOf(false)
+
     private val onboarding: OnboardingViewModel by viewModels()
     private val today: TodayViewModel by viewModels()
     private val medsList: MedicationListViewModel by viewModels()
@@ -164,11 +185,6 @@ class MainActivity : ComponentActivity() {
                 // решает человек кнопкой, и решение живёт в состоянии экрана, а не в том,
                 // что система ответила про разрешения (НАП-21).
                 var onboardingDone by remember { mutableStateOf(false) }
-                // Предупреждение на «Сегодня» ведёт на тот же экран разрешений, что и первый
-                // запуск: источник TODAY_WARNING решает только одно — индикатора шагов нет
-                // (НАП-21, критерий приёмки 4 SKL-29). Экран показывается поверх всего, как
-                // первый запуск, и закрывается возвратом на «Сегодня».
-                var permissionsFromToday by remember { mutableStateOf(false) }
                 val todayState by today.state.collectAsState()
                 // Кадр заставки — экран удержания: он виден от снятия системного кадра
                 // до готовности первого экрана и ни кадром дольше. Пока заставка на
@@ -273,6 +289,12 @@ class MainActivity : ComponentActivity() {
         // при каждом возвращении на передний план, а не запоминается флагом (НФТ-52,
         // критерий приёмки 6).
         settings.refresh()
+        // Живое окно отмены: человеку, оказавшемуся в приложении (в том числе
+        // разблокировавшему телефон), место на «Сегодня» с тем же снэкбаром — даже если
+        // приложение было оставлено на другом экране (SKL-43, ОВ-81). Истёкшее окно
+        // не переключает ничего; экран разрешений поверх корня закрывается — иначе
+        // «Сегодня» осталось бы под ним.
+        if (UndoReturn.onAppeared(undoMarks, rootNavigation)) permissionsFromToday = false
     }
 
     /**
@@ -287,32 +309,31 @@ class MainActivity : ComponentActivity() {
      * угадывается по тому, какой экран был отрисован последним. Иначе человек, ушедший
      * в лекарства из настроек, возвращался бы на «Сегодня».
      *
+     * Само состояние — в [RootNavigation]: оно доступно и `onResume`, который под живым
+     * окном отмены возвращает человека на «Сегодня» (SKL-43, ОВ-81).
+     *
      * Диагностика напоминаний и экран разрешений — отдельные Activity (SKL-13, SKL-14),
      * и в этот граф они не встраиваются: у них есть собственные точки входа — ярлык запуска
      * и уведомление.
      */
     @Composable
     private fun Root(onOpenPermissions: () -> Unit) {
-        var tab by remember { mutableStateOf(RootTab.TODAY) }
-        var meds by remember { mutableStateOf<MedsDestination?>(null) }
-        var section by remember { mutableStateOf<SettingsDestination?>(null) }
-        // История, открытая с «Сегодня» (ОВ-84, SKL-31): тот же второй уровень, что
-        // из настроек, но место входа — строка прогресса дня. Ветка стоит рядом
-        // с `section`/`meds`: возврат обязан вести туда, откуда открыли.
-        var historyFromToday by remember { mutableStateOf(false) }
-        val medsDestination = meds
-        val secondLevel = section
+        val medsDestination = rootNavigation.meds
+        val secondLevel = rootNavigation.section
         when {
-            historyFromToday -> HistorySection(
+            // История, открытая с «Сегодня» (ОВ-84, SKL-31): тот же второй уровень, что
+            // из настроек, но место входа — строка прогресса дня. Ветка стоит рядом
+            // с `section`/`meds`: возврат обязан вести туда, откуда открыли.
+            rootNavigation.historyFromToday -> HistorySection(
                 viewModel = history,
                 origin = HistoryOrigin.TODAY,
-                onLeave = { historyFromToday = false },
+                onLeave = { rootNavigation.leaveHistory() },
             )
 
             secondLevel != null -> SettingsSection(
                 destination = secondLevel,
                 viewModels = SettingsViewModels(history, transfer, deleteProfile),
-                onLeave = { section = null },
+                onLeave = rootNavigation::leaveSection,
                 onOpenPermissions = { startActivity(PermissionsActivity.intentFor(this)) },
             )
 
@@ -323,11 +344,11 @@ class MainActivity : ComponentActivity() {
                     card = medCard,
                     archive = archive,
                 ),
-                onLeaveSection = { meds = null },
+                onLeaveSection = rootNavigation::leaveMeds,
                 initial = medsDestination,
             )
 
-            tab == RootTab.SETTINGS -> SettingsRoute(
+            rootNavigation.tab == RootTab.SETTINGS -> SettingsRoute(
                 viewModel = settings,
                 navigation = SettingsNavigation(
                     // Экран добавления профиля не зафиксирован (`ОВ-3`): строка есть,
@@ -341,35 +362,35 @@ class MainActivity : ComponentActivity() {
                     // и только потом онбординг. Обратный порядок отправлял бы человека
                     // проходить цепочку заново, не сказав ему, сломано ли что-нибудь.
                     openDiagnostics = { startActivity(DiagnosticsActivity.intentFor(this)) },
-                    openHistory = { section = SettingsDestination.HISTORY },
-                    openDataTransfer = { section = SettingsDestination.TRANSFER },
+                    openHistory = { rootNavigation.openSection(SettingsDestination.HISTORY) },
+                    openDataTransfer = { rootNavigation.openSection(SettingsDestination.TRANSFER) },
                     // «Удалить профиль «Имя»» — экран второго уровня настроек (ОВ-7, SKL-36).
                     // Строка появляется только у активного чужого профиля, и «Готово»
                     // возвращает в настройки — туда, откуда человек пришёл.
-                    deleteProfile = { section = SettingsDestination.DELETE_PROFILE },
-                    openToday = { tab = RootTab.TODAY },
-                    openMedications = { meds = MedsDestination.List },
+                    deleteProfile = { rootNavigation.openSection(SettingsDestination.DELETE_PROFILE) },
+                    openToday = { rootNavigation.openTab(RootTab.TODAY) },
+                    openMedications = { rootNavigation.openMeds(MedsDestination.List) },
                 ),
             )
 
             else -> TodayRoute(
                 viewModel = today,
                 navigation = TodayNavigation(
-                    openMedicationCard = { id -> meds = MedsDestination.Card(id) },
+                    openMedicationCard = { id -> rootNavigation.openMeds(MedsDestination.Card(id)) },
                     // «Купить» ведёт в ту же карточку: блок остатка с кнопкой «Пополнить»
                     // живёт на ней (SKL-12).
-                    openMedicationStock = { id -> meds = MedsDestination.Card(id) },
-                    addMedication = { meds = MedsDestination.NewMedication },
-                    openMedicationList = { meds = MedsDestination.List },
+                    openMedicationStock = { id -> rootNavigation.openMeds(MedsDestination.Card(id)) },
+                    addMedication = { rootNavigation.openMeds(MedsDestination.NewMedication) },
+                    openMedicationList = { rootNavigation.openMeds(MedsDestination.List) },
                     // Вкладка «Настройки» нижней панели и аватар профиля в шапке ведут
                     // в одно место — шестерёнки в шапке нет (ПРФ-19, критерий приёмки 14).
-                    openSettings = { tab = RootTab.SETTINGS },
+                    openSettings = { rootNavigation.openTab(RootTab.SETTINGS) },
                     // «Настроить» в предупреждении о ненадёжности: экран разрешений
                     // с источником TODAY_WARNING (SKL-29, НАП-21).
                     openPermissions = onOpenPermissions,
                     // «История» в строке прогресса дня — история с местом входа TODAY
                     // (ОВ-84, SKL-31).
-                    openHistory = { historyFromToday = true },
+                    openHistory = rootNavigation::openHistory,
                 ),
             )
         }
