@@ -48,8 +48,9 @@ import ru.stohastika.sklyanka.navigation.SettingsSection
 import ru.stohastika.sklyanka.navigation.SettingsViewModels
 import ru.stohastika.sklyanka.platform.startup.StartupRouter
 import ru.stohastika.sklyanka.reminder.ReminderOutageAnnouncer
-import ru.stohastika.sklyanka.startup.SplashScreen
 import ru.stohastika.sklyanka.startup.StartDestination
+import ru.stohastika.sklyanka.startup.StartupFrames
+import ru.stohastika.sklyanka.startup.startupFrame
 import ru.stohastika.sklyanka.ui.locale.withInterfaceLocale
 import ru.stohastika.sklyanka.ui.profile.ProfileChrome
 import ru.stohastika.sklyanka.ui.profile.ProfileChromeState
@@ -75,9 +76,11 @@ import javax.inject.Inject
  * **Заставка.** Первый кадр рисует система по теме `Theme.Sklyanka.Splash` — полотно
  * и знак появляются до того, как выполнится хоть одна строка приложения, и потому
  * не добавляют к холодному старту ничего (НФТ-21). [installSplashScreen] держит этот
- * кадр, пока не решено, куда уходить; решение читается из системы и занимает доли
- * миллисекунды, так что держится он ровно один кадр. Дольше заставка живёт только
- * если дольше поднимается то, что и так нужно первому экрану.
+ * кадр ровно до первого кадра приложения: как только [StartupFrames] нарисовал свой
+ * кадр, система снимает свой, и под ним уже стоит заставка приложения. Она и держится,
+ * пока первый экран не готов показать своё содержимое, — и ни кадром дольше (ОВ-87).
+ * Собственной паузы у заставки нет: дольше она живёт только если дольше поднимается
+ * то, что и так нужно первому экрану.
  */
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -143,8 +146,11 @@ class MainActivity : ComponentActivity() {
 
         var destination by mutableStateOf<StartDestination?>(null)
         var onboardingUnseen by mutableStateOf(false)
-        // Системный кадр держится ровно до решения — и ни на кадр дольше.
-        splash.setKeepOnScreenCondition { destination == null }
+        // Признак «приложение нарисовало свой первый кадр». Системный кадр держится
+        // ровно до него — не до решения о маршруте: решение читает систему и может
+        // занять время, а рисовать приложению уже есть что.
+        var firstAppFrameDrawn = false
+        splash.setKeepOnScreenCondition { !firstAppFrameDrawn }
         lifecycleScope.launch {
             // Оба признака читаются в одном заходе: решение о первом экране принимается
             // один раз, и второе чтение дало бы другой ответ — первый запуск перестаёт
@@ -164,44 +170,54 @@ class MainActivity : ComponentActivity() {
                 // (НАП-21, критерий приёмки 4 SKL-29). Экран показывается поверх всего, как
                 // первый запуск, и закрывается возвратом на «Сегодня».
                 var permissionsFromToday by remember { mutableStateOf(false) }
-                when {
-                    // Кадр заставки средствами приложения: полотно и знак те же, что
-                    // у системного, поэтому переход не мигает. Индикатора загрузки
-                    // на нём нет намеренно (docs/spec/03-screens.md «Заставка»).
-                    destination == null -> SplashScreen()
+                val todayState by today.state.collectAsState()
+                // Кадр заставки — экран удержания: он виден от снятия системного кадра
+                // до готовности первого экрана и ни кадром дольше. Пока заставка на
+                // экране, первый экран не компонуется вовсе, поэтому пустой кадр
+                // «Сегодня» (TodayUiState.Opening) мелькнуть не может (ОВ-87).
+                StartupFrames(
+                    frame = startupFrame(
+                        destination = destination,
+                        onboardingUnseen = onboardingUnseen,
+                        onboardingDone = onboardingDone,
+                        today = todayState,
+                    ),
+                    onFirstFrameDrawn = { firstAppFrameDrawn = true },
+                ) {
+                    when {
+                        // Экран разрешений EMUI (SKL-14): запуск, на котором с разрешениями
+                        // непорядок, начинается с него — но только пока человек этого экрана
+                        // не видел. Решение и его причина уже записаны в журнал запуска.
+                        destination == StartDestination.Onboarding && onboardingUnseen && !onboardingDone ->
+                            PermissionsRoute(
+                                viewModel = onboarding,
+                                source = OnboardingSource.FIRST_LAUNCH,
+                                // Экран подключения часов — SKL-17, и его ещё нет. Исход
+                                // OnboardingExit.WATCH_SETUP вычисляется и попадает в журнал, но
+                                // ведёт туда же, куда пропуск: на «Сегодня». Обещать экран, которого
+                                // нет, хуже, чем не обещать ничего, — критерий приёмки 20 закрывается
+                                // вместе с SKL-17 одной строкой здесь.
+                                onExit = { onboardingDone = true },
+                            )
 
-                    // Экран разрешений EMUI (SKL-14): запуск, на котором с разрешениями
-                    // непорядок, начинается с него — но только пока человек этого экрана
-                    // не видел. Решение и его причина уже записаны в журнал запуска.
-                    destination == StartDestination.Onboarding && onboardingUnseen && !onboardingDone ->
-                        PermissionsRoute(
+                        // «Настроить» в предупреждении на «Сегодня» — тот же экран разрешений,
+                        // что при первом запуске, но с источником TODAY_WARNING: индикатора
+                        // шагов на нём нет (НАП-21, критерий приёмки 4 SKL-29). Человек
+                        // возвращается на «Сегодня» — оттуда он и пришёл.
+                        permissionsFromToday -> PermissionsRoute(
                             viewModel = onboarding,
-                            source = OnboardingSource.FIRST_LAUNCH,
-                            // Экран подключения часов — SKL-17, и его ещё нет. Исход
-                            // OnboardingExit.WATCH_SETUP вычисляется и попадает в журнал, но
-                            // ведёт туда же, куда пропуск: на «Сегодня». Обещать экран, которого
-                            // нет, хуже, чем не обещать ничего, — критерий приёмки 20 закрывается
-                            // вместе с SKL-17 одной строкой здесь.
-                            onExit = { onboardingDone = true },
+                            source = OnboardingSource.TODAY_WARNING,
+                            onExit = { permissionsFromToday = false },
                         )
 
-                    // «Настроить» в предупреждении на «Сегодня» — тот же экран разрешений,
-                    // что при первом запуске, но с источником TODAY_WARNING: индикатора
-                    // шагов на нём нет (НАП-21, критерий приёмки 4 SKL-29). Человек
-                    // возвращается на «Сегодня» — оттуда он и пришёл.
-                    permissionsFromToday -> PermissionsRoute(
-                        viewModel = onboarding,
-                        source = OnboardingSource.TODAY_WARNING,
-                        onExit = { permissionsFromToday = false },
-                    )
-
-                    // Оформление активного профиля — вокруг всего, что человек видит
-                    // в контексте профиля (ПРФ-12). Заставка и экран разрешений в него
-                    // не входят: профиля на них ещё нет, а на первом запуске он всегда
-                    // свой.
-                    else -> ProfileChrome(profileChrome()) {
-                        OutageNotice()
-                        Root(onOpenPermissions = { permissionsFromToday = true })
+                        // Оформление активного профиля — вокруг всего, что человек видит
+                        // в контексте профиля (ПРФ-12). Заставка и экран разрешений в него
+                        // не входят: профиля на них ещё нет, а на первом запуске он всегда
+                        // свой.
+                        else -> ProfileChrome(profileChrome()) {
+                            OutageNotice()
+                            Root(onOpenPermissions = { permissionsFromToday = true })
+                        }
                     }
                 }
             }
