@@ -2,6 +2,7 @@ package ru.stohastika.sklyanka.feature.history
 
 import android.content.Context
 import ru.stohastika.sklyanka.domain.history.DoctorReport
+import ru.stohastika.sklyanka.ui.locale.withInterfaceLocale
 import java.time.Instant
 import java.time.ZoneId
 import java.util.Locale
@@ -16,7 +17,19 @@ import java.util.Locale
  * `Context` здесь — ресурсы, а не платформа: состав собирается и проверяется под
  * Robolectric, и только [PdfPagePainter] касается `PdfDocument`.
  */
-internal class ReportPdfComposer(private val context: Context) {
+internal class ReportPdfComposer(applicationContext: Context) {
+
+    /**
+     * Контекст с закреплённым языком интерфейса (НФТ-43а, `ADR-0008`).
+     *
+     * Композер собирает слова и шторки, и документа, и закрепляет язык сам, а не полагается
+     * на вызывающего. Рендер отчёта — синглтон с контекстом приложения, а тот, в отличие от
+     * контекста активностей, закрепление языка не проходит: на телефоне с английской
+     * системой период печатался «1 — 30 September 2026», и локаль телефона уходила в PDF
+     * (находка 44-A SKL-44). Здесь закрепление стоит на единственной точке, где отчёт
+     * получает слова, — значит, собрать его на языке телефона не может ни один вызов.
+     */
+    private val context: Context = applicationContext.withInterfaceLocale()
 
     private val text = ReportPdfText(context)
 
