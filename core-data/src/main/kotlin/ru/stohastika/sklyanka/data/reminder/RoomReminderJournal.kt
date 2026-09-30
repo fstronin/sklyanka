@@ -40,27 +40,37 @@ class RoomReminderJournal @Inject constructor(private val dao: ReminderLogDao, p
     ReminderJournal {
 
     override suspend fun record(entry: ReminderLogEntry) {
-        dao.insert(
-            ReminderLogEntity(
-                occurredAt = entry.occurredAt.toEpochMilli(),
-                event = entry.event.name,
-                intakeId = entry.intakeId,
-                medicationId = entry.medicationId,
-                profileId = entry.profileId,
-                scheduledAt = SklyankaConverters.instantToMillis(entry.scheduledAt),
-                firedAt = SklyankaConverters.instantToMillis(entry.firedAt),
-                deviationSeconds = entry.deviationSeconds,
-                channel = entry.channel?.id,
-                delivered = entry.delivered,
-                reason = entry.reason,
-                alarmsCancelled = entry.alarmsCancelled,
-                alarmsScheduled = entry.alarmsScheduled,
-                attempt = entry.attempt,
-                snoozeMinutes = entry.minutes,
-                watchResult = entry.watchResult,
-            ),
-        )
+        dao.insert(entry.toEntity())
     }
+
+    /**
+     * Восстановление записывается один раз на факт (SKL-47): двумя пересборками
+     * (запуск и перезагрузка) состояние и будильники не удваиваются, и журнал
+     * не имеет права удвоиться. Решение «есть ли уже такой факт» принимается
+     * в одной транзакции DAO, а не здесь: см. `ReminderLogDao.insertRestoredOnce`.
+     */
+    override suspend fun recordRestored(entry: ReminderLogEntry) {
+        dao.insertRestoredOnce(entry.toEntity())
+    }
+
+    private fun ReminderLogEntry.toEntity(): ReminderLogEntity = ReminderLogEntity(
+        occurredAt = occurredAt.toEpochMilli(),
+        event = event.name,
+        intakeId = intakeId,
+        medicationId = medicationId,
+        profileId = profileId,
+        scheduledAt = SklyankaConverters.instantToMillis(scheduledAt),
+        firedAt = SklyankaConverters.instantToMillis(firedAt),
+        deviationSeconds = deviationSeconds,
+        channel = channel?.id,
+        delivered = delivered,
+        reason = reason,
+        alarmsCancelled = alarmsCancelled,
+        alarmsScheduled = alarmsScheduled,
+        attempt = attempt,
+        snoozeMinutes = minutes,
+        watchResult = watchResult,
+    )
 
     override suspend fun recent(limit: Int): List<ReminderLogEntry> = dao.recent(limit).mapNotNull(::toDomain)
 

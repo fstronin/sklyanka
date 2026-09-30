@@ -12,6 +12,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import ru.stohastika.sklyanka.data.room.SklyankaDatabase
 import ru.stohastika.sklyanka.data.room.entity.ReminderLogEntity
+import ru.stohastika.sklyanka.domain.reminder.DeferredReason
 import ru.stohastika.sklyanka.domain.reminder.ReminderChannel
 import ru.stohastika.sklyanka.domain.reminder.ReminderEvent
 import ru.stohastika.sklyanka.domain.reminder.ReminderLogEntry
@@ -175,6 +176,55 @@ class ReminderLogTest {
         assertEquals(keep, stored.size)
         assertTrue("the newest records must survive", stored.first().intakeId == "intake-9")
     }
+
+    /**
+     * Восстановление пишется один раз на факт (SKL-47).
+     *
+     * Две пересборки могут позвать запись с одним и тем же фактом — состояние и будильники
+     * у них идемпотентны, и журнал обязан быть идемпотентным. Другой момент срабатывания —
+     * другой факт, он не подавляется; запись об исходе `dropped` того же срабатывания
+     * восстановлению не помеха.
+     */
+    @Test
+    fun aRestorationIsRecordedOncePerFact() = runTest {
+        val firedAt = NOW.plusSeconds(900)
+        journal.recordRestored(restoredEntry(firedAt))
+        journal.recordRestored(restoredEntry(firedAt))
+        assertEquals("the same fact is one entry", 1, journal.recent(limit = 10).size)
+
+        val anotherMoment = firedAt.plusSeconds(60)
+        journal.recordRestored(restoredEntry(anotherMoment))
+        assertEquals("another moment is another fact", 2, journal.recent(limit = 10).size)
+
+        journal.record(
+            ReminderLogEntry(
+                occurredAt = NOW.plusSeconds(5),
+                event = ReminderEvent.DEFERRED,
+                reason = DeferredReason.DROPPED,
+                intakeId = "intake-1",
+                firedAt = firedAt,
+                attempt = 0,
+            ),
+        )
+        journal.recordRestored(restoredEntry(firedAt.plusSeconds(120)))
+        assertEquals(
+            "a dropped entry does not suppress a restoration",
+            1,
+            journal.recent(limit = 10).count { it.reason == DeferredReason.RESTORED && it.firedAt == firedAt },
+        )
+        assertEquals(4, journal.recent(limit = 10).size)
+    }
+
+    private fun restoredEntry(firedAt: Instant): ReminderLogEntry = ReminderLogEntry(
+        occurredAt = NOW,
+        event = ReminderEvent.DEFERRED,
+        reason = DeferredReason.RESTORED,
+        intakeId = "intake-1",
+        medicationId = "med-1",
+        profileId = "profile-1",
+        firedAt = firedAt,
+        attempt = 0,
+    )
 
     private companion object {
         val NOW: Instant = Instant.parse("2026-09-25T11:00:00Z")
