@@ -5,10 +5,14 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -70,15 +74,58 @@ class TodayViewModel @Inject constructor(
 
     private val view = MutableStateFlow(ViewState())
 
+    /**
+     * Поводы перечитать разрешения, пока экран жив (SKL-48).
+     *
+     * Очередь на один сигнал: повод — это «прочитай сейчас», а не значение. Без
+     * подписчика сигнал не копится: первый кадр после подписки читает состояние сам.
+     */
+    private val refreshRequests = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+
     /** Таймер текущего окна: замена отметки обязана погасить прошлый, а не ждать его. */
     private var undoJob: Job? = null
 
     /** Таймер подтверждения: повторный арм обязан погасить прошлый срок, а не ждать его. */
     private var confirmJob: Job? = null
 
-    val state: StateFlow<TodayUiState> = combine(observeAgenda(), view) { agenda, current ->
+    val state: StateFlow<TodayUiState> = combine(
+        observeAgenda(),
+        view,
+        reliabilityReads(),
+    ) { agenda, current, _ ->
         screen(agenda, current)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(SUBSCRIPTION_TIMEOUT_MS), TodayUiState.Opening)
+
+    /**
+     * Перечитать разрешения, не дожидаясь изменения повестки (SKL-48, НФТ-52).
+     *
+     * Зовётся возвратом в приложение: экран мог остаться живым, пока человек ходил
+     * в системные настройки, и без этого вызова предупреждение осталось бы отозванным
+     * (наблюдение smoke-прогона 30.09.2026).
+     */
+    fun refresh() {
+        refreshRequests.tryEmit(Unit)
+    }
+
+    /**
+     * Поводы перечитать признак надёжности: первый — по подписке, дальше — минута
+     * за минутой, плюс [refresh] с возврата в приложение.
+     *
+     * Отдельным потоком, а не снятием `distinctUntilChanged` у повестки: повестка —
+     * значения, и минутный такт, не изменивший карточек, до сборки состояния не
+     * доходит намеренно. Поток живёт внутри `stateIn` и без подписчика не работает —
+     * фоновой работы не добавляется (НФТ-27).
+     */
+    private fun reliabilityReads(): Flow<Unit> = merge(
+        flow { emit(Unit) },
+        flow {
+            while (true) {
+                delay(RELIABILITY_TICK_MS)
+                emit(Unit)
+            }
+        },
+        refreshRequests,
+    )
 
     init {
         viewModelScope.launch {
@@ -354,5 +401,13 @@ class TodayViewModel @Inject constructor(
          * успеть прочитаться.
          */
         const val CONFIRM_WINDOW_MS = 10_000L
+
+        /**
+         * Шаг перечитывания разрешений (SKL-48).
+         *
+         * Минута — тот же шаг, что у повестки (`ObserveTodayAgendaUseCase.TICK`):
+         * точнее минуты на «Сегодня» ничего не меняется, и второй шаг не вводится.
+         */
+        const val RELIABILITY_TICK_MS = 60_000L
     }
 }

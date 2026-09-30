@@ -93,6 +93,11 @@ internal class TodayTestWorld(scheduler: TestCoroutineScheduler, startAt: LocalD
         denied.forEach { permissions[it] = PermissionState.DENIED }
     }
 
+    /** Выдача разрешения мимо приложения: человек вернулся из системных настроек (SKL-48). */
+    fun grantPermissions(vararg granted: ReminderPermission) {
+        granted.forEach { permissions[it] = PermissionState.GRANTED }
+    }
+
     val markIntake = MarkIntakeUseCase(intakes, medications, profiles, clock)
     val undoMark = UndoMarkUseCase(intakes, medications, profiles)
     val undoMarks = UndoableMarkStore(clock)

@@ -301,6 +301,89 @@ class TodayViewModelTest {
         }
     }
 
+    // --- Перечитывание признака на живом экране (SKL-48) --------------------------
+
+    /**
+     * Выдача разрешения мимо приложения при живом экране: `refresh()` — тот же вызов,
+     * который делает `MainActivity.onResume` (`TDD.md §5.2` SKL-48).
+     */
+    @Test
+    fun `a granted permission clears the warning on the next refresh`() = runTest {
+        val world = worldWithDay(startAt = 9, minute = 0)
+        world.denyPermissions(ReminderPermission.NOTIFICATIONS)
+        val viewModel = world.viewModel()
+
+        viewModel.state.test {
+            assertEquals(ReminderWarning.NOTIFICATIONS_OFF, awaitContent().reliability)
+
+            world.grantPermissions(ReminderPermission.NOTIFICATIONS)
+            viewModel.refresh()
+
+            assertNull(awaitContentWhere { it.reliability == null }.reliability)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    /** Обратная сторона: отзыв разрешения на живом экране поднимает предупреждение. */
+    @Test
+    fun `a revoked permission reappears on the next refresh`() = runTest {
+        val world = worldWithDay(startAt = 9, minute = 0)
+        val viewModel = world.viewModel()
+
+        viewModel.state.test {
+            assertNull(awaitContent().reliability)
+
+            world.denyPermissions(ReminderPermission.NOTIFICATIONS)
+            viewModel.refresh()
+
+            assertEquals(
+                ReminderWarning.NOTIFICATIONS_OFF,
+                awaitContentWhere { it.reliability != null }.reliability,
+            )
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    /**
+     * Минутный такт перечитывает признак, даже когда ни одно действие не случилось
+     * и повестка не изменилась: `pm grant` из ADB не рождает событий жизненного цикла
+     * (наблюдение smoke-прогона 30.09.2026).
+     */
+    @Test
+    fun `the minute tick rereads the permission while the screen is open`() = runTest {
+        val world = worldWithDay(startAt = 9, minute = 0)
+        world.denyPermissions(ReminderPermission.NOTIFICATIONS)
+        val viewModel = world.viewModel()
+
+        viewModel.state.test {
+            assertEquals(ReminderWarning.NOTIFICATIONS_OFF, awaitContent().reliability)
+
+            world.grantPermissions(ReminderPermission.NOTIFICATIONS)
+            advanceTimeBy(60_001)
+            runCurrent()
+
+            assertNull((viewModel.state.value as TodayUiState.Content).reliability)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    /** Такт без изменения причины не перерисовывает экран: состояние не эмитится. */
+    @Test
+    fun `an unchanged permission does not rebuild the screen on the tick`() = runTest {
+        val world = worldWithDay(startAt = 9, minute = 0)
+        val viewModel = world.viewModel()
+
+        viewModel.state.test {
+            awaitContent()
+
+            advanceTimeBy(60_001)
+            runCurrent()
+
+            expectNoEvents()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
     @Test
     fun `the stock plate shows one warning and disappears without a threshold`() = runTest {
         val world = TodayTestWorld(testScheduler)
