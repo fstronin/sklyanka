@@ -1,5 +1,8 @@
 package ru.stohastika.sklyanka.feature.meds
 
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -7,8 +10,14 @@ import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.unit.Density
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -29,12 +38,14 @@ import ru.stohastika.sklyanka.feature.meds.card.TAG_ARCHIVE
 import ru.stohastika.sklyanka.feature.meds.card.TAG_COURSE_BAR
 import ru.stohastika.sklyanka.feature.meds.card.TAG_COURSE_BLOCK
 import ru.stohastika.sklyanka.feature.meds.card.TAG_LIMIT_BLOCK
+import ru.stohastika.sklyanka.feature.meds.card.TAG_REFILL
 import ru.stohastika.sklyanka.feature.meds.card.TAG_REFILL_CANCEL
 import ru.stohastika.sklyanka.feature.meds.card.TAG_REFILL_ROW
 import ru.stohastika.sklyanka.feature.meds.card.TAG_RESTORE
 import ru.stohastika.sklyanka.feature.meds.card.TAG_SCHEDULE_BLOCK
 import ru.stohastika.sklyanka.feature.meds.card.TAG_STOCK_BAR
 import ru.stohastika.sklyanka.feature.meds.card.TAG_STOCK_BLOCK
+import ru.stohastika.sklyanka.feature.meds.card.TAG_STOCK_VALUE
 import ru.stohastika.sklyanka.feature.meds.card.TAG_SUBTITLE
 import ru.stohastika.sklyanka.feature.meds.card.TAG_TIME_CHIP
 import ru.stohastika.sklyanka.feature.meds.card.TAG_WEEK_BLOCK
@@ -78,6 +89,41 @@ class MedicationCardScreenTest {
         composeRule.onAllNodesWithTag(TAG_TIME_CHIP, useUnmergedTree = true).assertCountEquals(2)
         composeRule.onNodeWithText(MORNING_TEXT, useUnmergedTree = true).assertIsDisplayed()
         composeRule.onNodeWithText(EVENING_TEXT, useUnmergedTree = true).assertIsDisplayed()
+    }
+
+    /**
+     * Чипы времени переносятся целиком и не сжимаются в колонки (SKL-59).
+     *
+     * Восемь приёмов в сутки — случай стенда, на котором дефект виден и без крупного
+     * шрифта: последние чипы получали нулевую ширину и разворачивались по буквам.
+     */
+    @Test
+    fun everyTimeChipKeepsItsOwnWidth() {
+        val manyTimes = (0 until 8).map { index -> LocalTime.of(8, 0).plusMinutes(index * 30L) }
+        show(
+            state(
+                schedule = ScheduleBlockUi.Scheduled(
+                    timesPerDay = manyTimes.size,
+                    doseAmount = BigDecimal("1"),
+                    doseUnit = DoseUnit.TABLET,
+                    times = manyTimes,
+                ),
+            ),
+        )
+
+        val chips = composeRule
+            .onAllNodesWithTag(TAG_TIME_CHIP, useUnmergedTree = true)
+            .fetchSemanticsNodes()
+        assertEquals(manyTimes.size, chips.size)
+        val squeezed = chips.filter { node ->
+            with(composeRule.density) { node.size.width.toDp().value } < MIN_CHIP_WIDTH_DP
+        }
+        assertTrue(
+            "чипы сжаты в колонки: " + squeezed.joinToString { node ->
+                with(composeRule.density) { "${node.size.width.toDp().value}x${node.size.height.toDp().value}" }
+            },
+            squeezed.isEmpty(),
+        )
     }
 
     @Test
@@ -160,6 +206,54 @@ class MedicationCardScreenTest {
             )
             .assertIsDisplayed()
         composeRule.onAllNodesWithTag(TAG_STOCK_BAR, useUnmergedTree = true).assertCountEquals(0)
+    }
+
+    /**
+     * Единица остатка не уезжает на строку без числа (SKL-59, дефект пилота).
+     *
+     * Проверяется разложение надписи: строка, кончающаяся числом, и следующая,
+     * начинающаяся буквой, — это ровно разрыв «60 / капсул». Перенос перед числом
+     * («осталось / 60 капсул») нарушением не считается и остаётся допустимым.
+     */
+    @Test
+    fun theStockUnitNeverStartsALineAfterTheNumber() {
+        show(
+            state(
+                stock = StockPanel.Visible(unitsLeft = BigDecimal("60"), daysLeft = 60, warning = false),
+                stockUnit = DoseUnit.CAPSULE,
+            ),
+            fontScale = FONT_SCALE_130,
+        )
+
+        val lines = textLinesOf(TAG_STOCK_VALUE)
+        val split = lines.zipWithNext().any { (first, second) ->
+            first.trimEnd().lastOrNull()?.isDigit() == true && second.firstOrNull()?.isLetter() == true
+        }
+        assertFalse("остаток разорван между числом и единицей: $lines", split)
+        assertTrue("остаток не поместился и в две строки: $lines", lines.size <= 2)
+    }
+
+    /**
+     * При крупном шрифте действие уходит под текст (§6.3), а не отнимает у него ширину.
+     */
+    @Test
+    fun atTwoHundredPercentTheRefillActionMovesUnderTheValue() {
+        show(
+            state(
+                stock = StockPanel.Visible(unitsLeft = BigDecimal("60"), daysLeft = 60, warning = false),
+                stockUnit = DoseUnit.CAPSULE,
+            ),
+            fontScale = FONT_SCALE_200,
+        )
+
+        composeRule.onNodeWithTag(TAG_REFILL, useUnmergedTree = true).performScrollTo()
+        composeRule.waitForIdle()
+        val value = composeRule.onNodeWithTag(TAG_STOCK_VALUE, useUnmergedTree = true).fetchSemanticsNode()
+        val refill = composeRule.onNodeWithTag(TAG_REFILL, useUnmergedTree = true).fetchSemanticsNode()
+        assertTrue(
+            "кнопка не ушла под текст: value=${value.boundsInRoot}, refill=${refill.boundsInRoot}",
+            refill.boundsInRoot.top >= value.boundsInRoot.bottom,
+        )
     }
 
     @Test
@@ -294,9 +388,26 @@ class MedicationCardScreenTest {
         ),
     )
 
-    private fun show(state: MedCardUiState) {
+    private fun show(state: MedCardUiState, fontScale: Float = 1f) {
         composeRule.setContent {
-            SklyankaTheme { MedicationCardScreen(state = state, onIntent = {}) }
+            val base = LocalDensity.current
+            CompositionLocalProvider(
+                LocalDensity provides Density(density = base.density, fontScale = fontScale),
+            ) {
+                SklyankaTheme { MedicationCardScreen(state = state, onIntent = {}) }
+            }
+        }
+    }
+
+    /** Строки разметки надписи: как их разложила вёрстка (приём `TextLayoutFacts` SKL-25). */
+    private fun textLinesOf(tag: String): List<String> {
+        val node = composeRule.onNodeWithTag(tag, useUnmergedTree = true).fetchSemanticsNode()
+        val results = mutableListOf<TextLayoutResult>()
+        node.config[SemanticsActions.GetTextLayoutResult].action?.invoke(results)
+        val layout = results.first()
+        val text = layout.layoutInput.text.text
+        return (0 until layout.lineCount).map { line ->
+            text.substring(layout.getLineStart(line), layout.getLineEnd(line))
         }
     }
 
@@ -315,6 +426,7 @@ class MedicationCardScreenTest {
             fraction = COURSE_FRACTION,
         ),
         stock: StockPanel = StockPanel.Visible(unitsLeft = BigDecimal("9"), daysLeft = 4, warning = true),
+        stockUnit: DoseUnit = DoseUnit.TABLET,
         isArchived: Boolean = false,
         refill: RefillUi? = null,
     ) = MedCardUiState(
@@ -331,7 +443,7 @@ class MedicationCardScreenTest {
         schedule = schedule,
         course = course,
         stock = stock,
-        stockUnit = DoseUnit.TABLET,
+        stockUnit = stockUnit,
         week = week(),
         // Состояние часов намеренно непустое: строки на экране нет именно потому,
         // что её вывел из состава MVP `ADR-0009`, а не потому, что состояние пусто.
@@ -361,6 +473,13 @@ class MedicationCardScreenTest {
         const val MANY = 90
         const val PACKAGE_SIZE = "60"
         const val COURSE_FRACTION = 0.43f
+
+        /** Масштабы системного шрифта, на которых проверяется НФТ-31. */
+        const val FONT_SCALE_130 = 1.3f
+        const val FONT_SCALE_200 = 2.0f
+
+        /** Ширина чипа времени не может быть меньше его собственной подписи «08:00». */
+        const val MIN_CHIP_WIDTH_DP = 40f
 
         /** Строки выбора звука на карточке нет: тега тоже нет ни в одном компоненте. */
         const val TAG_SOUND_ROW = "med_card_sound_row"

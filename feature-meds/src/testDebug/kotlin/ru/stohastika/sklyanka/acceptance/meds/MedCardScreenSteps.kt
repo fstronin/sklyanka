@@ -297,7 +297,12 @@ class MedCardScreenSteps(private val world: AcceptanceWorld) {
     fun theStockRowShows(text: String) {
         MedCardStand.ask(world, focusedMedication()) { test ->
             val texts = MedsProbe.texts(test, TAG_STOCK_VALUE)
-            assertTrue("the stock row must read «$text»: $texts", text in texts)
+            // Число и единица остатка разделены неразрывным пробелом (SKL-59):
+            // сценарий говорит о словах, а не о виде пробела между ними.
+            assertTrue(
+                "the stock row must read «$text»: $texts",
+                texts.any { shown -> shown.replace(NON_BREAKING_SPACE, ' ') == text },
+            )
         }
     }
 
@@ -724,5 +729,8 @@ class MedCardScreenSteps(private val world: AcceptanceWorld) {
 
         /** Начало подписи «хватит на N дней»: её отсутствие проверяется по всему блоку. */
         const val DAYS_LEFT_WORD = "хватит на"
+
+        /** Неразрывный пробел между числом и единицей остатка в ресурсе (SKL-59). */
+        const val NON_BREAKING_SPACE = '\u00A0'
     }
 }

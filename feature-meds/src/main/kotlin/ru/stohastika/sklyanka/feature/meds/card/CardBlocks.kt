@@ -4,6 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -31,6 +33,7 @@ import ru.stohastika.sklyanka.ui.component.ProgressPurpose
 import ru.stohastika.sklyanka.ui.component.QuietButton
 import ru.stohastika.sklyanka.ui.component.SecondaryButton
 import ru.stohastika.sklyanka.ui.component.SklyankaProgressTrack
+import ru.stohastika.sklyanka.ui.component.StackingRow
 import ru.stohastika.sklyanka.ui.component.SklyankaTextField
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaShapes
@@ -84,6 +87,7 @@ private fun CardBlock(
 }
 
 /** Блок «Расписание» либо ограничение «не чаще N раз в сутки» вместо него (ПР-7, ПР-8). */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun ScheduleBlock(schedule: ScheduleBlockUi, modifier: Modifier = Modifier) {
     val colors = SklyankaTheme.colors
@@ -93,7 +97,12 @@ internal fun ScheduleBlock(schedule: ScheduleBlockUi, modifier: Modifier = Modif
             modifier = modifier.testTag(TAG_SCHEDULE_BLOCK),
         ) {
             Text(text = schedule.summary(), style = SklyankaType.BodyStrong, color = colors.text)
-            Row(horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Small)) {
+            // Чипы переносятся целыми: при восьми приёмах в сутки ряд отдавал последним
+            // чипам нулевую ширину, и «16:01» разворачивался по буквам (SKL-59).
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Small),
+                verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Small),
+            ) {
                 schedule.times.forEach { time -> TimeChip(time.formatted()) }
             }
         }
@@ -212,25 +221,30 @@ internal fun StockBlock(state: MedCardUiState, onIntent: (MedCardIntent) -> Unit
         trailing = panel.captionDays?.let { days -> stockDaysText(days) },
         trailingAccent = panel.warning,
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Medium),
-        ) {
-            Text(
-                text = packageShare?.second ?: stockLeftLabel(panel.unitsLeft, state.stockUnit),
-                style = SklyankaType.BodyStrong,
-                color = if (panel.warning) colors.warning else colors.text,
-                modifier = Modifier
-                    .weight(1f)
-                    .testTag(TAG_STOCK_VALUE),
-            )
-            SecondaryButton(
-                text = stringResource(R.string.card_refill),
-                onClick = { onIntent(MedCardIntent.RefillRequested) },
-                modifier = Modifier.testTag(TAG_REFILL),
-            )
-        }
+        // Ряд «значение — действие»: при нехватке ширины кнопка уходит под текст,
+        // а значение получает всю ширину (§6.3). Взвешенный `Text` делил ширину,
+        // но не знал, что делать, когда её меньше самого длинного слова: «капсул»
+        // отрывался от числа (SKL-59, дефект пилота).
+        StackingRow(
+            leading = {},
+            text = {
+                Text(
+                    text = packageShare?.second ?: stockLeftLabel(panel.unitsLeft, state.stockUnit),
+                    style = SklyankaType.BodyStrong,
+                    color = if (panel.warning) colors.warning else colors.text,
+                    modifier = Modifier.testTag(TAG_STOCK_VALUE),
+                )
+            },
+            action = {
+                SecondaryButton(
+                    text = stringResource(R.string.card_refill),
+                    onClick = { onIntent(MedCardIntent.RefillRequested) },
+                    modifier = Modifier.testTag(TAG_REFILL),
+                )
+            },
+            gap = SklyankaSpacing.Medium,
+            minTextWidth = SklyankaSizes.MinTextColumn,
+        )
         packageShare?.let { (share, label) ->
             SklyankaProgressTrack(
                 progress = share,

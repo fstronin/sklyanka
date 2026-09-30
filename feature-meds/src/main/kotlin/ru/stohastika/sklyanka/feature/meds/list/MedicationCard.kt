@@ -5,6 +5,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -114,12 +116,20 @@ private fun TitleLine(card: MedicationCardUi) {
     }
 }
 
-/** Строка расписания: чипы времени и уточнение — остаток либо период (ЭКР-4). */
+/**
+ * Строка расписания: чипы времени и уточнение — остаток либо период (ЭКР-4).
+ *
+ * Поток, а не ряд: когда уточнению не хватает ширины рядом с чипами, оно переезжает
+ * под них целиком и переносится по словам. В обычном ряду остаток ширины доставался
+ * `Text` меньше самого длинного слова, и уточнение рассыпалось по одной букве
+ * (SKL-59, дефект пилота).
+ */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ScheduleLine(card: MedicationCardUi) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
+    FlowRow(
         horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Small),
+        verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Small),
     ) {
         card.times.forEach { time ->
             SklyankaChip(text = time.formatted(), state = ChipState.Info, shape = SklyankaShapes.Pill)

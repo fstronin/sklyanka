@@ -10,6 +10,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -119,6 +120,35 @@ class MedicationListScreenTest {
         composeRule.onNodeWithTag(TAG_TRAILING_LINE, useUnmergedTree = true).assertIsDisplayed()
     }
 
+    /**
+     * Три чипа времени не выдавливают уточнение из строки (SKL-59, дефект пилота).
+     *
+     * Уточнение — дата курса или остаток. Если рядом с чипами ему не хватило ширины,
+     * оно переносится под чипы целиком; колонка из одной буквы — это разрыв слова,
+     * а не перенос.
+     */
+    @Test
+    fun aCardWithThreeIntakeTimesKeepsThePeriodReadable() {
+        show(
+            MedsUiState(
+                items = listOf(
+                    scheduledCard(
+                        times = listOf(LocalTime.of(8, 0), LocalTime.of(13, 30), LocalTime.of(18, 0)),
+                    ),
+                ),
+                loading = false,
+            ),
+        )
+
+        val node = composeRule
+            .onNodeWithTag(TAG_TRAILING_LINE, useUnmergedTree = true)
+            .fetchSemanticsNode()
+        val width = with(composeRule.density) { node.size.width.toDp().value }
+        val height = with(composeRule.density) { node.size.height.toDp().value }
+        assertTrue("уточнение сжато в колонку: width=$width dp", width >= MIN_TRAILING_WIDTH_DP)
+        assertTrue("уточнение разложено на $height dp", height <= MAX_TRAILING_HEIGHT_DP)
+    }
+
     @Test
     fun theAddButtonIsLabelledForScreenReaders() {
         show(MedsUiState(items = listOf(scheduledCard()), loading = false))
@@ -148,14 +178,15 @@ class MedicationListScreenTest {
     private fun scheduledCard(
         id: String = "scheduled",
         trailingLine: TrailingLine = TrailingLine.Period(LocalDate.of(2026, 3, 12), null),
+        times: List<LocalTime> = listOf(LocalTime.of(8, 0)),
     ) = MedicationCardUi(
         medicationId = id,
         title = "med-$id",
         form = MedicationForm.TABLET,
         strength = "50",
         strengthUnit = "mg",
-        timesPerDay = 1,
-        times = listOf(LocalTime.of(8, 0)),
+        timesPerDay = times.size,
+        times = times,
         trailingLine = trailingLine,
         asNeeded = null,
     )
@@ -175,4 +206,12 @@ class MedicationListScreenTest {
             takeEnabled = takeEnabled,
         ),
     )
+
+    private companion object {
+        /** Уточнение уже́ самого длинного слова («сентября») не бывает: это разрыв слова. */
+        const val MIN_TRAILING_WIDTH_DP = 80f
+
+        /** Три строки уточнения — предел; колонка из букв даёт десятки строк. */
+        const val MAX_TRAILING_HEIGHT_DP = 80f
+    }
 }

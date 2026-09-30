@@ -195,7 +195,7 @@ class MedsListScreenSteps(private val world: AcceptanceWorld) {
                     .fetchSemanticsNode()
                 assertTrue(
                     "the archive card of «$medication» must show «$text»: ${MedsProbe.textsOf(cardNode)}",
-                    MedsProbe.textsOf(caption).single() == text,
+                    sameText(MedsProbe.textsOf(caption).single(), text),
                 )
             }
         } else {
@@ -204,10 +204,23 @@ class MedsListScreenSteps(private val world: AcceptanceWorld) {
                     .onNode(hasTestTag(TAG_TRAILING_LINE) and hasAnyAncestor(card(medication)), useUnmergedTree = true)
                     .fetchSemanticsNode()
                 val shown = MedsProbe.textsOf(node).single()
-                assertEquals("the card of «$medication» must show «$text»", text, shown)
+                assertTrue(
+                    "the card of «$medication» must show «$text», shown «$shown»",
+                    sameText(shown, text),
+                )
             }
         }
     }
+
+    /**
+     * Текст совпадает независимо от вида пробела.
+     *
+     * Число и единица остатка разделены неразрывным пробелом (SKL-59): «60 капсул»
+     * переносится целиком. В сценарии человек пишет обычный пробел — сценарий говорит
+     * о словах, а не о байтах.
+     */
+    private fun sameText(actual: String, expected: String): Boolean =
+        actual.replace(NON_BREAKING_SPACE, ' ') == expected.replace(NON_BREAKING_SPACE, ' ')
 
     /** Карточка архивного лекарства: имя лежит у потомков, кликабельна вся строка. */
     private fun archiveCard(medication: String) = hasTestTag(TAG_ARCHIVE_CARD) and
@@ -364,5 +377,8 @@ class MedsListScreenSteps(private val world: AcceptanceWorld) {
 
     private companion object {
         const val FIVE = 5
+
+        /** Неразрывный пробел: разделяет число и единицу остатка в ресурсе (SKL-59). */
+        const val NON_BREAKING_SPACE = '\u00A0'
     }
 }
