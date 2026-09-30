@@ -128,7 +128,12 @@ def read_csv_journal(path: str) -> list[dict]:
                     "attempt": to_int(row.get("attempt")),
                 }
             )
-    return [entry for entry in entries if entry["occurred_at"] is not None]
+    entries = [entry for entry in entries if entry["occurred_at"] is not None]
+    # Выгрузка приложения отдаёт строки по убыванию времени (`ORDER BY occurred_at DESC`),
+    # а перерывы считаются по возрастанию. Без сортировки окна перерывов в CSV-пути
+    # не находились бы вовсе, и исключение из знаменателя молча пропадало.
+    entries.sort(key=lambda entry: entry["occurred_at"])
+    return entries
 
 
 def read_db_journal(path: str) -> list[dict]:
