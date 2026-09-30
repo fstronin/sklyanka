@@ -1,5 +1,8 @@
 package ru.stohastika.sklyanka.feature.history
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasClickAction
@@ -306,6 +309,66 @@ class HistoryScreenTest {
         show(HistoryStates.september())
 
         composeRule.onAllNodesWithTag(TAG_MARKED_BY_YOU, useUnmergedTree = true).assertCountEquals(0)
+    }
+
+    /**
+     * SKL-44: шторка отчёта предъявляется и в реальной обёртке экрана.
+     *
+     * Проба повторяет корень приложения — `ProfileChrome { HistoryScreen(...) }`.
+     * На старом коде шторка стояла соседом в столбце и получала нулевую высоту: на
+     * устройстве «Отчёт врачу» строил документ молча. Прямой рендер
+     * `DoctorReportSheetTest` этого не ловил — там шторка была корневым ребёнком, —
+     * и проверка обязана краснеть, пока слои не разведены.
+     */
+    @Test
+    fun theReportSheetIsPresentedOverTheHistoryInTheRealWrapper() {
+        var state by mutableStateOf(HistoryStates.september())
+        composeRule.setContent {
+            ProfileChrome(ProfileChromeState.Owner) {
+                HistoryScreen(
+                    state = state,
+                    onIntent = { intent ->
+                        if (intent == HistoryIntent.ReportRequested) state = HistoryStates.withReport()
+                    },
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag(TAG_REPORT_ACTION).performClick()
+
+        composeRule.onNodeWithTag(TAG_REPORT_SHEET).assertIsDisplayed()
+        composeRule.onNodeWithTag(TAG_REPORT_WARNING).assertIsDisplayed()
+        composeRule.onNodeWithTag(TAG_REPORT_SHARE).assertIsDisplayed()
+        composeRule.onNodeWithTag(TAG_REPORT_SAVE).assertIsDisplayed()
+    }
+
+    /** SKL-44: «Отмена» возвращает экран истории, и шторку можно открыть снова. */
+    @Test
+    fun theReportCanBeClosedAndOpenedAgainInTheRealWrapper() {
+        var state by mutableStateOf(HistoryStates.september())
+        composeRule.setContent {
+            ProfileChrome(ProfileChromeState.Owner) {
+                HistoryScreen(
+                    state = state,
+                    onIntent = { intent ->
+                        when (intent) {
+                            HistoryIntent.ReportRequested -> state = HistoryStates.withReport()
+                            HistoryIntent.ReportDismissed -> state = state.copy(report = null)
+                            else -> Unit
+                        }
+                    },
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag(TAG_REPORT_ACTION).performClick()
+        composeRule.onNodeWithText(context.getString(UiR.string.action_cancel)).performClick()
+
+        composeRule.onAllNodesWithTag(TAG_REPORT_SHEET).assertCountEquals(0)
+
+        composeRule.onNodeWithTag(TAG_REPORT_ACTION).performClick()
+
+        composeRule.onNodeWithTag(TAG_REPORT_SHEET).assertIsDisplayed()
     }
 
     /**

@@ -22,6 +22,7 @@ import ru.stohastika.sklyanka.feature.history.TAG_PREVIOUS_MONTH
 import ru.stohastika.sklyanka.ui.profile.ProfileChrome
 import ru.stohastika.sklyanka.ui.profile.ProfileChromeState
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
+import ru.stohastika.sklyanka.ui.token.ProfileColor
 import java.time.YearMonth
 
 /**
@@ -119,6 +120,22 @@ internal object HistoryScreenProbe {
         }
         intents.forEach { apply(world, it) }
         return intents
+    }
+
+    /**
+     * Оформление по активному профилю — тем же правилом, что в корне приложения (ПРФ-11).
+     *
+     * Экранные шаги предъявления собирают экран в этой обёртке: дефект SKL-44 жил ровно
+     * в разнице между прямой композицией стенда и реальным корнем, и проверка без
+     * обёртки его не ловит.
+     */
+    fun chrome(world: AcceptanceWorld): ProfileChromeState {
+        val active = world.profiles.get(world.profiles.active)
+        return if (active.isSelf) {
+            ProfileChromeState.Owner
+        } else {
+            ProfileChromeState.Foreign(name = active.name, colour = ProfileColor.Terracotta)
+        }
     }
 
     @Composable

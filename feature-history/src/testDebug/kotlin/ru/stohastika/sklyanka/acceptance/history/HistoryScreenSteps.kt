@@ -758,15 +758,8 @@ class HistoryScreenSteps(private val world: AcceptanceWorld) {
     private fun ownMedicationIds(profileId: String): Set<String> =
         world.medications.all().filter { it.profileId == profileId }.map { it.id }.toSet()
 
-    /** Оформление по активному профилю — тем же правилом, что в корне приложения (ПРФ-11). */
-    private fun chrome(): ProfileChromeState {
-        val active = world.profiles.get(world.profiles.active)
-        return if (active.isSelf) {
-            ProfileChromeState.Owner
-        } else {
-            ProfileChromeState.Foreign(name = active.name, colour = FOREIGN_COLOUR)
-        }
-    }
+    /** Оформление по активному профилю — правилом пробы, а не второй его копией (ПРФ-11). */
+    private fun chrome(): ProfileChromeState = HistoryScreenProbe.chrome(world)
 
     private fun roleColour(state: ProfileChromeState, role: @Composable () -> Color): Color {
         var captured: Color? = null
