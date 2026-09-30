@@ -18,7 +18,12 @@ import java.time.Instant
  * без этих данных неразбираема. Наружу снимок не уходит: сети у приложения нет (НАП-39).
  */
 data class ReminderDiagnostics(
-    /** Последнее сработавшее напоминание: плановое, фактическое, отклонение. */
+    /**
+     * Последнее предъявленное напоминание: плановое, фактическое, отклонение.
+     *
+     * Повтор — такое же предъявление, как первый показ (НАП-37): после настойчивого
+     * повтора экран обязан показать его, а не остаться на более раннем первичном показе.
+     */
     val lastShown: ReminderLogEntry?,
     val nextAt: Instant?,
     val nextIntakeId: String?,
@@ -71,7 +76,7 @@ class BuildReminderDiagnosticsUseCase(
             .map { ExpectedFiring(it.intakeId, it.scheduledAt.atZone(zone).toInstant()) }
 
         return ReminderDiagnostics(
-            lastShown = journal.last(ReminderEvent.SHOWN),
+            lastShown = lastDelivery(),
             nextAt = next?.value,
             nextIntakeId = next?.key,
             totalScheduled = scheduled.size,
@@ -89,6 +94,18 @@ class BuildReminderDiagnosticsUseCase(
             journal = journal.recent(limit),
         )
     }
+
+    /**
+     * Последнее предъявление — первый показ или повтор (НАП-37, SKL-63).
+     *
+     * Два запроса «последняя запись вида» вместо нового метода порта: видов предъявления
+     * ровно два, и оба отвечаются существующим контрактом журнала. Сводка «вовремя»
+     * повторы по-прежнему не считает — это разные вопросы (`ReminderOnTimeRule`).
+     */
+    private suspend fun lastDelivery(): ReminderLogEntry? = listOfNotNull(
+        journal.last(ReminderEvent.SHOWN),
+        journal.last(ReminderEvent.REPEATED),
+    ).maxByOrNull { it.occurredAt }
 
     companion object {
         /** НАП-37: журнал последних срабатываний — не менее 50 записей. */

@@ -39,6 +39,24 @@ class ReminderDiagnosticsTest {
     }
 
     @Test
+    fun `the last delivery is a repeat when the repeat came last`() = runTest {
+        // Повтор — тоже предъявление напоминания (НАП-37): экран обязан показать его,
+        // а не оставаться на первичном показе — иначе разбор повторов врёт.
+        world.pending()
+        world.moveTo(ReminderTestWorld.AFTERNOON)
+        world.fired(Fixtures.INTAKE_ID)
+        world.moveTo(ReminderTestWorld.AFTERNOON.plusMinutes(15))
+        world.fired(Fixtures.INTAKE_ID, attempt = 1)
+
+        val shown = requireNotNull(world.diagnostics().lastShown)
+
+        assertEquals(ReminderEvent.REPEATED, shown.event)
+        assertEquals(world.momentOf(ReminderTestWorld.AFTERNOON), shown.scheduledAt)
+        assertEquals(world.momentOf(ReminderTestWorld.AFTERNOON.plusMinutes(15)), shown.firedAt)
+        assertEquals(900L, shown.deviationSeconds)
+    }
+
+    @Test
     fun `the time and the reason of the last rebuild are shown`() = runTest {
         world.pending()
         world.moveTo(LocalDateTime.of(2026, 9, 25, 10, 0))
