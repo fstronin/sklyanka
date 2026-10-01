@@ -27,13 +27,16 @@ import ru.stohastika.sklyanka.domain.model.MedicationForm
 import ru.stohastika.sklyanka.domain.model.TabletShape
 import ru.stohastika.sklyanka.feature.meds.ChoiceTile
 import ru.stohastika.sklyanka.feature.meds.R
-import ru.stohastika.sklyanka.feature.meds.ReleaseFormGlyph
 import ru.stohastika.sklyanka.feature.meds.SectionLabel
-import ru.stohastika.sklyanka.feature.meds.TabletShapeGlyph
 import ru.stohastika.sklyanka.feature.meds.doseSuffix
 import ru.stohastika.sklyanka.feature.meds.label
+import ru.stohastika.sklyanka.feature.meds.medicationPreviewCaption
+import ru.stohastika.sklyanka.feature.meds.medicationPreviewTitle
 import ru.stohastika.sklyanka.feature.meds.message
+import ru.stohastika.sklyanka.ui.component.MedicationGlyph
+import ru.stohastika.sklyanka.ui.component.MedicationPreview
 import ru.stohastika.sklyanka.ui.component.SklyankaTextField
+import ru.stohastika.sklyanka.ui.component.TabletShapeGlyph
 import ru.stohastika.sklyanka.ui.component.TextFieldState
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaShapes
@@ -89,6 +92,28 @@ internal fun NameBlock(state: MedFormUiState, onIntent: (MedFormIntent) -> Unit,
     }
 }
 
+/**
+ * Блок-превью выбора (§4.16, ОВ-94): сразу под «Названием», перед «Формой выпуска».
+ *
+ * Обновляется вместе с черновиком и не нажимается: это не действие, а взгляд на то,
+ * как лекарство будет узнаваться в списке и карточке. Заголовок и подпись собирает
+ * `feature-meds` из ресурсов и черновика — русского текста в `core-ui` нет.
+ */
+@Composable
+internal fun PreviewBlock(state: MedFormUiState) {
+    val draft = state.draft
+    val dose = draft.doseAmount?.let { amount ->
+        "${amount.stripTrailingZeros().toPlainString()} ${state.applicability.doseUnit.doseSuffix()}"
+    }
+    MedicationPreview(
+        form = draft.form,
+        shape = draft.shape,
+        title = medicationPreviewTitle(draft.form, draft.shape),
+        caption = medicationPreviewCaption(draft.form, dose),
+        modifier = Modifier.fillMaxWidth().testTag(TAG_MEDICATION_PREVIEW),
+    )
+}
+
 /** «Форма выпуска» — сетка 3×2 из шести плиток (`AddMed.dc.html`). */
 @Composable
 internal fun ReleaseFormBlock(state: MedFormUiState, onIntent: (MedFormIntent) -> Unit, anchors: FormAnchors) {
@@ -107,10 +132,15 @@ internal fun ReleaseFormBlock(state: MedFormUiState, onIntent: (MedFormIntent) -
                             .height(SklyankaSizes.FormTile)
                             .testTag(TAG_RELEASE_FORM),
                         glyph = {
-                            ReleaseFormGlyph(
-                                form = form,
-                                color = if (selected) colors.accent else colors.textMuted,
-                            )
+                            // Тег на обёртке значка, а не на самой Canvas: приёмка ищет
+                            // силуэт на каждой плитке, не читая пиксели (SKL-66).
+                            Box(modifier = Modifier.testTag(TAG_FORM_TILE_GLYPH)) {
+                                MedicationGlyph(
+                                    form = form,
+                                    shape = null,
+                                    color = if (selected) colors.accent else colors.textMuted,
+                                )
+                            }
                         },
                     )
                 }
@@ -122,7 +152,7 @@ internal fun ReleaseFormBlock(state: MedFormUiState, onIntent: (MedFormIntent) -
 /**
  * «Вид таблетки» — ряд из пяти силуэтов.
  *
- * Блок существует только для форм «таблетка» и «капсула» (ПР-9, ИНВ-16); при смене
+ * Блок существует только для формы «таблетка» (ПР-9, ИНВ-16, ОВ-88); при смене
  * формы выпуска на неприменимую он не просто скрывается — выбранное значение
  * сбрасывается в черновике, иначе оно уедет в базу незаметно для человека.
  *
@@ -226,7 +256,9 @@ internal fun BlockHint(text: String, modifier: Modifier = Modifier) {
 private const val FORMS_PER_ROW = 3
 
 const val TAG_NAME_FIELD = "form_name"
+const val TAG_MEDICATION_PREVIEW = "form_medication_preview"
 const val TAG_RELEASE_FORM = "form_release_form"
+const val TAG_FORM_TILE_GLYPH = "form_release_form_glyph"
 const val TAG_TABLET_SHAPE_ROW = "form_tablet_shape"
 const val TAG_DOSE_FIELD = "form_dose_amount"
 const val TAG_STRENGTH_FIELD = "form_strength"

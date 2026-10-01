@@ -101,13 +101,17 @@ object SklyankaSizes {
     /** Шеврон перехода в карточке списка (`Meds.dc.html`). */
     val Chevron: Dp = 16.dp
 
-    /** Плитка формы выпуска в сетке 3×2 и её значок (`AddMed.dc.html`). */
-    val FormTile: Dp = 78.dp
-    val FormTileGlyph: Dp = 22.dp
+    /** Плитка формы выпуска в сетке 3×2 и её значок (`AddMed.dc.html`, ОВ-94). */
+    val FormTile: Dp = 80.dp
+    val FormTileGlyph: Dp = 30.dp
 
     /** Кнопка вида таблетки и силуэт на ней (`AddMed.dc.html`). */
     val ShapeButton: Dp = 60.dp
     val ShapeGlyph: Dp = 30.dp
+
+    /** Плитка и силуэт блока-превью выбора (§4.16, ОВ-94). */
+    val PreviewTile: Dp = 72.dp
+    val PreviewGlyph: Dp = 38.dp
 
     /** Высота вкладки сегментного переключателя «Активные · 5 / Архив · 12». */
     val SegmentHeight: Dp = 38.dp
@@ -121,9 +125,13 @@ object SklyankaSizes {
 
     // --- Карточка лекарства и недельная полоса приёмов (SKL-10, макет MedCard.dc.html) ---
 
-    /** Плитка значка в титуле карточки лекарства и её значок (62 и 30 в макете). */
+    /** Плитка значка в титуле карточки лекарства и её значок (§4.15: 62 и 34). */
     val MedCardPlate: Dp = 62.dp
-    val MedCardPlateGlyph: Dp = 30.dp
+    val MedCardPlateGlyph: Dp = 34.dp
+
+    /** Плитка значка в строке списка лекарств и её силуэт (§4.15: 42×42, силуэт 22). */
+    val MedsListPlate: Dp = 42.dp
+    val MedsListPlateGlyph: Dp = 22.dp
 
     /** Кружок дня в блоке «Последние 7 дней» и точка легенды под ним. */
     val AdherenceDay: Dp = 26.dp

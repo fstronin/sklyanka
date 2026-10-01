@@ -24,8 +24,8 @@ class FieldApplicabilityTest {
 
     @ParameterizedTest
     @EnumSource(MedicationForm::class)
-    fun `the tablet shape block exists only for tablets and capsules`(form: MedicationForm) {
-        val expected = form == MedicationForm.TABLET || form == MedicationForm.CAPSULE
+    fun `the tablet shape block exists only for tablets`(form: MedicationForm) {
+        val expected = form == MedicationForm.TABLET
 
         assertEquals(expected, Drafts.valid().copy(form = form).applicability().shapeVisible)
     }

@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -90,25 +91,7 @@ fun ScreenHeader(
             if (!nestedWithBack && kind != ScreenHeaderKind.Root && onBack != null) {
                 BackAction(kind, onBack)
             }
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Hair),
-            ) {
-                when {
-                    profileName != null -> ProfileOverline(profileName)
-
-                    overline != null -> Text(
-                        text = overline.uppercased(),
-                        style = SklyankaType.OverlineDate,
-                        color = colors.textMuted,
-                    )
-                }
-                Text(
-                    text = labels.title,
-                    style = if (kind == ScreenHeaderKind.Modal) SklyankaType.BodyStrong else SklyankaType.TitleScreen,
-                    color = colors.text,
-                )
-            }
+            HeaderTitleColumn(labels, kind, profileName, overline)
             if (!nestedWithBack) trailing?.invoke()
         }
         if (profileName != null) {
@@ -122,6 +105,41 @@ fun ScreenHeader(
             // она отделяла бы шапку от того же самого цвета.
             HeaderDivider()
         }
+    }
+}
+
+/**
+ * Колонка заголовка шапки: надпись профиля либо надстрочник и сам заголовок.
+ *
+ * Вынесена из [ScreenHeader], чтобы функция шапки оставалась обозримой (detekt
+ * `LongMethod`): порядок строк и перенос заголовка при крупном шрифте не меняются.
+ */
+@Composable
+private fun RowScope.HeaderTitleColumn(
+    labels: ScreenHeaderLabels,
+    kind: ScreenHeaderKind,
+    profileName: String?,
+    overline: String?,
+) {
+    val colors = SklyankaTheme.colors
+    Column(
+        modifier = Modifier.weight(1f),
+        verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Hair),
+    ) {
+        when {
+            profileName != null -> ProfileOverline(profileName)
+
+            overline != null -> Text(
+                text = overline.uppercased(),
+                style = SklyankaType.OverlineDate,
+                color = colors.textMuted,
+            )
+        }
+        Text(
+            text = labels.title,
+            style = if (kind == ScreenHeaderKind.Modal) SklyankaType.BodyStrong else SklyankaType.TitleScreen,
+            color = colors.text,
+        )
     }
 }
 

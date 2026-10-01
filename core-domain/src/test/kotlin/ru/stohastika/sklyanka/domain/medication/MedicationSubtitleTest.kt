@@ -28,16 +28,17 @@ class MedicationSubtitleTest {
             Cards.scheduled(form = MedicationForm.SPRAY, shape = TabletShape.ROUND),
         )
 
-        // ПР-9: вид таблетки применим только к таблетке и капсуле, и в подпись спрея
+        // ПР-9: вид таблетки применим только к таблетке, и в подпись спрея
         // он не попадает даже если по недосмотру записан в лекарство.
         assertNull(subtitle.shape)
     }
 
     @Test
-    fun `a capsule keeps its shape`() {
+    fun `a capsule does not render its shape`() {
+        // ОВ-88: у капсулы вида нет, силуэт задан самой формой.
         val subtitle = MedicationSubtitle.of(Cards.scheduled(form = MedicationForm.CAPSULE))
 
-        assertEquals(TabletShape.ROUND_SCORED, subtitle.shape)
+        assertNull(subtitle.shape)
     }
 
     @Test

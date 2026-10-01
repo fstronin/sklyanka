@@ -34,6 +34,14 @@ object SklyankaShapes {
     /** Чип, переключатель, аватар, полоса прогресса, круглая кнопка отметки. */
     val PillRadius: Dp = 999.dp
 
+    /**
+     * Радиус плитки превью выбора (§3.1, §4.16).
+     *
+     * Отдельно от ступеней: спецификация §3.1 называет 20 и 22 «отдельно», и в шкалу
+     * `allRadii` этот радиус не входит — иначе сломается проверка ровно семи ступеней.
+     */
+    val PreviewRadius: Dp = 22.dp
+
     val Small: RoundedCornerShape = RoundedCornerShape(SmallRadius)
     val Compact: RoundedCornerShape = RoundedCornerShape(CompactRadius)
     val Button: RoundedCornerShape = RoundedCornerShape(ButtonRadius)
@@ -41,6 +49,9 @@ object SklyankaShapes {
     val Large: RoundedCornerShape = RoundedCornerShape(LargeRadius)
     val Card: RoundedCornerShape = RoundedCornerShape(CardRadius)
     val Pill: RoundedCornerShape = RoundedCornerShape(PillRadius)
+
+    /** Форма плитки превью выбора; вне ступеней `allRadii` (§3.1). */
+    val Preview: RoundedCornerShape = RoundedCornerShape(PreviewRadius)
 
     /** Все ступени — опора теста шкалы. */
     val allRadii: List<Dp>

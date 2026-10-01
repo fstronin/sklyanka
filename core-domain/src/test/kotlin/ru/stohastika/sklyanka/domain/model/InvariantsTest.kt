@@ -111,8 +111,16 @@ class InvariantsTest {
     }
 
     @Test
-    fun `shape belongs to tablets and capsules only`() {
+    fun `shape belongs to tablets only`() {
         val medication = Fixtures.scheduledMedication().copy(form = MedicationForm.SYRUP)
+
+        assertEquals(listOf("INV-16"), Invariants.violations(medication))
+    }
+
+    @Test
+    fun `a capsule with a shape breaks the invariant`() {
+        // ОВ-88: силуэт капсулы задан формой, вид к ней неприменим.
+        val medication = Fixtures.scheduledMedication().copy(form = MedicationForm.CAPSULE)
 
         assertEquals(listOf("INV-16"), Invariants.violations(medication))
     }

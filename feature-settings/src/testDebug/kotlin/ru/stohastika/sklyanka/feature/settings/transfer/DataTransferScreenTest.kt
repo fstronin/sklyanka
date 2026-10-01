@@ -76,11 +76,12 @@ class DataTransferScreenTest {
     fun everyCompositionChipKeepsItsOwnWidth() {
         showOverview(TransferScreenFixtures.overview())
 
+        fun chip(plural: Int, count: Int) = context.resources.getQuantityString(plural, count, count)
         val chips = listOf(
-            context.resources.getQuantityString(R.plurals.transfer_chip_medications, CHIP_MEDICATIONS, CHIP_MEDICATIONS),
-            context.resources.getQuantityString(R.plurals.transfer_chip_archived, CHIP_ARCHIVED, CHIP_ARCHIVED),
-            context.resources.getQuantityString(R.plurals.transfer_chip_history_months, CHIP_MONTHS, CHIP_MONTHS),
-            context.resources.getQuantityString(R.plurals.transfer_chip_profiles, CHIP_PROFILES, CHIP_PROFILES),
+            chip(R.plurals.transfer_chip_medications, CHIP_MEDICATIONS),
+            chip(R.plurals.transfer_chip_archived, CHIP_ARCHIVED),
+            chip(R.plurals.transfer_chip_history_months, CHIP_MONTHS),
+            chip(R.plurals.transfer_chip_profiles, CHIP_PROFILES),
             context.getString(R.string.transfer_export_chip_settings),
         )
         chips.forEach { text ->

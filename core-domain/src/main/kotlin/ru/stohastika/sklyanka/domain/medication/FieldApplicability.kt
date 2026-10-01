@@ -9,7 +9,7 @@ import ru.stohastika.sklyanka.domain.model.ScheduleMode
  * действуют при загрузке файла переноса данных (SKL-19), где формы нет вовсе.
  */
 data class FieldApplicability(
-    /** «Вид таблетки»: только для «таблетки» и «капсулы» (ПР-9, ИНВ-16). */
+    /** «Вид таблетки»: только для «таблетки» (ПР-9, ИНВ-16, ОВ-88). */
     val shapeVisible: Boolean,
     /** «Приёмов в сутки» и «Время приёма»: только при «по расписанию» (ПР-8). */
     val timesVisible: Boolean,

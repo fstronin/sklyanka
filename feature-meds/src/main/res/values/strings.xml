@@ -20,8 +20,11 @@
     <string name="meds_tab_archive">Архив · %1$d</string>
     <string name="meds_as_needed_chip">по потребности</string>
 
-    <!-- Разделитель строки описания «Таблетка · 50 мкг · 1 раз в сутки». -->
+    <!-- Разделитель строки описания и фразы расписания «Таблетка · 50 мкг». -->
     <string name="meds_separator">" · "</string>
+
+    <!-- Частота во фразе расписания при одном приёме в сутки (ОВ-94). -->
+    <string name="meds_frequency_daily">Ежедневно</string>
 
     <string name="meds_period_open">с %1$s · бессрочно</string>
     <string name="meds_period_until">до %1$s</string>
@@ -46,11 +49,34 @@
     <string name="form_label_name">Название</string>
     <string name="form_label_release_form">Форма выпуска</string>
     <string name="form_label_tablet_shape">Вид таблетки</string>
+
+    <!--
+      Блок-превью выбора (ОВ-94, §4.16).
+
+      У форм, где доза описывается силуэтом (таблетка и капсула), подпись говорит про
+      узнавание; у остальных — про дозу словами. Дословная формулировка ОВ-94 —
+      «Доза описывается словами: «2 впрыска» — без силуэта»; единица берётся из формы
+      (закрытый список ОВ-16), а до ввода дозы число назвать нечем — общая фраза.
+    -->
+    <string name="form_preview_reusable">Так лекарство будет узнаваться в списке и карточке</string>
+    <string name="form_preview_dose_words">Доза описывается словами: «%1$s» — без силуэта</string>
+    <string name="form_preview_dose_words_empty">Доза описывается словами, без силуэта</string>
     <string name="form_label_dose">Доза на один приём</string>
     <string name="form_label_intakes_per_day">Приёмов в сутки</string>
     <string name="form_caption_times_below">Время задаётся ниже</string>
     <string name="form_label_times">Время приёма</string>
     <string name="form_add_time">Добавить время</string>
+
+    <!--
+      Заголовки диалогов выбора времени и даты (SKL-69, §4.14). Заголовок времени
+      совпадает с подписью блока: диалог открывается из строки того же блока, и второе
+      название того же действия только путало бы. Начало и окончание названы словами
+      «Дата начала»/«Дата окончания», а не подписями строк «Начало»/«Окончание»:
+      без слова «дата» заголовок читается как выбор чего угодно.
+    -->
+    <string name="form_dialog_time">Время приёма</string>
+    <string name="form_dialog_start_date">Дата начала</string>
+    <string name="form_dialog_end_date">Дата окончания</string>
     <string name="form_label_mode">Режим приёма</string>
     <string name="form_mode_scheduled">По расписанию</string>
     <string name="form_mode_as_needed">По потребности</string>
@@ -68,6 +94,21 @@
     <string name="form_period_end">Окончание</string>
     <!-- Значение приглушённой строки «Окончание» при включённой бессрочности. -->
     <string name="form_period_end_empty">—</string>
+
+    <!--
+      Пресеты срока окончания курса (ПМ-12, SKL-75). Названия фиксированные, поэтому
+      без plurals: «2 недели» стоит в списке неизменно. Последний чип — не срок, а
+      действие, открывающее выбор произвольной даты (тот же диалог, что у строки
+      «Окончание», SKL-69).
+    -->
+    <string name="period_preset_week_1">1 неделя</string>
+    <string name="period_preset_weeks_2">2 недели</string>
+    <string name="period_preset_month_1">1 месяц</string>
+    <string name="period_preset_months_2">2 месяца</string>
+    <string name="period_preset_months_3">3 месяца</string>
+    <string name="period_preset_months_6">6 месяцев</string>
+    <string name="period_preset_year_1">1 год</string>
+    <string name="period_preset_other">Другая дата</string>
 
     <!-- Подписи для чтения с экрана (НФТ-30); формулировки — из aria-label макета -->
     <string name="cd_dose_amount">Количество</string>
@@ -166,6 +207,8 @@
     <!-- «9 таблеток из 60»: склонение единицы — по остатку, размер — числом (ОВ-45). -->
     <string name="card_stock_of_package">%1$s из %2$s</string>
     <string name="card_section_week">Последние 7 дней</string>
+    <!-- Нет завершённых дней с приёмами: доля вырождена, показывается фраза (ОВ-97, ПМ-15 п. 2). -->
+    <string name="card_week_empty">Приёмов пока нет</string>
     <string name="card_course_period">%1$s — %2$s</string>
     <string name="card_refill">Пополнить</string>
     <!--

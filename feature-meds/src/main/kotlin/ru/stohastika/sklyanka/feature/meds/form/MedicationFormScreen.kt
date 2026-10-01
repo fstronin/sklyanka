@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -42,8 +44,9 @@ import java.time.LocalTime
  * повторять состояние «недоступно, пока не заполнено название».
  *
  * Экран без состояния: черновик приходит в [state], наружу уходят намерения. Выбор
- * даты и времени — системный (`docs/tasks/SKL-09/task.md`, «Вне рамок»), поэтому он
- * поднимается наружу через [onPickDate] и [onPickTime], а не рисуется здесь.
+ * даты и времени поднимается наружу через [onPickDate] и [onPickTime], а не рисуется
+ * здесь: диалог дизайн-системы (`DateTimePickerDialog`, SKL-69) знает о платформенной
+ * настройке 12/24 и открывается из маршрута, поэтому контракт колбэков не меняется.
  */
 @Suppress("LongParameterList")
 @Composable
@@ -70,6 +73,7 @@ fun MedicationFormScreen(
         modifier = modifier
             .fillMaxSize()
             .background(colors.background)
+            .navigationBarsPadding()
             .testTag(TAG_MEDICATION_FORM),
     ) {
         ScreenHeader(
@@ -83,11 +87,14 @@ fun MedicationFormScreen(
                 .fillMaxWidth()
                 .verticalScroll(scroll)
                 .onGloballyPositioned { anchors.putContainerTop(it.positionInWindow().y.toInt()) }
+                .imePadding()
                 .screenPadding(),
             verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Screen),
         ) {
             // Порядок блоков — контракт формы, а не случайность разметки (Д-2).
+            // Превью стоит сразу под названием и обновляется вместе с черновиком (ОВ-94).
             NameBlock(state, onIntent, anchors)
+            PreviewBlock(state)
             ReleaseFormBlock(state, onIntent, anchors)
             TabletShapeBlock(state, onIntent, anchors)
             DoseBlock(state, onIntent, anchors)
