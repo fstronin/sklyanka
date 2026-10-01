@@ -4,12 +4,15 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import dagger.hilt.android.AndroidEntryPoint
 import ru.stohastika.sklyanka.domain.onboarding.OnboardingSource
 import ru.stohastika.sklyanka.ui.locale.withInterfaceLocale
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
+import android.graphics.Color as AndroidColor
 
 /**
  * Повторный вход на экран разрешений (НАП-21, критерий приёмки 15).
@@ -39,6 +42,11 @@ class PermissionsActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Светлый экран — тёмные значки системных панелей (SKL-72 §4).
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.light(AndroidColor.TRANSPARENT, AndroidColor.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.light(AndroidColor.TRANSPARENT, AndroidColor.TRANSPARENT),
+        )
         setContent {
             SklyankaTheme {
                 PermissionsRoute(

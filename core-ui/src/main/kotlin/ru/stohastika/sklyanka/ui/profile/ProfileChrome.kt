@@ -1,8 +1,13 @@
 package ru.stohastika.sklyanka.ui.profile
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -53,6 +58,16 @@ fun ProfileChrome(state: ProfileChromeState, modifier: Modifier = Modifier, cont
                     .fillMaxSize()
                     .background(SklyankaTheme.colors.background),
             ) {
+                // Полоса под статус-баром цветом шапки (SKL-72, §5.1): у владельца
+                // `profileHeader` равен фону — серой полосы нет; в чужом профиле под
+                // системной панелью лежит подкраска шапки, а полоса профиля 6 dp —
+                // первый элемент содержимого ниже неё (ОВ-92).
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(SklyankaTheme.colors.profileHeader)
+                        .windowInsetsTopHeight(WindowInsets.statusBars),
+                )
                 ProfileStripe()
                 content()
             }

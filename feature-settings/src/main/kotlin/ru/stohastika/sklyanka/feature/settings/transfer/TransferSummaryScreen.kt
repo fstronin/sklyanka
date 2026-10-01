@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -43,7 +44,7 @@ fun TransferSummaryScreen(
     modifier: Modifier = Modifier,
 ) {
     val colors = SklyankaTheme.colors
-    Column(modifier = modifier.fillMaxSize().testTag(TAG_SUMMARY)) {
+    Column(modifier = modifier.fillMaxSize().navigationBarsPadding().testTag(TAG_SUMMARY)) {
         ScreenHeader(
             labels = ScreenHeaderLabels(title = stringResource(R.string.transfer_summary_title)),
             kind = ScreenHeaderKind.Nested,

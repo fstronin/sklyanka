@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -48,7 +49,7 @@ fun DataTransferScreen(
     modifier: Modifier = Modifier,
 ) {
     val colors = SklyankaTheme.colors
-    Column(modifier = modifier.fillMaxSize().testTag(TAG_TRANSFER_SCREEN)) {
+    Column(modifier = modifier.fillMaxSize().navigationBarsPadding().testTag(TAG_TRANSFER_SCREEN)) {
         ScreenHeader(
             labels = ScreenHeaderLabels(title = stringResource(R.string.transfer_title)),
             kind = ScreenHeaderKind.Nested,

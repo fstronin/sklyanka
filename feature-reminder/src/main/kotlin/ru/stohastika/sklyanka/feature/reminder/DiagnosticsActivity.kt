@@ -4,8 +4,10 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.runtime.collectAsState
@@ -15,6 +17,7 @@ import ru.stohastika.sklyanka.domain.reminder.ReminderJournalDocument
 import ru.stohastika.sklyanka.ui.locale.withInterfaceLocale
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import javax.inject.Inject
+import android.graphics.Color as AndroidColor
 
 /**
  * Экран диагностики напоминаний (НАП-37).
@@ -48,8 +51,22 @@ class DiagnosticsActivity : ComponentActivity() {
     @Inject
     lateinit var setupEntry: ReminderSetupEntry
 
+    /**
+     * Куда ведёт «Исправить» у строки разрешения (ОВ-49).
+     *
+     * Системный `Intent` собирает `app`: `feature-reminder` не зависит от онбординга
+     * и не знает экранов системных настроек (`ADR-0007`).
+     */
+    @Inject
+    lateinit var settingsFixer: ReminderSettingsFixer
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Светлый экран — тёмные значки системных панелей (SKL-72 §4).
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.light(AndroidColor.TRANSPARENT, AndroidColor.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.light(AndroidColor.TRANSPARENT, AndroidColor.TRANSPARENT),
+        )
         setContent {
             SklyankaTheme {
                 val state by viewModel.state.collectAsState()
@@ -67,6 +84,8 @@ class DiagnosticsActivity : ComponentActivity() {
                     onRestartSetup = {
                         startActivity(setupEntry.intentFor(this@DiagnosticsActivity))
                     },
+                    onToggleSupport = viewModel::onToggleSupport,
+                    onFixPermission = settingsFixer::fix,
                     onBack = ::finish,
                     toLocal = viewModel::local,
                 )

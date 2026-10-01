@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -66,7 +68,7 @@ fun ReplaceConfirmScreen(
     val colors = SklyankaTheme.colors
     val word = stringResource(R.string.transfer_replace_word)
     val wordMatches = matchesConfirmationWord(confirmationWord, word)
-    Column(modifier = modifier.fillMaxSize().testTag(TAG_REPLACE_CONFIRM)) {
+    Column(modifier = modifier.fillMaxSize().navigationBarsPadding().imePadding().testTag(TAG_REPLACE_CONFIRM)) {
         ScreenHeader(
             labels = ScreenHeaderLabels(title = stringResource(R.string.transfer_replace_title)),
             kind = ScreenHeaderKind.Nested,

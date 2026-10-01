@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -55,7 +57,14 @@ fun DeleteProfileScreen(
     onDone: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier.fillMaxSize().background(SklyankaTheme.colors.background).testTag(TAG_DELETE_SCREEN)) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .background(SklyankaTheme.colors.background)
+            .navigationBarsPadding()
+            .imePadding()
+            .testTag(TAG_DELETE_SCREEN),
+    ) {
         when (state.step) {
             DeleteProfileStep.CONFIRM -> ConfirmationStep(state, onIntent, onSaveFile, onDone)
             DeleteProfileStep.RESULT -> ResultStep(state, onDone)
