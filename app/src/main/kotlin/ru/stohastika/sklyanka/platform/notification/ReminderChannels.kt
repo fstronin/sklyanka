@@ -9,6 +9,7 @@ import android.provider.Settings
 import dagger.hilt.android.qualifiers.ApplicationContext
 import ru.stohastika.sklyanka.R
 import ru.stohastika.sklyanka.domain.reminder.ReminderChannel
+import ru.stohastika.sklyanka.domain.reminder.ReminderVibration
 import ru.stohastika.sklyanka.ui.locale.withInterfaceLocale
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -72,7 +73,7 @@ class ReminderChannels @Inject constructor(@ApplicationContext applicationContex
             alarmAudio(),
         )
         enableVibration(true)
-        vibrationPattern = SHORT_PATTERN
+        vibrationPattern = ReminderVibration.of(ReminderChannel.REGULAR)
         lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
         setShowBadge(false)
     }
@@ -90,7 +91,7 @@ class ReminderChannels @Inject constructor(@ApplicationContext applicationContex
             alarmAudio(),
         )
         enableVibration(true)
-        vibrationPattern = LONG_PATTERN
+        vibrationPattern = ReminderVibration.of(ReminderChannel.PERSISTENT)
         // Действует только при выданном доступе к политике «Не беспокоить» (НАП-17);
         // без него система флаг игнорирует, и диагностика показывает это как ограничение,
         // а не как ошибку.
@@ -109,12 +110,4 @@ class ReminderChannels @Inject constructor(@ApplicationContext applicationContex
         .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
         .setUsage(AudioAttributes.USAGE_ALARM)
         .build()
-
-    private companion object {
-        /** Короткий паттерн обычного напоминания (НАП-24). */
-        val SHORT_PATTERN = longArrayOf(0, 350, 250, 350)
-
-        /** Длинный выраженный паттерн настойчивого напоминания (НАП-24). */
-        val LONG_PATTERN = longArrayOf(0, 700, 300, 700, 300, 700)
-    }
 }
