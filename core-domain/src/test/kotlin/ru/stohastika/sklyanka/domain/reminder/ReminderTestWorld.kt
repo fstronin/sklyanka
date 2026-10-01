@@ -51,6 +51,25 @@ internal class ReminderTestWorld(zone: ZoneId = MOSCOW) {
     val environment = FakeDeviceEnvironmentSource()
     val measurement = FakeReminderMeasurement()
 
+    /** Самопроверка доставки: те же сценарии, что запускает `app` (SKL-86, ОВ-108). */
+    val foreground = FakeAppForeground()
+    val acknowledgements = FakeDeliveryCheckAcknowledgements()
+
+    val startDeliveryCheck = StartDeliveryCheckUseCase(alarms = alarms, journal = journal, time = clock)
+
+    val firedDeliveryCheck = HandleFiredDeliveryCheckUseCase(
+        journal = journal,
+        notifications = notifications,
+        foreground = foreground,
+        time = clock,
+    )
+
+    val finishDeliveryCheck = FinishDeliveryCheckOnEntryUseCase(journal = journal, alarms = alarms, time = clock)
+
+    val cancelDeliveryCheck = CancelDeliveryCheckUseCase(alarms = alarms, journal = journal, time = clock)
+
+    val acknowledgeDeliveryCheck = AcknowledgeDeliveryCheckUseCase(acknowledgements)
+
     val sweep = SweepMissedIntakesUseCase(intakes, window, clock, opLog)
 
     val reschedule = RescheduleRemindersUseCase(

@@ -28,10 +28,12 @@ import ru.stohastika.sklyanka.feature.meds.archive.ArchiveViewModel
 import ru.stohastika.sklyanka.feature.meds.card.MedicationCardViewModel
 import ru.stohastika.sklyanka.feature.meds.form.MedicationFormViewModel
 import ru.stohastika.sklyanka.feature.meds.list.MedicationListViewModel
+import ru.stohastika.sklyanka.feature.onboarding.DeliveryCheckEntry
 import ru.stohastika.sklyanka.feature.onboarding.OnboardingViewModel
 import ru.stohastika.sklyanka.feature.onboarding.PermissionsActivity
 import ru.stohastika.sklyanka.feature.onboarding.PermissionsRoute
 import ru.stohastika.sklyanka.feature.onboarding.SystemSettingsNavigator
+import ru.stohastika.sklyanka.feature.reminder.DeliveryCheckNotice
 import ru.stohastika.sklyanka.feature.reminder.DiagnosticsActivity
 import ru.stohastika.sklyanka.feature.reminder.ReminderOutageNotice
 import ru.stohastika.sklyanka.feature.settings.SettingsNavigation
@@ -54,6 +56,7 @@ import ru.stohastika.sklyanka.navigation.SettingsSection
 import ru.stohastika.sklyanka.navigation.SettingsViewModels
 import ru.stohastika.sklyanka.navigation.UndoReturn
 import ru.stohastika.sklyanka.platform.startup.StartupRouter
+import ru.stohastika.sklyanka.reminder.DeliveryCheckAnnouncer
 import ru.stohastika.sklyanka.reminder.ReminderOutageAnnouncer
 import ru.stohastika.sklyanka.startup.StartDestination
 import ru.stohastika.sklyanka.startup.StartupFrames
@@ -123,6 +126,10 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var profileContext: ProfileContextProvider
 
+    /** Куда ведёт «Проверить доставку» из плашки «Всё настроено» (SKL-86, ОВ-108). */
+    @Inject
+    lateinit var deliveryCheckEntry: DeliveryCheckEntry
+
     /**
      * Переходы в системные настройки (SKL-78, ОВ-98).
      *
@@ -141,6 +148,16 @@ class MainActivity : ComponentActivity() {
      */
     @Inject
     lateinit var outageAnnouncer: ReminderOutageAnnouncer
+
+    /**
+     * Результат самопроверки доставки (SKL-86, ОВ-108).
+     *
+     * Показывается тем же входом, что сообщение о перерыве, и ниже него: перерыв говорит
+     * «что делать», результат проверки — «что вышло». «Проверка не состоялась» баннера
+     * не даёт: человек в приложении, и исход виден блоком на «Проверке напоминаний».
+     */
+    @Inject
+    lateinit var deliveryCheckAnnouncer: DeliveryCheckAnnouncer
 
     /** Местное время момента перерыва: журнал хранит моменты в UTC (НФТ-48). */
     @Inject
@@ -244,6 +261,7 @@ class MainActivity : ComponentActivity() {
                                 // нет, хуже, чем не обещать ничего, — критерий приёмки 20 закрывается
                                 // вместе с SKL-17 одной строкой здесь.
                                 onExit = { onboardingDone = true },
+                                onCheckDelivery = { startActivity(deliveryCheckEntry.intentFor(this)) },
                             )
 
                         // «Настроить» в предупреждении на «Сегодня» — тот же экран разрешений,
@@ -254,6 +272,7 @@ class MainActivity : ComponentActivity() {
                             viewModel = onboarding,
                             source = OnboardingSource.TODAY_WARNING,
                             onExit = { permissionsFromToday = false },
+                            onCheckDelivery = { startActivity(deliveryCheckEntry.intentFor(this)) },
                         )
 
                         // Оформление активного профиля — вокруг всего, что человек видит
@@ -262,6 +281,7 @@ class MainActivity : ComponentActivity() {
                         // свой.
                         else -> ProfileChrome(profileChrome()) {
                             OutageNotice()
+                            DeliveryCheckBanner()
                             Root(onOpenPermissions = { permissionsFromToday = true })
                         }
                     }
@@ -331,11 +351,37 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /**
+     * Результат самопроверки доставки над содержимым (SKL-86, ОВ-108).
+     *
+     * Признак перечитывается при каждом возвращении на передний план ([onResume]):
+     * проверка могла завершиться, пока приложение было в фоне. Результат объявляется
+     * один раз — оба действия сначала подтверждают его, а «Исправить» ведёт тем же
+     * маршрутом, что «Настроить» на «Сегодня».
+     */
+    @Composable
+    private fun DeliveryCheckBanner() {
+        val result by deliveryCheckAnnouncer.current.collectAsState()
+        result?.let { finished ->
+            DeliveryCheckNotice(
+                state = finished,
+                onAcknowledge = { lifecycleScope.launch { deliveryCheckAnnouncer.acknowledge() } },
+                onFix = {
+                    lifecycleScope.launch { deliveryCheckAnnouncer.acknowledge() }
+                    permissionsFromToday = true
+                },
+            )
+        }
+    }
+
     override fun onResume() {
         super.onResume()
         // Перерыв в напоминаниях мог начаться, пока приложение было в фоне, и мог
         // закончиться сам: признак считается заново, а не хранится флагом (НАП-38).
         lifecycleScope.launch { outageAnnouncer.refresh() }
+        // Результат самопроверки доставки читается тем же входом: проверка завершается
+        // при закрытом приложении, и показать исход раньше некому (SKL-86, НФТ-52).
+        lifecycleScope.launch { deliveryCheckAnnouncer.refresh() }
         // Состояние разрешений читается из системы при каждом возврате на передний план
         // (НФТ-52): человек уходит выдавать разрешение в системные настройки и возвращается,
         // и карточка обязана измениться без перезахода (критерии приёмки 4 и 16).

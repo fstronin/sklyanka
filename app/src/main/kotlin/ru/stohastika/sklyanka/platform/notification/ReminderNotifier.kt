@@ -11,9 +11,11 @@ import ru.stohastika.sklyanka.domain.reminder.ReminderCard
 import ru.stohastika.sklyanka.domain.reminder.ReminderChannel
 import ru.stohastika.sklyanka.domain.reminder.ReminderSlot
 import ru.stohastika.sklyanka.domain.reminder.port.NotificationGateway
+import ru.stohastika.sklyanka.feature.reminder.DeliveryCheckActivity
 import ru.stohastika.sklyanka.feature.reminder.ReminderActivity
 import ru.stohastika.sklyanka.ui.locale.InterfaceLocale
 import ru.stohastika.sklyanka.ui.locale.withInterfaceLocale
+import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -101,6 +103,45 @@ class ReminderNotifier @Inject constructor(
     }
 
     /**
+     * Карточка тестового напоминания обычным каналом (SKL-86, ОВ-108).
+     *
+     * Тем же каналом, что первое боевое напоминание: проверка обязана мерить настоящий
+     * путь доставки, а не отдельный «тихий» канал, который система не тронет. Полноэкранное
+     * намерение ведёт в [DeliveryCheckActivity]; дополнений приёма у уведомления нет,
+     * поэтому [retainOnly] его не трогает — снятие у него отдельный вызов.
+     */
+    override suspend fun showDeliveryCheck(at: LocalDateTime) {
+        channels.ensure()
+        val notification = NotificationCompat.Builder(context, ReminderChannel.REGULAR.id)
+            .setSmallIcon(R.drawable.ic_notification_mark)
+            .setContentTitle(context.getString(CHECK_OVERLINE))
+            .setContentText(context.getString(CHECK_TEXT))
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setAutoCancel(false)
+            .setOnlyAlertOnce(false)
+            .setFullScreenIntent(fullScreenCheck(at), true)
+            .setContentIntent(fullScreenCheck(at))
+            .build()
+        manager.notify(DELIVERY_CHECK_ID, notification)
+    }
+
+    /**
+     * Показана ли сейчас карточка проверки.
+     *
+     * Ответ — у системы, а не из памяти процесса: процесс на EMUI выгружается,
+     * а уведомление в шторке остаётся (тот же вопрос, что у боевого показа).
+     */
+    override suspend fun isDeliveryCheckShown(): Boolean = manager.activeNotifications.any {
+        it.id == DELIVERY_CHECK_ID
+    }
+
+    override suspend fun cancelDeliveryCheck() {
+        manager.cancel(DELIVERY_CHECK_ID)
+    }
+
+    /**
      * Показана ли карточка слота.
      *
      * Ответ берётся у системы, а не из памяти процесса: процесс на EMUI выгружается,
@@ -134,6 +175,14 @@ class ReminderNotifier @Inject constructor(
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
     )
 
+    /** Полноэкранное намерение карточки проверки: своя Activity, слоту приёма взяться неоткуда. */
+    private fun fullScreenCheck(at: LocalDateTime): PendingIntent = PendingIntent.getActivity(
+        context,
+        DELIVERY_CHECK_ID,
+        DeliveryCheckActivity.intentFor(context, at),
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+    )
+
     /**
      * Идентификатор уведомления из слота.
      *
@@ -145,5 +194,17 @@ class ReminderNotifier @Inject constructor(
     private companion object {
         const val AT = "@"
         const val EXTRA_INTAKE_IDS = "ru.stohastika.sklyanka.reminder.intake_ids"
+
+        /**
+         * Идентификатор уведомления проверки — фиксированный.
+         *
+         * Он не выводится из слота: у проверки нет ни профиля, ни приёма, а второй
+         * тестовый показ обязан обновить первый, а не добавить вторую карточку.
+         */
+        const val DELIVERY_CHECK_ID = 7_186_004
+
+        /** Тексты карточки живут в модуле экрана проверки (SKL-86, НФТ-42). */
+        val CHECK_OVERLINE = ru.stohastika.sklyanka.feature.reminder.R.string.reminder_check_overline
+        val CHECK_TEXT = ru.stohastika.sklyanka.feature.reminder.R.string.reminder_check_text
     }
 }

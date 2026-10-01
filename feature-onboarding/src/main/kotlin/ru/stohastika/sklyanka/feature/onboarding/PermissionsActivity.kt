@@ -13,6 +13,7 @@ import ru.stohastika.sklyanka.domain.onboarding.OnboardingSource
 import ru.stohastika.sklyanka.ui.locale.withInterfaceLocale
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import java.time.Instant
+import javax.inject.Inject
 import android.graphics.Color as AndroidColor
 
 /**
@@ -43,6 +44,15 @@ class PermissionsActivity : ComponentActivity() {
 
     private val viewModel: OnboardingViewModel by viewModels()
 
+    /**
+     * Куда ведёт «Проверить доставку» из плашки «Всё настроено» (SKL-86, ОВ-108).
+     *
+     * Подставляется `app`: экран проверки напоминаний живёт в `feature-reminder`,
+     * и `feature-onboarding` не имеет права его видеть.
+     */
+    @Inject
+    lateinit var deliveryCheckEntry: DeliveryCheckEntry
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // Светлый экран — тёмные значки системных панелей (SKL-72 §4).
@@ -62,6 +72,7 @@ class PermissionsActivity : ComponentActivity() {
                     // туда, откуда пришли. Обещать подключение часов из настроек нечем — это
                     // шаг онбординга, а не пункт настроек (SKL-17).
                     onExit = { finish() },
+                    onCheckDelivery = { startActivity(deliveryCheckEntry.intentFor(this)) },
                 )
             }
         }

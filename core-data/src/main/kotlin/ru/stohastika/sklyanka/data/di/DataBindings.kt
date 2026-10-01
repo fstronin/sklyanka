@@ -5,6 +5,7 @@ import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import ru.stohastika.sklyanka.data.log.RoomOperationLog
+import ru.stohastika.sklyanka.data.prefs.DeviceProtectedDirectBootStore
 import ru.stohastika.sklyanka.data.repository.ActiveProfileContext
 import ru.stohastika.sklyanka.data.repository.ActiveProfileRepositoryImpl
 import ru.stohastika.sklyanka.data.repository.IntakeRepositoryImpl
@@ -18,6 +19,8 @@ import ru.stohastika.sklyanka.domain.log.OperationLog
 import ru.stohastika.sklyanka.domain.profile.ProfileContextProvider
 import ru.stohastika.sklyanka.domain.profile.ProfileEraser
 import ru.stohastika.sklyanka.domain.profile.ProfileLossesSource
+import ru.stohastika.sklyanka.domain.reminder.port.DirectBootAlarmStore
+import ru.stohastika.sklyanka.domain.reminder.port.DirectBootTraceStore
 import ru.stohastika.sklyanka.domain.repository.ActiveProfileRepository
 import ru.stohastika.sklyanka.domain.repository.IntakeRepository
 import ru.stohastika.sklyanka.domain.repository.MedicationRepository
@@ -73,4 +76,14 @@ abstract class DataBindings {
     @Binds
     @Singleton
     abstract fun bindOperationLog(impl: RoomOperationLog): OperationLog
+
+    /** Зеркало поставленных будильников в device-protected storage (SKL-87). */
+    @Binds
+    @Singleton
+    abstract fun bindDirectBootAlarmStore(impl: DeviceProtectedDirectBootStore): DirectBootAlarmStore
+
+    /** Очередь следов locked-фазы; забирается после разблокировки одной операцией (SKL-87). */
+    @Binds
+    @Singleton
+    abstract fun bindDirectBootTraceStore(impl: DeviceProtectedDirectBootStore): DirectBootTraceStore
 }

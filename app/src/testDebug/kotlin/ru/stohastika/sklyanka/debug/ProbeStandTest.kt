@@ -19,7 +19,10 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.shadows.ShadowAlarmManager
 import ru.stohastika.sklyanka.R
 import ru.stohastika.sklyanka.domain.reminder.AlarmKind
+import ru.stohastika.sklyanka.domain.reminder.DirectBootAlarm
+import ru.stohastika.sklyanka.domain.reminder.DirectBootAlarms
 import ru.stohastika.sklyanka.domain.reminder.port.AlarmRegistry
+import ru.stohastika.sklyanka.domain.reminder.port.DirectBootAlarmStore
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderMeasurement
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderSettings
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderSettingsValues
@@ -77,6 +80,13 @@ class ProbeStandTest {
         override suspend fun remove(intakeId: String) = Unit
     }
 
+    private class FakeDirectBootAlarmStore : DirectBootAlarmStore {
+        override suspend fun load(): DirectBootAlarms? = null
+        override suspend fun put(alarm: DirectBootAlarm) = Unit
+        override suspend fun remove(intakeId: String) = Unit
+        override suspend fun replace(alarms: List<DirectBootAlarm>) = Unit
+    }
+
     private fun gateway(kind: AlarmKind, measurementAvailable: Boolean = true): AlarmManagerGateway =
         AlarmManagerGateway(
             context = context,
@@ -85,6 +95,7 @@ class ProbeStandTest {
                 settings = StoredSettings(ReminderSettingsValues(alarmStrategy = kind)),
                 measurement = Measurement(available = measurementAvailable),
             ),
+            directBoot = FakeDirectBootAlarmStore(),
         )
 
     private fun pendingFor(index: Int): PendingIntent = PendingIntent.getBroadcast(

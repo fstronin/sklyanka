@@ -14,7 +14,11 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Shadows.shadowOf
 import ru.stohastika.sklyanka.domain.reminder.AlarmKind
+import ru.stohastika.sklyanka.domain.reminder.DirectBootAlarm
+import ru.stohastika.sklyanka.domain.reminder.DirectBootAlarms
+import ru.stohastika.sklyanka.domain.reminder.DirectBootReplayPolicy
 import ru.stohastika.sklyanka.domain.reminder.port.AlarmRegistry
+import ru.stohastika.sklyanka.domain.reminder.port.DirectBootAlarmStore
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderMeasurement
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderSettings
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderSettingsValues
@@ -34,6 +38,7 @@ class AlarmManagerGatewayTest {
     private val alarms = requireNotNull(context.getSystemService(AlarmManager::class.java))
     private val shadow = shadowOf(alarms)
     private val registry = FakeAlarmRegistry()
+    private val directBoot = FakeDirectBootAlarmStore()
 
     private val at: Instant = Instant.parse("2026-09-26T05:00:00Z")
 
@@ -73,6 +78,34 @@ class AlarmManagerGatewayTest {
         }
     }
 
+    private class FakeDirectBootAlarmStore : DirectBootAlarmStore {
+        val stored: MutableMap<String, DirectBootAlarm> = linkedMapOf()
+        var failWrites: Boolean = false
+
+        override suspend fun load(): DirectBootAlarms? =
+            DirectBootAlarms(DirectBootReplayPolicy.FORMAT_VERSION, Instant.EPOCH, stored.values.toList())
+
+        override suspend fun put(alarm: DirectBootAlarm) {
+            failIfBroken()
+            stored[alarm.intakeId] = alarm
+        }
+
+        override suspend fun remove(intakeId: String) {
+            failIfBroken()
+            stored.remove(intakeId)
+        }
+
+        override suspend fun replace(alarms: List<DirectBootAlarm>) {
+            failIfBroken()
+            stored.clear()
+            alarms.forEach { stored[it.intakeId] = it }
+        }
+
+        private fun failIfBroken() {
+            if (failWrites) throw java.io.IOException("the direct boot mirror is down")
+        }
+    }
+
     private fun gateway(kind: AlarmKind, measurementAvailable: Boolean = true): AlarmManagerGateway =
         AlarmManagerGateway(
             context = context,
@@ -81,6 +114,7 @@ class AlarmManagerGatewayTest {
                 settings = StoredSettings(ReminderSettingsValues(alarmStrategy = kind)),
                 measurement = Measurement(available = measurementAvailable),
             ),
+            directBoot = directBoot,
         )
 
     @Test
@@ -151,5 +185,114 @@ class AlarmManagerGatewayTest {
 
         assertEquals("one intake is one alarm address (НАП-9)", 1, shadow.scheduledAlarms.size)
         assertEquals(at.plusSeconds(900).toEpochMilli(), shadow.scheduledAlarms.single().triggerAtTime)
+    }
+
+    @Test
+    fun `scheduling mirrors the alarm into the direct boot store`() = runTest {
+        gateway(AlarmKind.ALARM_CLOCK).schedule("intake-1", at)
+
+        assertEquals(DirectBootAlarm("intake-1", at, 0), directBoot.stored["intake-1"])
+    }
+
+    @Test
+    fun `cancelling clears both the registry and the mirror`() = runTest {
+        val gateway = gateway(AlarmKind.ALARM_CLOCK)
+        gateway.schedule("intake-1", at)
+
+        gateway.cancel("intake-1")
+
+        assertNull(registry.stored["intake-1"])
+        assertNull(directBoot.stored["intake-1"])
+    }
+
+    @Test
+    fun `syncing the mirror keeps exactly the alarms standing in the system`() = runTest {
+        val gateway = gateway(AlarmKind.ALARM_CLOCK)
+        gateway.schedule("intake-1", at)
+        gateway.schedule("intake-2", at.plusSeconds(60), attempt = 1)
+        directBoot.stored.clear()
+
+        gateway.syncMirror(
+            listOf(
+                DirectBootAlarm("intake-1", at, 0),
+                DirectBootAlarm("intake-2", at.plusSeconds(60), 1),
+                DirectBootAlarm("intake-absent", at, 0),
+            ),
+        )
+
+        assertEquals(setOf("intake-1", "intake-2"), directBoot.stored.keys)
+        assertEquals(DirectBootAlarm("intake-2", at.plusSeconds(60), 1), directBoot.stored["intake-2"])
+    }
+
+    @Test
+    fun `a broken mirror does not fail arming, cancelling or the rebuild sync`() = runTest {
+        val gateway = gateway(AlarmKind.ALARM_CLOCK)
+        directBoot.failWrites = true
+
+        gateway.schedule("intake-1", at)
+        assertEquals(at, registry.stored["intake-1"])
+
+        gateway.syncMirror(listOf(DirectBootAlarm("intake-1", at, 0)))
+
+        gateway.cancel("intake-1")
+        assertNull(registry.stored["intake-1"])
+    }
+
+    @Test
+    fun `scheduled sees an alarm that exists only in the mirror`() = runTest {
+        // Прямая постановка, как у LockedBootAlarmReplayer: зеркало знает будильник,
+        // а CE-реестр — нет. Без объединения пересборка не увидела бы его и не сняла.
+        val replayedAt = at.plusSeconds(7200)
+        directBoot.stored["intake-replayed"] = DirectBootAlarm("intake-replayed", replayedAt, 0)
+        alarms.setExactAndAllowWhileIdle(
+            AlarmManager.RTC_WAKEUP,
+            replayedAt.toEpochMilli(),
+            ReminderAlarms.pendingIntent(context, ReminderAlarms.intake(context, "intake-replayed", 0)),
+        )
+
+        val scheduled = gateway(AlarmKind.ALARM_CLOCK).scheduled()
+
+        assertEquals(replayedAt, scheduled["intake-replayed"])
+    }
+
+    @Test
+    fun `the delivery check goes the same combat path and stays out of the plan`() = runTest {
+        // SKL-86: тестовое срабатывание обязано мерить настоящий механизм продукта,
+        // а не отдельный тихий вызов, — иначе проверка доказывала бы не то, что обещает.
+        val gateway = gateway(AlarmKind.ALARM_CLOCK)
+        val checkAt = at.plusSeconds(90)
+
+        gateway.scheduleDeliveryCheck(checkAt)
+
+        val check = shadow.scheduledAlarms.single()
+        assertEquals(checkAt.toEpochMilli(), check.triggerAtTime)
+        assertNotNull("the check repeats the intake alarm mechanism", check.getAlarmClockInfo())
+        assertTrue("the check is not an intake alarm", gateway.scheduled().isEmpty())
+        assertNull("it must not enter the alarm registry", registry.stored[ReminderAlarms.ACTION_DELIVERY_CHECK])
+
+        gateway.cancelDeliveryCheck()
+
+        assertTrue("the check must be taken away", shadow.scheduledAlarms.isEmpty())
+    }
+
+    @Test
+    fun `the delivery check stays quiet in the exact idle variant`() = runTest {
+        val gateway = gateway(AlarmKind.EXACT_IDLE)
+
+        gateway.scheduleDeliveryCheck(at)
+
+        val check = shadow.scheduledAlarms.single()
+        assertNull("the quiet variant stays quiet", check.getAlarmClockInfo())
+        assertTrue("but still pierces Doze", check.isAllowWhileIdle)
+
+        // Снимок Robolectric общий на классы стенда: тест не оставляет за собой будильник.
+        gateway.cancelDeliveryCheck()
+    }
+
+    @Test
+    fun `cancelling an absent delivery check is not an error`() = runTest {
+        gateway(AlarmKind.ALARM_CLOCK).cancelDeliveryCheck()
+
+        assertTrue(shadow.scheduledAlarms.isEmpty())
     }
 }

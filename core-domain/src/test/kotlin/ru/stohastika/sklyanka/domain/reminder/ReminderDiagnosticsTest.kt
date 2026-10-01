@@ -317,6 +317,50 @@ class ReminderDiagnosticsTest {
         }
     }
 
+    @Test
+    fun `delivery check records stay out of the last reminder and the week summaries`() = runTest {
+        // Запись проверки — отличимый вид события, и она не попадает ни в «Последнее
+        // напоминание», ни в сводки по построению, без правок читателей (SKL-86, ОВ-108).
+        world.journal.record(firing(days = 0L, deviation = 5L))
+        world.moveTo(LocalDateTime.of(2026, 9, 25, 12, 0))
+        world.startDeliveryCheck()
+        movedToDueAndFired()
+
+        val snapshot = world.diagnostics()
+
+        assertEquals(ReminderEvent.SHOWN, snapshot.lastShown?.event)
+        assertEquals(1, snapshot.onTime.fired, "the check is not a fired reminder")
+        assertEquals(1, snapshot.week.fired, "the check does not make the week count")
+        assertEquals(0, snapshot.week.missed)
+        assertTrue(
+            snapshot.journal.any { it.event == ReminderEvent.DELIVERY_CHECK },
+            "the check must be visible in the support journal",
+        )
+    }
+
+    private suspend fun movedToDueAndFired() {
+        world.moveTo(LocalDateTime.of(2026, 9, 25, 12, 0).plus(DeliveryCheckRule.DELAY))
+        world.firedDeliveryCheck()
+    }
+
+    @Test
+    fun `a delivery check does not mask a break in reminders`() = runTest {
+        // Запись проверки не связана ни с одним приёмом и не является срабатыванием:
+        // обнаружение перерыва читает `FIRED` по идентификаторам приёмов и её не видит
+        // (SKL-86, НАП-38).
+        world.pending(at = LocalDateTime.of(2026, 9, 25, 12, 0))
+        world.reschedule(RescheduleReason.APP_START)
+        world.moveTo(LocalDateTime.of(2026, 9, 25, 12, 30))
+        world.startDeliveryCheck()
+        world.moveTo(LocalDateTime.of(2026, 9, 25, 12, 32))
+        world.firedDeliveryCheck()
+
+        val snapshot = world.diagnostics()
+
+        assertEquals(world.momentOf(LocalDateTime.of(2026, 9, 25, 12, 0)), snapshot.outage?.since)
+        assertTrue(snapshot.journal.any { it.event == ReminderEvent.DELIVERY_CHECK })
+    }
+
     private companion object {
         const val SECONDS_IN_DAY = 86_400L
     }

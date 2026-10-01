@@ -4,6 +4,7 @@ package ru.stohastika.sklyanka.feature.reminder
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,6 +22,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import ru.stohastika.sklyanka.domain.reminder.AlarmKind
+import ru.stohastika.sklyanka.domain.reminder.DeliveryCheckOutcome
+import ru.stohastika.sklyanka.domain.reminder.DeliveryCheckState
 import ru.stohastika.sklyanka.domain.reminder.ReminderDeviationWords
 import ru.stohastika.sklyanka.domain.reminder.ReminderDiagnostics
 import ru.stohastika.sklyanka.domain.reminder.ReminderLogEntry
@@ -75,12 +78,32 @@ fun DiagnosticsScreen(
      * переключатель показывается только при `measurementAvailable`.
      */
     onAlarmKindChange: (AlarmKind) -> Unit,
+    /** «Проверить доставку»: открыть шторку запуска самопроверки (SKL-86, ОВ-108). */
+    onCheckDelivery: () -> Unit,
+    /** «Отмена» в шторке: закрыть её, ничего не ставя. */
+    onDismissCheckSheet: () -> Unit,
+    /** «Начать проверку»: назначить тестовое срабатывание. */
+    onStartDeliveryCheck: () -> Unit,
+    /** «Отменить проверку»: снять тестовое срабатывание. */
+    onCancelDeliveryCheck: () -> Unit,
+    /** «Повторить проверку»: результат прочитан, открыть шторку заново. */
+    onRepeatDeliveryCheck: () -> Unit,
+    /** «Исправить»: результат прочитан, вести на «Настроить надёжность». */
+    onFixDeliveryCheck: () -> Unit,
     onBack: () -> Unit,
     toLocal: (Instant) -> LocalDateTime,
     modifier: Modifier = Modifier,
 ) {
     val colors = SklyankaTheme.colors
     val snapshot = state.snapshot
+    if (state.checkSheetOpen) {
+        CheckSheetLayer(
+            onStart = onStartDeliveryCheck,
+            onDismiss = onDismissCheckSheet,
+            modifier = modifier,
+        )
+        return
+    }
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -95,39 +118,106 @@ fun DiagnosticsScreen(
             onBack = onBack,
         )
         if (snapshot == null) return@Column
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = SklyankaSpacing.Screen),
-            verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Medium),
-        ) {
-            item { Warnings(snapshot, toLocal) }
-            item { ReliableLine(snapshot) }
-            item { Permissions(snapshot, state.fixFallback, onFixPermission) }
-            item { Actions(state, onCheckNow) }
-            item { WeekSummary(snapshot.week) }
-            item { LastSimple(snapshot, toLocal) }
-            item { NextPlan(snapshot, toLocal) }
-            item { SupportToggle(onToggleSupport) }
-            if (state.supportExpanded) {
-                item { LastShown(snapshot, toLocal) }
-                item { NextPlanned(snapshot, toLocal) }
-                item { MeasurementVariant(snapshot, onAlarmKindChange) }
-                item { OnTime(snapshot.onTime) }
-                item { LastReschedule(snapshot, toLocal) }
-                item { SectionTitle(stringResource(R.string.diagnostics_section_journal)) }
-                items(snapshot.journal) { entry -> JournalRow(entry, toLocal) }
-                item {
-                    SupportActions(
-                        state = state,
-                        onExportJournal = onExportJournal,
-                        onRestartSetup = onRestartSetup,
-                    )
-                }
-            } else {
-                item { ExportOutcome(state) }
-            }
+        DiagnosticsList(
+            state = state,
+            snapshot = snapshot,
+            toLocal = toLocal,
+            onCheckNow = onCheckNow,
+            onCheckDelivery = onCheckDelivery,
+            onCancelDeliveryCheck = onCancelDeliveryCheck,
+            onRepeatDeliveryCheck = onRepeatDeliveryCheck,
+            onFixDeliveryCheck = onFixDeliveryCheck,
+            onToggleSupport = onToggleSupport,
+            onExportJournal = onExportJournal,
+            onRestartSetup = onRestartSetup,
+            onFixPermission = onFixPermission,
+            onAlarmKindChange = onAlarmKindChange,
+        )
+    }
+}
+
+/**
+ * Содержимое экрана проверки списком (SKL-79, SKL-86).
+ *
+ * Вынесено из [DiagnosticsScreen] ради обозримости: у функции-корня остаётся выбор
+ * между шторкой и содержимым, а состав списка читается отдельно.
+ */
+@Composable
+@Suppress("LongParameterList")
+private fun DiagnosticsList(
+    state: DiagnosticsUiState,
+    snapshot: ReminderDiagnostics,
+    toLocal: (Instant) -> LocalDateTime,
+    onCheckNow: () -> Unit,
+    onCheckDelivery: () -> Unit,
+    onCancelDeliveryCheck: () -> Unit,
+    onRepeatDeliveryCheck: () -> Unit,
+    onFixDeliveryCheck: () -> Unit,
+    onToggleSupport: () -> Unit,
+    onExportJournal: () -> Unit,
+    onRestartSetup: (() -> Unit)?,
+    onFixPermission: (ReminderPermission) -> Unit,
+    onAlarmKindChange: (AlarmKind) -> Unit,
+) {
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = SklyankaSpacing.Screen),
+        verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Medium),
+    ) {
+        item { Warnings(snapshot, toLocal) }
+        item { ReliableLine(snapshot) }
+        item { Permissions(snapshot, state.fixFallback, onFixPermission) }
+        item { Actions(state, onCheckNow) }
+        item {
+            DeliveryCheckBlock(
+                state = snapshot.deliveryCheck,
+                onCheckDelivery = onCheckDelivery,
+                onCancelDeliveryCheck = onCancelDeliveryCheck,
+                onRepeatDeliveryCheck = onRepeatDeliveryCheck,
+                onFixDeliveryCheck = onFixDeliveryCheck,
+            )
         }
+        item { WeekSummary(snapshot.week) }
+        item { LastSimple(snapshot, toLocal) }
+        item { NextPlan(snapshot, toLocal) }
+        item { SupportToggle(onToggleSupport) }
+        if (state.supportExpanded) {
+            item { LastShown(snapshot, toLocal) }
+            item { NextPlanned(snapshot, toLocal) }
+            item { MeasurementVariant(snapshot, onAlarmKindChange) }
+            item { OnTime(snapshot.onTime) }
+            item { LastReschedule(snapshot, toLocal) }
+            item { SectionTitle(stringResource(R.string.diagnostics_section_journal)) }
+            items(snapshot.journal) { entry -> JournalRow(entry, toLocal) }
+            item {
+                SupportActions(
+                    state = state,
+                    onExportJournal = onExportJournal,
+                    onRestartSetup = onRestartSetup,
+                )
+            }
+        } else {
+            item { ExportOutcome(state) }
+        }
+    }
+}
+
+/**
+ * Шторка запуска поверх экрана проверки (SKL-86, ОВ-108).
+ *
+ * Шторка — часть экрана, а не второй экран: её накрывает та же Activity, и возврат
+ * из неё обязан вернуть человека на «Проверку напоминаний». Тег экрана остаётся
+ * на обёртке, чтобы «экран открыт» было верно в обоих состояниях.
+ */
+@Composable
+private fun CheckSheetLayer(onStart: () -> Unit, onDismiss: () -> Unit, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .testTag(TAG_DIAGNOSTICS),
+    ) {
+        DeliveryCheckSheet(onStart = onStart, onDismiss = onDismiss)
     }
 }
 
@@ -284,6 +374,97 @@ private fun Actions(state: DiagnosticsUiState, onCheckNow: () -> Unit) {
                 modifier = Modifier.testTag(TAG_CHECK_OUTCOME),
             )
         }
+    }
+}
+
+/**
+ * Блок самопроверки доставки (SKL-86, НАП-37).
+ *
+ * Стоит сразу под «Проверить сейчас» и говорит разными словами (ОВ-108): та кнопка
+ * пересобирает будильники и отвечает «поставлено», этот блок отвечает «дошло или нет»,
+ * но не чинит. Состояний три, и ни одно не молчит: кнопка запуска, ход проверки
+ * с отменой и исход с действием.
+ */
+@Composable
+private fun DeliveryCheckBlock(
+    state: DeliveryCheckState,
+    onCheckDelivery: () -> Unit,
+    onCancelDeliveryCheck: () -> Unit,
+    onRepeatDeliveryCheck: () -> Unit,
+    onFixDeliveryCheck: () -> Unit,
+) {
+    val colors = SklyankaTheme.colors
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(colors.surface, SklyankaShapes.Card)
+            .padding(SklyankaSpacing.Block)
+            .testTag(TAG_CHECK_BLOCK),
+        verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Medium),
+    ) {
+        SectionTitle(stringResource(R.string.diagnostics_check_sheet_title))
+        when (state) {
+            DeliveryCheckState.None -> SecondaryButton(
+                text = stringResource(R.string.diagnostics_action_check_delivery),
+                onClick = onCheckDelivery,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag(TAG_CHECK_DELIVERY),
+            )
+
+            is DeliveryCheckState.Running -> RunningCheck(onCancelDeliveryCheck)
+
+            is DeliveryCheckState.Finished -> FinishedCheck(state, onRepeatDeliveryCheck, onFixDeliveryCheck)
+        }
+    }
+}
+
+/** Ход проверки: плашка «идёт» и тихая отмена (ОВ-108). */
+@Composable
+private fun RunningCheck(onCancelDeliveryCheck: () -> Unit) {
+    Text(
+        text = stringResource(R.string.diagnostics_check_running),
+        style = SklyankaType.Body,
+        color = SklyankaTheme.colors.text,
+        modifier = Modifier.testTag(TAG_CHECK_RUNNING),
+    )
+    QuietButton(
+        text = stringResource(R.string.diagnostics_check_cancel),
+        onClick = onCancelDeliveryCheck,
+        muted = true,
+        modifier = Modifier.testTag(TAG_CHECK_CANCEL),
+    )
+}
+
+/** Исход проверки и действие по нему: «Повторить проверку» или «Исправить» (ОВ-108). */
+@Composable
+private fun FinishedCheck(
+    state: DeliveryCheckState.Finished,
+    onRepeatDeliveryCheck: () -> Unit,
+    onFixDeliveryCheck: () -> Unit,
+) {
+    Text(
+        text = state.resultText(),
+        style = SklyankaType.Body,
+        color = SklyankaTheme.colors.text,
+        modifier = Modifier.testTag(TAG_CHECK_RESULT),
+    )
+    if (state.outcome == DeliveryCheckOutcome.ON_TIME || state.outcome == DeliveryCheckOutcome.NOT_COMPLETED) {
+        SecondaryButton(
+            text = stringResource(R.string.diagnostics_check_repeat),
+            onClick = onRepeatDeliveryCheck,
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag(TAG_CHECK_REPEAT),
+        )
+    } else {
+        SecondaryButton(
+            text = stringResource(R.string.diagnostics_fix),
+            onClick = onFixDeliveryCheck,
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag(TAG_CHECK_FIX),
+        )
     }
 }
 
@@ -575,6 +756,13 @@ const val TAG_FIX = "diagnostics_fix"
 const val TAG_FIX_FALLBACK = "diagnostics_fix_fallback"
 const val TAG_CHECK_NOW = "diagnostics_check_now"
 const val TAG_CHECK_OUTCOME = "diagnostics_check_outcome"
+const val TAG_CHECK_BLOCK = "diagnostics_check_block"
+const val TAG_CHECK_DELIVERY = "diagnostics_check_delivery"
+const val TAG_CHECK_RUNNING = "diagnostics_check_running"
+const val TAG_CHECK_CANCEL = "diagnostics_check_cancel"
+const val TAG_CHECK_RESULT = "diagnostics_check_result"
+const val TAG_CHECK_REPEAT = "diagnostics_check_repeat"
+const val TAG_CHECK_FIX = "diagnostics_check_fix"
 const val TAG_WEEK_SUMMARY = "diagnostics_week_summary"
 const val TAG_LAST_SHORT = "diagnostics_last_short"
 const val TAG_NEXT_SHORT = "diagnostics_next_short"

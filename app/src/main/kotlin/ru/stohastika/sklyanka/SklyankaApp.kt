@@ -1,6 +1,7 @@
 package ru.stohastika.sklyanka
 
 import android.app.Application
+import android.os.UserManager
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -12,7 +13,9 @@ import ru.stohastika.sklyanka.data.repository.ProfileBootstrap
 import ru.stohastika.sklyanka.domain.log.OperationLog
 import ru.stohastika.sklyanka.domain.reminder.RescheduleReason
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderJournal
+import ru.stohastika.sklyanka.platform.AppForegroundTracker
 import ru.stohastika.sklyanka.platform.notification.ReminderChannels
+import ru.stohastika.sklyanka.reminder.DirectBootTraceDrain
 import ru.stohastika.sklyanka.reminder.ReminderOutageAnnouncer
 import ru.stohastika.sklyanka.reminder.ReminderPlanningTrigger
 import ru.stohastika.sklyanka.startup.StartupSeed
@@ -67,6 +70,24 @@ class SklyankaApp : Application() {
     lateinit var reminderJournal: ReminderJournal
 
     /**
+     * Перенос следов locked-фазы в журнал при старте (SKL-87).
+     *
+     * Страховка на случай, если процесс убили между `USER_UNLOCKED` и записью в журнал:
+     * очередь трасс забирается здесь повторно, но `drain()` очищает её, поэтому двойной
+     * записи не бывает.
+     */
+    @Inject
+    lateinit var directBootTraceDrain: DirectBootTraceDrain
+
+    /**
+     * Передний план приложения (SKL-86): им различаются «не дошло» и «проверка
+     * не состоялась». Колбэки регистрируются здесь, потому что вопрос задаётся
+     * приёмнику, поднятому системой без единой активности.
+     */
+    @Inject
+    lateinit var appForeground: AppForegroundTracker
+
+    /**
      * Заготовки данных отладочной сборки (`ОВ-3`).
      *
      * В релизной сборке набор пуст: связка живёт в `src/debug`, и в релизном артефакте
@@ -79,12 +100,21 @@ class SklyankaApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        // Передний план регистрируется до первой активности: приёмник может поднять
+        // процесс раньше любого экрана, и вопрос «открыто ли приложение» должен иметь
+        // ответ и тогда (SKL-86).
+        registerActivityLifecycleCallbacks(appForeground)
         // Каналы уведомлений создаются один раз и никогда не пересоздаются (ПЛ-10):
         // параметры канала неизменяемы, а удаление и создание канала с тем же
         // идентификатором восстанавливает прежний. Вызов синхронный и дешёвый —
         // без каналов не показать ни одного напоминания.
         reminderChannels.ensure()
+        // До разблокировки CE-хранилище закрыто: открыть Room или настройки нельзя. Работу,
+        // которая их трогает, запускает `USER_UNLOCKED` (план) и следующий открытый запуск
+        // (bootstrap и подрезка), поэтому здесь достаточно выйти, не уронив процесс.
+        if (!isUserUnlocked()) return
         startupScope.launch {
+            directBootTraceDrain.drainIntoJournal()
             profileBootstrap.ensureOwnerProfile(
                 // Имя профиля по умолчанию — текст интерфейса, и язык у него свой (НФТ-43а).
                 defaultName = withInterfaceLocale().getString(R.string.profile_self_default_name),
@@ -107,10 +137,12 @@ class SklyankaApp : Application() {
             reminderPlanning.planAll(RescheduleReason.APP_START)
             // Признак перерыва считается после пересборки: приложение могло быть
             // принудительно остановлено, и об этом человеку говорят прямо — сообщением
-            // над содержимым при входе, а не только записью в журнале (НАП-38).
+            // над содержимым при входе, а не только записью в журнал (НАП-38).
             outageAnnouncer.refresh()
             operationLog.prune(LogRetention.KEEP_DAYS, LogRetention.KEEP_RECORDS)
             reminderJournal.prune(ReminderLogRetention.KEEP_DAYS, ReminderLogRetention.KEEP_RECORDS)
         }
     }
+
+    private fun isUserUnlocked(): Boolean = getSystemService(UserManager::class.java)?.isUserUnlocked == true
 }

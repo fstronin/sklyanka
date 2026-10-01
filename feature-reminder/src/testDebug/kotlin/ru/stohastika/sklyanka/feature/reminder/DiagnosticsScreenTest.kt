@@ -17,6 +17,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import ru.stohastika.sklyanka.domain.reminder.AlarmKind
+import ru.stohastika.sklyanka.domain.reminder.DeliveryCheckOutcome
+import ru.stohastika.sklyanka.domain.reminder.DeliveryCheckState
 import ru.stohastika.sklyanka.domain.reminder.ReminderDiagnostics
 import ru.stohastika.sklyanka.domain.reminder.ReminderEvent
 import ru.stohastika.sklyanka.domain.reminder.ReminderJournalExportOutcome
@@ -60,6 +62,7 @@ class DiagnosticsScreenTest {
         measurementAvailable: Boolean = false,
         alarmKind: AlarmKind = AlarmKind.ALARM_CLOCK,
         nextAt: Instant? = null,
+        deliveryCheck: DeliveryCheckState = DeliveryCheckState.None,
     ) = ReminderDiagnostics(
         lastShown = null,
         lastMedicationName = null,
@@ -81,6 +84,7 @@ class DiagnosticsScreenTest {
         journal = emptyList(),
         alarmKind = alarmKind,
         measurementAvailable = measurementAvailable,
+        deliveryCheck = deliveryCheck,
     )
 
     private fun show(
@@ -89,10 +93,17 @@ class DiagnosticsScreenTest {
         checkOutcome: ReminderCheckOutcome? = null,
         outcome: ReminderJournalExportOutcome? = null,
         fixFallback: ReminderPermission? = null,
+        checkSheetOpen: Boolean = false,
         onToggleSupport: () -> Unit = {},
         onFixPermission: (ReminderPermission) -> Unit = {},
         onExportJournal: () -> Unit = {},
         onAlarmKindChange: (AlarmKind) -> Unit = {},
+        onCheckDelivery: () -> Unit = {},
+        onDismissCheckSheet: () -> Unit = {},
+        onStartDeliveryCheck: () -> Unit = {},
+        onCancelDeliveryCheck: () -> Unit = {},
+        onRepeatDeliveryCheck: () -> Unit = {},
+        onFixDeliveryCheck: () -> Unit = {},
     ) {
         compose.setContent {
             SklyankaTheme {
@@ -105,6 +116,7 @@ class DiagnosticsScreenTest {
                         supportExpanded = supportExpanded,
                         checkOutcome = checkOutcome,
                         fixFallback = fixFallback,
+                        checkSheetOpen = checkSheetOpen,
                     ),
                     onCheckNow = {},
                     onExportJournal = onExportJournal,
@@ -112,6 +124,12 @@ class DiagnosticsScreenTest {
                     onToggleSupport = onToggleSupport,
                     onFixPermission = onFixPermission,
                     onAlarmKindChange = onAlarmKindChange,
+                    onCheckDelivery = onCheckDelivery,
+                    onDismissCheckSheet = onDismissCheckSheet,
+                    onStartDeliveryCheck = onStartDeliveryCheck,
+                    onCancelDeliveryCheck = onCancelDeliveryCheck,
+                    onRepeatDeliveryCheck = onRepeatDeliveryCheck,
+                    onFixDeliveryCheck = onFixDeliveryCheck,
                     onBack = {},
                     toLocal = { instant: Instant -> instant.atZone(zone).toLocalDateTime() },
                 )
@@ -337,6 +355,156 @@ class DiagnosticsScreenTest {
 
         compose.onNodeWithText("показ подавлен").assertExists()
     }
+
+    // --- Самопроверка доставки (SKL-86, ОВ-108) ------------------------------------------------
+
+    @Test
+    fun theCheckBlockOffersTheDeliveryCheckUnderTheCheckNowButton() {
+        show()
+
+        compose.onNodeWithTag(TAG_CHECK_NOW).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag(TAG_CHECK_DELIVERY).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.diagnostics_action_check_delivery)).assertExists()
+    }
+
+    @Test
+    fun aRunningCheckShowsTheInstructionAndTheQuietCancel() {
+        val dueAt = Instant.parse("2026-09-25T07:01:30Z")
+        show(snapshot = snapshot(deliveryCheck = DeliveryCheckState.Running(dueAt)))
+
+        compose.onNodeWithTag(TAG_CHECK_RUNNING).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.diagnostics_check_running)).assertExists()
+        compose.onNodeWithTag(TAG_CHECK_CANCEL).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag(TAG_CHECK_DELIVERY).assertDoesNotExist()
+    }
+
+    @Test
+    fun aSuccessfulCheckOffersToRepeatIt() {
+        show(snapshot = snapshot(deliveryCheck = finished(DeliveryCheckOutcome.ON_TIME)))
+
+        compose.onNodeWithTag(TAG_CHECK_RESULT).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.diagnostics_check_on_time)).assertExists()
+        compose.onNodeWithTag(TAG_CHECK_REPEAT).performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun aLateCheckNamesTheMinutesAndOffersAFix() {
+        show(
+            snapshot = snapshot(
+                deliveryCheck = finished(DeliveryCheckOutcome.LATE, lateMinutes = 12),
+            ),
+        )
+
+        compose
+            .onNodeWithText(
+                context.getString(
+                    R.string.diagnostics_check_late,
+                    context.resources.getQuantityString(R.plurals.diagnostics_late, 12, 12),
+                ),
+            )
+            .assertExists()
+        compose.onNodeWithTag(TAG_CHECK_FIX).performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun aCheckThatNeverArrivedOffersAFix() {
+        show(snapshot = snapshot(deliveryCheck = finished(DeliveryCheckOutcome.NOT_DELIVERED)))
+
+        compose.onNodeWithText(context.getString(R.string.diagnostics_check_not_delivered)).assertExists()
+        compose.onNodeWithTag(TAG_CHECK_FIX).performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun aCheckWithTheAppOpenSaysSoAndOffersToRepeatIt() {
+        show(snapshot = snapshot(deliveryCheck = finished(DeliveryCheckOutcome.NOT_COMPLETED)))
+
+        compose.onNodeWithText(context.getString(R.string.diagnostics_check_not_completed)).assertExists()
+        compose.onNodeWithTag(TAG_CHECK_REPEAT).performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun theCheckSheetCarriesTheTitleInstructionAndBothActions() {
+        show(checkSheetOpen = true)
+
+        compose.onNodeWithTag(TAG_CHECK_SHEET).assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.diagnostics_check_sheet_title)).assertExists()
+        compose.onNodeWithText(context.getString(R.string.diagnostics_check_sheet_text)).assertExists()
+        compose.onNodeWithTag(TAG_CHECK_START).assertIsDisplayed()
+        compose.onNodeWithTag(TAG_CHECK_SHEET_CANCEL).assertIsDisplayed()
+    }
+
+    @Test
+    fun theSheetActionsReachTheirOwners() {
+        var started = 0
+        var dismissed = 0
+        show(
+            checkSheetOpen = true,
+            onStartDeliveryCheck = { started += 1 },
+            onDismissCheckSheet = { dismissed += 1 },
+        )
+
+        compose.onNodeWithTag(TAG_CHECK_START).performClick()
+        compose.onNodeWithTag(TAG_CHECK_SHEET_CANCEL).performClick()
+
+        assertEquals(1, started)
+        assertEquals(1, dismissed)
+    }
+
+    @Test
+    fun theBlockFixActionReachesItsOwner() {
+        var fixed = 0
+        show(
+            snapshot = snapshot(deliveryCheck = finished(DeliveryCheckOutcome.NOT_DELIVERED)),
+            onFixDeliveryCheck = { fixed += 1 },
+        )
+
+        compose.onNodeWithTag(TAG_CHECK_FIX).performScrollTo().performClick()
+
+        assertEquals(1, fixed)
+    }
+
+    @Test
+    fun theBlockCancelActionReachesItsOwner() {
+        var cancelled = 0
+        show(
+            snapshot = snapshot(deliveryCheck = DeliveryCheckState.Running(Instant.parse("2026-09-25T07:01:30Z"))),
+            onCancelDeliveryCheck = { cancelled += 1 },
+        )
+
+        compose.onNodeWithTag(TAG_CHECK_CANCEL).performScrollTo().performClick()
+
+        assertEquals(1, cancelled)
+    }
+
+    @Test
+    fun theBlockRepeatActionReachesItsOwner() {
+        var repeated = 0
+        show(
+            snapshot = snapshot(deliveryCheck = finished(DeliveryCheckOutcome.ON_TIME)),
+            onRepeatDeliveryCheck = { repeated += 1 },
+        )
+
+        compose.onNodeWithTag(TAG_CHECK_REPEAT).performScrollTo().performClick()
+
+        assertEquals(1, repeated)
+    }
+
+    @Test
+    fun theBlockCheckActionReachesItsOwner() {
+        var checked = 0
+        show(onCheckDelivery = { checked += 1 })
+
+        compose.onNodeWithTag(TAG_CHECK_DELIVERY).performScrollTo().performClick()
+
+        assertEquals(1, checked)
+    }
+
+    private fun finished(outcome: DeliveryCheckOutcome, lateMinutes: Long? = null) = DeliveryCheckState.Finished(
+        outcome = outcome,
+        dueAt = Instant.parse("2026-09-25T07:01:30Z"),
+        resolvedAt = Instant.parse("2026-09-25T07:02:00Z"),
+        lateMinutes = lateMinutes,
+    )
 
     private fun suppressed(reason: SuppressReason, deviation: Long?) = ReminderLogEntry(
         occurredAt = Instant.parse("2026-09-25T12:00:00Z"),

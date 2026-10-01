@@ -100,6 +100,7 @@ class RescheduleRemindersUseCase(
 
         stale.forEach { alarms.cancel(it) }
         toSchedule.forEach { alarms.schedule(it.intakeId, it.at, it.attempt) }
+        alarms.syncMirror(planned.map { DirectBootAlarm(it.intakeId, it.at, it.attempt) })
 
         notifications.retainOnly(liveIds)
 

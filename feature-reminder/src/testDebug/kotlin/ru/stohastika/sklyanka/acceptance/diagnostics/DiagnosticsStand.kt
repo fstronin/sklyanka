@@ -1,27 +1,35 @@
 package ru.stohastika.sklyanka.acceptance.diagnostics
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.runComposeUiTest
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
 import ru.stohastika.sklyanka.domain.intake.SweepReason
 import ru.stohastika.sklyanka.domain.reminder.BuildReminderDiagnosticsUseCase
+import ru.stohastika.sklyanka.domain.reminder.DeliveryCheckRule
+import ru.stohastika.sklyanka.domain.reminder.DeliveryCheckState
 import ru.stohastika.sklyanka.domain.reminder.ExportReminderJournalUseCase
 import ru.stohastika.sklyanka.domain.reminder.ReadReminderReliabilityUseCase
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPermission
 import ru.stohastika.sklyanka.domain.schedule.PlanReason
 import ru.stohastika.sklyanka.domain.schedule.PlanScope
+import ru.stohastika.sklyanka.feature.reminder.DeliveryCheckController
+import ru.stohastika.sklyanka.feature.reminder.DeliveryCheckNotice
+import ru.stohastika.sklyanka.feature.reminder.DeliveryCheckScreen
 import ru.stohastika.sklyanka.feature.reminder.DiagnosticsScreen
 import ru.stohastika.sklyanka.feature.reminder.DiagnosticsUiState
 import ru.stohastika.sklyanka.feature.reminder.DiagnosticsViewModel
 import ru.stohastika.sklyanka.feature.reminder.ReminderCheckNow
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import java.time.Instant
+import java.time.LocalDateTime
 
 /**
  * Стенд экрана диагностики напоминаний: настоящий `DiagnosticsViewModel` на мире сценария
@@ -52,12 +60,23 @@ internal object DiagnosticsStand {
     var backRequested: Boolean = false
         private set
 
+    /**
+     * Что объявляется баннером при входе (SKL-86): результат проверки или ничего.
+     *
+     * Стенд повторяет правило держателя `app` (`DeliveryCheckAnnouncer`): объявляется
+     * завершённый исход, который ещё не подтверждён и не «не состоялась». Правило держится
+     * в домене ([DeliveryCheckRule.announcementOf]), поэтому копией не расходится.
+     */
+    var announcement: DeliveryCheckState.Finished? = null
+        private set
+
     fun reset(world: AcceptanceWorld) {
         if (lastWorld !== world) {
             lastWorld = world
             viewModel = null
             fixed = null
             backRequested = false
+            announcement = null
             Dispatchers.setMain(UnconfinedTestDispatcher())
         }
     }
@@ -84,23 +103,94 @@ internal object DiagnosticsStand {
         model(world).refresh()
     }
 
+    /**
+     * Вход в приложение: истёкшая проверка закрывается, результат объявляется один раз.
+     *
+     * Затем снимок перечитывается — так же, как `MainActivity.onResume` и `SklyankaApp`
+     * делают это в продукте.
+     */
+    fun enter(world: AcceptanceWorld) {
+        reset(world)
+        val model = model(world)
+        runBlocking {
+            val state = world.reminders.finishDeliveryCheck()
+            announcement = DeliveryCheckRule.announcementOf(state, world.reminders.acknowledgements.announced())
+        }
+        model.refresh()
+    }
+
+    /** Человек подтвердил результат: дальше он не объявляется, в том числе после перезапуска. */
+    fun acknowledge(world: AcceptanceWorld) {
+        val finished = announcement ?: return
+        runBlocking { world.reminders.acknowledgeDeliveryCheck(finished.dueAt) }
+        announcement = null
+    }
+
+    /**
+     * Карточка проверки так, как её поднимает система полноэкранным намерением (SKL-86).
+     *
+     * Карточка живёт своей Activity, и на стенде она компонуется отдельно: вопросы
+     * к ней — состав и единственное действие, а не состояние экрана проверки.
+     */
+    fun showDeliveryCheckCard(world: AcceptanceWorld, at: LocalDateTime, question: ComposeUiTest.() -> Unit) {
+        reset(world)
+        runComposeUiTest {
+            setContent {
+                SklyankaTheme(dark = true) {
+                    DeliveryCheckScreen(at = at, onAcknowledge = {})
+                }
+            }
+            question()
+            waitForIdle()
+        }
+    }
+
     @Composable
     private fun Content(world: AcceptanceWorld, onAction: (() -> Unit) -> Unit) {
         SklyankaTheme {
-            DiagnosticsScreen(
-                state = state(world),
-                onCheckNow = { onAction { model(world).onCheckNow() } },
-                onExportJournal = { onAction { exportJournal(world) } },
-                // «Пройти настройку заново» подключает `app`; сценарии его не трогают.
-                onRestartSetup = null,
-                onToggleSupport = { onAction { model(world).onToggleSupport() } },
-                onFixPermission = { permission -> onAction { fixed = permission } },
-                onAlarmKindChange = { kind -> onAction { model(world).onAlarmKindChange(kind) } },
-                onBack = { onAction { backRequested = true } },
-                toLocal = { instant: Instant -> instant.atZone(world.clock.zone).toLocalDateTime() },
-            )
+            Column {
+                announcement?.let { finished ->
+                    DeliveryCheckNotice(
+                        state = finished,
+                        onAcknowledge = { onAction { acknowledge(world) } },
+                        onFix = { onAction { acknowledge(world) } },
+                    )
+                }
+                DiagnosticsScreen(
+                    state = state(world),
+                    onCheckNow = { onAction { model(world).onCheckNow() } },
+                    onExportJournal = { onAction { exportJournal(world) } },
+                    // «Пройти настройку заново» подключает `app`; сценарии его не трогают.
+                    onRestartSetup = null,
+                    onToggleSupport = { onAction { model(world).onToggleSupport() } },
+                    onFixPermission = { permission -> onAction { fixed = permission } },
+                    onAlarmKindChange = { kind -> onAction { model(world).onAlarmKindChange(kind) } },
+                    onCheckDelivery = { onAction { model(world).onCheckDelivery() } },
+                    onDismissCheckSheet = { onAction { model(world).onDismissCheckSheet() } },
+                    onStartDeliveryCheck = { onAction { model(world).onStartDeliveryCheck() } },
+                    onCancelDeliveryCheck = { onAction { model(world).onCancelDeliveryCheck() } },
+                    onRepeatDeliveryCheck = {
+                        onAction {
+                            model(world).onAcknowledgeDeliveryCheck()
+                            model(world).onCheckDelivery()
+                        }
+                    },
+                    onFixDeliveryCheck = {
+                        onAction {
+                            model(world).onAcknowledgeDeliveryCheck()
+                            fixedSetup = true
+                        }
+                    },
+                    onBack = { onAction { backRequested = true } },
+                    toLocal = { instant: Instant -> instant.atZone(world.clock.zone).toLocalDateTime() },
+                )
+            }
         }
     }
+
+    /** «Исправить» у блока проверки: результат прочитан, человек ушёл на «Настроить надёжность». */
+    var fixedSetup: Boolean = false
+        private set
 
     /**
      * Вопрос к собранной композиции с раскрытым техблоком.
@@ -169,6 +259,7 @@ internal object DiagnosticsStand {
             time = world.clock.time,
         ),
         settings = world.reminders.settingsStore,
+        deliveryCheck = StandDeliveryCheckController(world),
         time = world.clock.time,
     )
 
@@ -176,4 +267,21 @@ internal object DiagnosticsStand {
     fun dropMainDispatcher() {
         Dispatchers.resetMain()
     }
+}
+
+/**
+ * Самопроверка доставки для стенда (SKL-86).
+ *
+ * Настоящие доменные сценарии на портах мира сценария: копии правила нет, а порядок
+ * вызовов тот же, что собирает `app` в `DeliveryCheckScenarios`.
+ */
+private class StandDeliveryCheckController(private val world: AcceptanceWorld) : DeliveryCheckController {
+
+    override suspend fun start(): DeliveryCheckState = world.reminders.startDeliveryCheck()
+
+    override suspend fun finish(): DeliveryCheckState = world.reminders.finishDeliveryCheck()
+
+    override suspend fun cancel() = world.reminders.cancelDeliveryCheck()
+
+    override suspend fun acknowledge(dueAt: Instant) = world.reminders.acknowledgeDeliveryCheck(dueAt)
 }

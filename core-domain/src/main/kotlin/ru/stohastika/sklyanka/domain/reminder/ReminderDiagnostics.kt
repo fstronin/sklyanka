@@ -54,6 +54,14 @@ data class ReminderDiagnostics(
     val alarmKind: AlarmKind,
     /** Доступен ли в сборке переключатель варианта измерения (SKL-85, ПМ-20). */
     val measurementAvailable: Boolean,
+    /**
+     * Состояние и последний исход самопроверки доставки (SKL-86, НАП-37).
+     *
+     * Читается по последней записи проверки, а не хранится флагом: состояние переживает
+     * смерть процесса и перечитывается при каждом показе (НФТ-52). Записи проверки —
+     * отдельный вид события, поэтому в «последнее напоминание» и сводки они не попадают.
+     */
+    val deliveryCheck: DeliveryCheckState,
 )
 
 /**
@@ -127,6 +135,9 @@ class BuildReminderDiagnosticsUseCase(
             journal = journal.recent(limit),
             alarmKind = alarms.alarmKind(),
             measurementAvailable = measurement.available(),
+            // Состояние проверки — из журнала: и «идёт», и исход переживают смерть
+            // процесса, а экран перечитывает их при каждом показе (НФТ-52).
+            deliveryCheck = DeliveryCheckRule.stateOf(journal.last(ReminderEvent.DELIVERY_CHECK)),
         )
     }
 

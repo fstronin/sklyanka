@@ -6,6 +6,8 @@ import androidx.compose.ui.res.stringResource
 import ru.stohastika.sklyanka.domain.medication.DoseUnit
 import ru.stohastika.sklyanka.domain.medication.doseUnit
 import ru.stohastika.sklyanka.domain.reminder.AlarmKind
+import ru.stohastika.sklyanka.domain.reminder.DeliveryCheckOutcome
+import ru.stohastika.sklyanka.domain.reminder.DeliveryCheckState
 import ru.stohastika.sklyanka.domain.reminder.ReminderDeviationWords
 import ru.stohastika.sklyanka.domain.reminder.ReminderEvent
 import ru.stohastika.sklyanka.domain.reminder.ReminderJournalExportOutcome
@@ -107,6 +109,8 @@ internal fun PermissionState.label(): String = stringResource(
  */
 internal val REASON_LABELS: Map<RescheduleReason, Int> = mapOf(
     RescheduleReason.BOOT to R.string.diagnostics_reason_boot,
+    RescheduleReason.LOCKED_BOOT to R.string.diagnostics_reason_locked_boot,
+    RescheduleReason.USER_UNLOCKED to R.string.diagnostics_reason_user_unlocked,
     RescheduleReason.PACKAGE_REPLACED to R.string.diagnostics_reason_package_replaced,
     RescheduleReason.TIMEZONE_CHANGED to R.string.diagnostics_reason_timezone_changed,
     RescheduleReason.TIME_CHANGED to R.string.diagnostics_reason_time_changed,
@@ -143,6 +147,7 @@ internal val EVENT_LABELS: Map<ReminderEvent, Int> = mapOf(
     ReminderEvent.OUTAGE to R.string.diagnostics_event_outage,
     ReminderEvent.SETTINGS_CHANGED to R.string.diagnostics_event_settings_changed,
     ReminderEvent.ENVIRONMENT to R.string.diagnostics_event_environment,
+    ReminderEvent.DELIVERY_CHECK to R.string.diagnostics_event_delivery_check,
 )
 
 @Composable
@@ -175,6 +180,27 @@ internal fun ReminderLogEntry.journalLabel(): String =
 @Composable
 private fun ReminderLogEntry.latePhrase(): String {
     val minutes = ReminderDeviationWords.lateMinutes(deviationSeconds ?: 0L).toInt()
+    return pluralStringResource(R.plurals.diagnostics_late, minutes, minutes)
+}
+
+/**
+ * Исход самопроверки доставки словами (SKL-86, ОВ-108).
+ *
+ * Один и тот же текст у блока и у баннера: «тот же результат» из приёмки — это буквально
+ * одна формулировка, а не два похожих предложения. Опоздание подставляется склоняемой
+ * формой `plurals`, а не числом с «мин» (НФТ-44).
+ */
+@Composable
+internal fun DeliveryCheckState.Finished.resultText(): String = when (outcome) {
+    DeliveryCheckOutcome.ON_TIME -> stringResource(R.string.diagnostics_check_on_time)
+    DeliveryCheckOutcome.LATE -> stringResource(R.string.diagnostics_check_late, latePhrase())
+    DeliveryCheckOutcome.NOT_DELIVERED -> stringResource(R.string.diagnostics_check_not_delivered)
+    DeliveryCheckOutcome.NOT_COMPLETED -> stringResource(R.string.diagnostics_check_not_completed)
+}
+
+@Composable
+private fun DeliveryCheckState.Finished.latePhrase(): String {
+    val minutes = (lateMinutes ?: 0L).toInt()
     return pluralStringResource(R.plurals.diagnostics_late, minutes, minutes)
 }
 

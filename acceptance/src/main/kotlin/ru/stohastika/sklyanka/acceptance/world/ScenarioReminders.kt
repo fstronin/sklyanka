@@ -6,9 +6,15 @@ import ru.stohastika.sklyanka.domain.intake.SweepMissedIntakesUseCase
 import ru.stohastika.sklyanka.domain.medication.doseUnit
 import ru.stohastika.sklyanka.domain.model.IntakeStatus
 import ru.stohastika.sklyanka.domain.profile.ProfileSetReplanner
+import ru.stohastika.sklyanka.domain.reminder.AcknowledgeDeliveryCheckUseCase
 import ru.stohastika.sklyanka.domain.reminder.AlarmKind
+import ru.stohastika.sklyanka.domain.reminder.CancelDeliveryCheckUseCase
+import ru.stohastika.sklyanka.domain.reminder.DeliveryCheckState
 import ru.stohastika.sklyanka.domain.reminder.DeviceEnvironment
+import ru.stohastika.sklyanka.domain.reminder.DirectBootAlarm
 import ru.stohastika.sklyanka.domain.reminder.DismissReminderUseCase
+import ru.stohastika.sklyanka.domain.reminder.FinishDeliveryCheckOnEntryUseCase
+import ru.stohastika.sklyanka.domain.reminder.HandleFiredDeliveryCheckUseCase
 import ru.stohastika.sklyanka.domain.reminder.HandleFiredReminderUseCase
 import ru.stohastika.sklyanka.domain.reminder.ReminderCard
 import ru.stohastika.sklyanka.domain.reminder.ReminderCardItem
@@ -21,10 +27,12 @@ import ru.stohastika.sklyanka.domain.reminder.RescheduleOutcome
 import ru.stohastika.sklyanka.domain.reminder.RescheduleReason
 import ru.stohastika.sklyanka.domain.reminder.RescheduleRemindersUseCase
 import ru.stohastika.sklyanka.domain.reminder.SnoozeReminderUseCase
+import ru.stohastika.sklyanka.domain.reminder.StartDeliveryCheckUseCase
 import ru.stohastika.sklyanka.domain.reminder.SweepAtDayBoundaryUseCase
 import ru.stohastika.sklyanka.domain.reminder.port.AlarmGateway
 import ru.stohastika.sklyanka.domain.reminder.port.DeferredReminder
 import ru.stohastika.sklyanka.domain.reminder.port.DeferredReminders
+import ru.stohastika.sklyanka.domain.reminder.port.DeliveryCheckAcknowledgements
 import ru.stohastika.sklyanka.domain.reminder.port.DeviceEnvironmentSource
 import ru.stohastika.sklyanka.domain.reminder.port.NotificationGateway
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderCardSource
@@ -127,6 +135,54 @@ class ScenarioReminders(
     val journal: ReminderJournal = InMemoryReminderJournal()
 
     private val settingsImpl = InMemoryReminderSettings()
+
+    /**
+     * Самопроверка доставки (SKL-86, ПМ-21, ОВ-108).
+     *
+     * Тот же набор доменных сценариев, что собирает `app`: проверка идёт боевым путём —
+     * точный будильник, обычный канал, отдельная карточка, — но приёма не создаёт.
+     * «Приложение открыто» сценарий задаёт через [appForeground], а не через платформу.
+     */
+    var appForeground: Boolean = false
+
+    val acknowledgements: DeliveryCheckAcknowledgements = InMemoryDeliveryCheckAcknowledgements()
+
+    fun startDeliveryCheck(): DeliveryCheckState = runBlocking {
+        StartDeliveryCheckUseCase(alarms = alarms, journal = journal, time = clock.time)()
+    }
+
+    fun firedDeliveryCheck(): DeliveryCheckState = runBlocking {
+        HandleFiredDeliveryCheckUseCase(
+            journal = journal,
+            notifications = notifications,
+            foreground = { appForeground },
+            time = clock.time,
+        )()
+    }
+
+    fun finishDeliveryCheck(): DeliveryCheckState = runBlocking {
+        FinishDeliveryCheckOnEntryUseCase(journal = journal, alarms = alarms, time = clock.time)()
+    }
+
+    fun cancelDeliveryCheck() {
+        runBlocking { CancelDeliveryCheckUseCase(alarms = alarms, journal = journal, time = clock.time)() }
+    }
+
+    fun acknowledgeDeliveryCheck(dueAt: Instant) {
+        runBlocking { AcknowledgeDeliveryCheckUseCase(acknowledgements)(dueAt) }
+    }
+
+    /** Момент тестового срабатывания в системе; `null` — не назначено. */
+    fun deliveryCheckAlarm(): Instant? = alarmStore.deliveryCheck
+
+    /** Записи проверки — отличимый вид журнала; по ним поддержка видит её след (НАП-4). */
+    fun deliveryCheckRecords(): List<ReminderLogEntry> =
+        (journal as InMemoryReminderJournal).entries.filter { it.event == ReminderEvent.DELIVERY_CHECK }
+
+    /** Что просили показать тестовой карточкой: моменты, с которыми звали показ. */
+    fun deliveryCheckShows(): List<LocalDateTime> = notifications.deliveryChecks.toList()
+
+    fun isDeliveryCheckShown(): Boolean = notifications.deliveryCheckVisible()
 
     /**
      * Настройки со следом в журнале — как `JournalingReminderSettings` продукта (НАП-14).
@@ -422,9 +478,23 @@ private class InMemoryAlarms(private val kind: () -> AlarmKind) : AlarmGateway {
 
     override suspend fun scheduleDayBoundary(at: Instant) = Unit
 
+    override suspend fun syncMirror(placed: List<DirectBootAlarm>) = Unit
+
     override fun canScheduleExact(): Boolean = true
 
     override suspend fun alarmKind(): AlarmKind = kind()
+
+    /** Тестовое срабатывание проверки: адрес один, повторная постановка заменяет (SKL-86). */
+    var deliveryCheck: Instant? = null
+        private set
+
+    override suspend fun scheduleDeliveryCheck(at: Instant) {
+        deliveryCheck = at
+    }
+
+    override suspend fun cancelDeliveryCheck() {
+        deliveryCheck = null
+    }
 
     fun attemptOf(intakeId: String): Int? = attempts[intakeId]
 
@@ -482,6 +552,14 @@ private class InMemoryNotifications(private val allowed: () -> Boolean) : Notifi
 
     val shown: MutableList<Pair<ReminderCard, ReminderChannel>> = mutableListOf()
 
+    /** Показы тестовой карточки: моменты, с которыми её просили показать (SKL-86). */
+    val deliveryChecks: MutableList<LocalDateTime> = mutableListOf()
+
+    /** Доходит ли тестовый показ до шторки: `false` воспроизводит тихий отказ показа. */
+    var deliveryCheckReachesTheShade: Boolean = true
+
+    private var deliveryCheckVisible: Boolean = false
+
     private val visible: MutableSet<ReminderSlot> = mutableSetOf()
 
     /**
@@ -510,6 +588,32 @@ private class InMemoryNotifications(private val allowed: () -> Boolean) : Notifi
     }
 
     override fun areNotificationsEnabled(): Boolean = allowed()
+
+    override suspend fun showDeliveryCheck(at: LocalDateTime) {
+        if (!allowed()) return
+        deliveryChecks += at
+        deliveryCheckVisible = deliveryCheckReachesTheShade
+    }
+
+    override suspend fun isDeliveryCheckShown(): Boolean = deliveryCheckVisible
+
+    override suspend fun cancelDeliveryCheck() {
+        deliveryCheckVisible = false
+    }
+
+    fun deliveryCheckVisible(): Boolean = deliveryCheckVisible
+}
+
+/** Подтверждения проверки в памяти: момент последней объявленной проверки (SKL-86). */
+private class InMemoryDeliveryCheckAcknowledgements : DeliveryCheckAcknowledgements {
+
+    private var announcedAt: Instant? = null
+
+    override suspend fun announced(): Instant? = announcedAt
+
+    override suspend fun remember(dueAt: Instant) {
+        announcedAt = dueAt
+    }
 }
 
 /** Журнал срабатываний в памяти: след настоящего [HandleFiredReminderUseCase]. */

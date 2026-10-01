@@ -8,9 +8,11 @@ import android.os.Build
 import dagger.hilt.android.qualifiers.ApplicationContext
 import ru.stohastika.sklyanka.MainActivity
 import ru.stohastika.sklyanka.domain.reminder.AlarmKind
+import ru.stohastika.sklyanka.domain.reminder.DirectBootAlarm
 import ru.stohastika.sklyanka.domain.reminder.PersistentRepeatPolicy
 import ru.stohastika.sklyanka.domain.reminder.port.AlarmGateway
 import ru.stohastika.sklyanka.domain.reminder.port.AlarmRegistry
+import ru.stohastika.sklyanka.domain.reminder.port.DirectBootAlarmStore
 import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -36,6 +38,7 @@ class AlarmManagerGateway @Inject constructor(
     @ApplicationContext private val context: Context,
     private val registry: AlarmRegistry,
     private val strategy: EffectiveAlarmStrategy,
+    private val directBoot: DirectBootAlarmStore,
 ) : AlarmGateway {
 
     private val alarms: AlarmManager = requireNotNull(context.getSystemService(AlarmManager::class.java))
@@ -55,8 +58,13 @@ class AlarmManagerGateway @Inject constructor(
      * измерения не оставляет «второго» будильника (НАП-9).
      */
     override suspend fun schedule(intakeId: String, at: Instant, attempt: Int) {
-        val pending = pendingIntent(ReminderAlarms.intake(context, intakeId, attempt))
-        if (placeExact(at, pending)) registry.put(intakeId, at)
+        val pending = ReminderAlarms.pendingIntent(context, ReminderAlarms.intake(context, intakeId, attempt))
+        if (placeExact(at, pending)) {
+            registry.put(intakeId, at)
+            // Зеркало в DE-хранилище обновляется в той же точке, где будильник ставится:
+            // восстановление до разблокировки читает снимок, а не CE-реестр (SKL-87).
+            runCatching { directBoot.put(DirectBootAlarm(intakeId, at, attempt)) }
+        }
     }
 
     /**
@@ -77,12 +85,33 @@ class AlarmManagerGateway @Inject constructor(
         // Снимаются и первый показ, и все повторы: повтор адресуется тем же приёмом,
         // и осиротевший повтор напомнил бы о приёме, выбывшем из плана (НАП-26).
         for (attempt in 0..PersistentRepeatSlots.LAST) {
-            existing(ReminderAlarms.intake(context, intakeId, attempt))?.let { pending ->
+            ReminderAlarms.existing(context, ReminderAlarms.intake(context, intakeId, attempt))?.let { pending ->
                 alarms.cancel(pending)
                 pending.cancel()
             }
         }
         registry.remove(intakeId)
+        runCatching { directBoot.remove(intakeId) }
+    }
+
+    /**
+     * Полная пересборка оставляет в зеркале ровно то, что стоит в системе.
+     *
+     * Состав окна приходит из плана, но запись решает проба `PendingIntent`: она отсеивает
+     * и будильники, которым не удалось встать, и осиротевшие записи прежнего снимка,
+     * которые не смогли сняться. Записи, уже известные зеркалу, сохраняются, поэтому
+     * восстановленный до разблокировки будильник не пропадает, даже если в текущее окно
+     * он не попал. Пустой дифф пересборки — не повод пропустить вызов: именно он
+     * заполняет снимок после обновления, когда все будильники уже стояли.
+     */
+    override suspend fun syncMirror(placed: List<DirectBootAlarm>) {
+        runCatching {
+            val recorded = directBoot.load()?.alarms.orEmpty().associateBy { it.intakeId }
+            val standing = (recorded + placed.associateBy { it.intakeId }).values.filter { alarm ->
+                ReminderAlarms.existing(context, ReminderAlarms.intake(context, alarm.intakeId, alarm.attempt)) != null
+            }
+            directBoot.replace(standing)
+        }
     }
 
     /**
@@ -91,16 +120,46 @@ class AlarmManagerGateway @Inject constructor(
      * Сохранённый список — подсказка, а решает проба: запись, которой не соответствует
      * живой `PendingIntent`, из ответа исчезает, и пересборка поставит будильник заново.
      * Так выглядит восстановление после перезагрузки и после принудительной остановки.
+     *
+     * К CE-реестру добавляется DE-зеркало: будильник, восстановленный в locked-фазе, в реестр
+     * не попадает, и без зеркала пересборка после разблокировки считала бы его несуществующим —
+     * оставив после перелёта осиротевшее срабатывание, против которого написан SKL-13.
+     * Зеркало при расхождении важнее реестра: записи расходятся только при отказе записи
+     * в одно из хранилищ или при locked-восстановлении, и в обоих случаях актуальнее зеркало.
      */
-    override suspend fun scheduled(): Map<String, Instant> = registry.all()
-        .filter { (intakeId, _) -> existing(ReminderAlarms.intake(context, intakeId, attempt = 0)) != null }
+    override suspend fun scheduled(): Map<String, Instant> {
+        val replayed = directBoot.load()?.alarms.orEmpty().associate { it.intakeId to it.at }
+        return (registry.all() + replayed)
+            .filter { (intakeId, _) ->
+                ReminderAlarms.existing(context, ReminderAlarms.intake(context, intakeId, attempt = 0)) != null
+            }
+    }
 
     override suspend fun scheduleAnchor(at: Instant) {
-        setExact(at, pendingIntent(ReminderAlarms.anchor(context)))
+        setExact(at, ReminderAlarms.pendingIntent(context, ReminderAlarms.anchor(context)))
+    }
+
+    /**
+     * Тестовое срабатывание самопроверки (SKL-86, ОВ-108).
+     *
+     * Ставится тем же точным вызовом, что боевое напоминание: проверка обязана мерить
+     * настоящий путь доставки, а не его облегчённую копию. В [AlarmRegistry] и DE-зеркало
+     * запись не попадает: проверка не приём, и пересборка окна не имеет права видеть
+     * в ней осиротевший будильник.
+     */
+    override suspend fun scheduleDeliveryCheck(at: Instant) {
+        placeExact(at, ReminderAlarms.pendingIntent(context, ReminderAlarms.deliveryCheck(context)))
+    }
+
+    override suspend fun cancelDeliveryCheck() {
+        ReminderAlarms.existing(context, ReminderAlarms.deliveryCheck(context))?.let { pending ->
+            alarms.cancel(pending)
+            pending.cancel()
+        }
     }
 
     override suspend fun scheduleDayBoundary(at: Instant) {
-        setExact(at, pendingIntent(ReminderAlarms.dayBoundary(context)))
+        setExact(at, ReminderAlarms.pendingIntent(context, ReminderAlarms.dayBoundary(context)))
     }
 
     /**
@@ -148,36 +207,13 @@ class AlarmManagerGateway @Inject constructor(
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
     )
 
-    private fun pendingIntent(intent: Intent): PendingIntent = PendingIntent.getBroadcast(
-        context,
-        REQUEST_CODE,
-        intent,
-        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-    )
-
-    private fun existing(intent: Intent): PendingIntent? = PendingIntent.getBroadcast(
-        context,
-        REQUEST_CODE,
-        intent,
-        PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE,
-    )
-
     private companion object {
-        /**
-         * Код запроса один для всех будильников.
-         *
-         * Различает их `Uri` в самом намерении (см. [ReminderAlarms]), а не код: код,
-         * собранный из хеша идентификатора, даёт совпадения на разных приёмах, и один
-         * будильник молча вытесняет другой.
-         */
-        const val REQUEST_CODE = 0
-
         /**
          * Код запроса show-намерения системного будильника.
          *
-         * Отдельный от [REQUEST_CODE]: тот адресует broadcast'ы будильников приёма, а этот —
-         * activity, открываемую нажатием на признак в статус-баре; общий код дал бы
-         * `PendingIntent`-коллизию между разными видами намерений.
+         * Отдельный от [ReminderAlarms.REQUEST_CODE]: тот адресует broadcast'ы будильников
+         * приёма, а этот — activity, открываемую нажатием на признак в статус-баре; общий код
+         * дал бы `PendingIntent`-коллизию между разными видами намерений.
          */
         const val SHOW_REQUEST_CODE = 1
     }

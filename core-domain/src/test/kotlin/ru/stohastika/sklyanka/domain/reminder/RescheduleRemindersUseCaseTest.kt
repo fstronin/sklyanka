@@ -79,6 +79,30 @@ class RescheduleRemindersUseCaseTest {
     }
 
     @Test
+    fun `a rebuild over unchanged data still rewrites the direct boot mirror`() = runTest {
+        world.pending()
+        world.reschedule(RescheduleReason.APP_START)
+        world.alarms.mirrored.clear()
+
+        world.moveTo(LocalDateTime.of(2026, 9, 25, 9, 1))
+        val second = world.reschedule(RescheduleReason.APP_START)
+
+        assertEquals(0, second.scheduled)
+        assertEquals(0, second.cancelled)
+        assertEquals(
+            mapOf(
+                Fixtures.INTAKE_ID to DirectBootAlarm(
+                    Fixtures.INTAKE_ID,
+                    world.momentOf(LocalDateTime.of(2026, 9, 25, 14, 0)),
+                    0,
+                ),
+            ),
+            world.alarms.mirrored,
+        )
+        assertEquals(2, world.alarms.mirrorSyncs)
+    }
+
+    @Test
     fun `changing the time of an intake moves its alarm`() = runTest {
         world.pending()
         world.reschedule(RescheduleReason.APP_START)

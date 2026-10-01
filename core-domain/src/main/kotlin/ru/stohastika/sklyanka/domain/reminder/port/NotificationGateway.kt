@@ -3,6 +3,7 @@ package ru.stohastika.sklyanka.domain.reminder.port
 import ru.stohastika.sklyanka.domain.reminder.ReminderCard
 import ru.stohastika.sklyanka.domain.reminder.ReminderChannel
 import ru.stohastika.sklyanka.domain.reminder.ReminderSlot
+import java.time.LocalDateTime
 
 /**
  * Показ и снятие напоминания (НАП-29, НАП-36).
@@ -45,4 +46,24 @@ interface NotificationGateway {
 
     /** Разрешены ли уведомления (НАП-15). Читается из системы при каждом обращении (НФТ-52). */
     fun areNotificationsEnabled(): Boolean
+
+    /**
+     * Показать карточку самопроверки обычным каналом (SKL-86, ОВ-108).
+     *
+     * Карточка не притворяется приёмом: у неё нет состава слота и идентификаторов приёма,
+     * поэтому [retainOnly] её не находит и не снимает — снятие у неё отдельный вызов.
+     * Адрес у карточки один, показ заменяет предыдущий тестовый показ.
+     */
+    suspend fun showDeliveryCheck(at: LocalDateTime)
+
+    /**
+     * Показана ли сейчас карточка проверки.
+     *
+     * Вызов показа ещё не предъявление: система могла молча его уронить, и проверка
+     * обязана отличать «не дошло» от «не показывали» (НАП-2, SKL-86).
+     */
+    suspend fun isDeliveryCheckShown(): Boolean
+
+    /** Снять карточку проверки: «Понятно», отмена проверки или её завершение. */
+    suspend fun cancelDeliveryCheck()
 }

@@ -73,6 +73,11 @@ internal object ReminderPlanReasons {
     fun intakeReason(reason: RescheduleReason): PlanReason? = when (reason) {
         RescheduleReason.APP_START -> PlanReason.APP_START
         RescheduleReason.BOOT -> PlanReason.BOOT
+        // Разблокировка — та же генерация, что после перезагрузки: устройство могло быть
+        // выключено дольше горизонта, приёмы надо догенерировать (SKL-87).
+        RescheduleReason.USER_UNLOCKED -> PlanReason.BOOT
+        // До разблокировки работает только платформенный путь по снимку; полной пересборки нет.
+        RescheduleReason.LOCKED_BOOT -> null
         RescheduleReason.PACKAGE_REPLACED -> PlanReason.APP_START
         RescheduleReason.TIMEZONE_CHANGED -> PlanReason.TIMEZONE_CHANGED
         RescheduleReason.TIME_CHANGED -> PlanReason.TIME_CHANGED

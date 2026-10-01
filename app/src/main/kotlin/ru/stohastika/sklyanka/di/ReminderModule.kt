@@ -21,6 +21,7 @@ import ru.stohastika.sklyanka.domain.reminder.RescheduleRemindersUseCase
 import ru.stohastika.sklyanka.domain.reminder.SnoozeReminderUseCase
 import ru.stohastika.sklyanka.domain.reminder.SweepAtDayBoundaryUseCase
 import ru.stohastika.sklyanka.domain.reminder.port.AlarmGateway
+import ru.stohastika.sklyanka.domain.reminder.port.AppForeground
 import ru.stohastika.sklyanka.domain.reminder.port.DeferredReminders
 import ru.stohastika.sklyanka.domain.reminder.port.DeviceEnvironmentSource
 import ru.stohastika.sklyanka.domain.reminder.port.NoWatchGateway
@@ -36,15 +37,18 @@ import ru.stohastika.sklyanka.domain.repository.MedicationRepository
 import ru.stohastika.sklyanka.domain.time.TimeSource
 import ru.stohastika.sklyanka.domain.transfer.TransferFiles
 import ru.stohastika.sklyanka.feature.onboarding.PermissionsActivity
+import ru.stohastika.sklyanka.feature.reminder.DeliveryCheckController
 import ru.stohastika.sklyanka.feature.reminder.ReminderCheckNow
 import ru.stohastika.sklyanka.feature.reminder.ReminderSettingsFixer
 import ru.stohastika.sklyanka.feature.reminder.ReminderSetupEntry
+import ru.stohastika.sklyanka.platform.AppForegroundTracker
 import ru.stohastika.sklyanka.platform.environment.AndroidDeviceEnvironment
 import ru.stohastika.sklyanka.platform.notification.ReminderNotifier
 import ru.stohastika.sklyanka.platform.permission.SystemPermissionStateReader
 import ru.stohastika.sklyanka.platform.reminder.AlarmManagerGateway
 import ru.stohastika.sklyanka.platform.reminder.AndroidReminderSettingsFixer
 import ru.stohastika.sklyanka.platform.reminder.BuildMeasurementMode
+import ru.stohastika.sklyanka.reminder.DeliveryCheckScenarios
 import ru.stohastika.sklyanka.reminder.ReminderOutageDetector
 import ru.stohastika.sklyanka.reminder.ReminderPlanningTrigger
 import javax.inject.Qualifier
@@ -337,4 +341,14 @@ abstract class ReminderBindings {
     @Binds
     @Singleton
     abstract fun bindReminderMeasurement(impl: BuildMeasurementMode): ReminderMeasurement
+
+    /** Передний план приложения — трекер активностей, а не сохранённый флаг (SKL-86). */
+    @Binds
+    @Singleton
+    abstract fun bindAppForeground(impl: AppForegroundTracker): AppForeground
+
+    /** Контроллер проверки для экрана: связка доменных сценариев (SKL-86). */
+    @Binds
+    @Singleton
+    abstract fun bindDeliveryCheckController(impl: DeliveryCheckScenarios): DeliveryCheckController
 }

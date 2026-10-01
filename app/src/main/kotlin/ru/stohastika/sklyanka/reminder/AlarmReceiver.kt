@@ -54,6 +54,11 @@ class AlarmReceiver : BroadcastReceiver() {
             // Граница суток: неотмеченные приёмы прошедших суток становятся пропущенными,
             // их карточки снимаются, новых уведомлений не появляется (НАП-34).
             ReminderAlarms.ACTION_DAY_BOUNDARY -> ReminderWork.enqueueDayBoundary(context).await()
+
+            // Тестовое срабатывание самопроверки (SKL-86, ОВ-108): показ, отметка
+            // предъявления и исход — тонкий путь, не трогающий план. Пересборка окна
+            // не запускается: проверка не входит в план напоминаний.
+            ReminderAlarms.ACTION_DELIVERY_CHECK -> graph.handleFiredDeliveryCheck()()
         }
     }
 }

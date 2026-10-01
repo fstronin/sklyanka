@@ -91,10 +91,29 @@ class DiagnosticsActivity : ComponentActivity() {
                         viewModel.onFixResult(permission, settingsFixer.fix(permission))
                     },
                     onAlarmKindChange = viewModel::onAlarmKindChange,
+                    onCheckDelivery = viewModel::onCheckDelivery,
+                    onDismissCheckSheet = viewModel::onDismissCheckSheet,
+                    onStartDeliveryCheck = viewModel::onStartDeliveryCheck,
+                    onCancelDeliveryCheck = viewModel::onCancelDeliveryCheck,
+                    // Результат прочитан — он подтверждается до действия, иначе вернулся бы
+                    // баннером при следующем входе (ОВ-108).
+                    onRepeatDeliveryCheck = {
+                        viewModel.onAcknowledgeDeliveryCheck()
+                        viewModel.onCheckDelivery()
+                    },
+                    onFixDeliveryCheck = {
+                        viewModel.onAcknowledgeDeliveryCheck()
+                        startActivity(setupEntry.intentFor(this@DiagnosticsActivity))
+                    },
                     onBack = ::finish,
                     toLocal = viewModel::local,
                 )
             }
+        }
+        // Вход из плашки «Всё настроено» (SKL-84, ОВ-108): экран открывается с уже
+        // поднятой шторкой, чтобы запуск проверки оставался одним нажатием.
+        if (intent.getBooleanExtra(EXTRA_OPEN_DELIVERY_CHECK, false)) {
+            viewModel.onCheckDelivery()
         }
     }
 
@@ -106,6 +125,17 @@ class DiagnosticsActivity : ComponentActivity() {
     }
 
     companion object {
-        fun intentFor(context: Context): Intent = Intent(context, DiagnosticsActivity::class.java)
+        private const val EXTRA_OPEN_DELIVERY_CHECK = "ru.stohastika.sklyanka.diagnostics.open_delivery_check"
+
+        /**
+         * Намерение экрана «Проверка напоминаний».
+         *
+         * [openDeliveryCheck] — вход из плашки «Всё настроено» (SKL-86): шторка проверки
+         * доставки уже открыта, и запуск остаётся одним нажатием. Второй копии шторки
+         * и второго дома результата не заводится (ОВ-108).
+         */
+        fun intentFor(context: Context, openDeliveryCheck: Boolean = false): Intent =
+            Intent(context, DiagnosticsActivity::class.java)
+                .putExtra(EXTRA_OPEN_DELIVERY_CHECK, openDeliveryCheck)
     }
 }

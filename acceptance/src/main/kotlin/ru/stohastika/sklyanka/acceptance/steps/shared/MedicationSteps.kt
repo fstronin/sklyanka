@@ -71,6 +71,18 @@ class MedicationSteps(private val world: AcceptanceWorld) {
         world.medications.update(world.medicationNamed(medication)) { it.copy(doseAmount = RussianDates.amount(dose)) }
     }
 
+    /**
+     * Ежедневный курс без дозы у активного профиля — Предыстория самопроверки доставки
+     * (SKL-86).
+     *
+     * Доза сценарию проверки не нужна: тестовое напоминание не показывает состав приёма,
+     * и в Предыстории важны только лекарство и его время.
+     */
+    @Given("^у профиля есть лекарство «([^»]+)» с приёмом ежедневно в (\\d{2}:\\d{2})$")
+    fun theActiveProfileHasADailyMedication(medication: String, time: String) {
+        add(world.profiles.active, medication, listOf(LocalTime.parse(time)))
+    }
+
     @Given("^у профиля «(.+?)» есть лекарство «(.+?)» с приёмом в (\\d{2}:\\d{2}) и без учёта остатка$")
     fun theProfileHasAMedicationWithoutStockTracking(profile: String, medication: String, time: String) {
         add(profile, medication, listOf(LocalTime.parse(time)))

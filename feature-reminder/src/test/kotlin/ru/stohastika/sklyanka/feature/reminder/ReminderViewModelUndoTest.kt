@@ -36,6 +36,7 @@ import ru.stohastika.sklyanka.domain.model.Profile
 import ru.stohastika.sklyanka.domain.model.ScheduleMode
 import ru.stohastika.sklyanka.domain.model.TabletShape
 import ru.stohastika.sklyanka.domain.reminder.AlarmKind
+import ru.stohastika.sklyanka.domain.reminder.DirectBootAlarm
 import ru.stohastika.sklyanka.domain.reminder.ReminderCard
 import ru.stohastika.sklyanka.domain.reminder.ReminderCardItem
 import ru.stohastika.sklyanka.domain.reminder.ReminderChannel
@@ -378,11 +379,17 @@ private class NoAlarms : AlarmGateway {
 
     override suspend fun cancel(intakeId: String) = Unit
 
+    override suspend fun syncMirror(placed: List<DirectBootAlarm>) = Unit
+
     override suspend fun scheduled(): Map<String, Instant> = emptyMap()
 
     override suspend fun scheduleAnchor(at: Instant) = Unit
 
     override suspend fun scheduleDayBoundary(at: Instant) = Unit
+
+    override suspend fun scheduleDeliveryCheck(at: Instant) = Unit
+
+    override suspend fun cancelDeliveryCheck() = Unit
 
     override fun canScheduleExact(): Boolean = true
 
@@ -400,6 +407,12 @@ private class NoNotifications : NotificationGateway {
     override suspend fun retainOnly(pendingIntakeIds: Set<String>) = Unit
 
     override fun areNotificationsEnabled(): Boolean = true
+
+    override suspend fun showDeliveryCheck(at: LocalDateTime) = Unit
+
+    override suspend fun isDeliveryCheckShown(): Boolean = false
+
+    override suspend fun cancelDeliveryCheck() = Unit
 }
 
 /** Отложенное хранилище, которое тесту окна отмены не нужно: откладывать здесь нечего. */

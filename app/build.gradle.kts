@@ -67,6 +67,9 @@ dependencies {
     // тест подменяет Main тестовым диспетчером, иначе `runBlocking` на главном
     // потоке Robolectric ждёт сам себя.
     testImplementation(libs.kotlinx.coroutines.test)
+    // Регрессия расположения DE-файла снимка (SKL-87): core-data не экспортирует DataStore
+    // наружу, а тесту нужно записать через него и проверить, что файл лёг в DE.
+    testDebugImplementation(libs.androidx.datastore.preferences)
 
     // Экранный прогон сценарной приёмки профилей (SKL-26). Модуль выбран не по удобству:
     // «Признаки чужого профиля есть на всех экранах профиля» (SKL-15) обходит шесть

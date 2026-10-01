@@ -3,8 +3,10 @@ package ru.stohastika.sklyanka.acceptance.onboarding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.runComposeUiTest
 import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.Dispatchers
@@ -32,11 +34,14 @@ import ru.stohastika.sklyanka.feature.onboarding.OnboardingViewModel
 import ru.stohastika.sklyanka.feature.onboarding.PermissionsActions
 import ru.stohastika.sklyanka.feature.onboarding.PermissionsScreen
 import ru.stohastika.sklyanka.feature.onboarding.SystemSettingsNavigator
+import ru.stohastika.sklyanka.feature.onboarding.TAG_CHECK_DELIVERY
+import ru.stohastika.sklyanka.feature.reminder.DeliveryCheckController
 import ru.stohastika.sklyanka.feature.reminder.DiagnosticsScreen
 import ru.stohastika.sklyanka.feature.reminder.DiagnosticsUiState
 import ru.stohastika.sklyanka.feature.reminder.DiagnosticsViewModel
 import ru.stohastika.sklyanka.feature.reminder.ReminderCheckNow
 import ru.stohastika.sklyanka.feature.reminder.ReminderOutageNotice
+import ru.stohastika.sklyanka.feature.reminder.TAG_CHECK_START
 import ru.stohastika.sklyanka.feature.today.TodayScreen
 import ru.stohastika.sklyanka.feature.today.TodayUiState
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
@@ -113,6 +118,9 @@ internal object OnboardingAppProbe {
                     onNext = { onAction { model(world).onNext() } },
                     onSkip = { onAction { model(world).onSkip() } },
                     onDone = { onAction { model(world).onDone() } },
+                    // «Проверить доставку» из плашки «Всё настроено» (SKL-86): app открывает
+                    // «Проверку напоминаний» с уже поднятой шторкой.
+                    onCheckDelivery = { onAction { openCheckDelivery(world) } },
                 ),
                 toLocal = { instant -> instant.atZone(world.clock.zone).toLocalDateTime() },
             )
@@ -183,6 +191,100 @@ internal object OnboardingAppProbe {
         return model.state.value
     }
 
+    /**
+     * «Проверить доставку» из плашки «Всё настроено» (SKL-86, ОВ-108).
+     *
+     * Нажатие ведёт тем же путём, что `app`: открывается «Проверка напоминаний»
+     * с поднятой шторкой. Здесь это записывается состоянием, а не Activity: стенд
+     * проверяет решение маршрута, а не системы.
+     */
+    var checkDeliveryOpened: Boolean = false
+        private set
+
+    fun pressCheckDelivery(world: AcceptanceWorld) {
+        reset(world)
+        checkDeliveryOpened = false
+        val performed = mutableListOf<() -> Unit>()
+        runComposeUiTest {
+            setContent { PermissionsContent(world, onAction = { performed += it }) }
+            onNodeWithTag(TAG_CHECK_DELIVERY).performScrollTo().performClick()
+            waitForIdle()
+        }
+        performed.forEach { it() }
+    }
+
+    private fun openCheckDelivery(world: AcceptanceWorld) {
+        checkDeliveryOpened = true
+        diagnosticsModel(world).onCheckDelivery()
+    }
+
+    private fun diagnosticsModel(world: AcceptanceWorld): DiagnosticsViewModel =
+        diagnostics ?: buildDiagnostics(world).also { diagnostics = it }
+
+    /** Экран проверки напоминаний, открытый из плашки: шторка уже поднята. */
+    fun askCheckScreen(world: AcceptanceWorld, question: ComposeUiTest.() -> Unit) {
+        reset(world)
+        val model = diagnosticsModel(world)
+        val snapshot = model.state.value
+        runComposeUiTest {
+            setContent {
+                SklyankaTheme {
+                    DiagnosticsScreen(
+                        state = snapshot,
+                        onCheckNow = {},
+                        onExportJournal = {},
+                        onRestartSetup = null,
+                        onToggleSupport = {},
+                        onFixPermission = {},
+                        onAlarmKindChange = {},
+                        onCheckDelivery = {},
+                        onDismissCheckSheet = {},
+                        onStartDeliveryCheck = { model.onStartDeliveryCheck() },
+                        onCancelDeliveryCheck = {},
+                        onRepeatDeliveryCheck = {},
+                        onFixDeliveryCheck = {},
+                        onBack = {},
+                        toLocal = { instant: Instant -> instant.atZone(world.clock.zone).toLocalDateTime() },
+                    )
+                }
+            }
+            question()
+            waitForIdle()
+        }
+    }
+
+    /** «Начать проверку» в поднятой шторке: тем же доменным путём, что у продукта. */
+    fun startCheckFromSheet(world: AcceptanceWorld) {
+        reset(world)
+        val model = diagnosticsModel(world)
+        val snapshot = model.state.value
+        runComposeUiTest {
+            setContent {
+                SklyankaTheme {
+                    DiagnosticsScreen(
+                        state = snapshot,
+                        onCheckNow = {},
+                        onExportJournal = {},
+                        onRestartSetup = null,
+                        onToggleSupport = {},
+                        onFixPermission = {},
+                        onAlarmKindChange = {},
+                        onCheckDelivery = {},
+                        onDismissCheckSheet = {},
+                        onStartDeliveryCheck = { model.onStartDeliveryCheck() },
+                        onCancelDeliveryCheck = {},
+                        onRepeatDeliveryCheck = {},
+                        onFixDeliveryCheck = {},
+                        onBack = {},
+                        toLocal = { instant: Instant -> instant.atZone(world.clock.zone).toLocalDateTime() },
+                    )
+                }
+            }
+            onNodeWithTag(TAG_CHECK_START).performClick()
+            waitForIdle()
+        }
+    }
+
     fun askDiagnostics(world: AcceptanceWorld, question: ComposeUiTest.() -> Unit) {
         reset(world)
         val model = diagnostics ?: buildDiagnostics(world).also { diagnostics = it }
@@ -199,6 +301,12 @@ internal object OnboardingAppProbe {
                         onToggleSupport = {},
                         onFixPermission = {},
                         onAlarmKindChange = {},
+                        onCheckDelivery = {},
+                        onDismissCheckSheet = {},
+                        onStartDeliveryCheck = {},
+                        onCancelDeliveryCheck = {},
+                        onRepeatDeliveryCheck = {},
+                        onFixDeliveryCheck = {},
                         onBack = {},
                         toLocal = { instant: Instant -> instant.atZone(world.clock.zone).toLocalDateTime() },
                     )
@@ -247,6 +355,15 @@ internal object OnboardingAppProbe {
             time = world.clock.time,
         ),
         settings = world.reminders.settingsStore,
+        deliveryCheck = object : DeliveryCheckController {
+            override suspend fun start() = world.reminders.startDeliveryCheck()
+
+            override suspend fun finish() = world.reminders.finishDeliveryCheck()
+
+            override suspend fun cancel() = world.reminders.cancelDeliveryCheck()
+
+            override suspend fun acknowledge(dueAt: Instant) = world.reminders.acknowledgeDeliveryCheck(dueAt)
+        },
         time = world.clock.time,
     )
 

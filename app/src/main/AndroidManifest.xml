@@ -156,6 +156,24 @@
             android:turnScreenOn="true" />
 
         <!--
+          Карточка самопроверки доставки (SKL-86, ОВ-108).
+
+          Своя Activity рядом с боевой карточкой: тестовое срабатывание показывается
+          поверх блокировки тем же полноэкранным намерением, но не притворяется приёмом —
+          действий отметки у него нет. Свойства окна те же, что у ReminderActivity;
+          on 26 флаги окна ставятся в самой Activity (minSdk 26, ПЛ-1).
+        -->
+        <activity
+            android:name="ru.stohastika.sklyanka.feature.reminder.DeliveryCheckActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:showWhenLocked="true"
+            android:taskAffinity=""
+            android:theme="@style/Theme.Sklyanka"
+            android:turnScreenOn="true" />
+
+        <!--
           Диагностика напоминаний (НАП-37).
 
           Постоянный вход — строка настроек «Проверка напоминаний» (ОВ-49, SKL-79);
@@ -227,6 +245,23 @@
             -->
             <intent-filter>
                 <action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" />
+            </intent-filter>
+        </receiver>
+
+        <!--
+          Загрузка без разблокировки и разблокировка (SKL-87).
+
+          directBootAware="true" обязателен: до первой разблокировки система запускает только
+          такие компоненты. RECEIVE_BOOT_COMPLETED уже объявлен; оба broadcast'а защищённые,
+          шлёт только система, поэтому exported="true" безопасен.
+        -->
+        <receiver
+            android:name=".reminder.DirectBootReceiver"
+            android:directBootAware="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
+                <action android:name="android.intent.action.USER_UNLOCKED" />
             </intent-filter>
         </receiver>
 

@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import ru.stohastika.sklyanka.domain.reminder.AlarmKind
 import ru.stohastika.sklyanka.domain.reminder.BuildReminderDiagnosticsUseCase
+import ru.stohastika.sklyanka.domain.reminder.DeliveryCheckState
 import ru.stohastika.sklyanka.domain.reminder.ExportReminderJournalUseCase
 import ru.stohastika.sklyanka.domain.reminder.ReminderDiagnostics
 import ru.stohastika.sklyanka.domain.reminder.ReminderJournalExportOutcome
@@ -59,6 +60,8 @@ data class DiagnosticsUiState(
      * её не стирает, пока шаг не исправлен, — инструкция обязана остаться после возврата.
      */
     val fixFallback: ReminderPermission? = null,
+    /** Открыта ли шторка запуска самопроверки доставки (SKL-86, ОВ-108). */
+    val checkSheetOpen: Boolean = false,
 )
 
 /**
@@ -80,6 +83,14 @@ class DiagnosticsViewModel @Inject constructor(
      * в блоке «Для поддержки» нет вовсе (ПМ-20).
      */
     private val settings: ReminderSettings,
+    /**
+     * Самопроверка доставки (SKL-86).
+     *
+     * Точка входа одна: экран открывает шторку, запускает и отменяет проверку, а закрытие
+     * истёкшей проверки и подтверждение результата идут тем же путём. Сценарии собирает
+     * `app`: `feature-reminder` не знает ни будильников, ни их адресов (`ADR-0007`).
+     */
+    private val deliveryCheck: DeliveryCheckController,
     time: TimeSource,
 ) : ViewModel() {
 
@@ -94,6 +105,10 @@ class DiagnosticsViewModel @Inject constructor(
 
     fun refresh() {
         viewModelScope.launch {
+            // Истёкшая проверка закрывается до сборки снимка: «не дошло» обязано
+            // появиться без перезапуска приложения (НФТ-52). Снимок — чтение, и менять
+            // журнал ему нельзя, поэтому закрытие идёт здесь.
+            deliveryCheck.finish()
             val snapshot = diagnostics()
             _state.value = _state.value.copy(
                 snapshot = snapshot,
@@ -105,6 +120,44 @@ class DiagnosticsViewModel @Inject constructor(
                 },
             )
         }
+    }
+
+    /** «Проверить доставку»: открыть шторку с инструкцией, ничего не ставя (ОВ-108). */
+    fun onCheckDelivery() {
+        _state.value = _state.value.copy(checkSheetOpen = true)
+    }
+
+    /** «Отмена» в шторке: закрыть её и не ставить тестовое срабатывание. */
+    fun onDismissCheckSheet() {
+        _state.value = _state.value.copy(checkSheetOpen = false)
+    }
+
+    /** «Начать проверку»: назначить тестовое срабатывание и показать ход проверки. */
+    fun onStartDeliveryCheck() {
+        viewModelScope.launch {
+            deliveryCheck.start()
+            _state.value = _state.value.copy(checkSheetOpen = false)
+            refresh()
+        }
+    }
+
+    /** «Отменить проверку»: снять тестовое срабатывание и вернуть блок в исходное состояние. */
+    fun onCancelDeliveryCheck() {
+        viewModelScope.launch {
+            deliveryCheck.cancel()
+            refresh()
+        }
+    }
+
+    /**
+     * Результат проверки прочитан человеком на экране.
+     *
+     * Подтверждение постоянное: без него результат, уже показанный в блоке, вернулся бы
+     * баннером при следующем входе (ОВ-108).
+     */
+    fun onAcknowledgeDeliveryCheck() {
+        val finished = _state.value.snapshot?.deliveryCheck as? DeliveryCheckState.Finished ?: return
+        viewModelScope.launch { deliveryCheck.acknowledge(finished.dueAt) }
     }
 
     /**

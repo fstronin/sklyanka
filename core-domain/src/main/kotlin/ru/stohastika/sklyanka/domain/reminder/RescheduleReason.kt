@@ -11,6 +11,12 @@ enum class RescheduleReason(val code: String) {
     /** Перезагрузка стирает все будильники (ПЛ-9, НФТ-2). */
     BOOT("boot"),
 
+    /** Загрузка до разблокировки: окно восстановлено по снимку (SKL-87). */
+    LOCKED_BOOT("locked_boot"),
+
+    /** Разблокировка после перезагрузки: полная пересборка (SKL-87). */
+    USER_UNLOCKED("user_unlocked"),
+
     /** Обновление приложения поверх предыдущей сборки снимает будильники (И-11). */
     PACKAGE_REPLACED("package_replaced"),
 

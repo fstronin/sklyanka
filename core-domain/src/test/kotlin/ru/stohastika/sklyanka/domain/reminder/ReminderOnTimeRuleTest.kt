@@ -93,6 +93,23 @@ class ReminderOnTimeRuleTest {
     }
 
     @Test
+    fun `delivery checks never enter the on time share or the week phrase`() {
+        // Проверка доставки — не срабатывание напоминания: она не имеет права ни
+        // исказить долю «вовремя», ни показаться в фразе «сработало N, пропущено M»
+        // (SKL-86, ОВ-108). Вид записи решает это по построению.
+        val entries = listOf(
+            shown(10, ReminderEvent.DELIVERY_CHECK),
+            shown(null, ReminderEvent.DELIVERY_CHECK),
+        )
+
+        val summary = ReminderOnTimeRule.summarize(entries)
+        val week = ReminderWeekSummaryRule.summarize(entries)
+
+        assertFalse(summary.hasData, "a delivery check is not a firing")
+        assertFalse(week.hasData, "a delivery check is neither fired nor missed")
+    }
+
+    @Test
     fun `the window is the seven days the requirement names`() {
         assertEquals(7L, ReminderOnTimeRule.WINDOW.toDays())
         assertEquals(7L, ReminderOnTimeRule.summarize(emptyList()).days)

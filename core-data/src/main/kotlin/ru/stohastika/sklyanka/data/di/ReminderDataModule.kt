@@ -6,6 +6,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import ru.stohastika.sklyanka.data.prefs.AlarmRegistryStore
+import ru.stohastika.sklyanka.data.prefs.DeliveryCheckAcknowledgementsStore
 import ru.stohastika.sklyanka.data.prefs.JournalingReminderSettings
 import ru.stohastika.sklyanka.data.reminder.ReminderDataSource
 import ru.stohastika.sklyanka.data.reminder.RoomDeferredReminders
@@ -16,6 +17,7 @@ import ru.stohastika.sklyanka.data.room.dao.ReminderDao
 import ru.stohastika.sklyanka.data.room.dao.ReminderLogDao
 import ru.stohastika.sklyanka.domain.reminder.port.AlarmRegistry
 import ru.stohastika.sklyanka.domain.reminder.port.DeferredReminders
+import ru.stohastika.sklyanka.domain.reminder.port.DeliveryCheckAcknowledgements
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderCardSource
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderJournal
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPlanSource
@@ -86,4 +88,16 @@ abstract class ReminderDataBindings {
     @Binds
     @Singleton
     abstract fun bindDeferredReminders(impl: RoomDeferredReminders): DeferredReminders
+
+    /**
+     * Подтверждение результата самопроверки (SKL-86).
+     *
+     * Постоянное, а не в памяти процесса: результат проверки не кончается сам, и без
+     * записи «объявлено» баннер о вчерашней неудаче возвращался бы при каждом входе.
+     */
+    @Binds
+    @Singleton
+    abstract fun bindDeliveryCheckAcknowledgements(
+        impl: DeliveryCheckAcknowledgementsStore,
+    ): DeliveryCheckAcknowledgements
 }

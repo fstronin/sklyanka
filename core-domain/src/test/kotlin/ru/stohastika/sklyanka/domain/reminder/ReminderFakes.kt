@@ -3,8 +3,10 @@ package ru.stohastika.sklyanka.domain.reminder
 import ru.stohastika.sklyanka.domain.medication.doseUnit
 import ru.stohastika.sklyanka.domain.model.IntakeStatus
 import ru.stohastika.sklyanka.domain.reminder.port.AlarmGateway
+import ru.stohastika.sklyanka.domain.reminder.port.AppForeground
 import ru.stohastika.sklyanka.domain.reminder.port.DeferredReminder
 import ru.stohastika.sklyanka.domain.reminder.port.DeferredReminders
+import ru.stohastika.sklyanka.domain.reminder.port.DeliveryCheckAcknowledgements
 import ru.stohastika.sklyanka.domain.reminder.port.DeviceEnvironmentSource
 import ru.stohastika.sklyanka.domain.reminder.port.NotificationGateway
 import ru.stohastika.sklyanka.domain.reminder.port.PermissionState
@@ -39,9 +41,24 @@ internal class FakeAlarmGateway : AlarmGateway {
     /** Номер показа рядом с моментом: 0 — первый, 1… — настойчивый повтор (НАП-25). */
     val attempts: MutableMap<String, Int> = linkedMapOf()
 
+    /** Зеркало direct boot: что записала последняя полная пересборка (SKL-87). */
+    val mirrored: MutableMap<String, DirectBootAlarm> = linkedMapOf()
+
+    var mirrorSyncs: Int = 0
+        private set
+
     var anchor: Instant? = null
     var dayBoundary: Instant? = null
     var exactAllowed: Boolean = true
+
+    /** Момент тестового срабатывания самопроверки; null — не назначено (SKL-86). */
+    var deliveryCheck: Instant? = null
+        private set
+
+    var deliveryCheckScheduleCalls: Int = 0
+        private set
+    var deliveryCheckCancelCalls: Int = 0
+        private set
 
     /** Механизм, которым фейк «ставит» будильники: им же размечается журнал среды (SKL-85). */
     var kind: AlarmKind = AlarmKind.ALARM_CLOCK
@@ -56,12 +73,27 @@ internal class FakeAlarmGateway : AlarmGateway {
         scheduleCalls++
         alarms[intakeId] = at
         attempts[intakeId] = attempt
+        mirrored[intakeId] = DirectBootAlarm(intakeId, at, attempt)
     }
 
     override suspend fun cancel(intakeId: String) {
         cancelCalls++
         alarms.remove(intakeId)
         attempts.remove(intakeId)
+        mirrored.remove(intakeId)
+    }
+
+    /**
+     * Полная пересборка переписывает зеркало целиком (SKL-87).
+     *
+     * Проба живой постановки здесь — наличие в [alarms]: как и настоящий gateway,
+     * фейк не записывает то, что не стоит.
+     */
+    override suspend fun syncMirror(placed: List<DirectBootAlarm>) {
+        mirrorSyncs++
+        val merged = mirrored + placed.associateBy { it.intakeId }
+        mirrored.clear()
+        merged.values.filter { it.intakeId in alarms }.forEach { mirrored[it.intakeId] = it }
     }
 
     override suspend fun scheduled(): Map<String, Instant> = alarms.toMap()
@@ -72,6 +104,16 @@ internal class FakeAlarmGateway : AlarmGateway {
 
     override suspend fun scheduleDayBoundary(at: Instant) {
         dayBoundary = at
+    }
+
+    override suspend fun scheduleDeliveryCheck(at: Instant) {
+        deliveryCheckScheduleCalls++
+        deliveryCheck = at
+    }
+
+    override suspend fun cancelDeliveryCheck() {
+        deliveryCheckCancelCalls++
+        deliveryCheck = null
     }
 
     override fun canScheduleExact(): Boolean = exactAllowed
@@ -163,6 +205,35 @@ internal class FakeNotificationGateway : NotificationGateway {
     }
 
     override fun areNotificationsEnabled(): Boolean = enabled
+
+    /** Показы карточки проверки: моменты, с которыми её просили показать (SKL-86). */
+    val deliveryChecks: MutableList<LocalDateTime> = mutableListOf()
+
+    /** Доходит ли тестовый показ до шторки: `false` воспроизводит тихий отказ показа. */
+    var deliveryCheckReachesTheShade: Boolean = true
+
+    var deliveryCheckCancels: Int = 0
+        private set
+
+    private var deliveryCheckVisible: Boolean = false
+    private var deliveryCheckPolls: Int = 0
+
+    override suspend fun showDeliveryCheck(at: LocalDateTime) {
+        deliveryChecks += at
+        deliveryCheckPolls = 0
+        deliveryCheckVisible = deliveryCheckReachesTheShade
+    }
+
+    override suspend fun isDeliveryCheckShown(): Boolean {
+        onPoll?.invoke()
+        deliveryCheckPolls += 1
+        return deliveryCheckVisible && deliveryCheckPolls > appearsAfterPolls
+    }
+
+    override suspend fun cancelDeliveryCheck() {
+        deliveryCheckCancels += 1
+        deliveryCheckVisible = false
+    }
 }
 
 /** Часы: по умолчанию не настроены, как и в первой версии до SKL-16. */
@@ -258,6 +329,22 @@ internal class FakePermissionStateReader : PermissionStateReader {
         .also { it[ReminderPermission.AUTOSTART] = PermissionState.UNKNOWN }
 
     override fun state(permission: ReminderPermission): PermissionState = states[permission] ?: PermissionState.UNKNOWN
+}
+
+/** Передний план: по умолчанию приложение закрыто — как у процесса, поднятого приёмником (SKL-86). */
+internal class FakeAppForeground(var foreground: Boolean = false) : AppForeground {
+
+    override fun isForeground(): Boolean = foreground
+}
+
+/** Подтверждения в памяти: момент последней объявленной проверки (SKL-86). */
+internal class FakeDeliveryCheckAcknowledgements(var announcedAt: Instant? = null) : DeliveryCheckAcknowledgements {
+
+    override suspend fun announced(): Instant? = announcedAt
+
+    override suspend fun remember(dueAt: Instant) {
+        announcedAt = dueAt
+    }
 }
 
 /**

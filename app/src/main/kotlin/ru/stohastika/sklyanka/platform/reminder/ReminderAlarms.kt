@@ -1,5 +1,6 @@
 package ru.stohastika.sklyanka.platform.reminder
 
+import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -23,10 +24,45 @@ internal object ReminderAlarms {
     const val ACTION_ANCHOR = "ru.stohastika.sklyanka.action.REMINDER_ANCHOR"
     const val ACTION_DAY_BOUNDARY = "ru.stohastika.sklyanka.action.REMINDER_DAY_BOUNDARY"
 
+    /** Тестовое срабатывание самопроверки доставки (SKL-86, ОВ-108). */
+    const val ACTION_DELIVERY_CHECK = "ru.stohastika.sklyanka.action.REMINDER_DELIVERY_CHECK"
+
     const val EXTRA_INTAKE_ID = "intake_id"
     const val EXTRA_ATTEMPT = "attempt"
 
     private const val SCHEME = "sklyanka"
+
+    /**
+     * Код запроса один для всех будильников.
+     *
+     * Различает их `Uri` в самом намерении, а не код: код, собранный из хеша идентификатора,
+     * даёт совпадения на разных приёмах, и один будильник молча вытесняет другой.
+     */
+    const val REQUEST_CODE = 0
+
+    /**
+     * `PendingIntent` будильника: повторная постановка заменяет прежний (НАП-9).
+     *
+     * Вынесено сюда из `AlarmManagerGateway`, потому что восстановитель в locked-фазе обязан
+     * адресовать будильники тем же построением, каким их ставит планировщик. Разъехавшийся
+     * код запроса или флаги не ломают сборку и не видны в тестах: адреса расходятся молча,
+     * и после разблокировки пересборка либо плодит вторые будильники, либо не снимает
+     * восстановленные (НАП-9).
+     */
+    fun pendingIntent(context: Context, intent: Intent): PendingIntent = PendingIntent.getBroadcast(
+        context,
+        REQUEST_CODE,
+        intent,
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+    )
+
+    /** Проба существования будильника тем же адресом; `null` — его нет в системе. */
+    fun existing(context: Context, intent: Intent): PendingIntent? = PendingIntent.getBroadcast(
+        context,
+        REQUEST_CODE,
+        intent,
+        PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE,
+    )
 
     /** Будильник приёма: один приём — один адрес, повторная постановка заменяет (НАП-9). */
     fun intake(context: Context, intakeId: String, attempt: Int): Intent = Intent(context, AlarmReceiver::class.java)
@@ -44,4 +80,9 @@ internal object ReminderAlarms {
     fun dayBoundary(context: Context): Intent = Intent(context, AlarmReceiver::class.java)
         .setAction(ACTION_DAY_BOUNDARY)
         .setData(Uri.parse("$SCHEME://reminder/day-boundary"))
+
+    /** Адрес тестового срабатывания: один на проверку, повторная постановка заменяет (НАП-9). */
+    fun deliveryCheck(context: Context): Intent = Intent(context, AlarmReceiver::class.java)
+        .setAction(ACTION_DELIVERY_CHECK)
+        .setData(Uri.parse("$SCHEME://reminder/delivery-check"))
 }

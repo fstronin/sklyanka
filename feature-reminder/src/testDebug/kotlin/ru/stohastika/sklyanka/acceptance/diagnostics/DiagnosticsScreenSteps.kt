@@ -520,6 +520,8 @@ class DiagnosticsScreenSteps(private val world: AcceptanceWorld) {
         /** Отображение причины пересборки словами — как в `ReminderText` продукта. */
         val REASON_LABELS: Map<RescheduleReason, Int> = mapOf(
             RescheduleReason.BOOT to R.string.diagnostics_reason_boot,
+            RescheduleReason.LOCKED_BOOT to R.string.diagnostics_reason_locked_boot,
+            RescheduleReason.USER_UNLOCKED to R.string.diagnostics_reason_user_unlocked,
             RescheduleReason.PACKAGE_REPLACED to R.string.diagnostics_reason_package_replaced,
             RescheduleReason.TIMEZONE_CHANGED to R.string.diagnostics_reason_timezone_changed,
             RescheduleReason.TIME_CHANGED to R.string.diagnostics_reason_time_changed,

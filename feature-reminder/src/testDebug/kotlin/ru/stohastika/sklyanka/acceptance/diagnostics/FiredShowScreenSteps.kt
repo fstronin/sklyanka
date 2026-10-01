@@ -37,11 +37,6 @@ class FiredShowScreenSteps(private val world: AcceptanceWorld) {
     private val context: Context = ApplicationProvider.getApplicationContext()
     private val locale = context.resources.configuration.locales[0]
 
-    @Когда("^человек открывает «Проверку напоминаний»$")
-    fun thePersonOpensTheRemindersCheck() {
-        DiagnosticsStand.ask(world) { onNodeWithTag(TAG_DIAGNOSTICS).assertIsDisplayed() }
-    }
-
     /** «Для поддержки» раскрывается стендом: журнал живёт в техническом блоке (ОВ-49). */
     @Когда("^человек раскрывает «Для поддержки» на «Проверке напоминаний»$")
     fun thePersonExpandsSupport() {

@@ -1,5 +1,7 @@
 package ru.stohastika.sklyanka.feature.onboarding
 
+import android.content.Context
+import android.content.Intent
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -23,6 +25,9 @@ import java.time.Instant
  * экран называет его в плашке предупреждения.
  * @param onExit куда уходить с экрана. Решает хозяин навигации: `feature-*` друг о друге
  * не знают, и «Дальше» не может сам открыть экран подключения часов (SKL-17).
+ * @param onCheckDelivery «Проверить доставку» в плашке «Всё настроено» (SKL-86): запуск
+ * самопроверки живёт на «Проверке напоминаний», и решение о переходе принимает `app`
+ * (`ADR-0007`). `null` — действия нет.
  */
 @Composable
 fun PermissionsRoute(
@@ -31,6 +36,7 @@ fun PermissionsRoute(
     onExit: (OnboardingExit) -> Unit,
     modifier: Modifier = Modifier,
     outageSince: Instant? = null,
+    onCheckDelivery: (() -> Unit)? = null,
 ) {
     val state by viewModel.state.collectAsState()
     val exit by viewModel.exit.collectAsState()
@@ -65,12 +71,23 @@ fun PermissionsRoute(
             onNext = viewModel::onNext,
             onSkip = viewModel::onSkip,
             onDone = viewModel::onDone,
-            // Самопроверка доставки — SKL-86; до неё действия в плашке нет.
-            onCheckDelivery = null,
+            // Самопроверка доставки — SKL-86: переход собирает `app`, экран только зовёт.
+            onCheckDelivery = onCheckDelivery,
         ),
         toLocal = viewModel::local,
         modifier = modifier,
     )
+}
+
+/**
+ * Переход на самопроверку доставки — как зависимость экрана (SKL-86, `ADR-0007`).
+ *
+ * Экран «Проверка напоминаний» живёт в `feature-reminder`, и `feature-onboarding` не имеет
+ * права его видеть: второй копии шторки и второго дома результата не заводится (ОВ-108).
+ * Решение о переходе принимает `app` — тем же приёмом, что у `ReminderSetupEntry`.
+ */
+fun interface DeliveryCheckEntry {
+    fun intentFor(context: Context): Intent
 }
 
 /**

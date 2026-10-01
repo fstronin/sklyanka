@@ -121,6 +121,32 @@
     <string name="diagnostics_action_export">Выгрузить журнал</string>
     <string name="diagnostics_action_setup">Пройти настройку заново</string>
 
+    <!-- ===== Самопроверка доставки (SKL-86, ПМ-21, ОВ-108) ===== -->
+
+    <!-- Точка входа и шторка запуска. -->
+    <string name="diagnostics_action_check_delivery">Проверить доставку</string>
+    <string name="diagnostics_check_sheet_title">Проверка доставки</string>
+    <string name="diagnostics_check_sheet_text">Приложение поставит тестовое напоминание через 1–2 минуты. Сразу после начала закройте приложение — смахните его из списка недавних. Если приложение будет открыто, проверка не состоится. Блокировать телефон не нужно.</string>
+    <string name="diagnostics_check_start">Начать проверку</string>
+    <string name="diagnostics_check_sheet_cancel">Отмена</string>
+
+    <!-- Ход проверки: плашка и тихая отмена. -->
+    <string name="diagnostics_check_running">Проверка идёт: тестовое напоминание сработает примерно через минуту. Закройте приложение.</string>
+    <string name="diagnostics_check_cancel">Отменить проверку</string>
+
+    <!-- Исходы. Опоздание подставляется формами plurals/diagnostics_late (НФТ-44). -->
+    <string name="diagnostics_check_on_time">Проверка доставки пройдена: тестовое напоминание пришло вовремя.</string>
+    <string name="diagnostics_check_late">Проверка доставки: тестовое напоминание пришло %1$s. Телефон задержал его — проверьте настройки запуска и энергосбережения.</string>
+    <string name="diagnostics_check_not_delivered">Проверка доставки не прошла: тестовое напоминание не пришло. Проверьте настройки запуска и энергосбережения.</string>
+    <string name="diagnostics_check_not_completed">Проверка не состоялась: приложение было открыто. Закройте его и попробуйте снова.</string>
+    <string name="diagnostics_check_repeat">Повторить проверку</string>
+    <string name="diagnostics_check_acknowledge">Понятно</string>
+
+    <!-- ===== Карточка проверки (ОВ-108): не притворяется приёмом ===== -->
+
+    <string name="reminder_check_overline">Проверка доставки</string>
+    <string name="reminder_check_text">Тестовое напоминание. Отмечать ничего не нужно.</string>
+
     <!-- Исход выгрузки журнала файлом (НФТ-51). -->
     <string name="diagnostics_export_saved">Журнал выгружен · %1$s</string>
     <string name="diagnostics_export_failed">Журнал не выгружен: запись не удалась</string>
@@ -135,6 +161,8 @@
 
     <!-- Причины пересборки плана (таблица НАП-11). -->
     <string name="diagnostics_reason_boot">перезагрузка</string>
+    <string name="diagnostics_reason_locked_boot">восстановление до разблокировки</string>
+    <string name="diagnostics_reason_user_unlocked">разблокировка</string>
     <string name="diagnostics_reason_package_replaced">обновление приложения</string>
     <string name="diagnostics_reason_timezone_changed">смена часового пояса</string>
     <string name="diagnostics_reason_time_changed">перевод часов</string>
@@ -162,6 +190,7 @@
     <string name="diagnostics_event_outage">перерыв в напоминаниях</string>
     <string name="diagnostics_event_settings_changed">изменена настройка</string>
     <string name="diagnostics_event_environment">среда устройства</string>
+    <string name="diagnostics_event_delivery_check">проверка доставки</string>
 
     <!-- «снято 1, поставлено 2» — счётчики записи о пересборке. -->
     <string name="diagnostics_alarm_counters">снято %1$d, поставлено %2$d</string>

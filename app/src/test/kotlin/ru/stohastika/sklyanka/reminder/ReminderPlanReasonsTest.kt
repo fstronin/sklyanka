@@ -23,6 +23,7 @@ class ReminderPlanReasonsTest {
             RescheduleReason.ALARM_FIRED,
             RescheduleReason.PROFILE_SET_CHANGED,
             RescheduleReason.EXACT_ALARM_GRANTED,
+            RescheduleReason.LOCKED_BOOT,
         )
         RescheduleReason.entries.forEach { reason ->
             val mapped = ReminderPlanReasons.intakeReason(reason)
@@ -47,6 +48,14 @@ class ReminderPlanReasonsTest {
         // Выдача права меняет только очередь будильников; окно приёмов уже сгенерировано,
         // и лишний проход по всем профилям в приёмнике стоит времени, которого у него нет.
         assertNull(ReminderPlanReasons.intakeReason(RescheduleReason.EXACT_ALARM_GRANTED))
+    }
+
+    @Test
+    fun `unlocking regenerates intakes like a boot and locked boot generates nothing`() {
+        // Разблокировка — та же генерация, что после перезагрузки (устройство могло быть
+        // выключено дольше горизонта); до разблокировки работает только путь по снимку.
+        assertEquals(PlanReason.BOOT, ReminderPlanReasons.intakeReason(RescheduleReason.USER_UNLOCKED))
+        assertNull(ReminderPlanReasons.intakeReason(RescheduleReason.LOCKED_BOOT))
     }
 
     @Test
