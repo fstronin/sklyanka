@@ -108,7 +108,14 @@ class MedsFormScreenSteps(private val world: AcceptanceWorld) {
         val expected = values.split(VALUES_SEPARATOR).map { it.trim().trim('«', '»') }
         MedsFormStand.ask(world) { test ->
             test.onAllNodesWithTag(TAG_RELEASE_FORM, useUnmergedTree = true).assertCountEquals(expected.size)
-            expected.forEach { label -> test.onNodeWithText(label).assertIsDisplayed() }
+            // Подпись плитки адресуется внутри блока: «Таблетка» звучит ещё и в заголовке
+            // блока-превью (ОВ-94), и поиск по всему экрану нашёл бы два узла.
+            expected.forEach { label ->
+                test.onNode(
+                    hasText(label) and hasAnyAncestor(hasTestTag(TAG_RELEASE_FORM)),
+                    useUnmergedTree = true,
+                ).assertIsDisplayed()
+            }
         }
     }
 
