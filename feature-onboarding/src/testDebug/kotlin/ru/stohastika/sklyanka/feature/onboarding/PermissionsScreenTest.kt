@@ -1,8 +1,14 @@
 package ru.stohastika.sklyanka.feature.onboarding
 
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
@@ -10,6 +16,8 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.unit.Density
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.assertEquals
@@ -45,16 +53,31 @@ class PermissionsScreenTest {
 
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
 
-    private fun show(state: OnboardingUiState, actions: PermissionsActions = PermissionsScreenFixtures.actions()) {
+    private fun show(
+        state: OnboardingUiState,
+        actions: PermissionsActions = PermissionsScreenFixtures.actions(),
+        scale: Float = 1f,
+    ) {
         compose.setContent {
-            SklyankaTheme {
-                PermissionsScreen(
-                    state = state,
-                    actions = actions,
-                    toLocal = { LocalDateTime.ofInstant(it, java.time.ZoneId.of("Europe/Moscow")) },
-                )
+            Scaled(scale) {
+                SklyankaTheme {
+                    PermissionsScreen(
+                        state = state,
+                        actions = actions,
+                        toLocal = { LocalDateTime.ofInstant(it, java.time.ZoneId.of("Europe/Moscow")) },
+                    )
+                }
             }
         }
+    }
+
+    @Composable
+    private fun Scaled(scale: Float, content: @Composable () -> Unit) {
+        val base = LocalDensity.current
+        CompositionLocalProvider(
+            LocalDensity provides Density(density = base.density, fontScale = scale),
+            content = content,
+        )
     }
 
     private fun text(id: Int, vararg args: Any): String = context.getString(id, *args)
@@ -443,5 +466,67 @@ class PermissionsScreenTest {
             "2 не выдано",
             context.resources.getQuantityString(R.plurals.onboarding_summary_unresolved, 2, 2),
         )
+    }
+
+    @Test
+    fun atTwoHundredPercentTheConfirmedMarkGoesUnderTheText() {
+        show(PermissionsScreenFixtures.chainComplete(), scale = 2f)
+        scrollTo(TAG_CARD_RECENTS_PIN)
+
+        val title = compose.onNodeWithText(text(R.string.setup_step_recents_pin), useUnmergedTree = true)
+            .fetchSemanticsNode()
+        val mark = compose.onNode(markOf(TAG_CARD_RECENTS_PIN), useUnmergedTree = true).fetchSemanticsNode()
+        assertTrue(
+            "the state mark must move under the text at 200 %",
+            mark.boundsInRoot.top >= title.boundsInRoot.bottom - TOLERANCE,
+        )
+        assertTrue("no word of the step may be broken", !brokenInsideWord(title))
+    }
+
+    @Test
+    fun atTheNormalScaleNoWordOfTheStepHeaderIsBroken() {
+        show(PermissionsScreenFixtures.chainComplete())
+        scrollTo(TAG_CARD_RECENTS_PIN)
+
+        val title = compose.onNodeWithText(text(R.string.setup_step_recents_pin), useUnmergedTree = true)
+            .fetchSemanticsNode()
+        assertTrue("no word of the step may be broken", !brokenInsideWord(title))
+    }
+
+    @Test
+    fun atTheNormalScaleTheStateMarkStaysInTheRow() {
+        show(PermissionsScreenFixtures.chainComplete())
+
+        val title = compose.onNodeWithText(text(R.string.setup_step_notifications), useUnmergedTree = true)
+            .fetchSemanticsNode()
+        val mark = compose.onNode(
+            hasTestTag(TAG_GRANTED_MARK) and hasAnyAncestor(hasTestTag(TAG_CARD_NOTIFICATIONS)),
+            useUnmergedTree = true,
+        ).fetchSemanticsNode()
+        assertTrue(
+            "at the normal scale the mark must stay to the right of the text",
+            mark.boundsInRoot.left >= title.boundsInRoot.right - TOLERANCE,
+        )
+    }
+
+    private fun markOf(cardTag: String) = hasTestTag(TAG_CONFIRMED_MARK) and hasAnyAncestor(hasTestTag(cardTag))
+
+    private fun brokenInsideWord(node: SemanticsNode): Boolean {
+        val results = mutableListOf<TextLayoutResult>()
+        node.config[SemanticsActions.GetTextLayoutResult].action?.invoke(results)
+        val layout = results.firstOrNull() ?: return false
+        val text = layout.layoutInput.text.text
+        val lines = (0 until layout.lineCount).map { line ->
+            text.substring(layout.getLineStart(line), layout.getLineEnd(line))
+        }
+        return lines.indices.drop(1).any { index ->
+            val tail = lines[index - 1].lastOrNull()
+            val head = lines[index].firstOrNull()
+            tail != null && head != null && tail.isLetterOrDigit() && head.isLetterOrDigit()
+        }
+    }
+
+    private companion object {
+        val TOLERANCE = 1f
     }
 }

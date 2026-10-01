@@ -61,7 +61,7 @@ internal class ReportPdfComposer(applicationContext: Context) {
     }
 
     /**
-     * Короткий состав для шторки: профиль, период и число принятых приёмов.
+     * Короткий состав для шторки: профиль, период, число принятых приёмов и формат.
      *
      * Тем же композером, что и документ: текстовой сводки в шторке больше нет (решение
      * дизайна), но человек обязан видеть, что именно отдаёт, до нажатия «Передать».
@@ -78,6 +78,7 @@ internal class ReportPdfComposer(applicationContext: Context) {
             } else {
                 context.getString(R.string.report_document_taken_label) + " " + text.takenValue(report)
             },
+            context.getString(R.string.report_document_format),
         ).joinToString("\n")
     }
 

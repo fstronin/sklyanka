@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TimeInput
@@ -18,14 +19,17 @@ import androidx.compose.material3.TimePickerDefaults
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import ru.stohastika.sklyanka.ui.R
@@ -132,6 +136,13 @@ fun DateTimePickerDialog(
         is24Hour = is24Hour,
     )
     var keyboardInput by remember { mutableStateOf(false) }
+    val baseDensity = LocalDensity.current
+    val pickerTypography = MaterialTheme.typography.copy(
+        displayLarge = SklyankaType.Display,
+        displayMedium = SklyankaType.Display,
+        displaySmall = SklyankaType.Display,
+        headlineLarge = SklyankaType.Display,
+    )
     val pickerColors = TimePickerDefaults.colors(
         clockDialColor = colors.surface,
         clockDialSelectedContentColor = colors.surface,
@@ -155,10 +166,16 @@ fun DateTimePickerDialog(
         onConfirm = { onConfirm(LocalTime.of(state.hour, state.minute)) },
         modifier = modifier,
     ) {
-        if (keyboardInput) {
-            TimeInput(state = state, colors = pickerColors, modifier = Modifier.testTag(TAG_TIME_INPUT))
-        } else {
-            TimePicker(state = state, colors = pickerColors, modifier = Modifier.testTag(TAG_TIME_PICKER))
+        MaterialTheme(typography = pickerTypography) {
+            CompositionLocalProvider(
+                LocalDensity provides Density(density = baseDensity.density, fontScale = PICKER_FONT_SCALE),
+            ) {
+                if (keyboardInput) {
+                    TimeInput(state = state, colors = pickerColors, modifier = Modifier.testTag(TAG_TIME_INPUT))
+                } else {
+                    TimePicker(state = state, colors = pickerColors, modifier = Modifier.testTag(TAG_TIME_PICKER))
+                }
+            }
         }
         QuietButton(
             text = stringResource(R.string.cd_switch_time_input),
@@ -223,3 +240,5 @@ const val TAG_DATE_TIME_PICKER = "date_time_picker"
 const val TAG_TIME_PICKER = "date_time_picker_time"
 const val TAG_TIME_INPUT = "date_time_picker_time_input"
 const val TAG_DATE_PICKER = "date_time_picker_date"
+
+private const val PICKER_FONT_SCALE = 1f

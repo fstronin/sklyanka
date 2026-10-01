@@ -46,17 +46,23 @@ fun ScreenHeader(
     modifier: Modifier = Modifier,
     kind: ScreenHeaderKind = ScreenHeaderKind.Root,
     onBack: (() -> Unit)? = null,
+    leading: @Composable (() -> Unit)? = null,
     trailing: @Composable (() -> Unit)? = null,
 ) {
     val colors = SklyankaTheme.colors
     val profileName = LocalProfileChrome.current.foreignName
     val overline = labels.overline
     val foreign = profileName != null
-    // Вложенная шапка с действием «Назад» разводит действие и заголовок по строкам:
+    // Вложенная шапка с действием разводит действие и заголовок по строкам:
     // так нарисованы макеты вложенных экранов (`DataTransfer.dc.html`, `History.dc.html`,
     // `MedCard.dc.html`). В одной строке заголовок «Перенос данных» не помещался рядом
     // с кнопкой и переносился с висячим отступом (SKL-60, дефект пилота).
-    val nestedWithBack = kind == ScreenHeaderKind.Nested && onBack != null
+    val actionRow: (@Composable () -> Unit)? = when {
+        leading != null -> leading
+        onBack != null -> ({ BackAction(kind, onBack) })
+        else -> null
+    }
+    val nestedWithBack = kind == ScreenHeaderKind.Nested && actionRow != null
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -73,26 +79,9 @@ fun ScreenHeader(
         verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Large),
     ) {
         if (nestedWithBack) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Medium),
-            ) {
-                BackAction(kind, onBack)
-                Box(modifier = Modifier.weight(1f))
-                trailing?.invoke()
-            }
-        }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.Top,
-            horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Medium),
-        ) {
-            if (!nestedWithBack && kind != ScreenHeaderKind.Root && onBack != null) {
-                BackAction(kind, onBack)
-            }
-            HeaderTitleColumn(labels, kind, profileName, overline)
-            if (!nestedWithBack) trailing?.invoke()
+            StackedHeaderRows(actionRow, trailing, labels, kind, profileName, overline)
+        } else {
+            SingleHeaderRow(actionRow, trailing, labels, kind, profileName, overline)
         }
         if (profileName != null) {
             // Баннер стоит внутри подкрашенной шапки — так он нарисован в макете
@@ -105,6 +94,57 @@ fun ScreenHeader(
             // она отделяла бы шапку от того же самого цвета.
             HeaderDivider()
         }
+    }
+}
+
+@Composable
+private fun StackedHeaderRows(
+    actionRow: @Composable (() -> Unit)?,
+    trailing: @Composable (() -> Unit)?,
+    labels: ScreenHeaderLabels,
+    kind: ScreenHeaderKind,
+    profileName: String?,
+    overline: String?,
+) {
+    // Верхний отступ берётся один раз на всю шапку: у блока заголовка повторного
+    // `HeaderTopPadding` нет (ОВ-91).
+    Column(verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Small)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Medium),
+        ) {
+            actionRow?.invoke()
+            Box(modifier = Modifier.weight(1f))
+            trailing?.invoke()
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.Top,
+            horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Medium),
+        ) {
+            HeaderTitleColumn(labels, kind, profileName, overline)
+        }
+    }
+}
+
+@Composable
+private fun SingleHeaderRow(
+    actionRow: @Composable (() -> Unit)?,
+    trailing: @Composable (() -> Unit)?,
+    labels: ScreenHeaderLabels,
+    kind: ScreenHeaderKind,
+    profileName: String?,
+    overline: String?,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.Top,
+        horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Medium),
+    ) {
+        if (kind != ScreenHeaderKind.Root) actionRow?.invoke()
+        HeaderTitleColumn(labels, kind, profileName, overline)
+        trailing?.invoke()
     }
 }
 

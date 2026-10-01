@@ -13,6 +13,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.assertEquals
@@ -52,6 +53,19 @@ class HistoryScreenTest {
         composeRule.onNodeWithText(context.getString(R.string.history_title)).assertIsDisplayed()
         composeRule.onNodeWithTag(TAG_REPORT_ACTION).assertIsDisplayed()
         composeRule.onNodeWithText(context.getString(R.string.history_report_action)).assertIsDisplayed()
+    }
+
+    @Test
+    fun theTitleStandsRightUnderTheActionRow() {
+        show(HistoryStates.september())
+
+        val action = composeRule.onNodeWithTag(TAG_REPORT_ACTION).fetchSemanticsNode()
+        val title = composeRule.onNodeWithText(context.getString(R.string.history_title)).fetchSemanticsNode()
+        val gapDp = with(composeRule.density) { (title.boundsInRoot.top - action.boundsInRoot.bottom).toDp() }
+        assertTrue(
+            "the title must follow the action row with the macket gap, but the gap is $gapDp",
+            gapDp >= 3.5.dp && gapDp <= 12.5.dp,
+        )
     }
 
     /** Возврат экран не исполняет: куда он ведёт, решает тот, кто собрал маршрут. */

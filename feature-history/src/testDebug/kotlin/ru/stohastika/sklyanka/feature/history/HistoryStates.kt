@@ -173,5 +173,5 @@ internal object HistoryStates {
     private const val PROFILE_ID = "11111111-1111-4111-8111-111111111111"
 
     /** Заглушка состава: сам документ проверяется композером, а не этим текстом. */
-    private const val REPORT_SUMMARY = "report-summary"
+    private const val REPORT_SUMMARY = "Профиль: Я\nПериод: 1 — 30 сентября 2026\nПринято: 2 из 3 приёмов\nФормат: PDF"
 }

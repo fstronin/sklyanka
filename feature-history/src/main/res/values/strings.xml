@@ -99,7 +99,7 @@
     <string name="history_report_title">Отчёт врачу</string>
     <string name="history_report_warning">Отчёт содержит медицинские данные в открытом виде.</string>
     <string name="history_report_share">Передать</string>
-    <string name="history_report_save">Сохранить файлом</string>
+    <string name="history_report_save">Сохранить</string>
     <string name="history_report_shared">Отчёт передан</string>
     <string name="history_report_saved">Отчёт сохранён</string>
     <string name="history_report_cancelled">Передача отчёта отменена</string>
@@ -144,6 +144,7 @@
     <string name="report_document_missed_single">%1$s; %2$s</string>
     <string name="report_document_missed_without_mark">%1$d — без отметки</string>
     <string name="report_document_empty">За период нет ни одной записи о приёме</string>
+    <string name="report_document_format">Формат: PDF</string>
     <string name="report_document_disclaimer">Не является медицинским документом</string>
     <string name="report_document_page">Склянка · стр. %1$d</string>
     <!-- Разделители: « · » разделяет части строки лекарства, «, » — перечисление. -->

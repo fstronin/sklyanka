@@ -215,11 +215,11 @@ class ReportPdfComposerTest {
         }
     }
 
-    /** Состав шторки: профиль, период и число принятых приёмов — без текста документа. */
+    /** Состав шторки: профиль, период, число принятых приёмов и формат — без текста документа. */
     @Test
-    fun `the composition names the profile the period and the taken count`() {
+    fun `the composition names the profile the period the taken count and the format`() {
         assertEquals(
-            "Профиль: profile-a\nПериод: 1 — 30 сентября 2026\nПринято: " + percent(2, 5, 40),
+            "Профиль: profile-a\nПериод: 1 — 30 сентября 2026\nПринято: " + percent(2, 5, 40) + "\nФормат: PDF",
             composer.composition(report()),
         )
     }
@@ -231,7 +231,11 @@ class ReportPdfComposerTest {
 
         assertTrue(
             "the phrase must replace the count: $composition",
-            composition.endsWith("За период нет ни одной записи о приёме"),
+            composition.contains("За период нет ни одной записи о приёме"),
+        )
+        assertTrue(
+            "the format must stay in the composition: $composition",
+            composition.endsWith("Формат: PDF"),
         )
         assertFalse("no degenerate share may be promised: $composition", composition.contains("Принято:"))
         assertTrue("the sheet must still name the profile", composition.contains("Профиль: profile-a"))

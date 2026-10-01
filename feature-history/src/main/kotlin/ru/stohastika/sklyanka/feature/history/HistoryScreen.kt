@@ -14,7 +14,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -23,6 +22,7 @@ import androidx.compose.ui.semantics.contentDescription
 import ru.stohastika.sklyanka.ui.component.Banner
 import ru.stohastika.sklyanka.ui.component.BannerKind
 import ru.stohastika.sklyanka.ui.component.ScreenHeader
+import ru.stohastika.sklyanka.ui.component.ScreenHeaderKind
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderLabels
 import ru.stohastika.sklyanka.ui.component.SecondaryButton
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
@@ -72,8 +72,25 @@ fun HistoryScreen(state: HistoryUiState, onIntent: (HistoryIntent) -> Unit, modi
             .testTag(TAG_HISTORY_SCREEN),
     ) {
         Column(modifier = Modifier.fillMaxSize().navigationBarsPadding()) {
-            HistoryTopBar(onIntent)
-            ScreenHeader(labels = ScreenHeaderLabels(title = stringResource(R.string.history_title)))
+            ScreenHeader(
+                labels = ScreenHeaderLabels(title = stringResource(R.string.history_title)),
+                kind = ScreenHeaderKind.Nested,
+                leading = {
+                    GlyphButton(
+                        contentDescription = stringResource(UiR.string.cd_back),
+                        onClick = { onIntent(HistoryIntent.Back) },
+                    ) {
+                        ChevronGlyph(color = colors.text, pointsLeft = true, size = SklyankaSizes.IconPlateGlyph)
+                    }
+                },
+                trailing = {
+                    SecondaryButton(
+                        text = stringResource(R.string.history_report_action),
+                        onClick = { onIntent(HistoryIntent.ReportRequested) },
+                        modifier = Modifier.testTag(TAG_REPORT_ACTION),
+                    )
+                },
+            )
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -93,54 +110,6 @@ fun HistoryScreen(state: HistoryUiState, onIntent: (HistoryIntent) -> Unit, modi
             }
         }
         state.report?.let { report -> DoctorReportSheet(report, onIntent) }
-    }
-}
-
-/**
- * Шапка экрана: стрелка «Назад» слева, контурная кнопка «Отчёт врачу» справа.
- *
- * Собрана по месту, а не через `ScreenHeaderKind.Nested`: у той действие и заголовок
- * стоят в одной строке, а заголовок «История» набран шрифтом заголовка экрана и рядом
- * с кнопкой на 390 точках не помещается — он переносится посреди слова. В макете это
- * две строки, и здесь их тоже две.
- *
- * Фон берётся ролью `profileHeader`, той же, что у общей шапки: в профиле владельца
- * она совпадает с обычным фоном, в чужом — подкрашена, и полоса действий не выпадает
- * из подкрашенной шапки (ПРФ-11).
- *
- * У стрелки нет видимого текста, поэтому подпись для чтения с экрана обязательна и взята
- * из общих строк (НФТ-30); цель нажатия доводится до 44 dp модификатором, а не размером
- * рисунка (НФТ-29).
- */
-@Composable
-private fun HistoryTopBar(onIntent: (HistoryIntent) -> Unit) {
-    val colors = SklyankaTheme.colors
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(colors.profileHeader)
-            .padding(
-                start = SklyankaSpacing.Medium,
-                end = SklyankaSpacing.Section,
-                top = SklyankaSpacing.Block,
-                bottom = SklyankaSpacing.Small,
-            )
-            .testTag(TAG_TOP_BAR),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        GlyphButton(
-            contentDescription = stringResource(UiR.string.cd_back),
-            onClick = { onIntent(HistoryIntent.Back) },
-            modifier = Modifier.testTag(TAG_BACK),
-        ) {
-            ChevronGlyph(color = colors.text, pointsLeft = true, size = SklyankaSizes.IconPlateGlyph)
-        }
-        SecondaryButton(
-            text = stringResource(R.string.history_report_action),
-            onClick = { onIntent(HistoryIntent.ReportRequested) },
-            modifier = Modifier.testTag(TAG_REPORT_ACTION),
-        )
     }
 }
 
@@ -225,8 +194,6 @@ private fun SummaryTile(value: String, caption: String, description: String?, mo
 }
 
 const val TAG_HISTORY_SCREEN = "history_screen"
-const val TAG_TOP_BAR = "history_top_bar"
-const val TAG_BACK = "history_back"
 const val TAG_REPORT_ACTION = "history_report_action"
 const val TAG_SUMMARY = "history_summary"
 const val TAG_TILE_ON_TIME = "history_tile_on_time"

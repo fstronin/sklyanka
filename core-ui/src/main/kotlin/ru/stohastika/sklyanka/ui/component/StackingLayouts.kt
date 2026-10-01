@@ -5,6 +5,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.Measurable
+import androidx.compose.ui.layout.MeasureResult
+import androidx.compose.ui.layout.MeasureScope
+import androidx.compose.ui.layout.MultiContentMeasurePolicy
 import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
@@ -52,16 +55,20 @@ fun StackingRow(
     Layout(
         contents = listOf(leading, text, action),
         modifier = modifier.fillMaxWidth(),
-    ) { (leadingMeasurables, textMeasurables, actionMeasurables), constraints ->
+        measurePolicy = StackingRowMeasurePolicy(gap = gap, minTextWidth = minTextWidth),
+    )
+}
+
+private class StackingRowMeasurePolicy(private val gap: Dp, private val minTextWidth: Dp) : MultiContentMeasurePolicy {
+
+    override fun MeasureScope.measure(measurables: List<List<Measurable>>, constraints: Constraints): MeasureResult {
         val gapPx = gap.roundToPx()
         val loose = Constraints()
-        val lead = leadingMeasurables.firstOrNull()?.measure(loose)
-        val act = actionMeasurables.firstOrNull()?.measure(loose)
+        val lead = measurables[LEADING].firstOrNull()?.measure(loose)
+        val act = measurables[ACTION].firstOrNull()?.measure(loose)
+        val textMeasurable = measurables[TEXT].first()
         val leadWidth = lead.widthOrZero()
         val actionWidth = act.widthOrZero()
-        val leadGap = if (leadWidth == 0) 0 else gapPx
-        val actionGap = if (actionWidth == 0) 0 else gapPx
-        val textMeasurable = textMeasurables.first()
         val floor = maxOf(minTextWidth.roundToPx(), textMeasurable.longestWord())
 
         // Ширина может прийти неограниченной (горизонтальная прокрутка): тогда ряд
@@ -69,29 +76,109 @@ fun StackingRow(
         val available = if (constraints.hasBoundedWidth) {
             constraints.maxWidth
         } else {
-            leadWidth + leadGap + floor + actionGap + actionWidth
+            leadWidth + (if (leadWidth == 0) 0 else gapPx) + floor +
+                (if (actionWidth == 0) 0 else gapPx) + actionWidth
         }
-        val inlineTextWidth = available - leadWidth - leadGap - actionGap - actionWidth
-        val stacked = inlineTextWidth < floor && actionWidth > 0
-        val textWidth = if (stacked) available - leadWidth - leadGap else inlineTextWidth
-        val textPlaceable = textMeasurable.measure(Constraints(maxWidth = textWidth.coerceAtLeast(0)))
-
-        val rowHeight = maxOf(
-            lead.heightOrZero(),
-            textPlaceable.height,
-            if (stacked) 0 else act.heightOrZero(),
+        val boundaries = boundariesOf(
+            available = available,
+            leadWidth = leadWidth,
+            actionWidth = actionWidth,
+            gapPx = gapPx,
+            floor = floor,
         )
-        val height = if (stacked) rowHeight + gapPx + act.heightOrZero() else rowHeight
+        val textPlaceable = textMeasurable.measure(Constraints(maxWidth = boundaries.textWidth.coerceAtLeast(0)))
+        val rowHeight = rowHeightOf(boundaries, lead, act, textPlaceable.height)
+        val height = heightOf(boundaries, rowHeight, textPlaceable.height, act.heightOrZero())
 
-        layout(available, height) {
-            lead?.place(0, centered(rowHeight, lead.height))
-            textPlaceable.place(leadWidth + leadGap, centered(rowHeight, textPlaceable.height))
-            if (stacked) {
-                act?.place(leadWidth + leadGap, rowHeight + gapPx)
-            } else {
-                act?.place(available - act.width, centered(rowHeight, act.height))
-            }
+        return layout(available, height) {
+            placeRow(boundaries, lead, act, textPlaceable, rowHeight, available)
         }
+    }
+
+    private fun Placeable.PlacementScope.placeRow(
+        boundaries: StackingBoundaries,
+        lead: Placeable?,
+        act: Placeable?,
+        text: Placeable,
+        rowHeight: Int,
+        available: Int,
+    ) {
+        if (boundaries.leadingStacked) {
+            lead?.place(0, 0)
+            text.place(0, rowHeight + boundaries.gapPx)
+            act?.place(0, rowHeight + boundaries.gapPx + text.height + boundaries.gapPx)
+            return
+        }
+        lead?.place(0, centered(rowHeight, lead.height))
+        text.place(boundaries.leadWidth + boundaries.leadGap, centered(rowHeight, text.height))
+        if (boundaries.actionStacked) {
+            act?.place(boundaries.leadWidth + boundaries.leadGap, rowHeight + boundaries.gapPx)
+        } else {
+            act?.place(available - act.width, centered(rowHeight, act.height))
+        }
+    }
+
+    private fun boundariesOf(
+        available: Int,
+        leadWidth: Int,
+        actionWidth: Int,
+        gapPx: Int,
+        floor: Int,
+    ): StackingBoundaries {
+        val leadGap = if (leadWidth == 0) 0 else gapPx
+        val actionGap = if (actionWidth == 0) 0 else gapPx
+        val besideLeading = available - leadWidth - leadGap
+        val inline = besideLeading - actionGap - actionWidth
+        // Слово не влезает даже во всю строку рядом со значком: значок уезжает
+        // на свою строку, текст получает всю ширину. Иначе слово рвётся по буквам —
+        // ровно то, что запрещает НФТ-31.
+        val leadingStacked = leadWidth > 0 && besideLeading < floor
+        val actionStacked = !leadingStacked && inline < floor && actionWidth > 0
+        val textWidth = when {
+            leadingStacked -> available
+            actionStacked -> besideLeading
+            else -> inline
+        }
+        return StackingBoundaries(
+            leadWidth = leadWidth,
+            leadGap = leadGap,
+            gapPx = gapPx,
+            actionWidth = actionWidth,
+            leadingStacked = leadingStacked,
+            actionStacked = actionStacked,
+            textWidth = textWidth,
+        )
+    }
+
+    private fun rowHeightOf(boundaries: StackingBoundaries, lead: Placeable?, act: Placeable?, textHeight: Int): Int {
+        if (boundaries.leadingStacked) return lead.heightOrZero()
+        val actionHeight = if (boundaries.actionStacked) 0 else act.heightOrZero()
+        return maxOf(lead.heightOrZero(), textHeight, actionHeight)
+    }
+
+    private fun heightOf(boundaries: StackingBoundaries, rowHeight: Int, textHeight: Int, actionHeight: Int): Int =
+        when {
+            boundaries.leadingStacked ->
+                rowHeight + boundaries.gapPx + textHeight +
+                    if (boundaries.actionWidth > 0) boundaries.gapPx + actionHeight else 0
+            boundaries.actionStacked -> rowHeight + boundaries.gapPx + actionHeight
+            else -> rowHeight
+        }
+
+    private data class StackingBoundaries(
+        val leadWidth: Int,
+        val leadGap: Int,
+        val gapPx: Int,
+        val actionWidth: Int,
+        val leadingStacked: Boolean,
+        val actionStacked: Boolean,
+        val textWidth: Int,
+    )
+
+    private companion object {
+        const val LEADING = 0
+        const val TEXT = 1
+        const val ACTION = 2
     }
 }
 

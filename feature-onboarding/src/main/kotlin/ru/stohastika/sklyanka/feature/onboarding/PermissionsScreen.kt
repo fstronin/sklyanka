@@ -44,6 +44,7 @@ import ru.stohastika.sklyanka.ui.component.OnboardingSteps
 import ru.stohastika.sklyanka.ui.component.PrimaryButton
 import ru.stohastika.sklyanka.ui.component.QuietButton
 import ru.stohastika.sklyanka.ui.component.SklyankaSwitchRow
+import ru.stohastika.sklyanka.ui.component.StackingRow
 import ru.stohastika.sklyanka.ui.locale.InterfaceLocale
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaShapes
@@ -256,24 +257,27 @@ private fun StepCard(
 private fun StepHeader(step: PermissionStep, state: StepState) {
     val colors = SklyankaTheme.colors
     val resolved = state.isResolved
-    Row(horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Medium)) {
-        IconPlate(step, resolved)
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Hair),
-        ) {
-            Text(text = stringResource(titleOf(step)), style = SklyankaType.BodyDefaultStrong, color = colors.text)
-            captionOf(step)?.let { caption ->
-                Text(text = stringResource(caption), style = SklyankaType.Caption, color = colors.textMuted)
+    StackingRow(
+        leading = { IconPlate(step, resolved) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Hair)) {
+                Text(text = stringResource(titleOf(step)), style = SklyankaType.BodyDefaultStrong, color = colors.text)
+                captionOf(step)?.let { caption ->
+                    Text(text = stringResource(caption), style = SklyankaType.Caption, color = colors.textMuted)
+                }
+                stepExtraAction(step)?.let { extra ->
+                    Text(text = stringResource(extra), style = SklyankaType.Caption, color = colors.textMuted)
+                }
             }
-            stepExtraAction(step)?.let { extra ->
-                Text(text = stringResource(extra), style = SklyankaType.Caption, color = colors.textMuted)
-            }
-        }
-        // «Есть» — только про то, что прочитала система; вендорские шаги так не отмечаются.
-        if (state.readBySystemOrResolvedNotification()) GrantedMark()
-        if (state is ManualStepState && resolved) ConfirmedMark()
-    }
+        },
+        action = {
+            // «Есть» — только про то, что прочитала система; вендорские шаги так не отмечаются.
+            if (state.readBySystemOrResolvedNotification()) GrantedMark()
+            if (state is ManualStepState && resolved) ConfirmedMark()
+        },
+        gap = SklyankaSpacing.Medium,
+        minTextWidth = SklyankaSizes.MinTextColumn,
+    )
 }
 
 /** Читается ли состояние шага системой — у «Уведомлений» это ещё и канал с полноэкранным правом. */

@@ -1,9 +1,9 @@
 package ru.stohastika.sklyanka.feature.history
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -16,12 +16,16 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import ru.stohastika.sklyanka.ui.component.Banner
 import ru.stohastika.sklyanka.ui.component.BannerKind
+import ru.stohastika.sklyanka.ui.component.ButtonForm
 import ru.stohastika.sklyanka.ui.component.PrimaryButton
 import ru.stohastika.sklyanka.ui.component.ScreenHeader
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderKind
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderLabels
 import ru.stohastika.sklyanka.ui.component.SecondaryButton
+import ru.stohastika.sklyanka.ui.component.StackingEqualButtons
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
+import ru.stohastika.sklyanka.ui.token.SklyankaShapes
+import ru.stohastika.sklyanka.ui.token.SklyankaSizes
 import ru.stohastika.sklyanka.ui.token.SklyankaSpacing
 import ru.stohastika.sklyanka.ui.token.SklyankaType
 
@@ -65,31 +69,53 @@ internal fun DoctorReportSheet(report: ReportUi, onIntent: (HistoryIntent) -> Un
                 kind = BannerKind.Warning,
                 modifier = Modifier.testTag(TAG_REPORT_WARNING),
             )
-            Text(
-                text = report.summary,
-                style = SklyankaType.BodyDefault,
-                color = colors.text,
-                modifier = Modifier.testTag(TAG_REPORT_CONTENT),
-            )
+            CompositionCard(report.summary)
         }
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = SklyankaSpacing.Section, vertical = SklyankaSpacing.Block),
-            horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Medium),
-        ) {
+        ReportActions(onIntent)
+    }
+}
+
+@Composable
+private fun CompositionCard(summary: String) {
+    val colors = SklyankaTheme.colors
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(colors.surface, SklyankaShapes.Card)
+            .border(SklyankaSizes.BorderThin, colors.lineOnSurface, SklyankaShapes.Card)
+            .padding(SklyankaSpacing.Block)
+            .testTag(TAG_REPORT_CONTENT),
+        verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Small),
+    ) {
+        summary.lines().forEach { line ->
+            Text(text = line, style = SklyankaType.BodyDefault, color = colors.text)
+        }
+    }
+}
+
+@Composable
+private fun ReportActions(onIntent: (HistoryIntent) -> Unit) {
+    StackingEqualButtons(
+        first = {
             PrimaryButton(
                 text = stringResource(R.string.history_report_share),
                 onClick = { onIntent(HistoryIntent.ShareReport) },
-                modifier = Modifier.weight(1f).testTag(TAG_REPORT_SHARE),
+                modifier = Modifier.testTag(TAG_REPORT_SHARE),
             )
+        },
+        second = {
             SecondaryButton(
                 text = stringResource(R.string.history_report_save),
                 onClick = { onIntent(HistoryIntent.SaveRequested) },
-                modifier = Modifier.weight(1f).testTag(TAG_REPORT_SAVE),
+                form = ButtonForm.Screen,
+                modifier = Modifier.testTag(TAG_REPORT_SAVE),
             )
-        }
-    }
+        },
+        gap = SklyankaSpacing.Medium,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = SklyankaSpacing.Section, vertical = SklyankaSpacing.Block),
+    )
 }
 
 const val TAG_REPORT_SHEET = "history_report_sheet"
