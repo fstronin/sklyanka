@@ -9,6 +9,7 @@ import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
 import ru.stohastika.sklyanka.domain.medication.MedicationDraft
 import ru.stohastika.sklyanka.domain.medication.normalized
 import ru.stohastika.sklyanka.domain.model.Medication
+import ru.stohastika.sklyanka.domain.stock.StockThresholds
 import ru.stohastika.sklyanka.feature.meds.form.FormInputs
 import ru.stohastika.sklyanka.feature.meds.form.FormMode
 import ru.stohastika.sklyanka.feature.meds.form.MedFormIntent
@@ -66,6 +67,18 @@ internal object MedsFormStand {
 
     /** Открыта ли форма в этом сценарии и была ли она закрыта «Отменой». */
     val cancelled: Boolean get() = cancelledHere
+
+    /**
+     * Синхронизировать стенд с доменным черновиком (SKL-66).
+     *
+     * Сценарий выбирает форму шагом, объявленным в общем артефакте (`MedicationFormSteps`):
+     * он меняет доменный черновик, но не композицию. Перед проверкой состава превью
+     * стенд приводится к тому же черновику — тогда проверяется собранный экран, а не копия.
+     */
+    fun showDraft(world: AcceptanceWorld, draft: MedicationDraft): MedFormUiState {
+        resetIfNewWorld(world)
+        return MedFormUiState.of(draft.normalized(), FormMode.Create, FormInputs()).also { state = it }
+    }
 
     /** Применить намерение напрямую: так Предыстория задаёт заполненную форму. */
     fun intent(world: AcceptanceWorld, intent: MedFormIntent): MedFormUiState {
@@ -186,11 +199,16 @@ internal object MedsFormStand {
             )
 
             is MedFormIntent.StockReminderToggled -> current.with(
-                draft.copy(stockThresholdDays = if (intent.enabled) DEFAULT_THRESHOLD_DAYS else null),
+                draft.copy(stockThresholdDays = if (intent.enabled) StockThresholds.DEFAULT_DAYS else null),
             )
+
+            is MedFormIntent.StockThresholdChanged -> current.with(draft.copy(stockThresholdDays = intent.days))
 
             is MedFormIntent.StartDateChanged -> current.with(draft.copy(startDate = intent.date))
             is MedFormIntent.EndDateChanged -> current.with(draft.copy(endDate = intent.date))
+
+            is MedFormIntent.CourseEndPresetChosen ->
+                current.with(draft.copy(endDate = intent.preset.endDateFrom(draft.startDate)))
             is MedFormIntent.IndefiniteToggled -> current.with(
                 draft.copy(endDate = if (intent.indefinite) null else draft.startDate),
             )
@@ -230,6 +248,5 @@ internal object MedsFormStand {
 
     private val DEFAULT_TIME: LocalTime = LocalTime.of(8, 0)
     private const val TIME_STEP_HOURS = 4L
-    private const val DEFAULT_THRESHOLD_DAYS = 5
     private const val STRENGTH_UNIT = "mg"
 }

@@ -28,6 +28,7 @@ import ru.stohastika.sklyanka.domain.medication.normalized
 import ru.stohastika.sklyanka.domain.model.MedicationForm
 import ru.stohastika.sklyanka.domain.model.ScheduleMode
 import ru.stohastika.sklyanka.domain.model.TabletShape
+import ru.stohastika.sklyanka.domain.stock.StockThresholds
 import ru.stohastika.sklyanka.feature.meds.form.FormInputs
 import ru.stohastika.sklyanka.feature.meds.form.FormMode
 import ru.stohastika.sklyanka.feature.meds.form.MedFormIntent
@@ -53,7 +54,7 @@ import java.time.LocalTime
  * из мира сценария: приёмка проверяет следствие сохранения, а не повторяет его правила.
  *
  * Доза и расписание выбраны так, чтобы предпосылка была сильной: при включённом
- * напоминании остаток 9 при расходе 4 в сутки дал бы предупреждение (2 дня < 5).
+ * напоминании остаток 9 при расходе 4 в сутки дал бы предупреждение (2 дня < 7).
  * Иначе проверка «не показано» проходила бы и с забытым порогом.
  *
  * Русский текст в аннотациях — ключевые слова Gherkin, а не текст интерфейса.
@@ -78,10 +79,11 @@ class MedsStockCompositionSteps(private val world: AcceptanceWorld) {
             scheduleMode = ScheduleMode.SCHEDULED,
             times = TIMES,
             stockLeft = BigDecimal(amount),
-            stockThresholdDays = DEFAULT_THRESHOLD_DAYS,
+            stockThresholdDays = StockThresholds.DEFAULT_DAYS,
         )
         assertTrue(
-            "the premise must be a fired threshold: with the reminder on, the stock must not last $DEFAULT_THRESHOLD_DAYS days",
+            "the premise must be a fired threshold: with the reminder on, the stock must not last " +
+                "${StockThresholds.DEFAULT_DAYS} days",
             MedicationListRules.stockThresholdReached(draft.toMedication("premise-check")),
         )
         state = MedFormUiState.of(draft.normalized(), FormMode.Create, FormInputs(stockLeft = amount.toString()))
@@ -148,7 +150,9 @@ class MedsStockCompositionSteps(private val world: AcceptanceWorld) {
 
     private fun apply(current: MedFormUiState, intent: MedFormIntent): MedFormUiState = when (intent) {
         is MedFormIntent.StockReminderToggled -> MedFormUiState.of(
-            current.draft.copy(stockThresholdDays = if (intent.enabled) DEFAULT_THRESHOLD_DAYS else null).normalized(),
+            current.draft
+                .copy(stockThresholdDays = if (intent.enabled) StockThresholds.DEFAULT_DAYS else null)
+                .normalized(),
             current.mode,
             current.inputs,
         )
@@ -172,6 +176,5 @@ class MedsStockCompositionSteps(private val world: AcceptanceWorld) {
     private companion object {
         val DOSE_PER_INTAKE: BigDecimal = BigDecimal("2")
         val TIMES: List<LocalTime> = listOf(LocalTime.of(8, 0), LocalTime.of(20, 0))
-        const val DEFAULT_THRESHOLD_DAYS = 5
     }
 }

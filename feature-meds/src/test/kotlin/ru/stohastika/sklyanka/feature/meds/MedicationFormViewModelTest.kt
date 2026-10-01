@@ -18,6 +18,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import ru.stohastika.sklyanka.domain.medication.CourseEndPreset
 import ru.stohastika.sklyanka.domain.medication.DoseUnit
 import ru.stohastika.sklyanka.domain.medication.DraftField
 import ru.stohastika.sklyanka.domain.medication.DraftViolation
@@ -32,6 +33,7 @@ import ru.stohastika.sklyanka.domain.schedule.IntakeGenerationPolicy
 import ru.stohastika.sklyanka.domain.schedule.MedicationPlanner
 import ru.stohastika.sklyanka.domain.schedule.PlanIntakesUseCase
 import ru.stohastika.sklyanka.domain.schedule.PlanScope
+import ru.stohastika.sklyanka.domain.stock.StockThresholds
 import ru.stohastika.sklyanka.feature.meds.form.FormMode
 import ru.stohastika.sklyanka.feature.meds.form.MedFormIntent
 import ru.stohastika.sklyanka.feature.meds.form.MedicationFormViewModel
@@ -257,12 +259,40 @@ class MedicationFormViewModelTest {
     fun `switching the purchase reminder off clears the threshold`() = runTest(dispatcher) {
         open()
         model.onIntent(MedFormIntent.StockReminderToggled(true))
-        assertEquals(5, model.state.value!!.draft.stockThresholdDays)
+        assertEquals(StockThresholds.DEFAULT_DAYS, model.state.value!!.draft.stockThresholdDays)
 
         model.onIntent(MedFormIntent.StockReminderToggled(false))
 
         assertNull(model.state.value!!.draft.stockThresholdDays)
         assertFalse(model.state.value!!.applicability.stockThresholdEnabled)
+    }
+
+    @Test
+    fun `choosing a purchase threshold writes the chosen number`() = runTest(dispatcher) {
+        open()
+        model.onIntent(MedFormIntent.StockReminderToggled(true))
+
+        model.onIntent(MedFormIntent.StockThresholdChanged(14))
+
+        assertEquals(14, model.state.value!!.draft.stockThresholdDays)
+    }
+
+    @Test
+    fun `a course end preset sets the end date from the start date`() = runTest(dispatcher) {
+        open()
+        model.onIntent(MedFormIntent.CourseEndPresetChosen(CourseEndPreset.MONTH_1))
+
+        assertEquals(LocalDate.of(2026, 10, 25), model.state.value!!.draft.endDate)
+    }
+
+    @Test
+    fun `changing the start date does not move the chosen end date`() = runTest(dispatcher) {
+        open()
+        model.onIntent(MedFormIntent.CourseEndPresetChosen(CourseEndPreset.MONTH_1))
+
+        model.onIntent(MedFormIntent.StartDateChanged(LocalDate.of(2026, 9, 30)))
+
+        assertEquals(LocalDate.of(2026, 10, 25), model.state.value!!.draft.endDate)
     }
 
     // --- Числовые поля ------------------------------------------------------------------------

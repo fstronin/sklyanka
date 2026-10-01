@@ -1,5 +1,6 @@
 package ru.stohastika.sklyanka.feature.meds.form
 
+import ru.stohastika.sklyanka.domain.medication.CourseEndPreset
 import ru.stohastika.sklyanka.domain.model.FoodRelation
 import ru.stohastika.sklyanka.domain.model.MedicationForm
 import ru.stohastika.sklyanka.domain.model.ScheduleMode
@@ -55,7 +56,19 @@ sealed interface MedFormIntent {
     /** «Напомнить о покупке»: включает и выключает порог остатка. */
     data class StockReminderToggled(val enabled: Boolean) : MedFormIntent
 
+    /** Выбор порога напоминания о покупке (SKL-74, ПМ-13). */
+    data class StockThresholdChanged(val days: Int) : MedFormIntent
+
     data class StartDateChanged(val date: LocalDate) : MedFormIntent
+
+    /**
+     * Выбор пресета срока окончания курса (SKL-75, ПМ-12).
+     *
+     * Пресет — разовое действие, а не связь с датой начала: он задаёт [MedicationDraft.endDate]
+     * от текущей [MedicationDraft.startDate] один раз, и последующая смена начала уже
+     * выбранную дату окончания не двигает.
+     */
+    data class CourseEndPresetChosen(val preset: CourseEndPreset) : MedFormIntent
 
     data class EndDateChanged(val date: LocalDate) : MedFormIntent
 

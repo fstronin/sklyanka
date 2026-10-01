@@ -46,6 +46,15 @@ class StockWarningTest {
     }
 
     @Test
+    fun `the default threshold of seven days warns strictly below it`() {
+        // Таблица примеров «Граница порога» SKL-74: запас 6 дней при пороге 7
+        // предупреждает, ровно 7 и 8 — нет (ПР-13).
+        assertNotNull(StockWarning.of(twiceADay(stock = "12", threshold = StockThresholds.DEFAULT_DAYS)))
+        assertNull(StockWarning.of(twiceADay(stock = "14", threshold = StockThresholds.DEFAULT_DAYS)))
+        assertNull(StockWarning.of(twiceADay(stock = "16", threshold = StockThresholds.DEFAULT_DAYS)))
+    }
+
+    @Test
     fun `an empty package always warns`() {
         val warning = StockWarning.of(twiceADay(stock = "0", threshold = FIVE_DAYS))
 

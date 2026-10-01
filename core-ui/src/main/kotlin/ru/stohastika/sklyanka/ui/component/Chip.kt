@@ -13,6 +13,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.disabled
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaColors
 import ru.stohastika.sklyanka.ui.token.SklyankaShapes
@@ -46,12 +50,20 @@ fun SklyankaChip(
             .then(
                 if (clickable) {
                     Modifier
-                        .clickable(onClick = { onClick?.invoke() })
+                        .clickable(role = Role.RadioButton, onClick = { onClick?.invoke() })
                         .defaultMinSize(minHeight = SklyankaSizes.ChipHeight)
                 } else {
                     Modifier
                 },
             )
+            // Выбор чипа показан не только цветом и начертанием: без семантики
+            // `selected` программа чтения не отличает выбранный порог или пресет
+            // от остальных, а без `disabled` — не отличает недоступный чип от
+            // ненажимаемой метки (НФТ-30, SKL-74/75).
+            .semantics {
+                if (state != ChipState.Info) selected = state == ChipState.Selected
+                if (state == ChipState.Disabled) disabled()
+            }
             .background(background, shape)
             .then(
                 if (border == null) Modifier else Modifier.border(borderWidth, border, shape),

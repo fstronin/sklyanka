@@ -18,6 +18,7 @@ import ru.stohastika.sklyanka.domain.medication.applicability
 import ru.stohastika.sklyanka.domain.medication.normalized
 import ru.stohastika.sklyanka.domain.repository.ActiveProfileRepository
 import ru.stohastika.sklyanka.domain.repository.MedicationRepository
+import ru.stohastika.sklyanka.domain.stock.StockThresholds
 import ru.stohastika.sklyanka.domain.time.TimeSource
 import java.math.BigDecimal
 import java.time.LocalTime
@@ -140,11 +141,19 @@ class MedicationFormViewModel @Inject constructor(
                 )
 
             is MedFormIntent.StockReminderToggled -> state.with(
-                draft.copy(stockThresholdDays = if (intent.enabled) DEFAULT_THRESHOLD_DAYS else null),
+                // Включение ставит доменное умолчание (ПМ-13: 7 дней), выключение убирает
+                // порог: пустое значение и есть выключенное напоминание.
+                draft.copy(stockThresholdDays = if (intent.enabled) StockThresholds.DEFAULT_DAYS else null),
             )
+
+            is MedFormIntent.StockThresholdChanged -> state.with(draft.copy(stockThresholdDays = intent.days))
 
             is MedFormIntent.StartDateChanged -> state.with(draft.copy(startDate = intent.date))
             is MedFormIntent.EndDateChanged -> state.with(draft.copy(endDate = intent.date))
+
+            is MedFormIntent.CourseEndPresetChosen ->
+                state.with(draft.copy(endDate = intent.preset.endDateFrom(draft.startDate)))
+
             is MedFormIntent.IndefiniteToggled -> state.with(
                 // Пустая дата окончания и есть бессрочный приём (ПР-6). Выключение
                 // переключателя не оставляет строку «Окончание» пустой, иначе она
@@ -223,9 +232,6 @@ class MedicationFormViewModel @Inject constructor(
     private companion object {
         val DEFAULT_TIME: LocalTime = LocalTime.of(8, 0)
         const val TIME_STEP_HOURS = 4L
-
-        /** Подпись порога в макете: «Когда останется на 5 дней». */
-        const val DEFAULT_THRESHOLD_DAYS = 5
 
         /** Единица дозировки из макета формы; свободный ввод — открытый вопрос ОВ-16. */
         const val STRENGTH_UNIT = "mg"
