@@ -13,5 +13,4 @@ import ru.stohastika.sklyanka.domain.reminder.ReminderChannel
  * Отдельная функция, а не выражение по месту вызова, по образцу [ru.stohastika.sklyanka.reminder.ReminderPlanReasons]:
  * правило проверяется тестом на JVM, хотя само уведомление собирается только на устройстве.
  */
-internal fun onlyAlertOnce(channel: ReminderChannel): Boolean =
-    channel != ReminderChannel.PERSISTENT
+internal fun onlyAlertOnce(channel: ReminderChannel): Boolean = channel != ReminderChannel.PERSISTENT

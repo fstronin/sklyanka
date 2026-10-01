@@ -56,6 +56,31 @@ class ReminderDiagnosticsTest {
         assertEquals(900L, shown.deviationSeconds)
     }
 
+    /**
+     * Снятие — факт журнала, а не показ: «последнее напоминание» остаётся на раннем
+     * предъявлении (НАП-41, ОВ-99, НАП-37).
+     */
+    @Test
+    fun `a dropped overdue repeat does not replace the last shown reminder`() = runTest {
+        world.pending()
+        world.moveTo(ReminderTestWorld.AFTERNOON)
+        world.fired(Fixtures.INTAKE_ID)
+        world.moveTo(ReminderTestWorld.AFTERNOON.plusMinutes(1))
+        world.snooze(Fixtures.INTAKE_ID, minutes = 15)
+        world.simulateReboot()
+        world.moveTo(LocalDateTime.of(2026, 9, 25, 15, 0))
+
+        world.reschedule(RescheduleReason.BOOT)
+        val snapshot = world.diagnostics()
+
+        assertEquals(ReminderEvent.SHOWN, snapshot.lastShown?.event)
+        assertEquals(world.momentOf(ReminderTestWorld.AFTERNOON), snapshot.lastShown?.firedAt)
+        assertTrue(
+            snapshot.journal.any { it.event == ReminderEvent.DEFERRED && it.reason == DeferredReason.DROPPED },
+            "the drop must be visible in the journal",
+        )
+    }
+
     @Test
     fun `the time and the reason of the last rebuild are shown`() = runTest {
         world.pending()
@@ -83,6 +108,55 @@ class ReminderDiagnosticsTest {
         // Автозапуск EMUI программно не читается: честный ответ — «проверьте вручную» (НАП-20).
         assertEquals(PermissionState.UNKNOWN, snapshot.permissions[ReminderPermission.AUTOSTART])
         assertEquals(ReminderWarning.EXACT_ALARMS_OFF, snapshot.reliability.warning)
+    }
+
+    @Test
+    fun `the names of the last and the next medication are resolved for the first level`() = runTest {
+        world.pending()
+        world.pending(at = LocalDateTime.of(2026, 9, 26, 14, 0), id = "tomorrow")
+        world.moveTo(LocalDateTime.of(2026, 9, 25, 14, 0))
+        world.fired(Fixtures.INTAKE_ID)
+        world.take()
+        world.reschedule(RescheduleReason.APP_START)
+
+        world.moveTo(LocalDateTime.of(2026, 9, 25, 15, 0))
+        val snapshot = world.diagnostics()
+
+        val name = world.medication().name
+        assertEquals(name, snapshot.lastMedicationName)
+        assertEquals(name, snapshot.nextMedicationName)
+        assertTrue(
+            snapshot.journal.none { it.medicationId != null && it.toString().contains(name) },
+            "the journal carries identifiers, not names (NFR-19)",
+        )
+    }
+
+    @Test
+    fun `a removed medication leaves the name empty without failing the snapshot`() = runTest {
+        world.pending()
+        world.pending(at = LocalDateTime.of(2026, 9, 26, 14, 0), id = "tomorrow")
+        world.medications.stored.clear()
+
+        val snapshot = world.diagnostics()
+
+        assertEquals(null, snapshot.lastMedicationName)
+        assertEquals(null, snapshot.nextMedicationName)
+    }
+
+    @Test
+    fun `the week summary counts firings and missed intakes`() = runTest {
+        world.journal.record(firing(days = 1L, deviation = 5L))
+        world.journal.record(
+            ReminderLogEntry(
+                occurredAt = world.clock.now().minusSeconds(SECONDS_IN_DAY),
+                event = ReminderEvent.MISSED_SWEEP,
+            ),
+        )
+
+        val week = world.diagnostics().week
+
+        assertEquals(1, week.fired)
+        assertEquals(1, week.missed)
     }
 
     @Test

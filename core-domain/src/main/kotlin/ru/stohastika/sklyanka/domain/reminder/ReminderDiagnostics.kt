@@ -6,6 +6,7 @@ import ru.stohastika.sklyanka.domain.reminder.port.PermissionStateReader
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderJournal
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPermission
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPlanSource
+import ru.stohastika.sklyanka.domain.repository.MedicationRepository
 import ru.stohastika.sklyanka.domain.time.TimeSource
 import java.time.Duration
 import java.time.Instant
@@ -25,8 +26,17 @@ data class ReminderDiagnostics(
      * повтора экран обязан показать его, а не остаться на более раннем первичном показе.
      */
     val lastShown: ReminderLogEntry?,
+    /**
+     * Название лекарства последнего предъявления; `null` — имени не нашлось (SKL-79).
+     *
+     * Разрешается на экране по `medicationId` из журнала и **в журнал не пишется**:
+     * выгрузка журнала файлом не должна нести медицинские данные (НФТ-19).
+     */
+    val lastMedicationName: String?,
     val nextAt: Instant?,
     val nextIntakeId: String?,
+    /** Название лекарства ближайшего приёма; `null` — следующего нет или имя не нашлось. */
+    val nextMedicationName: String?,
     /** Сколько будильников реально стоит в системе (а не сколько домен собирался поставить). */
     val totalScheduled: Int,
     val lastReschedule: ReminderLogEntry?,
@@ -35,6 +45,8 @@ data class ReminderDiagnostics(
     val outage: ReminderOutage?,
     /** Сводка «сколько сработало вовремя за последние 7 дней» (НФТ-51). */
     val onTime: ReminderOnTimeSummary,
+    /** Сводка «сработало и пропущено за 7 дней» фразой (ОВ-49, SKL-79). */
+    val week: ReminderWeekSummary,
     /** Журнал срабатываний — не менее 50 записей (НАП-37). */
     val journal: List<ReminderLogEntry>,
 )
@@ -52,6 +64,14 @@ class BuildReminderDiagnosticsUseCase(
     private val permissions: PermissionStateReader,
     private val plan: ReminderPlanSource,
     private val reliability: ReadReminderReliabilityUseCase,
+    /**
+     * Названия лекарств для первого уровня (ОВ-49).
+     *
+     * Нужны, чтобы назвать последнее и следующее напоминание простыми словами. Имя
+     * разрешается на сборке снимка и **в журнал не попадает**: журнал хранит только
+     * идентификаторы (НФТ-19).
+     */
+    private val medications: MedicationRepository,
     private val time: TimeSource,
 ) {
 
@@ -60,6 +80,7 @@ class BuildReminderDiagnosticsUseCase(
         val zone = time.zone()
         val scheduled = alarms.scheduled()
         val next = scheduled.entries.filter { it.value.isAfter(now) }.minByOrNull { it.value }
+        val last = lastDelivery()
 
         // Ожидавшиеся срабатывания: приёмы, чей момент прошёл, а отметки так и нет.
         // Нижняя граница — сутки назад: перерыв длиной больше суток человек и так увидит
@@ -75,10 +96,14 @@ class BuildReminderDiagnosticsUseCase(
             )
             .map { ExpectedFiring(it.intakeId, it.scheduledAt.atZone(zone).toInstant()) }
 
+        // Один срез журнала на обе недельные сводки: второй проход по журналу не нужен.
+        val week = journal.since(now.minus(ReminderOnTimeRule.WINDOW))
         return ReminderDiagnostics(
-            lastShown = lastDelivery(),
+            lastShown = last,
+            lastMedicationName = last?.medicationId?.let { medications.get(it)?.name },
             nextAt = next?.value,
             nextIntakeId = next?.key,
+            nextMedicationName = nextMedicationName(next?.key),
             totalScheduled = scheduled.size,
             lastReschedule = journal.last(ReminderEvent.RESCHEDULED),
             permissions = permissions.all(),
@@ -90,10 +115,17 @@ class BuildReminderDiagnosticsUseCase(
             ),
             // Сводка считается по промежутку времени, а не по последним записям: «вовремя
             // за 7 дней» от длины показанного журнала зависеть не имеет права (НФТ-51).
-            onTime = ReminderOnTimeRule.summarize(journal.since(now.minus(ReminderOnTimeRule.WINDOW))),
+            onTime = ReminderOnTimeRule.summarize(week),
+            week = ReminderWeekSummaryRule.summarize(week),
             journal = journal.recent(limit),
         )
     }
+
+    /** Имя ближайшего приёма: лекарство по `nextIntakeId`, имя разрешается на экране (НФТ-19). */
+    private suspend fun nextMedicationName(nextIntakeId: String?): String? = nextIntakeId
+        ?.let { plan.intake(it) }
+        ?.medicationId
+        ?.let { medications.get(it)?.name }
 
     /**
      * Последнее предъявление — первый показ или повтор (НАП-37, SKL-63).
