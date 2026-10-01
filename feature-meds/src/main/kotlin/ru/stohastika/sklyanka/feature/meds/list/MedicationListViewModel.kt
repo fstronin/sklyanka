@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import ru.stohastika.sklyanka.domain.medication.MedicationListOrder
 import ru.stohastika.sklyanka.domain.medication.MedicationListRules
 import ru.stohastika.sklyanka.domain.model.Intake
 import ru.stohastika.sklyanka.domain.model.IntakeStatus
@@ -68,7 +69,8 @@ class MedicationListViewModel @Inject constructor(
         MedsUiState(
             activeCount = MedicationListRules.activeCount(active),
             archiveCount = archived.size,
-            items = active.map { medication -> card(medication, history) },
+            // «Что ближе — то выше» (ПМ-15 п. 1): порядок считает домен, а не разметка.
+            items = MedicationListOrder.sorted(active, time.nowLocal()).map { medication -> card(medication, history) },
             loading = false,
         )
     }
@@ -95,6 +97,7 @@ class MedicationListViewModel @Inject constructor(
         medicationId = medication.id,
         title = medication.name,
         form = medication.form,
+        shape = medication.shape,
         strength = medication.strength?.stripTrailingZeros()?.toPlainString(),
         strengthUnit = medication.strengthUnit,
         timesPerDay = medication.times.size,

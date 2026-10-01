@@ -18,6 +18,7 @@ import org.junit.Test
 import ru.stohastika.sklyanka.domain.medication.TrailingLine
 import ru.stohastika.sklyanka.domain.model.MedicationForm
 import ru.stohastika.sklyanka.domain.model.ScheduleMode
+import ru.stohastika.sklyanka.domain.model.TabletShape
 import ru.stohastika.sklyanka.feature.meds.list.MedicationListViewModel
 import ru.stohastika.sklyanka.feature.meds.list.MedsIntent
 import ru.stohastika.sklyanka.feature.meds.list.MedsTab
@@ -76,6 +77,26 @@ class MedicationListViewModelTest {
     }
 
     @Test
+    fun `the list is ordered by the nearest next intake`() = runTest(dispatcher) {
+        // Сейчас 25 сентября, 10:00: вечернее время ещё впереди, утреннее переходит на завтра.
+        medications.put(
+            MedsTestData.medication(id = "evening", times = listOf(MedsTestData.EVENING)),
+            MedsTestData.medication(id = "morning", times = listOf(MedsTestData.MORNING)),
+            MedsTestData.medication(id = "prn", mode = ScheduleMode.PRN, maxPerDay = 3),
+        )
+
+        val model = viewModel()
+        advanceUntilIdle()
+
+        assertEquals(
+            listOf("evening", "morning", "prn"),
+            model.state.value.items.map { it.medicationId },
+        )
+        // Порядок применяется после счётчика: «Активные» считает только курсы по расписанию.
+        assertEquals(2, model.state.value.activeCount)
+    }
+
+    @Test
     fun `an archived course leaves the active list and moves the counters`() = runTest(dispatcher) {
         medications.put(MedsTestData.medication(id = "a"), MedsTestData.medication(id = "b"))
         val model = viewModel()
@@ -106,6 +127,19 @@ class MedicationListViewModelTest {
         advanceUntilIdle()
 
         assertEquals(listOf("hers"), model.state.value.items.map { it.medicationId })
+    }
+
+    @Test
+    fun `the tablet shape reaches the card state`() = runTest(dispatcher) {
+        medications.put(MedsTestData.medication(id = "scored", shape = TabletShape.ROUND_SCORED))
+        medications.put(MedsTestData.medication(id = "capsule", form = MedicationForm.CAPSULE))
+
+        val model = viewModel()
+        advanceUntilIdle()
+
+        val cards = model.state.value.items.associateBy { it.medicationId }
+        assertEquals(TabletShape.ROUND_SCORED, cards.getValue("scored").shape)
+        assertNull(cards.getValue("capsule").shape)
     }
 
     // --- Строка расписания ------------------------------------------------------------------

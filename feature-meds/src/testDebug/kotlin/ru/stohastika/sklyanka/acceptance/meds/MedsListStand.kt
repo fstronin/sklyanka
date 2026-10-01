@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import ru.stohastika.sklyanka.acceptance.steps.medicationNamed
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
+import ru.stohastika.sklyanka.domain.medication.MedicationListOrder
 import ru.stohastika.sklyanka.domain.medication.MedicationListRules
 import ru.stohastika.sklyanka.domain.model.Intake
 import ru.stohastika.sklyanka.domain.model.IntakeStatus
@@ -59,7 +60,8 @@ internal object MedsListStand {
         return MedsUiState(
             activeCount = MedicationListRules.activeCount(active),
             archiveCount = archived.size,
-            items = active.map { card(it, history, world.clock.today()) },
+            items = MedicationListOrder.sorted(active, world.clock.nowLocal())
+                .map { card(it, history, world.clock.today()) },
             loading = false,
         )
     }
@@ -100,6 +102,7 @@ internal object MedsListStand {
             medicationId = medication.id,
             title = medication.name,
             form = medication.form,
+            shape = medication.shape,
             strength = medication.strength?.stripTrailingZeros()?.toPlainString(),
             strengthUnit = medication.strengthUnit,
             timesPerDay = medication.times.size,

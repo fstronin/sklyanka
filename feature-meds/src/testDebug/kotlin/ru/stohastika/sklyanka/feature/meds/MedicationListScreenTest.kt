@@ -17,6 +17,7 @@ import org.junit.runner.RunWith
 import ru.stohastika.sklyanka.domain.medication.DoseUnit
 import ru.stohastika.sklyanka.domain.medication.TrailingLine
 import ru.stohastika.sklyanka.domain.model.MedicationForm
+import ru.stohastika.sklyanka.domain.model.TabletShape
 import ru.stohastika.sklyanka.feature.meds.list.AsNeededCardUi
 import ru.stohastika.sklyanka.feature.meds.list.MedicationCardUi
 import ru.stohastika.sklyanka.feature.meds.list.MedicationListScreen
@@ -183,6 +184,7 @@ class MedicationListScreenTest {
         medicationId = id,
         title = "med-$id",
         form = MedicationForm.TABLET,
+        shape = TabletShape.ROUND_SCORED,
         strength = "50",
         strengthUnit = "mg",
         timesPerDay = times.size,
@@ -195,6 +197,7 @@ class MedicationListScreenTest {
         medicationId = "as-needed",
         title = "med-as-needed",
         form = MedicationForm.CAPSULE,
+        shape = null,
         strength = "200",
         strengthUnit = "mg",
         timesPerDay = 0,

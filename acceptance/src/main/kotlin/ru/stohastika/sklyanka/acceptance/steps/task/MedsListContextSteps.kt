@@ -47,7 +47,10 @@ class MedsListContextSteps(private val world: AcceptanceWorld) {
     fun theProfileHasTheseActiveMedications(table: DataTable) {
         table.entries().forEach { row ->
             val name = requireNotNull(row[MEDICATION_COLUMN]) { "the table must have a «лекарство» column" }
-            val times = RussianDates.times(requireNotNull(row[SCHEDULE_COLUMN]) { "no «расписание» in $row" })
+            // SKL-68 называет столбец «времена» и добавляет расчётный «следующий приём»;
+            // для Предыстории важно расписание — под ним и понимаются времена.
+            val schedule = row[SCHEDULE_COLUMN] ?: row[TIMES_COLUMN]
+            val times = RussianDates.times(requireNotNull(schedule) { "no «расписание»/«времена» in $row" })
             world.medications.add(
                 profile = world.profiles,
                 profileName = world.profiles.active,
@@ -270,6 +273,9 @@ class MedsListContextSteps(private val world: AcceptanceWorld) {
         const val MEDICATION_COLUMN = "лекарство"
         const val DESCRIPTION_COLUMN = "описание"
         const val SCHEDULE_COLUMN = "расписание"
+
+        /** Столбец времён приёма у задач, которые не называют его «расписанием» (SKL-68). */
+        const val TIMES_COLUMN = "времена"
 
         const val FIVE = 5
         const val TWELVE = 12

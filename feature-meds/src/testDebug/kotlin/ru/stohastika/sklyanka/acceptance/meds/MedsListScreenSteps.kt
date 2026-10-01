@@ -88,12 +88,20 @@ class MedsListScreenSteps(private val world: AcceptanceWorld) {
         }
     }
 
-    @Тогда("^у карточки «([^»]+)» чипы времени «(\\d{2}:\\d{2})» и «(\\d{2}:\\d{2})»$")
-    fun theCardCarriesThoseTimeChips(medication: String, first: String, second: String) {
+    @Тогда("^в строке расписания карточки «([^»]+)» времена «(\\d{2}:\\d{2})» и «(\\d{2}:\\d{2})»$")
+    fun theCardCarriesThoseTimesInTheScheduleLine(medication: String, first: String, second: String) {
+        // SKL-67: строка расписания — одна фраза, а не набор чипов. Обе времена
+        // обязаны быть в ней.
         MedsListStand.ask(world) { test ->
-            val texts = MedsProbe.textsOf(test.onNode(card(medication), useUnmergedTree = true).fetchSemanticsNode())
-            assertTrue("the card of «$medication» must show the chip $first: $texts", first in texts)
-            assertTrue("the card of «$medication» must show the chip $second: $texts", second in texts)
+            val node = test
+                .onNode(
+                    hasTestTag(TAG_TRAILING_LINE) and hasAnyAncestor(card(medication)),
+                    useUnmergedTree = true,
+                )
+                .fetchSemanticsNode()
+            val shown = MedsProbe.textsOf(node).joinToString(" ")
+            assertTrue("the schedule line of «$medication» must name $first: $shown", first in shown)
+            assertTrue("the schedule line of «$medication» must name $second: $shown", second in shown)
         }
     }
 
@@ -204,9 +212,12 @@ class MedsListScreenSteps(private val world: AcceptanceWorld) {
                     .onNode(hasTestTag(TAG_TRAILING_LINE) and hasAnyAncestor(card(medication)), useUnmergedTree = true)
                     .fetchSemanticsNode()
                 val shown = MedsProbe.textsOf(node).single()
+                // SKL-67: строка расписания — одна фраза, и уточнение стоит её частью.
+                // Сценарий называет фразу-уточнение, а не всю строку.
                 assertTrue(
                     "the card of «$medication» must show «$text», shown «$shown»",
-                    sameText(shown, text),
+                    sameText(shown, text) ||
+                        shown.replace(NON_BREAKING_SPACE, ' ').contains(text.replace(NON_BREAKING_SPACE, ' ')),
                 )
             }
         }
