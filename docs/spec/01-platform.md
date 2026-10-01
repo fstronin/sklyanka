@@ -115,7 +115,7 @@
 | Что это | Элемент системной модели разрешений | Настройка энергосбережения производителя |
 | Объявляется | В манифесте | Нигде |
 | Запрашивается | Системным диалогом из кода | Никак. Программного запроса не существует |
-| Состояние читается | Да, `checkSelfPermission` / `canScheduleExactAlarms` | **Нет.** Приложение не может узнать, включён ли автозапуск |
+| Состояние читается | Да, `checkSelfPermission` / `canScheduleExactAlarms` | **Нет.** Приложение не может узнать, включён ли автозапуск. Единственный документированный API статуса автозапуска — `autoStartupManager` — существует только в HarmonyOS и приложению Android/EMUI недоступен (ОВ-114, ПЛ-20) |
 | Что может приложение | Показать диалог и обработать ответ | Только открыть экран настроек интентом производителя и объяснить словами, что там нажать |
 | Поведение при отказе | Известно приложению сразу | Узнаётся постфактум — по тому, что напоминание не пришло |
 
@@ -125,9 +125,60 @@
 |---|---|
 | ПЛ-18 | Экран онбординга «Разрешения» ведёт человека по трём шагам подряд: уведомления, точные будильники, автозапуск и снятие ограничений энергосбережения (`design/SPEC-original.md` §5). Шаг автозапуска оформляется как инструкция с кнопкой «Открыть настройки», а не как запрос разрешения |
 | ПЛ-19 | **Удалено** (решение ведущей сессии, 29.09.2026): пробное напоминание убрано; автозапуск подтверждается человеком вручную, без программной проверки |
+| ПЛ-20 | **Состояние вендорских настроек EMUI программно не читается** (исследование ОВ-114, 02.10.2026). Документированного API «Запуска приложений» (автозапуск, косвенный запуск, работа в фоне), «Энергосбережения» и «Закрепления в недавних» у APK-приложения нет; недокументированные зонды в продукт не берутся. Единственный публичный сигнал — `isIgnoringBatteryOptimizations` — остаётся косвенным признаком шага «Энергосбережение» и не закрывает его (НАП-20). Вендорские шаги подтверждаются человеком |
 
 Интент экрана автозапуска — нестандартный и различается между прошивками. На устройстве, где
 интент не открывается, требуется запасной путь: текстовая инструкция с названиями пунктов меню.
+
+### Что показало исследование ОВ-114 (02.10.2026)
+
+Публичного документированного API, читающего состояние вендорских шагов EMUI («Запуск
+приложений», «Энергосбережение», «Закрепление в недавних»), у APK-приложения нет. Проверено
+по документации Huawei, AOSP и практике приложений:
+
+- **Единственный документированный API статуса автозапуска — `autoStartupManager.getAutoStartupStatusForSelf()`**
+  ([Huawei Developer](https://developer.huawei.com/consumer/en/doc/harmonyos-references/js-apis-app-ability-autostartupmanager)):
+  HarmonyOS API 21+, stage model, ArkTS. Приложению Android на EMUI 15 недоступен — это API
+  другой платформы, а не EMUI.
+- **`com.huawei.systemmanager` и PowerGenie не документированы и не дают контракта.** Официальный
+  ответ поддержки Huawei: добавить приложение в whitelist без действий человека в настройках нельзя
+  ([Huawei Community, 28.02.2020](https://consumer.huawei.com/en/community/details/topicId-68323/));
+  сводка сообщества: «There are no APIs and no documentation for those extensions»
+  ([dontkillmyapp.com/huawei](https://dontkillmyapp.com/huawei)).
+- **Приложения «с показом статуса» показывают не статус.** Библиотеки (AutoStarter и подобные)
+  проверяют лишь наличие экрана настроек через `queryIntentActivities` и открывают его; состояние
+  не читается. Stack Overflow фиксирует: «There isn't a way to know if apps are protected»
+  ([31638986](https://stackoverflow.com/questions/31638986/)), а вопрос о проверке автозапуска
+  в EMUI остаётся без ответа ([71230489](https://stackoverflow.com/questions/71230489/)).
+- **Стандартные API — частичные сигналы, а не вендорское состояние.**
+  `PowerManager.isIgnoringBatteryOptimizations` читает allowlist Doze, а не всю настройку
+  «Энергосбережение»; остаётся косвенным признаком (НАП-20). `ActivityManager.isBackgroundRestricted`
+  отражает общесистемный флаг «Restricted», а не EMUI «Управлять вручную». `RUN_IN_BACKGROUND` /
+  `RUN_ANY_IN_BACKGROUND` — скрытые app-op'ы, не входящие в публичный SDK; `getRecentTasks`
+  с API 21 отдаёт стороннему приложению только его собственные задачи и для «закрепления
+  в недавних» непригоден вовсе.
+- **«Закрепление в недавних»** — фирменный механизм EMUI, публичного API нет ни в AOSP,
+  ни у Huawei.
+
+**Пробы для эталонного устройства** (исследование, не продукт; снимаются до и после ручного
+переключения настройки в обе стороны, проба годится только если различает оба состояния
+воспроизводимо):
+
+```
+adb shell dumpsys package com.huawei.systemmanager | grep -iE "provider|authorit|permission"
+adb shell dumpsys package com.huawei.powergenie     | grep -iE "provider|authorit|permission"
+adb shell dumpsys package com.huawei.android.hwaps  | grep -iE "provider|authorit|permission"
+adb shell cmd package query-providers com.huawei.systemmanager 2>/dev/null
+adb shell dumpsys activity providers | grep -iE "huawei|systemmanager"
+adb shell dumpsys activity services  | grep -iE "powergenie|systemmanager|hwaps"
+adb shell dumpsys appops --package ru.stohastika.sklyanka | grep -iE "run_in_background|run_any_in_background|start_foreground|WAKE_LOCK|SCHEDULE_EXACT"
+adb shell cmd appops get ru.stohastika.sklyanka
+adb shell dumpsys deviceidle whitelist | grep -i sklyanka
+adb shell settings list secure | grep -iE "huawei|hw_|startup|protect|power|launch|recents"
+adb shell settings list global | grep -iE "huawei|hw_|startup|protect|power|launch|recents"
+adb shell dumpsys activity recents | grep -iE "sklyanka|lock"
+adb logcat -d | grep -iE "startupmgr|protect.?app|powergenie|HwPFW|PFW\."
+```
 
 ## 7. Открытые вопросы этого документа
 
