@@ -11,7 +11,7 @@ import ru.stohastika.sklyanka.domain.medication.MedicationSubtitle
 import ru.stohastika.sklyanka.domain.model.FoodRelation
 import ru.stohastika.sklyanka.feature.meds.R
 import ru.stohastika.sklyanka.feature.meds.dayAndMonth
-import ru.stohastika.sklyanka.feature.meds.label
+import ru.stohastika.sklyanka.feature.meds.formAndShapeLabel
 import ru.stohastika.sklyanka.feature.meds.strengthUnitLabel
 import ru.stohastika.sklyanka.ui.component.AdherenceDay
 import ru.stohastika.sklyanka.ui.component.AdherenceDayState
@@ -33,9 +33,8 @@ import java.util.Locale
 internal fun MedicationSubtitle.text(): String {
     val separator = stringResource(R.string.meds_separator)
     // Вид таблетки — часть фразы, а не подпись кнопки: в макете `MedCard.dc.html`
-    // и спеке он со строчной («Таблетка круглая с риской»). Найдено экранной приёмкой.
-    val head = listOfNotNull(form.label(), shape?.label()?.replaceFirstChar { it.lowercase(locale()) })
-        .joinToString(" ")
+    // и спеке он со строчной («Таблетка круглая с риской»). Сборка общая с превью формы.
+    val head = formAndShapeLabel(form, shape)
     val dose = strength?.let { value -> strengthUnit?.let { "${value.plain()} ${strengthUnitLabel(it)}" } }
     return listOfNotNull(head, dose, foodRelation?.cardLabel()).joinToString(separator)
 }

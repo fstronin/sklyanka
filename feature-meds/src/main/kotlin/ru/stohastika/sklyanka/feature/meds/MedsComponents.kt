@@ -301,12 +301,12 @@ internal fun CounterCard(
     }
 }
 
-/** Плашка значка формы выпуска в карточке списка. */
+/** Плашка значка формы выпуска в строке списка (§4.15: 42×42, радиус 13). */
 @Composable
 internal fun FormPlate(glyph: @Composable () -> Unit, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
-            .size(SklyankaSizes.IconPlate)
+            .size(SklyankaSizes.MedsListPlate)
             .background(SklyankaTheme.colors.neutralSoft, SklyankaShapes.Button),
         contentAlignment = Alignment.Center,
     ) {

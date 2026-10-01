@@ -25,7 +25,6 @@ import androidx.compose.ui.semantics.Role
 import ru.stohastika.sklyanka.domain.medication.ArchiveCaption
 import ru.stohastika.sklyanka.domain.medication.ArchiveCard
 import ru.stohastika.sklyanka.feature.meds.R
-import ru.stohastika.sklyanka.feature.meds.ReleaseFormGlyph
 import ru.stohastika.sklyanka.feature.meds.SectionLabel
 import ru.stohastika.sklyanka.feature.meds.Segment
 import ru.stohastika.sklyanka.feature.meds.SegmentedControl
@@ -34,6 +33,7 @@ import ru.stohastika.sklyanka.feature.meds.screenPadding
 import ru.stohastika.sklyanka.ui.component.Banner
 import ru.stohastika.sklyanka.ui.component.BannerKind
 import ru.stohastika.sklyanka.ui.component.EmptyState
+import ru.stohastika.sklyanka.ui.component.MedicationGlyph
 import ru.stohastika.sklyanka.ui.component.ScreenHeader
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderLabels
 import ru.stohastika.sklyanka.ui.component.SecondaryButton
@@ -197,7 +197,14 @@ private fun ArchivedMedicationCard(card: ArchiveCard, onIntent: (ArchiveIntent) 
                 .background(colors.neutralSoft, SklyankaShapes.Button),
             contentAlignment = Alignment.Center,
         ) {
-            ReleaseFormGlyph(form = card.form, color = colors.textTertiary)
+            // Размер силуэта сохраняется прежним (22 dp): иконография архива решением
+            // ОВ-94 не пересматривается, и снимок архива меняться не должен.
+            MedicationGlyph(
+                form = card.form,
+                shape = null,
+                color = colors.textTertiary,
+                size = SklyankaSizes.MedsListPlateGlyph,
+            )
         }
         Column(
             modifier = Modifier.weight(1f),

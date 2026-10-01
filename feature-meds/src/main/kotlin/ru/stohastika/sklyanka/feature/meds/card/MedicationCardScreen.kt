@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -21,10 +22,10 @@ import androidx.compose.ui.res.stringResource
 import ru.stohastika.sklyanka.feature.meds.BackGlyph
 import ru.stohastika.sklyanka.feature.meds.GlyphButton
 import ru.stohastika.sklyanka.feature.meds.R
-import ru.stohastika.sklyanka.feature.meds.ReleaseFormGlyph
 import ru.stohastika.sklyanka.feature.meds.screenPadding
 import ru.stohastika.sklyanka.ui.component.Banner
 import ru.stohastika.sklyanka.ui.component.BannerKind
+import ru.stohastika.sklyanka.ui.component.MedicationGlyph
 import ru.stohastika.sklyanka.ui.component.ProfileIndication
 import ru.stohastika.sklyanka.ui.component.QuietButton
 import ru.stohastika.sklyanka.ui.component.SecondaryButton
@@ -52,6 +53,7 @@ fun MedicationCardScreen(state: MedCardUiState, onIntent: (MedCardIntent) -> Uni
         modifier = modifier
             .fillMaxSize()
             .background(colors.background)
+            .navigationBarsPadding()
             .testTag(TAG_MEDICATION_CARD_SCREEN),
     ) {
         // Индикация чужого профиля: шапка карточки собрана по месту, и надпись
@@ -142,10 +144,12 @@ private fun Title(state: MedCardUiState) {
                 ),
             contentAlignment = Alignment.Center,
         ) {
-            ReleaseFormGlyph(
+            MedicationGlyph(
                 form = state.form,
+                shape = state.subtitle.shape,
                 color = if (state.isArchived) colors.textTertiary else colors.accent,
                 size = SklyankaSizes.MedCardPlateGlyph,
+                modifier = Modifier.testTag(TAG_CARD_PLATE_GLYPH),
             )
         }
         Column(verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Micro)) {
@@ -230,6 +234,7 @@ private fun ArchiveAction(state: MedCardUiState, onIntent: (MedCardIntent) -> Un
 const val TAG_MEDICATION_CARD_SCREEN = "medication_card_screen"
 const val TAG_BACK = "med_card_back"
 const val TAG_TITLE = "med_card_title"
+const val TAG_CARD_PLATE_GLYPH = "med_card_plate_glyph"
 const val TAG_SUBTITLE = "med_card_subtitle"
 const val TAG_EDIT = "med_card_edit"
 const val TAG_ARCHIVE = "med_card_archive"

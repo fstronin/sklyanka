@@ -3,6 +3,7 @@ package ru.stohastika.sklyanka.feature.meds.list
 import androidx.compose.runtime.Immutable
 import ru.stohastika.sklyanka.domain.medication.TrailingLine
 import ru.stohastika.sklyanka.domain.model.MedicationForm
+import ru.stohastika.sklyanka.domain.model.TabletShape
 import java.time.LocalDate
 import java.time.LocalTime
 
@@ -41,6 +42,8 @@ data class MedicationCardUi(
     val medicationId: String,
     val title: String,
     val form: MedicationForm,
+    /** Вид таблетки для силуэта «форма + вид»; у форм без вида — `null` (ОВ-88). */
+    val shape: TabletShape?,
     /** Дозировка «50» и её единица «мкг» — введённые человеком, переводу не подлежат. */
     val strength: String?,
     val strengthUnit: String?,

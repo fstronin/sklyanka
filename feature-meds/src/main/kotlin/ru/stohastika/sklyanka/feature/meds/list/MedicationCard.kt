@@ -5,8 +5,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -19,18 +17,16 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
-import ru.stohastika.sklyanka.domain.medication.TrailingLine
 import ru.stohastika.sklyanka.feature.meds.ChevronGlyph
 import ru.stohastika.sklyanka.feature.meds.FormPlate
 import ru.stohastika.sklyanka.feature.meds.R
-import ru.stohastika.sklyanka.feature.meds.ReleaseFormGlyph
 import ru.stohastika.sklyanka.feature.meds.dayAndMonth
-import ru.stohastika.sklyanka.feature.meds.formatted
 import ru.stohastika.sklyanka.feature.meds.label
-import ru.stohastika.sklyanka.feature.meds.stockLeftLabel
+import ru.stohastika.sklyanka.feature.meds.schedulePhrase
 import ru.stohastika.sklyanka.feature.meds.strengthUnitLabel
 import ru.stohastika.sklyanka.ui.component.ButtonState
 import ru.stohastika.sklyanka.ui.component.ChipState
+import ru.stohastika.sklyanka.ui.component.MedicationGlyph
 import ru.stohastika.sklyanka.ui.component.SecondaryButton
 import ru.stohastika.sklyanka.ui.component.SklyankaChip
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
@@ -66,7 +62,17 @@ internal fun MedicationCard(
         verticalAlignment = Alignment.Top,
         horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Medium),
     ) {
-        FormPlate(glyph = { ReleaseFormGlyph(form = card.form, color = colors.textMuted) })
+        FormPlate(
+            glyph = {
+                MedicationGlyph(
+                    form = card.form,
+                    shape = card.shape,
+                    color = colors.textMuted,
+                    size = SklyankaSizes.MedsListPlateGlyph,
+                    modifier = Modifier.testTag(TAG_MED_LIST_GLYPH),
+                )
+            },
+        )
         Column(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Micro),
@@ -117,30 +123,20 @@ private fun TitleLine(card: MedicationCardUi) {
 }
 
 /**
- * Строка расписания: чипы времени и уточнение — остаток либо период (ЭКР-4).
+ * Строка расписания — одна фраза: частота, времена и уточнение (ОВ-94).
  *
- * Поток, а не ряд: когда уточнению не хватает ширины рядом с чипами, оно переезжает
- * под них целиком и переносится по словам. В обычном ряду остаток ширины доставался
- * `Text` меньше самого длинного слова, и уточнение рассыпалось по одной букве
- * (SKL-59, дефект пилота).
+ * Не набор чипов времени: «Ежедневно · 08:00 · с 12 марта · бессрочно» читается как
+ * фраза, а длинная фраза переносится по словам. Уточнение — остаток либо период,
+ * одновременно они не показываются (ЭКР-4).
  */
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ScheduleLine(card: MedicationCardUi) {
-    FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Small),
-        verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Small),
-    ) {
-        card.times.forEach { time ->
-            SklyankaChip(text = time.formatted(), state = ChipState.Info, shape = SklyankaShapes.Pill)
-        }
-        Text(
-            text = trailingTextOf(card.trailingLine),
-            style = SklyankaType.CaptionSmall,
-            color = SklyankaTheme.colors.textMuted,
-            modifier = Modifier.testTag(TAG_TRAILING_LINE),
-        )
-    }
+    Text(
+        text = schedulePhrase(card.timesPerDay, card.times, card.trailingLine),
+        style = SklyankaType.CaptionSmall,
+        color = SklyankaTheme.colors.textMuted,
+        modifier = Modifier.testTag(TAG_TRAILING_LINE),
+    )
 }
 
 @Composable
@@ -172,35 +168,23 @@ private fun TrailingAction(card: MedicationCardUi, onTake: () -> Unit) {
     }
 }
 
-/** «Таблетка · 50 мкг · 1 раз в сутки» и «Капсула · 200 мг · не чаще 3 раз в сутки». */
+/** «Таблетка · 50 мкг» и «Капсула · 200 мг · не чаще 3 раз в сутки». */
 @Composable
 private fun descriptionOf(card: MedicationCardUi): String {
     val separator = stringResource(R.string.meds_separator)
     val strength = card.strength
     val unit = card.strengthUnit
-    val frequency = card.asNeeded?.let { pluralStringResource(R.plurals.max_per_day, it.maxPerDay, it.maxPerDay) }
-        ?: pluralStringResource(R.plurals.times_per_day, card.timesPerDay, card.timesPerDay)
+    // У расписания частота ушла во фразу расписания; у «по потребности» ограничение
+    // остаётся частью описания (ЭКР-5).
+    val limit = card.asNeeded?.let { pluralStringResource(R.plurals.max_per_day, it.maxPerDay, it.maxPerDay) }
     return listOfNotNull(
         card.form.label(),
         if (strength != null && unit != null) "$strength ${strengthUnitLabel(unit)}" else null,
-        frequency,
+        limit,
     ).joinToString(separator)
 }
 
-/** «осталось 9 таблеток», «с 12 марта · бессрочно» или «до 30 сентября». */
-@Composable
-private fun trailingTextOf(line: TrailingLine): String = when (line) {
-    is TrailingLine.Stock -> stockLeftLabel(line.left, line.unit)
-    is TrailingLine.Period -> {
-        val end = line.endDate
-        if (end == null) {
-            stringResource(R.string.meds_period_open, line.startDate.dayAndMonth())
-        } else {
-            stringResource(R.string.meds_period_until, end.dayAndMonth())
-        }
-    }
-}
-
 const val TAG_MEDICATION_CARD = "medication_card"
+const val TAG_MED_LIST_GLYPH = "medication_list_glyph"
 const val TAG_TRAILING_LINE = "medication_trailing_line"
 const val TAG_LAST_INTAKE = "medication_last_intake"
