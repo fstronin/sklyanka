@@ -7,6 +7,7 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -304,6 +305,34 @@ class MedicationCardScreenTest {
         composeRule
             .onNodeWithText(context.getString(UiR.string.adherence_legend_today), useUnmergedTree = true)
             .assertIsDisplayed()
+        composeRule.onNodeWithText(weekCounterText(), useUnmergedTree = true).assertIsDisplayed()
+    }
+
+    /** Без завершённых дней с приёмами доля вырождена: вместо «0 из 0» стоит фраза (ПМ-15 п. 2). */
+    @Test
+    fun theWeekWithoutRecordsShowsAPhraseAndNotAZeroFraction() {
+        show(state(week = weekWithoutRecords()))
+
+        composeRule
+            .onNodeWithText(context.getString(R.string.card_week_empty), useUnmergedTree = true)
+            .assertIsDisplayed()
+        val zeroFraction = context.resources.getQuantityString(R.plurals.card_week_counter, 0, 0, 0)
+        composeRule.onAllNodesWithText(zeroFraction, useUnmergedTree = true).assertCountEquals(0)
+    }
+
+    /** При наблюдении числа остаются: «0 из 14» — законное измерение, а не отсутствие данных. */
+    @Test
+    fun theWeekWithAFullyMissedPlanKeepsTheNumbers() {
+        show(state(week = weekAllMissed()))
+
+        composeRule.onAllNodesWithText(context.getString(R.string.card_week_empty), useUnmergedTree = true)
+            .assertCountEquals(0)
+        composeRule
+            .onNodeWithText(
+                context.resources.getQuantityString(R.plurals.card_week_counter, WEEK_PLANNED, 0, WEEK_PLANNED),
+                useUnmergedTree = true,
+            )
+            .assertIsDisplayed()
     }
 
     /** ЭКР-6: сегодняшний день подписан «сегодня», а не числом принятых приёмов. */
@@ -429,6 +458,7 @@ class MedicationCardScreenTest {
         stockUnit: DoseUnit = DoseUnit.TABLET,
         isArchived: Boolean = false,
         refill: RefillUi? = null,
+        week: WeekAdherenceStrip = week(),
     ) = MedCardUiState(
         medicationId = "medication-1",
         title = MEDICATION_NAME,
@@ -444,7 +474,7 @@ class MedicationCardScreenTest {
         course = course,
         stock = stock,
         stockUnit = stockUnit,
-        week = week(),
+        week = week,
         // Состояние часов намеренно непустое: строки на экране нет именно потому,
         // что её вывел из состава MVP `ADR-0009`, а не потому, что состояние пусто.
         watchMirror = WatchMirrorUi(checked = true, enabled = true),
@@ -460,8 +490,31 @@ class MedicationCardScreenTest {
             val date = TODAY.minusDays(back.toLong())
             DayCell.Completed(date = date, taken = 2, planned = 2)
         }.reversed() + DayCell.Today(TODAY)
-        return WeekAdherenceStrip(days = days, taken = 12, planned = 14)
+        return WeekAdherenceStrip(days = days, taken = WEEK_TAKEN, planned = WEEK_PLANNED)
     }
+
+    /** Завершённые дни без единого приёма в плане: доля вырождена. */
+    private fun weekWithoutRecords(): WeekAdherenceStrip {
+        val days = (1..6).map { back ->
+            DayCell.Completed(date = TODAY.minusDays(back.toLong()), taken = 0, planned = 0)
+        }.reversed() + DayCell.Today(TODAY)
+        return WeekAdherenceStrip(days = days, taken = 0, planned = 0)
+    }
+
+    /** Завершённые дни с планом, но ни одного принятого: «0 из 14» остаётся числом. */
+    private fun weekAllMissed(): WeekAdherenceStrip {
+        val days = (1..6).map { back ->
+            DayCell.Completed(date = TODAY.minusDays(back.toLong()), taken = 0, planned = 2)
+        }.reversed() + DayCell.Today(TODAY)
+        return WeekAdherenceStrip(days = days, taken = 0, planned = WEEK_PLANNED)
+    }
+
+    private fun weekCounterText(): String = context.resources.getQuantityString(
+        R.plurals.card_week_counter,
+        WEEK_PLANNED,
+        WEEK_TAKEN,
+        WEEK_PLANNED,
+    )
 
     private companion object {
         const val MEDICATION_NAME = "med-a"
@@ -473,6 +526,8 @@ class MedicationCardScreenTest {
         const val MANY = 90
         const val PACKAGE_SIZE = "60"
         const val COURSE_FRACTION = 0.43f
+        const val WEEK_TAKEN = 12
+        const val WEEK_PLANNED = 14
 
         /** Масштабы системного шрифта, на которых проверяется НФТ-31. */
         const val FONT_SCALE_130 = 1.3f
