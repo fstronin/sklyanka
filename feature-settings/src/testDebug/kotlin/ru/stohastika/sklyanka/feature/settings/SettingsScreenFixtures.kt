@@ -21,6 +21,7 @@ internal object SettingsScreenFixtures {
         manual: Int = 1,
         reminders: ReminderSettingsValues = ReminderSettingsValues(persistentEnabled = true),
         activeIsSelf: Boolean = true,
+        snoozePickerVisible: Boolean = false,
     ): SettingsUiState {
         val profiles = listOf(
             ProfileRowState(
@@ -47,6 +48,7 @@ internal object SettingsScreenFixtures {
             // Как у ViewModel: удаляемым считается активный чужой профиль, и только он.
             deletableProfile = profiles.firstOrNull { it.isActive && !it.isSelf },
             reminders = reminders,
+            snoozePickerVisible = snoozePickerVisible,
             permissions = PermissionsSummary(denied = denied, manual = manual),
             version = VERSION,
         )

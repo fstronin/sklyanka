@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -78,11 +79,19 @@ internal fun RowDivider(modifier: Modifier = Modifier) {
  * какое из них акцентное, обязан тот, кто состояние прочитал.
  */
 @Composable
+@Suppress("LongParameterList")
 internal fun SettingsRow(
     title: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     subtitle: RowSubtitle? = null,
+    /**
+     * Текущее значение строки перед шевроном («Отложить на» → «15 минут»).
+     *
+     * Необязательно: у строки-перехода значения нет вовсе («Звук» ведёт в системные
+     * настройки, где живёт выбор звука), и показывать там нечего (ОВ-98).
+     */
+    value: String? = null,
     leading: @Composable (() -> Unit)? = null,
     trailing: @Composable (() -> Unit)? = null,
 ) {
@@ -97,10 +106,32 @@ internal fun SettingsRow(
         StackingRow(
             leading = { leading?.invoke() },
             text = { RowText(title, subtitle) },
-            action = { trailing?.invoke() ?: ChevronGlyph(colors.iconFaint) },
+            action = { RowAction(value, trailing, colors.iconFaint) },
             gap = SklyankaSpacing.Medium,
             minTextWidth = SklyankaSizes.MinTextColumn,
         )
+    }
+}
+
+/**
+ * Слот действия строки: своя графика, либо значение с шевроном, либо только шеврон.
+ *
+ * Значение набрано приглушённо и стоит перед шевроном: это утверждение о сохранённом
+ * состоянии, а не подпись кнопки (ОВ-98).
+ */
+@Composable
+private fun RowAction(value: String?, trailing: (@Composable () -> Unit)?, chevronColor: Color) {
+    when {
+        trailing != null -> trailing()
+        value != null -> Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Small),
+        ) {
+            Text(text = value, style = SklyankaType.Label, color = SklyankaTheme.colors.textMuted)
+            ChevronGlyph(chevronColor)
+        }
+
+        else -> ChevronGlyph(chevronColor)
     }
 }
 
@@ -185,4 +216,6 @@ internal const val TAG_PROFILE_ROW = "settings_profile_row"
 internal const val TAG_ACTIVE_PROFILE = "settings_profile_active"
 internal const val TAG_PERMISSIONS_ROW = "settings_permissions_row"
 internal const val TAG_ABOUT = "settings_about"
-internal const val TAG_BOTTOM_BAR = "settings_bottom_bar"
+internal const val TAG_SOUND_ROW = "settings_sound_row"
+internal const val TAG_SNOOZE_ROW = "settings_snooze_row"
+internal const val TAG_SNOOZE_DIALOG = "settings_snooze_dialog"

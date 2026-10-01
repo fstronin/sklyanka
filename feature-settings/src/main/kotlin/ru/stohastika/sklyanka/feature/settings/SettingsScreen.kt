@@ -1,7 +1,6 @@
 package ru.stohastika.sklyanka.feature.settings
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -19,9 +18,14 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.semantics
+import ru.stohastika.sklyanka.domain.reminder.SnoozeIntervals
+import ru.stohastika.sklyanka.ui.component.BottomBar
+import ru.stohastika.sklyanka.ui.component.BottomBarTab
 import ru.stohastika.sklyanka.ui.component.CheckGlyph
 import ru.stohastika.sklyanka.ui.component.FlatMark
+import ru.stohastika.sklyanka.ui.component.ListPickerDialog
 import ru.stohastika.sklyanka.ui.component.ScreenHeader
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderLabels
 import ru.stohastika.sklyanka.ui.component.SklyankaSwitchRow
@@ -76,8 +80,42 @@ fun SettingsScreen(state: SettingsUiState, onIntent: (SettingsIntent) -> Unit, m
             dataBlock(onIntent)
             item { AboutPlate(state.version) }
         }
-        SettingsBottomBar(onIntent)
+        BottomBar(
+            selected = BottomBarTab.Settings,
+            onSelect = { tab ->
+                when (tab) {
+                    BottomBarTab.Today -> onIntent(SettingsIntent.OpenToday)
+                    BottomBarTab.Meds -> onIntent(SettingsIntent.OpenMedications)
+                    BottomBarTab.Settings -> Unit
+                }
+            },
+        )
+        if (state.snoozePickerVisible) {
+            SnoozePicker(state, onIntent)
+        }
     }
+}
+
+/**
+ * Выбор интервала откладывания (SKL-78, §4.17, ОВ-98).
+ *
+ * Набор берётся из [SnoozeIntervals] — одного места на домен, — а подписи складываются
+ * `plurals`: «15 минут» — это число с единицей, а не склеенная строка (НФТ-44).
+ * Сохранённого значения может не быть в наборе (его принёс файл переноса): тогда
+ * ни одна строка не отмечена, и человек выбирает значение заново, а не видит ложную
+ * отметку чужого числа.
+ */
+@Composable
+private fun SnoozePicker(state: SettingsUiState, onIntent: (SettingsIntent) -> Unit) {
+    ListPickerDialog(
+        title = stringResource(R.string.settings_snooze),
+        options = SnoozeIntervals.OPTIONS,
+        selected = state.reminders.snoozeMinutes.takeIf(SnoozeIntervals::isAllowed),
+        label = { minutes -> pluralStringResource(R.plurals.settings_snooze_minutes, minutes, minutes) },
+        onSelect = { minutes -> onIntent(SettingsIntent.SetSnooze(minutes)) },
+        onDismiss = { onIntent(SettingsIntent.DismissSnooze) },
+        modifier = Modifier.testTag(TAG_SNOOZE_DIALOG),
+    )
 }
 
 /**
@@ -88,6 +126,9 @@ fun SettingsScreen(state: SettingsUiState, onIntent: (SettingsIntent) -> Unit, m
  * за разделителем, стоит строка удаления (ОВ-7, SKL-36): удалить можно ровно того,
  * в чьём контексте человек находится, и только его одного. Само переключение — SKL-15:
  * экран только сообщает, какую строку нажали.
+ *
+ * Строка «Добавить профиль» до появления мастера выключена (SKL-58): нажимаемый элемент
+ * без перехода обещал бы функцию, которой нет.
  */
 private fun LazyListScope.profilesBlock(state: SettingsUiState, onIntent: (SettingsIntent) -> Unit) {
     item {
@@ -97,7 +138,7 @@ private fun LazyListScope.profilesBlock(state: SettingsUiState, onIntent: (Setti
                 ProfileRow(profile) { onIntent(SettingsIntent.SelectProfile(profile.id)) }
             }
             if (state.profiles.isNotEmpty()) RowDivider()
-            AddProfileRow { onIntent(SettingsIntent.AddProfile) }
+            AddProfileRow()
             state.deletableProfile?.let { profile ->
                 RowDivider(modifier = Modifier.testTag(TAG_DELETE_DIVIDER))
                 DeleteProfileRow(profile) { onIntent(SettingsIntent.DeleteProfile) }
@@ -181,47 +222,63 @@ private fun ProfileRowState.initial(): String {
 }
 
 /**
- * «Добавить профиль» (`ПРФ-9`, `ОВ-3`).
+ * Выключенная строка «Добавить профиль» (`ПРФ-9`, `ОВ-3`, SKL-58).
  *
- * Экран добавления профиля не зафиксирован, и строка ведёт в механику SKL-15; куда именно —
- * решает тот, кто собрал маршруты.
+ * Мастер создания профиля — отдельная задача после макета дизайнера. До него строка
+ * остаётся на месте по макету, но не нажимается: кнопка без перехода обещала бы функцию,
+ * которой нет. Гашение цвета — признак недоступности, а причину несёт подпись словами
+ * (§6.1 дизайн-системы, НФТ-30): один `TextDisabled` смысла не удержал бы.
+ *
+ * Намерение [SettingsIntent.AddProfile] и переход [SettingsNavigation.addProfile] сохранены
+ * швом пост-MVP, как строка часов: возвращение мастера не потребует правки навигации.
  */
 @Composable
-private fun AddProfileRow(onClick: () -> Unit) {
+private fun AddProfileRow() {
     val colors = SklyankaTheme.colors
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
             .minTouchTarget()
+            .semantics { disabled() }
             .testTag(TAG_ADD_PROFILE)
             .padding(horizontal = SklyankaSpacing.Block, vertical = SklyankaSpacing.Large),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Medium),
     ) {
-        DashedCircle(colors.lineInteractive)
-        Text(
-            text = stringResource(R.string.settings_profile_add),
-            style = SklyankaType.BodyDefaultStrong,
-            color = colors.accent,
-        )
+        DashedCircle(colors.textDisabled)
+        Column(verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Hair)) {
+            Text(
+                text = stringResource(R.string.settings_profile_add),
+                style = SklyankaType.BodyDefaultStrong,
+                color = colors.textDisabled,
+            )
+            Text(
+                text = stringResource(R.string.settings_profile_add_unavailable),
+                style = SklyankaType.CaptionSmall,
+                color = colors.textMuted,
+            )
+        }
     }
 }
 
 /**
- * Раздел «Напоминания» (`ОВ-11`).
+ * Раздел «Напоминания» (`ОВ-11`, SKL-78).
  *
- * Три строки, а не четыре: «Тихие часы» в продукт не идут. Звук и интервал откладывания
- * показывают текущее значение и переходов не обещают — экрана выбора звука в первой версии
- * нет (`docs/spec/09-scope.md` §2), а значения откладывания задаёт SKL-13.
+ * Три строки, а не четыре: «Тихие часы» в продукт не идут.
+ *
+ * «Звук» — переход в системные настройки уведомлений приложения, и значения у строки нет:
+ * выбор звука и важности живёт в системном экране каналов, а фальшивое «Мягкий сигнал»
+ * описывало звук, которого не существует (ПМ-15 п. 3, ОВ-98). «Отложить на» — обычная
+ * настройка: показывает текущий интервал и открывает выбор из набора [SnoozeIntervals].
  */
 private fun LazyListScope.remindersBlock(state: SettingsUiState, onIntent: (SettingsIntent) -> Unit) {
     item {
         SettingsBlock(stringResource(R.string.settings_rubric_reminders)) {
-            SettingsValueRow(
+            SettingsRow(
                 title = stringResource(R.string.settings_sound),
-                value = stringResource(R.string.settings_sound_value),
-                caption = stringResource(R.string.settings_sound_caption),
+                subtitle = RowSubtitle(stringResource(R.string.settings_sound_caption)),
+                onClick = { onIntent(SettingsIntent.OpenSound) },
+                modifier = Modifier.testTag(TAG_SOUND_ROW),
             )
             RowDivider()
             SklyankaSwitchRow(
@@ -231,13 +288,15 @@ private fun LazyListScope.remindersBlock(state: SettingsUiState, onIntent: (Sett
                 onCheckedChange = { onIntent(SettingsIntent.SetPersistentReminder(it)) },
             )
             RowDivider()
-            SettingsValueRow(
+            SettingsRow(
                 title = stringResource(R.string.settings_snooze),
                 value = pluralStringResource(
                     R.plurals.settings_snooze_minutes,
                     state.reminders.snoozeMinutes,
                     state.reminders.snoozeMinutes,
                 ),
+                onClick = { onIntent(SettingsIntent.OpenSnooze) },
+                modifier = Modifier.testTag(TAG_SNOOZE_ROW),
             )
         }
     }

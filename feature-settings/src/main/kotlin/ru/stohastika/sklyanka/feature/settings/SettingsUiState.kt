@@ -28,6 +28,14 @@ data class SettingsUiState(
      */
     val deletableProfile: ProfileRowState? = null,
     val reminders: ReminderSettingsValues = ReminderSettingsValues(),
+    /**
+     * Открыт ли выбор интервала откладывания (SKL-78).
+     *
+     * Видимость живёт в состоянии экрана, а не в `remember` композиции: стенд приёмки
+     * пересобирает композицию на каждом шаге, и `remember` терял бы выбор между «открыл»
+     * и «выбрал» (`TDD.md §5.2`).
+     */
+    val snoozePickerVisible: Boolean = false,
     val watch: WatchLinkState = WatchLinkState.NotConfigured,
     val permissions: PermissionsSummary = PermissionsSummary(),
     /** Версия приложения — та, что собрана, а не та, что нарисована в макете. */

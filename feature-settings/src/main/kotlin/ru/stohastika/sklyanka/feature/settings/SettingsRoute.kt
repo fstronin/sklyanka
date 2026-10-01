@@ -24,6 +24,9 @@ fun SettingsRoute(viewModel: SettingsViewModel, navigation: SettingsNavigation, 
                 // Строка часов из состава первой версии снята (`ADR-0009`), но намерение
                 // и переход сохранены швом пост-MVP: экран их сейчас не порождает.
                 SettingsIntent.OpenWatchSetup -> navigation.openWatchSetup?.invoke()
+                // «Звук» ведёт в системные настройки уведомлений приложения (ОВ-98):
+                // платформенный `Intent` собирает `app`, экран о нём не знает.
+                SettingsIntent.OpenSound -> navigation.openSound()
                 SettingsIntent.OpenPermissions -> navigation.openDiagnostics()
                 SettingsIntent.OpenHistory -> navigation.openHistory()
                 SettingsIntent.OpenDataTransfer -> navigation.openDataTransfer()
@@ -60,6 +63,13 @@ data class SettingsNavigation(
      * намерения не порождает, но возвращение строки не потребует правки навигации.
      */
     val openWatchSetup: (() -> Unit)? = null,
+    /**
+     * «Звук» → системные настройки уведомлений приложения (ОВ-98).
+     *
+     * Звук и важность — свойство неизменяемого канала уведомлений (`ADR-0004`), и выбрать
+     * их приложение не может: оно только приводит человека в системный экран каналов.
+     */
+    val openSound: () -> Unit = {},
     /**
      * «Разрешения и автозапуск» → диагностика напоминаний.
      *

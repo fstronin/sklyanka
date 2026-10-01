@@ -170,6 +170,12 @@
     <string name="settings_profile_subtitle">%1$s · %2$s</string>
     <string name="settings_profile_add">Добавить профиль</string>
     <!--
+      SKL-58, решение заказчика (30.09.2026): мастера создания профиля ещё нет, и строка
+      «Добавить профиль» выключена. Смысл несёт эта подпись, а не гашение цвета: слово
+      «недоступно» здесь сказано словами (НФТ-30, §6.1 дизайн-системы).
+    -->
+    <string name="settings_profile_add_unavailable">Будет доступно в ближайшем обновлении</string>
+    <!--
       ОВ-7: строка последняя в разделе, за разделителем, и только у активного чужого
       профиля. Свой не удаляется никогда, и строки для него не существует (ПРФ-28).
     -->
@@ -178,9 +184,12 @@
 
     <!-- ===== Напоминания ===== -->
     <string name="settings_sound">Звук</string>
-    <string name="settings_sound_value">Мягкий сигнал</string>
-    <!-- НАП-27: в первой версии один общий звук, выбора на лекарство нет. -->
-    <string name="settings_sound_caption">Один на все напоминания</string>
+    <!--
+      ПМ-15 п. 3, ОВ-98: у строки нет значения — выбор звука и важности живёт в системном
+      экране уведомлений приложения. Подпись называет, куда ведёт переход, чтобы отсутствие
+      значения не читалось как незаполненное поле.
+    -->
+    <string name="settings_sound_caption">Системные настройки уведомлений</string>
     <string name="settings_persistent">Настойчивое напоминание</string>
     <string name="settings_persistent_caption">Повторить, если не отметили</string>
     <string name="settings_snooze">Отложить на</string>
@@ -214,11 +223,6 @@
     <string name="settings_about_app">Склянка %1$s</string>
     <string name="settings_about_vendor">Stohastika · не является медицинским изделием</string>
     <string name="cd_settings_about_mark">Знак Склянка</string>
-
-    <!-- ===== Нижняя панель ===== -->
-    <string name="settings_tab_today">Сегодня</string>
-    <string name="settings_tab_meds">Лекарства</string>
-    <string name="settings_tab_settings">Настройки</string>
 
     <!-- ==================================================================== -->
     <!-- Удаление профиля (ОВ-7, SKL-36). Экран собран по образцу «Заменить  -->

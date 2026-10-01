@@ -40,4 +40,10 @@ class SettingsSystemStateReader @Inject constructor(
         reminders.setPersistentEnabled(enabled)
         return reminders.read()
     }
+
+    /** Интервал откладывания (SKL-78): записать и вернуть то, что действительно сохранено. */
+    suspend fun setSnoozeMinutes(minutes: Int): ReminderSettingsValues {
+        reminders.setSnoozeMinutes(minutes)
+        return reminders.read()
+    }
 }

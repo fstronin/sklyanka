@@ -75,6 +75,7 @@ internal fun LocalDateTime.journalMoment(): String = format(
 internal fun ReminderPermission.label(): String = stringResource(
     when (this) {
         ReminderPermission.NOTIFICATIONS -> R.string.diagnostics_permission_notifications
+        ReminderPermission.NOTIFICATION_CHANNEL -> R.string.diagnostics_permission_channel
         ReminderPermission.EXACT_ALARMS -> R.string.diagnostics_permission_exact_alarms
         ReminderPermission.FULL_SCREEN_INTENT -> R.string.diagnostics_permission_full_screen
         ReminderPermission.DND_POLICY_ACCESS -> R.string.diagnostics_permission_dnd

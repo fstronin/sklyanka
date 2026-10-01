@@ -60,6 +60,16 @@ class AndroidSystemSettingsNavigator @Inject constructor(@ApplicationContext pri
     }
 
     /**
+     * Экран доступа к политике «Не беспокоить» (НАП-17, SKL-79).
+     *
+     * Запрашивается отдельно, не в онбординге: без него повторные напоминания будут
+     * беззвучными, но приложение продолжает напоминать.
+     */
+    fun openDndAccessSettings() {
+        start(Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)) { start(appDetails()) }
+    }
+
+    /**
      * Экран управления запуском приложений производителя (ПЛ-18).
      *
      * Перебор известных адресов, а не один интент: имя Activity в EMUI менялось между

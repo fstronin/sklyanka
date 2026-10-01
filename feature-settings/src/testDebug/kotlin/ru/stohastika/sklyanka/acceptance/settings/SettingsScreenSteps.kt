@@ -46,6 +46,9 @@ import ru.stohastika.sklyanka.feature.settings.TAG_HISTORY_ROW
 import ru.stohastika.sklyanka.feature.settings.TAG_PERMISSIONS_ROW
 import ru.stohastika.sklyanka.feature.settings.TAG_PROFILE_ROW
 import ru.stohastika.sklyanka.feature.settings.TAG_SETTINGS_SCREEN
+import ru.stohastika.sklyanka.feature.settings.TAG_SNOOZE_DIALOG
+import ru.stohastika.sklyanka.feature.settings.TAG_SNOOZE_ROW
+import ru.stohastika.sklyanka.feature.settings.TAG_SOUND_ROW
 import ru.stohastika.sklyanka.feature.settings.TAG_TRANSFER_ROW
 import ru.stohastika.sklyanka.ui.component.TAG_SWITCH_ROW
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
@@ -154,11 +157,39 @@ class SettingsScreenSteps(private val world: AcceptanceWorld) {
         SettingsScreenProbe.ask(world) { assertTag(TAG_SETTINGS_SCREEN) }
     }
 
-    @Тогда("^строка «Звук» показывает выбранный звук «(.+?)»$")
-    fun theSoundRowShowsTheValue(value: String) {
+    /**
+     * SKL-78, ОВ-98: у строки «Звук» значения нет, а подпись называет, куда ведёт переход.
+     *
+     * Фальшивое «Мягкий сигнал» снято: звук — свойство неизменяемого канала, и выбирается
+     * он в системном экране уведомлений приложения.
+     */
+    @Тогда("^строка «Звук» не показывает значения и подписана «(.+?)»$")
+    fun theSoundRowCarriesNoValueButNamesThePlace(caption: String) {
         val state = SettingsScreenProbe.state(world)
         assertTrue(hasText(state, string(R.string.settings_sound)), "the sound row must be there")
-        assertTrue(hasText(state, value), "the sound row must show «$value»")
+        assertTrue(hasText(state, caption), "the sound row must carry «$caption»")
+        assertFalse(
+            hasText(state, FAKE_SOUND_VALUE),
+            "the fake sound value must be gone (ПМ-15 п. 3, ОВ-98)",
+        )
+        SettingsScreenProbe.ask(world) {
+            assertTrue(
+                onAllNodesWithTag(TAG_SOUND_ROW, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty(),
+                "the sound row must be a row on the screen",
+            )
+        }
+    }
+
+    /** SKL-78, ОВ-98: «Отложить на» открывает выбор интервала, выбор применяется сразу. */
+    @Тогда("^строка «Отложить на» открывает выбор интервала откладывания$")
+    fun theSnoozeRowOpensThePicker() {
+        SettingsScreenProbe.act(world) {
+            onNodeWithTag(TAG_SNOOZE_ROW, useUnmergedTree = true).performClick()
+        }
+        assertTrue(SettingsScreenProbe.state(world).snoozePickerVisible, "the interval picker must open")
+        SettingsScreenProbe.ask(world) {
+            onNodeWithTag(TAG_SNOOZE_DIALOG).assertExists()
+        }
     }
 
     @Тогда("^строка «Настойчивое напоминание» с подписью «(.+?)» показывает, включено оно или выключено$")
@@ -512,6 +543,24 @@ class SettingsScreenSteps(private val world: AcceptanceWorld) {
 
         val SOUND_KEYS = listOf("звук для", "звук лекарства", "выбрать звук")
         val LINKS = listOf("http", "www.", ".ru/", ".com/", "mailto")
-        val UPDATE_KEYS = listOf("обновлен", "обновить", "новая версия")
+
+        /** Прежнее фальшивое значение строки «Звук», снятое ОВ-98. Литерал намеренный. */
+        const val FAKE_SOUND_VALUE = "Мягкий сигнал"
+
+        /**
+         * Слова проверки или предложения обновления, а не корень «обновлен».
+         *
+         * SKL-58 ставит на экран честную подпись «Будет доступно в ближайшем обновлении»:
+         * это утверждение о будущей функции, а не предложение проверить или поставить
+         * обновление. Корень ловил бы её как ложный признак, поэтому признаки названы
+         * действиями — так проверка НФТ-15 остаётся такой же строгой и не шумит.
+         */
+        val UPDATE_KEYS = listOf(
+            "проверить обновлен",
+            "проверка обновлен",
+            "обновить приложение",
+            "скачать обновлен",
+            "новая версия",
+        )
     }
 }

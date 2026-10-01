@@ -15,6 +15,7 @@ import ru.stohastika.sklyanka.domain.model.Profile
 import ru.stohastika.sklyanka.domain.profile.ProfileContextProvider
 import ru.stohastika.sklyanka.domain.profile.SwitchProfileUseCase
 import ru.stohastika.sklyanka.domain.profile.SwitchReason
+import ru.stohastika.sklyanka.domain.reminder.SnoozeIntervals
 import ru.stohastika.sklyanka.domain.repository.MedicationRepository
 import ru.stohastika.sklyanka.domain.repository.ProfileRepository
 import ru.stohastika.sklyanka.domain.transfer.AppStamp
@@ -90,6 +91,9 @@ class SettingsViewModel @Inject constructor(
         when (intent) {
             is SettingsIntent.SelectProfile -> switchTo(intent.profileId)
             is SettingsIntent.SetPersistentReminder -> setPersistent(intent.enabled)
+            is SettingsIntent.OpenSnooze -> _state.value = _state.value.copy(snoozePickerVisible = true)
+            is SettingsIntent.DismissSnooze -> _state.value = _state.value.copy(snoozePickerVisible = false)
+            is SettingsIntent.SetSnooze -> setSnooze(intent.minutes)
             // Остальные намерения — переходы; их исполняет тот, кто собрал маршруты.
             else -> Unit
         }
@@ -164,6 +168,23 @@ class SettingsViewModel @Inject constructor(
     private fun setPersistent(enabled: Boolean) {
         viewModelScope.launch {
             _state.value = _state.value.copy(reminders = system.setPersistentEnabled(enabled))
+        }
+    }
+
+    /**
+     * Интервал откладывания (SKL-78, ОВ-98).
+     *
+     * Перепланирования не вызывает: интервал откладывания не меняет состав и время
+     * будущих будильников, как и настойчивое напоминание. Значение вне набора отклоняется
+     * до записи — набор задаёт диалог, и чужое число попало бы сюда только ошибкой.
+     */
+    private fun setSnooze(minutes: Int) {
+        if (!SnoozeIntervals.isAllowed(minutes)) return
+        viewModelScope.launch {
+            _state.value = _state.value.copy(
+                reminders = system.setSnoozeMinutes(minutes),
+                snoozePickerVisible = false,
+            )
         }
     }
 }

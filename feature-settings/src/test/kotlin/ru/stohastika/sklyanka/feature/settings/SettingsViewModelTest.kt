@@ -135,6 +135,7 @@ class SettingsViewModelTest {
     fun theDeniedPermissionsAreCountedApartFromTheOnesTheSystemDoesNotAnswerAbout() = runTest(dispatcher) {
         permissions.states = mapOf(
             ReminderPermission.NOTIFICATIONS to PermissionState.GRANTED,
+            ReminderPermission.NOTIFICATION_CHANNEL to PermissionState.GRANTED,
             ReminderPermission.EXACT_ALARMS to PermissionState.DENIED,
             ReminderPermission.FULL_SCREEN_INTENT to PermissionState.GRANTED,
             ReminderPermission.DND_POLICY_ACCESS to PermissionState.GRANTED,
@@ -209,6 +210,56 @@ class SettingsViewModelTest {
         assertFalse(reminders.values.persistentEnabled)
     }
 
+    /** SKL-78, ОВ-98: «Отложить на» открывает выбор интервала. */
+    @Test
+    fun openingTheSnoozePickerShowsIt() = runTest(dispatcher) {
+        val model = viewModel()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        model.onIntent(SettingsIntent.OpenSnooze)
+
+        assertTrue(model.state.value.snoozePickerVisible)
+    }
+
+    @Test
+    fun dismissingTheSnoozePickerHidesIt() = runTest(dispatcher) {
+        val model = viewModel()
+        dispatcher.scheduler.advanceUntilIdle()
+        model.onIntent(SettingsIntent.OpenSnooze)
+
+        model.onIntent(SettingsIntent.DismissSnooze)
+
+        assertFalse(model.state.value.snoozePickerVisible)
+    }
+
+    /** Выбор интервала записывается через порт, виден сразу и закрывает диалог. */
+    @Test
+    fun choosingAnIntervalStoresItAndClosesThePicker() = runTest(dispatcher) {
+        val model = viewModel()
+        dispatcher.scheduler.advanceUntilIdle()
+        model.onIntent(SettingsIntent.OpenSnooze)
+
+        model.onIntent(SettingsIntent.SetSnooze(SNOOZE))
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(SNOOZE, model.state.value.reminders.snoozeMinutes)
+        assertEquals(SNOOZE, reminders.values.snoozeMinutes)
+        assertFalse(model.state.value.snoozePickerVisible)
+    }
+
+    /** Значение вне набора отклоняется до записи: диалог его не порождает. */
+    @Test
+    fun anIntervalOutsideTheSetIsRefused() = runTest(dispatcher) {
+        val model = viewModel()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        model.onIntent(SettingsIntent.SetSnooze(SNOOZE_OUTSIDE_THE_SET))
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(ReminderSettingsValues.DEFAULT_SNOOZE_MINUTES, model.state.value.reminders.snoozeMinutes)
+        assertEquals(ReminderSettingsValues.DEFAULT_SNOOZE_MINUTES, reminders.values.snoozeMinutes)
+    }
+
     @Test
     fun theVersionShownIsTheOneOfTheBuiltPackage() = runTest(dispatcher) {
         val model = viewModel()
@@ -233,6 +284,7 @@ class SettingsViewModelTest {
         const val SELF_MEDICATIONS = 2
         const val FOREIGN_MEDICATIONS = 4
         const val SNOOZE = 30
+        const val SNOOZE_OUTSIDE_THE_SET = 17
         const val VERSION = "0.1.0"
         const val VERSION_CODE = 1
         const val WATCH_MODEL = "GT 6 Pro"

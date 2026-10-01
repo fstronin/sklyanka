@@ -4,9 +4,9 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.first
+import ru.stohastika.sklyanka.domain.reminder.port.ReminderSettings
 import ru.stohastika.sklyanka.domain.transfer.QuietHours
 import ru.stohastika.sklyanka.domain.transfer.ReminderSound
 import ru.stohastika.sklyanka.domain.transfer.TransferSettings
@@ -31,19 +31,28 @@ import javax.inject.Singleton
  * Живёт в `core-data`, рядом с [ActiveProfileDataStore], а не в `app`: постоянные настройки —
  * это хранилище, и `DataStore` подключён здесь. В `app` остаётся только то, что требует
  * системных механизмов, — файлы и планировщик.
+ *
+ * **Два поля делегированы порту настроек напоминания** (SKL-78, `TDD.md §5.6`): «Отложить на»
+ * и «Настойчивое напоминание» живут под ключами [ReminderSettings], которые читает движок
+ * напоминаний. Собственных копий у переноса больше нет: две копии одного значения рано или
+ * поздно назовут разные числа, и выгрузка перестанет отражать то, что видит планировщик.
+ * Запись идёт через тот же порт, поэтому загрузка файла оставляет след в журнале (ПЕР-18).
  */
 @Singleton
-class TransferSettingsDataStore @Inject constructor(private val preferences: DataStore<Preferences>) :
-    TransferSettingsStore {
+class TransferSettingsDataStore @Inject constructor(
+    private val preferences: DataStore<Preferences>,
+    private val reminderSettings: ReminderSettings,
+) : TransferSettingsStore {
 
     override suspend fun read(): TransferSettings {
         val stored = preferences.data.first()
         val from = stored[QUIET_FROM]?.let(::time)
         val to = stored[QUIET_TO]?.let(::time)
+        val reminders = reminderSettings.read()
         return TransferSettings(
             reminderSound = ReminderSound.ofCode(stored[SOUND]) ?: ReminderSound.DEFAULT,
-            persistentReminder = stored[PERSISTENT] ?: false,
-            snoozeMinutes = stored[SNOOZE] ?: TransferSettings.DEFAULT_SNOOZE_MINUTES,
+            persistentReminder = reminders.persistentEnabled,
+            snoozeMinutes = reminders.snoozeMinutes,
             // Тихие часы существуют только парой границ: одна граница без второй —
             // это не «половина режима», а его отсутствие.
             quietHours = if (from != null && to != null) QuietHours(from, to) else null,
@@ -53,10 +62,11 @@ class TransferSettingsDataStore @Inject constructor(private val preferences: Dat
     }
 
     override suspend fun write(settings: TransferSettings) {
+        // Два поля — через порт: и значение, и след в журнале. Остальное — своими ключами.
+        reminderSettings.setPersistentEnabled(settings.persistentReminder)
+        reminderSettings.setSnoozeMinutes(settings.snoozeMinutes)
         preferences.edit { mutable ->
             mutable[SOUND] = settings.reminderSound.code
-            mutable[PERSISTENT] = settings.persistentReminder
-            mutable[SNOOZE] = settings.snoozeMinutes
             mutable[WATCH] = settings.watchEnabled
             mutable[WATCH_SNOOZE] = settings.watchSnoozeButton
             val quiet = settings.quietHours
@@ -88,8 +98,6 @@ class TransferSettingsDataStore @Inject constructor(private val preferences: Dat
 
     private companion object {
         val SOUND = stringPreferencesKey("reminder_sound")
-        val PERSISTENT = booleanPreferencesKey("reminder_persistent")
-        val SNOOZE = intPreferencesKey("reminder_snooze_minutes")
         val QUIET_FROM = stringPreferencesKey("quiet_hours_from")
         val QUIET_TO = stringPreferencesKey("quiet_hours_to")
         val WATCH = booleanPreferencesKey("watch_enabled")

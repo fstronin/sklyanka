@@ -24,9 +24,17 @@ sealed interface SettingsIntent {
 
     data class SetPersistentReminder(val enabled: Boolean) : SettingsIntent
 
+    /** «Звук» — переход в системные настройки уведомлений приложения (ОВ-98). */
     data object OpenSound : SettingsIntent
 
+    /** «Отложить на» — открыть выбор интервала из [ru.stohastika.sklyanka.domain.reminder.SnoozeIntervals]. */
     data object OpenSnooze : SettingsIntent
+
+    /** Закрыть выбор интервала без изменения («Отмена», системная «Назад», тап вне окна). */
+    data object DismissSnooze : SettingsIntent
+
+    /** Выбран интервал откладывания в минутах (ОВ-98). */
+    data class SetSnooze(val minutes: Int) : SettingsIntent
 
     data object OpenWatchSetup : SettingsIntent
 

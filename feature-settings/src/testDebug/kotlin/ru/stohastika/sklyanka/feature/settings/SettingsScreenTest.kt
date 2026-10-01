@@ -19,6 +19,9 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderSettingsValues
+import ru.stohastika.sklyanka.ui.component.TAG_BOTTOM_BAR
+import ru.stohastika.sklyanka.ui.component.TAG_LIST_PICKER_OPTION
+import ru.stohastika.sklyanka.ui.component.TAG_LIST_PICKER_SELECTED
 import ru.stohastika.sklyanka.ui.component.TAG_SWITCH_ROW
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaSizes
@@ -70,6 +73,32 @@ class SettingsScreenTest {
         assertEquals(2, composeRule.onAllNodesWithTag(TAG_PROFILE_ROW).fetchSemanticsNodes().size)
     }
 
+    /**
+     * SKL-58: пока мастера создания профиля нет, строка «Добавить профиль» выключена
+     * и объясняет, что функция появится позже.
+     *
+     * Нажимаемость проверяется отсутствием действия нажатия. Цвет — только признак
+     * недоступности, смысл несёт подпись словами (§6.1 дизайн-системы, НФТ-30).
+     */
+    @Test
+    fun theAddProfileRowIsDisabledUntilTheWizardExists() {
+        show()
+
+        composeRule.onNodeWithText(string(R.string.settings_profile_add), useUnmergedTree = true).assertExists()
+        composeRule
+            .onNodeWithText(string(R.string.settings_profile_add_unavailable), useUnmergedTree = true)
+            .assertExists()
+        val node = composeRule.onNodeWithTag(TAG_ADD_PROFILE, useUnmergedTree = true).fetchSemanticsNode()
+        assertTrue(
+            "the add-profile row must not be clickable while the wizard is missing",
+            !node.config.contains(androidx.compose.ui.semantics.SemanticsActions.OnClick),
+        )
+        assertTrue(
+            "the add-profile row must be announced as disabled",
+            node.config.contains(androidx.compose.ui.semantics.SemanticsProperties.Disabled),
+        )
+    }
+
     /** ПРФ-7: строка чужого профиля несёт число лекарств и состояние дублирования. */
     @Test
     fun theForeignProfileRowStatesTheNumberOfMedicationsAndTheMirroredReminders() {
@@ -89,11 +118,25 @@ class SettingsScreenTest {
         composeRule.onNodeWithText(expected, useUnmergedTree = true).assertExists()
     }
 
+    /**
+     * SKL-78, ОВ-98: у строки «Звук» значения нет, подпись называет, куда ведёт переход.
+     *
+     * Прежнее фальшивое «Мягкий сигнал» снято: такого звука не существует, оба канала
+     * звучат системными сигналами.
+     */
+    @Test
+    fun theSoundRowCarriesNoValueAndNamesTheSystemSettings() {
+        show()
+
+        composeRule.onNodeWithText(string(R.string.settings_sound_caption), useUnmergedTree = true).assertExists()
+        composeRule.onAllNodesWithText(SOUND_VALUE).assertCountEquals(0)
+    }
+
     @Test
     fun theRemindersBlockShowsTheStoredValues() {
         show(SettingsScreenFixtures.state(reminders = ReminderSettingsValues(persistentEnabled = true)))
 
-        composeRule.onNodeWithText(string(R.string.settings_sound_value), useUnmergedTree = true).assertExists()
+        composeRule.onNodeWithText(string(R.string.settings_sound_caption), useUnmergedTree = true).assertExists()
         composeRule.onNodeWithText(string(R.string.settings_persistent_caption), useUnmergedTree = true).assertExists()
         val snooze = context.resources.getQuantityString(
             R.plurals.settings_snooze_minutes,
@@ -101,6 +144,60 @@ class SettingsScreenTest {
             ReminderSettingsValues.DEFAULT_SNOOZE_MINUTES,
         )
         composeRule.onNodeWithText(snooze, useUnmergedTree = true).assertExists()
+    }
+
+    /** SKL-78, ОВ-98: «Звук» ведёт в системные настройки уведомлений приложения. */
+    @Test
+    fun theSoundRowLeadsToTheSystemNotificationSettings() {
+        val intents = mutableListOf<SettingsIntent>()
+        show(onIntent = intents::add)
+
+        composeRule.onNodeWithTag(TAG_SOUND_ROW).performClick()
+
+        assertEquals(listOf(SettingsIntent.OpenSound), intents)
+    }
+
+    /** SKL-78, ОВ-98: «Отложить на» открывает выбор интервала. */
+    @Test
+    fun theSnoozeRowOpensTheIntervalPicker() {
+        val intents = mutableListOf<SettingsIntent>()
+        show(onIntent = intents::add)
+
+        composeRule.onNodeWithTag(TAG_SNOOZE_ROW).performClick()
+
+        assertEquals(listOf(SettingsIntent.OpenSnooze), intents)
+    }
+
+    /**
+     * SKL-78, ОВ-98: выбор — диалог из ровно пяти значений, выбор применяется сразу.
+     *
+     * Выбранное отмечено галочкой и состоянием `selected`, а не одним цветом (НФТ-30).
+     */
+    @Test
+    fun theSnoozeDialogOffersTheWholeSetAndAppliesTheChoiceImmediately() {
+        val intents = mutableListOf<SettingsIntent>()
+        show(SettingsScreenFixtures.state(snoozePickerVisible = true), onIntent = intents::add)
+
+        composeRule.onNodeWithTag(TAG_SNOOZE_DIALOG).assertExists()
+        assertEquals(SET_SIZE, composeRule.onAllNodesWithTag(TAG_LIST_PICKER_OPTION).fetchSemanticsNodes().size)
+        composeRule.onNodeWithTag(TAG_LIST_PICKER_SELECTED, useUnmergedTree = true).assertExists()
+
+        composeRule.onNodeWithText(snoozeLabel(THIRTY)).performClick()
+
+        assertEquals(listOf(SettingsIntent.SetSnooze(THIRTY)), intents)
+    }
+
+    /** SKL-78: закрытие диалога не меняет настройку — «Отмена» шлёт отмену. */
+    @Test
+    fun cancellingTheSnoozeDialogChangesNothing() {
+        val intents = mutableListOf<SettingsIntent>()
+        show(SettingsScreenFixtures.state(snoozePickerVisible = true), onIntent = intents::add)
+
+        composeRule
+            .onNodeWithText(context.getString(ru.stohastika.sklyanka.ui.R.string.action_cancel))
+            .performClick()
+
+        assertEquals(listOf(SettingsIntent.DismissSnooze), intents)
     }
 
     /**
@@ -306,9 +403,17 @@ class SettingsScreenTest {
 
     private fun string(id: Int): String = context.getString(id)
 
+    private fun snoozeLabel(minutes: Int): String =
+        context.resources.getQuantityString(R.plurals.settings_snooze_minutes, minutes, minutes)
+
     private companion object {
         const val TWO = 2
         const val SCALE_200 = 2.0f
+        const val SET_SIZE = 5
+        const val THIRTY = 30
+
+        /** Прежнее фальшивое значение строки «Звук», снятое ОВ-98. Литерал намеренный. */
+        const val SOUND_VALUE = "Мягкий сигнал"
 
         /**
          * Заголовок снятой строки часов. Литерал намеренный: ресурс удалён решением
