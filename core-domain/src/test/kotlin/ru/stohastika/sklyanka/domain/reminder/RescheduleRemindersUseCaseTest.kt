@@ -282,4 +282,46 @@ class RescheduleKeepsDeferredAlarmsTest {
         assertEquals(1, outcome.cancelled)
         assertEquals(IntakeStatus.PENDING, world.stored().status)
     }
+
+    /**
+     * Опоздавший повтор не ставится, а уже стоящий на прошедший момент снимается: без ветки
+     * `stale` «снятие» оставило бы будильник и предъявило его всё равно (НАП-41, ОВ-99).
+     */
+    @Test
+    fun `an overdue deferred repeat arms nothing and cancels its old alarm`() = runTest {
+        world.pending()
+        world.moveTo(LocalDateTime.of(2026, 9, 25, 14, 1))
+        world.snooze(Fixtures.INTAKE_ID, minutes = 15)
+        assertEquals(
+            world.momentOf(LocalDateTime.of(2026, 9, 25, 14, 16)),
+            world.alarms.alarms[Fixtures.INTAKE_ID],
+        )
+
+        world.moveTo(LocalDateTime.of(2026, 9, 25, 15, 0))
+        val outcome = world.reschedule(RescheduleReason.MANUAL)
+
+        assertTrue(world.alarms.alarms.isEmpty(), "the overdue repeat must not be armed")
+        assertEquals(1, outcome.cancelled, "the alarm on the past moment must be cancelled")
+        assertEquals(
+            DeferredReason.DROPPED,
+            world.journal.of(ReminderEvent.DEFERRED).last().reason,
+        )
+    }
+
+    /** Регрессия SKL-35: повтор в пределах порога по-прежнему стоит на своём моменте. */
+    @Test
+    fun `a deferred repeat within the threshold keeps its alarm`() = runTest {
+        world.pending()
+        world.moveTo(LocalDateTime.of(2026, 9, 25, 14, 1))
+        world.snooze(Fixtures.INTAKE_ID, minutes = 15)
+
+        world.moveTo(LocalDateTime.of(2026, 9, 25, 14, 30))
+        val outcome = world.reschedule(RescheduleReason.MANUAL)
+
+        assertEquals(
+            world.momentOf(LocalDateTime.of(2026, 9, 25, 14, 16)),
+            world.alarms.alarms[Fixtures.INTAKE_ID],
+        )
+        assertEquals(0, outcome.cancelled)
+    }
 }

@@ -33,6 +33,9 @@ import java.time.ZoneId
  * и в окно планирования не попадает. Записи читаются по идентификатору приёма — приём
  * мог выпасть из окна выборки, — а живучесть каждой решает то же правило
  * `WindowIntakeSelector.remindable`, что пускает приёмы в план.
+ *
+ * Будильник ставится не для любой живой записи, а только для уместной по времени:
+ * слишком опоздавший повтор снимается без показа ([DeferredShowPolicy], НАП-41, ОВ-99).
  */
 class RescheduleRemindersUseCase(
     private val plan: ReminderPlanSource,
@@ -137,10 +140,15 @@ class RescheduleRemindersUseCase(
      * Живучесть постоянных записей и план отложенных срабатываний (`TDD.md §9.3`, шаги 2–4, 6).
      *
      * Записи читаются по приёму, а не через окно: `scheduled_at` отложенного приёма уже
-     * в прошлом, и в выборке кандидатов его бы не было. Неживые записи снимаются с журнальным
-     * следом: их приём больше не ожидается — отмечен, истёк, в архиве, «по потребности»
-     * или в чужом профиле без дублирования. Живучесть решает то же правило
+     * в прошлом, и в выборке кандидатов его бы не было. Живучесть решает то же правило
      * `WindowIntakeSelector.remindable`, что пускает приёмы в план.
+     *
+     * Запись снимается по двум поводам, и оба ведут к одному журнальному следу
+     * `DEFERRED{dropped}`: приём больше не ожидается (отмечен, истёк, в архиве,
+     * «по потребности», в чужом профиле без дублирования, удалён) **или** показ
+     * восстановленного повтора уже неуместен по времени (`DeferredShowPolicy`, НАП-41,
+     * ОВ-99). Порог — только про показ: приём при этом остаётся `pending` до конца суток
+     * (ОВ-4), а не переводится в пропущенные.
      */
     private suspend fun reconcileDeferred(now: Instant, zone: ZoneId): DeferredPlan {
         val records = deferred.all()
@@ -148,15 +156,17 @@ class RescheduleRemindersUseCase(
         val liveIds = WindowIntakeSelector.remindable(paired.map { it.first }).map { it.intakeId }.toSet()
         val pairedById = paired.associateBy { (intake, _) -> intake.intakeId }
 
-        records.filter { it.intakeId !in liveIds }.forEach { record ->
-            deferred.remove(record.intakeId)
-            journalDropped(now, record, pairedById[record.intakeId]?.first, zone)
-        }
-
-        val wanted = paired
-            .filter { (intake, _) -> intake.intakeId in liveIds }
-            .map { (intake, record) ->
-                PlannedReminder(
+        // Один проход по записям разводит два исхода: поставить будильник или снять запись.
+        // Снятие идемпотентно по факту: журнальная строка появляется только тогда, когда
+        // запись действительно была снята (принцип SKL-47 «один факт — одна запись»).
+        val wanted = mutableListOf<PlannedReminder>()
+        records.forEach { record ->
+            val intake = pairedById[record.intakeId]?.first
+            val tooLate = !DeferredShowPolicy.shouldShow(now, record.fireAt)
+            if (intake == null || intake.intakeId !in liveIds || tooLate) {
+                if (deferred.remove(record.intakeId)) journalDropped(now, record, intake, zone)
+            } else {
+                wanted += PlannedReminder(
                     intakeId = intake.intakeId,
                     at = record.fireAt,
                     scheduledAt = intake.scheduledAt,
@@ -165,6 +175,7 @@ class RescheduleRemindersUseCase(
                     attempt = record.attempt,
                 )
             }
+        }
         return DeferredPlan(liveIds = liveIds, wanted = wanted)
     }
 

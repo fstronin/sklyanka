@@ -146,19 +146,21 @@ class RestoreDeferredRemindersTest {
     }
 
     /**
-     * Включение в тот же день: момент повтора ушёл в прошлое, но окно приёма ещё открыто.
+     * Опоздание в пределах порога: момент повтора ушёл в прошлое, но окно приёма ещё открыто.
      *
      * Будильник ставится на прошедший момент — `setExactAndAllowWhileIdle` предъявляет
      * его сразу, и человек получает обещанное напоминание, как только телефон вернулся.
      * Плановое время приёма при этом не переписывается (НАП-31, решение ведущей сессии).
+     * Пересборка в 14:30 — через 14 минут после цели повтора, то есть в пределах
+     * получаса (НАП-41, ОВ-99).
      */
     @Test
-    fun `a deferred moment in the past is armed at once while the intake is still pending`() = runTest {
+    fun `a deferred moment within the threshold is armed at once while the intake is still pending`() = runTest {
         world.pending()
         snoozeAtOnePastTwo()
         world.moveTo(LocalDateTime.of(2026, 9, 25, 14, 5))
         world.simulateReboot()
-        world.moveTo(LocalDateTime.of(2026, 9, 25, 15, 0))
+        world.moveTo(LocalDateTime.of(2026, 9, 25, 14, 30))
 
         world.reschedule(RescheduleReason.BOOT)
 
@@ -172,6 +174,67 @@ class RestoreDeferredRemindersTest {
         assertTrue(world.notifications.shown.isNotEmpty(), "the reminder must arrive when the phone is back")
         assertEquals(LocalDateTime.of(2026, 9, 25, 14, 0), world.stored().scheduledAt)
         assertEquals(IntakeStatus.PENDING, world.stored().status)
+    }
+
+    /**
+     * Опоздание больше порога: повтор снимается без показа (НАП-41, ОВ-99).
+     *
+     * Цель повтора 14:16, пересборка в 15:00 — 44 минуты. Предъявление уже не помогает
+     * человеку, поэтому записи в `wanted` нет, `alarms.schedule` не зовётся, а старый
+     * будильник на прошедший момент снимается веткой `stale`.
+     */
+    @Test
+    fun `a deferred moment later than the threshold is dropped without showing`() = runTest {
+        world.pending()
+        snoozeAtOnePastTwo()
+        world.simulateReboot()
+        world.moveTo(LocalDateTime.of(2026, 9, 25, 15, 0))
+
+        world.reschedule(RescheduleReason.BOOT)
+
+        assertTrue(world.alarms.alarms.isEmpty(), "the overdue repeat must not be armed")
+        assertTrue(world.deferred.stored.isEmpty(), "the overdue record must be dropped")
+        assertTrue(world.notifications.shown.isEmpty(), "the overdue repeat must not be shown")
+        assertEquals(
+            DeferredReason.DROPPED,
+            world.journal.of(ReminderEvent.DEFERRED).single().reason,
+        )
+    }
+
+    /** Снятие повтора — не отметка: приём остаётся ожидающимся и на своём плановом времени. */
+    @Test
+    fun `a dropped overdue repeat leaves the intake pending at its planned time`() = runTest {
+        world.pending()
+        snoozeAtOnePastTwo()
+        world.simulateReboot()
+        world.moveTo(LocalDateTime.of(2026, 9, 25, 15, 0))
+
+        world.reschedule(RescheduleReason.BOOT)
+
+        assertEquals(IntakeStatus.PENDING, world.stored().status, "the drop must not mark the intake")
+        assertEquals(LocalDateTime.of(2026, 9, 25, 14, 0), world.stored().scheduledAt)
+    }
+
+    /**
+     * Снятие идемпотентно по факту: две пересборки по одной опоздавшей записи дают одну
+     * журнальную строку `DEFERRED{dropped}` (принцип SKL-47 «один факт — одна запись»).
+     */
+    @Test
+    fun `two rebuilds over one overdue record leave a single dropped entry`() = runTest {
+        world.pending()
+        snoozeAtOnePastTwo()
+        world.simulateReboot()
+        world.moveTo(LocalDateTime.of(2026, 9, 25, 15, 0))
+
+        world.reschedule(RescheduleReason.BOOT)
+        world.reschedule(RescheduleReason.APP_START)
+
+        assertEquals(
+            1,
+            world.journal.of(ReminderEvent.DEFERRED).count { it.reason == DeferredReason.DROPPED },
+            "one drop is one journal entry, whatever the number of rebuilds",
+        )
+        assertTrue(world.deferred.stored.isEmpty())
     }
 
     @Test
