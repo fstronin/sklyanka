@@ -21,7 +21,7 @@
       и SklyankaIcon.dc.html.
     -->
 
-    <!-- Плитки иконки: тёмная основная, светлая для системы на тёмном фоне (§7). -->
+    <!-- Плитки иконки: светлая по умолчанию, тёмная — в `-night` (ОВ-95, §7). -->
     <color name="mark_tile_dark">#191512</color>
     <color name="mark_tile_light">#EFE7DB</color>
 

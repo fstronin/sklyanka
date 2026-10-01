@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Передний план адаптивной иконки, светлый знак на тёмной подложке.
+  Передний план адаптивной иконки, светлая системная тема: тёмный знак на светлой
+  подложке (ОВ-95).
 
   Геометрия — поле 200×200 из `design/screens/SklyankaMark.dc.html`, то же самое,
   из которого рисуется компонент знака в core-ui. Группа `<group>` переносит поле 200
@@ -30,7 +31,7 @@
               android:centerX="100"
               android:centerY="163"
               android:gradientRadius="58">
-            <item android:offset="0" android:color="@color/mark_caustic_dark" />
+            <item android:offset="0" android:color="@color/mark_caustic_light" />
             <item android:offset="1" android:color="@color/mark_caustic_clear" />
           </gradient>
         </aapt:attr>
@@ -45,9 +46,9 @@
             android:centerX="72.48"
             android:centerY="62.16"
             android:gradientRadius="134.16">
-          <item android:offset="0" android:color="@color/mark_body_dark_0" />
-          <item android:offset="0.52" android:color="@color/mark_body_dark_1" />
-          <item android:offset="1" android:color="@color/mark_body_dark_2" />
+          <item android:offset="0" android:color="@color/mark_body_light_0" />
+          <item android:offset="0.52" android:color="@color/mark_body_light_1" />
+          <item android:offset="1" android:color="@color/mark_body_light_2" />
         </gradient>
       </aapt:attr>
     </path>
@@ -63,9 +64,9 @@
             android:startY="27.76"
             android:endX="161.92"
             android:endY="175.68">
-          <item android:offset="0" android:color="@color/mark_rim_dark_0" />
-          <item android:offset="0.46" android:color="@color/mark_rim_dark_1" />
-          <item android:offset="1" android:color="@color/mark_rim_dark_2" />
+          <item android:offset="0" android:color="@color/mark_rim_light_0" />
+          <item android:offset="0.46" android:color="@color/mark_rim_light_1" />
+          <item android:offset="1" android:color="@color/mark_rim_light_2" />
         </gradient>
       </aapt:attr>
     </path>
@@ -73,33 +74,25 @@
     <!-- Три кольца: толщина убывает к центру, плотность нарастает. -->
     <path
         android:pathData="M100,34 a66,66 0 1,0 0,132 a66,66 0 1,0 0,-132 Z"
-        android:strokeColor="@color/mark_ink_on_dark"
-        android:strokeAlpha="0.13"
+        android:strokeColor="@color/mark_ink_on_light"
+        android:strokeAlpha="0.09"
         android:strokeWidth="7" />
     <path
         android:pathData="M100,53 a47,47 0 1,0 0,94 a47,47 0 1,0 0,-94 Z"
-        android:strokeColor="@color/mark_ink_on_dark"
-        android:strokeAlpha="0.26"
+        android:strokeColor="@color/mark_ink_on_light"
+        android:strokeAlpha="0.2"
         android:strokeWidth="2" />
     <path
         android:pathData="M100,72 a28,28 0 1,0 0,56 a28,28 0 1,0 0,-56 Z"
-        android:strokeColor="@color/mark_ink_on_dark"
-        android:strokeAlpha="0.5"
+        android:strokeColor="@color/mark_ink_on_light"
+        android:strokeAlpha="0.42"
         android:strokeWidth="2.5" />
 
     <!-- Световой серп по верхнему краю: кольцевой сектор 76/67. -->
     <path
         android:pathData="M25.1,86.8 A76,76 0 0 1 86.8,25.1 L88.4,34 A67,67 0 0 0 34,88.4 Z"
-        android:fillColor="@color/mark_ink_on_dark"
-        android:fillAlpha="0.82" />
-
-    <!-- Слабое отражение по нижнему левому краю. -->
-    <path
-        android:pathData="M44.6,131.4 A62,62 0 0 0 63,149.9"
-        android:strokeColor="@color/mark_ink_on_dark"
-        android:strokeAlpha="0.3"
-        android:strokeWidth="3"
-        android:strokeLineCap="round" />
+        android:fillColor="@color/mark_highlight"
+        android:fillAlpha="0.95" />
 
     <!-- Тёплая дуга преломлённого луча: она одна и та же в обоих вариантах. -->
     <path
@@ -111,7 +104,7 @@
     <!-- Центральная точка. -->
     <path
         android:pathData="M100,92 a8,8 0 1,0 0,16 a8,8 0 1,0 0,-16 Z"
-        android:fillColor="@color/mark_ink_on_dark"
-        android:fillAlpha="0.92" />
+        android:fillColor="@color/mark_ink_on_light"
+        android:fillAlpha="0.72" />
   </group>
 </vector>
