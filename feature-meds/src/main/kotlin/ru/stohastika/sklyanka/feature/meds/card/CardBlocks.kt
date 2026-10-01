@@ -19,6 +19,8 @@ import androidx.compose.ui.res.stringResource
 import ru.stohastika.sklyanka.domain.medication.CourseProgress
 import ru.stohastika.sklyanka.domain.medication.DoseUnit
 import ru.stohastika.sklyanka.domain.medication.WeekAdherenceStrip
+import ru.stohastika.sklyanka.domain.medication.WeekCounter
+import ru.stohastika.sklyanka.domain.medication.counter
 import ru.stohastika.sklyanka.domain.stock.StockPanel
 import ru.stohastika.sklyanka.feature.meds.ClockGlyph
 import ru.stohastika.sklyanka.feature.meds.R
@@ -33,8 +35,8 @@ import ru.stohastika.sklyanka.ui.component.ProgressPurpose
 import ru.stohastika.sklyanka.ui.component.QuietButton
 import ru.stohastika.sklyanka.ui.component.SecondaryButton
 import ru.stohastika.sklyanka.ui.component.SklyankaProgressTrack
-import ru.stohastika.sklyanka.ui.component.StackingRow
 import ru.stohastika.sklyanka.ui.component.SklyankaTextField
+import ru.stohastika.sklyanka.ui.component.StackingRow
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaShapes
 import ru.stohastika.sklyanka.ui.token.SklyankaSizes
@@ -307,10 +309,15 @@ private fun RefillRow(refill: RefillUi, unit: DoseUnit, onIntent: (MedCardIntent
 /** Блок «Последние 7 дней» на общем компоненте дизайн-системы (общий с SKL-18). */
 @Composable
 internal fun WeekBlock(week: WeekAdherenceStrip, modifier: Modifier = Modifier) {
+    // Нулевой знаменатель — доля не рисуется: фраза называет факт, а не «0 из 0» (ПМ-15 п. 2).
+    val trailing = when (val counter = week.counter()) {
+        is WeekCounter.Fraction -> weekCounter(counter.taken, counter.planned)
+        WeekCounter.NoRecords -> stringResource(R.string.card_week_empty)
+    }
     CardBlock(
         label = stringResource(R.string.card_section_week),
         modifier = modifier.testTag(TAG_WEEK_BLOCK),
-        trailing = weekCounter(week.taken, week.planned),
+        trailing = trailing,
     ) {
         AdherenceWeek(days = week.days.map { cell -> cell.toAdherenceDay() })
     }

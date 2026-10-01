@@ -117,6 +117,40 @@ class WeekAdherenceTest {
         assertEquals(2, strip.planned)
     }
 
+    // --- Итог недели: доля или фраза (ПМ-15 п. 2) --------------------------------------
+
+    @Test
+    fun `a week without completed days with a plan has no fraction`() {
+        // Только сегодня и дни до начала курса: завершённых дней с приёмами нет.
+        val strip = WeekAdherence.of(Cards.scheduled(startDate = Cards.TODAY), emptyList(), Cards.TODAY)
+
+        assertTrue(strip.counter() == WeekCounter.NoRecords, "a degenerate fraction must not be drawn: ${strip.days}")
+    }
+
+    @Test
+    fun `a week with a completed day that had a plan keeps the fraction`() {
+        val strip = WeekAdherence.of(Cards.scheduled(), Cards.day(Cards.TODAY.minusDays(1), taken = 2), Cards.TODAY)
+
+        assertEquals(WeekCounter.Fraction(taken = 2, planned = 2), strip.counter())
+    }
+
+    @Test
+    fun `todays intakes alone do not keep a fraction alive`() {
+        val strip = WeekAdherence.of(
+            Cards.scheduled(),
+            listOf(
+                Cards.intake(at = Cards.TODAY.atTime(Cards.MORNING)),
+                Cards.intake(at = Cards.TODAY.atTime(Cards.EVENING), status = IntakeStatus.PENDING),
+            ),
+            Cards.TODAY,
+        )
+
+        // Знаменатель полосы не пуст (сегодняшний план), но завершённых дней с приёмами
+        // нет: курс, заведённый сегодня, не показывает «0 из 2».
+        assertTrue(strip.planned > 0, "the strip still plans intakes: ${strip.planned}")
+        assertTrue(strip.counter() == WeekCounter.NoRecords, "a course started today must not show a fraction")
+    }
+
     @Test
     fun `intakes of another medication never leak into the strip`() {
         val strip = WeekAdherence.of(
