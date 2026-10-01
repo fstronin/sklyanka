@@ -24,6 +24,41 @@ data class ReminderOnTimeSummary(val fired: Int, val onTime: Int, val days: Long
 }
 
 /**
+ * Сводка за окно: сколько напоминаний сработало и сколько приёмов пропущено (ОВ-49, SKL-79).
+ *
+ * Отвечает на вопрос «работает ли оно вообще» простыми словами, а не долей: пропущенные
+ * приёмы — вторая половина ответа, и без неё «100 %» на одном срабатывании читалось бы
+ * как доказательство надёжности.
+ */
+data class ReminderWeekSummary(val fired: Int, val missed: Int) {
+
+    /** Есть ли что показывать: без срабатываний и пропусков фразы не существует. */
+    val hasData: Boolean get() = fired > 0 || missed > 0
+}
+
+/**
+ * Правило недельной сводки (ОВ-49).
+ *
+ * Срабатывания считаются по `SHOWN` — по предъявлению уведомления человеку, как и
+ * «вовремя»; пропущенные — по `MISSED_SWEEP` за то же окно (НАП-34).
+ */
+object ReminderWeekSummaryRule {
+
+    /**
+     * @param days глубина окна — та же, что у «вовремя» (НФТ-51); срез уже сделан вызывающим,
+     *   параметр держит подписи двух сводок одинаковыми и документирует окно.
+     */
+    @Suppress("UnusedParameter")
+    fun summarize(
+        entries: List<ReminderLogEntry>,
+        days: Long = ReminderOnTimeRule.WINDOW.toDays(),
+    ): ReminderWeekSummary = ReminderWeekSummary(
+        fired = entries.count { it.event == ReminderEvent.SHOWN },
+        missed = entries.count { it.event == ReminderEvent.MISSED_SWEEP },
+    )
+}
+
+/**
  * Правило «сработало вовремя» (НАП-2) и глубина сводки (НФТ-51).
  *
  * Отдельно от [ru.stohastika.sklyanka.domain.history.OnTimeRule] намеренно: там мерой служит

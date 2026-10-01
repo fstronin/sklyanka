@@ -2,19 +2,23 @@ package ru.stohastika.sklyanka.feature.reminder
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.annotation.Config
 import ru.stohastika.sklyanka.domain.reminder.ReminderDiagnostics
 import ru.stohastika.sklyanka.domain.reminder.ReminderJournalExportOutcome
 import ru.stohastika.sklyanka.domain.reminder.ReminderOnTimeSummary
 import ru.stohastika.sklyanka.domain.reminder.ReminderReliability
+import ru.stohastika.sklyanka.domain.reminder.ReminderWeekSummary
 import ru.stohastika.sklyanka.domain.reminder.port.PermissionState
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPermission
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
@@ -22,15 +26,16 @@ import java.time.Instant
 import java.time.ZoneId
 
 /**
- * Состав экрана диагностики в части, добавленной по НАП-37 и НФТ-51: сводка «вовремя
- * за 7 дней», выгрузка журнала файлом и вход в настройку заново.
+ * Экран проверки напоминаний: два уровня и честность первого (SKL-79, ОВ-49).
  *
- * Идёт на JVM под Robolectric (стенд SKL-24): состав экрана и подписи кнопок устройства
- * не требуют. Чего этот прогон **не** доказывает — что системный выбор места действительно
- * откроется и что файл запишется: это чужая активность и чужое хранилище, и проверяются
- * они на эталонном устройстве.
+ * Идёт на JVM под Robolectric: состав экрана и подписи устройства не требуют. Чего прогон
+ * не доказывает — что «Исправить» открывает нужный системный экран и что файл выгрузки
+ * запишется: это чужое и проверяется на устройстве.
  */
 @RunWith(AndroidJUnit4::class)
+// Экран длиннее окна телефона: техблок «Для поддержки» иначе не собирается, и проверка
+// видела бы только первый уровень.
+@Config(qualifiers = "w390dp-h4000dp-mdpi")
 class DiagnosticsScreenTest {
 
     @get:Rule
@@ -38,37 +43,55 @@ class DiagnosticsScreenTest {
 
     private val zone: ZoneId = ZoneId.of("Europe/Moscow")
 
-    private fun snapshot(onTime: ReminderOnTimeSummary) = ReminderDiagnostics(
+    private fun snapshot(
+        reliable: Boolean = true,
+        permissions: Map<ReminderPermission, PermissionState> = grantedAll(),
+        week: ReminderWeekSummary = ReminderWeekSummary(fired = 12, missed = 2),
+        onTime: ReminderOnTimeSummary = ReminderOnTimeSummary(fired = 13, onTime = 12, days = 7),
+    ) = ReminderDiagnostics(
         lastShown = null,
+        lastMedicationName = null,
         nextAt = null,
         nextIntakeId = null,
+        nextMedicationName = null,
         totalScheduled = 0,
         lastReschedule = null,
-        permissions = ReminderPermission.entries.associateWith { PermissionState.GRANTED },
-        reliability = ReminderReliability(notificationsEnabled = true, exactAlarmsAllowed = true),
+        permissions = permissions,
+        reliability = ReminderReliability(
+            notificationsEnabled = reliable,
+            exactAlarmsAllowed = reliable,
+        ),
         outage = null,
         onTime = onTime,
+        week = week,
         journal = emptyList(),
     )
 
     private fun show(
-        onTime: ReminderOnTimeSummary = ReminderOnTimeSummary(fired = 13, onTime = 12, days = 7),
+        snapshot: ReminderDiagnostics = snapshot(),
+        supportExpanded: Boolean = false,
+        checkOutcome: ReminderCheckOutcome? = null,
         outcome: ReminderJournalExportOutcome? = null,
+        onToggleSupport: () -> Unit = {},
+        onFixPermission: (ReminderPermission) -> Unit = {},
         onExportJournal: () -> Unit = {},
-        onRestartSetup: (() -> Unit)? = {},
     ) {
         compose.setContent {
             SklyankaTheme {
                 DiagnosticsScreen(
                     state = DiagnosticsUiState(
-                        snapshot = snapshot(onTime),
+                        snapshot = snapshot,
                         zone = zone,
                         exportFileName = "sklyanka-reminder-journal-2026-09-25.csv",
                         exportOutcome = outcome,
+                        supportExpanded = supportExpanded,
+                        checkOutcome = checkOutcome,
                     ),
                     onCheckNow = {},
                     onExportJournal = onExportJournal,
-                    onRestartSetup = onRestartSetup,
+                    onRestartSetup = null,
+                    onToggleSupport = onToggleSupport,
+                    onFixPermission = onFixPermission,
                     onBack = {},
                     toLocal = { instant: Instant -> instant.atZone(zone).toLocalDateTime() },
                 )
@@ -77,26 +100,101 @@ class DiagnosticsScreenTest {
     }
 
     @Test
-    fun theSevenDaySummaryIsAWholeLineWithTheCountBesideTheShare() {
+    fun theFirstLevelIsShortWhenEverythingIsFine() {
         show()
 
+        compose.onNodeWithTag(TAG_RELIABLE).assertIsDisplayed()
+        compose.onNodeWithTag(TAG_ALL_GRANTED).assertIsDisplayed()
+    }
+
+    /** Технический отчёт не виден на первом уровне: журнала и счётчиков там нет (ОВ-49). */
+    @Test
+    fun theTechnicalReportIsHiddenOnTheFirstLevel() {
+        show(snapshot = snapshot().copy(lastReschedule = null, journal = emptyList()))
+
+        compose.onNodeWithTag(TAG_SUPPORT_TOGGLE).assertIsDisplayed()
+        compose.onNodeWithTag(TAG_LAST_SHOWN).assertDoesNotExist()
+        compose.onNodeWithTag(TAG_RESCHEDULE).assertDoesNotExist()
+        compose.onNodeWithTag(TAG_JOURNAL_ROW).assertDoesNotExist()
+    }
+
+    @Test
+    fun expandingSupportShowsTheJournalAndTheCounters() {
+        show(supportExpanded = true)
+
+        compose.onNodeWithTag(TAG_LAST_SHOWN).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag(TAG_RESCHEDULE).performScrollTo().assertIsDisplayed()
         compose.onNodeWithTag(TAG_ON_TIME).performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("Вовремя за 7 дней").assertIsDisplayed()
-        // Число срабатываний рядом с долей: «100 %» на одном срабатывании ничего не доказывает.
-        compose.onNodeWithText("12 из 13 · 92 %").assertIsDisplayed()
+        compose.onNodeWithTag(TAG_EXPORT_JOURNAL).performScrollTo().assertIsDisplayed()
     }
 
     @Test
-    fun withoutFiringsTheSummarySaysSoInsteadOfShowingZero() {
-        show(onTime = ReminderOnTimeSummary(fired = 0, onTime = 0, days = 7))
+    fun tappingTheSupportToggleAsksForAnExpansion() {
+        var toggled = 0
+        show(onToggleSupport = { toggled += 1 })
 
-        compose.onNodeWithText("Срабатываний за это время не было").assertIsDisplayed()
+        compose.onNodeWithTag(TAG_SUPPORT_TOGGLE).performScrollTo().performClick()
+
+        assertEquals(1, toggled)
     }
 
     @Test
-    fun theJournalCanBeExportedToAFile() {
+    fun aMissingPermissionIsNamedAndOffersAFix() {
+        var fixed: ReminderPermission? = null
+        val permissions = grantedAll() + (ReminderPermission.NOTIFICATIONS to PermissionState.DENIED)
+        show(
+            snapshot = snapshot(permissions = permissions),
+            onFixPermission = { fixed = it },
+        )
+
+        assertTrue(
+            "a missing permission must have its own row",
+            compose.onAllNodesWithTag(TAG_PERMISSION_ROW, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty(),
+        )
+        compose.onAllNodesWithTag(TAG_FIX)[0].performScrollTo().performClick()
+
+        assertEquals(ReminderPermission.NOTIFICATIONS, fixed)
+    }
+
+    /** Автозапуск EMUI программно не читается: зелёной галочки здесь быть не может (НАП-20). */
+    @Test
+    fun theAutostartRowSaysItIsCheckedByHand() {
+        show(
+            snapshot = snapshot(
+                permissions = grantedAll() + (ReminderPermission.AUTOSTART to PermissionState.UNKNOWN),
+            ),
+        )
+
+        compose.onNodeWithText("Автозапуск и энергосбережение").assertExists()
+    }
+
+    @Test
+    fun theWeekSummaryIsAWholePhrase() {
+        show()
+
+        compose.onNodeWithTag(TAG_WEEK_SUMMARY).assertIsDisplayed()
+        compose.onNodeWithText("За 7 дней: сработало 12, пропущено 2").assertIsDisplayed()
+    }
+
+    @Test
+    fun aFailedCheckIsSaidOutLoud() {
+        show(checkOutcome = ReminderCheckOutcome.FAILED)
+
+        compose.onNodeWithTag(TAG_CHECK_OUTCOME).assertIsDisplayed()
+        compose.onNodeWithText("Проверить не удалось: напоминания не перепланированы").assertIsDisplayed()
+    }
+
+    @Test
+    fun aSuccessfulCheckIsSaidOutLoud() {
+        show(checkOutcome = ReminderCheckOutcome.SUCCESS)
+
+        compose.onNodeWithText("Проверка выполнена — напоминания поставлены").assertIsDisplayed()
+    }
+
+    @Test
+    fun theJournalCanBeExportedFromTheSupportBlock() {
         var requested = 0
-        show(onExportJournal = { requested += 1 })
+        show(supportExpanded = true, onExportJournal = { requested += 1 })
 
         compose.onNodeWithTag(TAG_EXPORT_JOURNAL).performScrollTo().performClick()
 
@@ -105,33 +203,13 @@ class DiagnosticsScreenTest {
 
     @Test
     fun theOutcomeOfAnExportIsNeverSilent() {
-        show(outcome = ReminderJournalExportOutcome.Saved(records = 12, bytes = 2_048))
+        show(supportExpanded = true, outcome = ReminderJournalExportOutcome.Saved(records = 12, bytes = 2_048))
 
         compose.onNodeWithTag(TAG_EXPORT_OUTCOME).performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("Журнал выгружен · 12 записей").assertIsDisplayed()
     }
 
-    @Test
-    fun aFailedExportIsSaidOutLoud() {
-        show(outcome = ReminderJournalExportOutcome.Failed)
-
-        compose.onNodeWithText("Журнал не выгружен: запись не удалась").assertIsDisplayed()
-    }
-
-    @Test
-    fun theSetupCanBeTakenAgainFromHere() {
-        var opened = 0
-        show(onRestartSetup = { opened += 1 })
-
-        compose.onNodeWithTag(TAG_RESTART_SETUP).performScrollTo().performClick()
-
-        assertEquals(1, opened)
-    }
-
-    @Test
-    fun withoutASetupScreenThereIsNoButtonLeadingNowhere() {
-        show(onRestartSetup = null)
-
-        compose.onNodeWithTag(TAG_RESTART_SETUP).assertDoesNotExist()
+    private companion object {
+        fun grantedAll(): Map<ReminderPermission, PermissionState> =
+            ReminderPermission.entries.associateWith { PermissionState.GRANTED }
     }
 }

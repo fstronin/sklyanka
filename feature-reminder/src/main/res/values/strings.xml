@@ -36,7 +36,36 @@
 
     <!-- ===== Диагностика напоминаний (НАП-37) ===== -->
 
-    <string name="diagnostics_title">Напоминания</string>
+    <string name="diagnostics_title">Проверка напоминаний</string>
+
+    <!-- Первый уровень: понятное и действенное (ОВ-49, SKL-79). -->
+    <string name="diagnostics_reliable">Всё в порядке</string>
+    <string name="diagnostics_all_granted">Разрешения выданы</string>
+    <string name="diagnostics_fix">Исправить</string>
+    <string name="diagnostics_check_done">Проверка выполнена — напоминания поставлены</string>
+    <string name="diagnostics_check_failed">Проверить не удалось: напоминания не перепланированы</string>
+    <string name="diagnostics_support">Для поддержки</string>
+
+    <!-- Сводка 7 дней фразой (ОВ-49). Формулировка ждёт дизайн, см. открытый вопрос. -->
+    <string name="diagnostics_week_summary">За 7 дней: сработало %1$d, пропущено %2$d</string>
+    <string name="diagnostics_week_summary_none">За 7 дней напоминаний не было</string>
+
+    <!-- Последнее и следующее — простыми словами, без секунд и идентификаторов (ОВ-49). -->
+    <string name="diagnostics_last_none">Напоминаний ещё не было</string>
+    <string name="diagnostics_last_line">%1$s — %2$s</string>
+    <string name="diagnostics_last_actual">показано в %1$s</string>
+    <string name="diagnostics_on_time_word">вовремя</string>
+    <string name="diagnostics_next_none">Следующего напоминания нет</string>
+    <string name="diagnostics_next_line">%1$s — %2$s · %3$s</string>
+    <string name="diagnostics_next_plan">план</string>
+
+    <plurals name="diagnostics_late">
+        <item quantity="one">с опозданием на %1$d минуту</item>
+        <item quantity="few">с опозданием на %1$d минуты</item>
+        <item quantity="many">с опозданием на %1$d минут</item>
+        <item quantity="other">с опозданием на %1$d минуты</item>
+    </plurals>
+
     <string name="diagnostics_section_last">Последнее напоминание</string>
     <string name="diagnostics_section_next">Следующее напоминание</string>
     <string name="diagnostics_section_reschedule">Последняя сборка плана</string>
@@ -54,6 +83,7 @@
     <string name="diagnostics_scheduled_total">Всего поставлено будильников: %1$d</string>
 
     <string name="diagnostics_permission_notifications">Уведомления</string>
+    <string name="diagnostics_permission_channel">Каналы уведомлений</string>
     <string name="diagnostics_permission_exact_alarms">Точные будильники</string>
     <string name="diagnostics_permission_full_screen">Полноэкранные уведомления</string>
     <string name="diagnostics_permission_dnd">Доступ к политике «Не беспокоить»</string>

@@ -11,6 +11,9 @@ enum class ReminderPermission {
     /** Показ уведомлений; на Android 13+ запрашивается у человека. */
     NOTIFICATIONS,
 
+    /** Каналы напоминаний: выключен хотя бы один — напоминание не покажется вовсе (SKL-79). */
+    NOTIFICATION_CHANNEL,
+
     /** Точные будильники: `USE_EXACT_ALARM` как основное, `SCHEDULE_EXACT_ALARM` запасное (НАП-16). */
     EXACT_ALARMS,
 

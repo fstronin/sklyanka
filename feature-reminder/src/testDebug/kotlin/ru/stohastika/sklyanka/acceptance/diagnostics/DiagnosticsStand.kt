@@ -13,6 +13,7 @@ import ru.stohastika.sklyanka.domain.intake.SweepReason
 import ru.stohastika.sklyanka.domain.reminder.BuildReminderDiagnosticsUseCase
 import ru.stohastika.sklyanka.domain.reminder.ExportReminderJournalUseCase
 import ru.stohastika.sklyanka.domain.reminder.ReadReminderReliabilityUseCase
+import ru.stohastika.sklyanka.domain.reminder.port.ReminderPermission
 import ru.stohastika.sklyanka.domain.schedule.PlanReason
 import ru.stohastika.sklyanka.domain.schedule.PlanScope
 import ru.stohastika.sklyanka.feature.reminder.DiagnosticsScreen
@@ -43,10 +44,20 @@ internal object DiagnosticsStand {
     private var lastWorld: AcceptanceWorld? = null
     private var viewModel: DiagnosticsViewModel? = null
 
+    /** Разрешение, в системный экран которого привёл «Исправить»; null — не нажимали. */
+    var fixed: ReminderPermission? = null
+        private set
+
+    /** Системная «Назад» нажата. */
+    var backRequested: Boolean = false
+        private set
+
     fun reset(world: AcceptanceWorld) {
         if (lastWorld !== world) {
             lastWorld = world
             viewModel = null
+            fixed = null
+            backRequested = false
             Dispatchers.setMain(UnconfinedTestDispatcher())
         }
     }
@@ -63,6 +74,16 @@ internal object DiagnosticsStand {
         model(world).onExportTo(handle)
     }
 
+    /** Раскрыть технический блок «Для поддержки», если он свёрнут (SKL-79). */
+    fun expandSupport(world: AcceptanceWorld) {
+        if (!state(world).supportExpanded) model(world).onToggleSupport()
+    }
+
+    /** Перечитать снимок: человек вернулся из системных настроек (НФТ-52). */
+    fun refresh(world: AcceptanceWorld) {
+        model(world).refresh()
+    }
+
     @Composable
     private fun Content(world: AcceptanceWorld, onAction: (() -> Unit) -> Unit) {
         SklyankaTheme {
@@ -70,15 +91,31 @@ internal object DiagnosticsStand {
                 state = state(world),
                 onCheckNow = { onAction { model(world).onCheckNow() } },
                 onExportJournal = { onAction { exportJournal(world) } },
-                // «Пройти настройку заново» подключает `app`; сценарии SKL-20 его не трогают.
+                // «Пройти настройку заново» подключает `app`; сценарии его не трогают.
                 onRestartSetup = null,
-                onBack = {},
+                onToggleSupport = { onAction { model(world).onToggleSupport() } },
+                onFixPermission = { permission -> onAction { fixed = permission } },
+                onBack = { onAction { backRequested = true } },
                 toLocal = { instant: Instant -> instant.atZone(world.clock.zone).toLocalDateTime() },
             )
         }
     }
 
+    /**
+     * Вопрос к собранной композиции с раскрытым техблоком.
+     *
+     * Сценарии SKL-13/SKL-20 говорят о технических деталях (журнал, счётчики, секунды
+     * отклонения), и блок «Для поддержки» раскрывается перед вопросом: иначе их проверки
+     * видели бы только первый уровень. Свёрнутость блока проверяют сценарии SKL-79
+     * через [askRaw].
+     */
     fun ask(world: AcceptanceWorld, question: ComposeUiTest.() -> Unit) {
+        expandSupport(world)
+        askRaw(world, question)
+    }
+
+    /** Вопрос к композиции без раскрытия техблока (SKL-79: «содержимое свёрнуто»). */
+    fun askRaw(world: AcceptanceWorld, question: ComposeUiTest.() -> Unit) {
         reset(world)
         runComposeUiTest {
             setContent { Content(world, onAction = {}) }
@@ -87,8 +124,14 @@ internal object DiagnosticsStand {
         }
     }
 
-    /** Действие человека: нажатия копятся и применяются после композиции. */
+    /** Действие человека с раскрытым техблоком: нажатия копятся и применяются после композиции. */
     fun act(world: AcceptanceWorld, action: ComposeUiTest.() -> Unit) {
+        expandSupport(world)
+        actRaw(world, action)
+    }
+
+    /** Действие человека без раскрытия техблока (SKL-79: нажатие «Для поддержки»). */
+    fun actRaw(world: AcceptanceWorld, action: ComposeUiTest.() -> Unit) {
         reset(world)
         val performed = mutableListOf<() -> Unit>()
         runComposeUiTest {
@@ -106,9 +149,12 @@ internal object DiagnosticsStand {
             permissions = world.system,
             plan = world.reminders.planSource(),
             reliability = ReadReminderReliabilityUseCase(world.system),
+            medications = world.repositories.medicationStore,
             time = world.clock.time,
         ),
         check = ReminderCheckNow { reason ->
+            // Сценарий отказа: проверка не может завершиться (SKL-79, НФТ-8).
+            check(!world.failReminderCheck) { "the manual check could not finish" }
             // Тот же порядок, что у `ReminderPlanningTrigger.planAll`: просроченные,
             // генерация окна, пересборка будильников (НАП-11, НАП-34).
             world.sweep(SweepReason.REPLAN)

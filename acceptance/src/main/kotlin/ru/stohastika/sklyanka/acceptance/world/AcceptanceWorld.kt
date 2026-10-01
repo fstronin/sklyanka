@@ -89,6 +89,9 @@ class AcceptanceWorld {
      */
     val system = ScenarioSystemState()
 
+    /** Сценарий отказа: ручная проверка напоминаний не может завершиться (SKL-79). */
+    var failReminderCheck: Boolean = false
+
     /** Подсистема напоминаний: будильники, карточки и журнал (SKL-13, ПРФ-6). */
     val reminders = ScenarioReminders(
         clock = clock,

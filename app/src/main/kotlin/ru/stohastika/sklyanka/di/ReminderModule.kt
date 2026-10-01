@@ -30,14 +30,17 @@ import ru.stohastika.sklyanka.domain.reminder.port.ReminderJournal
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPlanSource
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderSettings
 import ru.stohastika.sklyanka.domain.reminder.port.WatchGateway
+import ru.stohastika.sklyanka.domain.repository.MedicationRepository
 import ru.stohastika.sklyanka.domain.time.TimeSource
 import ru.stohastika.sklyanka.domain.transfer.TransferFiles
 import ru.stohastika.sklyanka.feature.onboarding.PermissionsActivity
 import ru.stohastika.sklyanka.feature.reminder.ReminderCheckNow
+import ru.stohastika.sklyanka.feature.reminder.ReminderSettingsFixer
 import ru.stohastika.sklyanka.feature.reminder.ReminderSetupEntry
 import ru.stohastika.sklyanka.platform.notification.ReminderNotifier
 import ru.stohastika.sklyanka.platform.permission.SystemPermissionStateReader
 import ru.stohastika.sklyanka.platform.reminder.AlarmManagerGateway
+import ru.stohastika.sklyanka.platform.reminder.AndroidReminderSettingsFixer
 import ru.stohastika.sklyanka.reminder.ReminderOutageDetector
 import ru.stohastika.sklyanka.reminder.ReminderPlanningTrigger
 import javax.inject.Qualifier
@@ -268,14 +271,26 @@ object ReminderModule {
     fun provideReminderSetupEntry(): ReminderSetupEntry =
         ReminderSetupEntry { context -> PermissionsActivity.intentFor(context) }
 
+    /**
+     * «Исправить» у строки разрешения (ОВ-49).
+     *
+     * Реализация — платформенная, в `app`: экран не знает системных `Intent`
+     * (`ADR-0007`, НФТ-46).
+     */
     @Provides
     @Singleton
+    fun provideReminderSettingsFixer(fixer: AndroidReminderSettingsFixer): ReminderSettingsFixer = fixer
+
+    @Provides
+    @Singleton
+    @Suppress("LongParameterList")
     fun provideDiagnostics(
         journal: ReminderJournal,
         alarms: AlarmGateway,
         permissions: PermissionStateReader,
         plan: ReminderPlanSource,
         reliability: ReadReminderReliabilityUseCase,
+        medications: MedicationRepository,
         time: TimeSource,
     ): BuildReminderDiagnosticsUseCase = BuildReminderDiagnosticsUseCase(
         journal = journal,
@@ -283,6 +298,7 @@ object ReminderModule {
         permissions = permissions,
         plan = plan,
         reliability = reliability,
+        medications = medications,
         time = time,
     )
 }

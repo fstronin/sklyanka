@@ -291,21 +291,26 @@ class ReminderDiagnosticsSteps(private val world: AcceptanceWorld) {
 
     @Тогда("^в записях журнала нет названий лекарств$")
     fun theJournalCarriesNoMedicationNames() {
+        // Только строки журнала: первый уровень проверки намеренно называет лекарство
+        // последнего напоминания обычными словами (ОВ-49), и медицинских данных в журнале
+        // это не отменяет — запрет НФТ-19 про журнал, а не про экран.
         val names = world.medications.all().map { it.name }
-        val offenders = texts().filter { text -> names.any { text.contains(it) } }
+        val offenders = journalTexts().filter { text -> names.any { text.contains(it) } }
         assertEquals(emptyList<String>(), offenders, "the journal must carry no medication names (НФТ-19)")
     }
 
     @И("^нет дозировок$")
     fun theJournalCarriesNoDosages() {
         val doseWords = listOf("таблетк", "капсул", "мг", "mg")
-        val offenders = texts().filter { text -> doseWords.any { word -> text.contains(word, ignoreCase = true) } }
+        val offenders = journalTexts().filter { text ->
+            doseWords.any { word -> text.contains(word, ignoreCase = true) }
+        }
         assertEquals(emptyList<String>(), offenders, "the journal must carry no dosages (НФТ-19)")
     }
 
     @И("^нет имён профилей$")
     fun theJournalCarriesNoProfileNames() {
-        val offenders = texts().filter { text ->
+        val offenders = journalTexts().filter { text ->
             world.profiles.all().any { profile -> occursAsToken(text, profile.name) }
         }
         assertEquals(emptyList<String>(), offenders, "the journal must carry no profile names (НФТ-19)")
@@ -353,6 +358,7 @@ class ReminderDiagnosticsSteps(private val world: AcceptanceWorld) {
 
     private fun permissionLabel(permission: ReminderPermission): Int = when (permission) {
         ReminderPermission.NOTIFICATIONS -> R.string.diagnostics_permission_notifications
+        ReminderPermission.NOTIFICATION_CHANNEL -> R.string.diagnostics_permission_channel
         ReminderPermission.EXACT_ALARMS -> R.string.diagnostics_permission_exact_alarms
         ReminderPermission.FULL_SCREEN_INTENT -> R.string.diagnostics_permission_full_screen
         ReminderPermission.DND_POLICY_ACCESS -> R.string.diagnostics_permission_dnd
@@ -387,10 +393,11 @@ class ReminderDiagnosticsSteps(private val world: AcceptanceWorld) {
         return found
     }
 
-    private fun texts(): List<String> {
+    /** Тексты только строк журнала — там, где медицинских данных быть не должно (НФТ-19). */
+    private fun journalTexts(): List<String> {
         var texts: List<String> = emptyList()
         DiagnosticsStand.ask(world) {
-            texts = onAllNodesWithTag(TAG_DIAGNOSTICS, useUnmergedTree = true)
+            texts = onAllNodesWithTag(TAG_JOURNAL_ROW, useUnmergedTree = true)
                 .fetchSemanticsNodes()
                 .flatMap(::textsOf)
         }

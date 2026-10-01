@@ -9,6 +9,7 @@ import android.os.Build
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import dagger.hilt.android.qualifiers.ApplicationContext
+import ru.stohastika.sklyanka.domain.reminder.ReminderChannel
 import ru.stohastika.sklyanka.domain.reminder.port.PermissionState
 import ru.stohastika.sklyanka.domain.reminder.port.PermissionStateReader
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPermission
@@ -28,6 +29,7 @@ class SystemPermissionStateReader @Inject constructor(@ApplicationContext privat
 
     override fun state(permission: ReminderPermission): PermissionState = when (permission) {
         ReminderPermission.NOTIFICATIONS -> granted(NotificationManagerCompat.from(context).areNotificationsEnabled())
+        ReminderPermission.NOTIFICATION_CHANNEL -> channelsEnabled()
         ReminderPermission.EXACT_ALARMS -> granted(canScheduleExact())
         ReminderPermission.FULL_SCREEN_INTENT -> fullScreenIntent()
         ReminderPermission.DND_POLICY_ACCESS -> granted(notifications().isNotificationPolicyAccessGranted)
@@ -42,6 +44,22 @@ class SystemPermissionStateReader @Inject constructor(@ApplicationContext privat
     /** До Android 12 разрешения на точные будильники не существует, и это не «не выдано». */
     private fun canScheduleExact(): Boolean = Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
         requireNotNull(context.getSystemService(AlarmManager::class.java)).canScheduleExactAlarms()
+
+    /**
+     * Оба канала напоминаний включены (SKL-79).
+     *
+     * Выключенный человеком канал — это отказ: напоминание не покажется вовсе. Канала
+     * может ещё не быть (приложение не успело создать его при старте) — тогда читать
+     * нечего, и честный ответ «не выдано»: строка приведёт человека в системный экран,
+     * где канал появится после первого показа.
+     */
+    private fun channelsEnabled(): PermissionState {
+        val manager = notifications()
+        val enabled = ReminderChannel.entries.all { channel ->
+            manager.getNotificationChannel(channel.id)?.importance != NotificationManager.IMPORTANCE_NONE
+        }
+        return granted(enabled)
+    }
 
     /**
      * Полноэкранные уведомления.
