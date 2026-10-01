@@ -18,6 +18,7 @@ import ru.stohastika.sklyanka.domain.medication.normalized
 import ru.stohastika.sklyanka.domain.model.MedicationForm
 import ru.stohastika.sklyanka.domain.model.ScheduleMode
 import ru.stohastika.sklyanka.domain.model.TabletShape
+import ru.stohastika.sklyanka.domain.stock.StockThresholds
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalTime
@@ -159,6 +160,26 @@ class MedicationFormSteps {
     }
 
     // --- Вид таблетки ------------------------------------------------------------------------------
+
+    /**
+     * Текущий черновик формы для экранного стенда (SKL-66).
+     *
+     * Экранные шаги не могут объявить «он выбирает форму выпуска …» повторно: строка уже
+     * поймана этим объявлением, а два объявления на одну строку валят словарь шагов.
+     * Поэтому сценарный шаг меняет доменный черновик, а экранный стенд синхронизируется
+     * с ним перед проверкой состава.
+     */
+    fun currentDraft(): MedicationDraft = draft
+
+    /** Экранное действие «выбирает форму»: домен и стенд обязаны видеть одно правило. */
+    fun chooseForm(form: MedicationForm) {
+        draft = draft.copy(form = form).normalized()
+    }
+
+    /** Экранное действие «выбирает вид таблетки»: то же правило `normalized()`. */
+    fun chooseShape(shape: TabletShape?) {
+        draft = draft.copy(shape = shape).normalized()
+    }
 
     @Given("^человек выбрал форму выпуска «(.+)» и вид «(.+)»$")
     fun theReleaseFormAndShapeAre(form: String, shape: String) {
@@ -375,7 +396,6 @@ class MedicationFormSteps {
          */
 /** Значения черновика по умолчанию — те же, что в таблицах примеров SKL-09. */
         val DEFAULT_TIME: LocalTime = LocalTime.of(8, 0)
-        const val DEFAULT_THRESHOLD_DAYS = 5
 
         fun defaultDraft(): MedicationDraft = MedicationDraft(
             id = null,
@@ -390,7 +410,7 @@ class MedicationFormSteps {
             startDate = REFERENCE_DATE,
             endDate = null,
             stockLeft = BigDecimal("60"),
-            stockThresholdDays = DEFAULT_THRESHOLD_DAYS,
+            stockThresholdDays = StockThresholds.DEFAULT_DAYS,
         )
     }
 }

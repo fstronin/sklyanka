@@ -1,17 +1,18 @@
 package ru.stohastika.sklyanka.feature.meds.form
 
-import android.app.DatePickerDialog
-import android.app.TimePickerDialog
-import android.content.Context
 import android.text.format.DateFormat
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import java.time.LocalDate
-import java.time.LocalTime
+import androidx.compose.ui.res.stringResource
+import ru.stohastika.sklyanka.feature.meds.R
+import ru.stohastika.sklyanka.ui.component.DateTimePickerDialog
 
 /**
  * Форма лекарства вместе с её состоянием: заведение и правка одной формой (SKL-09).
@@ -20,6 +21,13 @@ import java.time.LocalTime
  * добавления на списке и действие «Изменить» в карточке лекарства (SKL-10). Собранная
  * дважды, форма разошлась бы по обработке выбора даты — а это ровно то место, где
  * ошибка приводит к курсу, начавшемуся не в тот день.
+ *
+ * Маршрут — единственное место, знающее об Android-настройке формата времени
+ * (`DateFormat.is24HourFormat`, SKL-28): дизайн-система платформенного чтения не
+ * содержит и принимает флаг параметром (SKL-69, TDD §10.3). Выбор времени и даты —
+ * диалог приложения `DateTimePickerDialog`, а не системный `TimePickerDialog`/EMUI
+ * (`ОВ-89`). Контракт [MedicationFormScreen] при этом не меняется: замена диалога
+ * не переписывает форму, её снимки и стенды приёмки.
  *
  * @param medicationId `null` — новое лекарство; иначе правка существующего.
  * @param onDone форма закрылась: человек отменил либо сохранение прошло.
@@ -35,6 +43,11 @@ fun MedicationFormRoute(
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
 
+    // Какой диалог открыт: цель даты либо индекс строки времени. Диалог — состояние
+    // маршрута, а не черновика: до нажатия «Готово» пользовательское значение не меняется.
+    var dateDialog by remember { mutableStateOf<DateTarget?>(null) }
+    var timeDialogIndex by remember { mutableStateOf<Int?>(null) }
+
     // Успешное сохранение закрывает форму: список и карточка пересобираются потоком,
     // и перечитывать их отдельно не нужно. Событие не повторяется при новой подписке,
     // поэтому открытие формы после сохранения закрыться от него не может (SKL-57).
@@ -45,52 +58,47 @@ fun MedicationFormRoute(
         state = current,
         onIntent = viewModel::onIntent,
         onCancel = onDone,
-        onPickDate = { target ->
-            val initial = when (target) {
+        onPickDate = { target -> dateDialog = target },
+        onPickTime = { index, _ -> timeDialogIndex = index },
+        modifier = modifier,
+    )
+
+    dateDialog?.let { target ->
+        DateTimePickerDialog(
+            title = when (target) {
+                DateTarget.START -> stringResource(R.string.form_dialog_start_date)
+                DateTarget.END -> stringResource(R.string.form_dialog_end_date)
+            },
+            initial = when (target) {
                 DateTarget.START -> current.draft.startDate
                 DateTarget.END -> current.draft.endDate ?: current.draft.startDate
-            }
-            context.pickDate(initial) { picked ->
+            },
+            onDismiss = { dateDialog = null },
+            onConfirm = { picked ->
                 viewModel.onIntent(
                     when (target) {
                         DateTarget.START -> MedFormIntent.StartDateChanged(picked)
                         DateTarget.END -> MedFormIntent.EndDateChanged(picked)
                     },
                 )
-            }
-        },
-        onPickTime = { index, time ->
-            context.pickTime(time) { picked -> viewModel.onIntent(MedFormIntent.TimeChanged(index, picked)) }
-        },
-        modifier = modifier,
-    )
-}
+                dateDialog = null
+            },
+        )
+    }
 
-/**
- * Системный выбор даты.
- *
- * Собственного экрана выбора даты и времени продукт не рисует
- * (`docs/tasks/SKL-09/task.md`, «Вне рамок»): системный человек уже умеет, и он
- * подчиняется настройкам доступности устройства.
- */
-private fun Context.pickDate(initial: LocalDate, onPicked: (LocalDate) -> Unit) {
-    DatePickerDialog(
-        this,
-        { _, year, month, day -> onPicked(LocalDate.of(year, month + 1, day)) },
-        initial.year,
-        // java.time считает месяцы с единицы, android.widget.DatePicker — с нуля.
-        initial.monthValue - 1,
-        initial.dayOfMonth,
-    ).show()
-}
-
-/** Системный выбор времени; формат 12 или 24 часа берётся из настроек устройства. */
-private fun Context.pickTime(initial: LocalTime, onPicked: (LocalTime) -> Unit) {
-    TimePickerDialog(
-        this,
-        { _, hour, minute -> onPicked(LocalTime.of(hour, minute)) },
-        initial.hour,
-        initial.minute,
-        DateFormat.is24HourFormat(this),
-    ).show()
+    timeDialogIndex?.let { index ->
+        val initial = current.draft.times.getOrNull(index) ?: return@let
+        DateTimePickerDialog(
+            title = stringResource(R.string.form_dialog_time),
+            initial = initial,
+            // Системную настройку читаем в момент открытия, а не кэшируем: при смене
+            // режима 12/24 следующий диалог обязан открыться уже по-новому (TDD §10.3).
+            is24Hour = DateFormat.is24HourFormat(context),
+            onDismiss = { timeDialogIndex = null },
+            onConfirm = { picked ->
+                viewModel.onIntent(MedFormIntent.TimeChanged(index, picked))
+                timeDialogIndex = null
+            },
+        )
+    }
 }

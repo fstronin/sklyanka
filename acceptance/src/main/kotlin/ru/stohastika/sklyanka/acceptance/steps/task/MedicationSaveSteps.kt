@@ -8,6 +8,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import ru.stohastika.sklyanka.acceptance.steps.localMoment
 import ru.stohastika.sklyanka.acceptance.steps.medicationNamed
@@ -188,8 +189,29 @@ class MedicationSaveSteps(private val world: AcceptanceWorld) {
         )
     }
 
+    @Допустим("^человек заполнил форму нового лекарства: название «([^»]+)», форма «([^»]+)», вид не выбран$")
+    fun thePersonFilledTheFormWithoutShape(medication: String, form: String) {
+        // Вид не выбран намеренно: сценарий проверяет, что необязательное уточнение
+        // не мешает сохранению (ОВ-88).
+        draft = MedicationDraft(
+            id = null,
+            profileId = world.profiles.get(world.profiles.active).id,
+            name = medication,
+            form = releaseForm(form),
+            doseAmount = BigDecimal.ONE,
+            scheduleMode = ScheduleMode.SCHEDULED,
+            times = listOf(DEFAULT_TIME),
+            startDate = world.clock.today(),
+        )
+    }
+
     @Когда("^он нажимает «Сохранить лекарство»$")
     fun thePersonPressesSaveTheMedication() {
+        saved = world.save(requireNotNull(draft) { "the scenario never filled the form" })
+    }
+
+    @Когда("^он сохраняет лекарство$")
+    fun heSavesTheMedication() {
         saved = world.save(requireNotNull(draft) { "the scenario never filled the form" })
     }
 
@@ -198,6 +220,13 @@ class MedicationSaveSteps(private val world: AcceptanceWorld) {
         val result = requireNotNull(saved) { "the scenario never pressed «Сохранить лекарство»" }
         assertTrue(result is SaveResult.Saved, "the medication must be saved: $result")
         savedMedication = requireNotNull(draft).name
+    }
+
+    @Тогда("^у сохранённого лекарства вида таблетки нет$")
+    fun theSavedMedicationHasNoShape() {
+        val result = requireNotNull(saved) { "the scenario never saved the medication" }
+        assertTrue(result is SaveResult.Saved, "the medication must be saved: $result")
+        assertNull(world.medications.get(requireNotNull(draft).name).shape)
     }
 
     @Тогда("^ни одного ожидающего приёма «([^»]+)» не создаётся$")

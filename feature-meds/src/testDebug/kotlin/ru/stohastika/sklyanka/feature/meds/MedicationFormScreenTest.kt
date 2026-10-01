@@ -2,8 +2,11 @@ package ru.stohastika.sklyanka.feature.meds
 
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertHasNoClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
@@ -13,8 +16,10 @@ import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -23,6 +28,7 @@ import ru.stohastika.sklyanka.domain.medication.DraftViolation
 import ru.stohastika.sklyanka.domain.medication.MedicationDraft
 import ru.stohastika.sklyanka.domain.model.MedicationForm
 import ru.stohastika.sklyanka.domain.model.ScheduleMode
+import ru.stohastika.sklyanka.domain.stock.StockThresholds
 import ru.stohastika.sklyanka.feature.meds.form.FormInputs
 import ru.stohastika.sklyanka.feature.meds.form.FormMode
 import ru.stohastika.sklyanka.feature.meds.form.MedFormUiState
@@ -32,11 +38,16 @@ import ru.stohastika.sklyanka.feature.meds.form.TAG_MAX_PER_DAY
 import ru.stohastika.sklyanka.feature.meds.form.TAG_PACKAGE_SIZE_FIELD
 import ru.stohastika.sklyanka.feature.meds.form.TAG_PACKAGE_SIZE_HINT
 import ru.stohastika.sklyanka.feature.meds.form.TAG_PACKAGE_SIZE_UNIT
+import ru.stohastika.sklyanka.feature.meds.form.TAG_PERIOD_PRESETS
+import ru.stohastika.sklyanka.feature.meds.form.TAG_RELEASE_FORM
 import ru.stohastika.sklyanka.feature.meds.form.TAG_SAVE_BUTTON
 import ru.stohastika.sklyanka.feature.meds.form.TAG_STOCK_FIELD
+import ru.stohastika.sklyanka.feature.meds.form.TAG_STOCK_REMINDER
+import ru.stohastika.sklyanka.feature.meds.form.TAG_STOCK_THRESHOLD_OPTIONS
 import ru.stohastika.sklyanka.feature.meds.form.TAG_STOCK_UNIT
 import ru.stohastika.sklyanka.feature.meds.form.TAG_TABLET_SHAPE_ROW
 import ru.stohastika.sklyanka.feature.meds.form.TAG_TIMES_BLOCK
+import ru.stohastika.sklyanka.feature.meds.form.TAG_TIME_ROW
 import ru.stohastika.sklyanka.ui.component.TAG_SCREEN_HEADER
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import java.math.BigDecimal
@@ -88,11 +99,18 @@ class MedicationFormScreenTest {
             R.string.med_form_syrup,
             R.string.med_form_drops,
             R.string.med_form_injection,
-        ).forEach { id -> composeRule.onNodeWithText(context.getString(id)).assertIsDisplayed() }
+        ).forEach { id ->
+            // Подпись плитки адресуется внутри блока формы: «Таблетка» звучит ещё и в
+            // заголовке блока-превью (ОВ-94), и поиск по всему экрану нашёл бы два узла.
+            composeRule.onNode(
+                hasText(context.getString(id)) and hasAnyAncestor(hasTestTag(TAG_RELEASE_FORM)),
+                useUnmergedTree = true,
+            ).assertIsDisplayed()
+        }
     }
 
     @Test
-    fun theTabletShapeBlockShowsForTabletsAndCapsules() {
+    fun theTabletShapeBlockShowsForTabletsOnly() {
         show(draft(form = MedicationForm.TABLET))
         composeRule.onNodeWithTag(TAG_TABLET_SHAPE_ROW).assertIsDisplayed()
     }
@@ -265,6 +283,82 @@ class MedicationFormScreenTest {
 
         composeRule.onNodeWithContentDescription(context.getString(R.string.cd_dose_amount)).assertIsDisplayed()
         composeRule.onNodeWithContentDescription(context.getString(R.string.cd_strength)).assertIsDisplayed()
+    }
+
+    // --- SKL-69: строка времени поднимает выбор наружу ---
+
+    @Test
+    fun tappingATimeRowAsksTheRouteToPickThatTime() {
+        var picked: Pair<Int, LocalTime>? = null
+        composeRule.setContent {
+            SklyankaTheme {
+                MedicationFormScreen(
+                    state = MedFormUiState.of(
+                        draft(times = listOf(LocalTime.of(8, 0))),
+                        FormMode.Create,
+                        FormInputs(),
+                    ),
+                    onIntent = {},
+                    onCancel = {},
+                    onPickDate = {},
+                    onPickTime = { index, time -> picked = index to time },
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag(TAG_TIME_ROW).performClick()
+
+        assertEquals(0 to LocalTime.of(8, 0), picked)
+    }
+
+    // --- SKL-75: пресеты срока окончания ---
+
+    @Test
+    fun thePresetsStandUnderTheEndDateRow() {
+        show(draft().copy(endDate = LocalDate.of(2026, 10, 25)))
+
+        composeRule.onNodeWithTag(TAG_PERIOD_PRESETS).assertIsDisplayed()
+    }
+
+    @Test
+    fun thePresetMatchingTheEndDateIsSelectedAndTheOthersAreNot() {
+        show(draft().copy(endDate = LocalDate.of(2026, 10, 25)))
+
+        composeRule.onNodeWithText(context.getString(R.string.period_preset_month_1)).assertIsSelected()
+        composeRule.onNodeWithText(context.getString(R.string.period_preset_weeks_2)).assertIsNotSelected()
+    }
+
+    @Test
+    fun anEndDateThatMatchesNoPresetMarksNone() {
+        show(draft().copy(endDate = LocalDate.of(2026, 11, 17)))
+
+        composeRule.onNodeWithText(context.getString(R.string.period_preset_month_1)).assertIsNotSelected()
+        composeRule.onNodeWithText(context.getString(R.string.period_preset_other)).assertIsNotSelected()
+    }
+
+    @Test
+    fun thePresetsAreNotSelectableWhileTheCourseIsOpenEnded() {
+        show(draft())
+
+        composeRule.onNodeWithText(context.getString(R.string.period_preset_week_1)).assertHasNoClickAction()
+    }
+
+    // --- SKL-74: порог напоминания о покупке ---
+
+    @Test
+    fun theThresholdChipsAppearWhenTheReminderIsOn() {
+        show(draft().copy(stockThresholdDays = 7))
+
+        composeRule.onNodeWithTag(TAG_STOCK_THRESHOLD_OPTIONS).assertIsDisplayed()
+        composeRule.onNodeWithText(StockThresholds.DEFAULT_DAYS.toString()).assertIsSelected()
+    }
+
+    @Test
+    fun theThresholdChipsAreHiddenWhenTheReminderIsOff() {
+        show(draft())
+
+        composeRule.onNodeWithTag(TAG_STOCK_THRESHOLD_OPTIONS).assertDoesNotExistInTree()
+        composeRule.onNodeWithTag(TAG_STOCK_REMINDER).assertIsDisplayed()
     }
 
     private fun label(id: Int): String = context.getString(id).uppercase()
