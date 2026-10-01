@@ -1,9 +1,12 @@
 package ru.stohastika.sklyanka
 
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -28,6 +31,7 @@ import ru.stohastika.sklyanka.feature.meds.list.MedicationListViewModel
 import ru.stohastika.sklyanka.feature.onboarding.OnboardingViewModel
 import ru.stohastika.sklyanka.feature.onboarding.PermissionsActivity
 import ru.stohastika.sklyanka.feature.onboarding.PermissionsRoute
+import ru.stohastika.sklyanka.feature.onboarding.SystemSettingsNavigator
 import ru.stohastika.sklyanka.feature.reminder.DiagnosticsActivity
 import ru.stohastika.sklyanka.feature.reminder.ReminderOutageNotice
 import ru.stohastika.sklyanka.feature.settings.SettingsNavigation
@@ -59,6 +63,7 @@ import ru.stohastika.sklyanka.ui.profile.ProfileChrome
 import ru.stohastika.sklyanka.ui.profile.ProfileChromeState
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import javax.inject.Inject
+import android.graphics.Color as AndroidColor
 
 /**
  * Единственная Activity приложения.
@@ -119,6 +124,15 @@ class MainActivity : ComponentActivity() {
     lateinit var profileContext: ProfileContextProvider
 
     /**
+     * Переходы в системные настройки (SKL-78, ОВ-98).
+     *
+     * Строка «Звук» ведёт в системный экран уведомлений приложения: выбор звука и важности
+     * принадлежит каналу, а не приложению. Тот же переход, что у онбординга (SKL-14).
+     */
+    @Inject
+    lateinit var systemSettings: SystemSettingsNavigator
+
+    /**
      * Сообщение о перерыве в напоминаниях (НАП-38).
      *
      * Показывается в корне, над содержимым: человек, у которого напоминания не приходили,
@@ -164,6 +178,19 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
+        // Приложение светлое независимо от темы телефона (ОВ-9), поэтому значки
+        // системных панелей задаются явно тёмными: умолчание выбрало бы их по
+        // системной теме и дало бы светлые значки на светлом экране (SKL-72).
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.light(AndroidColor.TRANSPARENT, AndroidColor.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.light(AndroidColor.TRANSPARENT, AndroidColor.TRANSPARENT),
+        )
+
+        // Ярлык быстрого доступа «Добавить лекарство» (SKL-80, ОВ-96): явное действие
+        // человека важнее самопоказа онбординга, поэтому форма кладётся в стек раздела
+        // до первой композиции. Живое окно отмены (SKL-43) остаётся сильнее — оно уводит
+        // на «Сегодня» уже после появления окна.
+        val addMedicationRequested = rootNavigation.openFromLaunch(intent?.action)
 
         var destination by mutableStateOf<StartDestination?>(null)
         var onboardingUnseen by mutableStateOf(false)
@@ -202,7 +229,12 @@ class MainActivity : ComponentActivity() {
                         // Экран разрешений EMUI (SKL-14): запуск, на котором с разрешениями
                         // непорядок, начинается с него — но только пока человек этого экрана
                         // не видел. Решение и его причина уже записаны в журнал запуска.
-                        destination == StartDestination.Onboarding && onboardingUnseen && !onboardingDone ->
+                        // Ярлык «Добавить лекарство» перебивает самопоказ (SKL-80): человек
+                        // уже сказал, зачем пришёл; разрешения остаются баннером и настройками.
+                        destination == StartDestination.Onboarding &&
+                            onboardingUnseen &&
+                            !onboardingDone &&
+                            !addMedicationRequested ->
                             PermissionsRoute(
                                 viewModel = onboarding,
                                 source = OnboardingSource.FIRST_LAUNCH,
@@ -236,6 +268,20 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    /**
+     * Повторный приход ярлыка быстрого доступа (SKL-80).
+     *
+     * `singleTask` доводит ярлык до уже существующей задачи, поэтому запуск поверх
+     * открытого приложения приходит сюда, а не в `onCreate`. `openFromLaunch` кладёт
+     * в раздел то же значение: повторный приход идемпотентен и стек не растёт.
+     * `setIntent` сохраняет намерение, чтобы повторное чтение действия было верным.
+     */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        rootNavigation.openFromLaunch(intent.action)
     }
 
     /**
@@ -329,8 +375,9 @@ class MainActivity : ComponentActivity() {
      * окном отмены возвращает человека на «Сегодня» (SKL-43, ОВ-81).
      *
      * Диагностика напоминаний и экран разрешений — отдельные Activity (SKL-13, SKL-14),
-     * и в этот граф они не встраиваются: у них есть собственные точки входа — ярлык запуска
-     * и уведомление.
+     * и в этот граф они не встраиваются: у них есть собственные точки входа — строка
+     * настроек и уведомление. Ярлык быстрого доступа приходит сюда, в форму нового
+     * лекарства через раздел «Лекарства» (SKL-80).
      */
     @Composable
     private fun Root(onOpenPermissions: () -> Unit) {
@@ -361,19 +408,31 @@ class MainActivity : ComponentActivity() {
                     archive = archive,
                 ),
                 onLeaveSection = rootNavigation::leaveMeds,
+                // Панель на корне «Лекарств» (ОВ-91) ведёт на «Сегодня» и в «Настройки».
+                // Для настроек сначала закрывается раздел: ветка `Root` проверяет раздел
+                // раньше вкладки, и незакрытый раздел оставил бы человека в лекарствах.
+                onOpenToday = { rootNavigation.openToday() },
+                onOpenSettings = {
+                    rootNavigation.leaveMeds()
+                    rootNavigation.openTab(RootTab.SETTINGS)
+                },
                 initial = medsDestination,
             )
 
             rootNavigation.tab == RootTab.SETTINGS -> SettingsRoute(
                 viewModel = settings,
                 navigation = SettingsNavigation(
-                    // Экран добавления профиля не зафиксирован (`ОВ-3`): строка есть,
-                    // потому что она есть в макете, а перехода за ней пока нет. Заглушка,
-                    // открывающая пустой экран, обещала бы больше, чем продукт умеет.
+                    // Строка «Добавить профиль» выключена до мастера (`ОВ-3`, SKL-58):
+                    // экран создания профиля не зафиксирован, а нажимаемая строка без
+                    // перехода обещала бы больше, чем продукт умеет. Намерение и переход —
+                    // шов пост-MVP, как у строки часов: мастер вернётся без правки навигации.
                     addProfile = {},
                     // Экран подключения часов — SKL-17. `null` означает «экрана нет»,
                     // и строка часов остаётся состоянием связи, а не мнимым переходом.
                     openWatchSetup = null,
+                    // «Звук» — системный экран уведомлений приложения (ОВ-98): там оба
+                    // канала и выбор звука с важностью для каждого.
+                    openSound = { systemSettings.openNotificationSettings() },
                     // Решение по `ОВ-48`: сначала диагностика — что именно не так, —
                     // и только потом онбординг. Обратный порядок отправлял бы человека
                     // проходить цепочку заново, не сказав ему, сломано ли что-нибудь.

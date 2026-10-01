@@ -1,38 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Ярлык запуска на диагностику напоминаний (НАП-37).
+  Ярлыки быстрого доступа по долгому нажатию на иконку (SKL-80, ОВ-96).
 
-  Постоянная точка входа — пункт настроек «Разрешения и автозапуск» (SKL-20), и решение,
-  один это экран с онбордингом или два разных, не принято (ОВ-48). До тех пор экран
-  достижим ярлыком: диагностика, до которой нельзя добраться, не отвечает ни на один
-  вопрос человека, у которого не приходят напоминания.
+  Ярлык ровно один — «Добавить лекарство», самое частое действие человека, заводящего
+  курс. Служебные точки входа («Разрешения и автозапуск», диагностика) из ярлыков убраны:
+  они достижимы строками настроек (ОВ-48/ОВ-49), а быстрый доступ — для частых действий.
+
+  Деструктивных и необратимых пунктов здесь нет и не будет. Системный пункт «Удалить
+  приложение» меню лаунчера приложению не принадлежит, и признак перехода («стрелка»)
+  в списке рисует лаунчер — статический ярлык их не задаёт (ОВ-96).
 -->
 <shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
-    <!--
-      Экран разрешений и автозапуска (SKL-14, НАП-21). Стоит первым: до того, как цепочка
-      пройдена, диагностике нечего показывать, кроме невыданных разрешений.
-    -->
     <shortcut
         android:enabled="true"
         android:icon="@drawable/ic_notification_mark"
-        android:shortcutId="permissions_onboarding"
-        android:shortcutLongLabel="@string/permissions_shortcut_long_label"
-        android:shortcutShortLabel="@string/permissions_shortcut_label">
+        android:shortcutId="add_medication"
+        android:shortcutLongLabel="@string/add_medication_shortcut_long_label"
+        android:shortcutShortLabel="@string/add_medication_shortcut_label">
         <intent
-            android:action="android.intent.action.VIEW"
-            android:targetClass="ru.stohastika.sklyanka.feature.onboarding.PermissionsActivity"
-            android:targetPackage="ru.stohastika.sklyanka" />
-    </shortcut>
-
-    <shortcut
-        android:enabled="true"
-        android:icon="@drawable/ic_notification_mark"
-        android:shortcutId="reminders_diagnostics"
-        android:shortcutLongLabel="@string/diagnostics_shortcut_long_label"
-        android:shortcutShortLabel="@string/diagnostics_shortcut_label">
-        <intent
-            android:action="android.intent.action.VIEW"
-            android:targetClass="ru.stohastika.sklyanka.feature.reminder.DiagnosticsActivity"
+            android:action="ru.stohastika.sklyanka.action.ADD_MEDICATION"
+            android:targetClass="ru.stohastika.sklyanka.MainActivity"
             android:targetPackage="ru.stohastika.sklyanka" />
     </shortcut>
 </shortcuts>

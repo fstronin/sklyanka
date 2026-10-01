@@ -43,6 +43,21 @@ class RootNavigation {
         meds = destination
     }
 
+    /**
+     * Открыть форму нового лекарства, если пришло действие ярлыка быстрого доступа (SKL-80).
+     *
+     * Единственный шов, по которому [MainActivity] разбирает входящее намерение: имя
+     * действия живёт в [AddMedicationLaunch], решение о маршруте — здесь, и потому обе
+     * половины проверяются на JVM без Activity.
+     *
+     * @return `true`, если действие было ярлыком и форма открыта.
+     */
+    fun openFromLaunch(action: String?): Boolean {
+        if (!AddMedicationLaunch.matches(action)) return false
+        openMeds(MedsDestination.NewMedication)
+        return true
+    }
+
     fun leaveMeds() {
         meds = null
     }
