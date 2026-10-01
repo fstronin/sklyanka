@@ -29,7 +29,9 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import ru.stohastika.sklyanka.acceptance.steps.localMoment
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
+import ru.stohastika.sklyanka.domain.onboarding.ManualStepState
 import ru.stohastika.sklyanka.domain.onboarding.OnboardingSource
+import ru.stohastika.sklyanka.domain.onboarding.PermissionChecklist
 import ru.stohastika.sklyanka.domain.onboarding.PermissionGrant
 import ru.stohastika.sklyanka.domain.onboarding.PermissionStep
 import ru.stohastika.sklyanka.domain.reminder.port.PermissionState
@@ -38,23 +40,36 @@ import ru.stohastika.sklyanka.feature.onboarding.OnboardingUiState
 import ru.stohastika.sklyanka.feature.onboarding.PermissionsActions
 import ru.stohastika.sklyanka.feature.onboarding.PermissionsScreen
 import ru.stohastika.sklyanka.feature.onboarding.R
-import ru.stohastika.sklyanka.feature.onboarding.TAG_ACTION_AUTOSTART
+import ru.stohastika.sklyanka.feature.onboarding.TAG_ACTION_APP_STARTUP
+import ru.stohastika.sklyanka.feature.onboarding.TAG_ACTION_BATTERY_SAVING
 import ru.stohastika.sklyanka.feature.onboarding.TAG_ACTION_EXACT_ALARMS
 import ru.stohastika.sklyanka.feature.onboarding.TAG_ACTION_NOTIFICATIONS
-import ru.stohastika.sklyanka.feature.onboarding.TAG_AUTOSTART_UNVERIFIABLE
-import ru.stohastika.sklyanka.feature.onboarding.TAG_CARD_AUTOSTART
+import ru.stohastika.sklyanka.feature.onboarding.TAG_ACTION_RECENTS_PIN
+import ru.stohastika.sklyanka.feature.onboarding.TAG_ALL_CONFIGURED
+import ru.stohastika.sklyanka.feature.onboarding.TAG_CARD_APP_STARTUP
+import ru.stohastika.sklyanka.feature.onboarding.TAG_CARD_BATTERY_SAVING
 import ru.stohastika.sklyanka.feature.onboarding.TAG_CARD_EXACT_ALARMS
 import ru.stohastika.sklyanka.feature.onboarding.TAG_CARD_NOTIFICATIONS
+import ru.stohastika.sklyanka.feature.onboarding.TAG_CARD_RECENTS_PIN
+import ru.stohastika.sklyanka.feature.onboarding.TAG_CONFIRMED_MARK
+import ru.stohastika.sklyanka.feature.onboarding.TAG_CONFIRM_APP_STARTUP
+import ru.stohastika.sklyanka.feature.onboarding.TAG_CONFIRM_BATTERY_SAVING
+import ru.stohastika.sklyanka.feature.onboarding.TAG_CONFIRM_RECENTS_PIN
+import ru.stohastika.sklyanka.feature.onboarding.TAG_DONE
+import ru.stohastika.sklyanka.feature.onboarding.TAG_ISSUE
+import ru.stohastika.sklyanka.feature.onboarding.TAG_NEXT
 import ru.stohastika.sklyanka.feature.onboarding.TAG_PERMISSIONS_SCREEN
+import ru.stohastika.sklyanka.feature.onboarding.TAG_SKIP
+import ru.stohastika.sklyanka.feature.onboarding.TAG_UNVERIFIABLE
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.lightColors
 import java.io.File
 import java.time.Instant
 
 /**
- * Экранные шаги приёмки экрана разрешений (SKL-14, группа `@screen`).
+ * Экранные шаги приёмки экрана «Настроить надёжность» (SKL-14, группа `@screen`).
  *
- * Шаги живут в `feature-onboarding`, потому что говорят об экране разрешений
+ * Шаги живут в `feature-onboarding`, потому что говорят об экране
  * (`SKL-26/TDD.md §4.3`). Состояние собирает настоящий `OnboardingViewModel` на мире
  * сценария ([PermissionsStand]): цепочка шагов и сохранённые факты — те же доменные
  * сценарии и порты, что у продукта.
@@ -67,16 +82,37 @@ class PermissionsSteps(private val world: AcceptanceWorld) {
 
     private val context: Context = ApplicationProvider.getApplicationContext()
 
+    /**
+     * Карточка, о которой шла речь в последней проверке.
+     *
+     * Нужна шагам, чей текст не называет карточку («кнопка «Открыть настройки»»): сценарий
+     * говорит о ней предыдущей строкой, и пересказ названия в шаге был бы вторым источником
+     * правды о том, какую карточку проверяют.
+     */
+    private var currentCard: String? = null
+
     // --- Открытие экрана -----------------------------------------------------------------------
 
-    @Допустим("^человек находится на экране разрешений$")
-    fun thePersonIsOnThePermissions() {
+    @Допустим("^человек находится на экране «Настроить надёжность»$")
+    fun thePersonIsOnTheSetup() {
         openFirstLaunch()
     }
 
-    @Когда("^человек открывает экран разрешений (.+?) в (\\d{2}:\\d{2})$")
-    fun thePersonOpensThePermissions(date: String, time: String) {
+    @Допустим("^человек находится на экране «Настроить надёжность» (.+?) в (\\d{2}:\\d{2})$")
+    fun thePersonIsOnTheSetupAt(date: String, time: String) {
         world.clock.moveTo(world.localMoment(date, time))
+        openFirstLaunch()
+    }
+
+    @Когда("^человек открывает экран «Настроить надёжность» (.+?) в (\\d{2}:\\d{2})$")
+    fun thePersonOpensTheSetup(date: String, time: String) {
+        world.clock.moveTo(world.localMoment(date, time))
+        openFirstLaunch()
+    }
+
+    @Когда("^1 октября 2026 в 11:08 человек открывает экран «Настроить надёжность»$")
+    fun thePersonOpensTheSetupOnOctoberFirst() {
+        world.clock.moveTo(world.localMoment("1 октября 2026", "11:08"))
         openFirstLaunch()
     }
 
@@ -89,24 +125,19 @@ class PermissionsSteps(private val world: AcceptanceWorld) {
 
     @И("^на карточке «Уведомления» нет кнопки действия$")
     fun theNotificationsCardHasNoAction() {
-        assertTrue(noTag(TAG_ACTION_NOTIFICATIONS), "a granted card must carry no action button (критерий 2)")
+        assertTrue(noTag(TAG_ACTION_NOTIFICATIONS), "a granted card must carry no action button (критерий 3)")
     }
 
     @Тогда("^карточка «Точные будильники» выделена$")
     fun theExactAlarmsCardIsHighlighted() {
-        val denied = PermissionsStand.state(world)
-        val checklist = requireNotNull(denied.checklist) { "the screen must have read the system" }
-        val neutral = denied.copy(checklist = checklist.copy(exactAlarms = PermissionGrant.Granted(Instant.EPOCH)))
-        assertTrue(
-            accentPixels(denied) > accentPixels(neutral),
-            "a missing permission must be highlighted with the accent border (критерий 3)",
-        )
+        currentCard = TAG_CARD_EXACT_ALARMS
+        assertCardIsHighlighted(PermissionStep.EXACT_ALARMS)
     }
 
     @И("^на ней подпись «Иначе Android сдвинет приём на удобное себе время — до получаса»$")
     fun theExactAlarmsCaptionIsShown() {
         assertTrue(
-            showsText(string(R.string.onboarding_step_exact_alarms_caption)),
+            showsText(string(R.string.setup_step_exact_alarms_caption)),
             "the card caption is from the mockup",
         )
     }
@@ -116,7 +147,7 @@ class PermissionsSteps(private val world: AcceptanceWorld) {
         assertTrue(
             hasNode(
                 hasTestTag(TAG_ACTION_EXACT_ALARMS) and
-                    hasAnyDescendant(hasText(string(R.string.onboarding_action_allow))),
+                    hasAnyDescendant(hasText(string(R.string.setup_action_allow))),
             ),
             "the missing permission must offer «Разрешить» (критерий 3)",
         )
@@ -136,7 +167,7 @@ class PermissionsSteps(private val world: AcceptanceWorld) {
 
     @И("^кнопка «Разрешить» с неё убирается$")
     fun theAllowButtonIsGone() {
-        assertTrue(noTag(TAG_ACTION_EXACT_ALARMS), "a granted card must lose the action button (критерий 4)")
+        assertTrue(noTag(TAG_ACTION_EXACT_ALARMS), "a granted card must lose the action button (критерий 3)")
     }
 
     @Но("^человек остаётся на том же экране$")
@@ -156,8 +187,8 @@ class PermissionsSteps(private val world: AcceptanceWorld) {
         assertTrue(hasTag(TAG_ACTION_EXACT_ALARMS), "a refused permission must offer the action again")
     }
 
-    @И("^человек остаётся на экране разрешений$")
-    fun thePersonStaysOnThePermissions() {
+    @И("^человек остаётся на экране «Настроить надёжность»$")
+    fun thePersonStaysOnTheSetup() {
         assertScreenIsOpen()
     }
 
@@ -165,63 +196,235 @@ class PermissionsSteps(private val world: AcceptanceWorld) {
     fun theOtherStepsAreStillPassable() {
         // Отказ на одном шаге не запирает экран: у остальных остаются их действия (НАП-18).
         assertTrue(hasTag(TAG_ACTION_NOTIFICATIONS), "the notifications step must still be passable")
-        assertTrue(hasTag(TAG_ACTION_AUTOSTART), "the autostart step must still be passable")
+        assertTrue(hasTag(TAG_ACTION_APP_STARTUP), "the app startup step must still be passable")
+        assertTrue(hasTag(TAG_ACTION_BATTERY_SAVING), "the battery saving step must still be passable")
     }
 
-    // --- Автозапуск EMUI -----------------------------------------------------------------------
+    // --- Вендорские шаги -----------------------------------------------------------------------
 
-    @Тогда("^карточка «Автозапуск без ограничений» показана невыполненной$")
-    fun theAutostartCardIsUnresolved() {
-        assertAutostartUnresolved()
+    @Тогда("^карточка «Запуск приложений» показана невыполненной$")
+    fun theAppStartupCardIsUnresolved() {
+        currentCard = TAG_CARD_APP_STARTUP
+        assertVendorUnresolved(PermissionStep.APP_STARTUP, TAG_CARD_APP_STARTUP)
     }
 
-    @И("^на ней подпись «Настройки → Батарея → Запуск приложений → Склянка → вручную»$")
-    fun theAutostartCaptionIsShown() {
-        assertTrue(showsText(string(R.string.onboarding_step_autostart_caption)), "the manual path is from the mockup")
+    @Тогда("^карточка «Запуск приложений» всё равно показана невыполненной$")
+    fun theAppStartupCardIsStillUnresolved() {
+        currentCard = TAG_CARD_APP_STARTUP
+        assertVendorUnresolved(PermissionStep.APP_STARTUP, TAG_CARD_APP_STARTUP)
+    }
+
+    @Тогда("^карточка «Энергосбережение» показана невыполненной$")
+    fun theBatterySavingCardIsUnresolved() {
+        currentCard = TAG_CARD_BATTERY_SAVING
+        assertVendorUnresolved(PermissionStep.BATTERY_SAVING, TAG_CARD_BATTERY_SAVING)
+    }
+
+    @Тогда("^карточка «Энергосбережение» всё равно показана невыполненной$")
+    fun theBatterySavingCardIsStillUnresolved() {
+        theBatterySavingCardIsUnresolved()
+    }
+
+    @Тогда("^карточка «Энергосбережение» снова показана неподтверждённой$")
+    fun theBatterySavingCardIsUnconfirmedAgain() {
+        theBatterySavingCardIsUnresolved()
+    }
+
+    @Тогда("^карточка «Закрепление в недавних» показана невыполненной$")
+    fun theRecentsPinCardIsUnresolved() {
+        currentCard = TAG_CARD_RECENTS_PIN
+        assertVendorUnresolved(PermissionStep.RECENTS_PIN, TAG_CARD_RECENTS_PIN)
+    }
+
+    @И("^на ней подпись-путь «Настройки → Батарея → Запуск приложений → Склянка → Управлять вручную»$")
+    fun theAppStartupPathIsShown() {
+        assertTrue(showsText(string(R.string.setup_step_app_startup_caption)), "the manual path is from the spec")
+    }
+
+    @И("^пояснение «Включите «Автозапуск», «Косвенный запуск» и «Работу в фоне»»$")
+    fun theAppStartupActionIsShown() {
+        assertTrue(showsText(string(R.string.setup_step_app_startup_action)), "the actions to enable are from the spec")
     }
 
     @И("^кнопка «Открыть настройки»$")
     fun theOpenSettingsButtonIsShown() {
+        val card = requireNotNull(currentCard) { "the scenario must name the card first" }
+        val actionTag = actionTagOf(card)
         assertTrue(
             hasNode(
-                hasTestTag(TAG_ACTION_AUTOSTART) and
-                    hasAnyDescendant(hasText(string(R.string.onboarding_action_open_settings))),
+                hasTestTag(actionTag) and
+                    hasAnyDescendant(hasText(string(R.string.setup_action_open_settings))),
             ),
-            "the autostart step must offer «Открыть настройки» (критерий 3)",
+            "the vendor step must offer «Открыть настройки» (критерий 6)",
         )
     }
 
-    @Тогда("^карточка «Автозапуск без ограничений» всё равно показана невыполненной$")
-    fun theAutostartCardIsStillUnresolved() {
-        assertAutostartUnresolved()
+    @И("^на ней кнопка «Открыть настройки»$")
+    fun theCardOffersOpenSettings() {
+        theOpenSettingsButtonIsShown()
     }
 
-    @И("^приложение прямо говорит, что проверить эту настройку оно не может$")
-    fun theAppExplainsTheOnlyProof() {
+    @И("^кнопки «Открыть настройки» на ней нет$")
+    fun theCardHasNoOpenSettings() {
+        val card = requireNotNull(currentCard) { "the scenario must name the card first" }
+        assertTrue(noTag(actionTagOf(card)), "the recents pin has no system screen to open (ОВ-106)")
+    }
+
+    @И(
+        "^на ней подпись-инструкция «Откройте список недавних приложений, потяните карточку «Склянки» вниз и нажмите появившийся замок»$",
+    )
+    fun theRecentsPinInstructionIsShown() {
         assertTrue(
-            showsText(string(R.string.onboarding_autostart_unverifiable)),
-            "the third step must say the app cannot check it (НАП-20)",
+            showsText(string(R.string.setup_step_recents_pin_caption)),
+            "the recents pin explains the gesture from the spec",
+        )
+    }
+
+    @И("^переключатель «([^»]+)»$")
+    fun theSwitchIsShown(label: String) {
+        val card = requireNotNull(currentCard) { "the scenario must name the card first" }
+        assertTrue(
+            hasNode(
+                hasTestTag(confirmTagOf(card)) and hasAnyDescendant(hasText(label)),
+            ),
+            "the vendor step must carry the confirmation switch «$label» (НАП-20)",
+        )
+    }
+
+    @Тогда("^косвенный признак на ней назван косвенным и не подменяет подтверждение$")
+    fun theHintIsIndirectAndDoesNotReplaceTheConfirmation() {
+        assertTrue(showsText(string(R.string.setup_hint_battery)), "the hint must be shown word for word (НАП-20)")
+        assertTrue(
+            string(R.string.setup_hint_battery).startsWith("Косвенный признак"),
+            "the word «косвенный» is the point of the hint",
+        )
+        assertFalse(
+            cardShowsGranted(TAG_CARD_BATTERY_SAVING),
+            "a hint never turns the step green (НАП-20)",
+        )
+    }
+
+    @И("^приложение прямо говорит, что проверить эти настройки оно не может$")
+    fun theAppExplainsItCannotCheck() {
+        assertTrue(
+            showsText(string(R.string.setup_unverifiable_app_startup)),
+            "the vendor step must say the app cannot check it (НАП-20)",
+        )
+        assertTrue(
+            showsText(string(R.string.setup_unverifiable_battery_saving)),
+            "the battery step must say the app cannot check it (НАП-20)",
+        )
+    }
+
+    // --- Подтверждение вендорских шагов --------------------------------------------------------
+
+    @Когда("^человек подтверждает выполнение шага «Запуск приложений» переключателем$")
+    fun thePersonConfirmsAppStartup() {
+        ensureOpen()
+        toggleSwitch(TAG_CONFIRM_APP_STARTUP)
+    }
+
+    @Допустим("^человек подтвердил выполнение шага «Энергосбережение»$")
+    fun thePersonConfirmedBatterySaving() {
+        ensureOpen()
+        PermissionsStand.model(world).onManualConfirmed(PermissionStep.BATTERY_SAVING, true)
+    }
+
+    @Когда("^он включает переключатель «Я настроил запуск приложений»$")
+    fun thePersonTurnsOnAppStartupSwitch() {
+        thePersonConfirmsAppStartup()
+    }
+
+    @Когда("^он выключает тот же переключатель$")
+    fun thePersonTurnsOffTheSameSwitch() {
+        toggleSwitch(TAG_CONFIRM_APP_STARTUP)
+    }
+
+    @Когда("^он снимает переключатель «Я снял ограничения энергосбережения»$")
+    fun thePersonTurnsOffBatterySavingSwitch() {
+        ensureOpen()
+        toggleSwitch(TAG_CONFIRM_BATTERY_SAVING)
+    }
+
+    @Тогда("^карточка «Запуск приложений» получает обычную рамку$")
+    fun theAppStartupCardGetsTheNeutralBorder() {
+        currentCard = TAG_CARD_APP_STARTUP
+        // Обычная рамка — состояние «шаг пройден»; кнопка пути в системный раздел остаётся
+        // (НАП-20), а отметка сменяется на слово человека (критерий 4).
+        assertTrue(
+            PermissionsStand.state(world).checklist?.appStartup?.isResolved == true,
+            "the confirmed step must be counted as resolved (НАП-20)",
+        )
+        assertTrue(
+            hasNode(
+                hasTestTag(TAG_CARD_APP_STARTUP) and
+                    hasAnyDescendant(hasTestTag(TAG_CONFIRMED_MARK)),
+            ),
+            "the confirmed step must be marked «Подтверждено вами»",
+        )
+    }
+
+    @И("^на ней отметка «Подтверждено вами», а не «Есть»$")
+    fun theAppStartupCardIsConfirmedByUser() {
+        assertTrue(
+            hasNode(
+                hasTestTag(TAG_CARD_APP_STARTUP) and
+                    hasAnyDescendant(hasText(string(R.string.setup_confirmed_by_user))),
+            ),
+            "the vendor step is marked «Подтверждено вами» (НАП-20)",
+        )
+        assertFalse(
+            cardShowsGranted(TAG_CARD_APP_STARTUP),
+            "«Есть» stays only for what the system read (НАП-20)",
+        )
+    }
+
+    @Тогда("^карточка «Запуск приложений» отмечена «Подтверждено вами»$")
+    fun theAppStartupCardIsMarkedConfirmed() {
+        theAppStartupCardIsConfirmedByUser()
+    }
+
+    @Тогда("^карточка «Запуск приложений» снова показана невыполненной$")
+    fun theAppStartupIsUnresolvedAgainAfterSwitch() {
+        assertVendorUnresolved(PermissionStep.APP_STARTUP, TAG_CARD_APP_STARTUP)
+    }
+
+    @И("^приложение не утверждает, что этот шаг настроен$")
+    fun theAppDoesNotClaimTheStepIsConfigured() {
+        assertFalse(
+            cardShowsGranted(TAG_CARD_BATTERY_SAVING),
+            "the app must not claim a withdrawn vendor step is configured (НАП-20)",
+        )
+        assertFalse(
+            hasNode(
+                hasTestTag(TAG_CARD_BATTERY_SAVING) and
+                    hasAnyDescendant(hasText(string(R.string.setup_confirmed_by_user))),
+            ),
+            "the confirmation must be gone from the card",
         )
     }
 
     // --- Границы цепочки -----------------------------------------------------------------------
 
-    @Когда("^человек проходит все три шага (.+?) с (\\d{2}:\\d{2}) до (\\d{2}:\\d{2})$")
+    @Когда("^человек проходит все пять шагов (.+?) с (\\d{2}:\\d{2}) до (\\d{2}:\\d{2})$")
     @Suppress("LongParameterList")
-    fun thePersonGoesThroughAllThreeSteps(date: String, from: String, to: String) {
+    fun thePersonGoesThroughAllFiveSteps(date: String, from: String, to: String) {
         world.clock.moveTo(world.localMoment(date, from))
         openFirstLaunch()
-        passStep(TAG_ACTION_NOTIFICATIONS, ReminderPermission.NOTIFICATIONS, PermissionStep.NOTIFICATIONS)
-        passStep(TAG_ACTION_EXACT_ALARMS, ReminderPermission.EXACT_ALARMS, PermissionStep.EXACT_ALARMS)
-        PermissionsStand.act(world) { onNodeWithTag(TAG_ACTION_AUTOSTART).performScrollTo().performClick() }
-        PermissionsStand.model(world).onAutostartConfirmed(true)
+        passPermissionStep(TAG_ACTION_NOTIFICATIONS, ReminderPermission.NOTIFICATIONS, PermissionStep.NOTIFICATIONS)
+        passPermissionStep(TAG_ACTION_EXACT_ALARMS, ReminderPermission.EXACT_ALARMS, PermissionStep.EXACT_ALARMS)
+        PermissionsStand.act(world) { onNodeWithTag(TAG_ACTION_APP_STARTUP).performScrollTo().performClick() }
+        PermissionsStand.act(world) { onNodeWithTag(TAG_ACTION_BATTERY_SAVING).performScrollTo().performClick() }
+        PermissionsStand.model(world).onManualConfirmed(PermissionStep.APP_STARTUP, true)
+        PermissionsStand.model(world).onManualConfirmed(PermissionStep.BATTERY_SAVING, true)
+        PermissionsStand.model(world).onManualConfirmed(PermissionStep.RECENTS_PIN, true)
         world.clock.moveTo(world.localMoment(date, to))
     }
 
     @Тогда("^доступ к политике «Не беспокоить» у него не запрашивается ни разу$")
     fun theDndAccessIsNeverRequested() {
         val state = PermissionsStand.state(world)
-        assertTrue(state.checklist?.allResolved == true, "the scenario passes all three steps")
+        assertTrue(state.checklist?.allResolved == true, "the scenario passes all five steps")
         // «Не беспокоить» не входит в цепочку (НАП-17): её нет ни среди шагов домена,
         // ни среди запрошенных диалогов, ни среди системных переходов, и состояние
         // доступа мир не трогал вовсе.
@@ -235,7 +438,7 @@ class PermissionsSteps(private val world: AcceptanceWorld) {
             "the flow asks the system dialog only for notifications, never for the DND access",
         )
         assertEquals(
-            listOf(RecordingNavigator.EXACT_ALARMS, RecordingNavigator.AUTOSTART),
+            listOf(RecordingNavigator.EXACT_ALARMS, RecordingNavigator.APP_STARTUP, RecordingNavigator.BATTERY_SAVING),
             PermissionsStand.navigator.opened,
             "the flow opens only the screens of its own steps",
         )
@@ -246,11 +449,184 @@ class PermissionsSteps(private val world: AcceptanceWorld) {
         )
     }
 
+    // --- SKL-84: один экран на все входы и закрытая цепочка ------------------------------------
+
+    @Когда("^1 октября 2026 в 11:08 (?:он|человек) открывает «Пройти настройку заново» на «Проверке напоминаний»$")
+    fun heOpensTheSetupFromTheCheckScreen() {
+        world.clock.moveTo(world.localMoment("1 октября 2026", "11:08"))
+        // «Пройти настройку заново» ведёт в PermissionsActivity с источником SETTINGS (ОВ-48).
+        PermissionsStand.open(world, OnboardingSource.SETTINGS)
+    }
+
+    @Тогда("^открывается экран с заголовком «([^»]+)»$")
+    fun theSetupScreenWithTitleOpens(title: String) {
+        assertTrue(hasTag(TAG_PERMISSIONS_SCREEN), "the setup screen must be on the stand")
+        assertTrue(showsText(title), "the screen must carry the title «$title»")
+    }
+
+    @И("^пояснение «([^»]+)»$")
+    fun theIntroIsShown(intro: String) {
+        assertTrue(showsText(intro), "the screen must carry the intro word for word")
+    }
+
+    @И("^пять карточек в порядке: «([^»]+)», «([^»]+)», «([^»]+)», «([^»]+)», «([^»]+)»$")
+    @Suppress("LongParameterList")
+    fun fiveCardsInOrder(first: String, second: String, third: String, fourth: String, fifth: String) {
+        val cards = listOf(
+            first to TAG_CARD_NOTIFICATIONS,
+            second to TAG_CARD_EXACT_ALARMS,
+            third to TAG_CARD_APP_STARTUP,
+            fourth to TAG_CARD_BATTERY_SAVING,
+            fifth to TAG_CARD_RECENTS_PIN,
+        )
+        cards.forEach { (title, tag) ->
+            assertTrue(hasTag(tag), "the card «$title» must be on the screen")
+        }
+        // Порядок — по положению карточек на экране, а не по порядку объявления в разметке.
+        val tops = cards.map { (_, tag) ->
+            var top = 0f
+            PermissionsStand.ask(world) {
+                top = onNodeWithTag(tag, useUnmergedTree = true).fetchSemanticsNode().boundsInRoot.top
+            }
+            top
+        }
+        assertEquals(tops.sorted(), tops, "the cards must follow the fixed order of ОВ-106")
+    }
+
+    @И("^внизу одна кнопка «([^»]+)»$")
+    fun theOnlyFooterButtonIs(label: String) {
+        assertTrue(
+            hasNode(hasTestTag(TAG_DONE) and hasAnyDescendant(hasText(label))),
+            "a re-entry carries the quiet «$label»",
+        )
+        assertTrue(noTag(TAG_NEXT), "the onboarding footer must be gone")
+        assertTrue(noTag(TAG_SKIP), "the skip button belongs to the first launch only")
+    }
+
+    @Тогда("^на экране «Настроить надёжность» есть только карточки «([^»]+)» и «([^»]+)»$")
+    fun onlyTheCommonCardsAreShown(first: String, second: String) {
+        assertTrue(hasTag(TAG_CARD_NOTIFICATIONS), "the notifications card must be there")
+        assertTrue(hasTag(TAG_CARD_EXACT_ALARMS), "the exact alarms card must be there")
+        assertEquals("Уведомления", first)
+        assertEquals("Точные будильники", second)
+    }
+
+    @И("^карточек «([^»]+)», «([^»]+)» и «([^»]+)» на нём нет$")
+    fun theVendorCardsAreAbsent(third: String, fourth: String, fifth: String) {
+        val absent = listOf(
+            third to TAG_CARD_APP_STARTUP,
+            fourth to TAG_CARD_BATTERY_SAVING,
+            fifth to TAG_CARD_RECENTS_PIN,
+        )
+        absent.forEach { (title, tag) ->
+            assertTrue(noTag(tag), "the vendor card «$title» must not be shown on a non-Huawei phone")
+        }
+    }
+
+    @И("^плашек «Проверить это приложение не может» и переключателей EMUI на нём нет$")
+    fun theVendorPlaquesAndSwitchesAreAbsent() {
+        assertTrue(noTag(TAG_UNVERIFIABLE), "no vendor plaque may be shown")
+        assertTrue(noTag(TAG_CONFIRM_APP_STARTUP), "no EMUI switch may be shown")
+        assertTrue(noTag(TAG_CONFIRM_BATTERY_SAVING), "no EMUI switch may be shown")
+        assertTrue(noTag(TAG_CONFIRM_RECENTS_PIN), "no EMUI switch may be shown")
+    }
+
+    @Тогда("^карточка «Уведомления» показывает строку-причину «([^»]+)»$")
+    fun theNotificationsCardShowsTheIssue(issue: String) {
+        currentCard = TAG_CARD_NOTIFICATIONS
+        assertTrue(hasTag(TAG_ISSUE), "the card must carry the issue line")
+        assertTrue(showsText(issue), "the issue must be named «$issue» — the words of the banner and diagnostics")
+    }
+
+    @И("^предлагает действие «([^»]+)»$")
+    fun theCardOffersTheAction(label: String) {
+        val card = requireNotNull(currentCard) { "the scenario must name the card first" }
+        assertTrue(
+            hasNode(hasTestTag(actionTagOf(card)) and hasAnyDescendant(hasText(label))),
+            "the card must offer «$label»",
+        )
+    }
+
+    @И("^строки-причины и кнопки действия на ней нет$")
+    fun theNotificationsCardHasNoIssueAndNoAction() {
+        assertTrue(noTag(TAG_ISSUE), "a granted card must carry no issue line")
+        assertTrue(noTag(TAG_ACTION_NOTIFICATIONS), "a granted card must carry no action")
+    }
+
+    @Тогда("^карточки «Запуск приложений», «Энергосбережение» и «Закрепление в недавних» показаны невыполненными$")
+    fun theVendorCardsAreUnresolved() {
+        val steps = listOf(
+            PermissionStep.APP_STARTUP to TAG_CARD_APP_STARTUP,
+            PermissionStep.BATTERY_SAVING to TAG_CARD_BATTERY_SAVING,
+            PermissionStep.RECENTS_PIN to TAG_CARD_RECENTS_PIN,
+        )
+        steps.forEach { (step, tag) ->
+            assertFalse(cardShowsGranted(tag), "a vendor step never gets a granted mark (НАП-20)")
+            assertFalse(
+                PermissionsStand.state(world).checklist?.state(step)?.isResolved == true,
+                "the vendor step $step must stay unresolved",
+            )
+        }
+        assertTrue(hasTag(TAG_UNVERIFIABLE), "the vendor steps must say they are unverifiable")
+    }
+
+    @И("^на «Энергосбережении» виден косвенный признак «([^»]+)»$")
+    fun theBatteryHintIsShown(hint: String) {
+        currentCard = TAG_CARD_BATTERY_SAVING
+        assertTrue(showsText(hint), "the indirect hint must be shown word for word")
+    }
+
+    @Но("^выполненным шаг всё равно не отмечен$")
+    fun theVendorStepStaysUnresolved() {
+        assertFalse(
+            PermissionsStand.state(world).checklist?.batterySaving?.isResolved == true,
+            "a hint never resolves a vendor step (НАП-20)",
+        )
+        assertFalse(cardShowsGranted(TAG_CARD_BATTERY_SAVING), "«Есть» stays only for what the system read")
+    }
+
+    @Тогда("^над списком стоит плашка «([^»]+)»$")
+    fun theConfiguredPlaqueIsShown(plaque: String) {
+        assertTrue(hasTag(TAG_ALL_CONFIGURED), "the neutral plaque must be above the list")
+        assertTrue(showsText(plaque), "the plaque must read «$plaque»")
+    }
+
+    @И("^у карточек «Уведомления» и «Точные будильники» отметка «Есть»$")
+    fun bothPermissionCardsAreGranted() {
+        assertCardGranted(TAG_CARD_NOTIFICATIONS)
+        assertCardGranted(TAG_CARD_EXACT_ALARMS)
+    }
+
+    @И("^у вендорских карточек отметка «Подтверждено вами»$")
+    fun theVendorCardsAreConfirmedByUser() {
+        val cards = listOf(TAG_CARD_APP_STARTUP, TAG_CARD_BATTERY_SAVING, TAG_CARD_RECENTS_PIN)
+        cards.forEach { tag ->
+            assertTrue(
+                hasNode(hasTestTag(tag) and hasAnyDescendant(hasTestTag(TAG_CONFIRMED_MARK))),
+                "the vendor card must carry the person's confirmation",
+            )
+        }
+    }
+
+    @И("^ни на одной карточке нет ни кнопок, ни переключателей$")
+    fun noControlsAnywhere() {
+        val controls = listOf(
+            TAG_ACTION_NOTIFICATIONS,
+            TAG_ACTION_EXACT_ALARMS,
+            TAG_ACTION_APP_STARTUP,
+            TAG_ACTION_BATTERY_SAVING,
+            TAG_CONFIRM_APP_STARTUP,
+            TAG_CONFIRM_BATTERY_SAVING,
+            TAG_CONFIRM_RECENTS_PIN,
+        )
+        controls.forEach { assertTrue(noTag(it), "the control $it must be gone in the configured state") }
+    }
+
     // --- Обвязка -------------------------------------------------------------------------------
 
     private fun openFirstLaunch() {
         PermissionsStand.open(world, OnboardingSource.FIRST_LAUNCH)
-        assertTrue(hasTag(TAG_PERMISSIONS_SCREEN), "the permissions screen must be on the stand")
+        assertTrue(hasTag(TAG_PERMISSIONS_SCREEN), "the setup screen must be on the stand")
     }
 
     /** Нажать действие — значит уже стоять на экране: сценарий открытие может и не писать. */
@@ -263,7 +639,11 @@ class PermissionsSteps(private val world: AcceptanceWorld) {
         PermissionsStand.act(world) { onNodeWithTag(TAG_ACTION_EXACT_ALARMS).performScrollTo().performClick() }
     }
 
-    private fun passStep(actionTag: String, permission: ReminderPermission, step: PermissionStep) {
+    private fun toggleSwitch(tag: String) {
+        PermissionsStand.act(world) { onNodeWithTag(tag).performScrollTo().performClick() }
+    }
+
+    private fun passPermissionStep(actionTag: String, permission: ReminderPermission, step: PermissionStep) {
         PermissionsStand.act(world) { onNodeWithTag(actionTag).performScrollTo().performClick() }
         world.system.grant(permission)
         PermissionsStand.reportPermissionResult(world, step, granted = true)
@@ -272,7 +652,7 @@ class PermissionsSteps(private val world: AcceptanceWorld) {
     private fun assertCardGranted(cardTag: String) {
         assertTrue(
             hasNode(hasTestTag(cardTag) and hasAnyDescendant(hasText(string(R.string.onboarding_state_granted)))),
-            "the card must be marked «Есть» (критерий 2)",
+            "the card must be marked «Есть» (критерий 3)",
         )
     }
 
@@ -280,13 +660,24 @@ class PermissionsSteps(private val world: AcceptanceWorld) {
         hasTestTag(cardTag) and hasAnyDescendant(hasText(string(R.string.onboarding_state_granted))),
     )
 
-    private fun assertAutostartUnresolved() {
-        assertFalse(cardShowsGranted(TAG_CARD_AUTOSTART), "the autostart step never gets a granted mark (НАП-20)")
-        assertTrue(hasTag(TAG_AUTOSTART_UNVERIFIABLE), "the step must say it is unverifiable")
-        val state = PermissionsStand.state(world)
+    private fun assertVendorUnresolved(step: PermissionStep, cardTag: String) {
+        assertFalse(cardShowsGranted(cardTag), "a vendor step never gets a granted mark (НАП-20)")
         assertFalse(
-            state.checklist?.autostart?.confirmedByUser == true,
-            "the scenario has not confirmed the autostart",
+            hasNode(hasTestTag(cardTag) and hasAnyDescendant(hasText(string(R.string.setup_confirmed_by_user)))),
+            "the scenario has not confirmed this vendor step",
+        )
+        assertTrue(hasTag(TAG_UNVERIFIABLE), "the step must say it is unverifiable")
+        val state = PermissionsStand.state(world)
+        assertFalse(state.checklist?.state(step)?.isResolved == true, "the vendor step must stay unresolved")
+    }
+
+    /** Карточка с акцентной рамкой: сравниваются два состояния одного экрана (ОВ-106). */
+    private fun assertCardIsHighlighted(step: PermissionStep) {
+        val shown = PermissionsStand.state(world)
+        val resolved = shown.copy(checklist = shown.checklist?.resolved(step))
+        assertTrue(
+            accentPixels(shown) > accentPixels(resolved),
+            "a missing step must be highlighted with the accent border (критерий 3)",
         )
     }
 
@@ -343,10 +734,12 @@ class PermissionsSteps(private val world: AcceptanceWorld) {
                         state = state,
                         actions = PermissionsActions(
                             onStepAction = {},
-                            onAutostartConfirmed = {},
+                            onManualConfirmed = { _, _ -> },
                             onNext = {},
                             onSkip = {},
+                            onDone = {},
                         ),
+                        toLocal = { instant -> instant.atZone(world.clock.time.zone()).toLocalDateTime() },
                     )
                 }
             }
@@ -358,6 +751,31 @@ class PermissionsSteps(private val world: AcceptanceWorld) {
         } finally {
             target.delete()
         }
+    }
+
+    /** Копия чеклиста с закрытым шагом — второе состояние для сравнения рамки. */
+    private fun PermissionChecklist.resolved(step: PermissionStep): PermissionChecklist = when (step) {
+        PermissionStep.NOTIFICATIONS -> copy(
+            notifications = notifications.copy(permission = PermissionGrant.Granted(Instant.EPOCH)),
+        )
+        PermissionStep.EXACT_ALARMS -> copy(exactAlarms = PermissionGrant.Granted(Instant.EPOCH))
+        PermissionStep.APP_STARTUP -> copy(appStartup = ManualStepState(true))
+        PermissionStep.BATTERY_SAVING -> copy(batterySaving = ManualStepState(true))
+        PermissionStep.RECENTS_PIN -> copy(recentsPin = ManualStepState(true))
+    }
+
+    private fun actionTagOf(cardTag: String): String = when (cardTag) {
+        TAG_CARD_NOTIFICATIONS -> TAG_ACTION_NOTIFICATIONS
+        TAG_CARD_EXACT_ALARMS -> TAG_ACTION_EXACT_ALARMS
+        TAG_CARD_APP_STARTUP -> TAG_ACTION_APP_STARTUP
+        TAG_CARD_BATTERY_SAVING -> TAG_ACTION_BATTERY_SAVING
+        else -> TAG_ACTION_RECENTS_PIN
+    }
+
+    private fun confirmTagOf(cardTag: String): String = when (cardTag) {
+        TAG_CARD_APP_STARTUP -> TAG_CONFIRM_APP_STARTUP
+        TAG_CARD_BATTERY_SAVING -> TAG_CONFIRM_BATTERY_SAVING
+        else -> TAG_CONFIRM_RECENTS_PIN
     }
 
     private companion object {

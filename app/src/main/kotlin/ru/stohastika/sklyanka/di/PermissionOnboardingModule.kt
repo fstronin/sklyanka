@@ -6,10 +6,11 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import ru.stohastika.sklyanka.data.onboarding.OnboardingStateDataStore
-import ru.stohastika.sklyanka.domain.onboarding.ConfirmAutostartUseCase
+import ru.stohastika.sklyanka.domain.onboarding.ConfirmReliabilityStepUseCase
 import ru.stohastika.sklyanka.domain.onboarding.LeaveOnboardingUseCase
 import ru.stohastika.sklyanka.domain.onboarding.ReadPermissionChecklistUseCase
 import ru.stohastika.sklyanka.domain.onboarding.ShouldShowOnboardingUseCase
+import ru.stohastika.sklyanka.domain.onboarding.VendorProfileReader
 import ru.stohastika.sklyanka.domain.onboarding.port.AutostartHintReader
 import ru.stohastika.sklyanka.domain.onboarding.port.OnboardingLog
 import ru.stohastika.sklyanka.domain.onboarding.port.OnboardingStateStore
@@ -18,6 +19,7 @@ import ru.stohastika.sklyanka.domain.reminder.port.PermissionStateReader
 import ru.stohastika.sklyanka.domain.time.TimeSource
 import ru.stohastika.sklyanka.feature.onboarding.SystemSettingsNavigator
 import ru.stohastika.sklyanka.platform.onboarding.AndroidSystemSettingsNavigator
+import ru.stohastika.sklyanka.platform.onboarding.AndroidVendorProfileReader
 import ru.stohastika.sklyanka.platform.onboarding.BatteryOptimizationHintReader
 import ru.stohastika.sklyanka.platform.onboarding.OnboardingLogcat
 import ru.stohastika.sklyanka.platform.onboarding.SdkPermissionRequestSupport
@@ -42,18 +44,20 @@ object PermissionOnboardingModule {
         hints: AutostartHintReader,
         requests: PermissionRequestSupport,
         time: TimeSource,
+        vendor: VendorProfileReader,
     ): ReadPermissionChecklistUseCase = ReadPermissionChecklistUseCase(
         permissions = permissions,
         store = store,
         hints = hints,
         requests = requests,
         time = time,
+        vendor = vendor,
     )
 
     @Provides
     @Singleton
-    fun provideConfirmAutostart(store: OnboardingStateStore, log: OnboardingLog): ConfirmAutostartUseCase =
-        ConfirmAutostartUseCase(store = store, log = log)
+    fun provideConfirmReliabilityStep(store: OnboardingStateStore, log: OnboardingLog): ConfirmReliabilityStepUseCase =
+        ConfirmReliabilityStepUseCase(store = store, log = log)
 
     @Provides
     @Singleton
@@ -78,6 +82,10 @@ abstract class PermissionOnboardingBindings {
     @Binds
     @Singleton
     abstract fun bindAutostartHintReader(impl: BatteryOptimizationHintReader): AutostartHintReader
+
+    @Binds
+    @Singleton
+    abstract fun bindVendorProfileReader(impl: AndroidVendorProfileReader): VendorProfileReader
 
     @Binds
     @Singleton

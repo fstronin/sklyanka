@@ -1,5 +1,6 @@
 package ru.stohastika.sklyanka.reminder
 
+import android.app.AlarmManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -23,7 +24,7 @@ import ru.stohastika.sklyanka.domain.reminder.RescheduleReason
 class SystemEventReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
-        val reason = reasonOf(intent.action) ?: return
+        val reason = SystemEvents.reasonOf(intent.action) ?: return
         val graph = ReminderEntryPoint.of(context)
         val pending = goAsync()
         graph.reminderScope().launch {
@@ -34,8 +35,18 @@ class SystemEventReceiver : BroadcastReceiver() {
             }
         }
     }
+}
 
-    private fun reasonOf(action: String?): RescheduleReason? = when (action) {
+/**
+ * Системное действие → причина перепланирования (таблица НАП-11).
+ *
+ * Вынесено из приёмника, чтобы соответствие проверялось тестом на JVM без поднятия
+ * `WorkManager` и графа Hilt: забытое действие не ломает ничего сразу — будильники
+ * просто не восстановятся после события, и заметить это можно только пропущенным приёмом.
+ */
+internal object SystemEvents {
+
+    fun reasonOf(action: String?): RescheduleReason? = when (action) {
         Intent.ACTION_BOOT_COMPLETED -> RescheduleReason.BOOT
 
         // На части прошивок EMUI вместо штатного BOOT_COMPLETED приходит фирменное
@@ -45,11 +56,16 @@ class SystemEventReceiver : BroadcastReceiver() {
         Intent.ACTION_MY_PACKAGE_REPLACED -> RescheduleReason.PACKAGE_REPLACED
         Intent.ACTION_TIMEZONE_CHANGED -> RescheduleReason.TIMEZONE_CHANGED
         Intent.ACTION_TIME_CHANGED -> RescheduleReason.TIME_CHANGED
+
+        // Выдача права на точные будильники (НАП-16, И-20): до неё системный будильник
+        // поставить нельзя, после — план обязан восстановиться сам, без вывода приложения
+        // на передний план. Если прошивка событие не доставит, тот же результат даст
+        // ближайший запуск (APP_START).
+        AlarmManager.ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED -> RescheduleReason.EXACT_ALARM_GRANTED
+
         else -> null
     }
 
-    private companion object {
-        const val ACTION_QUICKBOOT_POWERON = "android.intent.action.QUICKBOOT_POWERON"
-        const val ACTION_HTC_QUICKBOOT_POWERON = "com.htc.intent.action.QUICKBOOT_POWERON"
-    }
+    const val ACTION_QUICKBOOT_POWERON = "android.intent.action.QUICKBOOT_POWERON"
+    const val ACTION_HTC_QUICKBOOT_POWERON = "com.htc.intent.action.QUICKBOOT_POWERON"
 }

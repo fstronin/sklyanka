@@ -51,7 +51,10 @@ class SdkPermissionRequestSupport @Inject constructor() : PermissionRequestSuppo
         // разбор расхождения в отчёте задачи.
         PermissionStep.EXACT_ALARMS -> false
 
-        // Программного запроса автозапуска не существует вовсе (НАП-20, ПЛ-18).
-        PermissionStep.AUTOSTART -> false
+        // Программного запроса вендорских настроек не существует вовсе (НАП-20, ПЛ-18).
+        PermissionStep.APP_STARTUP,
+        PermissionStep.BATTERY_SAVING,
+        PermissionStep.RECENTS_PIN,
+        -> false
     }
 }

@@ -1,7 +1,6 @@
 package ru.stohastika.sklyanka.acceptance.onboarding
 
 import androidx.compose.ui.test.ExperimentalTestApi
-import androidx.compose.ui.test.onAllNodesWithTag
 import io.cucumber.java.ru.Допустим
 import io.cucumber.java.ru.И
 import io.cucumber.java.ru.Когда
@@ -17,7 +16,6 @@ import ru.stohastika.sklyanka.domain.onboarding.ShouldShowOnboardingUseCase
 import ru.stohastika.sklyanka.feature.onboarding.OnboardingExit
 import ru.stohastika.sklyanka.feature.onboarding.TAG_NEXT
 import ru.stohastika.sklyanka.feature.onboarding.TAG_SKIP
-import ru.stohastika.sklyanka.feature.onboarding.TAG_UNRELIABLE
 
 /**
  * Экранные шаги приёмки системной «Назад» (SKL-40, группа `@screen`).
@@ -42,12 +40,12 @@ class PermissionsBackSteps(private val world: AcceptanceWorld) {
 
     // --- Точки входа ---------------------------------------------------------------------------
 
-    @Допустим("^человек открывает экран разрешений из предупреждения на «Сегодня»$")
+    @Допустим("^человек открывает экран «Настроить надёжность» из предупреждения на «Сегодня»$")
     fun thePersonOpensPermissionsFromTheWarning() {
         PermissionsStand.open(world, OnboardingSource.TODAY_WARNING)
     }
 
-    @Допустим("^человек открывает экран разрешений из настроек$")
+    @Допустим("^человек открывает экран «Настроить надёжность» из настроек$")
     fun thePersonOpensPermissionsFromSettings() {
         PermissionsStand.open(world, OnboardingSource.SETTINGS)
     }
@@ -71,7 +69,7 @@ class PermissionsBackSteps(private val world: AcceptanceWorld) {
 
     // --- Проверки ------------------------------------------------------------------------------
 
-    @Тогда("^экран разрешений закрывается$")
+    @Тогда("^экран «Настроить надёжность» закрывается$")
     fun thePermissionsScreenCloses() {
         assertNotNull(
             PermissionsStand.exitedTo,
@@ -121,14 +119,14 @@ class PermissionsBackSteps(private val world: AcceptanceWorld) {
         assertTrue(runBlocking { world.onboarding.seen() }, "the visible exit must be remembered (НАП-21)")
     }
 
-    /** Предупреждение остаётся: цепочка по-прежнему не пройдена, и экран об этом говорит. */
+    /**
+     * Предупреждение остаётся: цепочка по-прежнему не пройдена.
+     *
+     * Сама строка живёт на «Сегодня» (SKL-29) и читает те же факты системы: стенд проверяет
+     * доменное состояние, а отрисовку баннера «Сегодня» проверяет прогон feature-today.
+     */
     private fun warningStays(): Boolean {
         val checklist = requireNotNull(PermissionsStand.state(world).checklist) { "the screen must read the system" }
-        if (!checklist.remindersUnreliable) return false
-        var shown = false
-        PermissionsStand.ask(world) {
-            shown = onAllNodesWithTag(TAG_UNRELIABLE, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
-        }
-        return shown
+        return checklist.remindersUnreliable
     }
 }

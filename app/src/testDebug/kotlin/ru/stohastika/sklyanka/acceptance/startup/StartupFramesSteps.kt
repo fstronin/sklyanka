@@ -233,10 +233,12 @@ class StartupFramesSteps(private val world: AcceptanceWorld) {
             state = OnboardingAppProbe.state(world),
             actions = PermissionsActions(
                 onStepAction = {},
-                onAutostartConfirmed = {},
+                onManualConfirmed = { _, _ -> },
                 onNext = {},
                 onSkip = {},
+                onDone = {},
             ),
+            toLocal = { instant -> instant.atZone(world.clock.zone).toLocalDateTime() },
         )
     }
 

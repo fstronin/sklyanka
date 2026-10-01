@@ -1,11 +1,11 @@
 package ru.stohastika.sklyanka.platform.onboarding
 
 import android.util.Log
-import ru.stohastika.sklyanka.domain.onboarding.AutostartOpenResult
 import ru.stohastika.sklyanka.domain.onboarding.OnboardingOutcome
 import ru.stohastika.sklyanka.domain.onboarding.OnboardingSource
 import ru.stohastika.sklyanka.domain.onboarding.PermissionChecklist
 import ru.stohastika.sklyanka.domain.onboarding.PermissionStep
+import ru.stohastika.sklyanka.domain.onboarding.StepOpenResult
 import ru.stohastika.sklyanka.domain.onboarding.port.OnboardingLog
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -35,12 +35,16 @@ class OnboardingLogcat @Inject constructor() : OnboardingLog {
         Log.i(TAG, "system permission result (step=$step, granted=$granted)")
     }
 
-    override fun autostartSettingsOpened(result: AutostartOpenResult) {
-        Log.i(TAG, "autostart settings (result=$result)")
+    override fun vendorStepOpened(step: PermissionStep, result: StepOpenResult) {
+        Log.i(TAG, "vendor step opened (step=$step, result=$result)")
     }
 
-    override fun autostartConfirmedByUser(confirmed: Boolean) {
-        Log.i(TAG, "autostart confirmed by the person (confirmed=$confirmed)")
+    override fun manualStepConfirmed(step: PermissionStep, confirmed: Boolean) {
+        Log.i(TAG, "vendor step confirmed by the person (step=$step, confirmed=$confirmed)")
+    }
+
+    override fun reliabilityRouteTaken(source: OnboardingSource, firstUnresolved: PermissionStep?) {
+        Log.i(TAG, "reliability route taken (source=$source, firstUnresolved=$firstUnresolved)")
     }
 
     override fun onboardingLeft(outcome: OnboardingOutcome, checklist: PermissionChecklist) {

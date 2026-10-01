@@ -10,14 +10,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import ru.stohastika.sklyanka.domain.onboarding.OnboardingSource
 import ru.stohastika.sklyanka.domain.onboarding.PermissionStep
+import java.time.Instant
 
 /**
- * Хозяин экрана разрешений.
+ * Хозяин экрана «Настроить надёжность».
  *
  * Здесь и только здесь живёт системный запрос разрешения: контракт результата активности
  * требует Activity, и ни модель состояния, ни `SystemSettingsNavigator` его показать не могут.
  * Своего диалога разрешений приложение не рисует и нарисовать не вправе (ПЛ-13).
  *
+ * @param outageSince момент перерыва, если человек пришёл из баннера «Исправить» (ОВ-107):
+ * экран называет его в плашке предупреждения.
  * @param onExit куда уходить с экрана. Решает хозяин навигации: `feature-*` друг о друге
  * не знают, и «Дальше» не может сам открыть экран подключения часов (SKL-17).
  */
@@ -27,6 +30,7 @@ fun PermissionsRoute(
     source: OnboardingSource,
     onExit: (OnboardingExit) -> Unit,
     modifier: Modifier = Modifier,
+    outageSince: Instant? = null,
 ) {
     val state by viewModel.state.collectAsState()
     val exit by viewModel.exit.collectAsState()
@@ -35,7 +39,7 @@ fun PermissionsRoute(
         contract = ActivityResultContracts.RequestPermission(),
     ) { granted ->
         // Ответ системы в состояние не пишется: состояние перечитывается у системы (НФТ-52).
-        // Отказ не закрывает экран и не мешает пройти остальные шаги (НАП-18, критерий 5).
+        // Отказ не закрывает экран и не мешает пройти остальные шаги (НАП-18).
         viewModel.onPermissionResult(PermissionStep.NOTIFICATIONS, granted)
     }
 
@@ -46,7 +50,7 @@ fun PermissionsRoute(
     // запуске — «Сегодня» с предупреждением и отметкой «видел онбординг».
     BackHandler { viewModel.onSkip() }
 
-    LaunchedEffect(source) { viewModel.start(source) }
+    LaunchedEffect(source, outageSince) { viewModel.start(source, outageSince) }
     LaunchedEffect(exit) { exit?.let(onExit) }
 
     PermissionsScreen(
@@ -57,10 +61,14 @@ fun PermissionsRoute(
                 // диалог: до Android 13 разрешения не существует, и шаг ведёт в настройки.
                 if (viewModel.onStepAction(step)) requestNotifications.launch(POST_NOTIFICATIONS)
             },
-            onAutostartConfirmed = viewModel::onAutostartConfirmed,
+            onManualConfirmed = viewModel::onManualConfirmed,
             onNext = viewModel::onNext,
             onSkip = viewModel::onSkip,
+            onDone = viewModel::onDone,
+            // Самопроверка доставки — SKL-86; до неё действия в плашке нет.
+            onCheckDelivery = null,
         ),
+        toLocal = viewModel::local,
         modifier = modifier,
     )
 }

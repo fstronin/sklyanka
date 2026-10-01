@@ -19,6 +19,10 @@ interface DeferredReminderDao {
     @Query("SELECT * FROM deferred_reminder")
     suspend fun all(): List<DeferredReminderEntity>
 
+    /** Запись приёма либо `null`: отложенное срабатывание у приёма ровно одно. */
+    @Query("SELECT * FROM deferred_reminder WHERE intake_id = :intakeId")
+    suspend fun find(intakeId: String): DeferredReminderEntity?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun put(reminder: DeferredReminderEntity)
 

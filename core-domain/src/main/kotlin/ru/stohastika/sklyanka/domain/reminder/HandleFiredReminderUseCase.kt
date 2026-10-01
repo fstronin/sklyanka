@@ -31,6 +31,12 @@ enum class SuppressReason(val code: String) {
     /** Разрешение на уведомления отозвано — самый опасный отказ, тихий (НАП-15). */
     NOTIFICATIONS_DISABLED("notifications_disabled"),
 
+    /**
+     * Обычное срабатывание опоздало больше порога: показ уже не помогает, приём
+     * остаётся ожидающимся (ПМ-22, ОВ-109). Порог и его предмет — [FiredShowPolicy].
+     */
+    TOO_LATE("too_late"),
+
     /** Нечего показать: все приёмы слота отмечены. */
     EMPTY_SLOT("empty_slot"),
 
@@ -104,17 +110,41 @@ class HandleFiredReminderUseCase(
         val scheduledAt = intake.scheduledAt.atZone(time.zone()).toInstant()
         val deviation = Duration.between(scheduledAt, now).seconds
         val blocked = blockedBy(intake)
-        return if (blocked == null) {
-            present(intake, attempt, now, scheduledAt, deviation)
-        } else {
-            // Отметка опередила показ: заодно снимаем карточку, которая могла остаться
-            // от предыдущего показа этого же слота (НАП-32).
-            if (blocked == SuppressReason.ALREADY_MARKED) notifications.cancel(intake.slot)
-            // Срабатывание состоялось, но показа не будет: отложенному больше нечего ждать.
-            deferred.remove(intake.intakeId)
-            suppress(now, blocked, intake, scheduledAt, deviation)
+        return when {
+            blocked != null -> {
+                // Отметка опередила показ: заодно снимаем карточку, которая могла остаться
+                // от предыдущего показа этого же слота (НАП-32).
+                if (blocked == SuppressReason.ALREADY_MARKED) notifications.cancel(intake.slot)
+                // Срабатывание состоялось, но показа не будет: отложенному больше нечего ждать.
+                deferred.remove(intake.intakeId)
+                suppress(now, blocked, intake, scheduledAt, deviation)
+            }
+
+            isLateOrdinaryFiring(intake, attempt, now, scheduledAt) -> {
+                // Человек ничего не видел, приём остаётся ожидающимся: повтор положен
+                // общим правилом настойчивости (НАП-25) — как и при несостоявшемся показе.
+                planRepeat(intake, attempt, now)
+                suppress(now, SuppressReason.TOO_LATE, intake, scheduledAt, deviation)
+            }
+
+            else -> present(intake, attempt, now, scheduledAt, deviation)
         }
     }
+
+    /**
+     * Обычное срабатывание опоздало больше порога (ПМ-22, ОВ-109).
+     *
+     * Признак «обычное» — номер показа `0` **и** отсутствие записи отложенного срабатывания:
+     * ручное «Отложить» тоже приходит первым показом, поэтому решает запись, а не номер.
+     */
+    private suspend fun isLateOrdinaryFiring(
+        intake: ReminderIntake,
+        attempt: Int,
+        now: Instant,
+        scheduledAt: Instant,
+    ): Boolean = attempt == 0 &&
+        deferred.find(intake.intakeId) == null &&
+        !FiredShowPolicy.shouldShow(now, scheduledAt)
 
     /**
      * Почему показывать не нужно.

@@ -5,11 +5,13 @@ import ru.stohastika.sklyanka.domain.model.IntakeStatus
 import ru.stohastika.sklyanka.domain.reminder.port.AlarmGateway
 import ru.stohastika.sklyanka.domain.reminder.port.DeferredReminder
 import ru.stohastika.sklyanka.domain.reminder.port.DeferredReminders
+import ru.stohastika.sklyanka.domain.reminder.port.DeviceEnvironmentSource
 import ru.stohastika.sklyanka.domain.reminder.port.NotificationGateway
 import ru.stohastika.sklyanka.domain.reminder.port.PermissionState
 import ru.stohastika.sklyanka.domain.reminder.port.PermissionStateReader
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderCardSource
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderJournal
+import ru.stohastika.sklyanka.domain.reminder.port.ReminderMeasurement
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPermission
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPlanSource
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderSettings
@@ -41,6 +43,9 @@ internal class FakeAlarmGateway : AlarmGateway {
     var dayBoundary: Instant? = null
     var exactAllowed: Boolean = true
 
+    /** Механизм, которым фейк «ставит» будильники: им же размечается журнал среды (SKL-85). */
+    var kind: AlarmKind = AlarmKind.ALARM_CLOCK
+
     /** Сколько раз будильники ставились и снимались — доказательство идемпотентности. */
     var scheduleCalls: Int = 0
         private set
@@ -70,6 +75,8 @@ internal class FakeAlarmGateway : AlarmGateway {
     }
 
     override fun canScheduleExact(): Boolean = exactAllowed
+
+    override suspend fun alarmKind(): AlarmKind = kind
 }
 
 /**
@@ -84,6 +91,8 @@ internal class FakeDeferredReminders : DeferredReminders {
     val stored: MutableMap<String, DeferredReminder> = linkedMapOf()
 
     override suspend fun all(): List<DeferredReminder> = stored.values.toList()
+
+    override suspend fun find(intakeId: String): DeferredReminder? = stored[intakeId]
 
     override suspend fun put(reminder: DeferredReminder) {
         stored[reminder.intakeId] = reminder
@@ -214,6 +223,30 @@ internal class FakeReminderSettings(private var values: ReminderSettingsValues =
     override suspend fun setSnoozeMinutes(minutes: Int) {
         values = values.copy(snoozeMinutes = minutes)
     }
+
+    override suspend fun setAlarmStrategy(kind: AlarmKind) {
+        values = values.copy(alarmStrategy = kind)
+    }
+}
+
+/** Источник среды для тестов домена: факты задаются сценой, а не платформой. */
+internal class FakeDeviceEnvironmentSource(
+    var facts: DeviceEnvironment = DeviceEnvironment(
+        manufacturer = "HUAWEI",
+        brand = "HUAWEI",
+        osRelease = "12",
+        buildDisplay = "HUAWEI Pura 80 Ultra",
+        batteryUnrestricted = true,
+    ),
+) : DeviceEnvironmentSource {
+
+    override suspend fun environment(): DeviceEnvironment = facts
+}
+
+/** Режим измерения: в обычной сборке недоступен, тестом включается явно. */
+internal class FakeReminderMeasurement(var available: Boolean = false) : ReminderMeasurement {
+
+    override fun available(): Boolean = available
 }
 
 /** Разрешения: по умолчанию выданы, кроме нечитаемого программно автозапуска EMUI (НАП-20). */

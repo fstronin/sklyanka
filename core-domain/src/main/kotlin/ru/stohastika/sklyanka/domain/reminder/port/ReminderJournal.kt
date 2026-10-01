@@ -60,6 +60,18 @@ interface ReminderJournal {
         if (!known) record(entry)
     }
 
+    /**
+     * Записать среду измерения, если она изменилась (SKL-85, НАП-14).
+     *
+     * Сравнение с последней записью среды, а не с любой: журнал — журнал изменений,
+     * и пересборка на неизменной среде не имеет права добавлять строку (по образцу SKL-47).
+     * Реализация по умолчанию годится хранилищам в памяти; Room переопределяет её одной
+     * транзакцией «проверить и вставить».
+     */
+    suspend fun recordEnvironment(entry: ReminderLogEntry) {
+        if (last(ReminderEvent.ENVIRONMENT)?.reason != entry.reason) record(entry)
+    }
+
     /** Последние записи для диагностики — не менее 50 (НАП-37). */
     suspend fun recent(limit: Int): List<ReminderLogEntry>
 

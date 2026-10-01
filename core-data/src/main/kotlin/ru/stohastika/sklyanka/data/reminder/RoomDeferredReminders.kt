@@ -23,6 +23,8 @@ class RoomDeferredReminders @Inject constructor(private val dao: DeferredReminde
 
     override suspend fun all(): List<DeferredReminder> = dao.all().map(::toDomain)
 
+    override suspend fun find(intakeId: String): DeferredReminder? = dao.find(intakeId)?.let(::toDomain)
+
     override suspend fun put(reminder: DeferredReminder) {
         dao.put(
             DeferredReminderEntity(

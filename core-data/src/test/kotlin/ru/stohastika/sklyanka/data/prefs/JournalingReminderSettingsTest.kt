@@ -8,6 +8,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import ru.stohastika.sklyanka.domain.reminder.AlarmKind
 import ru.stohastika.sklyanka.domain.reminder.ReminderEvent
 import ru.stohastika.sklyanka.domain.reminder.ReminderLogEntry
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderJournal
@@ -71,8 +72,22 @@ class JournalingReminderSettingsTest {
         // запись «на каждое касание» превратила бы журнал срабатываний в журнал открытий.
         settings.setPersistentEnabled(false)
         settings.setSnoozeMinutes(15)
+        settings.setAlarmStrategy(AlarmKind.ALARM_CLOCK)
 
         assertTrue("unchanged values leave no trace", journal.entries.isEmpty())
+    }
+
+    /** Смена варианта измерения — граница окна A/B-прогона, и она обязана быть в журнале (SKL-85). */
+    @Test
+    fun `changing the measurement variant leaves a trace with the new code`() = runTest {
+        val settings = settings()
+
+        settings.setAlarmStrategy(AlarmKind.EXACT_IDLE)
+
+        val entry = journal.entries.single()
+        assertEquals(ReminderEvent.SETTINGS_CHANGED, entry.event)
+        assertEquals(ReminderSettingKey.ALARM_STRATEGY.trace(AlarmKind.EXACT_IDLE.code), entry.reason)
+        assertEquals(AlarmKind.EXACT_IDLE, settings.read().alarmStrategy)
     }
 
     @Test

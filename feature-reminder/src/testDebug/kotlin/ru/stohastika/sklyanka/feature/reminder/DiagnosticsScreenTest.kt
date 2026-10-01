@@ -1,5 +1,6 @@
 package ru.stohastika.sklyanka.feature.reminder
 
+import android.content.Context
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
@@ -7,6 +8,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -14,11 +16,15 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import ru.stohastika.sklyanka.domain.reminder.AlarmKind
 import ru.stohastika.sklyanka.domain.reminder.ReminderDiagnostics
+import ru.stohastika.sklyanka.domain.reminder.ReminderEvent
 import ru.stohastika.sklyanka.domain.reminder.ReminderJournalExportOutcome
+import ru.stohastika.sklyanka.domain.reminder.ReminderLogEntry
 import ru.stohastika.sklyanka.domain.reminder.ReminderOnTimeSummary
 import ru.stohastika.sklyanka.domain.reminder.ReminderReliability
 import ru.stohastika.sklyanka.domain.reminder.ReminderWeekSummary
+import ru.stohastika.sklyanka.domain.reminder.SuppressReason
 import ru.stohastika.sklyanka.domain.reminder.port.PermissionState
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPermission
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
@@ -34,12 +40,15 @@ import java.time.ZoneId
  */
 @RunWith(AndroidJUnit4::class)
 // Экран длиннее окна телефона: техблок «Для поддержки» иначе не собирается, и проверка
-// видела бы только первый уровень.
-@Config(qualifiers = "w390dp-h4000dp-mdpi")
+// видела бы только первый уровень. Язык — часть условий: подписи со склонениями читаются
+// по правилам русского, а не языка процесса (НФТ-44).
+@Config(qualifiers = "ru-rRU-w390dp-h4000dp-mdpi")
 class DiagnosticsScreenTest {
 
     @get:Rule
     val compose = createComposeRule()
+
+    private val context: Context = ApplicationProvider.getApplicationContext()
 
     private val zone: ZoneId = ZoneId.of("Europe/Moscow")
 
@@ -48,10 +57,13 @@ class DiagnosticsScreenTest {
         permissions: Map<ReminderPermission, PermissionState> = grantedAll(),
         week: ReminderWeekSummary = ReminderWeekSummary(fired = 12, missed = 2),
         onTime: ReminderOnTimeSummary = ReminderOnTimeSummary(fired = 13, onTime = 12, days = 7),
+        measurementAvailable: Boolean = false,
+        alarmKind: AlarmKind = AlarmKind.ALARM_CLOCK,
+        nextAt: Instant? = null,
     ) = ReminderDiagnostics(
         lastShown = null,
         lastMedicationName = null,
-        nextAt = null,
+        nextAt = nextAt,
         nextIntakeId = null,
         nextMedicationName = null,
         totalScheduled = 0,
@@ -59,12 +71,16 @@ class DiagnosticsScreenTest {
         permissions = permissions,
         reliability = ReminderReliability(
             notificationsEnabled = reliable,
+            channelEnabled = reliable,
             exactAlarmsAllowed = reliable,
+            fullScreenIntentAllowed = reliable,
         ),
         outage = null,
         onTime = onTime,
         week = week,
         journal = emptyList(),
+        alarmKind = alarmKind,
+        measurementAvailable = measurementAvailable,
     )
 
     private fun show(
@@ -72,9 +88,11 @@ class DiagnosticsScreenTest {
         supportExpanded: Boolean = false,
         checkOutcome: ReminderCheckOutcome? = null,
         outcome: ReminderJournalExportOutcome? = null,
+        fixFallback: ReminderPermission? = null,
         onToggleSupport: () -> Unit = {},
         onFixPermission: (ReminderPermission) -> Unit = {},
         onExportJournal: () -> Unit = {},
+        onAlarmKindChange: (AlarmKind) -> Unit = {},
     ) {
         compose.setContent {
             SklyankaTheme {
@@ -86,12 +104,14 @@ class DiagnosticsScreenTest {
                         exportOutcome = outcome,
                         supportExpanded = supportExpanded,
                         checkOutcome = checkOutcome,
+                        fixFallback = fixFallback,
                     ),
                     onCheckNow = {},
                     onExportJournal = onExportJournal,
                     onRestartSetup = null,
                     onToggleSupport = onToggleSupport,
                     onFixPermission = onFixPermission,
+                    onAlarmKindChange = onAlarmKindChange,
                     onBack = {},
                     toLocal = { instant: Instant -> instant.atZone(zone).toLocalDateTime() },
                 )
@@ -156,6 +176,59 @@ class DiagnosticsScreenTest {
         assertEquals(ReminderPermission.NOTIFICATIONS, fixed)
     }
 
+    @Test
+    fun aDisabledChannelIsNamedInTheWarnings() {
+        show(
+            snapshot = snapshot(
+                permissions = grantedAll() + (ReminderPermission.NOTIFICATION_CHANNEL to PermissionState.DENIED),
+            ).copy(
+                reliability = ReminderReliability(
+                    notificationsEnabled = true,
+                    channelEnabled = false,
+                    exactAlarmsAllowed = true,
+                    fullScreenIntentAllowed = true,
+                ),
+            ),
+        )
+
+        compose.onNodeWithTag(TAG_WARNING, useUnmergedTree = true).assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.diagnostics_warning_channel), useUnmergedTree = true)
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun aMissingFullScreenRightIsNamedInTheWarnings() {
+        show(
+            snapshot = snapshot(
+                permissions = grantedAll() + (ReminderPermission.FULL_SCREEN_INTENT to PermissionState.DENIED),
+            ).copy(
+                reliability = ReminderReliability(
+                    notificationsEnabled = true,
+                    channelEnabled = true,
+                    exactAlarmsAllowed = true,
+                    fullScreenIntentAllowed = false,
+                ),
+            ),
+        )
+
+        compose.onNodeWithText(context.getString(R.string.diagnostics_warning_full_screen), useUnmergedTree = true)
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun aFailedFixShowsTheWrittenInstructionsUnderTheRow() {
+        val permissions = grantedAll() + (ReminderPermission.AUTOSTART to PermissionState.UNKNOWN)
+        show(
+            snapshot = snapshot(permissions = permissions),
+            fixFallback = ReminderPermission.AUTOSTART,
+        )
+
+        // Системный экран не открылся — экран не молчит: под строкой остаётся ручной путь (НФТ-8).
+        compose.onNodeWithTag(TAG_FIX_FALLBACK, useUnmergedTree = true).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.diagnostics_fallback_app_startup), useUnmergedTree = true)
+            .assertExists()
+    }
+
     /** Автозапуск EMUI программно не читается: зелёной галочки здесь быть не может (НАП-20). */
     @Test
     fun theAutostartRowSaysItIsCheckedByHand() {
@@ -207,6 +280,74 @@ class DiagnosticsScreenTest {
 
         compose.onNodeWithTag(TAG_EXPORT_OUTCOME).performScrollTo().assertIsDisplayed()
     }
+
+    /** Подавленное по порогу срабатывание названо словами, а не безликим «показ подавлен» (ОВ-109). */
+    @Test
+    fun aSuppressedLateFiringIsSignedInTheJournal() {
+        val entry = suppressed(SuppressReason.TOO_LATE, 3_600)
+        show(snapshot = snapshot().copy(journal = listOf(entry)), supportExpanded = true)
+
+        compose.onNodeWithText("сработало с опозданием на 60 минут — не показано").assertExists()
+        compose.onNodeWithText("Отклонение 3600 с").assertExists()
+    }
+
+    /** Обычная сборка переключателя не показывает вовсе: планирование им не затрагивается (ПМ-20). */
+    @Test
+    fun theMeasurementSwitchIsAbsentInANormalBuild() {
+        show(supportExpanded = true)
+
+        compose.onNodeWithTag(TAG_MEASUREMENT).assertDoesNotExist()
+    }
+
+    @Test
+    fun theMeasuringBuildShowsTheVariantAndSwitchesIt() {
+        var chosen: AlarmKind? = null
+        show(
+            snapshot = snapshot(measurementAvailable = true, alarmKind = AlarmKind.ALARM_CLOCK),
+            supportExpanded = true,
+            onAlarmKindChange = { chosen = it },
+        )
+
+        compose.onNodeWithTag(TAG_MEASUREMENT).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Системный будильник").assertExists()
+        compose.onNodeWithText("Точный будильник").performScrollTo().performClick()
+
+        assertEquals(AlarmKind.EXACT_IDLE, chosen)
+    }
+
+    @Test
+    fun theAlarmClockIndicatorIsExplainedUnderTheNextReminder() {
+        show(
+            snapshot = snapshot(nextAt = Instant.parse("2026-09-26T05:00:00Z")),
+            supportExpanded = true,
+        )
+
+        compose.onNodeWithTag(TAG_NEXT).performScrollTo().assertIsDisplayed()
+        compose
+            .onNodeWithText("Это время телефон показывает в статус-баре как будильник — так и должно быть.")
+            .assertExists()
+    }
+
+    @Test
+    fun otherSuppressionsKeepTheirOwnLabel() {
+        show(
+            snapshot = snapshot().copy(journal = listOf(suppressed(SuppressReason.WINDOW_EXPIRED, null))),
+            supportExpanded = true,
+        )
+
+        compose.onNodeWithText("показ подавлен").assertExists()
+    }
+
+    private fun suppressed(reason: SuppressReason, deviation: Long?) = ReminderLogEntry(
+        occurredAt = Instant.parse("2026-09-25T12:00:00Z"),
+        event = ReminderEvent.SUPPRESSED,
+        intakeId = "intake-1",
+        scheduledAt = Instant.parse("2026-09-25T11:00:00Z"),
+        firedAt = Instant.parse("2026-09-25T12:00:00Z"),
+        deviationSeconds = deviation,
+        delivered = false,
+        reason = reason.code,
+    )
 
     private companion object {
         fun grantedAll(): Map<ReminderPermission, PermissionState> =

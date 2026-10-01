@@ -7,6 +7,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -61,6 +62,23 @@ class RoomDeferredRemindersTest {
         assertEquals(listOf(DeferredReminder(INTAKE_ID, FIRE_AT.plusSeconds(60), 1)), deferred.all())
     }
 
+    /**
+     * Чтение одной записи (SKL-88): обработке срабатывания нужен ответ «это срабатывание
+     * отложенное?» — по нему она отличает обычное от ручного «Отложить» и повтора.
+     */
+    @Test
+    fun findReturnsTheRecordOfThatIntakeOnly() = runTest {
+        seedIntake(INTAKE_ID)
+        database.intakeDao().insertAll(listOf(TestData.scheduledIntake(SECOND_INTAKE_ID)))
+
+        assertNull("nothing was deferred yet", deferred.find(INTAKE_ID))
+
+        deferred.put(DeferredReminder(SECOND_INTAKE_ID, FIRE_AT, attempt = 0))
+
+        assertNull("another intake has no record", deferred.find(INTAKE_ID))
+        assertEquals(DeferredReminder(SECOND_INTAKE_ID, FIRE_AT, 0), deferred.find(SECOND_INTAKE_ID))
+    }
+
     @Test
     fun removeTellsWhetherThereWasARecord() = runTest {
         seedIntake(INTAKE_ID)
@@ -81,6 +99,7 @@ class RoomDeferredRemindersTest {
 
     private companion object {
         const val INTAKE_ID = "intake-1"
+        const val SECOND_INTAKE_ID = "intake-2"
 
         val FIRE_AT: Instant = Instant.parse("2026-09-25T11:16:00Z")
     }

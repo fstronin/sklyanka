@@ -85,7 +85,12 @@ class DiagnosticsActivity : ComponentActivity() {
                         startActivity(setupEntry.intentFor(this@DiagnosticsActivity))
                     },
                     onToggleSupport = viewModel::onToggleSupport,
-                    onFixPermission = settingsFixer::fix,
+                    // Исход фиксера не глотается: экран покажет запасную инструкцию,
+                    // если системный раздел не открылся (НФТ-8, ОВ-106).
+                    onFixPermission = { permission ->
+                        viewModel.onFixResult(permission, settingsFixer.fix(permission))
+                    },
+                    onAlarmKindChange = viewModel::onAlarmKindChange,
                     onBack = ::finish,
                     toLocal = viewModel::local,
                 )

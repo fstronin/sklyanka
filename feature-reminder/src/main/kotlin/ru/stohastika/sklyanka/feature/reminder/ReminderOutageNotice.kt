@@ -22,21 +22,22 @@ import java.time.LocalDateTime
  * в `app`, как и все прочие решения о размещении экранов (`ADR-0007`).
  *
  * Сообщение прямое, как требует НАП-38: с какого момента напоминания не приходили и что
- * с этим делать. Действие ведёт в диагностику — единственное место, где видно, **что**
- * именно не так, а кнопка «Понятно», прячущая отказ, была бы ровно тем молчанием,
- * из-за которого жалоба «оно перестало напоминать» неразбираема.
+ * с этим делать. Действие ведёт одним шагом на «Настроить надёжность» с фокусом на первом
+ * незакрытом шаге (ОВ-107): раньше оно вело в диагностику, откуда до нужной настройки EMUI
+ * оставалось три-четыре перехода. Кнопка «Понятно», прячущая отказ, была бы ровно тем
+ * молчанием, из-за которого жалоба «оно перестало напоминать» неразбираема.
  */
 @Composable
 fun ReminderOutageNotice(
     outage: ReminderOutage,
-    onOpenDiagnostics: () -> Unit,
+    onFix: () -> Unit,
     toLocal: (Instant) -> LocalDateTime,
     modifier: Modifier = Modifier,
 ) {
     Banner(
         text = stringResource(R.string.reminder_outage_notice, toLocal(outage.since).outageMoment()),
         actionLabel = stringResource(R.string.reminder_outage_notice_action),
-        onAction = onOpenDiagnostics,
+        onAction = onFix,
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = SklyankaSpacing.Screen, vertical = SklyankaSpacing.Small)

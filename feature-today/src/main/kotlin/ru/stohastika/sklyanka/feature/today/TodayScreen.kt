@@ -215,16 +215,19 @@ private fun TodayHeader(state: TodayUiState.Content, onIntent: (TodayIntent) -> 
 }
 
 /**
- * Причина ненадёжности словами человека — одна формулировка на причину (ОВ-82).
+ * Причина ненадёжности словами человека — одна формулировка на причину (ОВ-82, ОВ-107).
  *
  * Текст берётся из ресурсов, а правило «какая причина» оставлено домену: разметка
- * не пересобирает `ReminderReliability` из двух флагов (НФТ-42).
+ * не пересобирает `ReminderReliability` из флагов (НФТ-42). Те же формулировки называют
+ * карточка «Настроить надёжность» и диагностика — перечисление одно на всех.
  */
 @Composable
 private fun ReminderWarning.text(): String = stringResource(
     when (this) {
         ReminderWarning.NOTIFICATIONS_OFF -> R.string.today_reliability_notifications_off
+        ReminderWarning.NOTIFICATION_CHANNEL_OFF -> R.string.today_reliability_channel_off
         ReminderWarning.EXACT_ALARMS_OFF -> R.string.today_reliability_exact_alarms_off
+        ReminderWarning.FULL_SCREEN_INTENT_OFF -> R.string.today_reliability_full_screen_off
         ReminderWarning.BOTH_OFF -> R.string.today_reliability_both_off
     },
 )

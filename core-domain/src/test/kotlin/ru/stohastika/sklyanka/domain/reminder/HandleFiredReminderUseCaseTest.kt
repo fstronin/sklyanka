@@ -235,6 +235,96 @@ class HandleFiredReminderUseCaseTest {
         assertEquals(1, world.alarms.attempts[Fixtures.INTAKE_ID])
     }
 
+    // --- Порог показа обычного срабатывания (ПМ-22, ОВ-109) ------------------------------------
+
+    @Test
+    fun `an ordinary firing later than the threshold is suppressed and keeps the intake waiting`() = runTest {
+        world.pending()
+        world.moveTo(LocalDateTime.of(2026, 9, 25, 14, 0).plusSeconds(1801))
+
+        val outcome = world.fired(Fixtures.INTAKE_ID)
+
+        assertEquals(FiredOutcome.Suppressed(SuppressReason.TOO_LATE), outcome)
+        assertTrue(world.notifications.shown.isEmpty(), "a late ordinary firing must not be presented")
+        val suppressed = world.journal.of(ReminderEvent.SUPPRESSED).single()
+        assertEquals(SuppressReason.TOO_LATE.code, suppressed.reason)
+        assertEquals(1801L, suppressed.deviationSeconds, "the journal must carry the actual lateness")
+        assertEquals(false, suppressed.delivered)
+        assertTrue(world.journal.of(ReminderEvent.SHOWN).isEmpty(), "a suppression is not a show")
+        assertTrue(world.stored().isPending, "the intake stays waiting and markable")
+    }
+
+    @Test
+    fun `lateness of exactly the threshold is still shown`() = runTest {
+        world.pending()
+        world.moveTo(LocalDateTime.of(2026, 9, 25, 14, 0).plusSeconds(1800))
+
+        val outcome = world.fired(Fixtures.INTAKE_ID)
+
+        assertTrue(outcome is FiredOutcome.Shown, "exactly 1800 seconds is a show, not a suppression")
+        assertEquals(1800L, world.journal.of(ReminderEvent.SHOWN).single().deviationSeconds)
+    }
+
+    @Test
+    fun `lateness of one second over the threshold is suppressed`() = runTest {
+        world.pending()
+        world.moveTo(LocalDateTime.of(2026, 9, 25, 14, 0).plusSeconds(1801))
+
+        world.fired(Fixtures.INTAKE_ID)
+
+        assertTrue(world.journal.of(ReminderEvent.SHOWN).isEmpty())
+        assertEquals(SuppressReason.TOO_LATE.code, world.journal.of(ReminderEvent.SUPPRESSED).single().reason)
+    }
+
+    @Test
+    fun `a deferred firing later than the threshold is still shown`() = runTest {
+        world.pending()
+        world.deferUntil(LocalDateTime.of(2026, 9, 25, 14, 15), attempt = 0)
+        world.moveTo(LocalDateTime.of(2026, 9, 25, 15, 0))
+
+        val outcome = world.fired(Fixtures.INTAKE_ID, attempt = 0)
+
+        assertTrue(outcome is FiredOutcome.Shown, "a manual deferral keeps its own rules (SKL-63)")
+        assertEquals(1, world.notifications.shown.size)
+    }
+
+    @Test
+    fun `a persistent repeat later than the threshold is still shown`() = runTest {
+        world.pending()
+        world.settings.setPersistentEnabled(true)
+        world.deferUntil(LocalDateTime.of(2026, 9, 25, 14, 15), attempt = 1)
+        world.moveTo(LocalDateTime.of(2026, 9, 25, 15, 0))
+
+        val outcome = world.fired(Fixtures.INTAKE_ID, attempt = 1)
+
+        assertTrue(outcome is FiredOutcome.Shown, "the threshold does not touch persistent repeats")
+        assertEquals(1, world.journal.of(ReminderEvent.REPEATED).size)
+    }
+
+    @Test
+    fun `a suppressed ordinary firing still plans the persistent repeat`() = runTest {
+        world.pending()
+        world.settings.setPersistentEnabled(true)
+        world.moveTo(LocalDateTime.of(2026, 9, 25, 15, 0))
+
+        world.fired(Fixtures.INTAKE_ID)
+
+        assertEquals(
+            DeferredReminder(
+                intakeId = Fixtures.INTAKE_ID,
+                fireAt = world.momentOf(LocalDateTime.of(2026, 9, 25, 15, 15)),
+                attempt = 1,
+            ),
+            world.deferred.stored.getValue(Fixtures.INTAKE_ID),
+            "the suppression is a decision about the show, not a cancellation of persistence",
+        )
+        assertEquals(
+            world.momentOf(LocalDateTime.of(2026, 9, 25, 15, 15)),
+            world.alarms.alarms[Fixtures.INTAKE_ID],
+            "the persistent repeat stays armed",
+        )
+    }
+
     // --- Судьба постоянной записи (SKL-35, ОВ-75) ----------------------------------------------
 
     @Test

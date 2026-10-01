@@ -167,7 +167,9 @@ class RescheduleRemindersUseCaseTest {
         assertFalse(
             ReminderReliability(
                 notificationsEnabled = outcome.notificationsEnabled,
+                channelEnabled = true,
                 exactAlarmsAllowed = outcome.exactAlarmsAllowed,
+                fullScreenIntentAllowed = true,
             ).isReliable,
         )
         // Будильники всё равно поставлены: приложение не переходит на неточные,

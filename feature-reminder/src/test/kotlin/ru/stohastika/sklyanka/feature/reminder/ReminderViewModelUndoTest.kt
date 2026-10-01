@@ -35,6 +35,7 @@ import ru.stohastika.sklyanka.domain.model.MedicationForm
 import ru.stohastika.sklyanka.domain.model.Profile
 import ru.stohastika.sklyanka.domain.model.ScheduleMode
 import ru.stohastika.sklyanka.domain.model.TabletShape
+import ru.stohastika.sklyanka.domain.reminder.AlarmKind
 import ru.stohastika.sklyanka.domain.reminder.ReminderCard
 import ru.stohastika.sklyanka.domain.reminder.ReminderCardItem
 import ru.stohastika.sklyanka.domain.reminder.ReminderChannel
@@ -356,6 +357,8 @@ private class ReminderTestWorld(withSecondRow: Boolean = false) {
         override suspend fun setPersistentEnabled(enabled: Boolean) = Unit
 
         override suspend fun setSnoozeMinutes(minutes: Int) = Unit
+
+        override suspend fun setAlarmStrategy(kind: AlarmKind) = Unit
     }
 }
 
@@ -382,6 +385,8 @@ private class NoAlarms : AlarmGateway {
     override suspend fun scheduleDayBoundary(at: Instant) = Unit
 
     override fun canScheduleExact(): Boolean = true
+
+    override suspend fun alarmKind(): AlarmKind = AlarmKind.ALARM_CLOCK
 }
 
 private class NoNotifications : NotificationGateway {
@@ -401,6 +406,8 @@ private class NoNotifications : NotificationGateway {
 private class NoDeferred : DeferredReminders {
 
     override suspend fun all(): List<DeferredReminder> = emptyList()
+
+    override suspend fun find(intakeId: String): DeferredReminder? = null
 
     override suspend fun put(reminder: DeferredReminder) = Unit
 

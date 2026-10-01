@@ -1,38 +1,50 @@
 package ru.stohastika.sklyanka.acceptance.world
 
-import ru.stohastika.sklyanka.domain.onboarding.AutostartOpenResult
 import ru.stohastika.sklyanka.domain.onboarding.OnboardingOutcome
 import ru.stohastika.sklyanka.domain.onboarding.OnboardingSource
 import ru.stohastika.sklyanka.domain.onboarding.PermissionChecklist
 import ru.stohastika.sklyanka.domain.onboarding.PermissionStep
+import ru.stohastika.sklyanka.domain.onboarding.StepOpenResult
+import ru.stohastika.sklyanka.domain.onboarding.VendorProfile
+import ru.stohastika.sklyanka.domain.onboarding.VendorProfileReader
 import ru.stohastika.sklyanka.domain.onboarding.port.AutostartHintReader
 import ru.stohastika.sklyanka.domain.onboarding.port.OnboardingLog
 import ru.stohastika.sklyanka.domain.onboarding.port.OnboardingStateStore
 import ru.stohastika.sklyanka.domain.onboarding.port.PermissionRequestSupport
 
 /**
- * Состояние онбординга сценария (SKL-14): сохранённые факты, подсказки и журнал.
+ * Состояние онбординга сценария (SKL-14, SKL-84): сохранённые факты, подсказки, вендор и журнал.
  *
  * Хранится ровно то, что продукт хранит в `DataStore` (`TDD.md §4`): «человек видел экран»
- * и «человек подтвердил автозапуск». Состояний разрешений здесь нет и быть не может —
+ * и три подтверждения вендорских шагов. Состояний разрешений здесь нет и быть не может —
  * они читаются из системы портом [ru.stohastika.sklyanka.acceptance.world.ScenarioSystemState]
  * при каждом показе (НФТ-52).
  *
- * Косвенный признак «оптимизация батареи снята» — данность Предыстории: на JVM его
- * неоткуда взять, а без него не проверить, что третий шаг не зеленеет от подсказок (НАП-20).
+ * Вендор — данность Предыстории: на JVM `Build.MANUFACTURER` неоткуда взять, а сценарии
+ * проверяют и полную цепочку на Huawei, и два общих шага на остальных телефонах.
+ *
+ * Косвенный признак «оптимизация батареи снята» — тоже данность Предыстории: без него
+ * не проверить, что вендорский шаг не зеленеет от подсказок (НАП-20).
  *
  * Журнал онбординга пишется в память: сценарии о нём не судят, но вызовы настоящие,
  * и заглушка не молчит о факте — она его записывает.
  */
+@Suppress("TooManyFunctions")
 class ScenarioOnboarding :
     OnboardingStateStore,
     AutostartHintReader,
     PermissionRequestSupport,
+    VendorProfileReader,
     OnboardingLog {
 
     private var seen: Boolean = false
-    private var confirmed: Boolean = false
+    private var appStartup: Boolean = false
+    private var batterySaving: Boolean = false
+    private var recentsPin: Boolean = false
     private var batteryIgnored: Boolean = false
+
+    /** Прошивка сценария: по умолчанию эталонный Huawei. */
+    var vendor: VendorProfile = VendorProfile.EMUI
 
     /** Записи журнала онбординга: короткие коды событий, без медицинских данных (НФТ-19). */
     val records: MutableList<String> = mutableListOf()
@@ -43,11 +55,25 @@ class ScenarioOnboarding :
         seen = true
     }
 
-    override suspend fun autostartConfirmed(): Boolean = confirmed
+    override suspend fun appStartupConfirmed(): Boolean = appStartup
 
-    override suspend fun setAutostartConfirmed(confirmed: Boolean) {
-        this.confirmed = confirmed
+    override suspend fun setAppStartupConfirmed(confirmed: Boolean) {
+        appStartup = confirmed
     }
+
+    override suspend fun batterySavingConfirmed(): Boolean = batterySaving
+
+    override suspend fun setBatterySavingConfirmed(confirmed: Boolean) {
+        batterySaving = confirmed
+    }
+
+    override suspend fun recentsPinConfirmed(): Boolean = recentsPin
+
+    override suspend fun setRecentsPinConfirmed(confirmed: Boolean) {
+        recentsPin = confirmed
+    }
+
+    override fun profile(): VendorProfile = vendor
 
     override fun batteryOptimizationIgnored(): Boolean = batteryIgnored
 
@@ -60,7 +86,8 @@ class ScenarioOnboarding :
      * Что из цепочки система позволяет запросить диалогом.
      *
      * Как на Android 13 и новее (ПЛ-13, ПЛ-14): уведомления — да, точные будильники — нет,
-     * их выдают на экране особого доступа. Ответ — свойство платформы, а не счётчик отказов.
+     * их выдают на экране особого доступа. Вендорские настройки не запрашиваются вовсе
+     * (НАП-20). Ответ — свойство платформы, а не счётчик отказов.
      */
     override fun canRequestFromCode(step: PermissionStep): Boolean = step == PermissionStep.NOTIFICATIONS
 
@@ -78,12 +105,16 @@ class ScenarioOnboarding :
         records += "result:$step:$granted"
     }
 
-    override fun autostartSettingsOpened(result: AutostartOpenResult) {
-        records += "autostart:$result"
+    override fun vendorStepOpened(step: PermissionStep, result: StepOpenResult) {
+        records += "vendor:$step:$result"
     }
 
-    override fun autostartConfirmedByUser(confirmed: Boolean) {
-        records += "confirmed:$confirmed"
+    override fun manualStepConfirmed(step: PermissionStep, confirmed: Boolean) {
+        records += "manual:$step:$confirmed"
+    }
+
+    override fun reliabilityRouteTaken(source: OnboardingSource, firstUnresolved: PermissionStep?) {
+        records += "route:$source:$firstUnresolved"
     }
 
     override fun onboardingLeft(outcome: OnboardingOutcome, checklist: PermissionChecklist) {

@@ -6,6 +6,8 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import dagger.hilt.android.qualifiers.ApplicationContext
+import ru.stohastika.sklyanka.MainActivity
+import ru.stohastika.sklyanka.domain.reminder.AlarmKind
 import ru.stohastika.sklyanka.domain.reminder.PersistentRepeatPolicy
 import ru.stohastika.sklyanka.domain.reminder.port.AlarmGateway
 import ru.stohastika.sklyanka.domain.reminder.port.AlarmRegistry
@@ -14,11 +16,14 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Точные будильники поверх `AlarmManager` (НАП-5).
+ * Будильники поверх `AlarmManager` (НАП-5).
  *
- * Только `setExactAndAllowWhileIdle`: неточные и повторяющиеся будильники не применяются —
- * первые отдают время на усмотрение системы, вторые на Android 8+ неточны по определению.
- * Doze пробивается тем же вызовом, и это обязательное средство, а не оптимизация (ПЛ-7).
+ * Напоминания о приёмах ставятся `setAlarmClock` — он получает исключение из Doze
+ * и заморозки, система его не сдвигает, а признак в статус-баре показывает ближайшее
+ * напоминание (ОВ-110). Служебные будильники (якорь и граница суток) остаются
+ * `setExactAndAllowWhileIdle` и признак не показывают (НАП-42). Неточные и повторяющиеся
+ * будильники не применяются — первые отдают время на усмотрение системы, вторые
+ * на Android 8+ неточны по определению.
  *
  * Чего здесь нет и не может быть: перечисления поставленных будильников. Android такого
  * API не даёт, поэтому набор хранится в [AlarmRegistry], а существование каждого будильника
@@ -30,6 +35,7 @@ import javax.inject.Singleton
 class AlarmManagerGateway @Inject constructor(
     @ApplicationContext private val context: Context,
     private val registry: AlarmRegistry,
+    private val strategy: EffectiveAlarmStrategy,
 ) : AlarmGateway {
 
     private val alarms: AlarmManager = requireNotNull(context.getSystemService(AlarmManager::class.java))
@@ -43,11 +49,28 @@ class AlarmManagerGateway @Inject constructor(
      * по нему, снимать ли будильник, а назначенное время приёма после первого показа
      * уже в прошлом и в окно не попадает (НАП-31). Без записи повтор снимался бы
      * первой же пересборкой как осиротевший.
+     *
+     * Механизм выбирается на месте, а номер показа остаётся единственным параметром
+     * различия показов: адрес будильника прежний, поэтому переключение варианта
+     * измерения не оставляет «второго» будильника (НАП-9).
      */
     override suspend fun schedule(intakeId: String, at: Instant, attempt: Int) {
-        if (setExact(at, pendingIntent(ReminderAlarms.intake(context, intakeId, attempt)))) {
-            registry.put(intakeId, at)
-        }
+        val pending = pendingIntent(ReminderAlarms.intake(context, intakeId, attempt))
+        if (placeExact(at, pending)) registry.put(intakeId, at)
+    }
+
+    /**
+     * Постановка будильника действующим механизмом по произвольному адресу (SKL-89).
+     *
+     * Вынесено из [schedule] ради измерительного пробника: он обязан ставить тестовые
+     * срабатывания тем же вызовом, каким живёт продукт. Дубль ветвления в debug-сборке
+     * разошёлся бы с продуктом при первой же правке механизма и мерил бы сам себя.
+     * Виден только внутри модуля: стенд живёт в `src/debug` той же сборки, а в релизном
+     * артефакте потребителя у метода нет.
+     */
+    internal suspend fun placeExact(at: Instant, pending: PendingIntent): Boolean = when (strategy.kind()) {
+        AlarmKind.ALARM_CLOCK -> setAlarmClock(at, pending)
+        AlarmKind.EXACT_IDLE -> setExact(at, pending)
     }
 
     override suspend fun cancel(intakeId: String) {
@@ -89,6 +112,9 @@ class AlarmManagerGateway @Inject constructor(
     override fun canScheduleExact(): Boolean =
         Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarms.canScheduleExactAlarms()
 
+    /** Действующий механизм: тот же, что только что ставил будильник (SKL-85). */
+    override suspend fun alarmKind(): AlarmKind = strategy.kind()
+
     /**
      * @return поставлен ли будильник. Отказ системы не роняет приложение и **не** приводит
      *   к подмене точного будильника неточным: молчаливая деградация запрещена (НАП-16),
@@ -100,6 +126,27 @@ class AlarmManagerGateway @Inject constructor(
     } catch (_: SecurityException) {
         false
     }
+
+    /**
+     * Системный будильник приёма: doze-exempt, не сдвигается, виден в статус-баре (ОВ-110).
+     *
+     * `showIntent` — переход по нажатию на признак будильника: он ведёт в приложение,
+     * а не в карточку конкретного приёма, потому что выбор ближайшего будильника
+     * при нескольких приложениях остаётся за системой (`TDD.md §9.1`).
+     */
+    private fun setAlarmClock(at: Instant, pending: PendingIntent): Boolean = try {
+        alarms.setAlarmClock(AlarmManager.AlarmClockInfo(at.toEpochMilli(), alarmClockShowIntent()), pending)
+        true
+    } catch (_: SecurityException) {
+        false
+    }
+
+    private fun alarmClockShowIntent(): PendingIntent = PendingIntent.getActivity(
+        context,
+        SHOW_REQUEST_CODE,
+        Intent(context, MainActivity::class.java),
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+    )
 
     private fun pendingIntent(intent: Intent): PendingIntent = PendingIntent.getBroadcast(
         context,
@@ -124,6 +171,15 @@ class AlarmManagerGateway @Inject constructor(
          * будильник молча вытесняет другой.
          */
         const val REQUEST_CODE = 0
+
+        /**
+         * Код запроса show-намерения системного будильника.
+         *
+         * Отдельный от [REQUEST_CODE]: тот адресует broadcast'ы будильников приёма, а этот —
+         * activity, открываемую нажатием на признак в статус-баре; общий код дал бы
+         * `PendingIntent`-коллизию между разными видами намерений.
+         */
+        const val SHOW_REQUEST_CODE = 1
     }
 }
 

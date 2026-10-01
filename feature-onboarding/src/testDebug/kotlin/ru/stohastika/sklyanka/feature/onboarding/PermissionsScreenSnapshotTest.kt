@@ -10,6 +10,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import java.io.File
+import java.time.ZoneId
 
 /**
  * Эталонные снимки экрана разрешений (SKL-24).
@@ -55,6 +56,7 @@ class PermissionsScreenSnapshotTest {
         PermissionsScreen(
             state = state,
             actions = PermissionsScreenFixtures.actions(),
+            toLocal = { instant -> instant.atZone(ZoneId.of("Europe/Moscow")).toLocalDateTime() },
         )
     }
 

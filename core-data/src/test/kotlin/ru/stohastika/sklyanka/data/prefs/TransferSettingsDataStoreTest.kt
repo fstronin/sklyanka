@@ -7,6 +7,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import ru.stohastika.sklyanka.domain.reminder.AlarmKind
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderSettings
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderSettingsValues
 import ru.stohastika.sklyanka.domain.transfer.TransferSettings
@@ -71,6 +72,10 @@ class TransferSettingsDataStoreTest {
 
         override suspend fun setSnoozeMinutes(minutes: Int) {
             values = values.copy(snoozeMinutes = minutes)
+        }
+
+        override suspend fun setAlarmStrategy(kind: AlarmKind) {
+            values = values.copy(alarmStrategy = kind)
         }
     }
 }

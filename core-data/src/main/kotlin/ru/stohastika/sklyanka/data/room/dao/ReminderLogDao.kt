@@ -116,4 +116,18 @@ abstract class ReminderLogDao {
             restoredFacts(event, reason, intakeId, firedAt, attempt) > 0
         if (!known) insert(entry)
     }
+
+    /**
+     * Записать среду измерения, если она изменилась (SKL-85).
+     *
+     * Сравнивается нагрузка последней записи того же вида: журнал — журнал изменений,
+     * и пересборка на неизменной среде не имеет права добавлять строку (по образцу SKL-47).
+     * Транзакция обязательна по той же причине, что у восстановления: без неё две
+     * одновременные пересборки (запуск и перезагрузка) обе увидят «ещё нет» и утроят
+     * запись среды, а по её границам считается измерение.
+     */
+    @Transaction
+    open suspend fun insertEnvironmentOnce(entry: ReminderLogEntity) {
+        if (last(entry.event)?.reason != entry.reason) insert(entry)
+    }
 }

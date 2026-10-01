@@ -95,6 +95,7 @@ internal object DiagnosticsStand {
                 onRestartSetup = null,
                 onToggleSupport = { onAction { model(world).onToggleSupport() } },
                 onFixPermission = { permission -> onAction { fixed = permission } },
+                onAlarmKindChange = { kind -> onAction { model(world).onAlarmKindChange(kind) } },
                 onBack = { onAction { backRequested = true } },
                 toLocal = { instant: Instant -> instant.atZone(world.clock.zone).toLocalDateTime() },
             )
@@ -150,6 +151,7 @@ internal object DiagnosticsStand {
             plan = world.reminders.planSource(),
             reliability = ReadReminderReliabilityUseCase(world.system),
             medications = world.repositories.medicationStore,
+            measurement = world.reminders.measurement,
             time = world.clock.time,
         ),
         check = ReminderCheckNow { reason ->
@@ -166,6 +168,7 @@ internal object DiagnosticsStand {
             files = world.transfer.files,
             time = world.clock.time,
         ),
+        settings = world.reminders.settingsStore,
         time = world.clock.time,
     )
 

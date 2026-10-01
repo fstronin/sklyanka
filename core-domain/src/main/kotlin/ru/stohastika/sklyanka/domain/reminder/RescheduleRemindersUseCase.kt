@@ -6,6 +6,7 @@ import ru.stohastika.sklyanka.domain.model.IntakeStatus
 import ru.stohastika.sklyanka.domain.reminder.port.AlarmGateway
 import ru.stohastika.sklyanka.domain.reminder.port.DeferredReminder
 import ru.stohastika.sklyanka.domain.reminder.port.DeferredReminders
+import ru.stohastika.sklyanka.domain.reminder.port.DeviceEnvironmentSource
 import ru.stohastika.sklyanka.domain.reminder.port.NotificationGateway
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderJournal
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPlanSource
@@ -37,6 +38,7 @@ import java.time.ZoneId
  * Будильник ставится не для любой живой записи, а только для уместной по времени:
  * слишком опоздавший повтор снимается без показа ([DeferredShowPolicy], НАП-41, ОВ-99).
  */
+@Suppress("LongParameterList")
 class RescheduleRemindersUseCase(
     private val plan: ReminderPlanSource,
     private val alarms: AlarmGateway,
@@ -44,6 +46,7 @@ class RescheduleRemindersUseCase(
     private val journal: ReminderJournal,
     private val deferred: DeferredReminders,
     private val sweepMissed: SweepMissedIntakesUseCase,
+    private val environment: DeviceEnvironmentSource,
     private val time: TimeSource,
 ) {
 
@@ -120,6 +123,8 @@ class RescheduleRemindersUseCase(
                 delivered = exact,
             ),
         )
+        journalEnvironment(now)
+
         // След восстановления — только на действительно поставленное заново: иначе журнал
         // превратился бы в журнал пересборок, а не изменений (SKL-35, `TDD.md §5.3`).
         toSchedule.filter { it.intakeId in deferredPlan.liveIds }.forEach { journalRestored(now, it, zone) }
@@ -133,6 +138,24 @@ class RescheduleRemindersUseCase(
             nextIntakeId = next?.intakeId,
             exactAlarmsAllowed = exact,
             notificationsEnabled = notifications.areNotificationsEnabled(),
+        )
+    }
+
+    /**
+     * Среда измерения пишется после причины пересборки (SKL-85, `TDD.md §9.2`).
+     *
+     * Её запись — граница окна A/B-прогона, и она обязана попасть на каждый путь
+     * пересборки. Механизм приходит из того же порта, что ставит будильники; внутри
+     * сравнение с последней записью: неизменная среда молчит (SKL-47).
+     */
+    private suspend fun journalEnvironment(now: Instant) {
+        val actual = ReminderEnvironment(alarms.alarmKind(), environment.environment())
+        journal.recordEnvironment(
+            ReminderLogEntry(
+                occurredAt = now,
+                event = ReminderEvent.ENVIRONMENT,
+                reason = actual.encode(),
+            ),
         )
     }
 

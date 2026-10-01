@@ -421,6 +421,16 @@ class TodayScreenTest {
     }
 
     @Test
+    fun aDisabledChannelIsNamedOnTheBanner() {
+        assertTheWarningIsShown(ReminderWarning.NOTIFICATION_CHANNEL_OFF, R.string.today_reliability_channel_off)
+    }
+
+    @Test
+    fun aMissingFullScreenRightIsNamedOnTheBanner() {
+        assertTheWarningIsShown(ReminderWarning.FULL_SCREEN_INTENT_OFF, R.string.today_reliability_full_screen_off)
+    }
+
+    @Test
     fun bothRevokedPermissionsAreNamedOnOneBanner() {
         assertTheWarningIsShown(ReminderWarning.BOTH_OFF, R.string.today_reliability_both_off)
     }

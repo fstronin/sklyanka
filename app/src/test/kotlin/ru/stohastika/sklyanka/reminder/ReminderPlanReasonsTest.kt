@@ -19,7 +19,11 @@ class ReminderPlanReasonsTest {
 
     @Test
     fun `every reason either maps to a generation reason or is explicitly excluded`() {
-        val excluded = setOf(RescheduleReason.ALARM_FIRED, RescheduleReason.PROFILE_SET_CHANGED)
+        val excluded = setOf(
+            RescheduleReason.ALARM_FIRED,
+            RescheduleReason.PROFILE_SET_CHANGED,
+            RescheduleReason.EXACT_ALARM_GRANTED,
+        )
         RescheduleReason.entries.forEach { reason ->
             val mapped = ReminderPlanReasons.intakeReason(reason)
             if (reason in excluded) {
@@ -36,6 +40,13 @@ class ReminderPlanReasonsTest {
         // времени, которого у приёмника нет (НАП-13), а очередь будильников пополняет
         // сама пересборка окна (НФТ-7).
         assertNull(ReminderPlanReasons.intakeReason(RescheduleReason.ALARM_FIRED))
+    }
+
+    @Test
+    fun `granting the exact alarm right generates no intakes`() {
+        // Выдача права меняет только очередь будильников; окно приёмов уже сгенерировано,
+        // и лишний проход по всем профилям в приёмнике стоит времени, которого у него нет.
+        assertNull(ReminderPlanReasons.intakeReason(RescheduleReason.EXACT_ALARM_GRANTED))
     }
 
     @Test

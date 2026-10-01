@@ -192,7 +192,8 @@ class SettingsRemindersScreenSteps(private val world: AcceptanceWorld) {
     fun exactlyThoseIntervalsAreOffered() {
         assertEquals(listOf(5, 10, 15, 30, 60), SnoozeIntervals.OPTIONS)
         SettingsRemindersStand.ask(world) {
-            assertEquals(5, onAllNodesWithTag(TAG_LIST_PICKER_OPTION, useUnmergedTree = true).fetchSemanticsNodes().size)
+            val options = onAllNodesWithTag(TAG_LIST_PICKER_OPTION, useUnmergedTree = true).fetchSemanticsNodes()
+            assertEquals(5, options.size)
             SnoozeIntervals.OPTIONS.forEach { minutes ->
                 onNode(hasTestTag(TAG_LIST_PICKER_OPTION) and hasText(labelOf(minutes))).assertExists()
             }
@@ -252,7 +253,9 @@ class SettingsRemindersScreenSteps(private val world: AcceptanceWorld) {
     private fun labelOf(minutes: Int): String =
         context.resources.getQuantityString(SettingsR.plurals.settings_snooze_minutes, minutes, minutes)
 
-    private fun minutesOf(label: String): Int = requireNotNull(SnoozeIntervals.OPTIONS.firstOrNull { labelOf(it) == label }) {
+    private fun minutesOf(label: String): Int = requireNotNull(
+        SnoozeIntervals.OPTIONS.firstOrNull { labelOf(it) == label },
+    ) {
         "unknown interval label: $label"
     }
 

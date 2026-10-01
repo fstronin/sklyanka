@@ -81,6 +81,34 @@ class ReminderDiagnosticsTest {
         )
     }
 
+    /**
+     * Подавленное по порогу срабатывание — факт журнала, а не показ: «последнее
+     * напоминание» остаётся на предъявлении, а сводки его не считают (ПМ-22, ОВ-109).
+     */
+    @Test
+    fun `a suppressed late firing does not replace the last shown reminder or enter the summaries`() = runTest {
+        world.pending()
+        world.moveTo(ReminderTestWorld.AFTERNOON)
+        world.fired(Fixtures.INTAKE_ID)
+
+        world.moveTo(LocalDateTime.of(2026, 9, 25, 15, 0))
+        world.fired(Fixtures.INTAKE_ID)
+
+        val snapshot = world.diagnostics()
+
+        assertEquals(ReminderEvent.SHOWN, snapshot.lastShown?.event)
+        assertEquals(world.momentOf(ReminderTestWorld.AFTERNOON), snapshot.lastShown?.firedAt)
+        assertTrue(
+            snapshot.journal.any {
+                it.event == ReminderEvent.SUPPRESSED && it.reason == SuppressReason.TOO_LATE.code
+            },
+            "the suppression must be visible in the journal",
+        )
+        assertEquals(1, snapshot.onTime.fired, "a suppressed firing must not count as fired")
+        assertEquals(1, snapshot.week.fired, "a suppressed firing must not count as fired")
+        assertEquals(0, snapshot.week.missed, "a suppressed firing must not count as missed")
+    }
+
     @Test
     fun `the time and the reason of the last rebuild are shown`() = runTest {
         world.pending()
@@ -243,6 +271,26 @@ class ReminderDiagnosticsTest {
         world.moveTo(LocalDateTime.of(2026, 9, 25, 18, 0))
 
         assertEquals(null, world.diagnostics().outage)
+    }
+
+    @Test
+    fun `the acting mechanism and the availability of the measurement mode are part of the snapshot`() = runTest {
+        world.alarms.kind = AlarmKind.ALARM_CLOCK
+        world.measurement.available = true
+
+        val snapshot = world.diagnostics()
+
+        assertEquals(AlarmKind.ALARM_CLOCK, snapshot.alarmKind)
+        assertTrue(snapshot.measurementAvailable)
+    }
+
+    @Test
+    fun `a normal build reports the measurement mode as unavailable`() = runTest {
+        world.measurement.available = false
+
+        val snapshot = world.diagnostics()
+
+        assertEquals(false, snapshot.measurementAvailable)
     }
 
     @Test

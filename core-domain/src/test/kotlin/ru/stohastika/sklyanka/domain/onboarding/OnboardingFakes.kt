@@ -7,12 +7,14 @@ import ru.stohastika.sklyanka.domain.onboarding.port.PermissionRequestSupport
 /**
  * Хранилище состояния онбординга в памяти.
  *
- * Хранит ровно два значения — и это проверяется тестом: любое третье значение здесь
- * означало бы, что состояние разрешения где-то запомнили (НФТ-52).
+ * Хранит ровно «видел» и три вендорских подтверждения — и это проверяется тестом: любое
+ * состояние разрешения здесь означало бы, что разрешение где-то запомнили (НФТ-52).
  */
 internal class FakeOnboardingStateStore(
     private var seen: Boolean = false,
-    private var autostartConfirmed: Boolean = false,
+    private var appStartupConfirmed: Boolean = false,
+    private var batterySavingConfirmed: Boolean = false,
+    private var recentsPinConfirmed: Boolean = false,
 ) : OnboardingStateStore {
 
     var markSeenCalls: Int = 0
@@ -25,14 +27,32 @@ internal class FakeOnboardingStateStore(
         seen = true
     }
 
-    override suspend fun autostartConfirmed(): Boolean = autostartConfirmed
+    override suspend fun appStartupConfirmed(): Boolean = appStartupConfirmed
 
-    override suspend fun setAutostartConfirmed(confirmed: Boolean) {
-        autostartConfirmed = confirmed
+    override suspend fun setAppStartupConfirmed(confirmed: Boolean) {
+        appStartupConfirmed = confirmed
+    }
+
+    override suspend fun batterySavingConfirmed(): Boolean = batterySavingConfirmed
+
+    override suspend fun setBatterySavingConfirmed(confirmed: Boolean) {
+        batterySavingConfirmed = confirmed
+    }
+
+    override suspend fun recentsPinConfirmed(): Boolean = recentsPinConfirmed
+
+    override suspend fun setRecentsPinConfirmed(confirmed: Boolean) {
+        recentsPinConfirmed = confirmed
     }
 }
 
-/** Косвенные признаки автозапуска в памяти. */
+/** Прошивка в памяти: по умолчанию эталонный Huawei. */
+internal class FakeVendorProfileReader(var vendor: VendorProfile = VendorProfile.EMUI) : VendorProfileReader {
+
+    override fun profile(): VendorProfile = vendor
+}
+
+/** Косвенный признак энергосбережения в памяти. */
 internal class FakeAutostartHintReader(var batteryOptimizationIgnored: Boolean = false) : AutostartHintReader {
 
     override fun batteryOptimizationIgnored(): Boolean = batteryOptimizationIgnored

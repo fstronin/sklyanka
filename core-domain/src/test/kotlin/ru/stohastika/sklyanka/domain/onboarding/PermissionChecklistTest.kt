@@ -2,54 +2,116 @@ package ru.stohastika.sklyanka.domain.onboarding
 
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import java.time.Instant
 
-@DisplayName("The three-step chain counts the autostart step and never calls it verified")
+@DisplayName("The chain is five steps on EMUI and two elsewhere, and it never calls a vendor step verified")
 class PermissionChecklistTest {
 
     private val readAt: Instant = Instant.parse("2026-09-25T10:00:00Z")
 
+    private val grantedNotifications = NotificationAccessState(
+        permission = PermissionGrant.Granted(readAt),
+        channel = PermissionGate.GRANTED,
+        fullScreenIntent = PermissionGate.GRANTED,
+    )
+
     private fun checklist(
-        notifications: PermissionGrant = PermissionGrant.Granted(readAt),
+        vendor: VendorProfile = VendorProfile.EMUI,
+        notifications: NotificationAccessState = grantedNotifications,
         exactAlarms: PermissionGrant = PermissionGrant.Granted(readAt),
-        autostart: AutostartState = AutostartState(confirmedByUser = false),
-    ) = PermissionChecklist(notifications, exactAlarms, autostart)
+        appStartup: ManualStepState = ManualStepState(confirmedByUser = false),
+        batterySaving: ManualStepState = ManualStepState(confirmedByUser = false),
+        recentsPin: ManualStepState = ManualStepState(confirmedByUser = false),
+    ) = PermissionChecklist(vendor, notifications, exactAlarms, appStartup, batterySaving, recentsPin)
 
     @Test
-    fun `the three steps come in the fixed order of REMINDER-19`() {
+    fun `on EMUI the five steps come in the fixed order of OV-106`() {
         assertEquals(
-            listOf(PermissionStep.NOTIFICATIONS, PermissionStep.EXACT_ALARMS, PermissionStep.AUTOSTART),
+            listOf(
+                PermissionStep.NOTIFICATIONS,
+                PermissionStep.EXACT_ALARMS,
+                PermissionStep.APP_STARTUP,
+                PermissionStep.BATTERY_SAVING,
+                PermissionStep.RECENTS_PIN,
+            ),
             checklist().steps.map { it.first },
         )
     }
 
     @Test
-    fun `the chain is not complete while the autostart step is unconfirmed`() {
-        // Оба разрешения Android выданы, но цепочка из трёх шагов пройдена на двух.
-        val chain = checklist()
+    fun `on any other phone only the two common steps are shown`() {
+        val chain = checklist(vendor = VendorProfile.GENERIC)
 
-        assertFalse(chain.allResolved, "two of three steps is not a passed chain")
-        assertEquals(1, chain.unresolvedCount)
-        assertEquals(listOf(PermissionStep.AUTOSTART), chain.unresolved)
+        assertEquals(
+            listOf(PermissionStep.NOTIFICATIONS, PermissionStep.EXACT_ALARMS),
+            chain.steps.map { it.first },
+        )
+        assertEquals(2, chain.steps.size, "there are no vendor settings to show on a non-Huawei phone")
     }
 
     @Test
-    fun `the chain is complete only when the person confirmed the autostart step too`() {
-        val chain = checklist(autostart = AutostartState(confirmedByUser = true))
+    fun `the chain is not complete while a vendor step is unconfirmed`() {
+        // Оба разрешения Android выданы, но цепочка из пяти шагов пройдена на двух.
+        val chain = checklist()
+
+        assertFalse(chain.allResolved, "two of five steps is not a passed chain")
+        assertEquals(3, chain.unresolvedCount)
+        assertEquals(
+            listOf(PermissionStep.APP_STARTUP, PermissionStep.BATTERY_SAVING, PermissionStep.RECENTS_PIN),
+            chain.unresolved,
+        )
+    }
+
+    @Test
+    fun `the chain is complete only when all vendor steps are confirmed too`() {
+        val chain = checklist(
+            appStartup = ManualStepState(confirmedByUser = true),
+            batterySaving = ManualStepState(confirmedByUser = true),
+            recentsPin = ManualStepState(confirmedByUser = true),
+        )
 
         assertTrue(chain.allResolved)
         assertEquals(0, chain.unresolvedCount)
+        assertNull(chain.firstUnresolved)
         assertFalse(chain.remindersUnreliable)
+    }
+
+    @Test
+    fun `on a non-Huawei phone the chain is complete with the two permissions alone`() {
+        val chain = checklist(vendor = VendorProfile.GENERIC)
+
+        // Вендорских шагов на экране нет — незакрытыми они цепочку не держат.
+        assertTrue(chain.allResolved)
+        assertEquals(0, chain.unresolvedCount)
+    }
+
+    @Test
+    fun `the first unresolved step is the focus of the banner entries`() {
+        val chain = checklist(
+            exactAlarms = PermissionGrant.Denied(canAsk = false),
+            appStartup = ManualStepState(confirmedByUser = true),
+        )
+
+        // Порядок фиксирован: первым незакрытым остаётся «Энергосбережение», хотя
+        // «Закрепление» тоже не подтверждено — оно позже.
+        assertEquals(PermissionStep.EXACT_ALARMS, chain.firstUnresolved)
+        assertEquals(
+            listOf(PermissionStep.EXACT_ALARMS, PermissionStep.BATTERY_SAVING, PermissionStep.RECENTS_PIN),
+            chain.unresolved,
+        )
     }
 
     @Test
     fun `one missing permission is counted as one and not as none`() {
         val chain = checklist(
             exactAlarms = PermissionGrant.Denied(canAsk = false),
-            autostart = AutostartState(confirmedByUser = true),
+            appStartup = ManualStepState(confirmedByUser = true),
+            batterySaving = ManualStepState(confirmedByUser = true),
+            recentsPin = ManualStepState(confirmedByUser = true),
         )
 
         assertEquals(1, chain.unresolvedCount)
@@ -60,43 +122,28 @@ class PermissionChecklistTest {
     fun `a granted permission carries the moment it was read from the system`() {
         // «Выдано» — утверждение о прошлом длиной в один показ экрана: разрешение отзывают
         // в системных настройках, и момент чтения показывает, насколько свежи данные.
-        val state = checklist().notifications
+        val state = checklist().notifications.permission
 
         assertEquals(PermissionGrant.Granted(readAt), state)
     }
 
     @Test
-    fun `no combination of hints makes the autostart step verified by the system`() {
-        val everything = AutostartState(confirmedByUser = true, hints = AutostartHint.entries.toSet())
-
-        assertFalse(everything.verifiedBySystem, "REMINDER-20: the app never verifies EMUI autostart")
-        assertEquals(AutostartHint.entries.size, everything.hints.size)
+    fun `an unresolved chain is what raises the unreliable-reminders warning`() {
+        assertTrue(
+            checklist(
+                notifications = grantedNotifications.copy(permission = PermissionGrant.Denied(canAsk = true)),
+            ).remindersUnreliable,
+        )
+        assertTrue(checklist().remindersUnreliable)
     }
 
     @Test
-    fun `the autostart state is not a permission grant and has no granted variant`() {
-        // Главное утверждение дизайна: ложно-зелёный третий шаг невозможен по типу,
-        // а не по дисциплине вызова (TDD §5.1).
-        val autostart: StepState = AutostartState(confirmedByUser = true)
-
-        assertFalse(autostart is PermissionGrant, "the autostart step must not reuse the permission type")
-
-        // Исчерпывающий when вместо рефлексии: третий вариант разрешения перестал бы
-        // компилироваться здесь, а подставить сюда AutostartState нельзя — у него
-        // другой тип. То есть «выдано» для шага автозапуска не выражается вовсе.
-        val variants = listOf(PermissionGrant.Granted(readAt), PermissionGrant.Denied(canAsk = true)).map { grant ->
-            when (grant) {
-                is PermissionGrant.Granted -> "Granted"
-                is PermissionGrant.Denied -> "Denied"
-            }
-        }
-        assertEquals(listOf("Granted", "Denied"), variants)
-    }
-
-    @Test
-    fun `the step count comes from the enumeration and not from a literal`() {
-        assertEquals(PermissionStep.entries.size, PermissionChecklist.STEP_COUNT)
-        assertEquals(3, PermissionChecklist.STEP_COUNT)
+    fun `the chain has five steps and Do Not Disturb is not one of them`() {
+        // НАП-17: доступ к политике «Не беспокоить» запрашивается отдельно, на экране
+        // настроек напоминаний, и в цепочку онбординга не входит.
+        assertEquals(5, PermissionStep.entries.size)
+        assertFalse(PermissionStep.entries.any { it.name.contains("DND") })
+        assertFalse(PermissionStep.entries.any { it.name.contains("POLICY") })
     }
 
     @Test
@@ -107,34 +154,28 @@ class PermissionChecklistTest {
     }
 
     @Test
-    fun `the step indicator belongs to onboarding and not to the screen`() {
-        assertTrue(OnboardingSource.FIRST_LAUNCH.showsStepIndicator)
-        assertFalse(OnboardingSource.SETTINGS.showsStepIndicator, "re-entry from settings shows no indicator")
-        assertFalse(OnboardingSource.TODAY_WARNING.showsStepIndicator)
-    }
-
-    @Test
-    fun `an unresolved chain is what raises the unreliable-reminders warning`() {
-        assertTrue(checklist(notifications = PermissionGrant.Denied(canAsk = true)).remindersUnreliable)
-        assertTrue(checklist().remindersUnreliable)
-    }
-
-    @Test
-    fun `the chain has exactly three steps and Do Not Disturb is not one of them`() {
-        // Критерий приёмки 19, НАП-17: доступ к политике «Не беспокоить» запрашивается
-        // отдельно, на экране настроек напоминаний, и в цепочку онбординга не входит.
-        // Проверяется составом перечисления: шаг, которого нет, запросить нечем.
-        assertEquals(3, PermissionStep.entries.size)
-        assertFalse(PermissionStep.entries.any { it.name.contains("DND") })
-        assertFalse(PermissionStep.entries.any { it.name.contains("POLICY") })
-    }
-
-    @Test
     fun `the state of one named step is readable without walking the list`() {
-        val chain = checklist(notifications = PermissionGrant.Denied(canAsk = true))
+        val chain = checklist(
+            notifications = grantedNotifications.copy(permission = PermissionGrant.Denied(canAsk = true)),
+        )
 
-        assertEquals(PermissionGrant.Denied(canAsk = true), chain.state(PermissionStep.NOTIFICATIONS))
+        assertEquals(
+            PermissionGrant.Denied(canAsk = true),
+            (chain.state(PermissionStep.NOTIFICATIONS) as NotificationAccessState).permission,
+        )
         assertEquals(PermissionGrant.Granted(readAt), chain.state(PermissionStep.EXACT_ALARMS))
-        assertEquals(AutostartState(confirmedByUser = false), chain.state(PermissionStep.AUTOSTART))
+        assertEquals(ManualStepState(confirmedByUser = false), chain.state(PermissionStep.APP_STARTUP))
+        assertEquals(ManualStepState(confirmedByUser = false), chain.state(PermissionStep.BATTERY_SAVING))
+        assertEquals(ManualStepState(confirmedByUser = false), chain.state(PermissionStep.RECENTS_PIN))
+    }
+
+    @Test
+    fun `the checklist has no fixed step count constant any more`() {
+        // Число шагов зависит от вендора; экран берёт его из steps, а не из константы.
+        val emui = checklist().steps.size
+        val generic = checklist(vendor = VendorProfile.GENERIC).steps.size
+
+        assertEquals(5, emui)
+        assertEquals(2, generic)
     }
 }

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Оснастка измерительного пробника (SKL-89). Файл существует только в отладочном
+  варианте: в релизном артефакте этих приёмников нет.
+
+  ProbeControlReceiver объявлен exported: команды приходят из adb-оболочки
+  (`am broadcast`), а не из другого приложения. В обычной сборке приёмника нет,
+  поэтому открытость не создаёт поверхности у продукта.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <receiver
+            android:name="ru.stohastika.sklyanka.debug.ProbeControlReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="ru.stohastika.sklyanka.debug.SCHEDULE_PROBE" />
+                <action android:name="ru.stohastika.sklyanka.debug.SET_PROBE_STRATEGY" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Срабатывание пробы адресуется самим приложением; снаружи присылать нечего. -->
+        <receiver
+            android:name="ru.stohastika.sklyanka.debug.ProbeFireReceiver"
+            android:exported="false" />
+    </application>
+</manifest>

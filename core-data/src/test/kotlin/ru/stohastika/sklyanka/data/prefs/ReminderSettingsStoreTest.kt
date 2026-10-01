@@ -1,6 +1,8 @@
 package ru.stohastika.sklyanka.data.prefs
 
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -8,6 +10,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import ru.stohastika.sklyanka.domain.reminder.AlarmKind
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderSettingsValues
 
 /**
@@ -33,6 +36,7 @@ class ReminderSettingsStoreTest {
         assertFalse("persistent reminders are off by default", values.persistentEnabled)
         assertEquals(ReminderSettingsValues.DEFAULT_SNOOZE_MINUTES, values.snoozeMinutes)
         assertEquals(15, values.snoozeMinutes)
+        assertEquals("the reliable mechanism is the default", AlarmKind.ALARM_CLOCK, values.alarmStrategy)
     }
 
     @Test
@@ -45,6 +49,25 @@ class ReminderSettingsStoreTest {
         val values = store.read()
         assertTrue(values.persistentEnabled)
         assertEquals(30, values.snoozeMinutes)
+    }
+
+    @Test
+    fun `the measurement variant is read back`() = runTest {
+        val store = store()
+
+        store.setAlarmStrategy(AlarmKind.EXACT_IDLE)
+        assertEquals(AlarmKind.EXACT_IDLE, store.read().alarmStrategy)
+    }
+
+    @Test
+    fun `an unknown stored code falls back to the reliable mechanism`() = runTest {
+        // Код записан другой сборкой: чтение не падает, а отвечает надёжным механизмом (МГ-6).
+        val dataStore = PreferenceDataStoreFactory.create { folder.newFile("unknown.preferences_pb") }
+        dataStore.edit { it[stringPreferencesKey("alarm_strategy")] = "warp_drive" }
+
+        val store = ReminderSettingsStore(dataStore)
+
+        assertEquals(AlarmKind.ALARM_CLOCK, store.read().alarmStrategy)
     }
 
     @Test

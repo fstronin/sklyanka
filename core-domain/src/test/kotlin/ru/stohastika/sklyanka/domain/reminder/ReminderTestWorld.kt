@@ -48,6 +48,8 @@ internal class ReminderTestWorld(zone: ZoneId = MOSCOW) {
     val permissions = FakePermissionStateReader()
     val plan = FakeReminderPlanSource(intakes, medications, profiles)
     val deferred = FakeDeferredReminders()
+    val environment = FakeDeviceEnvironmentSource()
+    val measurement = FakeReminderMeasurement()
 
     val sweep = SweepMissedIntakesUseCase(intakes, window, clock, opLog)
 
@@ -58,6 +60,7 @@ internal class ReminderTestWorld(zone: ZoneId = MOSCOW) {
         journal = journal,
         deferred = deferred,
         sweepMissed = sweep,
+        environment = environment,
         time = clock,
     )
 
@@ -108,6 +111,7 @@ internal class ReminderTestWorld(zone: ZoneId = MOSCOW) {
         plan = plan,
         reliability = ReadReminderReliabilityUseCase(permissions),
         medications = medications,
+        measurement = measurement,
         time = clock,
     )
 

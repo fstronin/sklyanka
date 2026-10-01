@@ -81,13 +81,74 @@ class ExportReminderJournalUseCaseTest {
         val row = content.trim().lines()[1]
         assertEquals(
             "2026-09-25T09:00:00Z,shown,intake-1,med-1,profile-1," +
-                "2026-09-25T08:59:23Z,2026-09-25T09:00:00Z,37,reminders_regular,true,,,,,,,true",
+                "2026-09-25T08:59:23Z,2026-09-25T09:00:00Z,37,reminders_regular,true,,,,,,,true,,,,,,",
             row,
         )
         // Медицинские данные продукта — текст, введённый человеком по-русски: название
         // лекарства, единица дозировки, имя профиля. Файл без единого символа вне ASCII
         // такого текста не несёт, и проверка эта механическая, а не на внимательность.
         assertFalse(content.any { it.code > ASCII_LIMIT }, "human text would show up as non-ASCII characters")
+    }
+
+    @Test
+    fun `an environment record fills the new columns and the windows are distinguishable`() = runTest {
+        environmentRow(AlarmKind.ALARM_CLOCK, at = now.minusSeconds(120))
+        firing(at = now.minusSeconds(60))
+        environmentRow(AlarmKind.EXACT_IDLE, at = now)
+
+        val lines = export.document().content.trim().lines()
+        val header = lines.first().split(',')
+        // Журнал отдаёт записи от новых к старым: плечо «точный» снято последним, «системный» — первым.
+        val alarmClockRow = lines[3].split(',')
+        val idleRow = lines[1].split(',')
+
+        assertEquals("alarm_kind", header[COLUMN_ALARM_KIND])
+        assertEquals("alarm_clock", alarmClockRow[COLUMN_ALARM_KIND])
+        assertEquals("HUAWEI", alarmClockRow[COLUMN_MANUFACTURER])
+        assertEquals("HUAWEI", alarmClockRow[COLUMN_BRAND])
+        assertEquals("12", alarmClockRow[COLUMN_OS_RELEASE])
+        assertEquals("HUAWEI Pura 80 Ultra", alarmClockRow[COLUMN_BUILD_DISPLAY])
+        assertEquals("true", alarmClockRow[COLUMN_BATTERY_UNRESTRICTED])
+        assertEquals("exact_idle", idleRow[COLUMN_ALARM_KIND])
+    }
+
+    @Test
+    fun `the new columns stay empty on the records of other kinds`() = runTest {
+        firing()
+
+        val row = export.document().content.trim().lines()[1].split(',')
+
+        (COLUMN_ALARM_KIND..COLUMN_BATTERY_UNRESTRICTED).forEach { column ->
+            assertEquals("", row[column], "column $column must be empty outside an environment record")
+        }
+    }
+
+    @Test
+    fun `the environment columns carry service codes and no medical data`() = runTest {
+        environmentRow(AlarmKind.ALARM_CLOCK)
+
+        val content = export.document().content
+
+        assertFalse(content.any { it.code > ASCII_LIMIT }, "environment facts are service codes, not human text")
+    }
+
+    private suspend fun environmentRow(kind: AlarmKind, at: Instant = now) {
+        journal.record(
+            ReminderLogEntry(
+                occurredAt = at,
+                event = ReminderEvent.ENVIRONMENT,
+                reason = ReminderEnvironment(
+                    alarmKind = kind,
+                    device = DeviceEnvironment(
+                        manufacturer = "HUAWEI",
+                        brand = "HUAWEI",
+                        osRelease = "12",
+                        buildDisplay = "HUAWEI Pura 80 Ultra",
+                        batteryUnrestricted = true,
+                    ),
+                ).encode(),
+            ),
+        )
     }
 
     @Test
@@ -155,6 +216,13 @@ class ExportReminderJournalUseCaseTest {
 
         /** Граница ASCII: русский текст продукта за ней, служебные коды журнала — до неё. */
         const val ASCII_LIMIT = 127
+
+        const val COLUMN_ALARM_KIND = 17
+        const val COLUMN_MANUFACTURER = 18
+        const val COLUMN_BRAND = 19
+        const val COLUMN_OS_RELEASE = 20
+        const val COLUMN_BUILD_DISPLAY = 21
+        const val COLUMN_BATTERY_UNRESTRICTED = 22
     }
 }
 

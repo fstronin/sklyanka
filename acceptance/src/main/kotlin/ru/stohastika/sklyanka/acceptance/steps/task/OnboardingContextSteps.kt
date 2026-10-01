@@ -10,6 +10,7 @@ import ru.stohastika.sklyanka.acceptance.steps.localMoment
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
 import ru.stohastika.sklyanka.domain.intake.MarkResult
 import ru.stohastika.sklyanka.domain.model.IntakeSource
+import ru.stohastika.sklyanka.domain.onboarding.VendorProfile
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPermission
 import java.math.BigDecimal
 
@@ -17,9 +18,9 @@ import java.math.BigDecimal
  * Доменные шаги приёмки SKL-14: установка, онбординг, отзыв разрешений.
  *
  * Строки живут в общем артефакте, потому что говорят о мире сценария, а не об экране:
- * их читают и стенд экрана разрешений (`feature-onboarding`), и композиция `app`,
- * и прогон диагностики (`feature-reminder`). Сохранённых фактов ровно два — «видел экран»
- * и «подтвердил автозапуск»; состояния разрешений меняются в [AcceptanceWorld.system]
+ * их читают и стенд экрана «Настроить надёжность» (`feature-onboarding`), и композиция `app`,
+ * и прогон диагностики (`feature-reminder`). Сохраняются «видел экран» и три подтверждения
+ * вендорских шагов (НАП-20, ОВ-106); состояния разрешений меняются в [AcceptanceWorld.system]
  * и читаются портом при каждом показе (НФТ-52).
  *
  * Русский текст в аннотациях — ключевые слова Gherkin, а не текст интерфейса.
@@ -34,12 +35,97 @@ class OnboardingContextSteps(private val world: AcceptanceWorld) {
      *
      * На Android 13+ разрешение на уведомления при установке не выдано (ПЛ-13), а право
      * на точные будильники не выдаётся диалогом ни на одной версии — его выдают на экране
-     * особого доступа (ПЛ-14). Именно поэтому цепочка состоит из трёх шагов, а не из одного.
+     * особого доступа (ПЛ-14). Именно поэтому цепочка начинается с двух разрешений,
+     * а не с одного (ОВ-106).
      */
     @Допустим("^приложение только что установлено на телефон с прошивкой EMUI$")
     fun theAppWasJustInstalled() {
         assertFalse(runBlocking { world.onboarding.seen() }, "a fresh install has never seen the onboarding")
         world.system.deny(ReminderPermission.NOTIFICATIONS, ReminderPermission.EXACT_ALARMS)
+    }
+
+    // --- Прошивка, разрешения и вендорские подтверждения (SKL-84) -------------------------------
+
+    @Допустим("^телефон человека — Huawei с прошивкой EMUI$")
+    fun thePhoneIsHuawei() {
+        world.onboarding.vendor = VendorProfile.EMUI
+    }
+
+    @Допустим("^телефон человека — не Huawei, и системного менеджера Huawei на нём нет$")
+    fun thePhoneIsNotHuawei() {
+        world.onboarding.vendor = VendorProfile.GENERIC
+    }
+
+    @Допустим("^разрешения выданы$")
+    fun thePermissionsAreGranted() {
+        theAndroidPermissionsAreGranted()
+    }
+
+    @Допустим("^все вендорские шаги подтверждены$")
+    fun theVendorStepsAreConfirmed() {
+        allVendorStepsAreConfirmed()
+    }
+
+    @Допустим("^разрешения Android выданы$")
+    fun theAndroidPermissionsAreGranted() {
+        world.system.grant(
+            ReminderPermission.NOTIFICATIONS,
+            ReminderPermission.NOTIFICATION_CHANNEL,
+            ReminderPermission.EXACT_ALARMS,
+            ReminderPermission.FULL_SCREEN_INTENT,
+        )
+    }
+
+    @Допустим("^человек не подтверждал вендорные шаги$")
+    fun theVendorStepsAreNotConfirmed() {
+        runBlocking {
+            world.onboarding.setAppStartupConfirmed(false)
+            world.onboarding.setBatterySavingConfirmed(false)
+            world.onboarding.setRecentsPinConfirmed(false)
+        }
+    }
+
+    @Допустим("^все три вендорских шага подтверждены человеком$")
+    fun allVendorStepsAreConfirmed() {
+        runBlocking {
+            world.onboarding.setAppStartupConfirmed(true)
+            world.onboarding.setBatterySavingConfirmed(true)
+            world.onboarding.setRecentsPinConfirmed(true)
+        }
+    }
+
+    @Допустим("^человек подтвердил вендорские шаги: запуск приложений, энергосбережение и закрепление в недавних$")
+    fun thePersonConfirmedTheVendorSteps() {
+        allVendorStepsAreConfirmed()
+    }
+
+    /**
+     * Ветка «выдано» уже описана шагом планировщика (SKL-13), ветка «не выдано» — шагом
+     * заставки (SKL-21): свои не заводятся, иначе шаг станет неоднозначным.
+     */
+    @Допустим("^уведомления (включены|отключены)$")
+    fun theNotificationsAre(state: String) {
+        toggle(ReminderPermission.NOTIFICATIONS, granted = state == "включены")
+    }
+
+    @Допустим("^канал уведомлений (включён|выключен)$")
+    fun theNotificationChannelIs(state: String) {
+        toggle(ReminderPermission.NOTIFICATION_CHANNEL, granted = state == "включён")
+    }
+
+    @Допустим("^полноэкранные уведомления (выданы|не выданы)$")
+    fun theFullScreenIntentIs(state: String) {
+        toggle(ReminderPermission.FULL_SCREEN_INTENT, granted = state == "выданы")
+    }
+
+    @Допустим("^точные будильники (выданы|не выданы)$")
+    fun theExactAlarmsAre(state: String) {
+        toggle(ReminderPermission.EXACT_ALARMS, granted = state == "выданы")
+    }
+
+    @Допустим("^напоминания не приходили с (.+?), (\\d{2}:\\d{2})$")
+    fun theRemindersAreOutdated(date: String, time: String) {
+        world.outageSince = world.clock.momentOf(world.localMoment(date, time))
     }
 
     @Допустим("^человек пропустил онбординг(?: (.+?) в (\\d{2}:\\d{2}))?$")
@@ -50,6 +136,11 @@ class OnboardingContextSteps(private val world: AcceptanceWorld) {
 
     @Допустим("^человек прошёл онбординг (.+?) в (\\d{2}:\\d{2})$")
     fun thePersonPassedTheOnboarding(date: String, time: String) {
+        passOnboarding(date, time)
+    }
+
+    @Допустим("^он прошёл онбординг (.+?) в (\\d{2}:\\d{2})$")
+    fun hePassedTheOnboarding(date: String, time: String) {
         passOnboarding(date, time)
     }
 
@@ -123,11 +214,18 @@ class OnboardingContextSteps(private val world: AcceptanceWorld) {
     private fun passOnboarding(date: String, time: String) {
         runBlocking {
             world.onboarding.markSeen()
-            // Прошедший цепочку подтвердил автозапуск — иначе шаг не был бы пройден (НАП-20).
-            world.onboarding.setAutostartConfirmed(true)
+            // Прошедший цепочку подтвердил все вендорские шаги — иначе они не были бы
+            // пройдены (НАП-20, ОВ-106).
+            world.onboarding.setAppStartupConfirmed(true)
+            world.onboarding.setBatterySavingConfirmed(true)
+            world.onboarding.setRecentsPinConfirmed(true)
         }
         // И выдал оба разрешения: пройденная цепочка означает, что они были (НАП-19).
         world.system.grant(ReminderPermission.NOTIFICATIONS, ReminderPermission.EXACT_ALARMS)
         world.clock.moveTo(world.localMoment(date, time))
+    }
+
+    private fun toggle(permission: ReminderPermission, granted: Boolean) {
+        if (granted) world.system.grant(permission) else world.system.deny(permission)
     }
 }

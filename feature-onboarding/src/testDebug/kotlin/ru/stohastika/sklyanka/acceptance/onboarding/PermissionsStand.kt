@@ -19,12 +19,12 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
-import ru.stohastika.sklyanka.domain.onboarding.AutostartOpenResult
-import ru.stohastika.sklyanka.domain.onboarding.ConfirmAutostartUseCase
+import ru.stohastika.sklyanka.domain.onboarding.ConfirmReliabilityStepUseCase
 import ru.stohastika.sklyanka.domain.onboarding.LeaveOnboardingUseCase
 import ru.stohastika.sklyanka.domain.onboarding.OnboardingSource
 import ru.stohastika.sklyanka.domain.onboarding.PermissionStep
 import ru.stohastika.sklyanka.domain.onboarding.ReadPermissionChecklistUseCase
+import ru.stohastika.sklyanka.domain.onboarding.StepOpenResult
 import ru.stohastika.sklyanka.feature.onboarding.OnboardingExit
 import ru.stohastika.sklyanka.feature.onboarding.OnboardingUiState
 import ru.stohastika.sklyanka.feature.onboarding.OnboardingViewModel
@@ -33,13 +33,15 @@ import ru.stohastika.sklyanka.feature.onboarding.PermissionsRoute
 import ru.stohastika.sklyanka.feature.onboarding.PermissionsScreen
 import ru.stohastika.sklyanka.feature.onboarding.SystemSettingsNavigator
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
+import java.time.Instant
 
 /**
- * Стенд экрана разрешений: настоящий `OnboardingViewModel` на мире сценария (SKL-14).
+ * Стенд экрана «Настроить надёжность»: настоящий `OnboardingViewModel` на мире сценария
+ * (SKL-14, SKL-84).
  *
  * Состояние цепочки читается настоящим `ReadPermissionChecklistUseCase` из тех же портов,
  * что у продукта: разрешения — из системы (`ScenarioSystemState`, НФТ-52), сохранённые
- * факты и подсказки — из мира онбординга.
+ * факты, вендор и подсказки — из мира онбординга.
  *
  * Подменяется только платформа: системные переходы записывает [RecordingNavigator],
  * а системный диалог уведомлений, который в продукте показывает `PermissionsRoute`,
@@ -54,7 +56,7 @@ internal object PermissionsStand {
     private var lastWorld: AcceptanceWorld? = null
     private var viewModel: OnboardingViewModel? = null
 
-    /** Системные переходы: кто открывался и чем кончился автозапуск. */
+    /** Системные переходы: кто открывался и чем кончился вендорский экран. */
     val navigator = RecordingNavigator()
 
     /** Шаги, для которых хозяин экрана обязан показать системный диалог (ПЛ-13). */
@@ -80,8 +82,8 @@ internal object PermissionsStand {
     fun exit(world: AcceptanceWorld): OnboardingExit? = model(world).exit.value
 
     /** Открыть экран из названного источника — как это делает хозяин экрана. */
-    fun open(world: AcceptanceWorld, source: OnboardingSource) {
-        model(world).start(source)
+    fun open(world: AcceptanceWorld, source: OnboardingSource, outageSince: Instant? = null) {
+        model(world).start(source, outageSince)
     }
 
     /**
@@ -143,6 +145,7 @@ internal object PermissionsStand {
                 PermissionsRoute(
                     viewModel = model(world),
                     source = state(world).source,
+                    outageSince = state(world).outageSince,
                     onExit = { exitedTo = it },
                 )
             }
@@ -167,10 +170,14 @@ internal object PermissionsStand {
                             if (model(world).onStepAction(step)) requested += step
                         }
                     },
-                    onAutostartConfirmed = { confirmed -> onAction { model(world).onAutostartConfirmed(confirmed) } },
+                    onManualConfirmed = { step, confirmed ->
+                        onAction { model(world).onManualConfirmed(step, confirmed) }
+                    },
                     onNext = { onAction { model(world).onNext() } },
                     onSkip = { onAction { model(world).onSkip() } },
+                    onDone = { onAction { model(world).onDone() } },
                 ),
+                toLocal = { instant -> instant.atZone(world.clock.time.zone()).toLocalDateTime() },
             )
         }
     }
@@ -203,11 +210,13 @@ internal object PermissionsStand {
             hints = world.onboarding,
             requests = world.onboarding,
             time = world.clock.time,
+            vendor = world.onboarding,
         ),
-        confirmAutostart = ConfirmAutostartUseCase(world.onboarding, world.onboarding),
+        confirmStep = ConfirmReliabilityStepUseCase(world.onboarding, world.onboarding),
         leaveOnboarding = LeaveOnboardingUseCase(world.onboarding, world.onboarding),
         navigator = navigator,
         log = world.onboarding,
+        time = world.clock.time,
     )
 
     /** Забыть подменённый главный диспетчер: стенд не должен влиять на соседние тесты. */
@@ -221,31 +230,47 @@ internal class RecordingNavigator : SystemSettingsNavigator {
 
     val opened: MutableList<String> = mutableListOf()
 
-    /** Чем отвечает экран автозапуска; запасной путь проверяется отдельным сценарием. */
-    var autostartResult: AutostartOpenResult = AutostartOpenResult.OPENED
+    /** Чем отвечает вендорский экран; запасной путь проверяется отдельным сценарием. */
+    var appStartupResult: StepOpenResult = StepOpenResult.OPENED
+    var batterySavingResult: StepOpenResult = StepOpenResult.OPENED
 
-    override fun openExactAlarmSettings() {
+    override fun openExactAlarmSettings(): StepOpenResult {
         opened += EXACT_ALARMS
+        return StepOpenResult.OPENED
     }
 
-    override fun openNotificationSettings() {
+    override fun openNotificationSettings(channelId: String?): StepOpenResult {
         opened += NOTIFICATIONS
+        return StepOpenResult.OPENED
     }
 
-    override fun openAutostartSettings(): AutostartOpenResult {
-        opened += AUTOSTART
-        return autostartResult
+    override fun openFullScreenIntentSettings(): StepOpenResult {
+        opened += FULL_SCREEN
+        return StepOpenResult.OPENED
+    }
+
+    override fun openAppStartupSettings(): StepOpenResult {
+        opened += APP_STARTUP
+        return appStartupResult
+    }
+
+    override fun openBatterySavingSettings(): StepOpenResult {
+        opened += BATTERY_SAVING
+        return batterySavingResult
     }
 
     fun clear() {
         opened.clear()
-        autostartResult = AutostartOpenResult.OPENED
+        appStartupResult = StepOpenResult.OPENED
+        batterySavingResult = StepOpenResult.OPENED
     }
 
     companion object {
         const val NOTIFICATIONS = "notifications"
         const val EXACT_ALARMS = "exact-alarms"
-        const val AUTOSTART = "autostart"
+        const val FULL_SCREEN = "full-screen"
+        const val APP_STARTUP = "app-startup"
+        const val BATTERY_SAVING = "battery-saving"
     }
 }
 

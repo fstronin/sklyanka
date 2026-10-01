@@ -1,5 +1,6 @@
 package ru.stohastika.sklyanka.domain.reminder.port
 
+import ru.stohastika.sklyanka.domain.reminder.AlarmKind
 import java.time.Instant
 
 /**
@@ -61,4 +62,12 @@ interface AlarmGateway {
      * деградация до неточных будильников запрещена.
      */
     fun canScheduleExact(): Boolean
+
+    /**
+     * Механизм, которым ставятся будильники приёмов прямо сейчас (SKL-85, НАП-5).
+     *
+     * Им же размечается журнал среды: значение обязано приходить из того же объекта,
+     * который ставит будильник, иначе разметка измерения разойдётся с реальностью.
+     */
+    suspend fun alarmKind(): AlarmKind
 }

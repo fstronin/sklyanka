@@ -14,14 +14,16 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import ru.stohastika.sklyanka.domain.onboarding.AutostartHint
-import ru.stohastika.sklyanka.domain.onboarding.AutostartOpenResult
+import ru.stohastika.sklyanka.domain.onboarding.ManualStepHint
 import ru.stohastika.sklyanka.domain.onboarding.OnboardingSource
 import ru.stohastika.sklyanka.domain.onboarding.PermissionStep
+import ru.stohastika.sklyanka.domain.onboarding.StepOpenResult
+import ru.stohastika.sklyanka.domain.onboarding.VendorProfile
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPermission
+import java.time.Instant
 
 /**
- * Поведение экрана разрешений (НАП-18 … НАП-22, НФТ-52).
+ * Поведение экрана «Настроить надёжность» (НАП-18 … НАП-21, НФТ-52, ОВ-106, ОВ-107).
  *
  * Проверяется на JVM: устройства в среде задачи нет, а расчёту состояния цепочки,
  * порядку вызовов и следу в журнале оно и не нужно. Что остаётся за устройством —
@@ -44,23 +46,47 @@ class OnboardingViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun started(source: OnboardingSource = OnboardingSource.FIRST_LAUNCH): OnboardingViewModel =
-        world.viewModel().also {
-            it.start(source)
-            dispatcher.scheduler.advanceUntilIdle()
-        }
+    private fun started(
+        source: OnboardingSource = OnboardingSource.FIRST_LAUNCH,
+        outageSince: Instant? = null,
+    ): OnboardingViewModel = world.viewModel().also {
+        it.start(source, outageSince)
+        dispatcher.scheduler.advanceUntilIdle()
+    }
 
     private fun OnboardingViewModel.settle() {
         dispatcher.scheduler.advanceUntilIdle()
     }
 
+    private suspend fun allVendorConfirmed() {
+        world.store.setAppStartupConfirmed(true)
+        world.store.setBatterySavingConfirmed(true)
+        world.store.setRecentsPinConfirmed(true)
+    }
+
     @Test
-    fun `the screen shows three steps in the order of REMINDER-19`() = runTest(dispatcher) {
+    fun `on EMUI the screen shows five steps in the order of OV-106`() = runTest(dispatcher) {
         val model = started()
 
         assertEquals(
-            listOf(PermissionStep.NOTIFICATIONS, PermissionStep.EXACT_ALARMS, PermissionStep.AUTOSTART),
+            listOf(
+                PermissionStep.NOTIFICATIONS,
+                PermissionStep.EXACT_ALARMS,
+                PermissionStep.APP_STARTUP,
+                PermissionStep.BATTERY_SAVING,
+                PermissionStep.RECENTS_PIN,
+            ),
             model.state.value.steps.map { it.first },
+        )
+    }
+
+    @Test
+    fun `on any other phone the screen shows only the two common steps`() = runTest(dispatcher) {
+        world.vendor.vendor = VendorProfile.GENERIC
+
+        assertEquals(
+            listOf(PermissionStep.NOTIFICATIONS, PermissionStep.EXACT_ALARMS),
+            started().state.value.steps.map { it.first },
         )
     }
 
@@ -71,20 +97,64 @@ class OnboardingViewModelTest {
         // Ни «всё выдано», ни «ничего не выдано»: систему ещё не спрашивали.
         assertNull(model.state.value.checklist)
         assertTrue(model.state.value.steps.isEmpty())
+        assertFalse(model.state.value.allConfigured)
     }
 
     @Test
-    fun `the step indicator is shown at first launch and hidden on re-entry from settings`() = runTest(dispatcher) {
+    fun `the step indicator is shown at first launch and hidden on re-entry`() = runTest(dispatcher) {
         assertTrue(started(OnboardingSource.FIRST_LAUNCH).state.value.showStepIndicator)
         assertFalse(started(OnboardingSource.SETTINGS).state.value.showStepIndicator)
+        assertFalse(started(OnboardingSource.TODAY_WARNING).state.value.showStepIndicator)
+        assertFalse(started(OnboardingSource.OUTAGE_BANNER).state.value.showStepIndicator)
     }
 
     @Test
-    fun `the step indicator shows the second of three steps as the mock-up does`() = runTest(dispatcher) {
-        val state = started().state.value
+    fun `a banner entry focuses the first unresolved step`() = runTest(dispatcher) {
+        world.permissions.deny(ReminderPermission.NOTIFICATIONS)
 
-        assertEquals(3, state.totalSteps)
-        assertEquals(2, state.currentStep)
+        val fromOutage = started(OnboardingSource.OUTAGE_BANNER)
+        assertEquals(PermissionStep.NOTIFICATIONS, fromOutage.state.value.focusStep)
+
+        world.permissions.grant(ReminderPermission.NOTIFICATIONS)
+        world.permissions.deny(ReminderPermission.EXACT_ALARMS)
+        val fromToday = started(OnboardingSource.TODAY_WARNING)
+        assertEquals(PermissionStep.EXACT_ALARMS, fromToday.state.value.focusStep)
+    }
+
+    @Test
+    fun `the first launch and settings entries do not focus anything`() = runTest(dispatcher) {
+        assertNull(started(OnboardingSource.FIRST_LAUNCH).state.value.focusStep)
+        assertNull(started(OnboardingSource.SETTINGS).state.value.focusStep)
+    }
+
+    @Test
+    fun `a return to the screen does not re-focus the step`() = runTest(dispatcher) {
+        val model = started(OnboardingSource.TODAY_WARNING)
+        val focus = model.state.value.focusStep
+
+        model.refresh()
+        model.settle()
+
+        // Фокус — событие входа, а не свойство экрана: после возврата из системных настроек
+        // список не должен прыгать заново.
+        assertEquals(focus, model.state.value.focusStep)
+    }
+
+    @Test
+    fun `the outage moment of the banner entry lives in the state`() = runTest(dispatcher) {
+        val since = Instant.parse("2026-10-01T07:30:00Z")
+
+        assertEquals(since, started(OnboardingSource.OUTAGE_BANNER, outageSince = since).state.value.outageSince)
+        assertNull(started(OnboardingSource.SETTINGS).state.value.outageSince)
+    }
+
+    @Test
+    fun `the banner entry is recorded with its focus`() = runTest(dispatcher) {
+        world.permissions.deny(ReminderPermission.EXACT_ALARMS)
+
+        started(OnboardingSource.OUTAGE_BANNER)
+
+        assertTrue(world.log.records.contains("route:OUTAGE_BANNER:EXACT_ALARMS"))
     }
 
     @Test
@@ -127,6 +197,18 @@ class OnboardingViewModelTest {
     }
 
     @Test
+    fun `a channel issue opens the notification settings instead of the dialog`() = runTest(dispatcher) {
+        world.permissions.deny(ReminderPermission.NOTIFICATION_CHANNEL)
+        val model = started()
+
+        val needsDialog = model.onStepAction(PermissionStep.NOTIFICATIONS)
+        model.settle()
+
+        assertFalse("the channel is fixed on the system screen", needsDialog)
+        assertEquals(listOf(FakeNavigator.NOTIFICATIONS), world.navigator.opened)
+    }
+
+    @Test
     fun `the exact alarms step opens the special access screen and no dialog`() = runTest(dispatcher) {
         world.permissions.deny(ReminderPermission.EXACT_ALARMS)
         val model = started()
@@ -146,62 +228,125 @@ class OnboardingViewModelTest {
     }
 
     @Test
-    fun `the autostart step opens the manufacturer screen`() = runTest(dispatcher) {
+    fun `the app startup step opens the manufacturer screen`() = runTest(dispatcher) {
         val model = started()
 
-        model.onStepAction(PermissionStep.AUTOSTART)
+        model.onStepAction(PermissionStep.APP_STARTUP)
         model.settle()
 
-        assertEquals(listOf(FakeNavigator.AUTOSTART), world.navigator.opened)
-        assertFalse(model.state.value.showAutostartInstructions)
-        assertTrue(world.log.records.contains("autostart:OPENED"))
+        assertEquals(listOf(FakeNavigator.APP_STARTUP), world.navigator.opened)
+        assertTrue(model.state.value.instructions.isEmpty())
+        assertTrue(world.log.records.contains("vendor:APP_STARTUP:OPENED"))
     }
 
     @Test
-    fun `on a firmware without that screen the person gets the written instructions`() = runTest(dispatcher) {
-        world.navigator.autostartResult = AutostartOpenResult.FALLBACK_TO_INSTRUCTIONS
+    fun `a missing screen gives the written instructions for that step`() = runTest(dispatcher) {
+        world.navigator.appStartupResult = StepOpenResult.FALLBACK_TO_INSTRUCTIONS
         val model = started()
 
-        model.onStepAction(PermissionStep.AUTOSTART)
+        model.onStepAction(PermissionStep.APP_STARTUP)
         model.settle()
 
-        assertTrue(model.state.value.showAutostartInstructions)
-        assertTrue(world.log.records.contains("autostart:FALLBACK_TO_INSTRUCTIONS"))
+        assertEquals(setOf(PermissionStep.APP_STARTUP), model.state.value.instructions)
+        assertTrue(world.log.records.contains("vendor:APP_STARTUP:FALLBACK_TO_INSTRUCTIONS"))
     }
 
     @Test
-    fun `the autostart step stays unresolved with the battery hint in place`() = runTest(dispatcher) {
+    fun `a failed battery step does not show the app startup instruction`() = runTest(dispatcher) {
+        world.navigator.batterySavingResult = StepOpenResult.FALLBACK_TO_INSTRUCTIONS
+        val model = started()
+
+        model.onStepAction(PermissionStep.BATTERY_SAVING)
+        model.settle()
+
+        // Инструкции по шагам: запасной путь одного шага не подменяет путь другого.
+        assertEquals(setOf(PermissionStep.BATTERY_SAVING), model.state.value.instructions)
+    }
+
+    @Test
+    fun `the recents pin step has no system screen to open`() = runTest(dispatcher) {
+        val model = started()
+
+        assertFalse(model.onStepAction(PermissionStep.RECENTS_PIN))
+        assertTrue(world.navigator.opened.isEmpty())
+    }
+
+    @Test
+    fun `a vendor step stays unresolved with the battery hint in place`() = runTest(dispatcher) {
         world.hints.batteryIgnored = true
 
-        val autostart = started().state.value.checklist!!.autostart
+        val battery = started().state.value.checklist!!.batterySaving
 
-        assertEquals(setOf(AutostartHint.BATTERY_OPTIMIZATION_IGNORED), autostart.hints)
-        assertFalse("REMINDER-20: hints never resolve the step", autostart.isResolved)
-        assertFalse(autostart.verifiedBySystem)
+        assertEquals(setOf(ManualStepHint.BATTERY_OPTIMIZATION_IGNORED), battery.hints)
+        assertFalse("REMINDER-20: hints never resolve the step", battery.isResolved)
+        assertFalse(battery.verifiedBySystem)
     }
 
     @Test
-    fun `manual confirmation resolves the autostart step and is recorded`() = runTest(dispatcher) {
-        val model = started()
+    fun `the hint belongs to the battery step and not to the app startup one`() = runTest(dispatcher) {
+        world.hints.batteryIgnored = true
 
-        model.onAutostartConfirmed(true)
-        model.settle()
+        val checklist = started().state.value.checklist!!
 
-        assertTrue(model.state.value.checklist!!.autostart.confirmedByUser)
-        assertTrue(world.log.records.contains("confirmed:true"))
+        assertTrue(checklist.appStartup.hints.isEmpty())
+        assertTrue(checklist.recentsPin.hints.isEmpty())
     }
 
     @Test
-    fun `confirming the autostart step hides the written instructions`() = runTest(dispatcher) {
-        world.navigator.autostartResult = AutostartOpenResult.FALLBACK_TO_INSTRUCTIONS
+    fun `manual confirmation resolves its own vendor step and is recorded`() = runTest(dispatcher) {
         val model = started()
-        model.onStepAction(PermissionStep.AUTOSTART)
+
+        model.onManualConfirmed(PermissionStep.APP_STARTUP, true)
         model.settle()
 
-        model.onAutostartConfirmed(true)
+        val checklist = model.state.value.checklist!!
+        assertTrue(checklist.appStartup.confirmedByUser)
+        assertFalse("other steps stay unresolved", checklist.batterySaving.isResolved)
+        assertTrue(world.log.records.contains("manual:APP_STARTUP:true"))
+    }
+
+    @Test
+    fun `a vendor confirmation can be withdrawn`() = runTest(dispatcher) {
+        val model = started()
+        model.onManualConfirmed(PermissionStep.BATTERY_SAVING, true)
         model.settle()
 
-        assertFalse(model.state.value.showAutostartInstructions)
+        model.onManualConfirmed(PermissionStep.BATTERY_SAVING, false)
+        model.settle()
+
+        assertFalse(model.state.value.checklist!!.batterySaving.isResolved)
+    }
+
+    @Test
+    fun `confirming a vendor step hides its written instructions`() = runTest(dispatcher) {
+        world.navigator.appStartupResult = StepOpenResult.FALLBACK_TO_INSTRUCTIONS
+        val model = started()
+        model.onStepAction(PermissionStep.APP_STARTUP)
+        model.settle()
+
+        model.onManualConfirmed(PermissionStep.APP_STARTUP, true)
+        model.settle()
+
+        assertTrue(model.state.value.instructions.isEmpty())
+    }
+
+    @Test
+    fun `the chain is configured only when every vendor step is confirmed too`() = runTest(dispatcher) {
+        val model = started()
+
+        assertFalse(model.state.value.allConfigured)
+        allVendorConfirmed()
+        model.refresh()
+        model.settle()
+
+        assertTrue(model.state.value.allConfigured)
+    }
+
+    @Test
+    fun `on a non-Huawei phone the two permissions alone close the chain`() = runTest(dispatcher) {
+        world.vendor.vendor = VendorProfile.GENERIC
+
+        assertTrue(started().state.value.allConfigured)
     }
 
     @Test
@@ -215,12 +360,12 @@ class OnboardingViewModelTest {
 
         assertEquals(OnboardingExit.TODAY, model.exit.value)
         assertTrue(world.store.seen())
-        assertTrue(world.log.records.contains("left:SKIPPED:3"))
+        assertTrue(world.log.records.contains("left:SKIPPED:5"))
     }
 
     @Test
-    fun `a passed chain leads on to the watch setup`() = runTest(dispatcher) {
-        world.store.setAutostartConfirmed(true)
+    fun `a passed chain leads on to the next onboarding step`() = runTest(dispatcher) {
+        allVendorConfirmed()
         val model = started()
 
         model.onNext()
@@ -244,13 +389,24 @@ class OnboardingViewModelTest {
 
     @Test
     fun `passing and skipping store the very same fact`() = runTest(dispatcher) {
-        world.store.setAutostartConfirmed(true)
+        allVendorConfirmed()
         val model = started()
 
         model.onNext()
         model.settle()
 
         // НАП-21, НФТ-52: хранится «видел экран», а не «прошёл онбординг».
+        assertTrue(world.store.seen())
+    }
+
+    @Test
+    fun `the quiet done of a re-entry returns to the entry point`() = runTest(dispatcher) {
+        val model = started(OnboardingSource.SETTINGS)
+
+        model.onDone()
+        model.settle()
+
+        assertEquals(OnboardingExit.TODAY, model.exit.value)
         assertTrue(world.store.seen())
     }
 
@@ -268,15 +424,6 @@ class OnboardingViewModelTest {
     }
 
     @Test
-    fun `a chain with every permission granted is still unreliable until the autostart step`() = runTest(dispatcher) {
-        val state = started().state.value
-
-        assertFalse(state.chainComplete)
-        assertTrue(state.checklist!!.remindersUnreliable)
-        assertEquals(1, state.checklist!!.unresolvedCount)
-    }
-
-    @Test
     fun `opening the screen is logged once with its source and step states`() = runTest(dispatcher) {
         val model = started(OnboardingSource.SETTINGS)
 
@@ -284,7 +431,7 @@ class OnboardingViewModelTest {
         model.settle()
 
         assertEquals(1, world.log.records.count { it.startsWith("opened:") })
-        assertTrue(world.log.records.contains("opened:SETTINGS:1"))
+        assertTrue(world.log.records.contains("opened:SETTINGS:3"))
     }
 
     @Test

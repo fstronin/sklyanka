@@ -162,6 +162,14 @@ internal object ReminderJournalCsv {
         "snooze_minutes",
         "watch_result",
         "on_time",
+        // Колонки среды измерения (SKL-85, НФТ-51): заполняются только у строк
+        // `environment` и разделяют окна A/B-прогона пилота.
+        "alarm_kind",
+        "manufacturer",
+        "brand",
+        "os_release",
+        "build_display",
+        "battery_unrestricted",
     )
 
     fun of(entries: List<ReminderLogEntry>): String = (
@@ -174,27 +182,47 @@ internal object ReminderJournalCsv {
      * Моменты — в ISO-8601 в UTC, как они и хранятся: перевод в местное время сделал бы
      * файлы двух устройств несравнимыми, а вопрос «что было раньше» — неразрешимым.
      */
-    private fun cells(entry: ReminderLogEntry): List<String> = listOf(
-        entry.occurredAt.toString(),
-        entry.event.code,
-        entry.intakeId.orEmpty(),
-        entry.medicationId.orEmpty(),
-        entry.profileId.orEmpty(),
-        entry.scheduledAt?.toString().orEmpty(),
-        entry.firedAt?.toString().orEmpty(),
-        entry.deviationSeconds?.toString().orEmpty(),
-        entry.channel?.id.orEmpty(),
-        entry.delivered?.toString().orEmpty(),
-        entry.reason.orEmpty(),
-        entry.alarmsCancelled?.toString().orEmpty(),
-        entry.alarmsScheduled?.toString().orEmpty(),
-        entry.attempt?.toString().orEmpty(),
-        entry.minutes?.toString().orEmpty(),
-        entry.watchResult.orEmpty(),
-        // Признак НАП-2 рядом с отклонением: иначе доля «вовремя» в файле считается
-        // заново и каждый раз по своему порогу.
-        if (entry.event == ReminderEvent.SHOWN) ReminderOnTimeRule.isOnTime(entry.deviationSeconds).toString() else "",
-    )
+    private fun cells(entry: ReminderLogEntry): List<String> {
+        // Среда разбирается только у своей строки: переносить тип будильника на каждую
+        // строку вредно — на границе вытеснения журнала первая запись окна подрезалась бы,
+        // и метка стала бы тихо неверной (SKL-85, TDD §8.2).
+        val environment = if (entry.event == ReminderEvent.ENVIRONMENT) {
+            ReminderEnvironment.parse(entry.reason.orEmpty())
+        } else {
+            null
+        }
+        return listOf(
+            entry.occurredAt.toString(),
+            entry.event.code,
+            entry.intakeId.orEmpty(),
+            entry.medicationId.orEmpty(),
+            entry.profileId.orEmpty(),
+            entry.scheduledAt?.toString().orEmpty(),
+            entry.firedAt?.toString().orEmpty(),
+            entry.deviationSeconds?.toString().orEmpty(),
+            entry.channel?.id.orEmpty(),
+            entry.delivered?.toString().orEmpty(),
+            entry.reason.orEmpty(),
+            entry.alarmsCancelled?.toString().orEmpty(),
+            entry.alarmsScheduled?.toString().orEmpty(),
+            entry.attempt?.toString().orEmpty(),
+            entry.minutes?.toString().orEmpty(),
+            entry.watchResult.orEmpty(),
+            // Признак НАП-2 рядом с отклонением: иначе доля «вовремя» в файле считается
+            // заново и каждый раз по своему порогу.
+            if (entry.event == ReminderEvent.SHOWN) {
+                ReminderOnTimeRule.isOnTime(entry.deviationSeconds).toString()
+            } else {
+                ""
+            },
+            environment?.alarmKind?.code.orEmpty(),
+            environment?.device?.manufacturer.orEmpty(),
+            environment?.device?.brand.orEmpty(),
+            environment?.device?.osRelease.orEmpty(),
+            environment?.device?.buildDisplay.orEmpty(),
+            environment?.device?.batteryUnrestricted?.toString().orEmpty(),
+        )
+    }
 
     /** Значение с разделителем, кавычкой или переводом строки не имеет права разорвать таблицу. */
     private fun escape(value: String): String = if (value.any { it in BREAKS_A_ROW }) {

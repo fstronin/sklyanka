@@ -13,6 +13,7 @@ import ru.stohastika.sklyanka.domain.model.ScheduleMode
 import ru.stohastika.sklyanka.domain.profile.ProfileContext
 import ru.stohastika.sklyanka.domain.profile.ProfileContextProvider
 import ru.stohastika.sklyanka.domain.profile.SwitchReason
+import ru.stohastika.sklyanka.domain.reminder.AlarmKind
 import ru.stohastika.sklyanka.domain.reminder.port.PermissionState
 import ru.stohastika.sklyanka.domain.reminder.port.PermissionStateReader
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPermission
@@ -149,6 +150,10 @@ internal class FakeReminderSettings(var values: ReminderSettingsValues = Reminde
 
     override suspend fun setSnoozeMinutes(minutes: Int) {
         values = values.copy(snoozeMinutes = minutes)
+    }
+
+    override suspend fun setAlarmStrategy(kind: AlarmKind) {
+        values = values.copy(alarmStrategy = kind)
     }
 }
 

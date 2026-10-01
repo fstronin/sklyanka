@@ -13,8 +13,24 @@ plugins {
     id("sklyanka.artifact.checks")
 }
 
+/**
+ * Режим измерения пилота (SKL-85, ПМ-20).
+ *
+ * Включается только явной Gradle-опцией `-Psklyanka.reminderMeasurement=true` для сборки
+ * пилота; обычная и релизная сборки опцию не передают, и `BuildConfig.REMINDER_MEASUREMENT`
+ * остаётся `false`. Аналитический A/B-контур сюда не подключается (ADR-0011).
+ */
+val reminderMeasurement: Boolean =
+    (project.findProperty("sklyanka.reminderMeasurement") as String?)?.toBoolean() ?: false
+
 android {
     namespace = "ru.stohastika.sklyanka"
+    buildFeatures {
+        buildConfig = true
+    }
+    defaultConfig {
+        buildConfigField("boolean", "REMINDER_MEASUREMENT", reminderMeasurement.toString())
+    }
 }
 
 dependencies {

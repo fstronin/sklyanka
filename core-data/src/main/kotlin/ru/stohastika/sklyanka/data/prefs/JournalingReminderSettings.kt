@@ -1,5 +1,6 @@
 package ru.stohastika.sklyanka.data.prefs
 
+import ru.stohastika.sklyanka.domain.reminder.AlarmKind
 import ru.stohastika.sklyanka.domain.reminder.ReminderEvent
 import ru.stohastika.sklyanka.domain.reminder.ReminderLogEntry
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderJournal
@@ -50,6 +51,18 @@ class JournalingReminderSettings @Inject constructor(
         // след о значении, которого нет, хуже отсутствия следа.
         store.setSnoozeMinutes(minutes)
         if (before != minutes) trace(ReminderSettingKey.SNOOZE_MINUTES.trace(minutes), minutes = minutes)
+    }
+
+    /**
+     * Смена варианта измерения — след `alarm_strategy=<код>` только при изменении (НАП-11, НАП-14).
+     *
+     * Окна измерения не имеют права пересекаться: смена варианта — такое же событие
+     * перепланирования, как правка расписания, и границы окон видны по журналу (SKL-85).
+     */
+    override suspend fun setAlarmStrategy(kind: AlarmKind) {
+        val before = store.read().alarmStrategy
+        store.setAlarmStrategy(kind)
+        if (before != kind) trace(ReminderSettingKey.ALARM_STRATEGY.trace(kind.code))
     }
 
     /**

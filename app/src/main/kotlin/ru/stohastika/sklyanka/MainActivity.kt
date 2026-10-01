@@ -311,11 +311,20 @@ class MainActivity : ComponentActivity() {
         outage?.let { detected ->
             ReminderOutageNotice(
                 outage = detected,
-                onOpenDiagnostics = {
-                    // Сообщение доставлено: дальше о перерыве говорит диагностика, и второй
+                onFix = {
+                    // Сообщение доставлено: дальше о перерыве говорит экран настройки, и второй
                     // раз тот же перерыв объявлять незачем.
                     outageAnnouncer.acknowledge()
-                    startActivity(DiagnosticsActivity.intentFor(this))
+                    // Один шаг до нужного места (ОВ-107): экран открывается на первом
+                    // незакрытом шаге по тому же правилу, что и «Настроить» на «Сегодня»,
+                    // и называет перерыв в плашке.
+                    startActivity(
+                        PermissionsActivity.intentFor(
+                            context = this,
+                            source = OnboardingSource.OUTAGE_BANNER,
+                            outageSince = detected.since,
+                        ),
+                    )
                 },
                 toLocal = { instant -> instant.atZone(time.zone()).toLocalDateTime() },
             )

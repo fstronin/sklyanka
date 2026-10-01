@@ -4,6 +4,7 @@ import ru.stohastika.sklyanka.domain.reminder.port.AlarmGateway
 import ru.stohastika.sklyanka.domain.reminder.port.PermissionState
 import ru.stohastika.sklyanka.domain.reminder.port.PermissionStateReader
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderJournal
+import ru.stohastika.sklyanka.domain.reminder.port.ReminderMeasurement
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPermission
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPlanSource
 import ru.stohastika.sklyanka.domain.repository.MedicationRepository
@@ -49,6 +50,10 @@ data class ReminderDiagnostics(
     val week: ReminderWeekSummary,
     /** Журнал срабатываний — не менее 50 записей (НАП-37). */
     val journal: List<ReminderLogEntry>,
+    /** Действующий механизм будильников приёмов (SKL-85, НАП-5). */
+    val alarmKind: AlarmKind,
+    /** Доступен ли в сборке переключатель варианта измерения (SKL-85, ПМ-20). */
+    val measurementAvailable: Boolean,
 )
 
 /**
@@ -58,6 +63,7 @@ data class ReminderDiagnostics(
  * будильников — из системы, а не из плана: расхождение «план есть, будильников нет» — это
  * и есть отказ, который экран обязан показать.
  */
+@Suppress("LongParameterList")
 class BuildReminderDiagnosticsUseCase(
     private val journal: ReminderJournal,
     private val alarms: AlarmGateway,
@@ -72,6 +78,7 @@ class BuildReminderDiagnosticsUseCase(
      * идентификаторы (НФТ-19).
      */
     private val medications: MedicationRepository,
+    private val measurement: ReminderMeasurement,
     private val time: TimeSource,
 ) {
 
@@ -118,6 +125,8 @@ class BuildReminderDiagnosticsUseCase(
             onTime = ReminderOnTimeRule.summarize(week),
             week = ReminderWeekSummaryRule.summarize(week),
             journal = journal.recent(limit),
+            alarmKind = alarms.alarmKind(),
+            measurementAvailable = measurement.available(),
         )
     }
 

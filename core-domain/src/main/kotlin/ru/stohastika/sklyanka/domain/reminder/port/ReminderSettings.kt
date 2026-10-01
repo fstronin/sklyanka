@@ -1,7 +1,9 @@
 package ru.stohastika.sklyanka.domain.reminder.port
 
+import ru.stohastika.sklyanka.domain.reminder.AlarmKind
+
 /**
- * Две настройки напоминания из `design/screens/Settings.dc.html`.
+ * Настройки напоминания из `design/screens/Settings.dc.html`.
  *
  * Экран настроек — SKL-20; здесь только значения. Ключей тихих часов в этом типе нет
  * и заготовки под них не будет: решение по НАП-28 не принято, а настройка, глушащая
@@ -17,6 +19,13 @@ data class ReminderSettingsValues(
      * повтора (НАП-25). Два разных интервала в одном экране настроек человек не разведёт.
      */
     val snoozeMinutes: Int = DEFAULT_SNOOZE_MINUTES,
+    /**
+     * Вариант измерения пилота (SKL-85, ПМ-20).
+     *
+     * Значение по умолчанию — надёжный механизм. В обычной сборке поле инертно:
+     * переключателя нет, а `EffectiveAlarmStrategy` не читает сохранённое значение.
+     */
+    val alarmStrategy: AlarmKind = AlarmKind.ALARM_CLOCK,
 ) {
     companion object {
         const val DEFAULT_SNOOZE_MINUTES: Int = 15
@@ -36,6 +45,15 @@ enum class ReminderSettingKey(val code: String) {
 
     /** «Отложить на» — интервал откладывания и период проверки повтора (НАП-30). */
     SNOOZE_MINUTES("snooze_minutes"),
+
+    /**
+     * Вариант измерения пилота — доступен только в измерительной сборке (SKL-85).
+     *
+     * След `alarm_strategy=<код>` пишется при смене варианта: окна измерения не имеют
+     * права пересекаться, и смена варианта — такое же событие перепланирования, как
+     * правка расписания (НАП-11, НАП-14).
+     */
+    ALARM_STRATEGY("alarm_strategy"),
     ;
 
     /** Служебная строка записи журнала: `persistent_reminder_enabled=true`. */
@@ -58,4 +76,12 @@ interface ReminderSettings {
     suspend fun setPersistentEnabled(enabled: Boolean)
 
     suspend fun setSnoozeMinutes(minutes: Int)
+
+    /**
+     * Смена варианта измерения пилота (SKL-85).
+     *
+     * В обычной сборке вызов недостижим: переключатель существует только при
+     * `ReminderMeasurement.available()`.
+     */
+    suspend fun setAlarmStrategy(kind: AlarmKind)
 }

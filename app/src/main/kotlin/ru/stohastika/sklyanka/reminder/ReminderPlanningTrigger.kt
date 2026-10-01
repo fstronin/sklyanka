@@ -63,6 +63,13 @@ class ReminderPlanningTrigger @Inject constructor(
  */
 internal object ReminderPlanReasons {
 
+    /**
+     * Соответствие «причина перепланирования → нужна ли генерация приёмов».
+     *
+     * Сложность — это перечисление причин таблицы НАП-11, а не ветвление логики:
+     * каждая новая причина проходит через тест полноты, а не через ревью ветки.
+     */
+    @Suppress("CyclomaticComplexMethod")
     fun intakeReason(reason: RescheduleReason): PlanReason? = when (reason) {
         RescheduleReason.APP_START -> PlanReason.APP_START
         RescheduleReason.BOOT -> PlanReason.BOOT
@@ -76,6 +83,9 @@ internal object ReminderPlanReasons {
         RescheduleReason.ANCHOR -> PlanReason.ANCHOR_ALARM
         RescheduleReason.MANUAL -> PlanReason.MANUAL_CHECK
         RescheduleReason.DATA_IMPORTED -> PlanReason.DATA_IMPORTED
+        // Выдача права на точные будильники план приёмов не меняет: генерация не нужна,
+        // восстанавливается только очередь будильников (SKL-85, НАП-16).
+        RescheduleReason.EXACT_ALARM_GRANTED -> null
         RescheduleReason.ALARM_FIRED, RescheduleReason.PROFILE_SET_CHANGED -> null
     }
 

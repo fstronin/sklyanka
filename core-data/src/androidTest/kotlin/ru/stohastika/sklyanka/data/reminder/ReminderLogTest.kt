@@ -3,7 +3,11 @@ package ru.stohastika.sklyanka.data.reminder
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -12,8 +16,11 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import ru.stohastika.sklyanka.data.room.SklyankaDatabase
 import ru.stohastika.sklyanka.data.room.entity.ReminderLogEntity
+import ru.stohastika.sklyanka.domain.reminder.AlarmKind
 import ru.stohastika.sklyanka.domain.reminder.DeferredReason
+import ru.stohastika.sklyanka.domain.reminder.DeviceEnvironment
 import ru.stohastika.sklyanka.domain.reminder.ReminderChannel
+import ru.stohastika.sklyanka.domain.reminder.ReminderEnvironment
 import ru.stohastika.sklyanka.domain.reminder.ReminderEvent
 import ru.stohastika.sklyanka.domain.reminder.ReminderLogEntry
 import ru.stohastika.sklyanka.domain.time.FixedTimeSource
@@ -224,6 +231,62 @@ class ReminderLogTest {
         profileId = "profile-1",
         firedAt = firedAt,
         attempt = 0,
+    )
+
+    /**
+     * Среда измерения пишется один раз на изменение (SKL-85).
+     *
+     * Идентичная нагрузка подавляется, изменённая пишется: журнал — журнал изменений,
+     * а записи среды задают границы окон A/B-прогона.
+     */
+    @Test
+    fun anEnvironmentRecordIsWrittenOncePerChange() = runTest {
+        journal.recordEnvironment(environmentEntry(AlarmKind.ALARM_CLOCK))
+        journal.recordEnvironment(environmentEntry(AlarmKind.ALARM_CLOCK))
+        assertEquals(
+            "an unchanged environment is one entry",
+            1,
+            journal.recent(limit = 10).count { it.event == ReminderEvent.ENVIRONMENT },
+        )
+
+        journal.recordEnvironment(environmentEntry(AlarmKind.EXACT_IDLE))
+        assertEquals(2, journal.recent(limit = 10).size)
+        assertEquals(
+            AlarmKind.EXACT_IDLE,
+            ReminderEnvironment.parse(requireNotNull(journal.last(ReminderEvent.ENVIRONMENT)?.reason))
+                ?.alarmKind,
+        )
+    }
+
+    /** Две одновременные пересборки не удваивают запись: проверка и вставка — одна транзакция. */
+    @Test
+    fun twoSimultaneousEnvironmentWritesLeaveOneRow() = runTest {
+        val entry = environmentEntry(AlarmKind.ALARM_CLOCK)
+
+        withContext(Dispatchers.Default) {
+            coroutineScope {
+                repeat(4) { launch { journal.recordEnvironment(entry) } }
+            }
+        }
+
+        assertEquals(1, journal.recent(limit = 10).count { it.event == ReminderEvent.ENVIRONMENT })
+    }
+
+    private val environment = ReminderEnvironment(
+        alarmKind = AlarmKind.ALARM_CLOCK,
+        device = DeviceEnvironment(
+            manufacturer = "HUAWEI",
+            brand = "HUAWEI",
+            osRelease = "12",
+            buildDisplay = "HUAWEI Pura 80 Ultra",
+            batteryUnrestricted = true,
+        ),
+    )
+
+    private fun environmentEntry(kind: AlarmKind): ReminderLogEntry = ReminderLogEntry(
+        occurredAt = NOW,
+        event = ReminderEvent.ENVIRONMENT,
+        reason = environment.copy(alarmKind = kind).encode(),
     )
 
     private companion object {

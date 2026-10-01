@@ -1,92 +1,108 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Тексты экрана разрешений EMUI.
+  Тексты экрана «Настроить надёжность» (бывший экран разрешений).
 
-  Раздел «Из макета» — дословно из `design/screens/Onboarding.dc.html` и
-  `design/spec/03-screens.md`, раздел «Разрешения (онбординг)»: критерий приёмки 21 требует
-  совпадения слово в слово. Русского текста в Kotlin-коде нет вообще (НФТ-42).
+  Дословно из `docs/spec/03-screens.md` («Настроить надёжность») и `design/screens/Onboarding.dc.html`;
+  состав расширен решениями ОВ-106/ОВ-107. Русского текста в Kotlin-коде нет вообще (НФТ-42).
 
-  Раздел «Сверх макета» — строки, которых в макетах нет. Каждая объяснена: экран задачи
-  говорит о том, чего макет не нарисовал (подтверждение третьего шага и запасной путь
-  при неоткрывшемся системном разделе), и придумывать эти формулировки молча нельзя.
+  Одно объявленное расхождение с `03-screens.md`: подпись шага «Уведомления» — без слов
+  «и на часах» — интеграция с часами отложена (`ADR-0009`), и слова вернутся с SKL-17.
 -->
 <resources>
 
-    <!-- ===== Из макета: дословно (критерий приёмки 21) ===== -->
+    <!-- ===== Заголовок и пояснение ===== -->
 
-    <string name="onboarding_title">Чтобы напоминания приходили вовремя</string>
-    <string name="onboarding_intro">На прошивке EMUI система агрессивно выгружает фоновые приложения. Без трёх разрешений ниже приёмы будут приходить с опозданием или не приходить совсем.</string>
+    <string name="setup_title">Настроить надёжность</string>
+    <string name="setup_intro">На прошивке EMUI система агрессивно выгружает фоновые приложения. Без настроек ниже приёмы будут приходить с опозданием или не приходить совсем.</string>
 
-    <string name="onboarding_step_notifications">Уведомления</string>
-    <!--
-      Единственная строка раздела «Из макета», отступившая от макета дословно: слова
-      «и на часах» сняты решением `ADR-0009` — интеграция с Wear Engine отложена
-      до пост-MVP, и обещать карточку на часах первой версии нельзя. Макет не правится;
-      слова вернутся вместе с часами.
-    -->
-    <string name="onboarding_step_notifications_caption">Карточка приёма на экране</string>
+    <!-- ===== Шаг «Уведомления»: три проверяемых состояния ===== -->
 
-    <string name="onboarding_step_exact_alarms">Точные будильники</string>
-    <string name="onboarding_step_exact_alarms_caption">Иначе Android сдвинет приём на удобное себе время — до получаса</string>
+    <string name="setup_step_notifications">Уведомления</string>
+    <string name="setup_step_notifications_caption">Карточка приёма на экране</string>
+    <string name="setup_issue_notifications">Уведомления отключены</string>
+    <string name="setup_issue_channel">Канал уведомлений отключён</string>
+    <string name="setup_issue_full_screen">Не разрешены полноэкранные уведомления</string>
 
-    <string name="onboarding_step_autostart">Автозапуск без ограничений</string>
-    <string name="onboarding_step_autostart_caption">Настройки → Батарея → Запуск приложений → Склянка → вручную</string>
+    <!-- ===== Шаг «Точные будильники» ===== -->
 
-    <!-- Отметка выданного разрешения. Рядом с ней галочка — цвет не единственный носитель смысла (НФТ-33). -->
-    <string name="onboarding_state_granted">Есть</string>
+    <string name="setup_step_exact_alarms">Точные будильники</string>
+    <string name="setup_step_exact_alarms_caption">Иначе Android сдвинет приём на удобное себе время — до получаса</string>
+    <!-- Пояснение системного индикатора будильника после выдачи права (НАП-42, ОВ-110). -->
+    <string name="setup_exact_alarms_indicator">Телефон покажет ближайшее напоминание в статус-баре как будильник. Это нормально: так система показывает, что напоминание поставлено.</string>
 
-    <string name="onboarding_action_allow">Разрешить</string>
-    <string name="onboarding_action_open_settings">Открыть настройки</string>
+    <!-- ===== Шаги EMUI: инструкции и пути ===== -->
 
-    <string name="onboarding_action_next">Дальше</string>
-    <string name="onboarding_action_skip">Пропустить, настрою позже</string>
+    <string name="setup_step_app_startup">Запуск приложений</string>
+    <string name="setup_step_app_startup_caption">Настройки → Батарея → Запуск приложений → Склянка → Управлять вручную</string>
+    <string name="setup_step_app_startup_action">Включите «Автозапуск», «Косвенный запуск» и «Работу в фоне»</string>
 
-    <!-- ===== Сверх макета ===== -->
+    <string name="setup_step_battery_saving">Энергосбережение</string>
 
-    <!--
-      Почему третий шаг не бывает зелёным сам (НАП-20, ПЛ-18, критерий приёмки 7).
-      Это не оговорка мелким шрифтом, а единственное, что приложение об этом шаге знает.
-    -->
-    <string name="onboarding_autostart_unverifiable">Проверить это приложение не может: состояние автозапуска ему не видно.</string>
+    <string name="setup_step_recents_pin">Закрепление в недавних</string>
+    <string name="setup_step_recents_pin_caption">Откройте список недавних приложений, потяните карточку «Склянки» вниз и нажмите появившийся замок</string>
 
-    <!--
-      Ручное подтверждение третьего шага (НАП-20, открытый вопрос ОВ-53).
-      Переключателем, а не кнопкой: подтверждение обязано сниматься — нажатое по ошибке,
-      оно иначе оставило бы человека с зелёным шагом, который он выдал себе сам.
-    -->
-    <string name="onboarding_autostart_confirm">Я настроил автозапуск</string>
-    <string name="onboarding_autostart_confirm_caption">Записывается с ваших слов: приложение эту настройку не проверяет</string>
+    <!-- Плашки непроверяемости: состояние фирменных настроек системе не видно (НАП-20). -->
+    <string name="setup_unverifiable_app_startup">Проверить это приложение не может: состояние автозапуска ему не видно.</string>
+    <string name="setup_unverifiable_battery_saving">Проверить это приложение не может: состояние энергосбережения ему не видно.</string>
+    <string name="setup_unverifiable_recents_pin">Проверить это приложение не может: список недавних ему не видно.</string>
+
+    <!-- Ручное подтверждение вендорского шага; снимается тем же переключателем (НАП-20). -->
+    <string name="setup_manual_confirm_app_startup">Я настроил запуск приложений</string>
+    <string name="setup_manual_confirm_battery_saving">Я снял ограничения энергосбережения</string>
+    <string name="setup_manual_confirm_recents_pin">Склянка закреплена в недавних</string>
+    <string name="setup_manual_confirm_caption">Записывается с ваших слов: приложение эту настройку не проверяет</string>
 
     <!-- Косвенный признак. Слово «косвенный» в строке обязательно: оно и есть смысл (НАП-20). -->
-    <string name="onboarding_hint_battery">Косвенный признак: оптимизация батареи для приложения снята</string>
+    <string name="setup_hint_battery">Косвенный признак: оптимизация батареи для приложения снята</string>
 
     <!--
       Запасной путь: системный раздел не открылся (критерий приёмки 6).
-      Не сообщение об ошибке — рабочая инструкция: интент этого экрана нестандартен
-      и различается между прошивками (`docs/spec/01-platform.md` §6).
+      Не сообщение об ошибке — рабочая инструкция: интенты этих экранов нестандартны
+      и различаются между прошивками (`docs/spec/01-platform.md` §6).
     -->
-    <string name="onboarding_autostart_instructions">Системный раздел на этом устройстве не открылся. Откройте его вручную: Настройки → Батарея → Запуск приложений → Склянка → вручную.</string>
+    <string name="setup_fallback_app_startup">Системный раздел на этом устройстве не открылся. Откройте его вручную: Настройки → Батарея → Запуск приложений → Склянка → Управлять вручную. Включите «Автозапуск», «Косвенный запуск» и «Работу в фоне».</string>
+    <string name="setup_fallback_battery_saving">Системный раздел на этом устройстве не открылся. Откройте его вручную: Настройки → Батарея → Склянка → снимите ограничения энергосбережения («Не ограничивать»).</string>
 
-    <!-- Обнаруженный отзыв ранее выданного разрешения (критерий приёмки 17). -->
-    <string name="onboarding_revoked_notifications">Разрешение на уведомления отозвано в системных настройках. Пока его нет, напоминания не приходят.</string>
-    <string name="onboarding_revoked_exact_alarms">Право на точные будильники отозвано. Напоминания будут приходить с опозданием.</string>
-    <string name="onboarding_revoked_autostart">Подтверждение автозапуска снято.</string>
+    <!-- ===== Отметки и кнопки ===== -->
 
-    <!-- Напоминания ненадёжны, пока цепочка не пройдена (НАП-18, НАП-21). -->
-    <string name="onboarding_unreliable">Пока цепочка не пройдена, напоминания ненадёжны. Приёмы можно отмечать вручную — журнал работает целиком.</string>
+    <!-- Отметка прочитанного системой. Рядом галочка — цвет не единственный носитель (НФТ-33). -->
+    <string name="onboarding_state_granted">Есть</string>
+    <string name="setup_confirmed_by_user">Подтверждено вами</string>
 
-    <!--
-      Сводное состояние для строки настроек «Разрешения и автозапуск» (критерий приёмки 14).
-      «Одно не выдано» — дословно из `design/screens/Settings.dc.html`; остальные формы
-      через plurals (НФТ-44), потому что непройденных шагов бывает и два, и три.
-    -->
+    <string name="setup_action_allow">Разрешить</string>
+    <string name="setup_action_open_settings">Открыть настройки</string>
+    <string name="setup_action_next">Дальше</string>
+    <string name="setup_action_skip">Пропустить, настрою позже</string>
+    <string name="setup_done">Готово</string>
+
+    <!-- ===== Плашка над списком ===== -->
+
+    <string name="setup_all_configured">Всё настроено</string>
+    <!-- Формулировка уточняется вместе со SKL-86; смысл зафиксирован ОВ-107. -->
+    <string name="setup_outage_warning">Всё настроено, но напоминания не приходили с %1$s.</string>
+    <string name="setup_check_delivery">Проверить доставку</string>
+    <string name="setup_outage_moment_pattern">d MMMM, HH:mm</string>
+
+    <!-- Сводное состояние для строки настроек «Разрешения и автозапуск» (feature-settings). -->
     <string name="onboarding_summary_all_resolved">Всё настроено</string>
 
-    <!-- Описания для чтения с экрана (НФТ-30): у значков карточек видимого текста нет. -->
+    <!-- ===== Отзыв подтверждений и разрешений ===== -->
+
+    <string name="setup_revoked_notifications">Разрешение на уведомления отозвано в системных настройках. Пока его нет, напоминания не приходят.</string>
+    <string name="setup_revoked_exact_alarms">Право на точные будильники отозвано. Напоминания будут приходить с опозданием.</string>
+    <string name="setup_revoked_app_startup">Подтверждение настройки «Запуск приложений» снято.</string>
+    <string name="setup_revoked_battery_saving">Подтверждение настройки «Энергосбережение» снято.</string>
+    <string name="setup_revoked_recents_pin">Подтверждение закрепления в недавних снято.</string>
+
+    <!-- ===== Описания для чтения с экрана (НФТ-30) ===== -->
+
     <string name="cd_onboarding_notifications">Уведомления</string>
     <string name="cd_onboarding_exact_alarms">Точные будильники</string>
-    <string name="cd_onboarding_autostart">Автозапуск</string>
+    <string name="cd_setup_app_startup">Запуск приложений</string>
+    <string name="cd_setup_battery_saving">Энергосбережение</string>
+    <string name="cd_setup_recents_pin">Закрепление в недавних</string>
     <string name="cd_onboarding_granted">Разрешение выдано</string>
+    <string name="cd_setup_confirmed">Шаг подтверждён вами</string>
     <string name="cd_onboarding_hint">Косвенный признак</string>
     <string name="cd_onboarding_steps">Шаг %1$d из %2$d</string>
 </resources>

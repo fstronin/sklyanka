@@ -7,4 +7,12 @@
 -->
 <resources>
     <string name="debug_seed_profile_name">Мама</string>
+
+    <!--
+      Строки измерительного пробника (SKL-89). Только отладочная сборка: в релиз
+      этот файл не попадает. Названия нейтральные — медицинских данных здесь нет.
+    -->
+    <string name="debug_probe_channel_name">Тест напоминания</string>
+    <string name="debug_probe_notification_title">Тест напоминания №%1$d</string>
+    <string name="debug_probe_notification_text">Служебная проба доставки</string>
 </resources>

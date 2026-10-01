@@ -53,6 +53,14 @@ class RoomReminderJournal @Inject constructor(private val dao: ReminderLogDao, p
         dao.insertRestoredOnce(entry.toEntity())
     }
 
+    /**
+     * Среда измерения записывается один раз на изменение (SKL-85): решение принимается
+     * в одной транзакции DAO, а не здесь — см. `ReminderLogDao.insertEnvironmentOnce`.
+     */
+    override suspend fun recordEnvironment(entry: ReminderLogEntry) {
+        dao.insertEnvironmentOnce(entry.toEntity())
+    }
+
     private fun ReminderLogEntry.toEntity(): ReminderLogEntity = ReminderLogEntity(
         occurredAt = occurredAt.toEpochMilli(),
         event = event.name,

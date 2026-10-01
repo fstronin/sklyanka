@@ -4,7 +4,9 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
@@ -134,6 +136,75 @@ internal fun BoltGlyph(color: Color, modifier: Modifier = Modifier, size: Dp = S
             color = color,
             style = stroke(side),
         )
+    }
+}
+
+/** Батарейка: карточка «Энергосбережение» (ОВ-106). */
+private const val BATTERY_LEFT = 0.16f
+private const val BATTERY_TOP = 0.30f
+private const val BATTERY_WIDTH = 0.58f
+private const val BATTERY_HEIGHT = 0.40f
+private const val BATTERY_RADIUS = 0.08f
+private const val BATTERY_CAP_LEFT = 0.76f
+private const val BATTERY_CAP_TOP = 0.41f
+private const val BATTERY_CAP_WIDTH = 0.10f
+private const val BATTERY_CAP_HEIGHT = 0.18f
+
+/** Замок: карточка «Закрепление в недавних» — тот же знак, что появляется в списке недавних. */
+private const val LOCK_SHACKLE_LEFT = 0.30f
+private const val LOCK_SHACKLE_TOP = 0.12f
+private const val LOCK_SHACKLE_SIZE = 0.40f
+private const val LOCK_BODY_LEFT = 0.22f
+private const val LOCK_BODY_TOP = 0.44f
+private const val LOCK_BODY_WIDTH = 0.56f
+private const val LOCK_BODY_HEIGHT = 0.42f
+private const val LOCK_BODY_RADIUS = 0.10f
+private const val LOCK_DOT_RADIUS = 0.05f
+private const val LOCK_DOT_Y = 0.64f
+
+/** Батарейка с кружком-клеммой (`Onboarding.dc.html`, карточка «Энергосбережение»). */
+@Composable
+internal fun BatteryGlyph(color: Color, modifier: Modifier = Modifier, size: Dp = SklyankaSizes.IconPlateGlyph) {
+    Canvas(modifier.size(size)) {
+        val side = this.size.minDimension
+        drawRoundRect(
+            color = color,
+            topLeft = Offset(side * BATTERY_LEFT, side * BATTERY_TOP),
+            size = Size(side * BATTERY_WIDTH, side * BATTERY_HEIGHT),
+            cornerRadius = CornerRadius(side * BATTERY_RADIUS),
+            style = stroke(side),
+        )
+        drawRoundRect(
+            color = color,
+            topLeft = Offset(side * BATTERY_CAP_LEFT, side * BATTERY_CAP_TOP),
+            size = Size(side * BATTERY_CAP_WIDTH, side * BATTERY_CAP_HEIGHT),
+            cornerRadius = CornerRadius(side * LOCK_DOT_RADIUS),
+        )
+    }
+}
+
+/** Замок (`Onboarding.dc.html`, карточка «Закрепление в недавних»). */
+@Composable
+internal fun PinGlyph(color: Color, modifier: Modifier = Modifier, size: Dp = SklyankaSizes.IconPlateGlyph) {
+    Canvas(modifier.size(size)) {
+        val side = this.size.minDimension
+        drawArc(
+            color = color,
+            startAngle = 180f,
+            sweepAngle = 180f,
+            useCenter = false,
+            topLeft = Offset(side * LOCK_SHACKLE_LEFT, side * LOCK_SHACKLE_TOP),
+            size = Size(side * LOCK_SHACKLE_SIZE, side * LOCK_SHACKLE_SIZE),
+            style = stroke(side),
+        )
+        drawRoundRect(
+            color = color,
+            topLeft = Offset(side * LOCK_BODY_LEFT, side * LOCK_BODY_TOP),
+            size = Size(side * LOCK_BODY_WIDTH, side * LOCK_BODY_HEIGHT),
+            cornerRadius = CornerRadius(side * LOCK_BODY_RADIUS),
+            style = stroke(side),
+        )
+        drawCircle(color, radius = side * LOCK_DOT_RADIUS, center = Offset(side * MIDDLE, side * LOCK_DOT_Y))
     }
 }
 

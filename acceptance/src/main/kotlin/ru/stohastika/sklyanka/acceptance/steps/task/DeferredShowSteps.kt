@@ -215,6 +215,7 @@ class DeferredShowSteps(private val world: AcceptanceWorld) {
             plan = world.reminders.planSource(),
             reliability = ReadReminderReliabilityUseCase(world.system),
             medications = world.repositories.medicationStore,
+            measurement = world.reminders.measurement,
             time = world.clock.time,
         )
         diagnostics = runBlocking { useCase() }

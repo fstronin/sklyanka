@@ -66,6 +66,9 @@
         <item quantity="other">с опозданием на %1$d минуты</item>
     </plurals>
 
+    <!-- Подавленное опоздавшее срабатывание: «сработало … — не показано» (ОВ-109, НАП-33). -->
+    <string name="diagnostics_journal_too_late">сработало %1$s — не показано</string>
+
     <string name="diagnostics_section_last">Последнее напоминание</string>
     <string name="diagnostics_section_next">Следующее напоминание</string>
     <string name="diagnostics_section_reschedule">Последняя сборка плана</string>
@@ -99,8 +102,12 @@
 
     <!-- Предупреждение о ненадёжности напоминаний (НАП-18). -->
     <string name="diagnostics_warning_notifications">Напоминания сейчас не приходят: уведомления отключены. Приёмы можно отмечать вручную.</string>
+    <string name="diagnostics_warning_channel">Напоминания сейчас не приходят: канал уведомлений отключён.</string>
     <string name="diagnostics_warning_exact_alarms">Напоминания могут приходить с опозданием: не выдано право на точные будильники.</string>
+    <string name="diagnostics_warning_full_screen">Карточка приёма не появится на заблокированном экране: не выдано право на полноэкранные уведомления.</string>
     <string name="diagnostics_warning_both">Напоминания сейчас не приходят: отключены уведомления и не выдано право на точные будильники.</string>
+    <!-- Системный раздел не открылся: тот же ручной путь, что на «Настроить надёжность» (ОВ-106). -->
+    <string name="diagnostics_fallback_app_startup">Системный раздел на этом устройстве не открылся. Откройте его вручную: Настройки → Батарея → Запуск приложений → Склянка → Управлять вручную. Включите «Автозапуск», «Косвенный запуск» и «Работу в фоне».</string>
 
     <!-- Сообщение о перерыве в напоминаниях (НАП-38). -->
     <string name="diagnostics_outage">Напоминания не приходили с %1$s. Проверьте разрешения и автозапуск, затем нажмите «Проверить сейчас».</string>
@@ -119,6 +126,13 @@
     <string name="diagnostics_export_failed">Журнал не выгружен: запись не удалась</string>
     <string name="diagnostics_export_no_space">Журнал не выгружен: на устройстве не хватает места</string>
 
+    <!-- Вариант измерения пилота: строка существует только в измерительной сборке (SKL-85). -->
+    <string name="diagnostics_measurement_row">Вариант измерения</string>
+    <string name="diagnostics_measurement_alarm_clock">Системный будильник</string>
+    <string name="diagnostics_measurement_exact_idle">Точный будильник</string>
+    <!-- Пояснение системного индикатора будильника под следующим напоминанием (ОВ-110). -->
+    <string name="diagnostics_next_alarm_indicator">Это время телефон показывает в статус-баре как будильник — так и должно быть.</string>
+
     <!-- Причины пересборки плана (таблица НАП-11). -->
     <string name="diagnostics_reason_boot">перезагрузка</string>
     <string name="diagnostics_reason_package_replaced">обновление приложения</string>
@@ -134,6 +148,7 @@
     <string name="diagnostics_reason_manual">ручное действие человека</string>
     <string name="diagnostics_reason_data_imported">загрузка данных</string>
     <string name="diagnostics_reason_app_start">запуск приложения</string>
+    <string name="diagnostics_reason_exact_alarm_granted">право на точные будильники выдано</string>
 
     <!-- Виды записей журнала (TDD §11.1). -->
     <string name="diagnostics_event_fired">будильник сработал</string>
@@ -146,6 +161,7 @@
     <string name="diagnostics_event_missed_sweep">переведено в пропущенные</string>
     <string name="diagnostics_event_outage">перерыв в напоминаниях</string>
     <string name="diagnostics_event_settings_changed">изменена настройка</string>
+    <string name="diagnostics_event_environment">среда устройства</string>
 
     <!-- «снято 1, поставлено 2» — счётчики записи о пересборке. -->
     <string name="diagnostics_alarm_counters">снято %1$d, поставлено %2$d</string>
@@ -153,6 +169,6 @@
     <!-- ===== Сообщение о перерыве при входе в приложение (НАП-38) ===== -->
 
     <string name="reminder_outage_notice">Напоминания не приходили с %1$s. Приёмы за это время можно отметить вручную.</string>
-    <string name="reminder_outage_notice_action">Что делать</string>
+    <string name="reminder_outage_notice_action">Исправить</string>
     <string name="reminder_outage_notice_moment_pattern">d MMMM, HH:mm</string>
 </resources>

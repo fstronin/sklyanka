@@ -5,9 +5,13 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import ru.stohastika.sklyanka.domain.medication.DoseUnit
 import ru.stohastika.sklyanka.domain.medication.doseUnit
+import ru.stohastika.sklyanka.domain.reminder.AlarmKind
+import ru.stohastika.sklyanka.domain.reminder.ReminderDeviationWords
 import ru.stohastika.sklyanka.domain.reminder.ReminderEvent
 import ru.stohastika.sklyanka.domain.reminder.ReminderJournalExportOutcome
+import ru.stohastika.sklyanka.domain.reminder.ReminderLogEntry
 import ru.stohastika.sklyanka.domain.reminder.RescheduleReason
+import ru.stohastika.sklyanka.domain.reminder.SuppressReason
 import ru.stohastika.sklyanka.domain.reminder.port.PermissionState
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPermission
 import ru.stohastika.sklyanka.ui.locale.InterfaceLocale
@@ -116,6 +120,7 @@ internal val REASON_LABELS: Map<RescheduleReason, Int> = mapOf(
     RescheduleReason.MANUAL to R.string.diagnostics_reason_manual,
     RescheduleReason.DATA_IMPORTED to R.string.diagnostics_reason_data_imported,
     RescheduleReason.APP_START to R.string.diagnostics_reason_app_start,
+    RescheduleReason.EXACT_ALARM_GRANTED to R.string.diagnostics_reason_exact_alarm_granted,
 )
 
 @Composable
@@ -137,10 +142,41 @@ internal val EVENT_LABELS: Map<ReminderEvent, Int> = mapOf(
     ReminderEvent.MISSED_SWEEP to R.string.diagnostics_event_missed_sweep,
     ReminderEvent.OUTAGE to R.string.diagnostics_event_outage,
     ReminderEvent.SETTINGS_CHANGED to R.string.diagnostics_event_settings_changed,
+    ReminderEvent.ENVIRONMENT to R.string.diagnostics_event_environment,
 )
 
 @Composable
 internal fun ReminderEvent.label(): String = stringResource(EVENT_LABELS.getValue(this))
+
+/** Вариант измерения пилота словами человека: «Системный будильник» / «Точный будильник». */
+@Composable
+internal fun AlarmKind.label(): String = stringResource(
+    when (this) {
+        AlarmKind.ALARM_CLOCK -> R.string.diagnostics_measurement_alarm_clock
+        AlarmKind.EXACT_IDLE -> R.string.diagnostics_measurement_exact_idle
+    },
+)
+
+/**
+ * Вид записи журнала словами человека; подавленное по порогу названо отдельно (ОВ-109).
+ *
+ * Подавленное срабатывание не выдаётся за показ и не называется безлико: запись говорит,
+ * что напоминание опоздало и почему человек его не увидел.
+ */
+@Composable
+internal fun ReminderLogEntry.journalLabel(): String =
+    if (event == ReminderEvent.SUPPRESSED && reason == SuppressReason.TOO_LATE.code) {
+        stringResource(R.string.diagnostics_journal_too_late, latePhrase())
+    } else {
+        event.label()
+    }
+
+/** «с опозданием на N минут» — та же форма, что на первом уровне (НФТ-44). */
+@Composable
+private fun ReminderLogEntry.latePhrase(): String {
+    val minutes = ReminderDeviationWords.lateMinutes(deviationSeconds ?: 0L).toInt()
+    return pluralStringResource(R.plurals.diagnostics_late, minutes, minutes)
+}
 
 /**
  * Исход выгрузки журнала словами (НФТ-51).

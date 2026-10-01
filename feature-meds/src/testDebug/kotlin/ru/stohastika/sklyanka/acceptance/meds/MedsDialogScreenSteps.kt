@@ -13,13 +13,13 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.runComposeUiTest
 import androidx.test.core.app.ApplicationProvider
-import org.robolectric.RuntimeEnvironment
 import io.cucumber.java.ru.Допустим
 import io.cucumber.java.ru.Когда
 import io.cucumber.java.ru.Но
 import io.cucumber.java.ru.Тогда
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.robolectric.RuntimeEnvironment
 import ru.stohastika.sklyanka.feature.meds.R
 import ru.stohastika.sklyanka.ui.component.DateTimePickerDialog
 import ru.stohastika.sklyanka.ui.component.TAG_DATE_TIME_PICKER
@@ -71,7 +71,10 @@ class MedsDialogScreenSteps {
 
     @Когда("^человек открывает диалог «Дата начала»$")
     fun thePersonOpensTheStartDateDialog() {
-        assertTrue("the dialog must show the start date title", context.getString(R.string.form_dialog_start_date).isNotEmpty())
+        assertTrue(
+            "the dialog must show the start date title",
+            context.getString(R.string.form_dialog_start_date).isNotEmpty(),
+        )
     }
 
     // --- Оформление и доступность --------------------------------------------------------------

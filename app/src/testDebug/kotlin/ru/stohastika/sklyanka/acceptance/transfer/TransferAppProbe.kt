@@ -21,10 +21,13 @@ import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
 import ru.stohastika.sklyanka.acceptance.world.ScenarioTransfer
 import ru.stohastika.sklyanka.acceptance.world.ScenarioTransferIds
 import ru.stohastika.sklyanka.data.transfer.JsonTransferCodec
-import ru.stohastika.sklyanka.domain.onboarding.AutostartState
+import ru.stohastika.sklyanka.domain.onboarding.ManualStepState
+import ru.stohastika.sklyanka.domain.onboarding.NotificationAccessState
 import ru.stohastika.sklyanka.domain.onboarding.OnboardingSource
 import ru.stohastika.sklyanka.domain.onboarding.PermissionChecklist
+import ru.stohastika.sklyanka.domain.onboarding.PermissionGate
 import ru.stohastika.sklyanka.domain.onboarding.PermissionGrant
+import ru.stohastika.sklyanka.domain.onboarding.VendorProfile
 import ru.stohastika.sklyanka.domain.transfer.ApplyTransferUseCase
 import ru.stohastika.sklyanka.domain.transfer.BuildTransferPlan
 import ru.stohastika.sklyanka.domain.transfer.ExportDataUseCase
@@ -175,6 +178,8 @@ internal object TransferAppProbe {
                     PermissionsScreen(
                         state = permissionsState(),
                         actions = permissionsActions(),
+                        // Плашка перерыва на этом стенде не показывается: пояс не важен.
+                        toLocal = { instant -> instant.atZone(java.time.ZoneOffset.UTC).toLocalDateTime() },
                     )
                 }
             }
@@ -209,17 +214,25 @@ internal object TransferAppProbe {
     private fun permissionsState(): OnboardingUiState = OnboardingUiState(
         source = OnboardingSource.FIRST_LAUNCH,
         checklist = PermissionChecklist(
-            notifications = PermissionGrant.Granted(Instant.EPOCH),
+            vendor = VendorProfile.EMUI,
+            notifications = NotificationAccessState(
+                permission = PermissionGrant.Granted(Instant.EPOCH),
+                channel = PermissionGate.GRANTED,
+                fullScreenIntent = PermissionGate.GRANTED,
+            ),
             exactAlarms = PermissionGrant.Granted(Instant.EPOCH),
-            autostart = AutostartState(confirmedByUser = false),
+            appStartup = ManualStepState(confirmedByUser = false),
+            batterySaving = ManualStepState(confirmedByUser = false),
+            recentsPin = ManualStepState(confirmedByUser = false),
         ),
     )
 
     private fun permissionsActions(): PermissionsActions = PermissionsActions(
         onStepAction = {},
-        onAutostartConfirmed = {},
+        onManualConfirmed = { _, _ -> },
         onNext = {},
         onSkip = {},
+        onDone = {},
     )
 
     private fun build(world: AcceptanceWorld): DataTransferViewModel {

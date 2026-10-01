@@ -1,10 +1,10 @@
 package ru.stohastika.sklyanka.domain.onboarding.port
 
-import ru.stohastika.sklyanka.domain.onboarding.AutostartOpenResult
 import ru.stohastika.sklyanka.domain.onboarding.OnboardingOutcome
 import ru.stohastika.sklyanka.domain.onboarding.OnboardingSource
 import ru.stohastika.sklyanka.domain.onboarding.PermissionChecklist
 import ru.stohastika.sklyanka.domain.onboarding.PermissionStep
+import ru.stohastika.sklyanka.domain.onboarding.StepOpenResult
 
 /**
  * След онбординга (`TDD.md §11`).
@@ -33,11 +33,20 @@ interface OnboardingLog {
     /** Результат системного запроса: выдано или отказано. */
     fun permissionResult(step: PermissionStep, granted: Boolean)
 
-    /** Открытие экрана автозапуска и его исход — открылся или сработал запасной путь. */
-    fun autostartSettingsOpened(result: AutostartOpenResult)
+    /** Открытие вендорского экрана и его исход — открылся или сработал запасной путь. */
+    fun vendorStepOpened(step: PermissionStep, result: StepOpenResult)
 
-    /** Ручное подтверждение автозапуска человеком — или снятие подтверждения. */
-    fun autostartConfirmedByUser(confirmed: Boolean)
+    /** Ручное подтверждение вендорского шага человеком — или снятие подтверждения. */
+    fun manualStepConfirmed(step: PermissionStep, confirmed: Boolean)
+
+    /**
+     * Человек пришёл по баннеру «Настроить» / «Исправить» (ОВ-107).
+     *
+     * Видно, с какого баннера он пришёл и к какому шагу его привёл фокус: без этой записи
+     * жалоба «нажал „Исправить“, а непонятно куда попал» неразбираема, потому что состояние
+     * к моменту разбора уже изменилось бы.
+     */
+    fun reliabilityRouteTaken(source: OnboardingSource, firstUnresolved: PermissionStep?)
 
     /** Уход с экрана: «Дальше» или «Пропустить», и состояние шагов на этот момент. */
     fun onboardingLeft(outcome: OnboardingOutcome, checklist: PermissionChecklist)

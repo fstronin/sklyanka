@@ -6,6 +6,8 @@ import ru.stohastika.sklyanka.domain.intake.SweepMissedIntakesUseCase
 import ru.stohastika.sklyanka.domain.medication.doseUnit
 import ru.stohastika.sklyanka.domain.model.IntakeStatus
 import ru.stohastika.sklyanka.domain.profile.ProfileSetReplanner
+import ru.stohastika.sklyanka.domain.reminder.AlarmKind
+import ru.stohastika.sklyanka.domain.reminder.DeviceEnvironment
 import ru.stohastika.sklyanka.domain.reminder.DismissReminderUseCase
 import ru.stohastika.sklyanka.domain.reminder.HandleFiredReminderUseCase
 import ru.stohastika.sklyanka.domain.reminder.ReminderCard
@@ -23,10 +25,13 @@ import ru.stohastika.sklyanka.domain.reminder.SweepAtDayBoundaryUseCase
 import ru.stohastika.sklyanka.domain.reminder.port.AlarmGateway
 import ru.stohastika.sklyanka.domain.reminder.port.DeferredReminder
 import ru.stohastika.sklyanka.domain.reminder.port.DeferredReminders
+import ru.stohastika.sklyanka.domain.reminder.port.DeviceEnvironmentSource
 import ru.stohastika.sklyanka.domain.reminder.port.NotificationGateway
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderCardSource
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderJournal
+import ru.stohastika.sklyanka.domain.reminder.port.ReminderMeasurement
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPlanSource
+import ru.stohastika.sklyanka.domain.reminder.port.ReminderSettingKey
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderSettings
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderSettingsValues
 import ru.stohastika.sklyanka.domain.reminder.port.WatchGateway
@@ -71,9 +76,34 @@ class ScenarioReminders(
      * и настроек (SKL-20): журнал, состояние будильников и настройки — то же самое
      * состояние, что видят сценарии напоминаний, и второй его копии в приёмке нет.
      */
-    private val alarmStore = InMemoryAlarms()
+    private val alarmStore = InMemoryAlarms { effectiveKind() }
 
     val alarms: AlarmGateway = alarmStore
+
+    /**
+     * Среда измерения пилота (SKL-85): факты устройства задаются сценарием, а не платформой.
+     *
+     * Живёт в мире, потому что в продукте это чтение `Build.*` в `app`: приёмке нужен
+     * тот же ответ, что ставит будильники, иначе разметка окон разошлась бы с реальностью.
+     */
+    var environment: DeviceEnvironment = DeviceEnvironment(
+        manufacturer = "HUAWEI",
+        brand = "HUAWEI",
+        osRelease = "12",
+        buildDisplay = "HUAWEI Pura 80 Ultra",
+        batteryUnrestricted = true,
+    )
+
+    /** Доступен ли режим измерения: в обычной сборке `false`, сценарий пилота включает явно. */
+    var measurementAvailable: Boolean = false
+
+    val environmentSource: DeviceEnvironmentSource = object : DeviceEnvironmentSource {
+        override suspend fun environment(): DeviceEnvironment = environment
+    }
+
+    val measurement: ReminderMeasurement = object : ReminderMeasurement {
+        override fun available(): Boolean = measurementAvailable
+    }
 
     /**
      * Отложенные срабатывания — в памяти, но переживают «перезагрузку» сценария:
@@ -96,7 +126,24 @@ class ScenarioReminders(
 
     val journal: ReminderJournal = InMemoryReminderJournal()
 
-    val settingsStore: ReminderSettings = InMemoryReminderSettings()
+    private val settingsImpl = InMemoryReminderSettings()
+
+    /**
+     * Настройки со следом в журнале — как `JournalingReminderSettings` продукта (НАП-14).
+     *
+     * Харнесс повторяет поведение слоя данных: смена варианта измерения обязана оставить
+     * `SETTINGS_CHANGED{alarm_strategy=…}`, иначе окна A/B-прогона неразличимы (SKL-85).
+     */
+    val settingsStore: ReminderSettings = SettingTraceSettings(settingsImpl, journal, clock)
+
+    /**
+     * Действующий механизм будильников — как `EffectiveAlarmStrategy` продукта (SKL-85).
+     *
+     * Обычная сборка игнорирует сохранённое значение и всегда ставит системный будильник:
+     * переключателя в ней нет, а значение могло остаться от измерительной сборки.
+     */
+    fun effectiveKind(): AlarmKind =
+        if (measurementAvailable) settingsImpl.current().alarmStrategy else AlarmKind.ALARM_CLOCK
 
     /**
      * Значения настроек на сейчас — синхронно, для состояний экранов.
@@ -125,6 +172,7 @@ class ScenarioReminders(
             journal = journal,
             deferred = deferredStore,
             sweepMissed = SweepMissedIntakesUseCase(repositories.intakeStore, intakes.window, clock.time, log),
+            environment = environmentSource,
             time = clock.time,
         )(reason)
     }
@@ -145,6 +193,19 @@ class ScenarioReminders(
 
     /** Отложенные срабатывания сейчас — по ним проверяются «один повтор» и «не переезжают» (SKL-35). */
     fun deferredRecords(): List<DeferredReminder> = deferredStore.stored.values.toList()
+
+    /**
+     * Данность Предыстории: настойчивый повтор уже назначен (НАП-25).
+     *
+     * Сценарий SKL-88 начинается с назначенного повтора, а не проживает первый показ:
+     * запись и будильник ставятся так, как их оставил бы состоявшийся показ.
+     */
+    fun armRepeat(intakeId: String, at: Instant, attempt: Int = 1) {
+        runBlocking {
+            deferredStore.put(DeferredReminder(intakeId, at, attempt))
+            alarms.schedule(intakeId, at, attempt)
+        }
+    }
 
     /** Момент срабатывания будильника приёма либо `null`, если напоминания нет. */
     fun alarmOf(intakeId: String): Instant? = scheduled()[intakeId]
@@ -338,7 +399,7 @@ class ScenarioReminders(
 }
 
 /** Будильники в памяти: адрес — идентификатор приёма, повторная постановка заменяет (НАП-9). */
-private class InMemoryAlarms : AlarmGateway {
+private class InMemoryAlarms(private val kind: () -> AlarmKind) : AlarmGateway {
 
     private val byIntake = linkedMapOf<String, Instant>()
 
@@ -363,6 +424,8 @@ private class InMemoryAlarms : AlarmGateway {
 
     override fun canScheduleExact(): Boolean = true
 
+    override suspend fun alarmKind(): AlarmKind = kind()
+
     fun attemptOf(intakeId: String): Int? = attempts[intakeId]
 
     /** Перезагрузка: система не хранит намерений приложения, будильников больше нет. */
@@ -384,6 +447,8 @@ private class InMemoryDeferredReminders : DeferredReminders {
     val stored: MutableMap<String, DeferredReminder> = linkedMapOf()
 
     override suspend fun all(): List<DeferredReminder> = stored.values.toList()
+
+    override suspend fun find(intakeId: String): DeferredReminder? = stored[intakeId]
 
     override suspend fun put(reminder: DeferredReminder) {
         stored[reminder.intakeId] = reminder
@@ -468,10 +533,58 @@ private class InMemoryReminderJournal : ReminderJournal {
     override suspend fun prune(keepDays: Long, keepRecords: Int) = Unit
 }
 
+/**
+ * Настройки со следом в журнале — поведение `JournalingReminderSettings` (НАП-14).
+ *
+ * След пишется только при изменении значения: экран настроек перечитывает состояние
+ * при каждом возвращении, и запись «на каждое касание» превратила бы журнал
+ * срабатываний в журнал открытий настроек.
+ */
+private class SettingTraceSettings(
+    private val store: InMemoryReminderSettings,
+    private val journal: ReminderJournal,
+    private val clock: ScenarioClock,
+) : ReminderSettings {
+
+    override suspend fun read(): ReminderSettingsValues = store.read()
+
+    override suspend fun setPersistentEnabled(enabled: Boolean) {
+        val before = store.current().persistentEnabled
+        store.setPersistentEnabled(enabled)
+        if (before != enabled) trace(ReminderSettingKey.PERSISTENT_ENABLED.trace(enabled))
+    }
+
+    override suspend fun setSnoozeMinutes(minutes: Int) {
+        val before = store.current().snoozeMinutes
+        store.setSnoozeMinutes(minutes)
+        if (before != minutes) trace(ReminderSettingKey.SNOOZE_MINUTES.trace(minutes), minutes = minutes)
+    }
+
+    override suspend fun setAlarmStrategy(kind: AlarmKind) {
+        val before = store.current().alarmStrategy
+        store.setAlarmStrategy(kind)
+        if (before != kind) trace(ReminderSettingKey.ALARM_STRATEGY.trace(kind.code))
+    }
+
+    private suspend fun trace(value: String, minutes: Int? = null) {
+        journal.record(
+            ReminderLogEntry(
+                occurredAt = clock.now(),
+                event = ReminderEvent.SETTINGS_CHANGED,
+                reason = value,
+                minutes = minutes,
+            ),
+        )
+    }
+}
+
 /** Настройки напоминания в памяти: значения по умолчанию — те же, что в продукте. */
 private class InMemoryReminderSettings : ReminderSettings {
 
     private var values = ReminderSettingsValues()
+
+    /** Значения на сейчас — синхронно: механизм выбирается в момент постановки будильника. */
+    fun current(): ReminderSettingsValues = values
 
     override suspend fun read(): ReminderSettingsValues = values
 
@@ -481,5 +594,9 @@ private class InMemoryReminderSettings : ReminderSettings {
 
     override suspend fun setSnoozeMinutes(minutes: Int) {
         values = values.copy(snoozeMinutes = minutes)
+    }
+
+    override suspend fun setAlarmStrategy(kind: AlarmKind) {
+        values = values.copy(alarmStrategy = kind)
     }
 }

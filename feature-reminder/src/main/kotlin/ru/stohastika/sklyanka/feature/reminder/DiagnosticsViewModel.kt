@@ -10,12 +10,15 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import ru.stohastika.sklyanka.domain.reminder.AlarmKind
 import ru.stohastika.sklyanka.domain.reminder.BuildReminderDiagnosticsUseCase
 import ru.stohastika.sklyanka.domain.reminder.ExportReminderJournalUseCase
 import ru.stohastika.sklyanka.domain.reminder.ReminderDiagnostics
 import ru.stohastika.sklyanka.domain.reminder.ReminderJournalExportOutcome
 import ru.stohastika.sklyanka.domain.reminder.RescheduleReason
+import ru.stohastika.sklyanka.domain.reminder.port.PermissionState
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPermission
+import ru.stohastika.sklyanka.domain.reminder.port.ReminderSettings
 import ru.stohastika.sklyanka.domain.time.TimeSource
 import ru.stohastika.sklyanka.domain.transfer.ExportTarget
 import java.time.Instant
@@ -49,6 +52,13 @@ data class DiagnosticsUiState(
     val supportExpanded: Boolean = false,
     /** Исход последней ручной проверки; null — ещё не проверяли. */
     val checkOutcome: ReminderCheckOutcome? = null,
+    /**
+     * Разрешение, для которого системный экран не открылся (НФТ-8, ОВ-106).
+     *
+     * Под строкой этого разрешения показывается запасная инструкция; снимок состояния
+     * её не стирает, пока шаг не исправлен, — инструкция обязана остаться после возврата.
+     */
+    val fixFallback: ReminderPermission? = null,
 )
 
 /**
@@ -63,6 +73,13 @@ class DiagnosticsViewModel @Inject constructor(
     private val diagnostics: BuildReminderDiagnosticsUseCase,
     private val check: ReminderCheckNow,
     private val exportJournal: ExportReminderJournalUseCase,
+    /**
+     * Вариант измерения пилота (SKL-85).
+     *
+     * Нужен только измерительной сборке: в обычной значение не читается, а переключателя
+     * в блоке «Для поддержки» нет вовсе (ПМ-20).
+     */
+    private val settings: ReminderSettings,
     time: TimeSource,
 ) : ViewModel() {
 
@@ -77,8 +94,29 @@ class DiagnosticsViewModel @Inject constructor(
 
     fun refresh() {
         viewModelScope.launch {
-            _state.value = _state.value.copy(snapshot = diagnostics(), busy = false)
+            val snapshot = diagnostics()
+            _state.value = _state.value.copy(
+                snapshot = snapshot,
+                busy = false,
+                // Инструкция снимается только тогда, когда разрешение действительно выдано:
+                // возврат без исправления оставляет её на месте (критерий приёмки 6).
+                fixFallback = _state.value.fixFallback?.takeIf {
+                    snapshot.permissions[it] != PermissionState.GRANTED
+                },
+            )
         }
+    }
+
+    /**
+     * Исход «Исправить» приходит от хозяина экрана (ОВ-106, `TDD.md §9.4`).
+     *
+     * Системный `Intent` собирает `app` (`ADR-0007`), а состояние экрана живёт здесь:
+     * неудача открытия превращается в запасную инструкцию под строкой разрешения.
+     */
+    fun onFixResult(permission: ReminderPermission, result: ReminderFixResult) {
+        _state.value = _state.value.copy(
+            fixFallback = permission.takeIf { result == ReminderFixResult.FALLBACK_TO_INSTRUCTIONS },
+        )
     }
 
     /** Раскрыть или свернуть технический блок «Для поддержки» (ОВ-49). */
@@ -107,6 +145,21 @@ class DiagnosticsViewModel @Inject constructor(
             }
             _state.value = _state.value.copy(checkOutcome = outcome)
             refresh()
+        }
+    }
+
+    /**
+     * Смена варианта измерения пилота (SKL-85, `TDD.md §9.4`).
+     *
+     * Порядок обязателен: сначала настройка, потом пересборка. `AlarmManagerGateway` читает
+     * настройку в момент постановки будильника, и пересборка до записи поставила бы
+     * будильники прежним механизмом. Пересборка идёт существующим путём «Проверить сейчас»,
+     * поэтому след причины, счётчики и обновление снимка — те же.
+     */
+    fun onAlarmKindChange(kind: AlarmKind) {
+        viewModelScope.launch {
+            settings.setAlarmStrategy(kind)
+            onCheckNow()
         }
     }
 
@@ -152,12 +205,28 @@ fun interface ReminderSetupEntry {
 }
 
 /**
+ * Чем закончился переход «Исправить» (НФТ-8, ОВ-106).
+ *
+ * Неудача открытия системного экрана — не исключение: на части прошивок раздела нет,
+ * и экран обязан показать запасную инструкцию. [NO_SCREEN] — «человеку здесь исправлять
+ * нечего» (приёмник загрузки), это не ошибка.
+ */
+enum class ReminderFixResult {
+    OPENED,
+    FALLBACK_TO_INSTRUCTIONS,
+    NO_SCREEN,
+}
+
+/**
  * Переход «Исправить» к системному экрану разрешения (ОВ-49, НАП-15).
  *
  * Экран не собирает системный `Intent` сам: он не знает ни `android.provider.Settings`,
  * ни того, какой экран соответствует разрешению. Реализация живёт в `app`, потому что
  * `feature-reminder` не должен зависеть от онбординга (`ADR-0007`).
+ *
+ * Исход возвращается наружу: неудача не глотается, а превращается в запасную инструкцию
+ * под строкой разрешения.
  */
 fun interface ReminderSettingsFixer {
-    fun fix(permission: ReminderPermission)
+    fun fix(permission: ReminderPermission): ReminderFixResult
 }

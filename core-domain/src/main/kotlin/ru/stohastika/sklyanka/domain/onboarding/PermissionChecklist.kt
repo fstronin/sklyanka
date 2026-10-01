@@ -1,58 +1,70 @@
 package ru.stohastika.sklyanka.domain.onboarding
 
 /**
- * Состояние цепочки из трёх шагов (НАП-19, ПЛ-18).
+ * Состояние цепочки шагов надёжности (НАП-19, ПЛ-18, ОВ-106).
  *
  * Поля типизированы поимённо, а не собраны в `Map<PermissionStep, StepState>`, ровно для
- * того, чтобы [autostart] нельзя было объявить выданным: тип [AutostartState] варианта
- * «выдано» не имеет, и подставить на его место [PermissionGrant.Granted] не получится
- * (`TDD.md §5.1`). Карта, собранная из шагов, отдаётся наружу [steps] — но собирает её
+ * того, чтобы вендорский шаг нельзя было объявить выданным: у [ManualStepState] варианта
+ * «выдано» нет, и подставить на его место [PermissionGrant.Granted] не получится
+ * (`TDD.md §5.6`). Карта, собранная из шагов, отдаётся наружу [steps] — но собирает её
  * этот класс, а не экран.
+ *
+ * Состав шагов зависит от [vendor]: на Huawei показывается полная цепочка из пяти,
+ * на остальных телефонах вендорских настроек нет и шагов остаётся два. Число шагов
+ * не хранится константой: экран берёт его из [steps].
  */
 data class PermissionChecklist(
-    val notifications: PermissionGrant,
+    val vendor: VendorProfile,
+    val notifications: NotificationAccessState,
     val exactAlarms: PermissionGrant,
-    val autostart: AutostartState,
+    val appStartup: ManualStepState,
+    val batterySaving: ManualStepState,
+    val recentsPin: ManualStepState,
 ) {
 
-    /** Шаги в фиксированном порядке НАП-19: экран не решает, в каком порядке их показать. */
-    val steps: List<Pair<PermissionStep, StepState>> = listOf(
-        PermissionStep.NOTIFICATIONS to notifications,
-        PermissionStep.EXACT_ALARMS to exactAlarms,
-        PermissionStep.AUTOSTART to autostart,
-    )
+    /** Шаги в фиксированном порядке ОВ-106: экран не решает, в каком порядке их показать. */
+    val steps: List<Pair<PermissionStep, StepState>> = buildList {
+        add(PermissionStep.NOTIFICATIONS to notifications)
+        add(PermissionStep.EXACT_ALARMS to exactAlarms)
+        if (vendor == VendorProfile.EMUI) {
+            add(PermissionStep.APP_STARTUP to appStartup)
+            add(PermissionStep.BATTERY_SAVING to batterySaving)
+            add(PermissionStep.RECENTS_PIN to recentsPin)
+        }
+    }
 
     /** Состояние конкретного шага. */
     fun state(step: PermissionStep): StepState = when (step) {
         PermissionStep.NOTIFICATIONS -> notifications
         PermissionStep.EXACT_ALARMS -> exactAlarms
-        PermissionStep.AUTOSTART -> autostart
+        PermissionStep.APP_STARTUP -> appStartup
+        PermissionStep.BATTERY_SAVING -> batterySaving
+        PermissionStep.RECENTS_PIN -> recentsPin
     }
 
     /**
-     * Цепочка пройдена целиком: «Дальше» ведёт на экран подключения часов (критерий приёмки 20).
+     * Цепочка пройдена целиком: «Дальше» ведёт на следующий шаг онбординга (критерий приёмки 7).
      *
-     * Автозапуск входит в счёт: цепочка из трёх шагов, пройденная на двух, — это ровно та
-     * ложная зелень, которой задача не допускает (НАП-20).
+     * Вендорские шаги входят в счёт: цепочка, пройденная на двух из пяти, — это ровно та
+     * ложная зелень, которой задача не допускает (НАП-20). На не-Huawei в счёт входят
+     * только два общих шага: вендорских настроек там нет вовсе.
      */
     val allResolved: Boolean = steps.all { (_, state) -> state.isResolved }
 
-    /** Сколько шагов не пройдено — сводное состояние строки настроек (критерий приёмки 14). */
+    /** Сколько шагов не пройдено — сводное состояние строки настроек. */
     val unresolvedCount: Int = steps.count { (_, state) -> !state.isResolved }
 
     /** Непройденные шаги в том же фиксированном порядке: что предложить сделать первым. */
     val unresolved: List<PermissionStep> = steps.filterNot { (_, state) -> state.isResolved }.map { it.first }
 
+    /** Первый незакрытый шаг — фокус при входе из баннера (ОВ-107). */
+    val firstUnresolved: PermissionStep? get() = unresolved.firstOrNull()
+
     /**
      * Напоминания ненадёжны в смысле НАП-18 — предупреждение на «Сегодня» и в диагностике.
      *
-     * Совпадает с [allResolved] намеренно: пока не пройден любой из трёх шагов, приложение
-     * не вправе утверждать, что напоминания настроены (критерий приёмки 17).
+     * Совпадает с [allResolved] намеренно: пока не пройден любой из шагов, приложение
+     * не вправе утверждать, что напоминания настроены.
      */
     val remindersUnreliable: Boolean = !allResolved
-
-    companion object {
-        /** Сколько шагов в цепочке — три по НАП-19, и число берётся из перечисления, а не из головы. */
-        val STEP_COUNT: Int = PermissionStep.entries.size
-    }
 }

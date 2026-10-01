@@ -20,18 +20,31 @@ class LeaveOnboardingUseCase(private val store: OnboardingStateStore, private va
 }
 
 /**
- * Ручное подтверждение автозапуска (НАП-20, ОВ-53).
+ * Ручное подтверждение вендорского шага (НАП-20, ОВ-53).
  *
- * Единственное, что человек может сообщить приложению об этом шаге, и единственное, что
- * о нём вообще сохраняется. Подтверждение снимаемо: человек, нажавший его по ошибке, иначе
- * остался бы с зелёным шагом, который сам себе и выдал, — а весь смысл третьего шага в том,
- * чтобы зелень означала что-то настоящее.
+ * Единственное, что человек может сообщить приложению о настройках EMUI, и единственное,
+ * что о них вообще сохраняется. Подтверждение снимаемо: человек, нажавший его по ошибке,
+ * иначе остался бы с зелёным шагом, который сам себе и выдал, — а весь смысл вендорских
+ * шагов в том, чтобы зелень означала что-то настоящее.
+ *
+ * Шаг-разрешение подтверждению не подлежит: у уведомлений и точных будильников состояние
+ * читает система, и запись «человек подтвердил» была бы ложью о факте, которого не было.
+ * Домен защищает от неё исключением, а не молчаливым no-op.
  */
-class ConfirmAutostartUseCase(private val store: OnboardingStateStore, private val log: OnboardingLog) {
+class ConfirmReliabilityStepUseCase(private val store: OnboardingStateStore, private val log: OnboardingLog) {
 
-    suspend operator fun invoke(confirmed: Boolean) {
-        store.setAutostartConfirmed(confirmed)
-        log.autostartConfirmedByUser(confirmed)
+    /** @throws IllegalArgumentException если шаг читается системой — подтверждать нечего. */
+    suspend operator fun invoke(step: PermissionStep, confirmed: Boolean) {
+        require(!step.verifiedBySystem) { "step $step is read from the system and cannot be confirmed" }
+        when (step) {
+            PermissionStep.APP_STARTUP -> store.setAppStartupConfirmed(confirmed)
+            PermissionStep.BATTERY_SAVING -> store.setBatterySavingConfirmed(confirmed)
+            PermissionStep.RECENTS_PIN -> store.setRecentsPinConfirmed(confirmed)
+            // Недостижимо после require, но перечисление закрыто не зря: новый вендорский
+            // шаг компилятор заставит добавить сюда, а не молча подтвердит не то.
+            PermissionStep.NOTIFICATIONS, PermissionStep.EXACT_ALARMS -> Unit
+        }
+        log.manualStepConfirmed(step, confirmed)
     }
 }
 

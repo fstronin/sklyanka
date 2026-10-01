@@ -220,6 +220,14 @@
                 <action android:name="android.intent.action.TIMEZONE_CHANGED" />
                 <action android:name="android.intent.action.TIME_SET" />
             </intent-filter>
+            <!--
+              Выдача права на точные будильники (SKL-85, НАП-16, И-20). Доставку события
+              гарантирует не всякая прошивка: при недоставке план восстановит ближайший
+              запуск, и это штатный путь восстановления, а не дефект.
+            -->
+            <intent-filter>
+                <action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" />
+            </intent-filter>
         </receiver>
 
         <!--

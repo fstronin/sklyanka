@@ -3,7 +3,10 @@ package ru.stohastika.sklyanka.acceptance.onboarding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.runComposeUiTest
+import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -11,15 +14,16 @@ import kotlinx.coroutines.test.setMain
 import ru.stohastika.sklyanka.acceptance.profile.TodayFromWorld
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
 import ru.stohastika.sklyanka.domain.intake.SweepReason
-import ru.stohastika.sklyanka.domain.onboarding.AutostartOpenResult
-import ru.stohastika.sklyanka.domain.onboarding.ConfirmAutostartUseCase
+import ru.stohastika.sklyanka.domain.onboarding.ConfirmReliabilityStepUseCase
 import ru.stohastika.sklyanka.domain.onboarding.LeaveOnboardingUseCase
 import ru.stohastika.sklyanka.domain.onboarding.OnboardingSource
 import ru.stohastika.sklyanka.domain.onboarding.PermissionStep
 import ru.stohastika.sklyanka.domain.onboarding.ReadPermissionChecklistUseCase
+import ru.stohastika.sklyanka.domain.onboarding.StepOpenResult
 import ru.stohastika.sklyanka.domain.reminder.BuildReminderDiagnosticsUseCase
 import ru.stohastika.sklyanka.domain.reminder.ExportReminderJournalUseCase
 import ru.stohastika.sklyanka.domain.reminder.ReadReminderReliabilityUseCase
+import ru.stohastika.sklyanka.domain.reminder.ReminderOutage
 import ru.stohastika.sklyanka.domain.schedule.PlanReason
 import ru.stohastika.sklyanka.domain.schedule.PlanScope
 import ru.stohastika.sklyanka.feature.onboarding.OnboardingExit
@@ -32,17 +36,19 @@ import ru.stohastika.sklyanka.feature.reminder.DiagnosticsScreen
 import ru.stohastika.sklyanka.feature.reminder.DiagnosticsUiState
 import ru.stohastika.sklyanka.feature.reminder.DiagnosticsViewModel
 import ru.stohastika.sklyanka.feature.reminder.ReminderCheckNow
+import ru.stohastika.sklyanka.feature.reminder.ReminderOutageNotice
 import ru.stohastika.sklyanka.feature.today.TodayScreen
 import ru.stohastika.sklyanka.feature.today.TodayUiState
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import java.time.Instant
+import ru.stohastika.sklyanka.feature.reminder.R as ReminderR
 
 /**
  * Стенд композиции онбординга (SKL-14, группа `@composition`).
  *
  * Здесь собирается настоящий `OnboardingViewModel` на мире сценария и настоящий экран
- * разрешений; рядом — «Сегодня», настройки и диагностика, потому что сценарии говорят
- * о нескольких экранах сразу (`SKL-26/TDD.md §4.3`). Экраны те же, что у продукта;
+ * «Настроить надёжность»; рядом — «Сегодня», настройки и диагностика, потому что сценарии
+ * говорят о нескольких экранах сразу (`SKL-26/TDD.md §4.3`). Экраны те же, что у продукта;
  * состояния — из мира настоящими портами.
  *
  * Обвязка модели повторена из стенда `feature-onboarding` — иначе и не может быть:
@@ -58,7 +64,7 @@ internal object OnboardingAppProbe {
     private var viewModel: OnboardingViewModel? = null
     private var diagnostics: DiagnosticsViewModel? = null
 
-    /** Системные переходы: кто открывался и чем кончился автозапуск. */
+    /** Системные переходы: кто открывался. */
     val navigator = AppRecordingNavigator()
 
     /** Шаги, для которых хозяин экрана показывает системный диалог (ПЛ-13). */
@@ -84,8 +90,8 @@ internal object OnboardingAppProbe {
 
     fun exit(world: AcceptanceWorld): OnboardingExit? = model(world).exit.value
 
-    fun open(world: AcceptanceWorld, source: OnboardingSource) {
-        model(world).start(source)
+    fun open(world: AcceptanceWorld, source: OnboardingSource, outageSince: Instant? = null) {
+        model(world).start(source, outageSince)
     }
 
     // --- Композиция ----------------------------------------------------------------------------
@@ -101,10 +107,14 @@ internal object OnboardingAppProbe {
                             if (model(world).onStepAction(step)) requested += step
                         }
                     },
-                    onAutostartConfirmed = { confirmed -> onAction { model(world).onAutostartConfirmed(confirmed) } },
+                    onManualConfirmed = { step, confirmed ->
+                        onAction { model(world).onManualConfirmed(step, confirmed) }
+                    },
                     onNext = { onAction { model(world).onNext() } },
                     onSkip = { onAction { model(world).onSkip() } },
+                    onDone = { onAction { model(world).onDone() } },
                 ),
+                toLocal = { instant -> instant.atZone(world.clock.zone).toLocalDateTime() },
             )
         }
     }
@@ -128,6 +138,33 @@ internal object OnboardingAppProbe {
             waitForIdle()
         }
         performed.forEach { it() }
+    }
+
+    /**
+     * «Исправить» в сообщении о перерыве — тем же маршрутом, что в `MainActivity` (ОВ-107).
+     *
+     * Сообщение — настоящий `ReminderOutageNotice`; нажатие открывает экран настройки
+     * с источником `OUTAGE_BANNER` и моментом перерыва: промежуточной диагностики
+     * в маршруте нет.
+     */
+    fun pressFixInTheOutageNotice(world: AcceptanceWorld) {
+        reset(world)
+        val since = requireNotNull(world.outageSince) { "the scenario must name the outage moment" }
+        runComposeUiTest {
+            setContent {
+                SklyankaTheme {
+                    ReminderOutageNotice(
+                        outage = ReminderOutage(since = since, missed = 1),
+                        onFix = { OnboardingAppProbe.open(world, OnboardingSource.OUTAGE_BANNER, since) },
+                        toLocal = { instant -> instant.atZone(world.clock.zone).toLocalDateTime() },
+                    )
+                }
+            }
+            val action = ApplicationProvider.getApplicationContext<android.content.Context>()
+                .getString(ReminderR.string.reminder_outage_notice_action)
+            onNodeWithText(action).performClick()
+            waitForIdle()
+        }
     }
 
     fun askToday(world: AcceptanceWorld, question: (ComposeUiTest, TodayUiState) -> Unit) {
@@ -161,6 +198,7 @@ internal object OnboardingAppProbe {
                         onRestartSetup = null,
                         onToggleSupport = {},
                         onFixPermission = {},
+                        onAlarmKindChange = {},
                         onBack = {},
                         toLocal = { instant: Instant -> instant.atZone(world.clock.zone).toLocalDateTime() },
                     )
@@ -178,11 +216,13 @@ internal object OnboardingAppProbe {
             hints = world.onboarding,
             requests = world.onboarding,
             time = world.clock.time,
+            vendor = world.onboarding,
         ),
-        confirmAutostart = ConfirmAutostartUseCase(world.onboarding, world.onboarding),
+        confirmStep = ConfirmReliabilityStepUseCase(world.onboarding, world.onboarding),
         leaveOnboarding = LeaveOnboardingUseCase(world.onboarding, world.onboarding),
         navigator = navigator,
         log = world.onboarding,
+        time = world.clock.time,
     )
 
     private fun buildDiagnostics(world: AcceptanceWorld): DiagnosticsViewModel = DiagnosticsViewModel(
@@ -193,6 +233,7 @@ internal object OnboardingAppProbe {
             plan = world.reminders.planSource(),
             reliability = ReadReminderReliabilityUseCase(world.system),
             medications = world.repositories.medicationStore,
+            measurement = world.reminders.measurement,
             time = world.clock.time,
         ),
         check = ReminderCheckNow { reason ->
@@ -205,6 +246,7 @@ internal object OnboardingAppProbe {
             files = world.transfer.files,
             time = world.clock.time,
         ),
+        settings = world.reminders.settingsStore,
         time = world.clock.time,
     )
 
@@ -219,20 +261,37 @@ internal class AppRecordingNavigator : SystemSettingsNavigator {
 
     val opened: MutableList<String> = mutableListOf()
 
-    override fun openExactAlarmSettings() {
+    var appStartupResult: StepOpenResult = StepOpenResult.OPENED
+    var batterySavingResult: StepOpenResult = StepOpenResult.OPENED
+
+    override fun openExactAlarmSettings(): StepOpenResult {
         opened += "exact-alarms"
+        return StepOpenResult.OPENED
     }
 
-    override fun openNotificationSettings() {
+    override fun openNotificationSettings(channelId: String?): StepOpenResult {
         opened += "notifications"
+        return StepOpenResult.OPENED
     }
 
-    override fun openAutostartSettings(): AutostartOpenResult {
-        opened += "autostart"
-        return AutostartOpenResult.OPENED
+    override fun openFullScreenIntentSettings(): StepOpenResult {
+        opened += "full-screen"
+        return StepOpenResult.OPENED
+    }
+
+    override fun openAppStartupSettings(): StepOpenResult {
+        opened += "app-startup"
+        return appStartupResult
+    }
+
+    override fun openBatterySavingSettings(): StepOpenResult {
+        opened += "battery-saving"
+        return batterySavingResult
     }
 
     fun clear() {
         opened.clear()
+        appStartupResult = StepOpenResult.OPENED
+        batterySavingResult = StepOpenResult.OPENED
     }
 }

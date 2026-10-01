@@ -2,7 +2,6 @@ package ru.stohastika.sklyanka.acceptance.onboarding
 
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
@@ -15,47 +14,48 @@ import io.cucumber.java.ru.Тогда
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
-import ru.stohastika.sklyanka.feature.onboarding.TAG_AUTOSTART_CONFIRM
-import ru.stohastika.sklyanka.feature.onboarding.TAG_CARD_AUTOSTART
+import ru.stohastika.sklyanka.feature.onboarding.TAG_CARD_APP_STARTUP
+import ru.stohastika.sklyanka.feature.onboarding.TAG_CARD_BATTERY_SAVING
 import ru.stohastika.sklyanka.feature.onboarding.TAG_CARD_EXACT_ALARMS
 import ru.stohastika.sklyanka.feature.onboarding.TAG_CARD_NOTIFICATIONS
+import ru.stohastika.sklyanka.feature.onboarding.TAG_CARD_RECENTS_PIN
+import ru.stohastika.sklyanka.feature.onboarding.TAG_CONFIRM_APP_STARTUP
+import ru.stohastika.sklyanka.feature.onboarding.TAG_CONFIRM_BATTERY_SAVING
+import ru.stohastika.sklyanka.feature.onboarding.TAG_CONFIRM_RECENTS_PIN
 
 /**
  * Экранные шаги приёмки удаления пробного напоминания (SKL-32, группа `@onboarding`).
  *
- * Шаги живут в `feature-onboarding`, потому что говорят об экране разрешений. Состояние
- * собирает тот же стенд [PermissionsStand], что у SKL-14: второй копии экрана в приёмке нет.
- * Проверки отсутствия называют удалённые строки и теги дословно: ресурсов у них больше нет,
- * и сценарий проверяет контракт, а не реализацию.
+ * Шаги живут в `feature-onboarding`, потому что говорят об экране «Настроить надёжность».
+ * Состояние собирает тот же стенд [PermissionsStand], что у SKL-14/SKL-84: второй копии
+ * экрана в приёмке нет. Проверки отсутствия называют удалённые строки и теги дословно:
+ * ресурсов у них больше нет, и сценарий проверяет контракт, а не реализацию.
  *
  * Русский текст в аннотациях — ключевые слова Gherkin, а не текст интерфейса.
  */
 @OptIn(ExperimentalTestApi::class)
 class TestReminderRemovalSteps(private val world: AcceptanceWorld) {
 
-    @Когда("^человек подтверждает, что настроил автозапуск$")
-    fun thePersonConfirmsTheAutostart() {
+    @Когда("^человек включает переключатель «Я настроил запуск приложений»$")
+    fun thePersonTurnsOnTheAppStartupSwitch() {
         PermissionsStand.act(world) {
-            onNodeWithTag(TAG_AUTOSTART_CONFIRM).performScrollTo().performClick()
+            onNodeWithTag(TAG_CONFIRM_APP_STARTUP).performScrollTo().performClick()
         }
     }
 
-    @Тогда("^карточка «Автозапуск без ограничений» считается выполненной$")
-    fun theAutostartCardIsDone() {
+    @Тогда("^на карточке «Запуск приложений» отметка «Подтверждено вами»$")
+    fun theAppStartupCardIsMarkedConfirmed() {
         assertTrue(
-            PermissionsStand.state(world).checklist?.autostart?.isResolved == true,
-            "the manual confirmation must close the third step (НАП-20)",
+            PermissionsStand.state(world).checklist?.appStartup?.confirmedByUser == true,
+            "the manual confirmation must close the vendor step (НАП-20)",
         )
-        PermissionsStand.ask(world) {
-            onNodeWithTag(TAG_AUTOSTART_CONFIRM).assertIsOn()
-        }
     }
 
-    @И("^цепочка из трёх шагов считается пройденной$")
-    fun theChainIsComplete() {
+    @И("^подтверждение человека закрыло шаг «Запуск приложений»$")
+    fun theAppStartupStepIsClosedByThePerson() {
         assertTrue(
-            PermissionsStand.state(world).checklist?.allResolved == true,
-            "all three steps must be resolved",
+            PermissionsStand.state(world).checklist?.appStartup?.isResolved == true,
+            "the person's word is what closes the vendor step (НАП-20)",
         )
     }
 
@@ -71,13 +71,17 @@ class TestReminderRemovalSteps(private val world: AcceptanceWorld) {
         assertFalse(hasText(TEST_REMINDER_LABEL), "the removed control must carry no label")
     }
 
-    @Но("^три карточки шагов и подтверждение автозапуска вручную остаются на месте$")
-    fun theStepsAndTheConfirmationStay() {
+    @Но("^пять карточек шагов и переключатели подтверждения остаются на месте$")
+    fun theStepsAndTheConfirmationsStay() {
         PermissionsStand.ask(world) {
             onNodeWithTag(TAG_CARD_NOTIFICATIONS).assertIsDisplayed()
             onNodeWithTag(TAG_CARD_EXACT_ALARMS).assertIsDisplayed()
-            onNodeWithTag(TAG_CARD_AUTOSTART).assertIsDisplayed()
-            onNodeWithTag(TAG_AUTOSTART_CONFIRM).assertIsDisplayed()
+            onNodeWithTag(TAG_CARD_APP_STARTUP).performScrollTo().assertIsDisplayed()
+            onNodeWithTag(TAG_CARD_BATTERY_SAVING).performScrollTo().assertIsDisplayed()
+            onNodeWithTag(TAG_CARD_RECENTS_PIN).performScrollTo().assertIsDisplayed()
+            onNodeWithTag(TAG_CONFIRM_APP_STARTUP).performScrollTo().assertIsDisplayed()
+            onNodeWithTag(TAG_CONFIRM_BATTERY_SAVING).performScrollTo().assertIsDisplayed()
+            onNodeWithTag(TAG_CONFIRM_RECENTS_PIN).performScrollTo().assertIsDisplayed()
         }
     }
 

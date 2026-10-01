@@ -1,3 +1,7 @@
+// Вкладка — перечисление рядом с панелью, а не отдельный файл: имя файла даёт компонент,
+// а объяснение, почему тип живёт здесь, — в его KDoc ниже.
+@file:Suppress("MatchingDeclarationName")
+
 package ru.stohastika.sklyanka.ui.component
 
 import androidx.compose.foundation.background

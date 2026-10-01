@@ -22,11 +22,13 @@ import ru.stohastika.sklyanka.domain.reminder.SnoozeReminderUseCase
 import ru.stohastika.sklyanka.domain.reminder.SweepAtDayBoundaryUseCase
 import ru.stohastika.sklyanka.domain.reminder.port.AlarmGateway
 import ru.stohastika.sklyanka.domain.reminder.port.DeferredReminders
+import ru.stohastika.sklyanka.domain.reminder.port.DeviceEnvironmentSource
 import ru.stohastika.sklyanka.domain.reminder.port.NoWatchGateway
 import ru.stohastika.sklyanka.domain.reminder.port.NotificationGateway
 import ru.stohastika.sklyanka.domain.reminder.port.PermissionStateReader
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderCardSource
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderJournal
+import ru.stohastika.sklyanka.domain.reminder.port.ReminderMeasurement
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPlanSource
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderSettings
 import ru.stohastika.sklyanka.domain.reminder.port.WatchGateway
@@ -37,10 +39,12 @@ import ru.stohastika.sklyanka.feature.onboarding.PermissionsActivity
 import ru.stohastika.sklyanka.feature.reminder.ReminderCheckNow
 import ru.stohastika.sklyanka.feature.reminder.ReminderSettingsFixer
 import ru.stohastika.sklyanka.feature.reminder.ReminderSetupEntry
+import ru.stohastika.sklyanka.platform.environment.AndroidDeviceEnvironment
 import ru.stohastika.sklyanka.platform.notification.ReminderNotifier
 import ru.stohastika.sklyanka.platform.permission.SystemPermissionStateReader
 import ru.stohastika.sklyanka.platform.reminder.AlarmManagerGateway
 import ru.stohastika.sklyanka.platform.reminder.AndroidReminderSettingsFixer
+import ru.stohastika.sklyanka.platform.reminder.BuildMeasurementMode
 import ru.stohastika.sklyanka.reminder.ReminderOutageDetector
 import ru.stohastika.sklyanka.reminder.ReminderPlanningTrigger
 import javax.inject.Qualifier
@@ -92,6 +96,7 @@ object ReminderModule {
         journal: ReminderJournal,
         deferred: DeferredReminders,
         sweepMissed: SweepMissedIntakesUseCase,
+        environment: DeviceEnvironmentSource,
         time: TimeSource,
     ): RescheduleRemindersUseCase = RescheduleRemindersUseCase(
         plan = plan,
@@ -100,6 +105,7 @@ object ReminderModule {
         journal = journal,
         deferred = deferred,
         sweepMissed = sweepMissed,
+        environment = environment,
         time = time,
     )
 
@@ -291,6 +297,7 @@ object ReminderModule {
         plan: ReminderPlanSource,
         reliability: ReadReminderReliabilityUseCase,
         medications: MedicationRepository,
+        measurement: ReminderMeasurement,
         time: TimeSource,
     ): BuildReminderDiagnosticsUseCase = BuildReminderDiagnosticsUseCase(
         journal = journal,
@@ -299,6 +306,7 @@ object ReminderModule {
         plan = plan,
         reliability = reliability,
         medications = medications,
+        measurement = measurement,
         time = time,
     )
 }
@@ -319,4 +327,14 @@ abstract class ReminderBindings {
     @Binds
     @Singleton
     abstract fun bindPermissionStateReader(impl: SystemPermissionStateReader): PermissionStateReader
+
+    /** Факты устройства для журнала среды — платформенное чтение `Build.*` (SKL-85). */
+    @Binds
+    @Singleton
+    abstract fun bindDeviceEnvironmentSource(impl: AndroidDeviceEnvironment): DeviceEnvironmentSource
+
+    /** Режим измерения — свойство сборки, а не данных (SKL-85, ПМ-20). */
+    @Binds
+    @Singleton
+    abstract fun bindReminderMeasurement(impl: BuildMeasurementMode): ReminderMeasurement
 }

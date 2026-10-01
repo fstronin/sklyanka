@@ -1,13 +1,15 @@
 package ru.stohastika.sklyanka.feature.onboarding
 
-import ru.stohastika.sklyanka.domain.onboarding.AutostartOpenResult
-import ru.stohastika.sklyanka.domain.onboarding.ConfirmAutostartUseCase
+import ru.stohastika.sklyanka.domain.onboarding.ConfirmReliabilityStepUseCase
 import ru.stohastika.sklyanka.domain.onboarding.LeaveOnboardingUseCase
 import ru.stohastika.sklyanka.domain.onboarding.OnboardingOutcome
 import ru.stohastika.sklyanka.domain.onboarding.OnboardingSource
 import ru.stohastika.sklyanka.domain.onboarding.PermissionChecklist
 import ru.stohastika.sklyanka.domain.onboarding.PermissionStep
 import ru.stohastika.sklyanka.domain.onboarding.ReadPermissionChecklistUseCase
+import ru.stohastika.sklyanka.domain.onboarding.StepOpenResult
+import ru.stohastika.sklyanka.domain.onboarding.VendorProfile
+import ru.stohastika.sklyanka.domain.onboarding.VendorProfileReader
 import ru.stohastika.sklyanka.domain.onboarding.port.AutostartHintReader
 import ru.stohastika.sklyanka.domain.onboarding.port.OnboardingLog
 import ru.stohastika.sklyanka.domain.onboarding.port.OnboardingStateStore
@@ -20,7 +22,7 @@ import java.time.Instant
 import java.time.ZoneId
 
 /**
- * Мир проверок экрана разрешений.
+ * Мир проверок экрана «Настроить надёжность».
  *
  * Сценарии собираются настоящими — из домена, — а подменяются только порты: расчёт состояния
  * цепочки проверяется тот же, что работает в продукте, а не его копия в тесте.
@@ -32,6 +34,7 @@ internal class OnboardingTestWorld(now: Instant = NOW, zone: ZoneId = ZoneId.of(
     val store = FakeStateStore()
     val hints = FakeHints()
     val requests = FakeRequestSupport()
+    val vendor = FakeVendor()
     val navigator = FakeNavigator()
     val log = RecordingLog()
 
@@ -41,14 +44,16 @@ internal class OnboardingTestWorld(now: Instant = NOW, zone: ZoneId = ZoneId.of(
         hints = hints,
         requests = requests,
         time = time,
+        vendor = vendor,
     )
 
     fun viewModel(): OnboardingViewModel = OnboardingViewModel(
         readChecklist = readChecklist,
-        confirmAutostart = ConfirmAutostartUseCase(store, log),
+        confirmStep = ConfirmReliabilityStepUseCase(store, log),
         leaveOnboarding = LeaveOnboardingUseCase(store, log),
         navigator = navigator,
         log = log,
+        time = time,
     )
 
     companion object {
@@ -74,8 +79,12 @@ internal class FakePermissions : PermissionStateReader {
     }
 }
 
-internal class FakeStateStore(private var seen: Boolean = false, private var confirmed: Boolean = false) :
-    OnboardingStateStore {
+internal class FakeStateStore(
+    private var seen: Boolean = false,
+    private var appStartup: Boolean = false,
+    private var batterySaving: Boolean = false,
+    private var recentsPin: Boolean = false,
+) : OnboardingStateStore {
 
     override suspend fun seen(): Boolean = seen
 
@@ -83,16 +92,33 @@ internal class FakeStateStore(private var seen: Boolean = false, private var con
         seen = true
     }
 
-    override suspend fun autostartConfirmed(): Boolean = confirmed
+    override suspend fun appStartupConfirmed(): Boolean = appStartup
 
-    override suspend fun setAutostartConfirmed(confirmed: Boolean) {
-        this.confirmed = confirmed
+    override suspend fun setAppStartupConfirmed(confirmed: Boolean) {
+        appStartup = confirmed
+    }
+
+    override suspend fun batterySavingConfirmed(): Boolean = batterySaving
+
+    override suspend fun setBatterySavingConfirmed(confirmed: Boolean) {
+        batterySaving = confirmed
+    }
+
+    override suspend fun recentsPinConfirmed(): Boolean = recentsPin
+
+    override suspend fun setRecentsPinConfirmed(confirmed: Boolean) {
+        recentsPin = confirmed
     }
 }
 
 internal class FakeHints(var batteryIgnored: Boolean = false) : AutostartHintReader {
 
     override fun batteryOptimizationIgnored(): Boolean = batteryIgnored
+}
+
+internal class FakeVendor(var vendor: VendorProfile = VendorProfile.EMUI) : VendorProfileReader {
+
+    override fun profile(): VendorProfile = vendor
 }
 
 internal class FakeRequestSupport : PermissionRequestSupport {
@@ -103,28 +129,44 @@ internal class FakeRequestSupport : PermissionRequestSupport {
     override fun canRequestFromCode(step: PermissionStep): Boolean = step in requestable
 }
 
-internal class FakeNavigator(var autostartResult: AutostartOpenResult = AutostartOpenResult.OPENED) :
-    SystemSettingsNavigator {
+internal class FakeNavigator(
+    var appStartupResult: StepOpenResult = StepOpenResult.OPENED,
+    var batterySavingResult: StepOpenResult = StepOpenResult.OPENED,
+) : SystemSettingsNavigator {
 
     val opened: MutableList<String> = mutableListOf()
 
-    override fun openExactAlarmSettings() {
+    override fun openExactAlarmSettings(): StepOpenResult {
         opened += EXACT_ALARMS
+        return StepOpenResult.OPENED
     }
 
-    override fun openNotificationSettings() {
+    override fun openNotificationSettings(channelId: String?): StepOpenResult {
         opened += NOTIFICATIONS
+        return StepOpenResult.OPENED
     }
 
-    override fun openAutostartSettings(): AutostartOpenResult {
-        opened += AUTOSTART
-        return autostartResult
+    override fun openFullScreenIntentSettings(): StepOpenResult {
+        opened += FULL_SCREEN
+        return StepOpenResult.OPENED
+    }
+
+    override fun openAppStartupSettings(): StepOpenResult {
+        opened += APP_STARTUP
+        return appStartupResult
+    }
+
+    override fun openBatterySavingSettings(): StepOpenResult {
+        opened += BATTERY_SAVING
+        return batterySavingResult
     }
 
     companion object {
         const val EXACT_ALARMS = "exact-alarms"
         const val NOTIFICATIONS = "notifications"
-        const val AUTOSTART = "autostart"
+        const val FULL_SCREEN = "full-screen"
+        const val APP_STARTUP = "app-startup"
+        const val BATTERY_SAVING = "battery-saving"
     }
 }
 
@@ -144,12 +186,16 @@ internal class RecordingLog : OnboardingLog {
         records += "result:$step:$granted"
     }
 
-    override fun autostartSettingsOpened(result: AutostartOpenResult) {
-        records += "autostart:$result"
+    override fun vendorStepOpened(step: PermissionStep, result: StepOpenResult) {
+        records += "vendor:$step:$result"
     }
 
-    override fun autostartConfirmedByUser(confirmed: Boolean) {
-        records += "confirmed:$confirmed"
+    override fun manualStepConfirmed(step: PermissionStep, confirmed: Boolean) {
+        records += "manual:$step:$confirmed"
+    }
+
+    override fun reliabilityRouteTaken(source: OnboardingSource, firstUnresolved: PermissionStep?) {
+        records += "route:$source:$firstUnresolved"
     }
 
     override fun onboardingLeft(outcome: OnboardingOutcome, checklist: PermissionChecklist) {

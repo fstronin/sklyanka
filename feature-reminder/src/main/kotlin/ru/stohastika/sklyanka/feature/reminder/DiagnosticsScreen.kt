@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import ru.stohastika.sklyanka.domain.reminder.AlarmKind
 import ru.stohastika.sklyanka.domain.reminder.ReminderDeviationWords
 import ru.stohastika.sklyanka.domain.reminder.ReminderDiagnostics
 import ru.stohastika.sklyanka.domain.reminder.ReminderLogEntry
@@ -30,11 +31,13 @@ import ru.stohastika.sklyanka.domain.reminder.RescheduleReason
 import ru.stohastika.sklyanka.domain.reminder.port.PermissionState
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPermission
 import ru.stohastika.sklyanka.ui.component.Banner
+import ru.stohastika.sklyanka.ui.component.ChipState
 import ru.stohastika.sklyanka.ui.component.QuietButton
 import ru.stohastika.sklyanka.ui.component.ScreenHeader
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderKind
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderLabels
 import ru.stohastika.sklyanka.ui.component.SecondaryButton
+import ru.stohastika.sklyanka.ui.component.SklyankaChip
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaShapes
 import ru.stohastika.sklyanka.ui.token.SklyankaSpacing
@@ -67,6 +70,11 @@ fun DiagnosticsScreen(
     onRestartSetup: (() -> Unit)?,
     onToggleSupport: () -> Unit,
     onFixPermission: (ReminderPermission) -> Unit,
+    /**
+     * Смена варианта измерения пилота (SKL-85). В обычной сборке недостижима:
+     * переключатель показывается только при `measurementAvailable`.
+     */
+    onAlarmKindChange: (AlarmKind) -> Unit,
     onBack: () -> Unit,
     toLocal: (Instant) -> LocalDateTime,
     modifier: Modifier = Modifier,
@@ -95,7 +103,7 @@ fun DiagnosticsScreen(
         ) {
             item { Warnings(snapshot, toLocal) }
             item { ReliableLine(snapshot) }
-            item { Permissions(snapshot, onFixPermission) }
+            item { Permissions(snapshot, state.fixFallback, onFixPermission) }
             item { Actions(state, onCheckNow) }
             item { WeekSummary(snapshot.week) }
             item { LastSimple(snapshot, toLocal) }
@@ -104,6 +112,7 @@ fun DiagnosticsScreen(
             if (state.supportExpanded) {
                 item { LastShown(snapshot, toLocal) }
                 item { NextPlanned(snapshot, toLocal) }
+                item { MeasurementVariant(snapshot, onAlarmKindChange) }
                 item { OnTime(snapshot.onTime) }
                 item { LastReschedule(snapshot, toLocal) }
                 item { SectionTitle(stringResource(R.string.diagnostics_section_journal)) }
@@ -136,7 +145,9 @@ private fun Warnings(snapshot: ReminderDiagnostics, toLocal: (Instant) -> LocalD
                 text = stringResource(
                     when (warning) {
                         ReminderWarning.NOTIFICATIONS_OFF -> R.string.diagnostics_warning_notifications
+                        ReminderWarning.NOTIFICATION_CHANNEL_OFF -> R.string.diagnostics_warning_channel
                         ReminderWarning.EXACT_ALARMS_OFF -> R.string.diagnostics_warning_exact_alarms
+                        ReminderWarning.FULL_SCREEN_INTENT_OFF -> R.string.diagnostics_warning_full_screen
                         ReminderWarning.BOTH_OFF -> R.string.diagnostics_warning_both
                     },
                 ),
@@ -176,7 +187,11 @@ private fun ReliableLine(snapshot: ReminderDiagnostics) {
  * честно говорит «проверьте вручную» (НАП-20).
  */
 @Composable
-private fun Permissions(snapshot: ReminderDiagnostics, onFixPermission: (ReminderPermission) -> Unit) {
+private fun Permissions(
+    snapshot: ReminderDiagnostics,
+    fixFallback: ReminderPermission?,
+    onFixPermission: (ReminderPermission) -> Unit,
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -196,7 +211,7 @@ private fun Permissions(snapshot: ReminderDiagnostics, onFixPermission: (Reminde
         }
         ReminderPermission.entries.forEach { permission ->
             val state = snapshot.permissions[permission] ?: PermissionState.UNKNOWN
-            PermissionRow(permission, state, onFixPermission)
+            PermissionRow(permission, state, fixFallback == permission, onFixPermission)
         }
     }
 }
@@ -205,6 +220,7 @@ private fun Permissions(snapshot: ReminderDiagnostics, onFixPermission: (Reminde
 private fun PermissionRow(
     permission: ReminderPermission,
     state: PermissionState,
+    fixFailed: Boolean,
     onFixPermission: (ReminderPermission) -> Unit,
 ) {
     val colors = SklyankaTheme.colors
@@ -234,6 +250,13 @@ private fun PermissionRow(
     // Отказ в доступе к политике «Не беспокоить» — ограничение, а не ошибка (НАП-17).
     if (permission == ReminderPermission.DND_POLICY_ACCESS && state != PermissionState.GRANTED) {
         Value(stringResource(R.string.diagnostics_dnd_hint))
+    }
+    // Системный экран не открылся — не молчим: под строкой остаётся ручной путь (НФТ-8, ОВ-106).
+    if (fixFailed) {
+        Value(
+            text = stringResource(R.string.diagnostics_fallback_app_startup),
+            modifier = Modifier.testTag(TAG_FIX_FALLBACK),
+        )
     }
 }
 
@@ -428,6 +451,34 @@ private fun NextPlanned(snapshot: ReminderDiagnostics, toLocal: (Instant) -> Loc
         val next = snapshot.nextAt
         Value(if (next == null) stringResource(R.string.diagnostics_none) else toLocal(next).journalMoment())
         Value(stringResource(R.string.diagnostics_scheduled_total, snapshot.totalScheduled))
+        // Пояснение системного индикатора будильника стоит там, где человек смотрит
+        // на следующее напоминание (НАП-42, ОВ-110): без него признак в статус-баре
+        // выглядит дефектом, а не выбранным механизмом.
+        if (next != null) Value(stringResource(R.string.diagnostics_next_alarm_indicator))
+    }
+}
+
+/**
+ * Вариант измерения пилота (SKL-85, `TDD.md §5.12`).
+ *
+ * Строки нет в обычной сборке вовсе — переключатель существует только при
+ * `measurementAvailable` (ПМ-20, ADR-0011). Смена варианта — событие перепланирования
+ * (НАП-11), поэтому нажатие сразу пересобирает план и оставляет след в журнале.
+ */
+@Composable
+private fun MeasurementVariant(snapshot: ReminderDiagnostics, onAlarmKindChange: (AlarmKind) -> Unit) {
+    if (!snapshot.measurementAvailable) return
+    Section(stringResource(R.string.diagnostics_measurement_row), TAG_MEASUREMENT) {
+        Row(horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Small)) {
+            AlarmKind.entries.forEach { kind ->
+                SklyankaChip(
+                    text = kind.label(),
+                    state = if (kind == snapshot.alarmKind) ChipState.Selected else ChipState.Unselected,
+                    onClick = { onAlarmKindChange(kind) },
+                    modifier = Modifier.testTag(TAG_MEASUREMENT_OPTION),
+                )
+            }
+        }
     }
 }
 
@@ -466,7 +517,7 @@ private fun JournalRow(entry: ReminderLogEntry, toLocal: (Instant) -> LocalDateT
             style = SklyankaType.Caption,
             color = SklyankaTheme.colors.textMuted,
         )
-        Text(text = entry.event.label(), style = SklyankaType.Body, color = SklyankaTheme.colors.text)
+        Text(text = entry.journalLabel(), style = SklyankaType.Body, color = SklyankaTheme.colors.text)
         entry.deviationSeconds?.let {
             Value(stringResource(R.string.diagnostics_deviation, it))
         }
@@ -497,8 +548,8 @@ private fun SectionTitle(title: String) {
 }
 
 @Composable
-private fun Value(text: String) {
-    Text(text = text, style = SklyankaType.Body, color = SklyankaTheme.colors.textMuted)
+private fun Value(text: String, modifier: Modifier = Modifier) {
+    Text(text = text, style = SklyankaType.Body, color = SklyankaTheme.colors.textMuted, modifier = modifier)
 }
 
 /** Отклонение словами: «вовремя» или «с опозданием на N мин» (ОВ-49). */
@@ -521,6 +572,7 @@ const val TAG_RELIABLE = "diagnostics_reliable"
 const val TAG_ALL_GRANTED = "diagnostics_all_granted"
 const val TAG_PERMISSION_ROW = "diagnostics_permission_row"
 const val TAG_FIX = "diagnostics_fix"
+const val TAG_FIX_FALLBACK = "diagnostics_fix_fallback"
 const val TAG_CHECK_NOW = "diagnostics_check_now"
 const val TAG_CHECK_OUTCOME = "diagnostics_check_outcome"
 const val TAG_WEEK_SUMMARY = "diagnostics_week_summary"
@@ -536,3 +588,5 @@ const val TAG_EXPORT_OUTCOME = "diagnostics_export_outcome"
 const val TAG_RESTART_SETUP = "diagnostics_restart_setup"
 const val TAG_PERMISSIONS = "diagnostics_permissions"
 const val TAG_JOURNAL_ROW = "diagnostics_journal_row"
+const val TAG_MEASUREMENT = "diagnostics_measurement"
+const val TAG_MEASUREMENT_OPTION = "diagnostics_measurement_option"
