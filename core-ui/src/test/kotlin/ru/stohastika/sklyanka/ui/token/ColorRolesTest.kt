@@ -29,17 +29,17 @@ class ColorRolesTest {
     }
 
     /**
-     * §5: в тёмной среде переопределяются ровно восемь ролей — плюс две нейтральные
+     * §5: в тёмной среде переопределяются ровно девять ролей — плюс две нейтральные
      * роли профиля, которые своего цвета не вводят и повторяют фон среды.
      *
      * Тест падает и когда тёмную роль забыли, и когда завели лишнюю: неиспользуемый
      * тёмный токен — приглашение нарисовать экран, которого в объёме нет.
      */
     @Test
-    fun `dark set overrides exactly the eight declared roles`() {
+    fun `dark set overrides exactly the nine declared roles`() {
         val changed = light.keys.filter { role -> light[role] != dark[role] }.toSet()
         assertEquals((DARK_OVERRIDDEN_ROLES + NEUTRAL_PROFILE_ROLES).toSet(), changed)
-        assertEquals(EIGHT_DARK_TOKENS, DARK_OVERRIDDEN_ROLES.size)
+        assertEquals(NINE_DARK_TOKENS, DARK_OVERRIDDEN_ROLES.size)
     }
 
     /**
@@ -81,8 +81,8 @@ class ColorRolesTest {
 
     private companion object {
 
-        /** §5 называет восемь тёмных токенов; число проверяется, а не подразумевается. */
-        const val EIGHT_DARK_TOKENS = 8
+        /** §5 называет девять тёмных токенов; число проверяется, а не подразумевается. */
+        const val NINE_DARK_TOKENS = 9
 
         /**
          * Имена и значения ролей из `toString()` набора.

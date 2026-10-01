@@ -88,18 +88,21 @@ fun IntakeCard(
             // Ряд действий раскрывается только когда время наступило: карточка
             // «требует действия» отличается не одной лишь рамкой (§6.1, вывод 5).
             // При крупном системном шрифте кнопки встают друг под друга: подпись
-            // главного действия не сжимается (§6.3, НФТ-31).
-            StackingButtons(
-                primary = {
+            // главного действия не сжимается (§6.3, НФТ-31). Равные половины и общая
+            // форма — карточная: «Принято» и «Пропустить» одного роста (ОВ-90).
+            StackingEqualButtons(
+                first = {
                     PrimaryButton(
                         text = stringResource(R.string.action_taken),
                         onClick = { actions.onMark?.invoke() },
+                        form = ButtonForm.Card,
                     )
                 },
-                secondary = {
+                second = {
                     SecondaryButton(
                         text = stringResource(R.string.action_skip),
                         onClick = { actions.onSkip?.invoke() },
+                        form = ButtonForm.Card,
                     )
                 },
                 gap = SklyankaSpacing.Default,
@@ -128,7 +131,7 @@ private fun IconPlate(state: IntakeCardState) {
             .background(plate, SklyankaShapes.Button),
         contentAlignment = Alignment.Center,
     ) {
-        MedicationGlyph(color = glyph)
+        MedicationPictogram(color = glyph)
     }
 }
 

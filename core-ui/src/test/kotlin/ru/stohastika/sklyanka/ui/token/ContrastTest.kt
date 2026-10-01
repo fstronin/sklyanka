@@ -43,6 +43,7 @@ class ContrastTest {
             "accent on background" to contrastRatio(light.accent, light.background),
             "accent on surface" to contrastRatio(light.accent, light.surface),
             "surface on accent" to contrastRatio(light.surface, light.accent),
+            "onAccent on accent" to contrastRatio(light.onAccent, light.accent),
             "surface on danger" to contrastRatio(light.surface, light.danger),
             "taken on surface" to contrastRatio(light.taken, light.surface),
             "taken on takenSoft" to contrastRatio(light.taken, light.takenSoft),
@@ -120,6 +121,29 @@ class ContrastTest {
         )
     }
 
+    /**
+     * Подпись акцентной кнопки читается в обеих средах (ОВ-90).
+     *
+     * Светлая пара — [Palette.Surface] на [Palette.Accent] (5,05). В тёмной среде
+     * подпись набирается фоном тёмной среды: поверхность на `AccentOnDark` даёт 3,44
+     * и не проходит AA — ровно поэтому роль `onAccent` и заведена.
+     */
+    @Test
+    fun `the accent button caption passes AA in both environments`() {
+        assertTrue(
+            "onAccent on accent (light): ${contrastRatio(light.onAccent, light.accent)}",
+            contrastRatio(light.onAccent, light.accent) >= AA_NORMAL,
+        )
+        assertTrue(
+            "onAccent on accent (dark): ${contrastRatio(dark.onAccent, dark.accent)}",
+            contrastRatio(dark.onAccent, dark.accent) >= AA_NORMAL,
+        )
+        assertTrue(
+            "Surface on AccentOnDark must stay below AA — that is why onAccent is dark",
+            contrastRatio(Palette.Surface, Palette.AccentOnDark) < AA_NORMAL,
+        )
+    }
+
     @Test
     fun `dark text stays readable`() {
         assertTrue(contrastRatio(dark.text, dark.background) >= AA_NORMAL)
@@ -168,6 +192,7 @@ class ContrastTest {
             Pair("accent on background", Palette.Accent, Palette.Background, 4.73),
             Pair("accent on surface", Palette.Accent, Palette.Surface, 5.05),
             Pair("surface on accent", Palette.Surface, Palette.Accent, 5.05),
+            Pair("onAccent on accentOnDark", Palette.DarkBackground, Palette.AccentOnDark, 4.61),
             Pair("surface on danger", Palette.Surface, Palette.ProfileForeign, 7.29),
             Pair("taken on surface", Palette.Taken, Palette.Surface, 7.22),
             Pair("taken on takenSoft", Palette.Taken, Palette.TakenSoft, 6.10),

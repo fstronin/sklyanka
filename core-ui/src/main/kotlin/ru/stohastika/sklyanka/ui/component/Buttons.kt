@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -20,7 +19,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import ru.stohastika.sklyanka.ui.modifier.minTouchTarget
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
-import ru.stohastika.sklyanka.ui.token.SklyankaShapes
 import ru.stohastika.sklyanka.ui.token.SklyankaSizes
 import ru.stohastika.sklyanka.ui.token.SklyankaType
 import ru.stohastika.sklyanka.ui.token.pressedTint
@@ -43,6 +41,7 @@ fun PrimaryButton(
     modifier: Modifier = Modifier,
     state: ButtonState = ButtonState.Normal,
     kind: PrimaryButtonKind = PrimaryButtonKind.Primary,
+    form: ButtonForm = ButtonForm.Screen,
 ) {
     val colors = SklyankaTheme.colors
     val interactionSource = remember { MutableInteractionSource() }
@@ -63,12 +62,12 @@ fun PrimaryButton(
                 showPressed -> pressedTint(base)
                 else -> base
             },
-            content = if (state.isActive) colors.surface else colors.textDisabled,
+            content = if (state.isActive) colors.onAccent else colors.textDisabled,
             border = null,
-            shape = SklyankaShapes.Large,
+            shape = form.shape,
         ),
         modifier = modifier
-            .heightIn(min = SklyankaSizes.PrimaryButtonHeight)
+            .heightIn(min = form.height)
             .testTag(TAG_PRIMARY_BUTTON),
     )
 }
@@ -79,10 +78,10 @@ fun PrimaryButton(
  * Прозрачного фона нет вовсе — не нарисован; граница `lineInteractive` заметнее
  * обычной линии, иначе кнопка не читается как кнопка.
  *
- * [shape] по умолчанию карточный: кнопка внутри карточки — 44 dp и радиус 13.
- * Экранная кнопка задаёт `SklyankaShapes.Large` (16) и высоту
- * `SklyankaSizes.PrimaryButtonHeight` (52) сама — дизайн-система допускает обе формы
- * (§4.3), а значение по умолчанию не трогает ни один существующий вызов.
+ * [form] по умолчанию карточный: кнопка внутри карточки — 44 dp и радиус 13.
+ * Экранная кнопка задаёт `ButtonForm.Screen` (52 dp, радиус 16) сама — дизайн-система
+ * допускает обе формы (§4.3), а значение по умолчанию не трогает ни один существующий
+ * вызов.
  */
 @Composable
 fun SecondaryButton(
@@ -90,7 +89,7 @@ fun SecondaryButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     state: ButtonState = ButtonState.Normal,
-    shape: RoundedCornerShape = SklyankaShapes.Button,
+    form: ButtonForm = ButtonForm.Card,
 ) {
     val colors = SklyankaTheme.colors
     val interactionSource = remember { MutableInteractionSource() }
@@ -105,10 +104,10 @@ fun SecondaryButton(
             background = if (showPressed && state.isActive) colors.neutralSoft else null,
             content = if (state.isActive) colors.text else colors.textDisabled,
             border = if (state.isActive) colors.lineInteractive else colors.line,
-            shape = shape,
+            shape = form.shape,
         ),
         modifier = modifier
-            .heightIn(min = SklyankaSizes.SecondaryButtonHeight)
+            .heightIn(min = form.height)
             .testTag(TAG_SECONDARY_BUTTON),
     )
 }

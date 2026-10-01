@@ -36,6 +36,12 @@ data class SklyankaColors(
     val accentBorder: Color,
     val onAccentSoft: Color,
     /**
+     * Подпись на акцентной заливке (ОВ-90). Роль, а не новый цвет: значения —
+     * существующие Surface (#FFFFFF) и DarkBackground (#191512). В тёмной среде
+     * Surface на AccentOnDark даёт 3,44 — ниже AA; тёмная пара даёт 4,61.
+     */
+    val onAccent: Color,
+    /**
      * Цвет предупреждения: критический остаток, значок баннера остатка.
      *
      * Роль добавлена сверх списка TDD §4.1. §1.1 отдаёт этим двум смыслам один и тот
@@ -96,6 +102,7 @@ fun lightColors(): SklyankaColors = SklyankaColors(
     accentSoft = Palette.AccentSoft,
     accentBorder = Palette.AccentBorder,
     onAccentSoft = Palette.OnAccentSoft,
+    onAccent = Palette.Surface,
     warning = Palette.ProfileForeign,
     danger = Palette.ProfileForeign,
     taken = Palette.Taken,
@@ -116,7 +123,7 @@ fun lightColors(): SklyankaColors = SklyankaColors(
  * Тёмный набор — контекст двух поверхностей, а не вторая тема оформления
  * (`docs/spec/08-design-system.md` §5, ОВ-9).
  *
- * Своими тёмными токенами переопределяются ровно восемь ролей §5; остальные
+ * Своими тёмными токенами переопределяются ровно девять ролей §5; остальные
  * наследуются от светлого набора и в тёмной среде не встречаются. Тёмный токен
  * «на всякий случай» — приглашение нарисовать экран, которого в объёме нет.
  *
@@ -138,6 +145,9 @@ fun darkColors(): SklyankaColors = lightColors().copy(
     line = Palette.LineDark,
     accent = Palette.AccentOnDark,
     accentSoft = Palette.AccentSoftOnDark,
+    // Подпись на акцентной заливке в тёмной среде — фон среды, а не поверхность:
+    // Surface на AccentOnDark даёт 3,44 и не читается (ОВ-90).
+    onAccent = Palette.DarkBackground,
     // Нейтральные роли профиля повторяют фон среды, а не заводят свой цвет: у
     // владельца подкраски нет, и «нет подкраски» в тёмной среде — это тёмный фон
     // (ПРФ-16). Оставленный светлым `profileHeader` давал светлую шапку на тёмном
@@ -146,7 +156,7 @@ fun darkColors(): SklyankaColors = lightColors().copy(
     profileHeader = Palette.DarkBackground,
 )
 
-/** Имена восьми ролей, переопределяемых в тёмной среде своими тёмными токенами (§5). */
+/** Имена девяти ролей, переопределяемых в тёмной среде своими тёмными токенами (§5). */
 val DARK_OVERRIDDEN_ROLES: List<String> = listOf(
     "background",
     "surface",
@@ -156,12 +166,13 @@ val DARK_OVERRIDDEN_ROLES: List<String> = listOf(
     "line",
     "accent",
     "accentSoft",
+    "onAccent",
 )
 
 /**
  * Нейтральные роли профиля: подкраска, которой у владельца нет (ПРФ-16).
  *
- * Нового цвета они не вводят и в счёт восьми тёмных токенов §5 не идут — они равны
+ * Нового цвета они не вводят и в счёт девяти тёмных токенов §5 не идут — они равны
  * фону своей среды. Поэтому и меняются вместе с ним: роль «подкраски нет» обязана
  * означать «как фон», а не «как светлый фон».
  */

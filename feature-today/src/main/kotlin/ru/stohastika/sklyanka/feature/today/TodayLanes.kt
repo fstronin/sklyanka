@@ -23,6 +23,7 @@ import ru.stohastika.sklyanka.domain.today.GroupAction
 import ru.stohastika.sklyanka.domain.today.IntakeItem
 import ru.stohastika.sklyanka.domain.today.IntakePresentation
 import ru.stohastika.sklyanka.domain.today.TimeGroup
+import ru.stohastika.sklyanka.ui.component.ButtonForm
 import ru.stohastika.sklyanka.ui.component.IntakeCard
 import ru.stohastika.sklyanka.ui.component.IntakeCardActions
 import ru.stohastika.sklyanka.ui.component.IntakeCardLabels
@@ -30,7 +31,6 @@ import ru.stohastika.sklyanka.ui.component.IntakeCardState
 import ru.stohastika.sklyanka.ui.component.PrimaryButton
 import ru.stohastika.sklyanka.ui.component.SecondaryButton
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
-import ru.stohastika.sklyanka.ui.token.SklyankaShapes
 import ru.stohastika.sklyanka.ui.token.SklyankaSizes
 import ru.stohastika.sklyanka.ui.token.SklyankaSpacing
 import ru.stohastika.sklyanka.ui.token.SklyankaType
@@ -119,7 +119,7 @@ private fun GroupMarkButton(
             SecondaryButton(
                 text = label,
                 onClick = onArm,
-                shape = SklyankaShapes.Large,
+                form = ButtonForm.Screen,
                 modifier = button,
             )
         }

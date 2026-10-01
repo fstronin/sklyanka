@@ -4,11 +4,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import ru.stohastika.sklyanka.ui.component.ButtonForm
 import ru.stohastika.sklyanka.ui.component.PrimaryButton
 import ru.stohastika.sklyanka.ui.component.SecondaryButton
 import ru.stohastika.sklyanka.ui.component.SklyankaMark
@@ -51,6 +52,7 @@ fun ReminderScreen(state: ReminderUiState.Card, actions: ReminderActions, modifi
         modifier = modifier
             .fillMaxSize()
             .background(colors.background)
+            .systemBarsPadding()
             .padding(horizontal = SklyankaSpacing.Screen)
             .testTag(TAG_REMINDER),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -182,18 +184,25 @@ private fun IntakeRow(row: ReminderRow, actions: ReminderActions) {
     ) {
         Text(text = row.name, style = SklyankaType.Subtitle, color = colors.text)
         Text(text = row.doseLine(), style = SklyankaType.Body, color = colors.textMuted)
-        Row(horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Medium)) {
-            PrimaryButton(
-                text = stringResource(R.string.reminder_row_taken),
-                onClick = { actions.onTaken(row.intakeId) },
-                modifier = Modifier.weight(1f),
-            )
-            SecondaryButton(
-                text = stringResource(R.string.reminder_row_skip),
-                onClick = { actions.onSkipped(row.intakeId) },
-                modifier = Modifier.weight(1f),
-            )
-        }
+        // Пара строки — карточная форма: кнопки внутри карточки делят её пополам
+        // и одного роста 44 dp (ОВ-90, §4.3).
+        StackingEqualButtons(
+            first = {
+                PrimaryButton(
+                    text = stringResource(R.string.reminder_row_taken),
+                    onClick = { actions.onTaken(row.intakeId) },
+                    form = ButtonForm.Card,
+                )
+            },
+            second = {
+                SecondaryButton(
+                    text = stringResource(R.string.reminder_row_skip),
+                    onClick = { actions.onSkipped(row.intakeId) },
+                    form = ButtonForm.Card,
+                )
+            },
+            gap = SklyankaSpacing.Medium,
+        )
     }
 }
 
@@ -209,17 +218,20 @@ private fun Actions(state: ReminderUiState.Card, actions: ReminderActions) {
         PrimaryButton(
             text = stringResource(ru.stohastika.sklyanka.ui.R.string.action_taken),
             onClick = actions.onTakenAll,
+            form = ButtonForm.Screen,
             modifier = Modifier
                 .fillMaxWidth()
                 .testTag(TAG_ACTION_TAKEN),
         )
         // При крупном шрифте кнопки встают друг под друга во всю ширину: сжатые
         // до половин, они переносили «Отложить 15 мин» на вторую строку (§6.3, SKL-61).
+        // Форма — экранная: нижний ряд вне карточки (52 dp / 16, ОВ-90).
         StackingEqualButtons(
             first = {
                 SecondaryButton(
                     text = snoozeLabel(state.snoozeMinutes),
                     onClick = actions.onSnooze,
+                    form = ButtonForm.Screen,
                     modifier = Modifier.testTag(TAG_ACTION_SNOOZE),
                 )
             },
@@ -227,6 +239,7 @@ private fun Actions(state: ReminderUiState.Card, actions: ReminderActions) {
                 SecondaryButton(
                     text = stringResource(ru.stohastika.sklyanka.ui.R.string.action_skip),
                     onClick = actions.onSkippedAll,
+                    form = ButtonForm.Screen,
                     modifier = Modifier.testTag(TAG_ACTION_SKIP),
                 )
             },

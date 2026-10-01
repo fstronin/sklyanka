@@ -96,68 +96,6 @@ fun StackingRow(
 }
 
 /**
- * Пара кнопок, встающая в столбец, когда подписи не помещаются рядом.
- *
- * Пока обе подписи помещаются в строку, раскладка та же, что у обычного ряда:
- * второстепенная кнопка занимает нужное подписи, основная — остаток. Как только
- * остатка перестаёт хватать на самое длинное слово подписи, кнопки встают друг под
- * друга во всю ширину: подпись главного действия экрана не рвётся и не обрезается
- * (§6.3, «кнопка „Принято“ не сжимается»).
- */
-@Composable
-internal fun StackingButtons(
-    primary: @Composable () -> Unit,
-    secondary: @Composable () -> Unit,
-    gap: Dp,
-    modifier: Modifier = Modifier,
-) {
-    Layout(
-        contents = listOf(primary, secondary),
-        modifier = modifier.fillMaxWidth(),
-    ) { (primaryMeasurables, secondaryMeasurables), constraints ->
-        val gapPx = gap.roundToPx()
-        val primaryMeasurable = primaryMeasurables.first()
-        val secondaryMeasurable = secondaryMeasurables.first()
-        val primaryFloor = primaryMeasurable.longestWord()
-        val secondaryFloor = secondaryMeasurable.longestWord()
-        val available = if (constraints.hasBoundedWidth) {
-            constraints.maxWidth
-        } else {
-            primaryFloor + gapPx + secondaryFloor
-        }
-        val stacked = primaryFloor + gapPx + secondaryFloor > available
-
-        val primaryPlaceable: Placeable
-        val secondaryPlaceable: Placeable
-        if (stacked) {
-            primaryPlaceable = primaryMeasurable.measure(Constraints.fixedWidth(available))
-            secondaryPlaceable = secondaryMeasurable.measure(Constraints.fixedWidth(available))
-        } else {
-            // Второстепенная кнопка берёт нужное подписи, но не отбирает у основной
-            // её собственное слово; основная занимает остаток — как `weight(1f)`.
-            secondaryPlaceable = secondaryMeasurable
-                .measure(Constraints(maxWidth = (available - gapPx - primaryFloor).coerceAtLeast(0)))
-            primaryPlaceable = primaryMeasurable
-                .measure(Constraints.fixedWidth((available - gapPx - secondaryPlaceable.width).coerceAtLeast(0)))
-        }
-
-        val height = if (stacked) {
-            primaryPlaceable.height + gapPx + secondaryPlaceable.height
-        } else {
-            maxOf(primaryPlaceable.height, secondaryPlaceable.height)
-        }
-        layout(available, height) {
-            primaryPlaceable.place(0, 0)
-            if (stacked) {
-                secondaryPlaceable.place(0, primaryPlaceable.height + gapPx)
-            } else {
-                secondaryPlaceable.place(available - secondaryPlaceable.width, 0)
-            }
-        }
-    }
-}
-
-/**
  * Пара равных кнопок, встающая в столбец, когда подписи перестают помещаться
  * в равные половины (§6.3).
  *

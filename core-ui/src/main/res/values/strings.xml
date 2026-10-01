@@ -26,10 +26,20 @@
     <string name="action_take">Принять</string>
     <string name="action_back">Назад</string>
     <string name="action_cancel">Отмена</string>
+    <string name="action_done">Готово</string>
     <string name="status_missed">Пропущено</string>
     <string name="status_marked_by_you">отметили вы</string>
     <string name="label_as_needed">По потребности</string>
     <string name="profile_label">Профиль · %1$s</string>
+
+    <!--
+      Подписи вкладок нижней панели (§4.13, ОВ-91). Панель — компонент дизайн-системы,
+      и подписи живут рядом с другими подписями компонентов: экранный модуль не держит
+      своей копии панели и, значит, своей копии подписей.
+    -->
+    <string name="tab_today">Сегодня</string>
+    <string name="tab_meds">Лекарства</string>
+    <string name="tab_settings">Настройки</string>
 
     <!--
       Баннер чужого профиля (ПРФ-13). Текст дословно из design/screens/MainProfile.dc.html,
@@ -62,6 +72,12 @@
     <string name="cd_profile">Чужой профиль</string>
     <!-- Аватар в шапке ведёт в список профилей настроек (ПРФ-19, решение по ОВ-54). -->
     <string name="cd_profile_avatar">Профили</string>
+
+    <!-- Переключатель циферблат/клавиатура в диалоге времени (SKL-69, §4.14). -->
+    <string name="cd_switch_time_input">Клавиатурный ввод времени</string>
+
+    <!-- Выбранный вариант диалога выбора из списка: смысл не одним цветом (SKL-78, НФТ-30). -->
+    <string name="cd_list_picker_selected">Выбрано</string>
 
     <!--
       Легенда недельной полосы приёмов (блок «Последние 7 дней», SKL-10).
