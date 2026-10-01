@@ -30,6 +30,8 @@ import ru.stohastika.sklyanka.feature.meds.list.MedicationListViewModel
 fun MedsSection(
     viewModels: MedsViewModels,
     onLeaveSection: () -> Unit,
+    onOpenToday: () -> Unit = {},
+    onOpenSettings: () -> Unit = {},
     initial: MedsDestination = MedsDestination.List,
     modifier: Modifier = Modifier,
 ) {
@@ -44,6 +46,8 @@ fun MedsSection(
             formViewModel = viewModels.form,
             onOpenMedicationCard = { id -> stack.push(MedsDestination.Card(id)) },
             onOpenArchive = { stack.push(MedsDestination.Archive) },
+            onOpenToday = onOpenToday,
+            onOpenSettings = onOpenSettings,
             modifier = modifier,
         )
 
@@ -51,6 +55,8 @@ fun MedsSection(
             viewModel = viewModels.archive,
             onSelectActive = { stack.pop() },
             onOpenMedicationCard = { id -> stack.push(MedsDestination.Card(id)) },
+            onOpenToday = onOpenToday,
+            onOpenSettings = onOpenSettings,
             modifier = modifier,
         )
 

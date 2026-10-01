@@ -28,12 +28,12 @@ import ru.stohastika.sklyanka.feature.onboarding.TAG_CARD_NOTIFICATIONS
 import ru.stohastika.sklyanka.feature.onboarding.TAG_NEXT
 import ru.stohastika.sklyanka.feature.onboarding.TAG_SKIP
 import ru.stohastika.sklyanka.feature.reminder.TAG_WARNING
-import ru.stohastika.sklyanka.feature.today.TAG_BOTTOM_BAR
 import ru.stohastika.sklyanka.feature.today.TAG_TODAY_SCREEN
 import ru.stohastika.sklyanka.startup.SplashRoute
 import ru.stohastika.sklyanka.startup.StartDestination
 import ru.stohastika.sklyanka.startup.StartReason
 import ru.stohastika.sklyanka.startup.StartupConditions
+import ru.stohastika.sklyanka.ui.component.TAG_BOTTOM_BAR
 import ru.stohastika.sklyanka.feature.onboarding.R as OnboardingR
 import ru.stohastika.sklyanka.feature.reminder.R as ReminderR
 import ru.stohastika.sklyanka.feature.settings.R as SettingsR

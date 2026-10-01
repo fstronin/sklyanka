@@ -23,6 +23,8 @@ import ru.stohastika.sklyanka.domain.reminder.ReminderWarning
 import ru.stohastika.sklyanka.domain.today.TodayLayout
 import ru.stohastika.sklyanka.ui.component.Banner
 import ru.stohastika.sklyanka.ui.component.BannerKind
+import ru.stohastika.sklyanka.ui.component.BottomBar
+import ru.stohastika.sklyanka.ui.component.BottomBarTab
 import ru.stohastika.sklyanka.ui.component.EmptyState
 import ru.stohastika.sklyanka.ui.component.ProgressAction
 import ru.stohastika.sklyanka.ui.component.ScreenHeader
@@ -84,7 +86,16 @@ fun TodayScreen(state: TodayUiState, onIntent: (TodayIntent) -> Unit, modifier: 
                 )
             }
         }
-        TodayBottomBar(onIntent)
+        BottomBar(
+            selected = BottomBarTab.Today,
+            onSelect = { tab ->
+                when (tab) {
+                    BottomBarTab.Meds -> onIntent(TodayIntent.OpenMedicationList)
+                    BottomBarTab.Settings -> onIntent(TodayIntent.OpenSettings)
+                    BottomBarTab.Today -> Unit
+                }
+            },
+        )
     }
 }
 

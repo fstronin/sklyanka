@@ -46,6 +46,7 @@ import ru.stohastika.sklyanka.domain.today.SectionSummary
 import ru.stohastika.sklyanka.domain.today.StockNotice
 import ru.stohastika.sklyanka.domain.today.TimeGroup
 import ru.stohastika.sklyanka.domain.today.TodayLayout
+import ru.stohastika.sklyanka.ui.component.TAG_BOTTOM_BAR
 import ru.stohastika.sklyanka.ui.component.TAG_INTAKE_CARD
 import ru.stohastika.sklyanka.ui.component.TAG_MARK_BUTTON
 import ru.stohastika.sklyanka.ui.component.TAG_MISSED_STATUS
@@ -399,8 +400,12 @@ class TodayScreenTest {
         show(TodayFixtures.plainDay())
 
         composeRule.onNodeWithTag(TAG_BOTTOM_BAR).assertIsDisplayed()
-        composeRule.onNodeWithText(context.getString(R.string.tab_meds)).assertIsDisplayed()
-        composeRule.onNodeWithText(context.getString(R.string.tab_settings)).assertIsDisplayed()
+        composeRule
+            .onNodeWithText(context.getString(ru.stohastika.sklyanka.ui.R.string.tab_meds))
+            .assertIsDisplayed()
+        composeRule
+            .onNodeWithText(context.getString(ru.stohastika.sklyanka.ui.R.string.tab_settings))
+            .assertIsDisplayed()
     }
 
     // --- Предупреждение о ненадёжности (SKL-29) --------------------------------

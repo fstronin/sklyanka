@@ -4,15 +4,12 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
-import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.Dp
 import ru.stohastika.sklyanka.ui.token.SklyankaSizes
@@ -44,25 +41,6 @@ private const val CHEVRON_BOTTOM = 0.76f
 /** Плюс на пустом кружке строки «Добавить профиль». */
 private const val PLUS_NEAR = 0.24f
 private const val PLUS_FAR = 0.76f
-
-/** Календарь вкладки «Сегодня». */
-private const val SHEET_LEFT = 0.14f
-private const val SHEET_RIGHT = 0.86f
-private const val SHEET_TOP = 0.20f
-private const val SHEET_BOTTOM = 0.86f
-private const val SHEET_RADIUS = 0.14f
-private const val RING_TOP = 0.10f
-private const val RING_BOTTOM = 0.30f
-private const val RING_LEFT = 0.34f
-private const val RING_RIGHT = 0.66f
-private const val SHEET_LINE = 0.42f
-
-/** Шестерёнка вкладки «Настройки»: сердцевина и шесть лучей. */
-private const val CORE_RADIUS = 0.15f
-private const val SPOKE_INNER = 0.26f
-private const val SPOKE_OUTER = 0.44f
-private const val SPOKE_COUNT = 6
-private const val FULL_TURN = 360f
 
 /** Пунктирная обводка кружка «Добавить профиль»: штрих и разрыв из макета. */
 private const val DASH_ON = 3f
@@ -123,61 +101,6 @@ internal fun DashedCircle(color: Color, modifier: Modifier = Modifier, size: Dp 
         )
     }
 }
-
-/** Календарь — вкладка «Сегодня». */
-@Composable
-internal fun CalendarGlyph(color: Color, modifier: Modifier = Modifier, size: Dp = SklyankaSizes.IconPlateGlyph) {
-    Canvas(modifier.size(size)) {
-        val side = this.size.minDimension
-        drawRoundRect(
-            color = color,
-            topLeft = Offset(side * SHEET_LEFT, side * SHEET_TOP),
-            size = Size(side * (SHEET_RIGHT - SHEET_LEFT), side * (SHEET_BOTTOM - SHEET_TOP)),
-            cornerRadius = CornerRadius(side * SHEET_RADIUS),
-            style = stroke(side),
-        )
-        listOf(RING_LEFT, RING_RIGHT).forEach { x ->
-            drawLine(
-                color = color,
-                start = Offset(side * x, side * RING_TOP),
-                end = Offset(side * x, side * RING_BOTTOM),
-                strokeWidth = side * STROKE_RATIO,
-                cap = StrokeCap.Round,
-            )
-        }
-        drawLine(
-            color = color,
-            start = Offset(side * SHEET_LEFT, side * SHEET_LINE),
-            end = Offset(side * SHEET_RIGHT, side * SHEET_LINE),
-            strokeWidth = side * STROKE_RATIO,
-            cap = StrokeCap.Round,
-        )
-    }
-}
-
-/** Шестерёнка — вкладка «Настройки». */
-@Composable
-internal fun GearGlyph(color: Color, modifier: Modifier = Modifier, size: Dp = SklyankaSizes.IconPlateGlyph) {
-    Canvas(modifier.size(size)) {
-        val side = this.size.minDimension
-        drawCircle(color, radius = side * CORE_RADIUS, center = center, style = stroke(side))
-        repeat(SPOKE_COUNT) { index ->
-            val angle = Math.toRadians((FULL_TURN / SPOKE_COUNT * index).toDouble())
-            drawLine(
-                color = color,
-                start = spoke(side, angle, SPOKE_INNER),
-                end = spoke(side, angle, SPOKE_OUTER),
-                strokeWidth = side * STROKE_RATIO,
-                cap = StrokeCap.Round,
-            )
-        }
-    }
-}
-
-private fun DrawScope.spoke(side: Float, angle: Double, length: Float): Offset = Offset(
-    x = center.x + (side * length * kotlin.math.cos(angle)).toFloat(),
-    y = center.y + (side * length * kotlin.math.sin(angle)).toFloat(),
-)
 
 private fun stroke(side: Float): Stroke =
     Stroke(width = side * STROKE_RATIO, cap = StrokeCap.Round, join = StrokeJoin.Round)

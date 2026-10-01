@@ -1,6 +1,10 @@
 package ru.stohastika.sklyanka.ui.component
 
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Immutable
+import androidx.compose.ui.unit.Dp
+import ru.stohastika.sklyanka.ui.token.SklyankaShapes
+import ru.stohastika.sklyanka.ui.token.SklyankaSizes
 
 /**
  * Состояния компонентов каталога (`docs/spec/08-design-system.md` §4).
@@ -101,6 +105,18 @@ enum class ButtonState {
  * снимков `button-primary-*`.
  */
 enum class PrimaryButtonKind { Primary, Danger }
+
+/**
+ * Форма кнопки: карточная (внутри карточек) и экранная (§4.3, ОВ-90).
+ *
+ * Габариты берут существующие токены `SklyankaSizes`/`SklyankaShapes` — новых
+ * размеров и радиусов не вводится (НФТ-47). Одну форму делят оба вида кнопок в ряду:
+ * иначе «Принято» и «Пропустить» разной высоты читаются как кривая вёрстка.
+ */
+enum class ButtonForm(val height: Dp, val shape: RoundedCornerShape) {
+    Card(SklyankaSizes.SecondaryButtonHeight, SklyankaShapes.Button),
+    Screen(SklyankaSizes.PrimaryButtonHeight, SklyankaShapes.Large),
+}
 
 /**
  * Состояния чипа (§4.2).

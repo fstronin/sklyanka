@@ -11,6 +11,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.Dp
 import ru.stohastika.sklyanka.ui.token.MarkVariant
@@ -62,6 +63,25 @@ private const val CAPSULE_TOP = 0.34f
 private const val CAPSULE_BOTTOM = 0.66f
 private const val CAPSULE_LEFT = 0.12f
 private const val CAPSULE_RIGHT = 0.88f
+
+/** Календарь вкладки «Сегодня» (перенесён в дизайн-систему, ОВ-91). */
+private const val SHEET_LEFT = 0.14f
+private const val SHEET_RIGHT = 0.86f
+private const val SHEET_TOP = 0.20f
+private const val SHEET_BOTTOM = 0.86f
+private const val SHEET_RADIUS = 0.14f
+private const val RING_TOP = 0.10f
+private const val RING_BOTTOM = 0.30f
+private const val RING_LEFT = 0.34f
+private const val RING_RIGHT = 0.66f
+private const val SHEET_LINE = 0.42f
+
+/** Шестерёнка вкладки «Настройки»: сердцевина и шесть лучей. */
+private const val CORE_RADIUS = 0.15f
+private const val SPOKE_INNER = 0.26f
+private const val SPOKE_OUTER = 0.44f
+private const val SPOKE_COUNT = 6
+private const val FULL_TURN = 360f
 
 /** Галочка: обязательный спутник цвета в статусе «принято» (НФТ-33). */
 @Composable
@@ -141,9 +161,15 @@ fun ProfileGlyph(color: Color, modifier: Modifier = Modifier, size: Dp = Sklyank
     }
 }
 
-/** Нейтральная пиктограмма лекарства для плашки иконки. */
+/**
+ * Нейтральная пиктограмма лекарства для плашки иконки.
+ *
+ * Имя `MedicationGlyph` носит иконография «форма + вид» (§4.15): пиктограмма приёма —
+ * это не силуэт выбранного лекарства, а обобщённый знак на плашке. Имена разные, потому
+ * что разные и сущности; см. `MedicationGlyph`.
+ */
 @Composable
-fun MedicationGlyph(color: Color, modifier: Modifier = Modifier, size: Dp = SklyankaSizes.IconPlateGlyph) {
+fun MedicationPictogram(color: Color, modifier: Modifier = Modifier, size: Dp = SklyankaSizes.IconPlateGlyph) {
     Canvas(modifier.size(size)) {
         val side = this.size.minDimension
         val stroke = Stroke(width = side * STROKE_RATIO, cap = StrokeCap.Round, join = StrokeJoin.Round)
@@ -164,6 +190,71 @@ fun MedicationGlyph(color: Color, modifier: Modifier = Modifier, size: Dp = Skly
         )
     }
 }
+
+/**
+ * Календарь — вкладка «Сегодня» (ОВ-91).
+ *
+ * Значки вкладок нижней панели живут в дизайн-системе: панель — общий компонент
+ * (§4.13), и второй её экземпляр в экранном модуле разошёлся бы с первым.
+ */
+@Composable
+fun CalendarGlyph(color: Color, modifier: Modifier = Modifier, size: Dp = SklyankaSizes.IconPlateGlyph) {
+    Canvas(modifier.size(size)) {
+        val side = this.size.minDimension
+        drawRoundRect(
+            color = color,
+            topLeft = Offset(side * SHEET_LEFT, side * SHEET_TOP),
+            size = Size(side * (SHEET_RIGHT - SHEET_LEFT), side * (SHEET_BOTTOM - SHEET_TOP)),
+            cornerRadius = CornerRadius(side * SHEET_RADIUS),
+            style = Stroke(width = side * STROKE_RATIO, cap = StrokeCap.Round, join = StrokeJoin.Round),
+        )
+        listOf(RING_LEFT, RING_RIGHT).forEach { x ->
+            drawLine(
+                color = color,
+                start = Offset(side * x, side * RING_TOP),
+                end = Offset(side * x, side * RING_BOTTOM),
+                strokeWidth = side * STROKE_RATIO,
+                cap = StrokeCap.Round,
+            )
+        }
+        drawLine(
+            color = color,
+            start = Offset(side * SHEET_LEFT, side * SHEET_LINE),
+            end = Offset(side * SHEET_RIGHT, side * SHEET_LINE),
+            strokeWidth = side * STROKE_RATIO,
+            cap = StrokeCap.Round,
+        )
+    }
+}
+
+/** Шестерёнка — вкладка «Настройки» (ОВ-91). */
+@Composable
+fun GearGlyph(color: Color, modifier: Modifier = Modifier, size: Dp = SklyankaSizes.IconPlateGlyph) {
+    Canvas(modifier.size(size)) {
+        val side = this.size.minDimension
+        drawCircle(
+            color = color,
+            radius = side * CORE_RADIUS,
+            center = center,
+            style = Stroke(width = side * STROKE_RATIO, cap = StrokeCap.Round, join = StrokeJoin.Round),
+        )
+        repeat(SPOKE_COUNT) { index ->
+            val angle = Math.toRadians((FULL_TURN / SPOKE_COUNT * index).toDouble())
+            drawLine(
+                color = color,
+                start = spoke(side, angle, SPOKE_INNER),
+                end = spoke(side, angle, SPOKE_OUTER),
+                strokeWidth = side * STROKE_RATIO,
+                cap = StrokeCap.Round,
+            )
+        }
+    }
+}
+
+private fun DrawScope.spoke(side: Float, angle: Double, length: Float): Offset = Offset(
+    x = center.x + (side * length * kotlin.math.cos(angle)).toFloat(),
+    y = center.y + (side * length * kotlin.math.sin(angle)).toFloat(),
+)
 
 /**
  * Знак «Склянки» плоской редукцией, заданной краской.

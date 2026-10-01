@@ -16,10 +16,9 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import ru.stohastika.sklyanka.acceptance.today.TodayScreenProbe
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
-import ru.stohastika.sklyanka.feature.today.R
-import ru.stohastika.sklyanka.feature.today.TAG_BOTTOM_BAR
 import ru.stohastika.sklyanka.feature.today.TAG_TODAY_SCREEN
 import ru.stohastika.sklyanka.feature.today.TodayIntent
+import ru.stohastika.sklyanka.ui.component.TAG_BOTTOM_BAR
 
 /**
  * Экранные шаги SKL-20 про единственный вход в настройки (`@defect`).
@@ -81,7 +80,7 @@ class SettingsEntrySteps(private val world: AcceptanceWorld) {
         assertTrue(intents.contains(TodayIntent.OpenSettings), "the tab must open the settings: $intents")
     }
 
-    private fun settingsLabel(): String = context.getString(R.string.tab_settings)
+    private fun settingsLabel(): String = context.getString(ru.stohastika.sklyanka.ui.R.string.tab_settings)
 
     private fun string(id: Int): String = context.getString(id)
 

@@ -132,10 +132,4 @@
     <string name="today_undo_action">Отменить</string>
     <string name="today_undo_taken_single">%1$s — приём отмечен как принятый</string>
     <string name="today_undo_skipped_single">%1$s — приём отмечен как пропущенный</string>
-
-    <!-- ===== Нижняя панель (Main.dc.html) ===== -->
-
-    <string name="tab_today">Сегодня</string>
-    <string name="tab_meds">Лекарства</string>
-    <string name="tab_settings">Настройки</string>
 </resources>

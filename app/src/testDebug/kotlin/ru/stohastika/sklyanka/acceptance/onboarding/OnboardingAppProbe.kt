@@ -159,6 +159,8 @@ internal object OnboardingAppProbe {
                         onCheckNow = {},
                         onExportJournal = {},
                         onRestartSetup = null,
+                        onToggleSupport = {},
+                        onFixPermission = {},
                         onBack = {},
                         toLocal = { instant: Instant -> instant.atZone(world.clock.zone).toLocalDateTime() },
                     )
@@ -190,6 +192,7 @@ internal object OnboardingAppProbe {
             permissions = world.system,
             plan = world.reminders.planSource(),
             reliability = ReadReminderReliabilityUseCase(world.system),
+            medications = world.repositories.medicationStore,
             time = world.clock.time,
         ),
         check = ReminderCheckNow { reason ->

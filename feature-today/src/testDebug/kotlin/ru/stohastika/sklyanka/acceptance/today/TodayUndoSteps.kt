@@ -27,8 +27,8 @@ import ru.stohastika.sklyanka.domain.model.IntakeSource
 import ru.stohastika.sklyanka.domain.model.IntakeStatus
 import ru.stohastika.sklyanka.domain.model.ScheduleMode
 import ru.stohastika.sklyanka.feature.today.R
-import ru.stohastika.sklyanka.feature.today.TAG_BOTTOM_BAR
 import ru.stohastika.sklyanka.feature.today.TodayIntent
+import ru.stohastika.sklyanka.ui.component.TAG_BOTTOM_BAR
 import ru.stohastika.sklyanka.ui.component.TAG_SNACKBAR
 import java.time.LocalTime
 import ru.stohastika.sklyanka.ui.R as UiR
