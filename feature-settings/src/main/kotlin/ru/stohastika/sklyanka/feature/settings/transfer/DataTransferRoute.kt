@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -13,6 +14,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import ru.stohastika.sklyanka.domain.transfer.TransferCounts
 import ru.stohastika.sklyanka.domain.transfer.TransferFormat
+import ru.stohastika.sklyanka.ui.motion.layerTransform
 
 /**
  * Раздел «Перенос данных»: шаги одного экрана и системный выбор файла.
@@ -67,28 +69,53 @@ fun DataTransferRoute(
         )
     }
 
-    when (state.step) {
+    AnimatedContent(
+        targetState = state.step,
+        transitionSpec = { layerTransform(transferStepMotion(initialState, targetState)) },
+        label = "transferStep",
+    ) { step ->
+        TransferStepScreen(
+            step = step,
+            state = state,
+            onIntent = viewModel::onIntent,
+            onOpenPermissions = onOpenPermissions,
+            modifier = modifier,
+            overview = overview,
+        )
+    }
+}
+
+@Composable
+private fun TransferStepScreen(
+    step: TransferStep,
+    state: TransferUiState,
+    onIntent: (TransferIntent) -> Unit,
+    onOpenPermissions: () -> Unit,
+    modifier: Modifier,
+    overview: @Composable () -> Unit,
+) {
+    when (step) {
         TransferStep.OVERVIEW -> overview()
 
         TransferStep.SUMMARY -> TransferSummaryScreen(
             counts = state.fileCounts ?: EMPTY_COUNTS,
             state = state,
             zone = state.zone,
-            onContinue = { viewModel.onIntent(TransferIntent.ContinueFromSummary) },
-            onCancel = { viewModel.onIntent(TransferIntent.Leave) },
+            onContinue = { onIntent(TransferIntent.ContinueFromSummary) },
+            onCancel = { onIntent(TransferIntent.Leave) },
             modifier = modifier,
         )
 
         TransferStep.MATCHES -> MatchReviewScreen(
             state = state,
-            onIntent = viewModel::onIntent,
-            onCancel = { viewModel.onIntent(TransferIntent.Leave) },
+            onIntent = onIntent,
+            onCancel = { onIntent(TransferIntent.Leave) },
             modifier = modifier,
         )
 
         TransferStep.REPLACE_CONFIRM -> ReplaceConfirmationStep(
             state = state,
-            onIntent = viewModel::onIntent,
+            onIntent = onIntent,
             modifier = modifier,
         )
 
@@ -103,7 +130,7 @@ fun DataTransferRoute(
                 // не переносятся, и без этого шага человек получит молчащее приложение
                 // и уверенность, что перенос удался.
                 onContinue = {
-                    viewModel.onIntent(TransferIntent.AcknowledgeReport)
+                    onIntent(TransferIntent.AcknowledgeReport)
                     onOpenPermissions()
                 },
                 modifier = modifier,

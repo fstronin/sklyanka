@@ -1,9 +1,16 @@
 package ru.stohastika.sklyanka.feature.today
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,9 +20,15 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -31,6 +44,8 @@ import ru.stohastika.sklyanka.ui.component.ScreenHeader
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderLabels
 import ru.stohastika.sklyanka.ui.component.SklyankaProgressBar
 import ru.stohastika.sklyanka.ui.component.Snackbar
+import ru.stohastika.sklyanka.ui.motion.MotionPhase
+import ru.stohastika.sklyanka.ui.motion.motionTiming
 import ru.stohastika.sklyanka.ui.profile.ProfileAvatar
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaSpacing
@@ -63,6 +78,7 @@ fun TodayScreen(state: TodayUiState, onIntent: (TodayIntent) -> Unit, modifier: 
             .background(colors.background)
             .testTag(TAG_TODAY_SCREEN),
     ) {
+        val undo = (state as? TodayUiState.Content)?.undo
         // Содержимое и снэкбар живут в одном Box над нижней панелью: снэкбар всплывает
         // поверх контента, а панель остаётся видимой и нажимаемой (ОВ-81/ОВ-6, SKL-30).
         Box(Modifier.fillMaxWidth().weight(1f)) {
@@ -71,20 +87,7 @@ fun TodayScreen(state: TodayUiState, onIntent: (TodayIntent) -> Unit, modifier: 
                 is TodayUiState.Empty -> TodayEmpty(state, onIntent, Modifier.fillMaxSize())
                 is TodayUiState.Content -> TodayContent(state, onIntent, Modifier.fillMaxSize())
             }
-            (state as? TodayUiState.Content)?.undo?.let { notice ->
-                Snackbar(
-                    text = notice.text(),
-                    actionLabel = stringResource(R.string.today_undo_action),
-                    onAction = { onIntent(TodayIntent.UndoMark(notice.intakeIds)) },
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(
-                            start = SklyankaSpacing.Section,
-                            end = SklyankaSpacing.Section,
-                            bottom = SklyankaSpacing.Medium,
-                        ),
-                )
-            }
+            UndoSnackbar(undo = undo, onIntent = onIntent)
         }
         BottomBar(
             selected = BottomBarTab.Today,
@@ -96,6 +99,41 @@ fun TodayScreen(state: TodayUiState, onIntent: (TodayIntent) -> Unit, modifier: 
                 }
             },
         )
+    }
+}
+
+@Composable
+private fun BoxScope.UndoSnackbar(undo: UndoNotice?, onIntent: (TodayIntent) -> Unit) {
+    var lastUndo by remember { mutableStateOf<UndoNotice?>(null) }
+    LaunchedEffect(undo) { if (undo != null) lastUndo = undo }
+    val rise = with(LocalDensity.current) { SklyankaSpacing.Block.roundToPx() }
+    val enterTiming = motionTiming(MotionPhase.SnackbarEnter)
+    val exitTiming = motionTiming(MotionPhase.SnackbarExit)
+    AnimatedVisibility(
+        visible = undo != null,
+        enter = slideInVertically(
+            animationSpec = tween(enterTiming.durationMillis, easing = enterTiming.easing),
+            initialOffsetY = { rise },
+        ) + fadeIn(tween(enterTiming.durationMillis, easing = enterTiming.easing)),
+        exit = slideOutVertically(
+            animationSpec = tween(exitTiming.durationMillis, easing = exitTiming.easing),
+            targetOffsetY = { rise },
+        ) + fadeOut(tween(exitTiming.durationMillis, easing = exitTiming.easing)),
+        modifier = Modifier
+            .align(Alignment.BottomCenter)
+            .padding(
+                start = SklyankaSpacing.Section,
+                end = SklyankaSpacing.Section,
+                bottom = SklyankaSpacing.Medium,
+            ),
+    ) {
+        lastUndo?.let { notice ->
+            Snackbar(
+                text = notice.text(),
+                actionLabel = stringResource(R.string.today_undo_action),
+                onAction = { onIntent(TodayIntent.UndoMark(notice.intakeIds)) },
+            )
+        }
     }
 }
 

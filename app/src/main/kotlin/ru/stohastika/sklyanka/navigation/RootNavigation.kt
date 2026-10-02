@@ -3,6 +3,7 @@ package ru.stohastika.sklyanka.navigation
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import ru.stohastika.sklyanka.ui.motion.LayerMotion
 
 /**
  * Состояние корня приложения: вкладка нижней панели и открытый экран второго уровня.
@@ -31,15 +32,24 @@ class RootNavigation {
     var historyFromToday: Boolean by mutableStateOf(false)
         private set
 
+    var rootMotion: LayerMotion by mutableStateOf(LayerMotion.Crossfade)
+        private set
+
     /** Открыт ли сейчас «Сегодня»: им проверяется, куда привёл возврат (SKL-43). */
     val showsToday: Boolean
         get() = tab == RootTab.TODAY && meds == null && section == null && !historyFromToday
 
     fun openTab(tab: RootTab) {
+        rootMotion = LayerMotion.Crossfade
         this.tab = tab
     }
 
     fun openMeds(destination: MedsDestination) {
+        rootMotion = if (destination == MedsDestination.List || destination == MedsDestination.Archive) {
+            LayerMotion.Crossfade
+        } else {
+            LayerMotion.Forward
+        }
         meds = destination
     }
 
@@ -59,22 +69,27 @@ class RootNavigation {
     }
 
     fun leaveMeds() {
+        rootMotion = LayerMotion.Back
         meds = null
     }
 
     fun openSection(destination: SettingsDestination) {
+        rootMotion = LayerMotion.Forward
         section = destination
     }
 
     fun leaveSection() {
+        rootMotion = LayerMotion.Back
         section = null
     }
 
     fun openHistory() {
+        rootMotion = LayerMotion.Forward
         historyFromToday = true
     }
 
     fun leaveHistory() {
+        rootMotion = LayerMotion.Back
         historyFromToday = false
     }
 
@@ -85,6 +100,7 @@ class RootNavigation {
      * не там, куда его привело живое окно отмены, а незакрытая история — вместо «Сегодня».
      */
     fun openToday() {
+        rootMotion = LayerMotion.Crossfade
         tab = RootTab.TODAY
         meds = null
         section = null

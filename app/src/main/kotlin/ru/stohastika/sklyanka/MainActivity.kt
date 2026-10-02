@@ -8,12 +8,14 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
@@ -49,12 +51,14 @@ import ru.stohastika.sklyanka.navigation.HistorySection
 import ru.stohastika.sklyanka.navigation.MedsDestination
 import ru.stohastika.sklyanka.navigation.MedsSection
 import ru.stohastika.sklyanka.navigation.MedsViewModels
+import ru.stohastika.sklyanka.navigation.RootLayer
 import ru.stohastika.sklyanka.navigation.RootNavigation
 import ru.stohastika.sklyanka.navigation.RootTab
 import ru.stohastika.sklyanka.navigation.SettingsDestination
 import ru.stohastika.sklyanka.navigation.SettingsSection
 import ru.stohastika.sklyanka.navigation.SettingsViewModels
 import ru.stohastika.sklyanka.navigation.UndoReturn
+import ru.stohastika.sklyanka.navigation.layer
 import ru.stohastika.sklyanka.platform.startup.StartupRouter
 import ru.stohastika.sklyanka.reminder.DeliveryCheckAnnouncer
 import ru.stohastika.sklyanka.reminder.ReminderOutageAnnouncer
@@ -62,6 +66,7 @@ import ru.stohastika.sklyanka.startup.StartDestination
 import ru.stohastika.sklyanka.startup.StartupFrames
 import ru.stohastika.sklyanka.startup.startupFrame
 import ru.stohastika.sklyanka.ui.locale.withInterfaceLocale
+import ru.stohastika.sklyanka.ui.motion.AnimatedLayer
 import ru.stohastika.sklyanka.ui.profile.ProfileChrome
 import ru.stohastika.sklyanka.ui.profile.ProfileChromeState
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
@@ -436,93 +441,101 @@ class MainActivity : ComponentActivity() {
      */
     @Composable
     private fun Root(onOpenPermissions: () -> Unit) {
-        val medsDestination = rootNavigation.meds
-        val secondLevel = rootNavigation.section
-        when {
-            // История, открытая с «Сегодня» (ОВ-84, SKL-31): тот же второй уровень, что
-            // из настроек, но место входа — строка прогресса дня. Ветка стоит рядом
-            // с `section`/`meds`: возврат обязан вести туда, откуда открыли.
-            rootNavigation.historyFromToday -> HistorySection(
-                viewModel = history,
-                origin = HistoryOrigin.TODAY,
-                onLeave = { rootNavigation.leaveHistory() },
-            )
+        AnimatedLayer(
+            layer = rootNavigation.layer(),
+            motion = rootNavigation.rootMotion,
+            modifier = Modifier.fillMaxSize(),
+        ) { layer ->
+            when (layer) {
+                // История, открытая с «Сегодня» (ОВ-84, SKL-31): тот же второй уровень, что
+                // из настроек, но место входа — строка прогресса дня. Ветка стоит рядом
+                // с `section`/`meds`: возврат обязан вести туда, откуда открыли.
+                RootLayer.HistoryFromToday -> HistorySection(
+                    viewModel = history,
+                    origin = HistoryOrigin.TODAY,
+                    onLeave = { rootNavigation.leaveHistory() },
+                )
 
-            secondLevel != null -> SettingsSection(
-                destination = secondLevel,
-                viewModels = SettingsViewModels(history, transfer, deleteProfile),
-                onLeave = rootNavigation::leaveSection,
-                onOpenPermissions = { startActivity(PermissionsActivity.intentFor(this)) },
-            )
+                is RootLayer.SettingsScreen -> SettingsSection(
+                    destination = layer.destination,
+                    viewModels = SettingsViewModels(history, transfer, deleteProfile),
+                    onLeave = rootNavigation::leaveSection,
+                    onOpenPermissions = { startActivity(PermissionsActivity.intentFor(this)) },
+                )
 
-            medsDestination != null -> MedsSection(
-                viewModels = MedsViewModels(
-                    list = medsList,
-                    form = medsForm,
-                    card = medCard,
-                    archive = archive,
-                ),
-                onLeaveSection = rootNavigation::leaveMeds,
-                // Панель на корне «Лекарств» (ОВ-91) ведёт на «Сегодня» и в «Настройки».
-                // Для настроек сначала закрывается раздел: ветка `Root` проверяет раздел
-                // раньше вкладки, и незакрытый раздел оставил бы человека в лекарствах.
-                onOpenToday = { rootNavigation.openToday() },
-                onOpenSettings = {
-                    rootNavigation.leaveMeds()
-                    rootNavigation.openTab(RootTab.SETTINGS)
-                },
-                initial = medsDestination,
-            )
+                is RootLayer.Meds -> MedsSection(
+                    viewModels = MedsViewModels(
+                        list = medsList,
+                        form = medsForm,
+                        card = medCard,
+                        archive = archive,
+                    ),
+                    onLeaveSection = rootNavigation::leaveMeds,
+                    // Панель на корне «Лекарств» (ОВ-91) ведёт на «Сегодня» и в «Настройки».
+                    // Для настроек сначала закрывается раздел: ветка `Root` проверяет раздел
+                    // раньше вкладки, и незакрытый раздел оставил бы человека в лекарствах.
+                    onOpenToday = { rootNavigation.openToday() },
+                    onOpenSettings = {
+                        rootNavigation.leaveMeds()
+                        rootNavigation.openTab(RootTab.SETTINGS)
+                    },
+                    initial = layer.entry,
+                )
 
-            rootNavigation.tab == RootTab.SETTINGS -> SettingsRoute(
-                viewModel = settings,
-                navigation = SettingsNavigation(
-                    // Строка «Добавить профиль» выключена до мастера (`ОВ-3`, SKL-58):
-                    // экран создания профиля не зафиксирован, а нажимаемая строка без
-                    // перехода обещала бы больше, чем продукт умеет. Намерение и переход —
-                    // шов пост-MVP, как у строки часов: мастер вернётся без правки навигации.
-                    addProfile = {},
-                    // Экран подключения часов — SKL-17. `null` означает «экрана нет»,
-                    // и строка часов остаётся состоянием связи, а не мнимым переходом.
-                    openWatchSetup = null,
-                    // «Звук» — системный экран уведомлений приложения (ОВ-98): там оба
-                    // канала и выбор звука с важностью для каждого.
-                    openSound = { systemSettings.openNotificationSettings() },
-                    // Решение по `ОВ-48`: сначала диагностика — что именно не так, —
-                    // и только потом онбординг. Обратный порядок отправлял бы человека
-                    // проходить цепочку заново, не сказав ему, сломано ли что-нибудь.
-                    openDiagnostics = { startActivity(DiagnosticsActivity.intentFor(this)) },
-                    openHistory = { rootNavigation.openSection(SettingsDestination.HISTORY) },
-                    openDataTransfer = { rootNavigation.openSection(SettingsDestination.TRANSFER) },
-                    // «Удалить профиль «Имя»» — экран второго уровня настроек (ОВ-7, SKL-36).
-                    // Строка появляется только у активного чужого профиля, и «Готово»
-                    // возвращает в настройки — туда, откуда человек пришёл.
-                    deleteProfile = { rootNavigation.openSection(SettingsDestination.DELETE_PROFILE) },
-                    openToday = { rootNavigation.openTab(RootTab.TODAY) },
-                    openMedications = { rootNavigation.openMeds(MedsDestination.List) },
-                ),
-            )
+                RootLayer.Settings -> SettingsRoute(
+                    viewModel = settings,
+                    navigation = settingsNavigation(),
+                )
 
-            else -> TodayRoute(
-                viewModel = today,
-                navigation = TodayNavigation(
-                    openMedicationCard = { id -> rootNavigation.openMeds(MedsDestination.Card(id)) },
-                    // «Купить» ведёт в ту же карточку: блок остатка с кнопкой «Пополнить»
-                    // живёт на ней (SKL-12).
-                    openMedicationStock = { id -> rootNavigation.openMeds(MedsDestination.Card(id)) },
-                    addMedication = { rootNavigation.openMeds(MedsDestination.NewMedication) },
-                    openMedicationList = { rootNavigation.openMeds(MedsDestination.List) },
-                    // Вкладка «Настройки» нижней панели и аватар профиля в шапке ведут
-                    // в одно место — шестерёнки в шапке нет (ПРФ-19, критерий приёмки 14).
-                    openSettings = { rootNavigation.openTab(RootTab.SETTINGS) },
-                    // «Настроить» в предупреждении о ненадёжности: экран разрешений
-                    // с источником TODAY_WARNING (SKL-29, НАП-21).
-                    openPermissions = onOpenPermissions,
-                    // «История» в строке прогресса дня — история с местом входа TODAY
-                    // (ОВ-84, SKL-31).
-                    openHistory = rootNavigation::openHistory,
-                ),
-            )
+                RootLayer.Today -> TodayRoute(
+                    viewModel = today,
+                    navigation = todayNavigation(onOpenPermissions),
+                )
+            }
         }
     }
+
+    private fun settingsNavigation(): SettingsNavigation = SettingsNavigation(
+        // Строка «Добавить профиль» выключена до мастера (`ОВ-3`, SKL-58):
+        // экран создания профиля не зафиксирован, а нажимаемая строка без
+        // перехода обещала бы больше, чем продукт умеет. Намерение и переход —
+        // шов пост-MVP, как у строки часов: мастер вернётся без правки навигации.
+        addProfile = {},
+        // Экран подключения часов — SKL-17. `null` означает «экрана нет»,
+        // и строка часов остаётся состоянием связи, а не мнимым переходом.
+        openWatchSetup = null,
+        // «Звук» — системный экран уведомлений приложения (ОВ-98): там оба
+        // канала и выбор звука с важностью для каждого.
+        openSound = { systemSettings.openNotificationSettings() },
+        // Решение по `ОВ-48`: сначала диагностика — что именно не так, —
+        // и только потом онбординг. Обратный порядок отправлял бы человека
+        // проходить цепочку заново, не сказав ему, сломано ли что-нибудь.
+        openDiagnostics = { startActivity(DiagnosticsActivity.intentFor(this)) },
+        openHistory = { rootNavigation.openSection(SettingsDestination.HISTORY) },
+        openDataTransfer = { rootNavigation.openSection(SettingsDestination.TRANSFER) },
+        // «Удалить профиль «Имя»» — экран второго уровня настроек (ОВ-7, SKL-36).
+        // Строка появляется только у активного чужого профиля, и «Готово»
+        // возвращает в настройки — туда, откуда человек пришёл.
+        deleteProfile = { rootNavigation.openSection(SettingsDestination.DELETE_PROFILE) },
+        openToday = { rootNavigation.openTab(RootTab.TODAY) },
+        openMedications = { rootNavigation.openMeds(MedsDestination.List) },
+    )
+
+    private fun todayNavigation(onOpenPermissions: () -> Unit): TodayNavigation = TodayNavigation(
+        openMedicationCard = { id -> rootNavigation.openMeds(MedsDestination.Card(id)) },
+        // «Купить» ведёт в ту же карточку: блок остатка с кнопкой «Пополнить»
+        // живёт на ней (SKL-12).
+        openMedicationStock = { id -> rootNavigation.openMeds(MedsDestination.Card(id)) },
+        addMedication = { rootNavigation.openMeds(MedsDestination.NewMedication) },
+        openMedicationList = { rootNavigation.openMeds(MedsDestination.List) },
+        // Вкладка «Настройки» нижней панели и аватар профиля в шапке ведут
+        // в одно место — шестерёнки в шапке нет (ПРФ-19, критерий приёмки 14).
+        openSettings = { rootNavigation.openTab(RootTab.SETTINGS) },
+        // «Настроить» в предупреждении о ненадёжности: экран разрешений
+        // с источником TODAY_WARNING (SKL-29, НАП-21).
+        openPermissions = onOpenPermissions,
+        // «История» в строке прогресса дня — история с местом входа TODAY
+        // (ОВ-84, SKL-31).
+        openHistory = rootNavigation::openHistory,
+    )
 }

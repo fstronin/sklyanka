@@ -16,6 +16,8 @@ import ru.stohastika.sklyanka.feature.meds.list.MedsIntent
 import ru.stohastika.sklyanka.feature.meds.list.MedsTab
 import ru.stohastika.sklyanka.ui.component.BottomBar
 import ru.stohastika.sklyanka.ui.component.BottomBarTab
+import ru.stohastika.sklyanka.ui.motion.AnimatedLayer
+import ru.stohastika.sklyanka.ui.motion.LayerMotion
 
 /**
  * Раздел «Лекарства»: список и форма.
@@ -43,44 +45,48 @@ fun MedsRoute(
     val listState by listViewModel.state.collectAsState()
     var formOpen by remember { mutableStateOf(false) }
 
-    if (formOpen) {
-        MedicationFormRoute(
-            viewModel = formViewModel,
-            medicationId = null,
-            onDone = { formOpen = false },
-            modifier = modifier,
-        )
-        return
-    }
+    AnimatedLayer(
+        layer = formOpen,
+        motion = if (formOpen) LayerMotion.Forward else LayerMotion.Back,
+    ) { open ->
+        if (open) {
+            MedicationFormRoute(
+                viewModel = formViewModel,
+                medicationId = null,
+                onDone = { formOpen = false },
+                modifier = modifier,
+            )
+        } else {
+            // Нижняя панель — общий компонент (ОВ-91). Список получает остаток высоты, поэтому
+            // круглая кнопка добавления остаётся над панелью, а сама панель стоит на корне
+            // вкладки. Переходы наружу задаёт `app`.
+            Column(modifier = modifier) {
+                MedicationListScreen(
+                    state = listState,
+                    onIntent = { intent ->
+                        when (intent) {
+                            MedsIntent.AddMedication -> formOpen = true
+                            is MedsIntent.OpenMedication -> onOpenMedicationCard(intent.medicationId)
+                            is MedsIntent.SelectTab -> {
+                                if (intent.tab == MedsTab.ARCHIVE) onOpenArchive() else listViewModel.onIntent(intent)
+                            }
 
-    // Нижняя панель — общий компонент (ОВ-91). Список получает остаток высоты, поэтому
-    // круглая кнопка добавления остаётся над панелью, а сама панель стоит на корне
-    // вкладки. Переходы наружу задаёт `app`.
-    Column(modifier = modifier) {
-        MedicationListScreen(
-            state = listState,
-            onIntent = { intent ->
-                when (intent) {
-                    MedsIntent.AddMedication -> formOpen = true
-                    is MedsIntent.OpenMedication -> onOpenMedicationCard(intent.medicationId)
-                    is MedsIntent.SelectTab -> {
-                        if (intent.tab == MedsTab.ARCHIVE) onOpenArchive() else listViewModel.onIntent(intent)
-                    }
-
-                    is MedsIntent.TakeNow -> listViewModel.onIntent(intent)
-                }
-            },
-            modifier = Modifier.weight(1f),
-        )
-        BottomBar(
-            selected = BottomBarTab.Meds,
-            onSelect = { tab ->
-                when (tab) {
-                    BottomBarTab.Today -> onOpenToday()
-                    BottomBarTab.Settings -> onOpenSettings()
-                    BottomBarTab.Meds -> Unit
-                }
-            },
-        )
+                            is MedsIntent.TakeNow -> listViewModel.onIntent(intent)
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                )
+                BottomBar(
+                    selected = BottomBarTab.Meds,
+                    onSelect = { tab ->
+                        when (tab) {
+                            BottomBarTab.Today -> onOpenToday()
+                            BottomBarTab.Settings -> onOpenSettings()
+                            BottomBarTab.Meds -> Unit
+                        }
+                    },
+                )
+            }
+        }
     }
 }

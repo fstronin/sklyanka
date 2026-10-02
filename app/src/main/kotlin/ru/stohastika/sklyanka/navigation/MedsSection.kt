@@ -2,8 +2,11 @@ package ru.stohastika.sklyanka.navigation
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Modifier
 import ru.stohastika.sklyanka.feature.meds.MedsRoute
@@ -14,6 +17,8 @@ import ru.stohastika.sklyanka.feature.meds.card.MedicationCardViewModel
 import ru.stohastika.sklyanka.feature.meds.form.MedicationFormRoute
 import ru.stohastika.sklyanka.feature.meds.form.MedicationFormViewModel
 import ru.stohastika.sklyanka.feature.meds.list.MedicationListViewModel
+import ru.stohastika.sklyanka.ui.motion.AnimatedLayer
+import ru.stohastika.sklyanka.ui.motion.LayerMotion
 
 /**
  * Экраны раздела «Лекарства» и переходы между ними.
@@ -40,47 +45,49 @@ fun MedsSection(
     // человек, закрывший карточку кнопкой телефона, оказывается вне раздела.
     BackHandler(enabled = true) { if (!stack.pop()) onLeaveSection() }
 
-    when (val destination = stack.current) {
-        MedsDestination.List -> MedsRoute(
-            listViewModel = viewModels.list,
-            formViewModel = viewModels.form,
-            onOpenMedicationCard = { id -> stack.push(MedsDestination.Card(id)) },
-            onOpenArchive = { stack.push(MedsDestination.Archive) },
-            onOpenToday = onOpenToday,
-            onOpenSettings = onOpenSettings,
-            modifier = modifier,
-        )
+    AnimatedLayer(layer = stack.current, motion = stack.motion) { destination ->
+        when (destination) {
+            MedsDestination.List -> MedsRoute(
+                listViewModel = viewModels.list,
+                formViewModel = viewModels.form,
+                onOpenMedicationCard = { id -> stack.push(MedsDestination.Card(id)) },
+                onOpenArchive = { stack.push(MedsDestination.Archive) },
+                onOpenToday = onOpenToday,
+                onOpenSettings = onOpenSettings,
+                modifier = modifier,
+            )
 
-        MedsDestination.Archive -> ArchiveRoute(
-            viewModel = viewModels.archive,
-            onSelectActive = { stack.pop() },
-            onOpenMedicationCard = { id -> stack.push(MedsDestination.Card(id)) },
-            onOpenToday = onOpenToday,
-            onOpenSettings = onOpenSettings,
-            modifier = modifier,
-        )
+            MedsDestination.Archive -> ArchiveRoute(
+                viewModel = viewModels.archive,
+                onSelectActive = { stack.pop() },
+                onOpenMedicationCard = { id -> stack.push(MedsDestination.Card(id)) },
+                onOpenToday = onOpenToday,
+                onOpenSettings = onOpenSettings,
+                modifier = modifier,
+            )
 
-        is MedsDestination.Card -> MedicationCardRoute(
-            medicationId = destination.medicationId,
-            viewModel = viewModels.card,
-            onBack = { stack.pop() },
-            onEdit = { id -> stack.push(MedsDestination.Edit(id)) },
-            modifier = modifier,
-        )
+            is MedsDestination.Card -> MedicationCardRoute(
+                medicationId = destination.medicationId,
+                viewModel = viewModels.card,
+                onBack = { stack.pop() },
+                onEdit = { id -> stack.push(MedsDestination.Edit(id)) },
+                modifier = modifier,
+            )
 
-        is MedsDestination.Edit -> MedicationFormRoute(
-            viewModel = viewModels.form,
-            medicationId = destination.medicationId,
-            onDone = { stack.pop() },
-            modifier = modifier,
-        )
+            is MedsDestination.Edit -> MedicationFormRoute(
+                viewModel = viewModels.form,
+                medicationId = destination.medicationId,
+                onDone = { stack.pop() },
+                modifier = modifier,
+            )
 
-        MedsDestination.NewMedication -> MedicationFormRoute(
-            viewModel = viewModels.form,
-            medicationId = null,
-            onDone = { if (!stack.pop()) onLeaveSection() },
-            modifier = modifier,
-        )
+            MedsDestination.NewMedication -> MedicationFormRoute(
+                viewModel = viewModels.form,
+                medicationId = null,
+                onDone = { if (!stack.pop()) onLeaveSection() },
+                modifier = modifier,
+            )
+        }
     }
 }
 
@@ -120,16 +127,21 @@ class MedsViewModels(
 /** Стек раздела: список всегда на дне и не снимается. */
 class MedsStack internal constructor(private val entries: SnapshotStateList<MedsDestination>) {
 
+    var motion: LayerMotion by mutableStateOf(LayerMotion.Crossfade)
+        private set
+
     val current: MedsDestination get() = entries.last()
 
     fun push(destination: MedsDestination) {
+        motion = if (destination == MedsDestination.Archive) LayerMotion.Crossfade else LayerMotion.Forward
         entries += destination
     }
 
     /** @return false, если снимать нечего: человек уже на списке лекарств. */
     fun pop(): Boolean {
         if (entries.size <= 1) return false
-        entries.removeAt(entries.lastIndex)
+        val closing = entries.removeAt(entries.lastIndex)
+        motion = if (closing == MedsDestination.Archive) LayerMotion.Crossfade else LayerMotion.Back
         return true
     }
 }

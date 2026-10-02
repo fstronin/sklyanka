@@ -2,12 +2,17 @@ package ru.stohastika.sklyanka.feature.reminder
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.drawable.ColorDrawable
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -43,6 +48,7 @@ class DeliveryCheckActivity : ComponentActivity() {
             navigationBarStyle = SystemBarStyle.dark(AndroidColor.TRANSPARENT),
         )
         showOverLockScreen()
+        window.setBackgroundDrawable(ColorDrawable(AndroidColor.TRANSPARENT))
         val at = intent.getStringExtra(EXTRA_AT)?.let(LocalDateTime::parse)
         // Намерение без времени показывать нечего: карточка закрывается, а не гадает,
         // какое срабатывание человек имел в виду.
@@ -52,15 +58,18 @@ class DeliveryCheckActivity : ComponentActivity() {
         }
         setContent {
             SklyankaTheme(dark = true) {
-                DeliveryCheckScreen(
-                    at = at,
-                    onAcknowledge = {
-                        lifecycleScope.launch {
-                            notifications.cancelDeliveryCheck()
-                            finish()
-                        }
-                    },
-                )
+                var closing by remember { mutableStateOf(false) }
+                ReminderFade(visible = true, closing = closing, onClosed = { finish() }) {
+                    DeliveryCheckScreen(
+                        at = at,
+                        onAcknowledge = {
+                            lifecycleScope.launch {
+                                notifications.cancelDeliveryCheck()
+                                closing = true
+                            }
+                        },
+                    )
+                }
             }
         }
     }

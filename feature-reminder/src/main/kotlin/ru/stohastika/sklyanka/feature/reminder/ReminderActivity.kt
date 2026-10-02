@@ -2,6 +2,7 @@ package ru.stohastika.sklyanka.feature.reminder
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.drawable.ColorDrawable
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -9,7 +10,6 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import dagger.hilt.android.AndroidEntryPoint
@@ -54,6 +54,7 @@ class ReminderActivity : ComponentActivity() {
             navigationBarStyle = SystemBarStyle.dark(AndroidColor.TRANSPARENT),
         )
         showOverLockScreen()
+        window.setBackgroundDrawable(ColorDrawable(AndroidColor.TRANSPARENT))
         open(intent)
 
         setContent {
@@ -61,24 +62,17 @@ class ReminderActivity : ComponentActivity() {
             // напоминание и знак, а не приложение целиком (docs/spec/08-design-system.md §5).
             SklyankaTheme(dark = true) {
                 val state by viewModel.state.collectAsState()
-                when (val current = state) {
-                    is ReminderUiState.Card -> ReminderScreen(
-                        state = current,
-                        actions = ReminderActions(
-                            onTaken = viewModel::onTaken,
-                            onSkipped = viewModel::onSkipped,
-                            onTakenAll = viewModel::onTakenAll,
-                            onSkippedAll = viewModel::onSkippedAll,
-                            onSnooze = viewModel::onSnooze,
-                        ),
-                    )
-
-                    // Приём отмечен — в том числе с часов, пока карточка была открыта:
-                    // экран закрывается сам, повторной отметки не создаётся (НАП-32).
-                    ReminderUiState.Closed -> LaunchedEffect(Unit) { finish() }
-
-                    ReminderUiState.Loading -> Unit
-                }
+                ReminderCardHost(
+                    state = state,
+                    actions = ReminderActions(
+                        onTaken = viewModel::onTaken,
+                        onSkipped = viewModel::onSkipped,
+                        onTakenAll = viewModel::onTakenAll,
+                        onSkippedAll = viewModel::onSkippedAll,
+                        onSnooze = viewModel::onSnooze,
+                    ),
+                    onClosed = { finish() },
+                )
             }
         }
     }
