@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <plurals name="transfer_chip_medications">
+        <item quantity="one">%1$d дәрі</item>
+        <item quantity="other">%1$d дәрі</item>
+    </plurals>
+
+    <plurals name="transfer_chip_archived">
+        <item quantity="one">%1$d мұрағатта</item>
+        <item quantity="other">%1$d мұрағатта</item>
+    </plurals>
+
+    <plurals name="transfer_chip_history_months">
+        <item quantity="one">%1$d айлық тарих</item>
+        <item quantity="other">%1$d айлық тарих</item>
+    </plurals>
+
+    <plurals name="transfer_chip_profiles">
+        <item quantity="one">%1$d бейін</item>
+        <item quantity="other">%1$d бейін</item>
+    </plurals>
+
+    <plurals name="transfer_count_intakes">
+        <item quantity="one">%1$d тарих жазбасы</item>
+        <item quantity="other">%1$d тарих жазбасы</item>
+    </plurals>
+
+    <plurals name="settings_profile_medications">
+        <item quantity="one">%1$d дәрі</item>
+        <item quantity="other">%1$d дәрі</item>
+    </plurals>
+
+    <plurals name="settings_snooze_minutes">
+        <item quantity="one">%1$d минут</item>
+        <item quantity="other">%1$d минут</item>
+    </plurals>
+</resources>

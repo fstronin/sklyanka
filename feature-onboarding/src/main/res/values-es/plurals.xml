@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <plurals name="onboarding_summary_unresolved">
+        <item quantity="one">Falta uno</item>
+        <item quantity="other">Faltan %1$d</item>
+    </plurals>
+</resources>

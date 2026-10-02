@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Sklyanka</string>
+
+    <string name="profile_self_default_name">Me</string>
+
+    <string name="reminder_channel_regular_name">Medication reminders</string>
+    <string name="reminder_channel_regular_description">Intake card at the scheduled time</string>
+    <string name="reminder_channel_persistent_name">Persistent reminders</string>
+    <string name="reminder_channel_persistent_description">Repeated while the intake stays unmarked</string>
+
+    <string name="reminder_overline">Scheduled intake</string>
+    <string name="reminder_time_pattern">HH:mm</string>
+    <string name="reminder_notification_separator">" · "</string>
+    <string name="reminder_notification_text">%1$s · %2$s</string>
+
+    <string name="add_medication_shortcut_label">Add medication</string>
+    <string name="add_medication_shortcut_long_label">New medication</string>
+
+    <string name="diagnostics_shortcut_label">Reminders</string>
+
+    <string name="permissions_shortcut_label">Permissions and autostart</string>
+</resources>

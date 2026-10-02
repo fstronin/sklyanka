@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <plurals name="today_medications">
+        <item quantity="one">%1$d Medikament</item>
+        <item quantity="other">%1$d Medikamente</item>
+    </plurals>
+
+    <plurals name="today_days_left">
+        <item quantity="one">reicht für %1$d Tag</item>
+        <item quantity="other">reicht für %1$d Tage</item>
+    </plurals>
+
+    <plurals name="today_stock_left_tablets">
+        <item quantity="one">noch %1$s Tablette</item>
+        <item quantity="other">noch %1$s Tabletten</item>
+    </plurals>
+    <plurals name="today_stock_left_capsules">
+        <item quantity="one">noch %1$s Kapsel</item>
+        <item quantity="other">noch %1$s Kapseln</item>
+    </plurals>
+    <plurals name="today_stock_left_millilitres">
+        <item quantity="one">noch %1$s ml</item>
+        <item quantity="other">noch %1$s ml</item>
+    </plurals>
+    <plurals name="today_stock_left_doses">
+        <item quantity="one">noch %1$s Dosis</item>
+        <item quantity="other">noch %1$s Dosen</item>
+    </plurals>
+
+    <plurals name="today_dose_tablets">
+        <item quantity="one">%1$s Tablette</item>
+        <item quantity="other">%1$s Tabletten</item>
+    </plurals>
+    <plurals name="today_dose_capsules">
+        <item quantity="one">%1$s Kapsel</item>
+        <item quantity="other">%1$s Kapseln</item>
+    </plurals>
+    <plurals name="today_dose_millilitres">
+        <item quantity="one">%1$s ml</item>
+        <item quantity="other">%1$s ml</item>
+    </plurals>
+    <plurals name="today_dose_doses">
+        <item quantity="one">%1$s Dosis</item>
+        <item quantity="other">%1$s Dosen</item>
+    </plurals>
+
+    <plurals name="today_prn_subtitle">
+        <item quantity="one">Ohne Zeitplan · höchstens %1$d Mal pro Tag</item>
+        <item quantity="other">Ohne Zeitplan · höchstens %1$d Mal pro Tag</item>
+    </plurals>
+
+    <plurals name="today_prn_limit_reached">
+        <item quantity="one">Heute bereits %1$d Mal eingenommen — das ist das Tageslimit</item>
+        <item quantity="other">Heute bereits %1$d Mal eingenommen — das ist das Tageslimit</item>
+    </plurals>
+
+    <plurals name="group_caption_by_one">
+        <item quantity="one">%1$d Einnahme · einzeln markieren</item>
+        <item quantity="other">%1$d Einnahmen · einzeln markieren</item>
+    </plurals>
+
+    <plurals name="dense_section_all_marked">
+        <item quantity="one">%1$d Einnahme, alle markiert</item>
+        <item quantity="other">%1$d Einnahmen, alle markiert</item>
+    </plurals>
+    <plurals name="dense_section_ahead">
+        <item quantity="one">%1$d Einnahme steht noch aus</item>
+        <item quantity="other">%1$d Einnahmen stehen noch aus</item>
+    </plurals>
+
+    <plurals name="today_undo_taken">
+        <item quantity="one">%1$d Einnahme als eingenommen markiert</item>
+        <item quantity="other">%1$d Einnahmen als eingenommen markiert</item>
+    </plurals>
+    <plurals name="today_undo_skipped">
+        <item quantity="one">%1$d Einnahme als übersprungen markiert</item>
+        <item quantity="other">%1$d Einnahmen als übersprungen markiert</item>
+    </plurals>
+
+    <plurals name="today_prn_collapsed">
+        <item quantity="one">%1$d Medikament ohne Zeitplan</item>
+        <item quantity="other">%1$d Medikamente ohne Zeitplan</item>
+    </plurals>
+</resources>

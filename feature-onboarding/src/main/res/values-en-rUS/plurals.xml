@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <plurals name="onboarding_summary_unresolved">
+        <item quantity="one">One not granted</item>
+        <item quantity="other">%1$d not granted</item>
+    </plurals>
+</resources>

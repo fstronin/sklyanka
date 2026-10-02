@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <plurals name="reminder_dose_tablets">
+        <item quantity="other">%1$s 片</item>
+    </plurals>
+    <plurals name="reminder_dose_capsules">
+        <item quantity="other">%1$s 粒</item>
+    </plurals>
+    <plurals name="reminder_dose_millilitres">
+        <item quantity="other">%1$s 毫升</item>
+    </plurals>
+    <plurals name="reminder_dose_doses">
+        <item quantity="other">%1$s 剂</item>
+    </plurals>
+
+    <plurals name="diagnostics_export_records">
+        <item quantity="other">%1$d 条记录</item>
+    </plurals>
+
+    <plurals name="diagnostics_late">
+        <item quantity="other">延迟 %1$d 分钟</item>
+    </plurals>
+</resources>

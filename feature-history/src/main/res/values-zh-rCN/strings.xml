@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="history_title">历史</string>
+    <string name="history_report_action">医生报告</string>
+    <string name="history_tile_on_time">按时服用</string>
+    <string name="history_tile_days_without_misses">无漏服天数</string>
+    <string name="history_tile_misses">本月漏服</string>
+
+    <string name="history_value_dash">—</string>
+    <string name="history_percent">%1$d %%</string>
+
+    <string name="cd_previous_month">上个月</string>
+    <string name="cd_next_month">下个月</string>
+
+    <string name="weekday_monday">周一</string>
+    <string name="weekday_tuesday">周二</string>
+    <string name="weekday_wednesday">周三</string>
+    <string name="weekday_thursday">周四</string>
+    <string name="weekday_friday">周五</string>
+    <string name="weekday_saturday">周六</string>
+    <string name="weekday_sunday">周日</string>
+
+    <string name="history_legend_all_taken">全部已服用</string>
+    <string name="history_legend_partial">部分服用</string>
+    <string name="history_legend_missed">漏服</string>
+
+    <string name="cd_history_day">%1$s，%2$s</string>
+    <string name="cd_history_day_today">%1$s，今天，%2$s</string>
+    <string name="history_state_no_intakes">没有服药</string>
+    <string name="history_state_ahead">服药时间还未到</string>
+    <string name="history_state_before_history">在开始记录历史之前</string>
+
+    <string name="history_breakdown_title">按药物</string>
+    <string name="history_archived_course">已归档</string>
+    <string name="cd_history_medication">%1$s，已服用 %2$s</string>
+
+    <string name="history_insight_morning">最常漏服的是 %1$s 的早上服药。</string>
+    <string name="history_insight_day">最常漏服的是 %1$s 的日间服药。</string>
+    <string name="history_insight_evening">最常漏服的是 %1$s 的晚上服药。</string>
+    <string name="history_insight_night">最常漏服的是 %1$s 的夜间服药。</string>
+
+    <string name="history_report_title">医生报告</string>
+    <string name="history_report_warning">报告以明文包含医疗数据。</string>
+    <string name="history_report_share">分享</string>
+    <string name="history_report_save">保存</string>
+    <string name="history_report_shared">报告已分享</string>
+    <string name="history_report_saved">报告已保存</string>
+    <string name="history_report_cancelled">已取消分享报告</string>
+    <string name="history_report_failed">报告未保存</string>
+    <string name="history_notice_dismiss">知道了</string>
+
+    <string name="report_document_composition_profile">档案：%1$s</string>
+
+    <string name="report_document_title">服药报告</string>
+    <string name="report_document_profile">Sklyanka · 档案“%1$s”</string>
+    <string name="report_document_period">期间：%1$s — %2$s</string>
+    <string name="report_document_generated">生成时间：%1$s</string>
+    <string name="report_document_summary_title">概要</string>
+    <string name="report_document_taken_label">已服用：</string>
+    <string name="report_document_on_time_label">按时服用：</string>
+    <string name="report_document_days_without_misses_label">无漏服天数：</string>
+    <string name="report_document_misses_label">期间漏服：</string>
+    <string name="report_document_medications_title">按药物</string>
+    <string name="report_document_medication_share">%1$d / %2$d（%3$s）</string>
+    <string name="report_document_as_needed">按需服药</string>
+    <string name="report_document_course">%1$s — %2$s</string>
+    <string name="report_document_course_open">自 %1$s 起，长期</string>
+    <string name="report_document_archived">疗程已归档</string>
+    <string name="report_document_no_misses">没有漏服</string>
+    <string name="report_document_missed_dates">漏服：%1$s</string>
+    <string name="report_document_missed_both">%1$s；其中 %2$s，%3$s</string>
+    <string name="report_document_missed_single">%1$s；%2$s</string>
+    <string name="report_document_missed_without_mark">%1$d — 未标记</string>
+    <string name="report_document_empty">该期间没有任何服药记录</string>
+    <string name="report_document_format">格式：PDF</string>
+    <string name="report_document_disclaimer">非医疗文件</string>
+    <string name="report_document_page">Sklyanka · 第 %1$d 页</string>
+
+    <string name="strength_unit_milligram">毫克</string>
+
+    <string name="history_date_pattern">M月d日</string>
+    <string name="history_date_pattern_full">yyyy年M月d日</string>
+    <string name="history_datetime_pattern">yyyy年M月d日 HH:mm</string>
+</resources>

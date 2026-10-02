@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <plurals name="today_medications">
+        <item quantity="one">%1$d дәрі</item>
+        <item quantity="other">%1$d дәрі</item>
+    </plurals>
+
+    <plurals name="today_days_left">
+        <item quantity="one">%1$d күнге жетеді</item>
+        <item quantity="other">%1$d күнге жетеді</item>
+    </plurals>
+
+    <plurals name="today_stock_left_tablets">
+        <item quantity="one">%1$s таблетка қалды</item>
+        <item quantity="other">%1$s таблетка қалды</item>
+    </plurals>
+    <plurals name="today_stock_left_capsules">
+        <item quantity="one">%1$s капсула қалды</item>
+        <item quantity="other">%1$s капсула қалды</item>
+    </plurals>
+    <plurals name="today_stock_left_millilitres">
+        <item quantity="one">%1$s мл қалды</item>
+        <item quantity="other">%1$s мл қалды</item>
+    </plurals>
+    <plurals name="today_stock_left_doses">
+        <item quantity="one">%1$s доза қалды</item>
+        <item quantity="other">%1$s доза қалды</item>
+    </plurals>
+
+    <plurals name="today_dose_tablets">
+        <item quantity="one">%1$s таблетка</item>
+        <item quantity="other">%1$s таблетка</item>
+    </plurals>
+    <plurals name="today_dose_capsules">
+        <item quantity="one">%1$s капсула</item>
+        <item quantity="other">%1$s капсула</item>
+    </plurals>
+    <plurals name="today_dose_millilitres">
+        <item quantity="one">%1$s мл</item>
+        <item quantity="other">%1$s мл</item>
+    </plurals>
+    <plurals name="today_dose_doses">
+        <item quantity="one">%1$s доза</item>
+        <item quantity="other">%1$s доза</item>
+    </plurals>
+
+    <plurals name="today_prn_subtitle">
+        <item quantity="one">Кестесіз · тәулігіне %1$d реттен көп емес</item>
+        <item quantity="other">Кестесіз · тәулігіне %1$d реттен көп емес</item>
+    </plurals>
+
+    <plurals name="today_prn_limit_reached">
+        <item quantity="one">Бүгін %1$d рет қабылданды — бұл тәуліктік шек</item>
+        <item quantity="other">Бүгін %1$d рет қабылданды — бұл тәуліктік шек</item>
+    </plurals>
+
+    <plurals name="group_caption_by_one">
+        <item quantity="one">%1$d қабылдау · біреулеп белгілеңіз</item>
+        <item quantity="other">%1$d қабылдау · біреулеп белгілеңіз</item>
+    </plurals>
+
+    <plurals name="dense_section_all_marked">
+        <item quantity="one">%1$d қабылдау, барлығы белгіленген</item>
+        <item quantity="other">%1$d қабылдау, барлығы белгіленген</item>
+    </plurals>
+    <plurals name="dense_section_ahead">
+        <item quantity="one">%1$d қабылдау алда</item>
+        <item quantity="other">%1$d қабылдау алда</item>
+    </plurals>
+
+    <plurals name="today_undo_taken">
+        <item quantity="one">%1$d қабылдау қабылданды деп белгіленді</item>
+        <item quantity="other">%1$d қабылдау қабылданды деп белгіленді</item>
+    </plurals>
+    <plurals name="today_undo_skipped">
+        <item quantity="one">%1$d қабылдау өткізілді деп белгіленді</item>
+        <item quantity="other">%1$d қабылдау өткізілді деп белгіленді</item>
+    </plurals>
+
+    <plurals name="today_prn_collapsed">
+        <item quantity="one">%1$d кестесіз дәрі</item>
+        <item quantity="other">%1$d кестесіз дәрі</item>
+    </plurals>
+</resources>

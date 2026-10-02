@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <plurals name="report_document_intakes_of_total">
+        <item quantity="other">%1$d / %2$d 次（%3$s）</item>
+    </plurals>
+
+    <plurals name="report_document_missed_by_person">
+        <item quantity="other">%1$d 次由本人标记</item>
+    </plurals>
+
+    <plurals name="report_document_dose_tablets">
+        <item quantity="other">%1$s 片</item>
+    </plurals>
+    <plurals name="report_document_dose_capsules">
+        <item quantity="other">%1$s 粒</item>
+    </plurals>
+    <plurals name="report_document_dose_millilitres">
+        <item quantity="other">%1$s 毫升</item>
+    </plurals>
+    <plurals name="report_document_dose_doses">
+        <item quantity="other">%1$s 剂</item>
+    </plurals>
+
+    <plurals name="cd_history_days_without_misses">
+        <item quantity="other">%1$d 天无漏服</item>
+    </plurals>
+
+    <plurals name="cd_history_misses">
+        <item quantity="other">本月 %1$d 次漏服</item>
+    </plurals>
+</resources>

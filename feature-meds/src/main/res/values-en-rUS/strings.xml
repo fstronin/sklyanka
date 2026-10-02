@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="meds_title">Medications</string>
+    <string name="meds_tab_active">Active · %1$d</string>
+    <string name="meds_tab_archive">Archive · %1$d</string>
+    <string name="meds_as_needed_chip">as needed</string>
+
+    <string name="meds_separator">" · "</string>
+
+    <string name="meds_frequency_daily">Daily</string>
+
+    <string name="meds_period_open">since %1$s · indefinite</string>
+    <string name="meds_period_until">until %1$s</string>
+    <string name="meds_last_intake">last intake — %1$s</string>
+
+    <string name="meds_empty_title">Nothing is scheduled yet</string>
+    <string name="meds_empty_text">Add a medication and its intakes will appear here by the clock.</string>
+    <string name="meds_empty_action">Add medication</string>
+
+    <string name="cd_add_medication">Add medication</string>
+    <string name="cd_open_medication">Open card: %1$s</string>
+
+    <string name="form_title_new">New medication</string>
+    <string name="form_save_new">Save medication</string>
+    <string name="form_save_existing">Save</string>
+
+    <string name="form_label_name">Name</string>
+    <string name="form_label_release_form">Form</string>
+    <string name="form_label_tablet_shape">Tablet shape</string>
+
+    <string name="form_preview_reusable">This is how the medication will be recognized in the list and card</string>
+    <string name="form_preview_dose_words">The dose is described in words: “%1$s” — without a shape</string>
+    <string name="form_preview_dose_words_empty">The dose is described in words, without a shape</string>
+    <string name="form_label_dose">Dose per intake</string>
+    <string name="form_label_intakes_per_day">Intakes per day</string>
+    <string name="form_caption_times_below">Time is set below</string>
+    <string name="form_label_times">Intake time</string>
+    <string name="form_add_time">Add time</string>
+
+    <string name="form_dialog_time">Intake time</string>
+    <string name="form_dialog_start_date">Start date</string>
+    <string name="form_dialog_end_date">End date</string>
+    <string name="form_label_mode">Intake mode</string>
+    <string name="form_mode_scheduled">Scheduled</string>
+    <string name="form_mode_as_needed">As needed</string>
+    <string name="form_mode_as_needed_hint">As needed — no reminders: the intake is marked manually when it is needed.</string>
+    <string name="form_label_food_relation">Relation to food</string>
+    <string name="form_label_stock">Package stock</string>
+    <string name="form_stock_now">Currently available</string>
+    <string name="form_package_size">Package size</string>
+    <string name="form_package_size_hint">Optional. The card will show how much is left of the package</string>
+    <string name="form_stock_reminder">Remind to buy</string>
+    <string name="form_label_period">Intake period</string>
+    <string name="form_period_start">Start</string>
+    <string name="form_period_indefinite">Take indefinitely</string>
+    <string name="form_period_indefinite_caption">End date is not set</string>
+    <string name="form_period_end">End</string>
+    <string name="form_period_end_empty">—</string>
+
+    <string name="period_preset_week_1">1 week</string>
+    <string name="period_preset_weeks_2">2 weeks</string>
+    <string name="period_preset_month_1">1 month</string>
+    <string name="period_preset_months_2">2 months</string>
+    <string name="period_preset_months_3">3 months</string>
+    <string name="period_preset_months_6">6 months</string>
+    <string name="period_preset_year_1">1 year</string>
+    <string name="period_preset_other">Another date</string>
+
+    <string name="cd_dose_amount">Amount</string>
+    <string name="cd_strength">Dosage</string>
+    <string name="cd_decrease">Decrease</string>
+    <string name="cd_increase">Increase</string>
+    <string name="cd_delete_time">Delete time %1$s</string>
+
+    <string name="med_form_tablet">Tablet</string>
+    <string name="med_form_capsule">Capsule</string>
+    <string name="med_form_spray">Spray</string>
+    <string name="med_form_syrup">Syrup</string>
+    <string name="med_form_drops">Drops</string>
+    <string name="med_form_injection">Injection</string>
+
+    <string name="tablet_shape_round">Round</string>
+    <string name="tablet_shape_round_scored">Round with a score line</string>
+    <string name="tablet_shape_oval">Oval</string>
+    <string name="tablet_shape_oblong">Oblong</string>
+    <string name="tablet_shape_triangular">Triangular</string>
+
+    <string name="food_relation_any">Any</string>
+    <string name="food_relation_before">Before food</string>
+    <string name="food_relation_with">With food</string>
+    <string name="food_relation_after">After food</string>
+
+    <string name="dose_suffix_piece">pcs</string>
+    <string name="dose_suffix_millilitre">ml</string>
+    <string name="dose_suffix_dose">doses</string>
+
+    <string name="strength_unit_milligram">mg</string>
+
+    <string name="stock_unit_tablets">tablets</string>
+    <string name="stock_unit_capsules">capsules</string>
+    <string name="stock_unit_millilitres">ml</string>
+    <string name="stock_unit_doses">doses</string>
+
+    <string name="form_label_max_per_day">No more than, times a day</string>
+    <string name="form_caption_max_per_day">Intake is marked manually</string>
+
+    <string name="error_name_empty">Enter the medication name</string>
+    <string name="error_dose_not_positive">The dose per intake must be greater than zero</string>
+    <string name="error_strength_without_unit">Enter the dosage unit</string>
+    <string name="error_unit_without_strength">Enter the dosage value</string>
+    <string name="error_no_times">Set at least one intake time</string>
+    <string name="error_duplicate_time">Time %1$s is repeated</string>
+    <string name="error_end_before_start">The end date is earlier than the start date</string>
+    <string name="error_max_per_day_missing">Set the maximum number of intakes per day</string>
+    <string name="error_max_per_day_not_positive">The limit must be greater than zero</string>
+    <string name="error_stock_negative">The stock cannot be negative</string>
+    <string name="error_package_size_not_positive">The package size must be greater than zero</string>
+    <string name="form_save_blocked">Enter a name to save the medication</string>
+
+    <string name="card_edit">Edit</string>
+    <string name="card_section_schedule">Schedule</string>
+    <string name="card_section_course">Course</string>
+    <string name="card_section_stock">Stock</string>
+    <string name="card_stock_of_package">%1$s of %2$s</string>
+    <string name="card_section_week">Last 7 days</string>
+    <string name="card_week_empty">No intakes yet</string>
+    <string name="card_course_period">%1$s — %2$s</string>
+    <string name="card_refill">Refill</string>
+    <string name="card_archive">Archive</string>
+
+    <string name="card_food_before">before food</string>
+    <string name="card_food_with">with food</string>
+    <string name="card_food_after">after food</string>
+
+    <string name="card_section_limit">Limit</string>
+    <string name="card_restore">Restore</string>
+    <string name="card_course_last_day">last day</string>
+    <string name="card_course_over">course finished</string>
+
+    <string name="card_refill_hint">How much is left</string>
+    <string name="card_refill_confirm">Save</string>
+
+    <string name="card_offer_course_finished">The course has finished. Move it to the archive?</string>
+    <string name="card_offer_action">Archive</string>
+
+    <string name="card_notice_period_needs_update">The intake period has ended. Extend it in the edit form to restore the course.</string>
+    <string name="card_notice_dismiss">Got it</string>
+
+    <string name="cd_adherence_today">%1$s, today</string>
+    <string name="cd_adherence_completed">%1$s, %2$d of %3$d taken</string>
+    <string name="cd_adherence_no_intakes">%1$s, no intakes</string>
+    <string name="cd_adherence_before_course">%1$s, before the course started</string>
+
+    <string name="archive_group_finished">Course finished</string>
+    <string name="archive_group_manual">Removed manually</string>
+    <string name="archive_caption_since">in the archive since %1$s</string>
+    <string name="archive_restore">Restore</string>
+    <string name="archive_history_banner">Intake history is preserved. Restoring from the archive brings the medication back with the same schedule.</string>
+
+    <string name="archive_empty_title">The archive is empty for now</string>
+    <string name="archive_empty_text">Finished courses will appear here from the medication card. Intake history will be preserved.</string>
+
+    <string name="date_pattern_day_month">MMMM d</string>
+    <string name="date_pattern_full">MMMM d, yyyy</string>
+</resources>

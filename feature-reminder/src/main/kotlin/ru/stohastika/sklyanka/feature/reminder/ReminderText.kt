@@ -16,7 +16,7 @@ import ru.stohastika.sklyanka.domain.reminder.RescheduleReason
 import ru.stohastika.sklyanka.domain.reminder.SuppressReason
 import ru.stohastika.sklyanka.domain.reminder.port.PermissionState
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPermission
-import ru.stohastika.sklyanka.ui.locale.InterfaceLocale
+import ru.stohastika.sklyanka.ui.locale.interfaceLocale
 import java.math.BigDecimal
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -33,7 +33,7 @@ import java.time.format.DateTimeFormatter
 /** «14:00» — время приёма над названием лекарства. */
 @Composable
 internal fun LocalDateTime.timeLabel(): String =
-    format(DateTimeFormatter.ofPattern(stringResource(R.string.reminder_time_pattern), InterfaceLocale.VALUE))
+    format(DateTimeFormatter.ofPattern(stringResource(R.string.reminder_time_pattern), interfaceLocale()))
 
 /** «2 таблетки · 48 мг» — доза и дозировка одной строкой (НАП-29). */
 @Composable
@@ -73,7 +73,7 @@ internal fun snoozeLabel(minutes: Int): String = stringResource(R.string.reminde
 internal fun LocalDateTime.journalMoment(): String = format(
     // Локаль указана явно: `ofPattern` без неё берёт локаль процесса, а она остаётся
     // локалью телефона и после закрепления конфигурации (ADR-0008).
-    DateTimeFormatter.ofPattern(stringResource(R.string.diagnostics_datetime_pattern), InterfaceLocale.VALUE),
+    DateTimeFormatter.ofPattern(stringResource(R.string.diagnostics_datetime_pattern), interfaceLocale()),
 )
 
 /** Название разрешения строкой диагностики (НАП-37). */
@@ -224,5 +224,5 @@ internal fun ReminderJournalExportOutcome.label(): String = when (this) {
 /** Момент, с которого напоминания не приходили, в сообщении о перерыве (НАП-38). */
 @Composable
 internal fun LocalDateTime.outageMoment(): String = format(
-    DateTimeFormatter.ofPattern(stringResource(R.string.reminder_outage_notice_moment_pattern), InterfaceLocale.VALUE),
+    DateTimeFormatter.ofPattern(stringResource(R.string.reminder_outage_notice_moment_pattern), interfaceLocale()),
 )

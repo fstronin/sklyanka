@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="history_title">Тарих</string>
+    <string name="history_report_action">Дәрігерге есеп</string>
+    <string name="history_tile_on_time">уақытында қабылданды</string>
+    <string name="history_tile_days_without_misses">өткізілмеген күндер</string>
+    <string name="history_tile_misses">айдағы өткізілулер</string>
+
+    <string name="history_value_dash">—</string>
+    <string name="history_percent">%1$d %%</string>
+
+    <string name="cd_previous_month">Алдыңғы ай</string>
+    <string name="cd_next_month">Келесі ай</string>
+
+    <string name="weekday_monday">Дс</string>
+    <string name="weekday_tuesday">Сс</string>
+    <string name="weekday_wednesday">Ср</string>
+    <string name="weekday_thursday">Бс</string>
+    <string name="weekday_friday">Жм</string>
+    <string name="weekday_saturday">Сн</string>
+    <string name="weekday_sunday">Жк</string>
+
+    <string name="history_legend_all_taken">барлығы қабылданды</string>
+    <string name="history_legend_partial">ішінара</string>
+    <string name="history_legend_missed">өткізілді</string>
+
+    <string name="cd_history_day">%1$s, %2$s</string>
+    <string name="cd_history_day_today">%1$s, бүгін, %2$s</string>
+    <string name="history_state_no_intakes">қабылдау болмады</string>
+    <string name="history_state_ahead">қабылдау әлі келмеді</string>
+    <string name="history_state_before_history">тарих басталғанға дейін</string>
+
+    <string name="history_breakdown_title">Дәрі бойынша</string>
+    <string name="history_archived_course">мұрағатта</string>
+    <string name="cd_history_medication">%1$s, %2$s қабылданды</string>
+
+    <string name="history_insight_morning">Ең жиі өткізілетін — %1$s кезіндегі таңғы қабылдау.</string>
+    <string name="history_insight_day">Ең жиі өткізілетін — %1$s кезіндегі күндізгі қабылдау.</string>
+    <string name="history_insight_evening">Ең жиі өткізілетін — %1$s кезіндегі кешкі қабылдау.</string>
+    <string name="history_insight_night">Ең жиі өткізілетін — %1$s кезіндегі түнгі қабылдау.</string>
+
+    <string name="history_report_title">Дәрігерге есеп</string>
+    <string name="history_report_warning">Есепте медициналық деректер ашық түрде бар.</string>
+    <string name="history_report_share">Жіберу</string>
+    <string name="history_report_save">Сақтау</string>
+    <string name="history_report_shared">Есеп жіберілді</string>
+    <string name="history_report_saved">Есеп сақталды</string>
+    <string name="history_report_cancelled">Есепті жіберу тоқтатылды</string>
+    <string name="history_report_failed">Есеп сақталмады</string>
+    <string name="history_notice_dismiss">Түсінікті</string>
+
+    <string name="report_document_composition_profile">Бейін: %1$s</string>
+
+    <string name="report_document_title">Дәрі қабылдау туралы есеп</string>
+    <string name="report_document_profile">Sklyanka · «%1$s» бейіні</string>
+    <string name="report_document_period">Кезең: %1$s — %2$s</string>
+    <string name="report_document_generated">Құрылған күні: %1$s</string>
+    <string name="report_document_summary_title">ҚОРЫТЫНДЫ</string>
+    <string name="report_document_taken_label">Қабылданды:</string>
+    <string name="report_document_on_time_label">Уақытында қабылданды:</string>
+    <string name="report_document_days_without_misses_label">Өткізілмеген күндер:</string>
+    <string name="report_document_misses_label">Кезеңдегі өткізілулер:</string>
+    <string name="report_document_medications_title">ДӘРІ БОЙЫНША</string>
+    <string name="report_document_medication_share">%2$d ішінен %1$d (%3$s)</string>
+    <string name="report_document_as_needed">Қажетіне қарай қабылдау</string>
+    <string name="report_document_course">%1$s — %2$s</string>
+    <string name="report_document_course_open">%1$s бастап, мерзімсіз</string>
+    <string name="report_document_archived">Курс мұрағатта</string>
+    <string name="report_document_no_misses">Өткізілулер жоқ</string>
+    <string name="report_document_missed_dates">Өткізілулер: %1$s</string>
+    <string name="report_document_missed_both">%1$s; оның ішінде %2$s, %3$s</string>
+    <string name="report_document_missed_single">%1$s; %2$s</string>
+    <string name="report_document_missed_without_mark">%1$d — белгісіз</string>
+    <string name="report_document_empty">Кезеңде бірде-бір қабылдау жазбасы жоқ</string>
+    <string name="report_document_format">Формат: PDF</string>
+    <string name="report_document_disclaimer">Медициналық құжат емес</string>
+    <string name="report_document_page">Sklyanka · %1$d-бет</string>
+
+    <string name="strength_unit_milligram">мг</string>
+
+    <string name="history_date_pattern">d MMMM</string>
+    <string name="history_date_pattern_full">d MMMM yyyy</string>
+    <string name="history_datetime_pattern">d MMMM yyyy, HH:mm</string>
+</resources>

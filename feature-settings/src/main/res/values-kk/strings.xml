@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="transfer_title">Деректерді көшіру</string>
+    <string name="transfer_principle">Барлық дәрілер, кестелер және тарих бір файлда. Бұлт жоқ — файл сізде қалады.</string>
+
+    <string name="transfer_export_title">Шығару</string>
+    <string name="transfer_export_file">%1$s файлы</string>
+    <string name="transfer_export_action">Файлды сақтау</string>
+    <string name="transfer_export_chip_settings">параметрлер</string>
+    <string name="transfer_last_export">Соңғы шығару — %1$s</string>
+
+    <string name="transfer_privacy_content">Файлда дәрі атаулары, дозалар және қабылдау тарихы бар. Ол шифрланбаған — оны медициналық құжат ретінде ұстаңыз.</string>
+    <string name="transfer_privacy_place">Сақтау орнын сіз таңдайсыз. Бұлтпен синхрондалатын қалта деректерді бұлтқа алып кетеді.</string>
+
+    <string name="transfer_import_title">Жүктеу</string>
+    <string name="transfer_import_subtitle">Осы құрылғыдағы файлдан</string>
+    <string name="transfer_mode_merge">Қазіргілерге қосу</string>
+    <string name="transfer_mode_merge_hint">Атауы мен дозасы бойынша сәйкестіктер бөлек көрсетіледі</string>
+    <string name="transfer_mode_replace">Барлығын ауыстыру</string>
+    <string name="transfer_mode_replace_hint">Осы құрылғыдағы қазіргі деректер жойылады</string>
+    <string name="transfer_import_action">Файлды таңдау</string>
+
+    <string name="transfer_permissions_note">Жаңа құрылғыда рұқсаттар мен автожүгіртуді қайта беру керек — олар жүйеге тиесілі, файлға емес. Жүктеуден кейін сол реттеу экраны ашылады.</string>
+
+    <string name="transfer_summary_title">Файлда не бар</string>
+    <string name="transfer_summary_exported_at">Шығарылды %1$s</string>
+    <string name="transfer_summary_old_format">Файл Sklyanka-ның ескі нұсқасымен жасалған (формат нұсқасы %1$d). Ол миграция арқылы оқылады.</string>
+    <string name="transfer_summary_continue">Әрі қарай</string>
+    <string name="transfer_summary_cancel">Болдырмау</string>
+
+    <string name="transfer_matches_title">Сәйкестіктер</string>
+    <string name="transfer_matches_hint">Бұл дәрілер құрылғыда бұрыннан бар. Шешім әрқайсысы үшін бөлек қабылданады.</string>
+    <string name="transfer_matches_empty">Сәйкестіктер жоқ — файлдағының бәрі сұрақсыз қосылады.</string>
+    <string name="transfer_match_dosage">%1$s, %2$s</string>
+    <string name="transfer_match_dosage_value">%1$s %2$s</string>
+    <string name="transfer_match_difference_times">Қабылдау уақыты: құрылғыда %1$s, файлда %2$s</string>
+    <string name="transfer_match_difference_schedule_mode">Қабылдау режимі өзгеше</string>
+    <string name="transfer_match_difference_form">Шығарылым түрі өзгеше</string>
+    <string name="transfer_match_difference_shape">Дәрі пішіні өзгеше</string>
+    <string name="transfer_match_difference_dose_amount">Бір қабылдауға доза өзгеше</string>
+    <string name="transfer_match_difference_food_relation">Тамақпен байланысы өзгеше</string>
+    <string name="transfer_match_difference_period">Курс кезеңі өзгеше</string>
+    <string name="transfer_match_difference_stock">Қаптама қалдығы өзгеше</string>
+    <string name="transfer_match_difference_max_per_day">Тәуліктік қабылдау шегі өзгеше</string>
+    <string name="transfer_decision_keep_mine">Менікі қалсын</string>
+    <string name="transfer_decision_take_from_file">Файлдан алу</string>
+    <string name="transfer_decision_add_separately">Бөлек қосу</string>
+    <string name="transfer_decision_do_not_load">Жүктемеу</string>
+    <string name="transfer_matches_drop_all">Сәйкес келгендердің ешқайсысын жүктемеу</string>
+    <string name="transfer_matches_apply">Жүктеу</string>
+    <string name="transfer_times_empty">қажетіне қарай</string>
+    <string name="transfer_strength_unit_milligram">мг</string>
+
+    <string name="transfer_replace_title">Барлығын ауыстырайық па?</string>
+    <string name="transfer_replace_warning">Осы құрылғыдағы қазіргі деректер жойылып, файл мазмұнымен ауыстырылады. Мұны болдырмау мүмкін емес.</string>
+    <string name="transfer_replace_now">Қазір құрылғыда</string>
+    <string name="transfer_replace_after">Файлдан болады</string>
+    <string name="transfer_replace_history_from">%1$s бастап тарих</string>
+    <string name="transfer_replace_history_empty">тарих жоқ</string>
+    <string name="transfer_replace_safety_copy">Жою алдында қолданба қазіргі деректердің сақтық көшірмесін ішкі жадқа сақтайды, %1$s файлы. Ол басқа қолданбаларға қолжетімсіз және келесі ауыстыруда үстінен жазылады.</string>
+    <string name="transfer_replace_confirm">Жою және жүктеу</string>
+    <string name="transfer_replace_cancel">Жоймау</string>
+    <string name="transfer_replace_word">Ауыстыру</string>
+    <string name="transfer_replace_word_label">Растау үшін «%1$s» сөзін енгізіңіз</string>
+
+    <string name="transfer_report_title">Жүктеу аяқталды</string>
+    <string name="transfer_report_profiles">Қосылған бейіндер: %1$d</string>
+    <string name="transfer_report_medications">Қосылған дәрілер: %1$d</string>
+    <string name="transfer_report_medications_updated">Файлдан жаңартылған дәрілер: %1$d</string>
+    <string name="transfer_report_intakes">Қосылған тарих жазбалары: %1$d</string>
+    <string name="transfer_report_intakes_updated">Нақтыланған тарих жазбалары: %1$d</string>
+    <string name="transfer_report_intakes_skipped">Бұрыннан болғандықтан қосылмаған тарих жазбалары: %1$d</string>
+    <string name="transfer_report_matches">Шешілген сәйкестіктер: %1$d</string>
+    <string name="transfer_report_decision">%1$s — %2$d</string>
+    <string name="transfer_report_not_transferred">Толық көшірілмеді</string>
+    <string name="transfer_report_notice_sound">Файлдағы еске салғыш дыбысы бұл құрылғыда табылмады және әдепкі дыбыспен ауыстырылды.</string>
+    <string name="transfer_report_notice_enum">«%1$s» өрісінің мәні танылмады және әдепкі мәнмен ауыстырылды: %2$s.</string>
+    <string name="transfer_report_notice_enum_settings">Параметрлердегі «%1$s» өрісінің мәні танылмады және әдепкі мәнмен ауыстырылды.</string>
+    <string name="transfer_report_notice_old_format">Файл ескі формат нұсқасымен (%1$d) жасалған және миграция арқылы оқылды.</string>
+    <string name="transfer_report_safety_copy">Бұрынғы деректердің сақтық көшірмесі: %1$s</string>
+    <string name="transfer_report_continue">Рұқсаттарды реттеу</string>
+    <string name="transfer_field_form">шығарылым түрі</string>
+    <string name="transfer_field_shape">дәрі пішіні</string>
+    <string name="transfer_field_food_relation">тамақпен байланысы</string>
+    <string name="transfer_field_schedule_mode">қабылдау режимі</string>
+    <string name="transfer_field_archive_reason">мұрағаттау себебі</string>
+    <string name="transfer_field_status">қабылдау күйі</string>
+    <string name="transfer_field_source">белгі көзі</string>
+    <string name="transfer_field_unknown">белгісіз өріс</string>
+
+    <string name="transfer_error_not_an_export">Файл Sklyanka шығарылымына ұқсамайды</string>
+    <string name="transfer_error_from_future">Файл Sklyanka-ның жаңарақ нұсқасымен жасалған. Қолданбаны жаңартыңыз</string>
+    <string name="transfer_error_no_space">Орын жеткіліксіз. Ештеңе жойылмады және жүктелмеді.</string>
+    <string name="transfer_error_not_applied">Жүктеу өтпеді. Құрылғыдағы деректер өзгерген жоқ.</string>
+    <string name="transfer_error_export_failed">Шығару өтпеді. Таңдалған жерде дайын файл жоқ.</string>
+    <string name="transfer_error_no_file_picker">Құрылғыда файл таңдайтын қолданба жоқ. Онсыз деректерді көшіру мүмкін емес.</string>
+    <string name="transfer_error_import_interrupted">Алдыңғы жүктеу өтпеді. Құрылғыдағы деректер бұрынғы күйінде қалды.</string>
+
+    <string name="transfer_reason_not_json">Файл JSON ретінде оқылмайды</string>
+    <string name="transfer_reason_missing_marker">Файлда шығарылым идентификаторы жоқ</string>
+    <string name="transfer_reason_foreign_marker">Файлдағы идентификатор Sklyanka-ға тиесілі емес</string>
+    <string name="transfer_reason_invalid_version">Файлдың формат нұсқасы танылмады</string>
+    <string name="transfer_reason_missing_section">Файлда міндетті бөлім жоқ: %1$s</string>
+    <string name="transfer_reason_invalid_value">Мән оқылмайды: %1$s</string>
+    <string name="transfer_reason_duplicate_id">Файлда идентификатор қайталанады: %1$s</string>
+    <string name="transfer_reason_broken_link">Файл ішіндегі байланыс үзілген: %1$s</string>
+    <string name="transfer_reason_self_profile">Файлда өз бейіні жоқ немесе олар біреуден көп</string>
+    <string name="transfer_reason_invalid_record">Файлдағы жазба қолданба ережелерінен өтпейді: %1$s</string>
+
+    <string name="transfer_date_pattern_day_month">d MMMM</string>
+    <string name="transfer_date_pattern_full">d MMMM yyyy</string>
+    <string name="transfer_time_pattern">HH:mm</string>
+    <string name="transfer_summary_moment">%1$s, %2$s</string>
+    <string name="transfer_times_separator">" және "</string>
+
+    <string name="transfer_cd_export">Шығару</string>
+    <string name="transfer_cd_import">Жүктеу</string>
+    <string name="transfer_cd_back">Артқа</string>
+
+    <string name="settings_title">Параметрлер</string>
+
+    <string name="settings_rubric_profiles">Бейіндер</string>
+    <string name="settings_rubric_reminders">Еске салғыштар</string>
+    <string name="settings_rubric_system">Жүйе</string>
+    <string name="settings_rubric_data">Деректер</string>
+
+    <string name="settings_profile_self">Менің дәрілерім</string>
+    <string name="settings_profile_self_initial">М</string>
+    <string name="settings_profile_mirrored">еске салғыштар маған қайталанады</string>
+    <string name="settings_profile_subtitle">%1$s · %2$s</string>
+    <string name="settings_profile_add">Бейін қосу</string>
+    <string name="settings_profile_add_unavailable">Жақын арадағы жаңартуда қолжетімді болады</string>
+    <string name="settings_profile_delete">«%1$s» бейінін жою</string>
+    <string name="cd_settings_profile_active">Белсенді бейін</string>
+
+    <string name="settings_sound">Дыбыс</string>
+    <string name="settings_sound_caption">Жүйелік хабарлама параметрлері</string>
+    <string name="settings_persistent">Қайталама еске салғыш</string>
+    <string name="settings_persistent_caption">Белгіленбесе, қайталау</string>
+    <string name="settings_snooze">Кейінге қалдыру</string>
+
+    <string name="settings_permissions">Рұқсаттар және автожүгірту</string>
+    <string name="settings_permissions_denied_one">Біреуі берілмеді</string>
+    <string name="settings_permissions_denied_many">%1$d берілмеді</string>
+    <string name="settings_permissions_granted_manual">Берілген · автожүгіртуді қолмен тексеріңіз</string>
+    <string name="settings_permissions_granted">Барлық рұқсаттар берілген</string>
+
+    <string name="settings_history">Қабылдау тарихы</string>
+    <string name="settings_transfer_caption">Файлмен шығару және жүктеу, бұлтсыз</string>
+
+    <string name="settings_about_app">Sklyanka %1$s</string>
+    <string name="settings_about_vendor">Stohastika · Медициналық өнім емес</string>
+    <string name="cd_settings_about_mark">Sklyanka белгісі</string>
+
+    <string name="profile_delete_title">Бейінді жою керек пе?</string>
+    <string name="profile_delete_intro">«%1$s» бейіні деректерімен бірге жойылады:</string>
+    <string name="profile_delete_medications">Дәрілер: %1$d (мұрағатта %2$d)</string>
+    <string name="profile_delete_history">Тарих жазбалары: %1$d</string>
+    <string name="profile_delete_reminders">Осы бейіннің қабылдаулары туралы еске салғыштар алынады</string>
+    <string name="profile_delete_warning">Жою қайтарымсыз: бейін және оның барлық деректері осы құрылғыдан жойылады. Оларды қайтару мүмкін болмайды</string>
+    <string name="profile_delete_export">Көшіру файлын сақтау</string>
+    <string name="profile_delete_export_note">Файлда барлық бейіндер бар. «%1$s» тек бүкіл файлды жүктеу арқылы қайтарылады</string>
+    <string name="profile_delete_export_saved">Файл сақталды — %1$s</string>
+    <string name="profile_delete_word">Жою</string>
+    <string name="profile_delete_confirm">Бейінді жою</string>
+    <string name="profile_delete_done">Дайын</string>
+    <string name="profile_delete_result_title">«%1$s» бейіні жойылды</string>
+    <string name="profile_delete_result_active">Сіздің бейініңіз белсенді болды</string>
+    <string name="profile_delete_no_space">Орын жеткіліксіз. Файл сақталмады, бейін жойылмады.</string>
+    <string name="profile_delete_no_picker">Құрылғыда файл таңдайтын қолданба жоқ. Онсыз көшіру файлын сақтау мүмкін емес.</string>
+</resources>

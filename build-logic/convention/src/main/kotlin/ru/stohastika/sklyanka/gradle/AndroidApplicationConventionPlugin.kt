@@ -23,13 +23,16 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
                 versionCode = 1
                 versionName = "0.1.0"
                 testInstrumentationRunner = ProjectDefaults.ANDROID_TEST_RUNNER
-                // Приложение говорит на одном языке (НФТ-43), и это записано здесь, а не
-                // только в строках: иначе в артефакт едут чужие переводы библиотек, а
-                // система не знает, на каких языках приложение вообще разговаривает.
-                // Механизмом закрепления языка это НЕ является — им служит конфигурация
+                // Объявленные языки (НФТ-43, ПМ-14) записаны здесь, а не только
+                // в строках: иначе в артефакт едут чужие переводы библиотек, а система
+                // не знает, на каких языках приложение вообще разговаривает.
+                // Механизмом выбора языка это НЕ является — им служит конфигурация
                 // контекста (ADR-0008): форму множественного числа выбирает система
                 // по локали конфигурации, а не по составу ресурсов.
-                resourceConfigurations += ProjectDefaults.INTERFACE_LOCALE
+                //
+                // BCP-47 («en-US») переводится в квалификатор AAPT («en-rUS»):
+                // дефис перед регионом AAPT не понимает и валит линковку ресурсов.
+                resourceConfigurations += ProjectDefaults.INTERFACE_LOCALES.map(::resourceQualifier)
             }
             compileOptions {
                 sourceCompatibility = JavaVersion.VERSION_17
@@ -49,4 +52,10 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
             add("androidTestImplementation", libs.findLibrary("androidx-test-runner").get())
         }
     }
+}
+
+/** BCP-47 в квалификатор AAPT: `en-US` → `en-rUS`, `zh-CN` → `zh-rCN`, `es` → `es`. */
+private fun resourceQualifier(language: String): String {
+    val parts = language.split('-', limit = 2)
+    return if (parts.size == 2) "${parts[0]}-r${parts[1]}" else language
 }

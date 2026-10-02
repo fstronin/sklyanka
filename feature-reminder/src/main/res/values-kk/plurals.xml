@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <plurals name="reminder_dose_tablets">
+        <item quantity="one">%1$s таблетка</item>
+        <item quantity="other">%1$s таблетка</item>
+    </plurals>
+
+    <plurals name="reminder_dose_capsules">
+        <item quantity="one">%1$s капсула</item>
+        <item quantity="other">%1$s капсула</item>
+    </plurals>
+
+    <plurals name="reminder_dose_millilitres">
+        <item quantity="one">%1$s мл</item>
+        <item quantity="other">%1$s мл</item>
+    </plurals>
+
+    <plurals name="reminder_dose_doses">
+        <item quantity="one">%1$s доза</item>
+        <item quantity="other">%1$s доза</item>
+    </plurals>
+
+    <plurals name="diagnostics_export_records">
+        <item quantity="one">%1$d жазба</item>
+        <item quantity="other">%1$d жазба</item>
+    </plurals>
+
+    <plurals name="diagnostics_late">
+        <item quantity="one">%1$d минут кешігумен</item>
+        <item quantity="other">%1$d минут кешігумен</item>
+    </plurals>
+</resources>

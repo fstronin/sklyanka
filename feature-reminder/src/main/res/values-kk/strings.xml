@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="reminder_overline">Кесте бойынша қабылдау</string>
+    <string name="reminder_time_pattern">HH:mm</string>
+
+    <string name="reminder_snooze">%1$d мин кейін</string>
+
+    <string name="reminder_dose_separator">" · "</string>
+
+    <string name="reminder_strength">%1$s %2$s</string>
+
+    <string name="reminder_row_taken">Қабылданды</string>
+    <string name="reminder_row_skip">Өткізіп жіберу</string>
+
+    <string name="diagnostics_title">Еске салғыштарды тексеру</string>
+
+    <string name="diagnostics_reliable">Барлығы дұрыс</string>
+    <string name="diagnostics_all_granted">Рұқсаттар берілген</string>
+    <string name="diagnostics_fix">Түзету</string>
+    <string name="diagnostics_check_done">Тексеру орындалды — еске салғыштар қойылды</string>
+    <string name="diagnostics_check_failed">Тексеру мүмкін болмады: еске салғыштар қайта жоспарланбады</string>
+    <string name="diagnostics_support">Қолдау қызметіне</string>
+
+    <string name="diagnostics_week_summary">7 күнде: %1$d іске қосылды, %2$d өткізілді</string>
+    <string name="diagnostics_week_summary_none">7 күнде еске салғыштар болмады</string>
+
+    <string name="diagnostics_last_none">Әзірге еске салғыштар болмады</string>
+    <string name="diagnostics_last_line">%1$s — %2$s</string>
+    <string name="diagnostics_last_actual">%1$s көрсетілді</string>
+    <string name="diagnostics_on_time_word">уақытында</string>
+    <string name="diagnostics_next_none">Келесі еске салғыш жоқ</string>
+    <string name="diagnostics_next_line">%1$s — %2$s · %3$s</string>
+    <string name="diagnostics_next_plan">жоспар</string>
+
+    <string name="diagnostics_journal_too_late">%1$s іске қосылды — көрсетілмеді</string>
+
+    <string name="diagnostics_section_last">Соңғы еске салғыш</string>
+    <string name="diagnostics_section_next">Келесі еске салғыш</string>
+    <string name="diagnostics_section_reschedule">Соңғы жоспар құру</string>
+    <string name="diagnostics_section_permissions">Рұқсаттар</string>
+    <string name="diagnostics_section_journal">Іске қосылу журналы</string>
+    <string name="diagnostics_section_on_time">7 күнде уақытында</string>
+
+    <string name="diagnostics_none">деректер жоқ</string>
+    <string name="diagnostics_datetime_pattern">d MMMM, HH:mm:ss</string>
+
+    <string name="diagnostics_deviation">Ауытқу %1$d с</string>
+    <string name="diagnostics_planned">Жоспар %1$s</string>
+    <string name="diagnostics_actual">Нақты %1$s</string>
+    <string name="diagnostics_scheduled_total">Барлығы қойылған будильниктер: %1$d</string>
+
+    <string name="diagnostics_permission_notifications">Хабарламалар</string>
+    <string name="diagnostics_permission_channel">Хабарлама арналары</string>
+    <string name="diagnostics_permission_exact_alarms">Нақты будильниктер</string>
+    <string name="diagnostics_permission_full_screen">Толық экранды хабарламалар</string>
+    <string name="diagnostics_permission_dnd">«Мазаламау» саясатына рұқсат</string>
+    <string name="diagnostics_permission_boot">Жүктеу қабылдағышы</string>
+    <string name="diagnostics_permission_autostart">Автожүгірту және қуат үнемдеу</string>
+
+    <string name="diagnostics_state_granted">берілген</string>
+    <string name="diagnostics_state_denied">берілмеген</string>
+    <string name="diagnostics_state_unknown">қолмен тексеріңіз</string>
+
+    <string name="diagnostics_dnd_hint">«Мазаламау» режимінде қайталама еске салғыштар дыбыссыз болады.</string>
+
+    <string name="diagnostics_warning_notifications">Еске салғыштар қазір келмейді: хабарламалар өшірілген. Қабылдауларды қолмен белгілеуге болады.</string>
+    <string name="diagnostics_warning_channel">Еске салғыштар қазір келмейді: хабарлама арнасы өшірілген.</string>
+    <string name="diagnostics_warning_exact_alarms">Еске салғыштар кешігуі мүмкін: нақты будильник рұқсаты берілмеген.</string>
+    <string name="diagnostics_warning_full_screen">Қабылдау картасы құлыпталған экранда шықпайды: толық экранды хабарлама рұқсаты берілмеген.</string>
+    <string name="diagnostics_warning_both">Еске салғыштар қазір келмейді: хабарламалар өшірілген және нақты будильник рұқсаты берілмеген.</string>
+    <string name="diagnostics_fallback_app_startup">Бұл құрылғыда жүйелік бөлім ашылмады. Оны қолмен ашыңыз: Параметрлер → Батарея → Қолданбаларды іске қосу → Sklyanka → Қолмен басқару. «Автожүгірту», «Жанама жүгірту» және «Фонда жұмыс істеу» опцияларын қосыңыз.</string>
+
+    <string name="diagnostics_outage">%1$s бастап еске салғыштар келмеді. Рұқсаттар мен автожүгіртуді тексеріп, «Қазір тексеру» түймесін басыңыз.</string>
+
+    <string name="diagnostics_on_time">%2$d ішінен %1$d · %3$d %%</string>
+    <string name="diagnostics_on_time_none">Осы уақытта іске қосылулар болмады</string>
+    <string name="diagnostics_on_time_rule">Уақытында — ауытқу 120 секундтан аспайды</string>
+
+    <string name="diagnostics_action_check">Қазір тексеру</string>
+    <string name="diagnostics_action_export">Журналды шығару</string>
+    <string name="diagnostics_action_setup">Реттеуді қайта өту</string>
+
+    <string name="diagnostics_action_check_delivery">Жеткізілуін тексеру</string>
+    <string name="diagnostics_check_sheet_title">Жеткізілуді тексеру</string>
+    <string name="diagnostics_check_sheet_text">Қолданба 1–2 минуттан кейін сынақ еске салғышын қояды. Бастаған соң бірден қолданбаны жабыңыз — оны соңғылар тізімінен сыпырып тастаңыз. Қолданба ашық тұрса, тексеру өтпейді. Телефонды құлыптаудың қажеті жоқ.</string>
+    <string name="diagnostics_check_start">Тексеруді бастау</string>
+    <string name="diagnostics_check_sheet_cancel">Болдырмау</string>
+
+    <string name="diagnostics_check_running">Тексеру жүріп жатыр: сынақ еске салғышы шамамен бір минуттан кейін іске қосылады. Қолданбаны жабыңыз.</string>
+    <string name="diagnostics_check_cancel">Тексеруді тоқтату</string>
+
+    <string name="diagnostics_check_on_time">Жеткізілу тексеруі өтті: сынақ еске салғышы уақытында келді.</string>
+    <string name="diagnostics_check_late">Жеткізілу тексеруі: сынақ еске салғышы %1$s келді. Телефон оны кешіктірді — іске қосу және қуат үнемдеу параметрлерін тексеріңіз.</string>
+    <string name="diagnostics_check_not_delivered">Жеткізілу тексеруі өтпеді: сынақ еске салғышы келмеді. Іске қосу және қуат үнемдеу параметрлерін тексеріңіз.</string>
+    <string name="diagnostics_check_not_completed">Тексеру өтпеді: қолданба ашық еді. Оны жауып, қайталап көріңіз.</string>
+    <string name="diagnostics_check_repeat">Тексеруді қайталау</string>
+    <string name="diagnostics_check_acknowledge">Түсінікті</string>
+
+    <string name="reminder_check_overline">Жеткізілуді тексеру</string>
+    <string name="reminder_check_text">Сынақ еске салғышы. Ештеңе белгілеудің қажеті жоқ.</string>
+
+    <string name="diagnostics_export_saved">Журнал шығарылды · %1$s</string>
+    <string name="diagnostics_export_failed">Журнал шығарылмады: жазу сәтсіз аяқталды</string>
+    <string name="diagnostics_export_no_space">Журнал шығарылмады: құрылғыда орын жеткіліксіз</string>
+
+    <string name="diagnostics_measurement_row">Өлшеу нұсқасы</string>
+    <string name="diagnostics_measurement_alarm_clock">Жүйелік будильник</string>
+    <string name="diagnostics_measurement_exact_idle">Нақты будильник</string>
+    <string name="diagnostics_next_alarm_indicator">Телефон бұл уақытты күй жолағында будильник ретінде көрсетеді — осылай болуы керек.</string>
+
+    <string name="diagnostics_reason_boot">қайта жүктеу</string>
+    <string name="diagnostics_reason_locked_boot">құлыптан шығарғанға дейін қалпына келтіру</string>
+    <string name="diagnostics_reason_user_unlocked">құлыптан шығару</string>
+    <string name="diagnostics_reason_package_replaced">қолданба жаңартылды</string>
+    <string name="diagnostics_reason_timezone_changed">уақыт белдеуі өзгерді</string>
+    <string name="diagnostics_reason_time_changed">сағат ауыстырылды</string>
+    <string name="diagnostics_reason_schedule_edited">дәрі кестесі өзгертілді</string>
+    <string name="diagnostics_reason_medication_added">дәрі қосылды</string>
+    <string name="diagnostics_reason_medication_archived">дәрі мұрағатқа жіберілді</string>
+    <string name="diagnostics_reason_medication_unarchived">дәрі мұрағаттан қайтарылды</string>
+    <string name="diagnostics_reason_alarm_fired">еске салғыш іске қосылды</string>
+    <string name="diagnostics_reason_profile_set_changed">бейіндер құрамы өзгерді</string>
+    <string name="diagnostics_reason_anchor">түнгі тексеру</string>
+    <string name="diagnostics_reason_manual">адамның қолмен әрекеті</string>
+    <string name="diagnostics_reason_data_imported">деректерді жүктеу</string>
+    <string name="diagnostics_reason_app_start">қолданба іске қосылды</string>
+    <string name="diagnostics_reason_exact_alarm_granted">нақты будильник рұқсаты берілді</string>
+
+    <string name="diagnostics_event_fired">будильник іске қосылды</string>
+    <string name="diagnostics_event_shown">еске салғыш көрсетілді</string>
+    <string name="diagnostics_event_suppressed">көрсету тоқтатылды</string>
+    <string name="diagnostics_event_repeated">еске салғыш қайталанды</string>
+    <string name="diagnostics_event_snoozed">кейінге қалдырылды</string>
+    <string name="diagnostics_event_deferred">кешіктірілген іске қосылу</string>
+    <string name="diagnostics_event_rescheduled">жоспар қайта құрылды</string>
+    <string name="diagnostics_event_missed_sweep">өткізілгенге ауыстырылды</string>
+    <string name="diagnostics_event_outage">еске салғыштар үзілісі</string>
+    <string name="diagnostics_event_settings_changed">параметр өзгертілді</string>
+    <string name="diagnostics_event_environment">құрылғы ортасы</string>
+    <string name="diagnostics_event_delivery_check">жеткізілуді тексеру</string>
+
+    <string name="diagnostics_alarm_counters">алынды %1$d, қойылды %2$d</string>
+
+    <string name="reminder_outage_notice">%1$s бастап еске салғыштар келмеді. Осы уақыттағы қабылдауларды қолмен белгілеуге болады.</string>
+    <string name="reminder_outage_notice_action">Түзету</string>
+    <string name="reminder_outage_notice_moment_pattern">d MMMM, HH:mm</string>
+</resources>

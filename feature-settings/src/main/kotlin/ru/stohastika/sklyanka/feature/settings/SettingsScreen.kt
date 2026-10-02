@@ -1,6 +1,7 @@
 package ru.stohastika.sklyanka.feature.settings
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -14,6 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -29,7 +31,7 @@ import ru.stohastika.sklyanka.ui.component.ListPickerDialog
 import ru.stohastika.sklyanka.ui.component.ScreenHeader
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderLabels
 import ru.stohastika.sklyanka.ui.component.SklyankaSwitchRow
-import ru.stohastika.sklyanka.ui.locale.InterfaceLocale
+import ru.stohastika.sklyanka.ui.locale.interfaceLocale
 import ru.stohastika.sklyanka.ui.modifier.minTouchTarget
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.ProfilePalette
@@ -218,7 +220,7 @@ private fun ProfileRowState.subtitle(): String {
 private fun ProfileRowState.initial(): String {
     val fallback = stringResource(R.string.settings_profile_self_initial)
     if (isSelf) return fallback
-    return name.trim().take(1).uppercase(InterfaceLocale.VALUE).ifEmpty { fallback }
+    return name.trim().take(1).uppercase(interfaceLocale()).ifEmpty { fallback }
 }
 
 /**
@@ -365,13 +367,17 @@ private fun LazyListScope.dataBlock(onIntent: (SettingsIntent) -> Unit) {
  *
  * Формулировка «не является медицинским изделием» стоит здесь и видна сразу: ни нажатия,
  * ни раскрытия, ни прокрутки длинного текста (`design/SPEC-original.md` §1, принцип `П-4`).
- * Плашка не нажимается вовсе — ни ссылки наружу, ни проверки обновлений на экране нет
- * и быть не может: порта сети в проекте не существует (НФТ-14, НФТ-15).
+ * Нажимается ровно одна строка — адрес сайта студии (ПМ-16): системный переход
+ * `ACTION_VIEW` открывает браузер, порта сети в приложении по-прежнему нет
+ * (НФТ-14, НФТ-15), а проверки обновлений на экране нет и быть не может.
  */
 @Composable
 private fun AboutPlate(version: String, modifier: Modifier = Modifier) {
     val colors = SklyankaTheme.colors
     val markLabel = stringResource(R.string.cd_settings_about_mark)
+    val site = stringResource(R.string.settings_about_site)
+    val siteUrl = stringResource(R.string.settings_about_site_url)
+    val uriHandler = LocalUriHandler.current
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -396,6 +402,15 @@ private fun AboutPlate(version: String, modifier: Modifier = Modifier) {
                 text = stringResource(R.string.settings_about_vendor),
                 style = SklyankaType.CaptionSmall,
                 color = colors.textMuted,
+            )
+            Text(
+                text = site,
+                style = SklyankaType.CaptionSmall,
+                color = colors.accent,
+                modifier = Modifier
+                    .clickable { uriHandler.openUri(siteUrl) }
+                    .minTouchTarget()
+                    .testTag(TAG_ABOUT_SITE),
             )
         }
     }

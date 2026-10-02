@@ -16,7 +16,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import ru.stohastika.sklyanka.ui.R
 import ru.stohastika.sklyanka.ui.component.SklyankaMark
-import ru.stohastika.sklyanka.ui.locale.InterfaceLocale
+import ru.stohastika.sklyanka.ui.locale.interfaceLocale
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.MarkEnvironment
 import ru.stohastika.sklyanka.ui.token.SklyankaBrandType
@@ -72,7 +72,7 @@ fun SplashScreen(modifier: Modifier = Modifier) {
                     Text(
                         // Прописные — отрисовкой, а не в ресурсе: читалка должна
                         // произносить слова, а не перечислять буквы (НФТ-30).
-                        text = stringResource(R.string.brand_tagline).uppercase(InterfaceLocale.VALUE),
+                        text = stringResource(R.string.brand_tagline).uppercase(interfaceLocale()),
                         style = SklyankaBrandType.SplashTagline,
                         // Макет задаёт подписи #8C837A, а издателю #6B635B. Новых цветов
                         // задача не вводит (TDD §9), поэтому берутся две ближайшие роли

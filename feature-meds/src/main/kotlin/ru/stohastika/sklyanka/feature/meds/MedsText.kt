@@ -18,7 +18,7 @@ import ru.stohastika.sklyanka.domain.medication.TrailingLine
 import ru.stohastika.sklyanka.domain.model.FoodRelation
 import ru.stohastika.sklyanka.domain.model.MedicationForm
 import ru.stohastika.sklyanka.domain.model.TabletShape
-import ru.stohastika.sklyanka.ui.locale.InterfaceLocale
+import ru.stohastika.sklyanka.ui.locale.interfaceLocale
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalTime
@@ -143,7 +143,8 @@ internal fun frequencyLabel(timesPerDay: Int): String = if (timesPerDay <= 1) {
 @Composable
 internal fun timesPhrase(times: List<LocalTime>): String {
     val formatted = times.map { it.formatted() }
-    return remember(formatted) { ListFormatter.getInstance(InterfaceLocale.VALUE).format(formatted) }
+    val locale = interfaceLocale()
+    return remember(formatted, locale) { ListFormatter.getInstance(locale).format(formatted) }
 }
 
 /**

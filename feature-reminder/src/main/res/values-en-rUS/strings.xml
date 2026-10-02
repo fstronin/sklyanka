@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="reminder_overline">Scheduled intake</string>
+    <string name="reminder_time_pattern">HH:mm</string>
+
+    <string name="reminder_snooze">Snooze %1$d min</string>
+
+    <string name="reminder_dose_separator">" · "</string>
+
+    <string name="reminder_strength">%1$s %2$s</string>
+
+    <string name="reminder_row_taken">Taken</string>
+    <string name="reminder_row_skip">Skip</string>
+
+    <string name="diagnostics_title">Reminder check</string>
+
+    <string name="diagnostics_reliable">Everything is fine</string>
+    <string name="diagnostics_all_granted">Permissions granted</string>
+    <string name="diagnostics_fix">Fix</string>
+    <string name="diagnostics_check_done">Check completed — reminders are scheduled</string>
+    <string name="diagnostics_check_failed">Check failed: reminders were not rescheduled</string>
+    <string name="diagnostics_support">For support</string>
+
+    <string name="diagnostics_week_summary">Over 7 days: %1$d fired, %2$d missed</string>
+    <string name="diagnostics_week_summary_none">No reminders over 7 days</string>
+
+    <string name="diagnostics_last_none">No reminders yet</string>
+    <string name="diagnostics_last_line">%1$s — %2$s</string>
+    <string name="diagnostics_last_actual">shown at %1$s</string>
+    <string name="diagnostics_on_time_word">on time</string>
+    <string name="diagnostics_next_none">No next reminder</string>
+    <string name="diagnostics_next_line">%1$s — %2$s · %3$s</string>
+    <string name="diagnostics_next_plan">plan</string>
+
+    <string name="diagnostics_journal_too_late">fired %1$s — not shown</string>
+
+    <string name="diagnostics_section_last">Last reminder</string>
+    <string name="diagnostics_section_next">Next reminder</string>
+    <string name="diagnostics_section_reschedule">Last plan rebuild</string>
+    <string name="diagnostics_section_permissions">Permissions</string>
+    <string name="diagnostics_section_journal">Firing journal</string>
+    <string name="diagnostics_section_on_time">On time over 7 days</string>
+
+    <string name="diagnostics_none">no data</string>
+    <string name="diagnostics_datetime_pattern">MMMM d, HH:mm:ss</string>
+
+    <string name="diagnostics_deviation">Deviation %1$d s</string>
+    <string name="diagnostics_planned">Planned %1$s</string>
+    <string name="diagnostics_actual">Actual %1$s</string>
+    <string name="diagnostics_scheduled_total">Alarms scheduled in total: %1$d</string>
+
+    <string name="diagnostics_permission_notifications">Notifications</string>
+    <string name="diagnostics_permission_channel">Notification channels</string>
+    <string name="diagnostics_permission_exact_alarms">Exact alarms</string>
+    <string name="diagnostics_permission_full_screen">Full-screen notifications</string>
+    <string name="diagnostics_permission_dnd">“Do not disturb” policy access</string>
+    <string name="diagnostics_permission_boot">Boot receiver</string>
+    <string name="diagnostics_permission_autostart">Auto-launch and power saving</string>
+
+    <string name="diagnostics_state_granted">granted</string>
+    <string name="diagnostics_state_denied">not granted</string>
+    <string name="diagnostics_state_unknown">check manually</string>
+
+    <string name="diagnostics_dnd_hint">In “Do not disturb” mode, repeated reminders will be silent.</string>
+
+    <string name="diagnostics_warning_notifications">Reminders are not arriving right now: notifications are off. Intakes can be marked manually.</string>
+    <string name="diagnostics_warning_channel">Reminders are not arriving right now: the notification channel is off.</string>
+    <string name="diagnostics_warning_exact_alarms">Reminders may arrive late: exact alarm permission is not granted.</string>
+    <string name="diagnostics_warning_full_screen">The intake card will not appear on the lock screen: full-screen notification permission is not granted.</string>
+    <string name="diagnostics_warning_both">Reminders are not arriving right now: notifications are off and exact alarm permission is not granted.</string>
+    <string name="diagnostics_fallback_app_startup">The system section did not open on this device. Open it manually: Settings → Battery → App launch → Sklyanka → Manage manually. Turn on “Auto-launch”, “Secondary launch” and “Run in background”.</string>
+
+    <string name="diagnostics_outage">Reminders have not arrived since %1$s. Check the permissions and auto-launch, then tap “Check now”.</string>
+
+    <string name="diagnostics_on_time">%1$d of %2$d · %3$d %%</string>
+    <string name="diagnostics_on_time_none">No firings during this time</string>
+    <string name="diagnostics_on_time_rule">On time — deviation no more than 120 seconds</string>
+
+    <string name="diagnostics_action_check">Check now</string>
+    <string name="diagnostics_action_export">Export journal</string>
+    <string name="diagnostics_action_setup">Run setup again</string>
+
+    <string name="diagnostics_action_check_delivery">Check delivery</string>
+    <string name="diagnostics_check_sheet_title">Delivery check</string>
+    <string name="diagnostics_check_sheet_text">The app will schedule a test reminder in 1–2 minutes. Close the app right after starting — swipe it away from the recents list. If the app stays open, the check will not happen. You do not need to lock the phone.</string>
+    <string name="diagnostics_check_start">Start check</string>
+    <string name="diagnostics_check_sheet_cancel">Cancel</string>
+
+    <string name="diagnostics_check_running">Check in progress: the test reminder will fire in about a minute. Close the app.</string>
+    <string name="diagnostics_check_cancel">Cancel check</string>
+
+    <string name="diagnostics_check_on_time">Delivery check passed: the test reminder arrived on time.</string>
+    <string name="diagnostics_check_late">Delivery check: the test reminder arrived %1$s. The phone delayed it — check the launch and power saving settings.</string>
+    <string name="diagnostics_check_not_delivered">Delivery check failed: the test reminder did not arrive. Check the launch and power saving settings.</string>
+    <string name="diagnostics_check_not_completed">The check did not happen: the app was open. Close it and try again.</string>
+    <string name="diagnostics_check_repeat">Repeat check</string>
+    <string name="diagnostics_check_acknowledge">Got it</string>
+
+    <string name="reminder_check_overline">Delivery check</string>
+    <string name="reminder_check_text">Test reminder. Nothing needs to be marked.</string>
+
+    <string name="diagnostics_export_saved">Journal exported · %1$s</string>
+    <string name="diagnostics_export_failed">Journal not exported: the write failed</string>
+    <string name="diagnostics_export_no_space">Journal not exported: not enough space on the device</string>
+
+    <string name="diagnostics_measurement_row">Measurement arm</string>
+    <string name="diagnostics_measurement_alarm_clock">System alarm</string>
+    <string name="diagnostics_measurement_exact_idle">Exact alarm</string>
+    <string name="diagnostics_next_alarm_indicator">The phone shows this time in the status bar as an alarm — this is expected.</string>
+
+    <string name="diagnostics_reason_boot">reboot</string>
+    <string name="diagnostics_reason_locked_boot">restore before unlock</string>
+    <string name="diagnostics_reason_user_unlocked">unlock</string>
+    <string name="diagnostics_reason_package_replaced">app update</string>
+    <string name="diagnostics_reason_timezone_changed">time zone change</string>
+    <string name="diagnostics_reason_time_changed">clock change</string>
+    <string name="diagnostics_reason_schedule_edited">medication schedule changed</string>
+    <string name="diagnostics_reason_medication_added">medication added</string>
+    <string name="diagnostics_reason_medication_archived">medication archived</string>
+    <string name="diagnostics_reason_medication_unarchived">medication restored from the archive</string>
+    <string name="diagnostics_reason_alarm_fired">reminder fired</string>
+    <string name="diagnostics_reason_profile_set_changed">profile set changed</string>
+    <string name="diagnostics_reason_anchor">night check</string>
+    <string name="diagnostics_reason_manual">manual action by the person</string>
+    <string name="diagnostics_reason_data_imported">data import</string>
+    <string name="diagnostics_reason_app_start">app start</string>
+    <string name="diagnostics_reason_exact_alarm_granted">exact alarm permission granted</string>
+
+    <string name="diagnostics_event_fired">alarm fired</string>
+    <string name="diagnostics_event_shown">reminder shown</string>
+    <string name="diagnostics_event_suppressed">show suppressed</string>
+    <string name="diagnostics_event_repeated">reminder repeated</string>
+    <string name="diagnostics_event_snoozed">snoozed</string>
+    <string name="diagnostics_event_deferred">deferred firing</string>
+    <string name="diagnostics_event_rescheduled">plan rebuilt</string>
+    <string name="diagnostics_event_missed_sweep">moved to missed</string>
+    <string name="diagnostics_event_outage">reminder outage</string>
+    <string name="diagnostics_event_settings_changed">setting changed</string>
+    <string name="diagnostics_event_environment">device environment</string>
+    <string name="diagnostics_event_delivery_check">delivery check</string>
+
+    <string name="diagnostics_alarm_counters">removed %1$d, scheduled %2$d</string>
+
+    <string name="reminder_outage_notice">Reminders have not arrived since %1$s. Intakes from this time can be marked manually.</string>
+    <string name="reminder_outage_notice_action">Fix</string>
+    <string name="reminder_outage_notice_moment_pattern">MMMM d, HH:mm</string>
+</resources>

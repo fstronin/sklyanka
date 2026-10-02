@@ -1,11 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Языки, на которых разговаривает приложение (НФТ-43, ADR-0008).
+  Языки, на которых разговаривает приложение (НФТ-43, ПМ-14, ADR-0008).
 
-  Список из одной строки — это ответ системе на вопрос «какой язык у приложения»,
-  а не механизм его закрепления: язык закрепляет конфигурация контекста. Появится
-  вторая локаль — строк станет две, и вместе с ними появится выбор у человека.
+  Список — ответ системе на вопрос «какие языки приложение знает», а не механизм выбора:
+  язык выбирает конфигурация контекста (InterfaceLocale.resolve). Состав объявлен здесь
+  и в ProjectDefaults.INTERFACE_LOCALES; разойдясь, они разойдутся молча, поэтому
+  совпадение проверяется guard-тестом локализации.
 -->
 <locale-config xmlns:android="http://schemas.android.com/apk/res/android">
     <locale android:name="ru" />
+    <locale android:name="en-US" />
+    <locale android:name="es" />
+    <locale android:name="de" />
+    <locale android:name="zh-CN" />
+    <locale android:name="kk" />
 </locale-config>

@@ -221,7 +221,10 @@
     <!-- ===== О приложении ===== -->
     <!-- Версия подставляется из собранного пакета, а не из макета. -->
     <string name="settings_about_app">Склянка %1$s</string>
-    <string name="settings_about_vendor">Stohastika · не является медицинским изделием</string>
+    <string name="settings_about_vendor">Стохастика · не является медицинским изделием</string>
+    <!-- Адрес сайта не переводится: он одинаков на всех языках (ПМ-16). -->
+    <string name="settings_about_site" translatable="false">stohastika.ru</string>
+    <string name="settings_about_site_url" translatable="false">https://stohastika.ru</string>
     <string name="cd_settings_about_mark">Знак Склянка</string>
 
     <!-- ==================================================================== -->

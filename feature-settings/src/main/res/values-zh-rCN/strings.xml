@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="transfer_title">数据传输</string>
+    <string name="transfer_principle">一个文件包含所有药物、日程和历史。没有云端——文件留在您手中。</string>
+
+    <string name="transfer_export_title">导出</string>
+    <string name="transfer_export_file">文件 %1$s</string>
+    <string name="transfer_export_action">保存文件</string>
+    <string name="transfer_export_chip_settings">设置</string>
+    <string name="transfer_last_export">上次导出 — %1$s</string>
+
+    <string name="transfer_privacy_content">文件包含药物名称、剂量和服药历史。它未加密——请像医疗文件一样对待。</string>
+    <string name="transfer_privacy_place">保存位置由您选择。与云端同步的文件夹会把数据带到云端。</string>
+
+    <string name="transfer_import_title">导入</string>
+    <string name="transfer_import_subtitle">从此设备上的文件</string>
+    <string name="transfer_mode_merge">添加到现有数据</string>
+    <string name="transfer_mode_merge_hint">按名称和规格含量的匹配项将单独显示</string>
+    <string name="transfer_mode_replace">全部替换</string>
+    <string name="transfer_mode_replace_hint">此设备上的现有数据将被清除</string>
+    <string name="transfer_import_action">选择文件</string>
+
+    <string name="transfer_permissions_note">在新设备上需要重新授予权限和自启动——它们属于系统，不属于文件。导入后将打开相同的设置页面。</string>
+
+    <string name="transfer_summary_title">文件内容</string>
+    <string name="transfer_summary_exported_at">导出于 %1$s</string>
+    <string name="transfer_summary_old_format">该文件由旧版 Sklyanka 创建（格式版本 %1$d）。将通过迁移读取。</string>
+    <string name="transfer_summary_continue">下一步</string>
+    <string name="transfer_summary_cancel">取消</string>
+
+    <string name="transfer_matches_title">匹配项</string>
+    <string name="transfer_matches_hint">这些药物已在此设备上。每个都单独决定。</string>
+    <string name="transfer_matches_empty">没有匹配项——文件中的所有内容将直接添加。</string>
+    <string name="transfer_match_dosage">%1$s，%2$s</string>
+    <string name="transfer_match_dosage_value">%1$s %2$s</string>
+    <string name="transfer_match_difference_times">服药时间：设备上 %1$s，文件中 %2$s</string>
+    <string name="transfer_match_difference_schedule_mode">服药方式不同</string>
+    <string name="transfer_match_difference_form">剂型不同</string>
+    <string name="transfer_match_difference_shape">药片形状不同</string>
+    <string name="transfer_match_difference_dose_amount">单次剂量不同</string>
+    <string name="transfer_match_difference_food_relation">与饮食的关系不同</string>
+    <string name="transfer_match_difference_period">疗程周期不同</string>
+    <string name="transfer_match_difference_stock">包装余量不同</string>
+    <string name="transfer_match_difference_max_per_day">每日服药限制不同</string>
+    <string name="transfer_decision_keep_mine">保留我的</string>
+    <string name="transfer_decision_take_from_file">采用文件中的</string>
+    <string name="transfer_decision_add_separately">单独添加</string>
+    <string name="transfer_decision_do_not_load">不导入</string>
+    <string name="transfer_matches_drop_all">不导入任何匹配项</string>
+    <string name="transfer_matches_apply">导入</string>
+    <string name="transfer_times_empty">按需</string>
+    <string name="transfer_strength_unit_milligram">毫克</string>
+
+    <string name="transfer_replace_title">全部替换？</string>
+    <string name="transfer_replace_warning">此设备上的现有数据将被清除，并由文件内容替换。此操作无法撤销。</string>
+    <string name="transfer_replace_now">设备上现在</string>
+    <string name="transfer_replace_after">将来自文件</string>
+    <string name="transfer_replace_history_from">历史自 %1$s 起</string>
+    <string name="transfer_replace_history_empty">没有历史</string>
+    <string name="transfer_replace_safety_copy">清除前，应用会把当前数据的备份保存到应用内部存储，文件 %1$s。其他应用无法访问，并会在下次替换时被覆盖。</string>
+    <string name="transfer_replace_confirm">清除并导入</string>
+    <string name="transfer_replace_cancel">不清除</string>
+    <string name="transfer_replace_word">替换</string>
+    <string name="transfer_replace_word_label">输入“%1$s”以确认</string>
+
+    <string name="transfer_report_title">导入完成</string>
+    <string name="transfer_report_profiles">已添加档案：%1$d</string>
+    <string name="transfer_report_medications">已添加药物：%1$d</string>
+    <string name="transfer_report_medications_updated">已从文件更新药物：%1$d</string>
+    <string name="transfer_report_intakes">已添加历史记录：%1$d</string>
+    <string name="transfer_report_intakes_updated">已细化历史记录：%1$d</string>
+    <string name="transfer_report_intakes_skipped">因已存在而未添加的历史记录：%1$d</string>
+    <string name="transfer_report_matches">已处理的匹配项：%1$d</string>
+    <string name="transfer_report_decision">%1$s — %2$d</string>
+    <string name="transfer_report_not_transferred">未完全传输</string>
+    <string name="transfer_report_notice_sound">文件中提醒音在此设备上未找到，已替换为默认提示音。</string>
+    <string name="transfer_report_notice_enum">字段“%1$s”的值无法识别，已替换为默认值：%2$s。</string>
+    <string name="transfer_report_notice_enum_settings">设置中字段“%1$s”的值无法识别，已替换为默认值。</string>
+    <string name="transfer_report_notice_old_format">该文件由旧格式版本（%1$d）创建，已通过迁移读取。</string>
+    <string name="transfer_report_safety_copy">先前数据的安全副本：%1$s</string>
+    <string name="transfer_report_continue">设置权限</string>
+    <string name="transfer_field_form">剂型</string>
+    <string name="transfer_field_shape">药片形状</string>
+    <string name="transfer_field_food_relation">与饮食的关系</string>
+    <string name="transfer_field_schedule_mode">服药方式</string>
+    <string name="transfer_field_archive_reason">归档原因</string>
+    <string name="transfer_field_status">服药状态</string>
+    <string name="transfer_field_source">标记来源</string>
+    <string name="transfer_field_unknown">未知字段</string>
+
+    <string name="transfer_error_not_an_export">该文件不像是 Sklyanka 的导出文件</string>
+    <string name="transfer_error_from_future">该文件由更新版本的 Sklyanka 创建。请更新应用</string>
+    <string name="transfer_error_no_space">空间不足。未清除也未导入任何内容。</string>
+    <string name="transfer_error_not_applied">导入未进行。设备上的数据没有变化。</string>
+    <string name="transfer_error_export_failed">导出未进行。所选位置没有可用的文件。</string>
+    <string name="transfer_error_no_file_picker">此设备上没有用于选择文件的应用。没有它无法传输数据。</string>
+    <string name="transfer_error_import_interrupted">上次导入未进行。设备上的数据保持不变。</string>
+
+    <string name="transfer_reason_not_json">文件无法作为 JSON 读取</string>
+    <string name="transfer_reason_missing_marker">文件中没有导出标识</string>
+    <string name="transfer_reason_foreign_marker">文件中的标识不属于 Sklyanka</string>
+    <string name="transfer_reason_invalid_version">文件格式版本无法识别</string>
+    <string name="transfer_reason_missing_section">文件缺少必需的区块：%1$s</string>
+    <string name="transfer_reason_invalid_value">值无法读取：%1$s</string>
+    <string name="transfer_reason_duplicate_id">文件中标识符重复：%1$s</string>
+    <string name="transfer_reason_broken_link">文件内部关联断裂：%1$s</string>
+    <string name="transfer_reason_self_profile">文件没有自己的档案，或有多个</string>
+    <string name="transfer_reason_invalid_record">文件中的记录不符合应用规则：%1$s</string>
+
+    <string name="transfer_date_pattern_day_month">M月d日</string>
+    <string name="transfer_date_pattern_full">yyyy年M月d日</string>
+    <string name="transfer_time_pattern">HH:mm</string>
+    <string name="transfer_summary_moment">%1$s，%2$s</string>
+    <string name="transfer_times_separator">" 和 "</string>
+
+    <string name="transfer_cd_export">导出</string>
+    <string name="transfer_cd_import">导入</string>
+    <string name="transfer_cd_back">返回</string>
+
+    <string name="settings_title">设置</string>
+
+    <string name="settings_rubric_profiles">档案</string>
+    <string name="settings_rubric_reminders">提醒</string>
+    <string name="settings_rubric_system">系统</string>
+    <string name="settings_rubric_data">数据</string>
+
+    <string name="settings_profile_self">我的药物</string>
+    <string name="settings_profile_self_initial">我</string>
+    <string name="settings_profile_mirrored">提醒会同步给我</string>
+    <string name="settings_profile_subtitle">%1$s · %2$s</string>
+    <string name="settings_profile_add">添加档案</string>
+    <string name="settings_profile_add_unavailable">将在最近的更新中提供</string>
+    <string name="settings_profile_delete">删除档案“%1$s”</string>
+    <string name="cd_settings_profile_active">当前档案</string>
+
+    <string name="settings_sound">声音</string>
+    <string name="settings_sound_caption">系统通知设置</string>
+    <string name="settings_persistent">持续提醒</string>
+    <string name="settings_persistent_caption">未标记时重复</string>
+    <string name="settings_snooze">稍后提醒</string>
+
+    <string name="settings_permissions">权限与自启动</string>
+    <string name="settings_permissions_denied_one">还有一项未完成</string>
+    <string name="settings_permissions_denied_many">还有 %1$d 项未完成</string>
+    <string name="settings_permissions_granted_manual">已授予 · 请手动检查自启动</string>
+    <string name="settings_permissions_granted">所有权限已授予</string>
+
+    <string name="settings_history">服药历史</string>
+    <string name="settings_transfer_caption">通过文件导出和导入，无云端</string>
+
+    <string name="settings_about_app">Sklyanka %1$s</string>
+    <string name="settings_about_vendor">Stohastika · 非医疗器械</string>
+    <string name="cd_settings_about_mark">Sklyanka 标记</string>
+
+    <string name="profile_delete_title">删除档案？</string>
+    <string name="profile_delete_intro">档案“%1$s”将连同其数据一起删除：</string>
+    <string name="profile_delete_medications">药物：%1$d（已归档 %2$d）</string>
+    <string name="profile_delete_history">历史记录：%1$d</string>
+    <string name="profile_delete_reminders">此档案服药的提醒将被移除</string>
+    <string name="profile_delete_warning">删除不可逆：档案及其所有数据将从本设备抹除，无法恢复</string>
+    <string name="profile_delete_export">保存传输文件</string>
+    <string name="profile_delete_export_note">文件包含所有档案。只有导入整个文件才能恢复“%1$s”</string>
+    <string name="profile_delete_export_saved">文件已保存 — %1$s</string>
+    <string name="profile_delete_word">删除</string>
+    <string name="profile_delete_confirm">删除档案</string>
+    <string name="profile_delete_done">完成</string>
+    <string name="profile_delete_result_title">档案“%1$s”已删除</string>
+    <string name="profile_delete_result_active">您的档案已成为当前档案</string>
+    <string name="profile_delete_no_space">空间不足。文件未保存，档案未删除。</string>
+    <string name="profile_delete_no_picker">此设备上没有用于选择文件的应用。没有它无法保存传输文件。</string>
+</resources>

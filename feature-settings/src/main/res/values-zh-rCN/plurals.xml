@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <plurals name="transfer_chip_medications">
+        <item quantity="other">%1$d 种药物</item>
+    </plurals>
+
+    <plurals name="transfer_chip_archived">
+        <item quantity="other">%1$d 项已归档</item>
+    </plurals>
+
+    <plurals name="transfer_chip_history_months">
+        <item quantity="other">%1$d 个月的历史</item>
+    </plurals>
+
+    <plurals name="transfer_chip_profiles">
+        <item quantity="other">%1$d 个档案</item>
+    </plurals>
+
+    <plurals name="transfer_count_intakes">
+        <item quantity="other">%1$d 条历史记录</item>
+    </plurals>
+
+    <plurals name="settings_profile_medications">
+        <item quantity="other">%1$d 种药物</item>
+    </plurals>
+
+    <plurals name="settings_snooze_minutes">
+        <item quantity="other">%1$d 分钟</item>
+    </plurals>
+</resources>

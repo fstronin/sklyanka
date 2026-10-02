@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="reminder_overline">Einnahme nach Plan</string>
+    <string name="reminder_time_pattern">HH:mm</string>
+
+    <string name="reminder_snooze">%1$d Min. später</string>
+
+    <string name="reminder_dose_separator">" · "</string>
+
+    <string name="reminder_strength">%1$s %2$s</string>
+
+    <string name="reminder_row_taken">Eingenommen</string>
+    <string name="reminder_row_skip">Überspringen</string>
+
+    <string name="diagnostics_title">Erinnerungsprüfung</string>
+
+    <string name="diagnostics_reliable">Alles in Ordnung</string>
+    <string name="diagnostics_all_granted">Berechtigungen erteilt</string>
+    <string name="diagnostics_fix">Beheben</string>
+    <string name="diagnostics_check_done">Prüfung durchgeführt — Erinnerungen sind geplant</string>
+    <string name="diagnostics_check_failed">Prüfung fehlgeschlagen: Erinnerungen wurden nicht neu geplant</string>
+    <string name="diagnostics_support">Für den Support</string>
+
+    <string name="diagnostics_week_summary">In 7 Tagen: %1$d ausgelöst, %2$d ausgelassen</string>
+    <string name="diagnostics_week_summary_none">In 7 Tagen gab es keine Erinnerungen</string>
+
+    <string name="diagnostics_last_none">Noch keine Erinnerungen</string>
+    <string name="diagnostics_last_line">%1$s — %2$s</string>
+    <string name="diagnostics_last_actual">angezeigt um %1$s</string>
+    <string name="diagnostics_on_time_word">pünktlich</string>
+    <string name="diagnostics_next_none">Keine nächste Erinnerung</string>
+    <string name="diagnostics_next_line">%1$s — %2$s · %3$s</string>
+    <string name="diagnostics_next_plan">Plan</string>
+
+    <string name="diagnostics_journal_too_late">ausgelöst %1$s — nicht angezeigt</string>
+
+    <string name="diagnostics_section_last">Letzte Erinnerung</string>
+    <string name="diagnostics_section_next">Nächste Erinnerung</string>
+    <string name="diagnostics_section_reschedule">Letzter Planaufbau</string>
+    <string name="diagnostics_section_permissions">Berechtigungen</string>
+    <string name="diagnostics_section_journal">Auslösungsprotokoll</string>
+    <string name="diagnostics_section_on_time">Pünktlich in 7 Tagen</string>
+
+    <string name="diagnostics_none">keine Daten</string>
+    <string name="diagnostics_datetime_pattern">d. MMMM, HH:mm:ss</string>
+
+    <string name="diagnostics_deviation">Abweichung %1$d s</string>
+    <string name="diagnostics_planned">Plan %1$s</string>
+    <string name="diagnostics_actual">Tatsächlich %1$s</string>
+    <string name="diagnostics_scheduled_total">Insgesamt geplante Alarme: %1$d</string>
+
+    <string name="diagnostics_permission_notifications">Benachrichtigungen</string>
+    <string name="diagnostics_permission_channel">Benachrichtigungskanäle</string>
+    <string name="diagnostics_permission_exact_alarms">Exakte Alarme</string>
+    <string name="diagnostics_permission_full_screen">Vollbild-Benachrichtigungen</string>
+    <string name="diagnostics_permission_dnd">Zugriff auf „Nicht stören“</string>
+    <string name="diagnostics_permission_boot">Start-Empfänger</string>
+    <string name="diagnostics_permission_autostart">Autostart und Energiesparen</string>
+
+    <string name="diagnostics_state_granted">erteilt</string>
+    <string name="diagnostics_state_denied">nicht erteilt</string>
+    <string name="diagnostics_state_unknown">manuell prüfen</string>
+
+    <string name="diagnostics_dnd_hint">Im Modus „Nicht stören“ sind wiederholte Erinnerungen lautlos.</string>
+
+    <string name="diagnostics_warning_notifications">Erinnerungen kommen gerade nicht an: Benachrichtigungen sind aus. Einnahmen können manuell markiert werden.</string>
+    <string name="diagnostics_warning_channel">Erinnerungen kommen gerade nicht an: der Benachrichtigungskanal ist aus.</string>
+    <string name="diagnostics_warning_exact_alarms">Erinnerungen können verspätet kommen: die Berechtigung für exakte Alarme fehlt.</string>
+    <string name="diagnostics_warning_full_screen">Die Einnahmekarte erscheint nicht auf dem Sperrbildschirm: die Berechtigung für Vollbild-Benachrichtigungen fehlt.</string>
+    <string name="diagnostics_warning_both">Erinnerungen kommen gerade nicht an: Benachrichtigungen sind aus und die Berechtigung für exakte Alarme fehlt.</string>
+    <string name="diagnostics_fallback_app_startup">Der Systembereich ließ sich auf diesem Gerät nicht öffnen. Öffnen Sie ihn manuell: Einstellungen → Akku → App-Start → Sklyanka → Manuell verwalten. Aktivieren Sie „Autostart“, „Sekundärstart“ und „Im Hintergrund ausführen“.</string>
+
+    <string name="diagnostics_outage">Erinnerungen kommen seit %1$s nicht an. Prüfen Sie die Berechtigungen und den Autostart und tippen Sie auf „Jetzt prüfen“.</string>
+
+    <string name="diagnostics_on_time">%1$d von %2$d · %3$d %%</string>
+    <string name="diagnostics_on_time_none">In dieser Zeit gab es keine Auslösungen</string>
+    <string name="diagnostics_on_time_rule">Pünktlich — Abweichung höchstens 120 Sekunden</string>
+
+    <string name="diagnostics_action_check">Jetzt prüfen</string>
+    <string name="diagnostics_action_export">Protokoll exportieren</string>
+    <string name="diagnostics_action_setup">Einrichtung erneut durchlaufen</string>
+
+    <string name="diagnostics_action_check_delivery">Zustellung prüfen</string>
+    <string name="diagnostics_check_sheet_title">Zustellungsprüfung</string>
+    <string name="diagnostics_check_sheet_text">Die App plant in 1–2 Minuten eine Testerinnerung. Schließen Sie die App direkt nach dem Start — wischen Sie sie aus der Liste der zuletzt verwendeten Apps. Bleibt die App geöffnet, findet die Prüfung nicht statt. Das Telefon muss nicht gesperrt werden.</string>
+    <string name="diagnostics_check_start">Prüfung starten</string>
+    <string name="diagnostics_check_sheet_cancel">Abbrechen</string>
+
+    <string name="diagnostics_check_running">Prüfung läuft: Die Testerinnerung wird in etwa einer Minute ausgelöst. Schließen Sie die App.</string>
+    <string name="diagnostics_check_cancel">Prüfung abbrechen</string>
+
+    <string name="diagnostics_check_on_time">Zustellungsprüfung bestanden: Die Testerinnerung kam pünktlich an.</string>
+    <string name="diagnostics_check_late">Zustellungsprüfung: Die Testerinnerung kam %1$s an. Das Telefon hat sie verzögert — prüfen Sie die Start- und Energiespareinstellungen.</string>
+    <string name="diagnostics_check_not_delivered">Zustellungsprüfung fehlgeschlagen: Die Testerinnerung kam nicht an. Prüfen Sie die Start- und Energiespareinstellungen.</string>
+    <string name="diagnostics_check_not_completed">Die Prüfung fand nicht statt: Die App war geöffnet. Schließen Sie sie und versuchen Sie es erneut.</string>
+    <string name="diagnostics_check_repeat">Prüfung wiederholen</string>
+    <string name="diagnostics_check_acknowledge">Verstanden</string>
+
+    <string name="reminder_check_overline">Zustellungsprüfung</string>
+    <string name="reminder_check_text">Testerinnerung. Es muss nichts markiert werden.</string>
+
+    <string name="diagnostics_export_saved">Protokoll exportiert · %1$s</string>
+    <string name="diagnostics_export_failed">Protokoll nicht exportiert: Schreiben fehlgeschlagen</string>
+    <string name="diagnostics_export_no_space">Protokoll nicht exportiert: nicht genug Speicherplatz auf dem Gerät</string>
+
+    <string name="diagnostics_measurement_row">Messvariante</string>
+    <string name="diagnostics_measurement_alarm_clock">Systemwecker</string>
+    <string name="diagnostics_measurement_exact_idle">Exakter Alarm</string>
+    <string name="diagnostics_next_alarm_indicator">Das Telefon zeigt diese Zeit in der Statusleiste als Wecker an — das ist so vorgesehen.</string>
+
+    <string name="diagnostics_reason_boot">Neustart</string>
+    <string name="diagnostics_reason_locked_boot">Wiederherstellung vor dem Entsperren</string>
+    <string name="diagnostics_reason_user_unlocked">Entsperren</string>
+    <string name="diagnostics_reason_package_replaced">App-Aktualisierung</string>
+    <string name="diagnostics_reason_timezone_changed">Zeitzonenwechsel</string>
+    <string name="diagnostics_reason_time_changed">Zeitumstellung</string>
+    <string name="diagnostics_reason_schedule_edited">Medikamentenplan geändert</string>
+    <string name="diagnostics_reason_medication_added">Medikament hinzugefügt</string>
+    <string name="diagnostics_reason_medication_archived">Medikament archiviert</string>
+    <string name="diagnostics_reason_medication_unarchived">Medikament aus dem Archiv zurückgeholt</string>
+    <string name="diagnostics_reason_alarm_fired">Erinnerung ausgelöst</string>
+    <string name="diagnostics_reason_profile_set_changed">Profilbestand geändert</string>
+    <string name="diagnostics_reason_anchor">Nachtprüfung</string>
+    <string name="diagnostics_reason_manual">manuelle Aktion der Person</string>
+    <string name="diagnostics_reason_data_imported">Datenimport</string>
+    <string name="diagnostics_reason_app_start">App-Start</string>
+    <string name="diagnostics_reason_exact_alarm_granted">Berechtigung für exakte Alarme erteilt</string>
+
+    <string name="diagnostics_event_fired">Alarm ausgelöst</string>
+    <string name="diagnostics_event_shown">Erinnerung angezeigt</string>
+    <string name="diagnostics_event_suppressed">Anzeige unterdrückt</string>
+    <string name="diagnostics_event_repeated">Erinnerung wiederholt</string>
+    <string name="diagnostics_event_snoozed">aufgeschoben</string>
+    <string name="diagnostics_event_deferred">verzögerte Auslösung</string>
+    <string name="diagnostics_event_rescheduled">Plan neu aufgebaut</string>
+    <string name="diagnostics_event_missed_sweep">als ausgelassen vermerkt</string>
+    <string name="diagnostics_event_outage">Erinnerungsausfall</string>
+    <string name="diagnostics_event_settings_changed">Einstellung geändert</string>
+    <string name="diagnostics_event_environment">Geräteumgebung</string>
+    <string name="diagnostics_event_delivery_check">Zustellungsprüfung</string>
+
+    <string name="diagnostics_alarm_counters">entfernt %1$d, geplant %2$d</string>
+
+    <string name="reminder_outage_notice">Erinnerungen kommen seit %1$s nicht an. Einnahmen aus dieser Zeit können manuell markiert werden.</string>
+    <string name="reminder_outage_notice_action">Beheben</string>
+    <string name="reminder_outage_notice_moment_pattern">d. MMMM, HH:mm</string>
+</resources>

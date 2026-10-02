@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="setup_title">Set up reliability</string>
+    <string name="setup_intro">On EMUI, the system aggressively unloads background apps. Without the settings below, intakes will arrive late or not at all.</string>
+
+    <string name="setup_step_notifications">Notifications</string>
+    <string name="setup_step_notifications_caption">Intake card on the screen</string>
+    <string name="setup_issue_notifications">Notifications are off</string>
+    <string name="setup_issue_channel">The notification channel is off</string>
+    <string name="setup_issue_full_screen">Full-screen notifications are not allowed</string>
+
+    <string name="setup_step_exact_alarms">Exact alarms</string>
+    <string name="setup_step_exact_alarms_caption">Otherwise Android shifts the intake to a time that suits it — up to half an hour</string>
+    <string name="setup_exact_alarms_indicator">The phone will show the nearest reminder in the status bar as an alarm. This is normal: it means the reminder is scheduled.</string>
+
+    <string name="setup_step_app_startup">App launch</string>
+    <string name="setup_step_app_startup_caption">Settings → Battery → App launch → Sklyanka → Manage manually</string>
+    <string name="setup_step_app_startup_action">Turn on “Auto-launch”, “Secondary launch” and “Run in background”</string>
+
+    <string name="setup_step_battery_saving">Power saving</string>
+
+    <string name="setup_step_recents_pin">Pin in recents</string>
+    <string name="setup_step_recents_pin_caption">Open the recent apps list, pull the “Sklyanka” card down and tap the lock that appears</string>
+
+    <string name="setup_unverifiable_app_startup">The app cannot check this: auto-launch state is not visible to it.</string>
+    <string name="setup_unverifiable_battery_saving">The app cannot check this: power saving state is not visible to it.</string>
+    <string name="setup_unverifiable_recents_pin">The app cannot check this: the recents list is not visible to it.</string>
+
+    <string name="setup_manual_confirm_app_startup">I have set up app launch</string>
+    <string name="setup_manual_confirm_battery_saving">I have removed the power saving restrictions</string>
+    <string name="setup_manual_confirm_recents_pin">Sklyanka is pinned in recents</string>
+    <string name="setup_manual_confirm_caption">Recorded on your word: the app does not check this setting</string>
+
+    <string name="setup_hint_battery">Indirect sign: battery optimization for the app is off</string>
+
+    <string name="setup_fallback_app_startup">The system section did not open on this device. Open it manually: Settings → Battery → App launch → Sklyanka → Manage manually. Turn on “Auto-launch”, “Secondary launch” and “Run in background”.</string>
+    <string name="setup_fallback_battery_saving">The system section did not open on this device. Open it manually: Settings → Battery → Sklyanka → remove the power saving restrictions (“Do not restrict”).</string>
+
+    <string name="onboarding_state_granted">On</string>
+    <string name="setup_confirmed_by_user">Confirmed by you</string>
+
+    <string name="setup_action_allow">Allow</string>
+    <string name="setup_action_open_settings">Open settings</string>
+    <string name="setup_action_next">Next</string>
+    <string name="setup_action_skip">Skip, I will set it up later</string>
+    <string name="setup_done">Done</string>
+
+    <string name="setup_all_configured">Everything is set up</string>
+    <string name="setup_outage_warning">Everything is set up, but reminders have not arrived since %1$s.</string>
+    <string name="setup_check_delivery">Check delivery</string>
+    <string name="setup_outage_moment_pattern">MMMM d, HH:mm</string>
+
+    <string name="onboarding_summary_all_resolved">Everything is set up</string>
+
+    <string name="setup_revoked_notifications">Notification permission was revoked in system settings. While it is missing, reminders will not arrive.</string>
+    <string name="setup_revoked_exact_alarms">Exact alarm permission was revoked. Reminders will arrive late.</string>
+    <string name="setup_revoked_app_startup">The “App launch” confirmation was removed.</string>
+    <string name="setup_revoked_battery_saving">The “Power saving” confirmation was removed.</string>
+    <string name="setup_revoked_recents_pin">The recents pin confirmation was removed.</string>
+
+    <string name="cd_onboarding_notifications">Notifications</string>
+    <string name="cd_onboarding_exact_alarms">Exact alarms</string>
+    <string name="cd_setup_app_startup">App launch</string>
+    <string name="cd_setup_battery_saving">Power saving</string>
+    <string name="cd_setup_recents_pin">Pin in recents</string>
+    <string name="cd_onboarding_granted">Permission granted</string>
+    <string name="cd_setup_confirmed">Step confirmed by you</string>
+    <string name="cd_onboarding_hint">Indirect sign</string>
+    <string name="cd_onboarding_steps">Step %1$d of %2$d</string>
+</resources>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <plurals name="onboarding_summary_unresolved">
+        <item quantity="other">还有 %1$d 项未完成</item>
+    </plurals>
+</resources>

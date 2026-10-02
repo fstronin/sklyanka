@@ -45,7 +45,7 @@ import java.time.LocalDateTime
 @RunWith(AndroidJUnit4::class)
 // Экран длиннее окна телефона: цепочка из пяти карточек и футер. В окне телефона он
 // скроллится, и проверка состава видела бы только его верх (SKL-24).
-@Config(qualifiers = "w390dp-h2400dp-mdpi")
+@Config(qualifiers = "ru-rRU-w390dp-h2400dp-mdpi")
 class PermissionsScreenTest {
 
     @get:Rule

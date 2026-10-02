@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="history_title">History</string>
+    <string name="history_report_action">Doctor report</string>
+    <string name="history_tile_on_time">taken on time</string>
+    <string name="history_tile_days_without_misses">days without misses</string>
+    <string name="history_tile_misses">misses this month</string>
+
+    <string name="history_value_dash">—</string>
+    <string name="history_percent">%1$d %%</string>
+
+    <string name="cd_previous_month">Previous month</string>
+    <string name="cd_next_month">Next month</string>
+
+    <string name="weekday_monday">Mon</string>
+    <string name="weekday_tuesday">Tue</string>
+    <string name="weekday_wednesday">Wed</string>
+    <string name="weekday_thursday">Thu</string>
+    <string name="weekday_friday">Fri</string>
+    <string name="weekday_saturday">Sat</string>
+    <string name="weekday_sunday">Sun</string>
+
+    <string name="history_legend_all_taken">all taken</string>
+    <string name="history_legend_partial">partial</string>
+    <string name="history_legend_missed">missed</string>
+
+    <string name="cd_history_day">%1$s, %2$s</string>
+    <string name="cd_history_day_today">%1$s, today, %2$s</string>
+    <string name="history_state_no_intakes">no intakes</string>
+    <string name="history_state_ahead">the intake is still ahead</string>
+    <string name="history_state_before_history">before the history began</string>
+
+    <string name="history_breakdown_title">By medication</string>
+    <string name="history_archived_course">archived</string>
+    <string name="cd_history_medication">%1$s, %2$s taken</string>
+
+    <string name="history_insight_morning">The morning intake at %1$s is missed most often.</string>
+    <string name="history_insight_day">The daytime intake at %1$s is missed most often.</string>
+    <string name="history_insight_evening">The evening intake at %1$s is missed most often.</string>
+    <string name="history_insight_night">The night intake at %1$s is missed most often.</string>
+
+    <string name="history_report_title">Doctor report</string>
+    <string name="history_report_warning">The report contains medical data in the clear.</string>
+    <string name="history_report_share">Share</string>
+    <string name="history_report_save">Save</string>
+    <string name="history_report_shared">Report shared</string>
+    <string name="history_report_saved">Report saved</string>
+    <string name="history_report_cancelled">Report sharing cancelled</string>
+    <string name="history_report_failed">Report not saved</string>
+    <string name="history_notice_dismiss">Got it</string>
+
+    <string name="report_document_composition_profile">Profile: %1$s</string>
+
+    <string name="report_document_title">Medication intake report</string>
+    <string name="report_document_profile">Sklyanka · profile “%1$s”</string>
+    <string name="report_document_period">Period: %1$s — %2$s</string>
+    <string name="report_document_generated">Generated: %1$s</string>
+    <string name="report_document_summary_title">SUMMARY</string>
+    <string name="report_document_taken_label">Taken:</string>
+    <string name="report_document_on_time_label">Taken on time:</string>
+    <string name="report_document_days_without_misses_label">Days without misses:</string>
+    <string name="report_document_misses_label">Misses in the period:</string>
+    <string name="report_document_medications_title">BY MEDICATION</string>
+    <string name="report_document_medication_share">%1$d of %2$d (%3$s)</string>
+    <string name="report_document_as_needed">As-needed intake</string>
+    <string name="report_document_course">%1$s — %2$s</string>
+    <string name="report_document_course_open">since %1$s, indefinite</string>
+    <string name="report_document_archived">Course archived</string>
+    <string name="report_document_no_misses">No misses</string>
+    <string name="report_document_missed_dates">Misses: %1$s</string>
+    <string name="report_document_missed_both">%1$s; of them %2$s, %3$s</string>
+    <string name="report_document_missed_single">%1$s; %2$s</string>
+    <string name="report_document_missed_without_mark">%1$d — without a mark</string>
+    <string name="report_document_empty">No intake records in this period</string>
+    <string name="report_document_format">Format: PDF</string>
+    <string name="report_document_disclaimer">Not a medical document</string>
+    <string name="report_document_page">Sklyanka · page %1$d</string>
+
+    <string name="strength_unit_milligram">mg</string>
+
+    <string name="history_date_pattern">MMMM d</string>
+    <string name="history_date_pattern_full">MMMM d, yyyy</string>
+    <string name="history_datetime_pattern">MMMM d, yyyy, HH:mm</string>
+</resources>

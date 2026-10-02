@@ -21,7 +21,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
-import ru.stohastika.sklyanka.ui.locale.InterfaceLocale
+import ru.stohastika.sklyanka.ui.locale.interfaceLocale
 import ru.stohastika.sklyanka.ui.modifier.minTouchTarget
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaShapes
@@ -42,7 +42,7 @@ import ru.stohastika.sklyanka.ui.token.SklyankaType
 @Composable
 internal fun SectionLabel(text: String, modifier: Modifier = Modifier) {
     Text(
-        text = text.uppercase(InterfaceLocale.VALUE),
+        text = text.uppercase(interfaceLocale()),
         style = SklyankaType.Overline,
         color = SklyankaTheme.colors.textMuted,
         modifier = modifier,

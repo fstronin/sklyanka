@@ -19,7 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import ru.stohastika.sklyanka.ui.component.StackingRow
-import ru.stohastika.sklyanka.ui.locale.InterfaceLocale
+import ru.stohastika.sklyanka.ui.locale.interfaceLocale
 import ru.stohastika.sklyanka.ui.modifier.minTouchTarget
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaShapes
@@ -36,7 +36,7 @@ import ru.stohastika.sklyanka.ui.token.SklyankaType
 @Composable
 internal fun SectionRubric(text: String, modifier: Modifier = Modifier) {
     Text(
-        text = text.uppercase(InterfaceLocale.VALUE),
+        text = text.uppercase(interfaceLocale()),
         style = SklyankaType.Overline,
         color = SklyankaTheme.colors.textMuted,
         modifier = modifier.padding(start = SklyankaSpacing.Micro),
@@ -216,6 +216,7 @@ internal const val TAG_PROFILE_ROW = "settings_profile_row"
 internal const val TAG_ACTIVE_PROFILE = "settings_profile_active"
 internal const val TAG_PERMISSIONS_ROW = "settings_permissions_row"
 internal const val TAG_ABOUT = "settings_about"
+internal const val TAG_ABOUT_SITE = "settings_about_site"
 internal const val TAG_SOUND_ROW = "settings_sound_row"
 internal const val TAG_SNOOZE_ROW = "settings_snooze_row"
 internal const val TAG_SNOOZE_DIALOG = "settings_snooze_dialog"

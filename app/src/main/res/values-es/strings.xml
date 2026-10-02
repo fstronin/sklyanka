@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Sklyanka</string>
+
+    <string name="profile_self_default_name">Yo</string>
+
+    <string name="reminder_channel_regular_name">Recordatorios de toma</string>
+    <string name="reminder_channel_regular_description">Tarjeta de toma a la hora programada</string>
+    <string name="reminder_channel_persistent_name">Recordatorios insistentes</string>
+    <string name="reminder_channel_persistent_description">Repetición si la toma queda sin marcar</string>
+
+    <string name="reminder_overline">Toma programada</string>
+    <string name="reminder_time_pattern">HH:mm</string>
+    <string name="reminder_notification_separator"> · </string>
+    <string name="reminder_notification_text">%1$s · %2$s</string>
+
+    <string name="add_medication_shortcut_label">Añadir medicamento</string>
+    <string name="add_medication_shortcut_long_label">Nuevo medicamento</string>
+
+    <string name="diagnostics_shortcut_label">Recordatorios</string>
+
+    <string name="permissions_shortcut_label">Permisos e inicio automático</string>
+</resources>

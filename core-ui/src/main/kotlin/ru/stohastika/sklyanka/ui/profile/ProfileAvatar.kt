@@ -24,7 +24,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import ru.stohastika.sklyanka.ui.R
 import ru.stohastika.sklyanka.ui.component.semanticsLabel
-import ru.stohastika.sklyanka.ui.locale.InterfaceLocale
+import ru.stohastika.sklyanka.ui.locale.interfaceLocale
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaShapes
 import ru.stohastika.sklyanka.ui.token.SklyankaSizes
@@ -98,7 +98,7 @@ fun ProfileAvatar(onOpenProfiles: () -> Unit, modifier: Modifier = Modifier) {
 private fun ProfileChromeState.initial(): String {
     val fallback = stringResource(R.string.profile_self_initial)
     val name = foreignName ?: return fallback
-    return name.trim().take(1).uppercase(InterfaceLocale.VALUE).ifEmpty { fallback }
+    return name.trim().take(1).uppercase(interfaceLocale()).ifEmpty { fallback }
 }
 
 /** Шеврон вниз: он обещает продолжение, и продолжение есть — экран списка профилей. */

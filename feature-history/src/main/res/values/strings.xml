@@ -38,10 +38,10 @@
     <string name="history_month_pattern" translatable="false">LLLL yyyy</string>
     <!-- Имя месяца в родительном падеже: «6, 9, 14 сентября» в списке дат документа. -->
     <string name="history_month_name_pattern" translatable="false">MMMM</string>
-    <string name="history_date_pattern" translatable="false">d MMMM</string>
-    <string name="history_date_pattern_full" translatable="false">d MMMM yyyy</string>
+    <string name="history_date_pattern">d MMMM</string>
+    <string name="history_date_pattern_full">d MMMM yyyy</string>
     <string name="history_time_pattern" translatable="false">HH:mm</string>
-    <string name="history_datetime_pattern" translatable="false">d MMMM yyyy, HH:mm</string>
+    <string name="history_datetime_pattern">d MMMM yyyy, HH:mm</string>
 
     <string name="cd_previous_month">Предыдущий месяц</string>
     <string name="cd_next_month">Следующий месяц</string>

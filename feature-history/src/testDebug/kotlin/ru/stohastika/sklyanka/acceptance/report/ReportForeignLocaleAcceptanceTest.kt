@@ -10,15 +10,16 @@ import ru.stohastika.sklyanka.acceptance.run.ScreenAcceptanceRun
 /**
  * Экранный прогон приёмки языка отчёта врачу (SKL-45, группа `@screen`).
  *
- * Квалификатор задаёт **чужой** язык телефона — того, чего не делает ни один другой прогон
- * модуля: `ReportAcceptanceTest` идёт с русским телефоном, и дефект 44-A для него невидим.
+ * Квалификатор задаёт **незнакомый приложению** язык телефона (`fr-FR`; объявленные
+ * языки проверяются локализацией SKL-62): `ReportAcceptanceTest` идёт с русским телефоном,
+ * и дефект 44-A для него невидим.
  * Так же устроен `InterfaceLanguageAcceptanceTest` (SKL-28) в модуле `app` — для экранов,
  * которые дефект языка уже прошёл.
  *
  * Сценарий собирается из существующих шагов: новых объявлений словаря SKL-23 не появляется.
  */
 @RunWith(AndroidJUnit4::class)
-@Config(qualifiers = "en-rUS-w390dp-h3000dp-mdpi")
+@Config(qualifiers = "fr-rFR-w390dp-h3000dp-mdpi")
 class ReportForeignLocaleAcceptanceTest {
 
     @Test

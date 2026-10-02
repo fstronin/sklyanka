@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="meds_title">药物</string>
+    <string name="meds_tab_active">使用中 · %1$d</string>
+    <string name="meds_tab_archive">归档 · %1$d</string>
+    <string name="meds_as_needed_chip">按需</string>
+
+    <string name="meds_separator">" · "</string>
+
+    <string name="meds_frequency_daily">每天</string>
+
+    <string name="meds_period_open">自 %1$s 起 · 长期</string>
+    <string name="meds_period_until">至 %1$s</string>
+    <string name="meds_last_intake">上次服药 — %1$s</string>
+
+    <string name="meds_empty_title">还没有任何计划</string>
+    <string name="meds_empty_text">添加药物后，它的服药时间会按钟点显示在这里。</string>
+    <string name="meds_empty_action">添加药物</string>
+
+    <string name="cd_add_medication">添加药物</string>
+    <string name="cd_open_medication">打开卡片：%1$s</string>
+
+    <string name="form_title_new">新药物</string>
+    <string name="form_save_new">保存药物</string>
+    <string name="form_save_existing">保存</string>
+
+    <string name="form_label_name">名称</string>
+    <string name="form_label_release_form">剂型</string>
+    <string name="form_label_tablet_shape">药片形状</string>
+
+    <string name="form_preview_reusable">药物将在列表和卡片中以这种方式识别</string>
+    <string name="form_preview_dose_words">剂量以文字描述：“%1$s” — 不显示形状</string>
+    <string name="form_preview_dose_words_empty">剂量以文字描述，不显示形状</string>
+    <string name="form_label_dose">单次剂量</string>
+    <string name="form_label_intakes_per_day">每日服药次数</string>
+    <string name="form_caption_times_below">时间在下方设置</string>
+    <string name="form_label_times">服药时间</string>
+    <string name="form_add_time">添加时间</string>
+
+    <string name="form_dialog_time">服药时间</string>
+    <string name="form_dialog_start_date">开始日期</string>
+    <string name="form_dialog_end_date">结束日期</string>
+    <string name="form_label_mode">服药方式</string>
+    <string name="form_mode_scheduled">按计划</string>
+    <string name="form_mode_as_needed">按需</string>
+    <string name="form_mode_as_needed_hint">按需 — 不发送提醒：需要时手动标记服药。</string>
+    <string name="form_label_food_relation">与饮食的关系</string>
+    <string name="form_label_stock">包装余量</string>
+    <string name="form_stock_now">当前有</string>
+    <string name="form_package_size">包装规格</string>
+    <string name="form_package_size_hint">可选。卡片会显示包装剩余量</string>
+    <string name="form_stock_reminder">提醒购买</string>
+    <string name="form_label_period">服药周期</string>
+    <string name="form_period_start">开始</string>
+    <string name="form_period_indefinite">长期服用</string>
+    <string name="form_period_indefinite_caption">未设置结束日期</string>
+    <string name="form_period_end">结束</string>
+    <string name="form_period_end_empty">—</string>
+
+    <string name="period_preset_week_1">1 周</string>
+    <string name="period_preset_weeks_2">2 周</string>
+    <string name="period_preset_month_1">1 个月</string>
+    <string name="period_preset_months_2">2 个月</string>
+    <string name="period_preset_months_3">3 个月</string>
+    <string name="period_preset_months_6">6 个月</string>
+    <string name="period_preset_year_1">1 年</string>
+    <string name="period_preset_other">其他日期</string>
+
+    <string name="cd_dose_amount">数量</string>
+    <string name="cd_strength">规格含量</string>
+    <string name="cd_decrease">减少</string>
+    <string name="cd_increase">增加</string>
+    <string name="cd_delete_time">删除时间 %1$s</string>
+
+    <string name="med_form_tablet">药片</string>
+    <string name="med_form_capsule">胶囊</string>
+    <string name="med_form_spray">喷雾</string>
+    <string name="med_form_syrup">糖浆</string>
+    <string name="med_form_drops">滴剂</string>
+    <string name="med_form_injection">注射剂</string>
+
+    <string name="tablet_shape_round">圆形</string>
+    <string name="tablet_shape_round_scored">圆形带刻痕</string>
+    <string name="tablet_shape_oval">椭圆形</string>
+    <string name="tablet_shape_oblong">长圆形</string>
+    <string name="tablet_shape_triangular">三角形</string>
+
+    <string name="food_relation_any">无所谓</string>
+    <string name="food_relation_before">饭前</string>
+    <string name="food_relation_with">随餐</string>
+    <string name="food_relation_after">饭后</string>
+
+    <string name="dose_suffix_piece">片</string>
+    <string name="dose_suffix_millilitre">毫升</string>
+    <string name="dose_suffix_dose">剂</string>
+
+    <string name="strength_unit_milligram">毫克</string>
+
+    <string name="stock_unit_tablets">片</string>
+    <string name="stock_unit_capsules">粒</string>
+    <string name="stock_unit_millilitres">毫升</string>
+    <string name="stock_unit_doses">剂</string>
+
+    <string name="form_label_max_per_day">每天不超过、次</string>
+    <string name="form_caption_max_per_day">手动标记服药</string>
+
+    <string name="error_name_empty">请填写药物名称</string>
+    <string name="error_dose_not_positive">单次剂量必须大于零</string>
+    <string name="error_strength_without_unit">请填写规格单位</string>
+    <string name="error_unit_without_strength">请填写规格数值</string>
+    <string name="error_no_times">请至少设置一个服药时间</string>
+    <string name="error_duplicate_time">时间 %1$s 重复</string>
+    <string name="error_end_before_start">结束日期早于开始日期</string>
+    <string name="error_max_per_day_missing">请设置每天最多服用次数</string>
+    <string name="error_max_per_day_not_positive">限制必须大于零</string>
+    <string name="error_stock_negative">余量不能为负数</string>
+    <string name="error_package_size_not_positive">包装规格必须大于零</string>
+    <string name="form_save_blocked">请填写名称以保存药物</string>
+
+    <string name="card_edit">编辑</string>
+    <string name="card_section_schedule">日程</string>
+    <string name="card_section_course">疗程</string>
+    <string name="card_section_stock">余量</string>
+    <string name="card_stock_of_package">%1$s / %2$s</string>
+    <string name="card_section_week">最近 7 天</string>
+    <string name="card_week_empty">暂无服药</string>
+    <string name="card_course_period">%1$s — %2$s</string>
+    <string name="card_refill">补充</string>
+    <string name="card_archive">归档</string>
+
+    <string name="card_food_before">饭前</string>
+    <string name="card_food_with">随餐</string>
+    <string name="card_food_after">饭后</string>
+
+    <string name="card_section_limit">限制</string>
+    <string name="card_restore">恢复</string>
+    <string name="card_course_last_day">最后一天</string>
+    <string name="card_course_over">疗程已结束</string>
+
+    <string name="card_refill_hint">剩余多少</string>
+    <string name="card_refill_confirm">保存</string>
+
+    <string name="card_offer_course_finished">疗程已结束。将其归档？</string>
+    <string name="card_offer_action">归档</string>
+
+    <string name="card_notice_period_needs_update">服药周期已结束。请在编辑表单中延长周期以恢复疗程。</string>
+    <string name="card_notice_dismiss">知道了</string>
+
+    <string name="cd_adherence_today">%1$s，今天</string>
+    <string name="cd_adherence_completed">%1$s，已完成 %2$d / %3$d</string>
+    <string name="cd_adherence_no_intakes">%1$s，没有服药</string>
+    <string name="cd_adherence_before_course">%1$s，疗程开始之前</string>
+
+    <string name="archive_group_finished">疗程已结束</string>
+    <string name="archive_group_manual">手动移除</string>
+    <string name="archive_caption_since">自 %1$s 起归档</string>
+    <string name="archive_restore">恢复</string>
+    <string name="archive_history_banner">服药历史会保留。从归档恢复将以原日程重新启用药物。</string>
+
+    <string name="archive_empty_title">归档中还没有内容</string>
+    <string name="archive_empty_text">已结束的疗程会从药物卡片进入这里。服药历史将保留。</string>
+
+    <string name="date_pattern_day_month">M月d日</string>
+    <string name="date_pattern_full">yyyy年M月d日</string>
+</resources>

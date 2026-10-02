@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="today_title">Бүгін</string>
+
+    <string name="today_date_pattern">EEEE, d MMMM</string>
+    <string name="today_time_pattern">HH:mm</string>
+
+    <string name="today_progress_dense">%1$s · %2$s</string>
+
+    <string name="today_history_link">Тарих</string>
+
+    <string name="today_stock_warning">%1$s — %2$s, %3$s</string>
+    <string name="today_stock_action">Сатып алу</string>
+
+    <string name="today_reliability_notifications_off">Еске салғыштар қазір келмейді: хабарламалар өшірілген</string>
+    <string name="today_reliability_channel_off">Еске салғыштар қазір келмейді: хабарлама арнасы өшірілген</string>
+    <string name="today_reliability_exact_alarms_off">Еске салғыштар кешігуі мүмкін: нақты будильник рұқсаты берілмеген</string>
+    <string name="today_reliability_both_off">Еске салғыштар қазір келмейді: хабарламалар өшірілген және нақты будильник рұқсаты берілмеген</string>
+    <string name="today_reliability_full_screen_off">Қабылдау картасы құлыпталған экранда шықпайды: толық экранды хабарлама рұқсаты берілмеген</string>
+    <string name="today_reliability_action">Реттеу</string>
+
+    <string name="part_of_day_morning">Таң</string>
+    <string name="part_of_day_day">Күндіз</string>
+    <string name="part_of_day_evening">Кеш</string>
+    <string name="part_of_day_night">Түн</string>
+
+    <string name="today_now">Қазір</string>
+
+    <string name="today_separator">" · "</string>
+
+    <string name="today_strength">%1$s %2$s</string>
+
+    <string name="food_relation_before">тамаққа дейін</string>
+    <string name="food_relation_with">тамақ кезінде</string>
+    <string name="food_relation_after">тамақтан кейін</string>
+
+    <string name="today_prn_divider">Қажетіне қарай</string>
+
+    <string name="today_prn_no_limit">Кестесіз</string>
+
+    <string name="dense_section_title">%1$s · %2$s — %3$s</string>
+
+    <string name="dense_section_counter">%1$d / %2$d</string>
+
+    <string name="dense_section_partial">%1$d / %2$d белгіленді</string>
+
+    <string name="group_mark_both">Екеуін де белгілеу</string>
+    <string name="group_mark_all_three">Үшеуін де белгілеу</string>
+    <string name="group_mark_all_n">Барлығын белгілеу: %1$d</string>
+
+    <string name="group_confirm_both">Екеуін де белгілеуді растайсыз ба?</string>
+    <string name="group_confirm_all_three">Үшеуін де белгілеуді растайсыз ба?</string>
+    <string name="group_confirm_all_n">Барлығын (%1$d) белгілеуді растайсыз ба?</string>
+
+    <string name="today_empty_title">Әзірге ештеңе жоспарланбаған</string>
+    <string name="today_empty_text">Дәрі қосыңыз — оның қабылдаулары осында сағат бойынша пайда болады.</string>
+    <string name="today_empty_action">Дәрі қосу</string>
+
+    <string name="today_nothing_today">Бүгінге қабылдау жоқ</string>
+
+    <string name="today_undo_action">Болдырмау</string>
+    <string name="today_undo_taken_single">%1$s — қабылдау қабылданды деп белгіленді</string>
+    <string name="today_undo_skipped_single">%1$s — қабылдау өткізілді деп белгіленді</string>
+</resources>

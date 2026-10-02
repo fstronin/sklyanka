@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <plurals name="reminder_dose_tablets">
+        <item quantity="one">%1$s comprimido</item>
+        <item quantity="other">%1$s comprimidos</item>
+    </plurals>
+
+    <plurals name="reminder_dose_capsules">
+        <item quantity="one">%1$s cápsula</item>
+        <item quantity="other">%1$s cápsulas</item>
+    </plurals>
+
+    <plurals name="reminder_dose_millilitres">
+        <item quantity="one">%1$s ml</item>
+        <item quantity="other">%1$s ml</item>
+    </plurals>
+
+    <plurals name="reminder_dose_doses">
+        <item quantity="one">%1$s dosis</item>
+        <item quantity="other">%1$s dosis</item>
+    </plurals>
+
+    <plurals name="diagnostics_export_records">
+        <item quantity="one">%1$d registro</item>
+        <item quantity="other">%1$d registros</item>
+    </plurals>
+
+    <plurals name="diagnostics_late">
+        <item quantity="one">con %1$d minuto de retraso</item>
+        <item quantity="other">con %1$d minutos de retraso</item>
+    </plurals>
+</resources>

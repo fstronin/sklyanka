@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="setup_title">Сенімділікті реттеу</string>
+    <string name="setup_intro">EMUI жүйесі фондық қолданбаларды белсенді түрде түсіреді. Төмендегі параметрлерсіз қабылдаулар кешігіп немесе мүлде келмейді.</string>
+
+    <string name="setup_step_notifications">Хабарламалар</string>
+    <string name="setup_step_notifications_caption">Экрандағы қабылдау картасы</string>
+    <string name="setup_issue_notifications">Хабарламалар өшірілген</string>
+    <string name="setup_issue_channel">Хабарлама арнасы өшірілген</string>
+    <string name="setup_issue_full_screen">Толық экранды хабарламаларға рұқсат жоқ</string>
+
+    <string name="setup_step_exact_alarms">Нақты будильниктер</string>
+    <string name="setup_step_exact_alarms_caption">Әйтпесе Android қабылдауды өзіне ыңғайлы уақытқа жылжытады — жарты сағатқа дейін</string>
+    <string name="setup_exact_alarms_indicator">Телефон ең жақын еске салғышты күй жолағында будильник ретінде көрсетеді. Бұл қалыпты: жүйе еске салғыш қойылғанын осылай білдіреді.</string>
+
+    <string name="setup_step_app_startup">Қолданбаларды іске қосу</string>
+    <string name="setup_step_app_startup_caption">Параметрлер → Батарея → Қолданбаларды іске қосу → Sklyanka → Қолмен басқару</string>
+    <string name="setup_step_app_startup_action">«Автожүгірту», «Жанама жүгірту» және «Фонда жұмыс істеу» опцияларын қосыңыз</string>
+
+    <string name="setup_step_battery_saving">Қуат үнемдеу</string>
+
+    <string name="setup_step_recents_pin">Соңғыларда бекіту</string>
+    <string name="setup_step_recents_pin_caption">Соңғы қолданбалар тізімін ашып, «Sklyanka» картасын төмен тартыңыз да, пайда болған құлыпты басыңыз</string>
+
+    <string name="setup_unverifiable_app_startup">Қолданба мұны тексере алмайды: автожүгірту күйі оған көрінбейді.</string>
+    <string name="setup_unverifiable_battery_saving">Қолданба мұны тексере алмайды: қуат үнемдеу күйі оған көрінбейді.</string>
+    <string name="setup_unverifiable_recents_pin">Қолданба мұны тексере алмайды: соңғылар тізімі оған көрінбейді.</string>
+
+    <string name="setup_manual_confirm_app_startup">Мен қолданбаларды іске қосуды реттедім</string>
+    <string name="setup_manual_confirm_battery_saving">Мен қуат үнемдеу шектеулерін алып тастадым</string>
+    <string name="setup_manual_confirm_recents_pin">Sklyanka соңғыларда бекітілді</string>
+    <string name="setup_manual_confirm_caption">Сіздің сөзіңізбен жазылады: қолданба бұл параметрді тексермейді</string>
+
+    <string name="setup_hint_battery">Жанама белгі: қолданба үшін батарея оңтайландыруы алынды</string>
+
+    <string name="setup_fallback_app_startup">Бұл құрылғыда жүйелік бөлім ашылмады. Оны қолмен ашыңыз: Параметрлер → Батарея → Қолданбаларды іске қосу → Sklyanka → Қолмен басқару. «Автожүгірту», «Жанама жүгірту» және «Фонда жұмыс істеу» опцияларын қосыңыз.</string>
+    <string name="setup_fallback_battery_saving">Бұл құрылғыда жүйелік бөлім ашылмады. Оны қолмен ашыңыз: Параметрлер → Батарея → Sklyanka → қуат үнемдеу шектеулерін алып тастаңыз («Шектемеу»).</string>
+
+    <string name="onboarding_state_granted">Бар</string>
+    <string name="setup_confirmed_by_user">Сіз растадыңыз</string>
+
+    <string name="setup_action_allow">Рұқсат ету</string>
+    <string name="setup_action_open_settings">Параметрлерді ашу</string>
+    <string name="setup_action_next">Әрі қарай</string>
+    <string name="setup_action_skip">Өткізіп жіберу, кейін реттеймін</string>
+    <string name="setup_done">Дайын</string>
+
+    <string name="setup_all_configured">Барлығы реттелген</string>
+    <string name="setup_outage_warning">Барлығы реттелген, бірақ %1$s бастап еске салғыштар келмеді.</string>
+    <string name="setup_check_delivery">Жеткізілуін тексеру</string>
+    <string name="setup_outage_moment_pattern">d MMMM, HH:mm</string>
+
+    <string name="onboarding_summary_all_resolved">Барлығы реттелген</string>
+
+    <string name="setup_revoked_notifications">Хабарлама рұқсаты жүйелік параметрлерде қайтарып алынды. Ол болмағанша еске салғыштар келмейді.</string>
+    <string name="setup_revoked_exact_alarms">Нақты будильник рұқсаты қайтарып алынды. Еске салғыштар кешігіп келеді.</string>
+    <string name="setup_revoked_app_startup">«Қолданбаларды іске қосу» растауы алынды.</string>
+    <string name="setup_revoked_battery_saving">«Қуат үнемдеу» растауы алынды.</string>
+    <string name="setup_revoked_recents_pin">Соңғыларда бекіту растауы алынды.</string>
+
+    <string name="cd_onboarding_notifications">Хабарламалар</string>
+    <string name="cd_onboarding_exact_alarms">Нақты будильниктер</string>
+    <string name="cd_setup_app_startup">Қолданбаларды іске қосу</string>
+    <string name="cd_setup_battery_saving">Қуат үнемдеу</string>
+    <string name="cd_setup_recents_pin">Соңғыларда бекіту</string>
+    <string name="cd_onboarding_granted">Рұқсат берілді</string>
+    <string name="cd_setup_confirmed">Қадам сізбен расталды</string>
+    <string name="cd_onboarding_hint">Жанама белгі</string>
+    <string name="cd_onboarding_steps">%1$d-қадам, барлығы %2$d</string>
+</resources>

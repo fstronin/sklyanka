@@ -16,7 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import ru.stohastika.sklyanka.ui.R
-import ru.stohastika.sklyanka.ui.locale.InterfaceLocale
+import ru.stohastika.sklyanka.ui.locale.interfaceLocale
 import ru.stohastika.sklyanka.ui.profile.LocalProfileChrome
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaSizes
@@ -280,7 +280,8 @@ private fun HeaderDivider() {
  * РЕГИСТР») исполняется преобразованием — но ровно в одном месте дизайн-системы и
  * с учётом локали: `uppercase()` без локали ломается на второй локали (НФТ-43).
  */
-private fun String.uppercased(): String = uppercase(InterfaceLocale.VALUE)
+@Composable
+private fun String.uppercased(): String = uppercase(interfaceLocale())
 
 const val TAG_SCREEN_HEADER = "screen_header"
 const val TAG_PROFILE_LABEL = "profile_label"

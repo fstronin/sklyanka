@@ -10,12 +10,12 @@ import ru.stohastika.sklyanka.acceptance.run.ScreenAcceptanceRun
 /**
  * Экранный прогон приёмки языка интерфейса (SKL-28, группа `@screen`).
  *
- * Квалификатор задаёт **чужой** язык телефона — то, чего не делает ни один другой экранный
- * прогон: все они идут с русским телефоном (`ProjectDefaults.SCREEN_TEST_QUALIFIERS`),
- * и потому дефект был им невидим.
+ * Квалификатор задаёт **незнакомый приложению** язык телефона (`fr-FR`): объявленные
+ * языки теперь законно переводятся (SKL-62), и запасное русское поведение SKL-28
+ * проверяется на языке, которого в приложении нет.
  */
 @RunWith(AndroidJUnit4::class)
-@Config(qualifiers = "en-rUS-w390dp-h2400dp-mdpi")
+@Config(qualifiers = "fr-rFR-w390dp-h2400dp-mdpi")
 class InterfaceLanguageAcceptanceTest {
 
     @Test

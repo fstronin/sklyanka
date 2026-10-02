@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Sklyanka</string>
+    <string name="brand_tagline">toma de medicamentos</string>
+    <string name="brand_vendor">Stohastika</string>
+
+    <string name="action_taken">Tomado</string>
+    <string name="action_skip">Omitir</string>
+    <string name="action_take">Tomar</string>
+    <string name="action_back">Atrás</string>
+    <string name="action_cancel">Cancelar</string>
+    <string name="action_done">Hecho</string>
+    <string name="status_missed">Omitida</string>
+    <string name="status_marked_by_you">marcado por ti</string>
+    <string name="label_as_needed">Según necesidad</string>
+    <string name="profile_label">Perfil · %1$s</string>
+
+    <string name="tab_today">Hoy</string>
+    <string name="tab_meds">Medicamentos</string>
+    <string name="tab_settings">Ajustes</string>
+
+    <string name="profile_banner">Estas no son tus tomas. Las marcas se guardarán en el perfil «%1$s».</string>
+
+    <string name="profile_self_initial">Y</string>
+
+    <string name="cd_mark_intake">Marcar la toma %1$s</string>
+    <string name="cd_back">Atrás</string>
+    <string name="cd_app_mark">Marca de Sklyanka</string>
+    <string name="cd_app_mark_glass">Marca de Sklyanka: fondo de vidrio grueso</string>
+    <string name="cd_icon_on_dark">Icono sobre fondo oscuro</string>
+    <string name="cd_icon_on_light">Icono sobre fondo claro</string>
+    <string name="cd_flat_mark_72">Reducción plana de 72 píxeles</string>
+    <string name="cd_flat_mark_44">Reducción plana de 44 píxeles</string>
+    <string name="cd_flat_mark_28">Reducción plana de 28 píxeles</string>
+    <string name="cd_flat_mark_18">Reducción plana de 18 píxeles</string>
+    <string name="cd_warning">Advertencia</string>
+    <string name="cd_profile">Otro perfil</string>
+    <string name="cd_profile_avatar">Perfiles</string>
+
+    <string name="cd_switch_time_input">Entrada de hora con teclado</string>
+
+    <string name="cd_list_picker_selected">Seleccionado</string>
+
+    <string name="adherence_legend_taken">Tomado</string>
+    <string name="adherence_legend_missed">Omitida</string>
+    <string name="adherence_legend_today">Hoy</string>
+
+    <plurals name="intakes_taken_of_total">
+        <item quantity="one">%1$d de %2$d toma realizada</item>
+        <item quantity="other">%1$d de %2$d tomas realizadas</item>
+    </plurals>
+    <plurals name="pills_left">
+        <item quantity="one">queda %1$d comprimido</item>
+        <item quantity="other">quedan %1$d comprimidos</item>
+    </plurals>
+
+    <string name="preview_date">Viernes, 25 de septiembre</string>
+    <string name="preview_screen_title">Hoy</string>
+    <string name="preview_section_title">Horario</string>
+    <string name="preview_medication">Medicamento</string>
+    <string name="preview_dose">1 unidad · dosis</string>
+    <string name="preview_time">08:00</string>
+    <string name="preview_marked_time">08:05</string>
+    <string name="preview_profile_name">Ejemplo</string>
+    <string name="preview_primary_action">Añadir medicamento</string>
+    <string name="preview_danger_action">Reemplazar todo</string>
+    <string name="preview_secondary_action">Archivar</string>
+    <string name="preview_quiet_action">Editar</string>
+    <string name="preview_field_label">Nombre</string>
+    <string name="preview_field_value">Valor</string>
+    <string name="preview_field_unit">mg</string>
+    <string name="preview_field_error">Rellena el campo</string>
+    <string name="preview_chip_label">Comprimido</string>
+    <string name="preview_switch_label">Recordatorio insistente</string>
+    <string name="preview_switch_caption">Repetir si no se marca</string>
+    <string name="preview_banner_warning">El envase se está acabando, es hora de reponer</string>
+    <string name="preview_banner_profile">Estas no son tus tomas. Las marcas se guardarán en otro perfil.</string>
+    <string name="preview_banner_neutral">Una nota sobre la sección de ajustes</string>
+    <string name="preview_empty_title">Aún no hay nada programado</string>
+    <string name="preview_empty_text">Añade un medicamento y sus tomas aparecerán aquí por horas.</string>
+
+    <string name="catalog_title">Catálogo de componentes</string>
+    <string name="catalog_typography">Tipografía</string>
+    <string name="catalog_intake_card">Tarjeta de toma</string>
+    <string name="catalog_chip">Chip</string>
+    <string name="catalog_buttons">Botones</string>
+    <string name="catalog_text_field">Campo de texto</string>
+    <string name="catalog_switch">Interruptor</string>
+    <string name="catalog_banner">Banner</string>
+    <string name="catalog_progress">Barra de progreso</string>
+    <string name="catalog_empty_state">Estado vacío</string>
+    <string name="catalog_screen_header">Cabecera de pantalla</string>
+    <string name="catalog_profile_stripe">Franja de perfil</string>
+    <string name="catalog_mark">La marca y sus variantes</string>
+    <string name="catalog_lockup">Logotipo con el nombre</string>
+</resources>

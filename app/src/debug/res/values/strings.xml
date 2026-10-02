@@ -6,13 +6,13 @@
   и макет MainProfile.dc.html, и сценарии приёмки SKL-15.
 -->
 <resources>
-    <string name="debug_seed_profile_name">Мама</string>
+    <string name="debug_seed_profile_name" translatable="false">Мама</string>
 
     <!--
       Строки измерительного пробника (SKL-89). Только отладочная сборка: в релиз
       этот файл не попадает. Названия нейтральные — медицинских данных здесь нет.
     -->
-    <string name="debug_probe_channel_name">Тест напоминания</string>
-    <string name="debug_probe_notification_title">Тест напоминания №%1$d</string>
-    <string name="debug_probe_notification_text">Служебная проба доставки</string>
+    <string name="debug_probe_channel_name" translatable="false">Тест напоминания</string>
+    <string name="debug_probe_notification_title" translatable="false">Тест напоминания №%1$d</string>
+    <string name="debug_probe_notification_text" translatable="false">Служебная проба доставки</string>
 </resources>

@@ -36,7 +36,7 @@ import ru.stohastika.sklyanka.ui.token.SklyankaSizes
 @RunWith(AndroidJUnit4::class)
 // Экран длиннее окна телефона: снимок стенда режет его по нижней кромке, и проверка
 // состава видела бы не экран, а его верх.
-@Config(qualifiers = "w390dp-h2400dp-mdpi")
+@Config(qualifiers = "ru-rRU-w390dp-h2400dp-mdpi")
 class SettingsScreenTest {
 
     @get:Rule

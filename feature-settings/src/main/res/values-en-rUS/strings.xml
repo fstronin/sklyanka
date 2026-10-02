@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="transfer_title">Data transfer</string>
+    <string name="transfer_principle">One file with all medications, schedules and history. No cloud — the file stays with you.</string>
+
+    <string name="transfer_export_title">Export</string>
+    <string name="transfer_export_file">File %1$s</string>
+    <string name="transfer_export_action">Save file</string>
+    <string name="transfer_export_chip_settings">settings</string>
+    <string name="transfer_last_export">Last export — %1$s</string>
+
+    <string name="transfer_privacy_content">The file contains medication names, doses and intake history. It is not encrypted — treat it as a medical document.</string>
+    <string name="transfer_privacy_place">You choose where to save it. A folder synced with the cloud will take the data to the cloud.</string>
+
+    <string name="transfer_import_title">Import</string>
+    <string name="transfer_import_subtitle">From a file on this device</string>
+    <string name="transfer_mode_merge">Add to current</string>
+    <string name="transfer_mode_merge_hint">Matches by name and dosage will be shown separately</string>
+    <string name="transfer_mode_replace">Replace all</string>
+    <string name="transfer_mode_replace_hint">Current data on this device will be erased</string>
+    <string name="transfer_import_action">Choose file</string>
+
+    <string name="transfer_permissions_note">On a new device, permissions and auto-launch will have to be granted again — they belong to the system, not to the file. The same setup screen will open after the import.</string>
+
+    <string name="transfer_summary_title">What is in the file</string>
+    <string name="transfer_summary_exported_at">Exported %1$s</string>
+    <string name="transfer_summary_old_format">The file was created by an older version of Sklyanka (format version %1$d). It will be read through a migration.</string>
+    <string name="transfer_summary_continue">Next</string>
+    <string name="transfer_summary_cancel">Cancel</string>
+
+    <string name="transfer_matches_title">Matches</string>
+    <string name="transfer_matches_hint">These medications already exist on the device. A decision is made for each one separately.</string>
+    <string name="transfer_matches_empty">No matches — everything from the file will be added without questions.</string>
+    <string name="transfer_match_dosage">%1$s, %2$s</string>
+    <string name="transfer_match_dosage_value">%1$s %2$s</string>
+    <string name="transfer_match_difference_times">Intake time: on the device %1$s, in the file %2$s</string>
+    <string name="transfer_match_difference_schedule_mode">The intake mode differs</string>
+    <string name="transfer_match_difference_form">The form differs</string>
+    <string name="transfer_match_difference_shape">The tablet shape differs</string>
+    <string name="transfer_match_difference_dose_amount">The dose per intake differs</string>
+    <string name="transfer_match_difference_food_relation">The relation to food differs</string>
+    <string name="transfer_match_difference_period">The course period differs</string>
+    <string name="transfer_match_difference_stock">The package stock differs</string>
+    <string name="transfer_match_difference_max_per_day">The daily intake limit differs</string>
+    <string name="transfer_decision_keep_mine">Keep mine</string>
+    <string name="transfer_decision_take_from_file">Take from the file</string>
+    <string name="transfer_decision_add_separately">Add separately</string>
+    <string name="transfer_decision_do_not_load">Do not load</string>
+    <string name="transfer_matches_drop_all">Do not load any of the matches</string>
+    <string name="transfer_matches_apply">Load</string>
+    <string name="transfer_times_empty">as needed</string>
+    <string name="transfer_strength_unit_milligram">mg</string>
+
+    <string name="transfer_replace_title">Replace all?</string>
+    <string name="transfer_replace_warning">Current data on this device will be erased and replaced with the contents of the file. This cannot be undone.</string>
+    <string name="transfer_replace_now">Now on the device</string>
+    <string name="transfer_replace_after">Will be from the file</string>
+    <string name="transfer_replace_history_from">history since %1$s</string>
+    <string name="transfer_replace_history_empty">no history</string>
+    <string name="transfer_replace_safety_copy">Before erasing, the app will save a safety copy of the current data to the app internal storage, file %1$s. It is unavailable to other apps and is overwritten on the next replacement.</string>
+    <string name="transfer_replace_confirm">Erase and load</string>
+    <string name="transfer_replace_cancel">Do not erase</string>
+    <string name="transfer_replace_word">Replace</string>
+    <string name="transfer_replace_word_label">Type the word “%1$s” to confirm</string>
+
+    <string name="transfer_report_title">Import complete</string>
+    <string name="transfer_report_profiles">Profiles added: %1$d</string>
+    <string name="transfer_report_medications">Medications added: %1$d</string>
+    <string name="transfer_report_medications_updated">Medications updated from the file: %1$d</string>
+    <string name="transfer_report_intakes">History records added: %1$d</string>
+    <string name="transfer_report_intakes_updated">History records refined: %1$d</string>
+    <string name="transfer_report_intakes_skipped">History records not added because they already existed: %1$d</string>
+    <string name="transfer_report_matches">Matches resolved: %1$d</string>
+    <string name="transfer_report_decision">%1$s — %2$d</string>
+    <string name="transfer_report_not_transferred">Transferred incompletely</string>
+    <string name="transfer_report_notice_sound">The reminder sound from the file was not found on this device and was replaced with the default sound.</string>
+    <string name="transfer_report_notice_enum">The value of the field “%1$s” was not recognized and was replaced with the default value: %2$s.</string>
+    <string name="transfer_report_notice_enum_settings">The value of the field “%1$s” in the settings was not recognized and was replaced with the default value.</string>
+    <string name="transfer_report_notice_old_format">The file was created by an older format version (%1$d) and was read through a migration.</string>
+    <string name="transfer_report_safety_copy">Safety copy of the previous data: %1$s</string>
+    <string name="transfer_report_continue">Set up permissions</string>
+    <string name="transfer_field_form">form</string>
+    <string name="transfer_field_shape">tablet shape</string>
+    <string name="transfer_field_food_relation">relation to food</string>
+    <string name="transfer_field_schedule_mode">intake mode</string>
+    <string name="transfer_field_archive_reason">archive reason</string>
+    <string name="transfer_field_status">intake status</string>
+    <string name="transfer_field_source">mark source</string>
+    <string name="transfer_field_unknown">unknown field</string>
+
+    <string name="transfer_error_not_an_export">The file does not look like a Sklyanka export</string>
+    <string name="transfer_error_from_future">The file was created by a newer version of Sklyanka. Update the app</string>
+    <string name="transfer_error_no_space">Not enough space. Nothing was erased or loaded.</string>
+    <string name="transfer_error_not_applied">The import did not happen. Data on the device did not change.</string>
+    <string name="transfer_error_export_failed">The export did not happen. There is no ready file in the chosen location.</string>
+    <string name="transfer_error_no_file_picker">There is no file picker app on the device. Data transfer is impossible without it.</string>
+    <string name="transfer_error_import_interrupted">The previous import did not happen. Data on the device stayed as it was.</string>
+
+    <string name="transfer_reason_not_json">The file cannot be read as JSON</string>
+    <string name="transfer_reason_missing_marker">The file has no export marker</string>
+    <string name="transfer_reason_foreign_marker">The marker in the file is not Sklyanka’s</string>
+    <string name="transfer_reason_invalid_version">The file format version is not recognized</string>
+    <string name="transfer_reason_missing_section">The file is missing a required section: %1$s</string>
+    <string name="transfer_reason_invalid_value">Cannot read the value: %1$s</string>
+    <string name="transfer_reason_duplicate_id">A duplicate identifier in the file: %1$s</string>
+    <string name="transfer_reason_broken_link">A link inside the file is broken: %1$s</string>
+    <string name="transfer_reason_self_profile">The file has no self profile or has more than one</string>
+    <string name="transfer_reason_invalid_record">A record in the file fails the app rules: %1$s</string>
+
+    <string name="transfer_date_pattern_day_month">MMMM d</string>
+    <string name="transfer_date_pattern_full">MMMM d, yyyy</string>
+    <string name="transfer_time_pattern">HH:mm</string>
+    <string name="transfer_summary_moment">%1$s, %2$s</string>
+    <string name="transfer_times_separator">" and "</string>
+
+    <string name="transfer_cd_export">Export</string>
+    <string name="transfer_cd_import">Import</string>
+    <string name="transfer_cd_back">Back</string>
+
+    <string name="settings_title">Settings</string>
+
+    <string name="settings_rubric_profiles">Profiles</string>
+    <string name="settings_rubric_reminders">Reminders</string>
+    <string name="settings_rubric_system">System</string>
+    <string name="settings_rubric_data">Data</string>
+
+    <string name="settings_profile_self">My medications</string>
+    <string name="settings_profile_self_initial">M</string>
+    <string name="settings_profile_mirrored">reminders are mirrored to me</string>
+    <string name="settings_profile_subtitle">%1$s · %2$s</string>
+    <string name="settings_profile_add">Add profile</string>
+    <string name="settings_profile_add_unavailable">Coming in the nearest update</string>
+    <string name="settings_profile_delete">Delete profile “%1$s”</string>
+    <string name="cd_settings_profile_active">Active profile</string>
+
+    <string name="settings_sound">Sound</string>
+    <string name="settings_sound_caption">System notification settings</string>
+    <string name="settings_persistent">Persistent reminder</string>
+    <string name="settings_persistent_caption">Repeat if not marked</string>
+    <string name="settings_snooze">Snooze</string>
+
+    <string name="settings_permissions">Permissions and autostart</string>
+    <string name="settings_permissions_denied_one">One not granted</string>
+    <string name="settings_permissions_denied_many">%1$d not granted</string>
+    <string name="settings_permissions_granted_manual">Granted · check auto-launch manually</string>
+    <string name="settings_permissions_granted">All permissions granted</string>
+
+    <string name="settings_history">Intake history</string>
+    <string name="settings_transfer_caption">Export and import by file, no cloud</string>
+
+    <string name="settings_about_app">Sklyanka %1$s</string>
+    <string name="settings_about_vendor">Stohastika · Not a medical device</string>
+    <string name="cd_settings_about_mark">Sklyanka mark</string>
+
+    <string name="profile_delete_title">Delete profile?</string>
+    <string name="profile_delete_intro">Profile “%1$s” will be deleted together with its data:</string>
+    <string name="profile_delete_medications">Medications: %1$d (archived %2$d)</string>
+    <string name="profile_delete_history">History records: %1$d</string>
+    <string name="profile_delete_reminders">Reminders for this profile’s intakes will be removed</string>
+    <string name="profile_delete_warning">Deletion is irreversible: the profile and all its data will be erased from this device. They cannot be returned</string>
+    <string name="profile_delete_export">Save transfer file</string>
+    <string name="profile_delete_export_note">The file contains all profiles. “%1$s” can only be returned by loading the whole file</string>
+    <string name="profile_delete_export_saved">File saved — %1$s</string>
+    <string name="profile_delete_word">Delete</string>
+    <string name="profile_delete_confirm">Delete profile</string>
+    <string name="profile_delete_done">Done</string>
+    <string name="profile_delete_result_title">Profile “%1$s” deleted</string>
+    <string name="profile_delete_result_active">Your profile became active</string>
+    <string name="profile_delete_no_space">Not enough space. The file was not saved, the profile was not deleted.</string>
+    <string name="profile_delete_no_picker">There is no file picker app on the device. The transfer file cannot be saved without it.</string>
+</resources>

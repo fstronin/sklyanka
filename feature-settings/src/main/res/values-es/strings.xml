@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="transfer_title">Transferencia de datos</string>
+    <string name="transfer_principle">Un archivo con todos los medicamentos, horarios e historial. Sin nube: el archivo se queda contigo.</string>
+
+    <string name="transfer_export_title">Exportar</string>
+    <string name="transfer_export_file">Archivo %1$s</string>
+    <string name="transfer_export_action">Guardar archivo</string>
+    <string name="transfer_export_chip_settings">ajustes</string>
+    <string name="transfer_last_export">Última exportación — %1$s</string>
+
+    <string name="transfer_privacy_content">El archivo contiene nombres de medicamentos, dosis e historial de tomas. No está cifrado: trátalo como un documento médico.</string>
+    <string name="transfer_privacy_place">Tú eliges dónde guardarlo. Una carpeta sincronizada con la nube llevará los datos a la nube.</string>
+
+    <string name="transfer_import_title">Importar</string>
+    <string name="transfer_import_subtitle">Desde un archivo en este dispositivo</string>
+    <string name="transfer_mode_merge">Añadir a los actuales</string>
+    <string name="transfer_mode_merge_hint">Las coincidencias por nombre y dosificación se mostrarán por separado</string>
+    <string name="transfer_mode_replace">Reemplazar todo</string>
+    <string name="transfer_mode_replace_hint">Los datos actuales de este dispositivo se borrarán</string>
+    <string name="transfer_import_action">Elegir archivo</string>
+
+    <string name="transfer_permissions_note">En un dispositivo nuevo habrá que volver a conceder los permisos y el inicio automático: pertenecen al sistema, no al archivo. Después de la importación se abrirá la misma pantalla de configuración.</string>
+
+    <string name="transfer_summary_title">Qué hay en el archivo</string>
+    <string name="transfer_summary_exported_at">Exportado %1$s</string>
+    <string name="transfer_summary_old_format">El archivo fue creado por una versión antigua de Sklyanka (versión de formato %1$d). Se leerá mediante una migración.</string>
+    <string name="transfer_summary_continue">Siguiente</string>
+    <string name="transfer_summary_cancel">Cancelar</string>
+
+    <string name="transfer_matches_title">Coincidencias</string>
+    <string name="transfer_matches_hint">Estos medicamentos ya existen en el dispositivo. Se decide por cada uno por separado.</string>
+    <string name="transfer_matches_empty">No hay coincidencias: todo lo del archivo se añadirá sin preguntas.</string>
+    <string name="transfer_match_dosage">%1$s, %2$s</string>
+    <string name="transfer_match_dosage_value">%1$s %2$s</string>
+    <string name="transfer_match_difference_times">Hora de toma: en el dispositivo %1$s, en el archivo %2$s</string>
+    <string name="transfer_match_difference_schedule_mode">El modo de toma es distinto</string>
+    <string name="transfer_match_difference_form">La forma farmacéutica es distinta</string>
+    <string name="transfer_match_difference_shape">La forma del comprimido es distinta</string>
+    <string name="transfer_match_difference_dose_amount">La dosis por toma es distinta</string>
+    <string name="transfer_match_difference_food_relation">La relación con la comida es distinta</string>
+    <string name="transfer_match_difference_period">El período del tratamiento es distinto</string>
+    <string name="transfer_match_difference_stock">Las existencias del envase son distintas</string>
+    <string name="transfer_match_difference_max_per_day">El límite de tomas al día es distinto</string>
+    <string name="transfer_decision_keep_mine">Mantener el mío</string>
+    <string name="transfer_decision_take_from_file">Tomar del archivo</string>
+    <string name="transfer_decision_add_separately">Añadir por separado</string>
+    <string name="transfer_decision_do_not_load">No importar</string>
+    <string name="transfer_matches_drop_all">No importar ninguna coincidencia</string>
+    <string name="transfer_matches_apply">Importar</string>
+    <string name="transfer_times_empty">según necesidad</string>
+    <string name="transfer_strength_unit_milligram">mg</string>
+
+    <string name="transfer_replace_title">¿Reemplazar todo?</string>
+    <string name="transfer_replace_warning">Los datos actuales de este dispositivo se borrarán y se sustituirán por el contenido del archivo. Esto no se puede deshacer.</string>
+    <string name="transfer_replace_now">Ahora en el dispositivo</string>
+    <string name="transfer_replace_after">Quedará del archivo</string>
+    <string name="transfer_replace_history_from">historial desde %1$s</string>
+    <string name="transfer_replace_history_empty">sin historial</string>
+    <string name="transfer_replace_safety_copy">Antes de borrar, la aplicación guardará una copia de seguridad de los datos actuales en el almacenamiento interno, archivo %1$s. No es accesible para otras aplicaciones y se sobrescribe en el siguiente reemplazo.</string>
+    <string name="transfer_replace_confirm">Borrar e importar</string>
+    <string name="transfer_replace_cancel">No borrar</string>
+    <string name="transfer_replace_word">Reemplazar</string>
+    <string name="transfer_replace_word_label">Escribe la palabra «%1$s» para confirmar</string>
+
+    <string name="transfer_report_title">Importación completada</string>
+    <string name="transfer_report_profiles">Perfiles añadidos: %1$d</string>
+    <string name="transfer_report_medications">Medicamentos añadidos: %1$d</string>
+    <string name="transfer_report_medications_updated">Medicamentos actualizados desde el archivo: %1$d</string>
+    <string name="transfer_report_intakes">Registros de historial añadidos: %1$d</string>
+    <string name="transfer_report_intakes_updated">Registros de historial precisados: %1$d</string>
+    <string name="transfer_report_intakes_skipped">Registros de historial no añadidos porque ya existían: %1$d</string>
+    <string name="transfer_report_matches">Coincidencias resueltas: %1$d</string>
+    <string name="transfer_report_decision">%1$s — %2$d</string>
+    <string name="transfer_report_not_transferred">No se transfirió por completo</string>
+    <string name="transfer_report_notice_sound">El sonido del recordatorio del archivo no se encontró en este dispositivo y se sustituyó por el sonido predeterminado.</string>
+    <string name="transfer_report_notice_enum">El valor del campo «%1$s» no se reconoció y se sustituyó por el valor predeterminado: %2$s.</string>
+    <string name="transfer_report_notice_enum_settings">El valor del campo «%1$s» en los ajustes no se reconoció y se sustituyó por el valor predeterminado.</string>
+    <string name="transfer_report_notice_old_format">El archivo fue creado por una versión de formato antigua (%1$d) y se leyó mediante una migración.</string>
+    <string name="transfer_report_safety_copy">Copia de seguridad de los datos anteriores: %1$s</string>
+    <string name="transfer_report_continue">Configurar los permisos</string>
+    <string name="transfer_field_form">forma farmacéutica</string>
+    <string name="transfer_field_shape">forma del comprimido</string>
+    <string name="transfer_field_food_relation">relación con la comida</string>
+    <string name="transfer_field_schedule_mode">modo de toma</string>
+    <string name="transfer_field_archive_reason">motivo de archivo</string>
+    <string name="transfer_field_status">estado de la toma</string>
+    <string name="transfer_field_source">origen de la marca</string>
+    <string name="transfer_field_unknown">campo desconocido</string>
+
+    <string name="transfer_error_not_an_export">El archivo no parece una exportación de Sklyanka</string>
+    <string name="transfer_error_from_future">El archivo fue creado por una versión más nueva de Sklyanka. Actualiza la aplicación</string>
+    <string name="transfer_error_no_space">No hay espacio suficiente. No se ha borrado ni importado nada.</string>
+    <string name="transfer_error_not_applied">La importación no se realizó. Los datos del dispositivo no cambiaron.</string>
+    <string name="transfer_error_export_failed">La exportación no se realizó. No hay ningún archivo listo en el lugar elegido.</string>
+    <string name="transfer_error_no_file_picker">No hay ninguna aplicación para elegir archivos en el dispositivo. La transferencia de datos es imposible sin ella.</string>
+    <string name="transfer_error_import_interrupted">La importación anterior no se realizó. Los datos del dispositivo quedaron como estaban.</string>
+
+    <string name="transfer_reason_not_json">El archivo no se puede leer como JSON</string>
+    <string name="transfer_reason_missing_marker">El archivo no tiene marcador de exportación</string>
+    <string name="transfer_reason_foreign_marker">El marcador del archivo no es de Sklyanka</string>
+    <string name="transfer_reason_invalid_version">La versión del formato del archivo no se reconoce</string>
+    <string name="transfer_reason_missing_section">Al archivo le falta una sección obligatoria: %1$s</string>
+    <string name="transfer_reason_invalid_value">No se puede leer el valor: %1$s</string>
+    <string name="transfer_reason_duplicate_id">Identificador repetido en el archivo: %1$s</string>
+    <string name="transfer_reason_broken_link">Un enlace dentro del archivo está roto: %1$s</string>
+    <string name="transfer_reason_self_profile">El archivo no tiene perfil propio o tiene más de uno</string>
+    <string name="transfer_reason_invalid_record">Un registro del archivo no pasa las reglas de la aplicación: %1$s</string>
+
+    <string name="transfer_date_pattern_day_month">"d 'de' MMMM"</string>
+    <string name="transfer_date_pattern_full">"d 'de' MMMM 'de' yyyy"</string>
+    <string name="transfer_time_pattern">HH:mm</string>
+    <string name="transfer_summary_moment">%1$s, %2$s</string>
+    <string name="transfer_times_separator"> y </string>
+
+    <string name="transfer_cd_export">Exportación</string>
+    <string name="transfer_cd_import">Importación</string>
+    <string name="transfer_cd_back">Atrás</string>
+
+    <string name="settings_title">Ajustes</string>
+
+    <string name="settings_rubric_profiles">Perfiles</string>
+    <string name="settings_rubric_reminders">Recordatorios</string>
+    <string name="settings_rubric_system">Sistema</string>
+    <string name="settings_rubric_data">Datos</string>
+
+    <string name="settings_profile_self">Mis medicamentos</string>
+    <string name="settings_profile_self_initial">Y</string>
+    <string name="settings_profile_mirrored">los recordatorios se me duplican</string>
+    <string name="settings_profile_subtitle">%1$s · %2$s</string>
+    <string name="settings_profile_add">Añadir perfil</string>
+    <string name="settings_profile_add_unavailable">Disponible en la próxima actualización</string>
+    <string name="settings_profile_delete">Eliminar el perfil «%1$s»</string>
+    <string name="cd_settings_profile_active">Perfil activo</string>
+
+    <string name="settings_sound">Sonido</string>
+    <string name="settings_sound_caption">Ajustes de notificaciones del sistema</string>
+    <string name="settings_persistent">Recordatorio insistente</string>
+    <string name="settings_persistent_caption">Repetir si no se marca</string>
+    <string name="settings_snooze">Posponer</string>
+
+    <string name="settings_permissions">Permisos e inicio automático</string>
+    <string name="settings_permissions_denied_one">Falta uno</string>
+    <string name="settings_permissions_denied_many">Faltan %1$d</string>
+    <string name="settings_permissions_granted_manual">Concedidos · comprueba el inicio automático manualmente</string>
+    <string name="settings_permissions_granted">Todos los permisos concedidos</string>
+
+    <string name="settings_history">Historial de tomas</string>
+    <string name="settings_transfer_caption">Exportación e importación por archivo, sin nube</string>
+
+    <string name="settings_about_app">Sklyanka %1$s</string>
+    <string name="settings_about_vendor">Stohastika · No es un producto sanitario</string>
+    <string name="cd_settings_about_mark">Marca de Sklyanka</string>
+
+    <string name="profile_delete_title">¿Eliminar el perfil?</string>
+    <string name="profile_delete_intro">El perfil «%1$s» se eliminará junto con sus datos:</string>
+    <string name="profile_delete_medications">Medicamentos: %1$d (archivados %2$d)</string>
+    <string name="profile_delete_history">Registros de historial: %1$d</string>
+    <string name="profile_delete_reminders">Se retirarán los recordatorios de las tomas de este perfil</string>
+    <string name="profile_delete_warning">La eliminación es irreversible: el perfil y todos sus datos se borrarán de este dispositivo. No se podrán recuperar</string>
+    <string name="profile_delete_export">Guardar archivo de transferencia</string>
+    <string name="profile_delete_export_note">El archivo contiene todos los perfiles. «%1$s» solo se podrá recuperar importando el archivo completo</string>
+    <string name="profile_delete_export_saved">Archivo guardado — %1$s</string>
+    <string name="profile_delete_word">Eliminar</string>
+    <string name="profile_delete_confirm">Eliminar el perfil</string>
+    <string name="profile_delete_done">Hecho</string>
+    <string name="profile_delete_result_title">El perfil «%1$s» ha sido eliminado</string>
+    <string name="profile_delete_result_active">Tu perfil se ha convertido en el activo</string>
+    <string name="profile_delete_no_space">No hay espacio suficiente. El archivo no se guardó y el perfil no se eliminó.</string>
+    <string name="profile_delete_no_picker">No hay ninguna aplicación para elegir archivos en el dispositivo. El archivo de transferencia no se puede guardar sin ella.</string>
+</resources>

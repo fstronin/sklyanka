@@ -47,10 +47,12 @@ object ProjectDefaults {
     const val SCREEN_TEST_QUALIFIERS = "ru-rRU-w390dp-h844dp-mdpi"
 
     /**
-     * Язык интерфейса — один (НФТ-43). Код языка живёт здесь, потому что его знают
-     * и сборка, и манифест, и код: разойдясь, они разойдутся молча.
+     * Объявленные языки интерфейса (НФТ-43, ПМ-14, ПМ-23). Состав живёт здесь, потому что
+     * его знают и сборка, и манифест, и код: разойдясь, они разойдутся молча.
+     *
+     * Русский — язык набора по умолчанию и запасной для незнакомых языков телефона.
      */
-    const val INTERFACE_LOCALE = "ru"
+    val INTERFACE_LOCALES: Set<String> = linkedSetOf("ru", "en-US", "es", "de", "zh-CN", "kk")
 }
 
 internal val Project.libs: VersionCatalog

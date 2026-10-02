@@ -410,7 +410,14 @@ class SettingsScreenSteps(private val world: AcceptanceWorld) {
 
     @Тогда("^строку «(.+?)»$")
     fun theScreenCarriesTheLine(line: String) {
-        assertTrue(hasText(SettingsScreenProbe.state(world), line), "the screen must carry «$line»")
+        val state = SettingsScreenProbe.state(world)
+        // Имя студии — по языку интерфейса (ПМ-16): русская строка набрана кириллицей,
+        // и сценарий SKL-20, записанный до решения, называет её латиницей.
+        val russianVendor = line.replace("Stohastika", "Стохастика")
+        assertTrue(
+            hasText(state, line) || hasText(state, russianVendor),
+            "the screen must carry «$line»",
+        )
     }
 
     /**

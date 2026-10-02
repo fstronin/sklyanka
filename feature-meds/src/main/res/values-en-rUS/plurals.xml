@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <plurals name="times_per_day">
+        <item quantity="one">%1$d time a day</item>
+        <item quantity="other">%1$d times a day</item>
+    </plurals>
+
+    <plurals name="max_per_day">
+        <item quantity="one">no more than %1$d time a day</item>
+        <item quantity="other">no more than %1$d times a day</item>
+    </plurals>
+
+    <plurals name="stock_left_tablets">
+        <item quantity="one">%1$d tablet left</item>
+        <item quantity="other">%1$d tablets left</item>
+    </plurals>
+    <plurals name="stock_left_capsules">
+        <item quantity="one">%1$d capsule left</item>
+        <item quantity="other">%1$d capsules left</item>
+    </plurals>
+    <plurals name="stock_left_millilitres">
+        <item quantity="one">%1$d ml left</item>
+        <item quantity="other">%1$d ml left</item>
+    </plurals>
+    <plurals name="stock_left_doses">
+        <item quantity="one">%1$d dose left</item>
+        <item quantity="other">%1$d doses left</item>
+    </plurals>
+
+    <plurals name="card_intakes_per_day">
+        <item quantity="one">%1$d intake a day</item>
+        <item quantity="other">%1$d intakes a day</item>
+    </plurals>
+
+    <plurals name="card_dose_tablets">
+        <item quantity="one">%1$s tablet</item>
+        <item quantity="other">%1$s tablets</item>
+    </plurals>
+    <plurals name="card_dose_capsules">
+        <item quantity="one">%1$s capsule</item>
+        <item quantity="other">%1$s capsules</item>
+    </plurals>
+    <plurals name="card_dose_millilitres">
+        <item quantity="one">%1$s ml</item>
+        <item quantity="other">%1$s ml</item>
+    </plurals>
+    <plurals name="card_dose_doses">
+        <item quantity="one">%1$s dose</item>
+        <item quantity="other">%1$s doses</item>
+    </plurals>
+
+    <plurals name="card_course_days_left">
+        <item quantity="one">%1$d day left</item>
+        <item quantity="other">%1$d days left</item>
+    </plurals>
+
+    <plurals name="card_stock_days_left">
+        <item quantity="one">lasts %1$d day</item>
+        <item quantity="other">lasts %1$d days</item>
+    </plurals>
+
+    <plurals name="card_week_counter">
+        <item quantity="one">%1$d of %2$d intake</item>
+        <item quantity="other">%1$d of %2$d intakes</item>
+    </plurals>
+
+    <plurals name="archive_outcome">
+        <item quantity="one">%1$d day · %2$d of %3$d taken</item>
+        <item quantity="other">%1$d days · %2$d of %3$d taken</item>
+    </plurals>
+
+    <plurals name="stock_threshold_caption">
+        <item quantity="one">When %1$d day is left</item>
+        <item quantity="other">When %1$d days are left</item>
+    </plurals>
+</resources>

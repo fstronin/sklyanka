@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <plurals name="report_document_intakes_of_total">
+        <item quantity="one">%1$d von %2$d Einnahme (%3$s)</item>
+        <item quantity="other">%1$d von %2$d Einnahmen (%3$s)</item>
+    </plurals>
+
+    <plurals name="report_document_missed_by_person">
+        <item quantity="one">%1$d von der Person markiert</item>
+        <item quantity="other">%1$d von der Person markiert</item>
+    </plurals>
+
+    <plurals name="report_document_dose_tablets">
+        <item quantity="one">%1$s Tablette</item>
+        <item quantity="other">%1$s Tabletten</item>
+    </plurals>
+    <plurals name="report_document_dose_capsules">
+        <item quantity="one">%1$s Kapsel</item>
+        <item quantity="other">%1$s Kapseln</item>
+    </plurals>
+    <plurals name="report_document_dose_millilitres">
+        <item quantity="one">%1$s ml</item>
+        <item quantity="other">%1$s ml</item>
+    </plurals>
+    <plurals name="report_document_dose_doses">
+        <item quantity="one">%1$s Dosis</item>
+        <item quantity="other">%1$s Dosen</item>
+    </plurals>
+
+    <plurals name="cd_history_days_without_misses">
+        <item quantity="one">%1$d Tag ohne Auslassungen</item>
+        <item quantity="other">%1$d Tage ohne Auslassungen</item>
+    </plurals>
+
+    <plurals name="cd_history_misses">
+        <item quantity="one">%1$d Auslassung im Monat</item>
+        <item quantity="other">%1$d Auslassungen im Monat</item>
+    </plurals>
+</resources>

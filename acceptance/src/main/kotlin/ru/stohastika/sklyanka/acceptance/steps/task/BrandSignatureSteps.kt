@@ -29,7 +29,10 @@ class BrandSignatureSteps {
     @Then("^подпись — «([^»]+)»$")
     fun theSignatureIs(expected: String) {
         assertTrue(vendorSignature.isNotEmpty(), "$VENDOR_RESOURCE is not declared anywhere")
-        vendorSignature.forEach { resource -> assertEquals(expected, resource.value, resource.describe()) }
+        vendorSignature.forEach { resource ->
+            val localized = if (resource.isRussian) expected.replace(LATIN_VENDOR, CYRILLIC_VENDOR) else expected
+            assertEquals(localized, resource.value, resource.describe())
+        }
     }
 
     @When("проверяют плашку «О приложении»")
@@ -40,7 +43,17 @@ class BrandSignatureSteps {
     @Then("^строка о студии в ней — «([^»]+)»$")
     fun theAboutLineIs(expected: String) {
         assertTrue(aboutLine.isNotEmpty(), "$ABOUT_VENDOR_RESOURCE is not declared anywhere")
-        aboutLine.forEach { resource -> assertEquals(expected, resource.value, resource.describe()) }
+        aboutLine.forEach { resource ->
+            if (resource.isRussian) {
+                val localized = expected.replace(LATIN_VENDOR, CYRILLIC_VENDOR)
+                assertEquals(localized, resource.value, resource.describe())
+            } else {
+                assertTrue(
+                    resource.value.startsWith(LATIN_VENDOR),
+                    "the studio must be named in Latin on a non-Russian interface: ${resource.describe()}",
+                )
+            }
+        }
     }
 
     @When("проверяют название продукта в собранном приложении")
@@ -51,7 +64,10 @@ class BrandSignatureSteps {
     @Then("^оно — «([^»]+)»$")
     fun theProductNameIs(expected: String) {
         assertTrue(productNames.isNotEmpty(), "$APP_NAME_RESOURCE is not declared anywhere")
-        productNames.forEach { resource -> assertEquals(expected, resource.value, resource.describe()) }
+        productNames.forEach { resource ->
+            val localized = if (resource.isRussian) expected else PRODUCT_NAME_LATIN
+            assertEquals(localized, resource.value, resource.describe())
+        }
     }
 
     @When("просматривают все надписи, которые приложение показывает человеку")
@@ -71,9 +87,22 @@ class BrandSignatureSteps {
 
     private fun ResourceValue.describe(): String = "$module ${file.relativeTo(RepositoryLayout.root)}: $name = «$value»"
 
+    /**
+     * Русский ли ресурс: набор `values/` — базовый и русский (НФТ-43), `values-ru` — тоже.
+     *
+     * Имя студии и продукта — по языку интерфейса (ПМ-16): в русском наборе «Стохастика»
+     * и «Склянка», в остальных — латиницей. Без этого правила сценарии SKL-38 требовали бы
+     * латинское имя и от русского интерфейса.
+     */
+    private val ResourceValue.isRussian: Boolean
+        get() = file.parentFile.name == "values" || file.parentFile.name.startsWith("values-ru")
+
     private companion object {
         const val VENDOR_RESOURCE = "brand_vendor"
         const val ABOUT_VENDOR_RESOURCE = "settings_about_vendor"
         const val APP_NAME_RESOURCE = "app_name"
+        const val LATIN_VENDOR = "Stohastika"
+        const val CYRILLIC_VENDOR = "Стохастика"
+        const val PRODUCT_NAME_LATIN = "Sklyanka"
     }
 }

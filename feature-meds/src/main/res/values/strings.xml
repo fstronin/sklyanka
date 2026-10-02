@@ -273,8 +273,8 @@
       падеже, поэтому шаблон живёт в ресурсах и применяется с локалью конфигурации,
       а не собирается конкатенацией (НФТ-43).
     -->
-    <string name="date_pattern_day_month" translatable="false">d MMMM</string>
-    <string name="date_pattern_full" translatable="false">d MMMM yyyy</string>
+    <string name="date_pattern_day_month">d MMMM</string>
+    <string name="date_pattern_full">d MMMM yyyy</string>
     <!--
       «Сб» в недельной полосе и «суббота» для программы чтения с экрана.
 

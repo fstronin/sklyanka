@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <plurals name="transfer_chip_medications">
+        <item quantity="one">%1$d medicamento</item>
+        <item quantity="other">%1$d medicamentos</item>
+    </plurals>
+
+    <plurals name="transfer_chip_archived">
+        <item quantity="one">%1$d archivado</item>
+        <item quantity="other">%1$d archivados</item>
+    </plurals>
+
+    <plurals name="transfer_chip_history_months">
+        <item quantity="one">historial de %1$d mes</item>
+        <item quantity="other">historial de %1$d meses</item>
+    </plurals>
+
+    <plurals name="transfer_chip_profiles">
+        <item quantity="one">%1$d perfil</item>
+        <item quantity="other">%1$d perfiles</item>
+    </plurals>
+
+    <plurals name="transfer_count_intakes">
+        <item quantity="one">%1$d registro de historial</item>
+        <item quantity="other">%1$d registros de historial</item>
+    </plurals>
+
+    <plurals name="settings_profile_medications">
+        <item quantity="one">%1$d medicamento</item>
+        <item quantity="other">%1$d medicamentos</item>
+    </plurals>
+
+    <plurals name="settings_snooze_minutes">
+        <item quantity="one">%1$d minuto</item>
+        <item quantity="other">%1$d minutos</item>
+    </plurals>
+</resources>

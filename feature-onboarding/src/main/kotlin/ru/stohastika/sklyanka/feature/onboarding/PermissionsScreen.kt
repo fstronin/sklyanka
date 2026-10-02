@@ -45,7 +45,7 @@ import ru.stohastika.sklyanka.ui.component.PrimaryButton
 import ru.stohastika.sklyanka.ui.component.QuietButton
 import ru.stohastika.sklyanka.ui.component.SklyankaSwitchRow
 import ru.stohastika.sklyanka.ui.component.StackingRow
-import ru.stohastika.sklyanka.ui.locale.InterfaceLocale
+import ru.stohastika.sklyanka.ui.locale.interfaceLocale
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaShapes
 import ru.stohastika.sklyanka.ui.token.SklyankaSizes
@@ -652,7 +652,7 @@ private fun confirmTagOf(step: PermissionStep): String = when (step) {
 private fun LocalDateTime.journalMoment(): String = format(
     // Локаль указана явно: `ofPattern` без неё берёт локаль процесса, а она остаётся
     // локалью телефона и после закрепления конфигурации (`ADR-0008`).
-    DateTimeFormatter.ofPattern(stringResource(R.string.setup_outage_moment_pattern), InterfaceLocale.VALUE),
+    DateTimeFormatter.ofPattern(stringResource(R.string.setup_outage_moment_pattern), interfaceLocale()),
 )
 
 const val TAG_PERMISSIONS_SCREEN = "permissions_screen"

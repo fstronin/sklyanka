@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="meds_title">Medicamentos</string>
+    <string name="meds_tab_active">Activos · %1$d</string>
+    <string name="meds_tab_archive">Archivo · %1$d</string>
+    <string name="meds_as_needed_chip">según necesidad</string>
+
+    <string name="meds_separator"> · </string>
+
+    <string name="meds_frequency_daily">Diariamente</string>
+
+    <string name="meds_period_open">desde %1$s · indefinido</string>
+    <string name="meds_period_until">hasta %1$s</string>
+    <string name="meds_last_intake">última toma — %1$s</string>
+
+    <string name="meds_empty_title">Aún no hay nada programado</string>
+    <string name="meds_empty_text">Añade un medicamento y sus tomas aparecerán aquí por horas.</string>
+    <string name="meds_empty_action">Añadir medicamento</string>
+
+    <string name="cd_add_medication">Añadir medicamento</string>
+    <string name="cd_open_medication">Abrir la tarjeta: %1$s</string>
+
+    <string name="form_title_new">Nuevo medicamento</string>
+    <string name="form_save_new">Guardar medicamento</string>
+    <string name="form_save_existing">Guardar</string>
+
+    <string name="form_label_name">Nombre</string>
+    <string name="form_label_release_form">Forma farmacéutica</string>
+    <string name="form_label_tablet_shape">Forma del comprimido</string>
+
+    <string name="form_preview_reusable">Así se reconocerá el medicamento en la lista y en la tarjeta</string>
+    <string name="form_preview_dose_words">La dosis se describe con palabras: «%1$s» — sin silueta</string>
+    <string name="form_preview_dose_words_empty">La dosis se describe con palabras, sin silueta</string>
+    <string name="form_label_dose">Dosis por toma</string>
+    <string name="form_label_intakes_per_day">Tomas al día</string>
+    <string name="form_caption_times_below">La hora se indica abajo</string>
+    <string name="form_label_times">Hora de la toma</string>
+    <string name="form_add_time">Añadir hora</string>
+
+    <string name="form_dialog_time">Hora de la toma</string>
+    <string name="form_dialog_start_date">Fecha de inicio</string>
+    <string name="form_dialog_end_date">Fecha de fin</string>
+    <string name="form_label_mode">Modo de toma</string>
+    <string name="form_mode_scheduled">Según horario</string>
+    <string name="form_mode_as_needed">Según necesidad</string>
+    <string name="form_mode_as_needed_hint">Según necesidad — sin recordatorios: la toma se marca manualmente cuando hace falta.</string>
+    <string name="form_label_food_relation">Relación con la comida</string>
+    <string name="form_label_stock">Existencias en el envase</string>
+    <string name="form_stock_now">Disponible ahora</string>
+    <string name="form_package_size">Tamaño del envase</string>
+    <string name="form_package_size_hint">Opcional. La tarjeta mostrará cuánto queda del envase</string>
+    <string name="form_stock_reminder">Recordar comprar</string>
+    <string name="form_label_period">Período de toma</string>
+    <string name="form_period_start">Inicio</string>
+    <string name="form_period_indefinite">Tomar indefinidamente</string>
+    <string name="form_period_indefinite_caption">La fecha de fin no está definida</string>
+    <string name="form_period_end">Fin</string>
+    <string name="form_period_end_empty">—</string>
+
+    <string name="period_preset_week_1">1 semana</string>
+    <string name="period_preset_weeks_2">2 semanas</string>
+    <string name="period_preset_month_1">1 mes</string>
+    <string name="period_preset_months_2">2 meses</string>
+    <string name="period_preset_months_3">3 meses</string>
+    <string name="period_preset_months_6">6 meses</string>
+    <string name="period_preset_year_1">1 año</string>
+    <string name="period_preset_other">Otra fecha</string>
+
+    <string name="cd_dose_amount">Cantidad</string>
+    <string name="cd_strength">Dosificación</string>
+    <string name="cd_decrease">Reducir</string>
+    <string name="cd_increase">Aumentar</string>
+    <string name="cd_delete_time">Eliminar la hora %1$s</string>
+
+    <string name="med_form_tablet">Comprimido</string>
+    <string name="med_form_capsule">Cápsula</string>
+    <string name="med_form_spray">Espray</string>
+    <string name="med_form_syrup">Jarabe</string>
+    <string name="med_form_drops">Gotas</string>
+    <string name="med_form_injection">Inyección</string>
+
+    <string name="tablet_shape_round">Redondo</string>
+    <string name="tablet_shape_round_scored">Redondo con ranura</string>
+    <string name="tablet_shape_oval">Ovalado</string>
+    <string name="tablet_shape_oblong">Alargado</string>
+    <string name="tablet_shape_triangular">Triangular</string>
+
+    <string name="food_relation_any">Indiferente</string>
+    <string name="food_relation_before">Antes de comer</string>
+    <string name="food_relation_with">Con la comida</string>
+    <string name="food_relation_after">Después de comer</string>
+
+    <string name="dose_suffix_piece">uds</string>
+    <string name="dose_suffix_millilitre">ml</string>
+    <string name="dose_suffix_dose">dosis</string>
+
+    <string name="strength_unit_milligram">mg</string>
+
+    <string name="stock_unit_tablets">comprimidos</string>
+    <string name="stock_unit_capsules">cápsulas</string>
+    <string name="stock_unit_millilitres">ml</string>
+    <string name="stock_unit_doses">dosis</string>
+
+    <string name="form_label_max_per_day">No más de, veces al día</string>
+    <string name="form_caption_max_per_day">La toma se marca manualmente</string>
+
+    <string name="error_name_empty">Indica el nombre del medicamento</string>
+    <string name="error_dose_not_positive">La dosis por toma debe ser mayor que cero</string>
+    <string name="error_strength_without_unit">Indica la unidad de dosificación</string>
+    <string name="error_unit_without_strength">Indica el valor de dosificación</string>
+    <string name="error_no_times">Indica al menos una hora de toma</string>
+    <string name="error_duplicate_time">La hora %1$s se repite</string>
+    <string name="error_end_before_start">La fecha de fin es anterior a la fecha de inicio</string>
+    <string name="error_max_per_day_missing">Indica el número máximo de tomas al día</string>
+    <string name="error_max_per_day_not_positive">El límite debe ser mayor que cero</string>
+    <string name="error_stock_negative">Las existencias no pueden ser negativas</string>
+    <string name="error_package_size_not_positive">El tamaño del envase debe ser mayor que cero</string>
+    <string name="form_save_blocked">Indica el nombre para guardar el medicamento</string>
+
+    <string name="card_edit">Editar</string>
+    <string name="card_section_schedule">Horario</string>
+    <string name="card_section_course">Tratamiento</string>
+    <string name="card_section_stock">Existencias</string>
+    <string name="card_stock_of_package">%1$s de %2$s</string>
+    <string name="card_section_week">Últimos 7 días</string>
+    <string name="card_week_empty">Aún no hay tomas</string>
+    <string name="card_course_period">%1$s — %2$s</string>
+    <string name="card_refill">Reponer</string>
+    <string name="card_archive">Archivar</string>
+
+    <string name="card_food_before">antes de comer</string>
+    <string name="card_food_with">durante la comida</string>
+    <string name="card_food_after">después de comer</string>
+
+    <string name="card_section_limit">Límite</string>
+    <string name="card_restore">Restaurar</string>
+    <string name="card_course_last_day">último día</string>
+    <string name="card_course_over">tratamiento finalizado</string>
+
+    <string name="card_refill_hint">Cuánto queda</string>
+    <string name="card_refill_confirm">Guardar</string>
+
+    <string name="card_offer_course_finished">El tratamiento ha finalizado. ¿Archivarlo?</string>
+    <string name="card_offer_action">Archivar</string>
+
+    <string name="card_notice_period_needs_update">El período de toma ha terminado. Prorrógalo en el formulario de edición para restaurar el tratamiento.</string>
+    <string name="card_notice_dismiss">Entendido</string>
+
+    <string name="cd_adherence_today">%1$s, hoy</string>
+    <string name="cd_adherence_completed">%1$s, %2$d de %3$d realizadas</string>
+    <string name="cd_adherence_no_intakes">%1$s, no hubo tomas</string>
+    <string name="cd_adherence_before_course">%1$s, antes del inicio del tratamiento</string>
+
+    <string name="archive_group_finished">Tratamiento finalizado</string>
+    <string name="archive_group_manual">Retirado manualmente</string>
+    <string name="archive_caption_since">en el archivo desde %1$s</string>
+    <string name="archive_restore">Restaurar</string>
+    <string name="archive_history_banner">El historial de tomas se conserva. Restaurar desde el archivo devolverá el medicamento con el mismo horario.</string>
+
+    <string name="archive_empty_title">El archivo está vacío por ahora</string>
+    <string name="archive_empty_text">Los tratamientos finalizados aparecerán aquí desde la tarjeta del medicamento. El historial de tomas se conservará.</string>
+
+    <string name="date_pattern_day_month">"d 'de' MMMM"</string>
+    <string name="date_pattern_full">"d 'de' MMMM 'de' yyyy"</string>
+</resources>

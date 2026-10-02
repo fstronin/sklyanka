@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <plurals name="today_medications">
+        <item quantity="other">%1$d 种药物</item>
+    </plurals>
+
+    <plurals name="today_days_left">
+        <item quantity="other">可用 %1$d 天</item>
+    </plurals>
+
+    <plurals name="today_stock_left_tablets">
+        <item quantity="other">剩余 %1$s 片</item>
+    </plurals>
+    <plurals name="today_stock_left_capsules">
+        <item quantity="other">剩余 %1$s 粒</item>
+    </plurals>
+    <plurals name="today_stock_left_millilitres">
+        <item quantity="other">剩余 %1$s 毫升</item>
+    </plurals>
+    <plurals name="today_stock_left_doses">
+        <item quantity="other">剩余 %1$s 剂</item>
+    </plurals>
+
+    <plurals name="today_dose_tablets">
+        <item quantity="other">%1$s 片</item>
+    </plurals>
+    <plurals name="today_dose_capsules">
+        <item quantity="other">%1$s 粒</item>
+    </plurals>
+    <plurals name="today_dose_millilitres">
+        <item quantity="other">%1$s 毫升</item>
+    </plurals>
+    <plurals name="today_dose_doses">
+        <item quantity="other">%1$s 剂</item>
+    </plurals>
+
+    <plurals name="today_prn_subtitle">
+        <item quantity="other">无日程 · 每天不超过 %1$d 次</item>
+    </plurals>
+
+    <plurals name="today_prn_limit_reached">
+        <item quantity="other">今天已服用 %1$d 次 — 已达到每日上限</item>
+    </plurals>
+
+    <plurals name="group_caption_by_one">
+        <item quantity="other">%1$d 次服药 · 请逐次标记</item>
+    </plurals>
+
+    <plurals name="dense_section_all_marked">
+        <item quantity="other">%1$d 次服药，全部已标记</item>
+    </plurals>
+    <plurals name="dense_section_ahead">
+        <item quantity="other">还有 %1$d 次服药</item>
+    </plurals>
+
+    <plurals name="today_undo_taken">
+        <item quantity="other">%1$d 次服药已标记为已服用</item>
+    </plurals>
+    <plurals name="today_undo_skipped">
+        <item quantity="other">%1$d 次服药已标记为跳过</item>
+    </plurals>
+
+    <plurals name="today_prn_collapsed">
+        <item quantity="other">%1$d 种无日程药物</item>
+    </plurals>
+</resources>

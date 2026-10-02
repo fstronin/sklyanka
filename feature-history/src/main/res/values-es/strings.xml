@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="history_title">Historial</string>
+    <string name="history_report_action">Informe médico</string>
+    <string name="history_tile_on_time">tomadas a tiempo</string>
+    <string name="history_tile_days_without_misses">días sin omisiones</string>
+    <string name="history_tile_misses">omisiones del mes</string>
+
+    <string name="history_value_dash">—</string>
+    <string name="history_percent">%1$d %%</string>
+
+    <string name="cd_previous_month">Mes anterior</string>
+    <string name="cd_next_month">Mes siguiente</string>
+
+    <string name="weekday_monday">Lun</string>
+    <string name="weekday_tuesday">Mar</string>
+    <string name="weekday_wednesday">Mié</string>
+    <string name="weekday_thursday">Jue</string>
+    <string name="weekday_friday">Vie</string>
+    <string name="weekday_saturday">Sáb</string>
+    <string name="weekday_sunday">Dom</string>
+
+    <string name="history_legend_all_taken">todo tomado</string>
+    <string name="history_legend_partial">parcial</string>
+    <string name="history_legend_missed">omitida</string>
+
+    <string name="cd_history_day">%1$s, %2$s</string>
+    <string name="cd_history_day_today">%1$s, hoy, %2$s</string>
+    <string name="history_state_no_intakes">no hubo tomas</string>
+    <string name="history_state_ahead">la toma aún no ha llegado</string>
+    <string name="history_state_before_history">antes del inicio del historial</string>
+
+    <string name="history_breakdown_title">Por medicamento</string>
+    <string name="history_archived_course">archivado</string>
+    <string name="cd_history_medication">%1$s, %2$s tomadas</string>
+
+    <string name="history_insight_morning">La toma de la mañana a las %1$s es la que más se omite.</string>
+    <string name="history_insight_day">La toma del día a las %1$s es la que más se omite.</string>
+    <string name="history_insight_evening">La toma de la tarde a las %1$s es la que más se omite.</string>
+    <string name="history_insight_night">La toma de la noche a las %1$s es la que más se omite.</string>
+
+    <string name="history_report_title">Informe médico</string>
+    <string name="history_report_warning">El informe contiene datos médicos en claro.</string>
+    <string name="history_report_share">Compartir</string>
+    <string name="history_report_save">Guardar</string>
+    <string name="history_report_shared">Informe compartido</string>
+    <string name="history_report_saved">Informe guardado</string>
+    <string name="history_report_cancelled">Envío del informe cancelado</string>
+    <string name="history_report_failed">Informe no guardado</string>
+    <string name="history_notice_dismiss">Entendido</string>
+
+    <string name="report_document_composition_profile">Perfil: %1$s</string>
+
+    <string name="report_document_title">Informe de toma de medicamentos</string>
+    <string name="report_document_profile">Sklyanka · perfil «%1$s»</string>
+    <string name="report_document_period">Período: %1$s — %2$s</string>
+    <string name="report_document_generated">Generado: %1$s</string>
+    <string name="report_document_summary_title">RESUMEN</string>
+    <string name="report_document_taken_label">Tomadas:</string>
+    <string name="report_document_on_time_label">Tomadas a tiempo:</string>
+    <string name="report_document_days_without_misses_label">Días sin omisiones:</string>
+    <string name="report_document_misses_label">Omisiones del período:</string>
+    <string name="report_document_medications_title">POR MEDICAMENTO</string>
+    <string name="report_document_medication_share">%1$d de %2$d (%3$s)</string>
+    <string name="report_document_as_needed">Toma según necesidad</string>
+    <string name="report_document_course">%1$s — %2$s</string>
+    <string name="report_document_course_open">desde %1$s, indefinido</string>
+    <string name="report_document_archived">Tratamiento archivado</string>
+    <string name="report_document_no_misses">Sin omisiones</string>
+    <string name="report_document_missed_dates">Omisiones: %1$s</string>
+    <string name="report_document_missed_both">%1$s; de ellas %2$s, %3$s</string>
+    <string name="report_document_missed_single">%1$s; %2$s</string>
+    <string name="report_document_missed_without_mark">%1$d — sin marca</string>
+    <string name="report_document_empty">No hay ningún registro de toma en el período</string>
+    <string name="report_document_format">Formato: PDF</string>
+    <string name="report_document_disclaimer">No es un documento médico</string>
+    <string name="report_document_page">Sklyanka · pág. %1$d</string>
+
+    <string name="strength_unit_milligram">mg</string>
+
+    <string name="history_date_pattern">"d 'de' MMMM"</string>
+    <string name="history_date_pattern_full">"d 'de' MMMM 'de' yyyy"</string>
+    <string name="history_datetime_pattern">"d 'de' MMMM 'de' yyyy, HH:mm"</string>
+</resources>

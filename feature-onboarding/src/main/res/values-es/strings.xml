@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="setup_title">Configurar la fiabilidad</string>
+    <string name="setup_intro">En EMUI, el sistema descarga agresivamente las aplicaciones en segundo plano. Sin los ajustes de abajo, las tomas llegarán con retraso o no llegarán.</string>
+
+    <string name="setup_step_notifications">Notificaciones</string>
+    <string name="setup_step_notifications_caption">Tarjeta de toma en la pantalla</string>
+    <string name="setup_issue_notifications">Las notificaciones están desactivadas</string>
+    <string name="setup_issue_channel">El canal de notificaciones está desactivado</string>
+    <string name="setup_issue_full_screen">No se permiten las notificaciones de pantalla completa</string>
+
+    <string name="setup_step_exact_alarms">Alarmas exactas</string>
+    <string name="setup_step_exact_alarms_caption">De lo contrario, Android moverá la toma a la hora que le convenga, hasta media hora</string>
+    <string name="setup_exact_alarms_indicator">El teléfono mostrará el próximo recordatorio en la barra de estado como una alarma. Es normal: significa que el recordatorio está programado.</string>
+
+    <string name="setup_step_app_startup">Inicio de aplicaciones</string>
+    <string name="setup_step_app_startup_caption">Ajustes → Batería → Inicio de aplicaciones → Sklyanka → Gestionar manualmente</string>
+    <string name="setup_step_app_startup_action">Activa «Inicio automático», «Inicio secundario» y «Ejecutar en segundo plano»</string>
+
+    <string name="setup_step_battery_saving">Ahorro de energía</string>
+
+    <string name="setup_step_recents_pin">Fijar en recientes</string>
+    <string name="setup_step_recents_pin_caption">Abre la lista de aplicaciones recientes, desliza la tarjeta de «Sklyanka» hacia abajo y toca el candado que aparece</string>
+
+    <string name="setup_unverifiable_app_startup">La aplicación no puede comprobarlo: el estado del inicio automático no es visible para ella.</string>
+    <string name="setup_unverifiable_battery_saving">La aplicación no puede comprobarlo: el estado del ahorro de energía no es visible para ella.</string>
+    <string name="setup_unverifiable_recents_pin">La aplicación no puede comprobarlo: la lista de recientes no es visible para ella.</string>
+
+    <string name="setup_manual_confirm_app_startup">He configurado el inicio de aplicaciones</string>
+    <string name="setup_manual_confirm_battery_saving">He quitado las restricciones de ahorro de energía</string>
+    <string name="setup_manual_confirm_recents_pin">Sklyanka está fijada en recientes</string>
+    <string name="setup_manual_confirm_caption">Se registra bajo tu palabra: la aplicación no comprueba este ajuste</string>
+
+    <string name="setup_hint_battery">Indicio indirecto: la optimización de batería para la aplicación está desactivada</string>
+
+    <string name="setup_fallback_app_startup">La sección del sistema no se abrió en este dispositivo. Ábrela manualmente: Ajustes → Batería → Inicio de aplicaciones → Sklyanka → Gestionar manualmente. Activa «Inicio automático», «Inicio secundario» y «Ejecutar en segundo plano».</string>
+    <string name="setup_fallback_battery_saving">La sección del sistema no se abrió en este dispositivo. Ábrela manualmente: Ajustes → Batería → Sklyanka → quita las restricciones de ahorro de energía («No restringir»).</string>
+
+    <string name="onboarding_state_granted">Sí</string>
+    <string name="setup_confirmed_by_user">Confirmado por ti</string>
+
+    <string name="setup_action_allow">Permitir</string>
+    <string name="setup_action_open_settings">Abrir ajustes</string>
+    <string name="setup_action_next">Siguiente</string>
+    <string name="setup_action_skip">Omitir, lo configuraré más tarde</string>
+    <string name="setup_done">Hecho</string>
+
+    <string name="setup_all_configured">Todo configurado</string>
+    <string name="setup_outage_warning">Todo está configurado, pero los recordatorios no llegan desde %1$s.</string>
+    <string name="setup_check_delivery">Comprobar la entrega</string>
+    <string name="setup_outage_moment_pattern">"d 'de' MMMM, HH:mm"</string>
+
+    <string name="onboarding_summary_all_resolved">Todo configurado</string>
+
+    <string name="setup_revoked_notifications">El permiso de notificaciones se ha revocado en los ajustes del sistema. Mientras falte, los recordatorios no llegarán.</string>
+    <string name="setup_revoked_exact_alarms">Se ha revocado el permiso de alarmas exactas. Los recordatorios llegarán con retraso.</string>
+    <string name="setup_revoked_app_startup">Se ha quitado la confirmación de «Inicio de aplicaciones».</string>
+    <string name="setup_revoked_battery_saving">Se ha quitado la confirmación de «Ahorro de energía».</string>
+    <string name="setup_revoked_recents_pin">Se ha quitado la confirmación de fijar en recientes.</string>
+
+    <string name="cd_onboarding_notifications">Notificaciones</string>
+    <string name="cd_onboarding_exact_alarms">Alarmas exactas</string>
+    <string name="cd_setup_app_startup">Inicio de aplicaciones</string>
+    <string name="cd_setup_battery_saving">Ahorro de energía</string>
+    <string name="cd_setup_recents_pin">Fijar en recientes</string>
+    <string name="cd_onboarding_granted">Permiso concedido</string>
+    <string name="cd_setup_confirmed">Paso confirmado por ti</string>
+    <string name="cd_onboarding_hint">Indicio indirecto</string>
+    <string name="cd_onboarding_steps">Paso %1$d de %2$d</string>
+</resources>

@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Sklyanka</string>
+    <string name="brand_tagline">дәрі қабылдау</string>
+    <string name="brand_vendor">Stohastika</string>
+
+    <string name="action_taken">Қабылданды</string>
+    <string name="action_skip">Өткізіп жіберу</string>
+    <string name="action_take">Қабылдау</string>
+    <string name="action_back">Артқа</string>
+    <string name="action_cancel">Болдырмау</string>
+    <string name="action_done">Дайын</string>
+    <string name="status_missed">Өткізілді</string>
+    <string name="status_marked_by_you">сіз белгіледіңіз</string>
+    <string name="label_as_needed">Қажетіне қарай</string>
+    <string name="profile_label">Бейін · %1$s</string>
+
+    <string name="tab_today">Бүгін</string>
+    <string name="tab_meds">Дәрілер</string>
+    <string name="tab_settings">Параметрлер</string>
+
+    <string name="profile_banner">Бұлар сіздің қабылдауларыңыз емес. Белгілер «%1$s» бейініне сақталады.</string>
+
+    <string name="profile_self_initial">М</string>
+
+    <string name="cd_mark_intake">%1$s қабылдауын белгілеу</string>
+    <string name="cd_back">Артқа</string>
+    <string name="cd_app_mark">Sklyanka белгісі</string>
+    <string name="cd_app_mark_glass">Sklyanka белгісі: қалың шыны түбі</string>
+    <string name="cd_icon_on_dark">Қою фондағы белгіше</string>
+    <string name="cd_icon_on_light">Ашық фондағы белгіше</string>
+    <string name="cd_flat_mark_72">72 пиксельді жазық нұсқа</string>
+    <string name="cd_flat_mark_44">44 пиксельді жазық нұсқа</string>
+    <string name="cd_flat_mark_28">28 пиксельді жазық нұсқа</string>
+    <string name="cd_flat_mark_18">18 пиксельді жазық нұсқа</string>
+    <string name="cd_warning">Ескерту</string>
+    <string name="cd_profile">Басқа бейін</string>
+    <string name="cd_profile_avatar">Бейіндер</string>
+
+    <string name="cd_switch_time_input">Уақытты пернетақтамен енгізу</string>
+
+    <string name="cd_list_picker_selected">Таңдалды</string>
+
+    <string name="adherence_legend_taken">Қабылданды</string>
+    <string name="adherence_legend_missed">Өткізілді</string>
+    <string name="adherence_legend_today">Бүгін</string>
+
+    <plurals name="intakes_taken_of_total">
+        <item quantity="one">%2$d қабылдаудың %1$d-і орындалды</item>
+        <item quantity="other">%2$d қабылдаудың %1$d-і орындалды</item>
+    </plurals>
+    <plurals name="pills_left">
+        <item quantity="one">%1$d таблетка қалды</item>
+        <item quantity="other">%1$d таблетка қалды</item>
+    </plurals>
+
+    <string name="preview_date">Жұма, 25 қыркүйек</string>
+    <string name="preview_screen_title">Бүгін</string>
+    <string name="preview_section_title">Кесте</string>
+    <string name="preview_medication">Дәрі</string>
+    <string name="preview_dose">1 өлшем · доза</string>
+    <string name="preview_time">08:00</string>
+    <string name="preview_marked_time">08:05</string>
+    <string name="preview_profile_name">Үлгі</string>
+    <string name="preview_primary_action">Дәрі қосу</string>
+    <string name="preview_danger_action">Барлығын ауыстыру</string>
+    <string name="preview_secondary_action">Мұрағатқа</string>
+    <string name="preview_quiet_action">Өзгерту</string>
+    <string name="preview_field_label">Атауы</string>
+    <string name="preview_field_value">Мән</string>
+    <string name="preview_field_unit">мг</string>
+    <string name="preview_field_error">Өрісті толтырыңыз</string>
+    <string name="preview_chip_label">Таблетка</string>
+    <string name="preview_switch_label">Қайталама еске салғыш</string>
+    <string name="preview_switch_caption">Белгіленбесе, қайталау</string>
+    <string name="preview_banner_warning">Қаптама азайып қалды, толықтыру уақыты келді</string>
+    <string name="preview_banner_profile">Бұлар сіздің қабылдауларыңыз емес. Белгілер басқа бейінге сақталады.</string>
+    <string name="preview_banner_neutral">Параметрлер бөліміне түсініктеме</string>
+    <string name="preview_empty_title">Әзірге ештеңе жоспарланбаған</string>
+    <string name="preview_empty_text">Дәрі қосыңыз — оның қабылдаулары осында сағат бойынша пайда болады.</string>
+
+    <string name="catalog_title">Компоненттер каталогы</string>
+    <string name="catalog_typography">Типографика</string>
+    <string name="catalog_intake_card">Қабылдау картасы</string>
+    <string name="catalog_chip">Чип</string>
+    <string name="catalog_buttons">Түймелер</string>
+    <string name="catalog_text_field">Енгізу өрісі</string>
+    <string name="catalog_switch">Ауыстырып-қосқыш</string>
+    <string name="catalog_banner">Баннер</string>
+    <string name="catalog_progress">Прогресс жолағы</string>
+    <string name="catalog_empty_state">Бос күй</string>
+    <string name="catalog_screen_header">Экран тақырыбы</string>
+    <string name="catalog_profile_stripe">Бейін жолағы</string>
+    <string name="catalog_mark">Белгі және оның нұсқалары</string>
+    <string name="catalog_lockup">Атауы бар логотип</string>
+</resources>

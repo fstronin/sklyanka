@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="meds_title">Дәрілер</string>
+    <string name="meds_tab_active">Белсенді · %1$d</string>
+    <string name="meds_tab_archive">Мұрағат · %1$d</string>
+    <string name="meds_as_needed_chip">қажетіне қарай</string>
+
+    <string name="meds_separator">" · "</string>
+
+    <string name="meds_frequency_daily">Күн сайын</string>
+
+    <string name="meds_period_open">%1$s бастап · мерзімсіз</string>
+    <string name="meds_period_until">%1$s дейін</string>
+    <string name="meds_last_intake">соңғы қабылдау — %1$s</string>
+
+    <string name="meds_empty_title">Әзірге ештеңе жоспарланбаған</string>
+    <string name="meds_empty_text">Дәрі қосыңыз — оның қабылдаулары осында сағат бойынша пайда болады.</string>
+    <string name="meds_empty_action">Дәрі қосу</string>
+
+    <string name="cd_add_medication">Дәрі қосу</string>
+    <string name="cd_open_medication">Картаны ашу: %1$s</string>
+
+    <string name="form_title_new">Жаңа дәрі</string>
+    <string name="form_save_new">Дәріні сақтау</string>
+    <string name="form_save_existing">Сақтау</string>
+
+    <string name="form_label_name">Атауы</string>
+    <string name="form_label_release_form">Шығарылым түрі</string>
+    <string name="form_label_tablet_shape">Дәрі пішіні</string>
+
+    <string name="form_preview_reusable">Дәрі тізімде және картада осылай танылады</string>
+    <string name="form_preview_dose_words">Доза сөзбен сипатталады: «%1$s» — пішінсіз</string>
+    <string name="form_preview_dose_words_empty">Доза сөзбен сипатталады, пішінсіз</string>
+    <string name="form_label_dose">Бір қабылдауға доза</string>
+    <string name="form_label_intakes_per_day">Тәулігіне қабылдау саны</string>
+    <string name="form_caption_times_below">Уақыт төменде белгіленеді</string>
+    <string name="form_label_times">Қабылдау уақыты</string>
+    <string name="form_add_time">Уақыт қосу</string>
+
+    <string name="form_dialog_time">Қабылдау уақыты</string>
+    <string name="form_dialog_start_date">Басталу күні</string>
+    <string name="form_dialog_end_date">Аяқталу күні</string>
+    <string name="form_label_mode">Қабылдау режимі</string>
+    <string name="form_mode_scheduled">Кесте бойынша</string>
+    <string name="form_mode_as_needed">Қажетіне қарай</string>
+    <string name="form_mode_as_needed_hint">Қажетіне қарай — еске салғышсыз: қабылдау қажет болғанда қолмен белгіленеді.</string>
+    <string name="form_label_food_relation">Тамақпен байланысы</string>
+    <string name="form_label_stock">Қаптамадағы қалдық</string>
+    <string name="form_stock_now">Қазір бар</string>
+    <string name="form_package_size">Қаптама өлшемі</string>
+    <string name="form_package_size_hint">Міндетті емес. Карта қаптамадан қанша қалғанын көрсетеді</string>
+    <string name="form_stock_reminder">Сатып алуды еске салу</string>
+    <string name="form_label_period">Қабылдау кезеңі</string>
+    <string name="form_period_start">Басталуы</string>
+    <string name="form_period_indefinite">Мерзімсіз қабылдау</string>
+    <string name="form_period_indefinite_caption">Аяқталу күні белгіленбеген</string>
+    <string name="form_period_end">Аяқталуы</string>
+    <string name="form_period_end_empty">—</string>
+
+    <string name="period_preset_week_1">1 апта</string>
+    <string name="period_preset_weeks_2">2 апта</string>
+    <string name="period_preset_month_1">1 ай</string>
+    <string name="period_preset_months_2">2 ай</string>
+    <string name="period_preset_months_3">3 ай</string>
+    <string name="period_preset_months_6">6 ай</string>
+    <string name="period_preset_year_1">1 жыл</string>
+    <string name="period_preset_other">Басқа күн</string>
+
+    <string name="cd_dose_amount">Мөлшері</string>
+    <string name="cd_strength">Доза мөлшері</string>
+    <string name="cd_decrease">Азайту</string>
+    <string name="cd_increase">Көбейту</string>
+    <string name="cd_delete_time">%1$s уақытын жою</string>
+
+    <string name="med_form_tablet">Таблетка</string>
+    <string name="med_form_capsule">Капсула</string>
+    <string name="med_form_spray">Спрей</string>
+    <string name="med_form_syrup">Шәрбат</string>
+    <string name="med_form_drops">Тамшылар</string>
+    <string name="med_form_injection">Инъекция</string>
+
+    <string name="tablet_shape_round">Дөңгелек</string>
+    <string name="tablet_shape_round_scored">Сызығы бар дөңгелек</string>
+    <string name="tablet_shape_oval">Сопақ</string>
+    <string name="tablet_shape_oblong">Созылмалы</string>
+    <string name="tablet_shape_triangular">Үшбұрышты</string>
+
+    <string name="food_relation_any">Маңызды емес</string>
+    <string name="food_relation_before">Тамаққа дейін</string>
+    <string name="food_relation_with">Тамақ кезінде</string>
+    <string name="food_relation_after">Тамақтан кейін</string>
+
+    <string name="dose_suffix_piece">дана</string>
+    <string name="dose_suffix_millilitre">мл</string>
+    <string name="dose_suffix_dose">доза</string>
+
+    <string name="strength_unit_milligram">мг</string>
+
+    <string name="stock_unit_tablets">таблетка</string>
+    <string name="stock_unit_capsules">капсула</string>
+    <string name="stock_unit_millilitres">мл</string>
+    <string name="stock_unit_doses">доза</string>
+
+    <string name="form_label_max_per_day">Тәулігіне реттен көп емес</string>
+    <string name="form_caption_max_per_day">Қабылдау қолмен белгіленеді</string>
+
+    <string name="error_name_empty">Дәрі атауын көрсетіңіз</string>
+    <string name="error_dose_not_positive">Бір қабылдауға доза нөлден үлкен болуы керек</string>
+    <string name="error_strength_without_unit">Доза өлшем бірлігін көрсетіңіз</string>
+    <string name="error_unit_without_strength">Доза мәнін көрсетіңіз</string>
+    <string name="error_no_times">Кемінде бір қабылдау уақытын белгілеңіз</string>
+    <string name="error_duplicate_time">%1$s уақыты қайталанады</string>
+    <string name="error_end_before_start">Аяқталу күні басталу күнінен ерте</string>
+    <string name="error_max_per_day_missing">Тәулігіне ең көп қанша рет қабылдауға болатынын белгілеңіз</string>
+    <string name="error_max_per_day_not_positive">Шектеу нөлден үлкен болуы керек</string>
+    <string name="error_stock_negative">Қалдық теріс болуы мүмкін емес</string>
+    <string name="error_package_size_not_positive">Қаптама өлшемі нөлден үлкен болуы керек</string>
+    <string name="form_save_blocked">Дәріні сақтау үшін атауын көрсетіңіз</string>
+
+    <string name="card_edit">Өзгерту</string>
+    <string name="card_section_schedule">Кесте</string>
+    <string name="card_section_course">Курс</string>
+    <string name="card_section_stock">Қалдық</string>
+    <string name="card_stock_of_package">%1$s / %2$s</string>
+    <string name="card_section_week">Соңғы 7 күн</string>
+    <string name="card_week_empty">Әзірге қабылдау жоқ</string>
+    <string name="card_course_period">%1$s — %2$s</string>
+    <string name="card_refill">Толықтыру</string>
+    <string name="card_archive">Мұрағатқа</string>
+
+    <string name="card_food_before">тамаққа дейін</string>
+    <string name="card_food_with">тамақ кезінде</string>
+    <string name="card_food_after">тамақтан кейін</string>
+
+    <string name="card_section_limit">Шектеу</string>
+    <string name="card_restore">Қайтару</string>
+    <string name="card_course_last_day">соңғы күн</string>
+    <string name="card_course_over">курс аяқталды</string>
+
+    <string name="card_refill_hint">Қанша қалды</string>
+    <string name="card_refill_confirm">Сақтау</string>
+
+    <string name="card_offer_course_finished">Курс аяқталды. Оны мұрағатқа жіберейік пе?</string>
+    <string name="card_offer_action">Мұрағатқа</string>
+
+    <string name="card_notice_period_needs_update">Қабылдау кезеңі аяқталды. Курсты қайтару үшін оны өңдеу формасында ұзартыңыз.</string>
+    <string name="card_notice_dismiss">Түсінікті</string>
+
+    <string name="cd_adherence_today">%1$s, бүгін</string>
+    <string name="cd_adherence_completed">%1$s, %3$d ішінен %2$d орындалды</string>
+    <string name="cd_adherence_no_intakes">%1$s, қабылдау болмады</string>
+    <string name="cd_adherence_before_course">%1$s, курс басталғанға дейін</string>
+
+    <string name="archive_group_finished">Курс аяқталды</string>
+    <string name="archive_group_manual">Қолмен алынды</string>
+    <string name="archive_caption_since">%1$s бастап мұрағатта</string>
+    <string name="archive_restore">Қайтару</string>
+    <string name="archive_history_banner">Қабылдау тарихы сақталады. Мұрағаттан қайтару дәріні бұрынғы кестесімен қалпына келтіреді.</string>
+
+    <string name="archive_empty_title">Мұрағат әзірге бос</string>
+    <string name="archive_empty_text">Аяқталған курстар дәрі картасынан осында түседі. Қабылдау тарихы сақталады.</string>
+
+    <string name="date_pattern_day_month">d MMMM</string>
+    <string name="date_pattern_full">d MMMM yyyy</string>
+</resources>

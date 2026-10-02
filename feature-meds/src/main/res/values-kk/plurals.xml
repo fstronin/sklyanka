@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <plurals name="times_per_day">
+        <item quantity="one">тәулігіне %1$d рет</item>
+        <item quantity="other">тәулігіне %1$d рет</item>
+    </plurals>
+
+    <plurals name="max_per_day">
+        <item quantity="one">тәулігіне %1$d реттен көп емес</item>
+        <item quantity="other">тәулігіне %1$d реттен көп емес</item>
+    </plurals>
+
+    <plurals name="stock_left_tablets">
+        <item quantity="one">%1$d таблетка қалды</item>
+        <item quantity="other">%1$d таблетка қалды</item>
+    </plurals>
+    <plurals name="stock_left_capsules">
+        <item quantity="one">%1$d капсула қалды</item>
+        <item quantity="other">%1$d капсула қалды</item>
+    </plurals>
+    <plurals name="stock_left_millilitres">
+        <item quantity="one">%1$d мл қалды</item>
+        <item quantity="other">%1$d мл қалды</item>
+    </plurals>
+    <plurals name="stock_left_doses">
+        <item quantity="one">%1$d доза қалды</item>
+        <item quantity="other">%1$d доза қалды</item>
+    </plurals>
+
+    <plurals name="card_intakes_per_day">
+        <item quantity="one">тәулігіне %1$d қабылдау</item>
+        <item quantity="other">тәулігіне %1$d қабылдау</item>
+    </plurals>
+
+    <plurals name="card_dose_tablets">
+        <item quantity="one">%1$s таблетка</item>
+        <item quantity="other">%1$s таблетка</item>
+    </plurals>
+    <plurals name="card_dose_capsules">
+        <item quantity="one">%1$s капсула</item>
+        <item quantity="other">%1$s капсула</item>
+    </plurals>
+    <plurals name="card_dose_millilitres">
+        <item quantity="one">%1$s мл</item>
+        <item quantity="other">%1$s мл</item>
+    </plurals>
+    <plurals name="card_dose_doses">
+        <item quantity="one">%1$s доза</item>
+        <item quantity="other">%1$s доза</item>
+    </plurals>
+
+    <plurals name="card_course_days_left">
+        <item quantity="one">%1$d күн қалды</item>
+        <item quantity="other">%1$d күн қалды</item>
+    </plurals>
+
+    <plurals name="card_stock_days_left">
+        <item quantity="one">%1$d күнге жетеді</item>
+        <item quantity="other">%1$d күнге жетеді</item>
+    </plurals>
+
+    <plurals name="card_week_counter">
+        <item quantity="one">%2$d ішінен %1$d</item>
+        <item quantity="other">%2$d ішінен %1$d</item>
+    </plurals>
+
+    <plurals name="archive_outcome">
+        <item quantity="one">%1$d күн · %3$d ішінен %2$d орындалды</item>
+        <item quantity="other">%1$d күн · %3$d ішінен %2$d орындалды</item>
+    </plurals>
+
+    <plurals name="stock_threshold_caption">
+        <item quantity="one">%1$d күн қалғанда</item>
+        <item quantity="other">%1$d күн қалғанда</item>
+    </plurals>
+</resources>

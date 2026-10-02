@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Sklyanka</string>
+    <string name="brand_tagline">服药记录</string>
+    <string name="brand_vendor">Stohastika</string>
+
+    <string name="action_taken">已服用</string>
+    <string name="action_skip">跳过</string>
+    <string name="action_take">服用</string>
+    <string name="action_back">返回</string>
+    <string name="action_cancel">取消</string>
+    <string name="action_done">完成</string>
+    <string name="status_missed">漏服</string>
+    <string name="status_marked_by_you">由您标记</string>
+    <string name="label_as_needed">按需</string>
+    <string name="profile_label">档案 · %1$s</string>
+
+    <string name="tab_today">今天</string>
+    <string name="tab_meds">药物</string>
+    <string name="tab_settings">设置</string>
+
+    <string name="profile_banner">这不是您的服药记录。标记将保存到“%1$s”档案。</string>
+
+    <string name="profile_self_initial">我</string>
+
+    <string name="cd_mark_intake">标记服药 %1$s</string>
+    <string name="cd_back">返回</string>
+    <string name="cd_app_mark">Sklyanka 标记</string>
+    <string name="cd_app_mark_glass">Sklyanka 标记：厚玻璃瓶底</string>
+    <string name="cd_icon_on_dark">深色背景上的图标</string>
+    <string name="cd_icon_on_light">浅色背景上的图标</string>
+    <string name="cd_flat_mark_72">72 像素平面简化</string>
+    <string name="cd_flat_mark_44">44 像素平面简化</string>
+    <string name="cd_flat_mark_28">28 像素平面简化</string>
+    <string name="cd_flat_mark_18">18 像素平面简化</string>
+    <string name="cd_warning">警告</string>
+    <string name="cd_profile">其他档案</string>
+    <string name="cd_profile_avatar">档案</string>
+
+    <string name="cd_switch_time_input">键盘输入时间</string>
+
+    <string name="cd_list_picker_selected">已选择</string>
+
+    <string name="adherence_legend_taken">已服用</string>
+    <string name="adherence_legend_missed">漏服</string>
+    <string name="adherence_legend_today">今天</string>
+
+    <plurals name="intakes_taken_of_total">
+        <item quantity="other">%2$d 次服药中已完成 %1$d 次</item>
+    </plurals>
+    <plurals name="pills_left">
+        <item quantity="other">剩余 %1$d 片</item>
+    </plurals>
+
+    <string name="preview_date">9月25日星期五</string>
+    <string name="preview_screen_title">今天</string>
+    <string name="preview_section_title">日程</string>
+    <string name="preview_medication">药物</string>
+    <string name="preview_dose">1 单位 · 剂量</string>
+    <string name="preview_time">08:00</string>
+    <string name="preview_marked_time">08:05</string>
+    <string name="preview_profile_name">示例</string>
+    <string name="preview_primary_action">添加药物</string>
+    <string name="preview_danger_action">全部替换</string>
+    <string name="preview_secondary_action">归档</string>
+    <string name="preview_quiet_action">编辑</string>
+    <string name="preview_field_label">名称</string>
+    <string name="preview_field_value">值</string>
+    <string name="preview_field_unit">毫克</string>
+    <string name="preview_field_error">请填写字段</string>
+    <string name="preview_chip_label">药片</string>
+    <string name="preview_switch_label">持续提醒</string>
+    <string name="preview_switch_caption">未标记时重复</string>
+    <string name="preview_banner_warning">包装即将用完，该补充了</string>
+    <string name="preview_banner_profile">这不是您的服药记录。标记将保存到其他档案。</string>
+    <string name="preview_banner_neutral">设置分区的说明</string>
+    <string name="preview_empty_title">还没有任何计划</string>
+    <string name="preview_empty_text">添加药物后，它的服药时间会按钟点显示在这里。</string>
+
+    <string name="catalog_title">组件目录</string>
+    <string name="catalog_typography">字体排印</string>
+    <string name="catalog_intake_card">服药卡片</string>
+    <string name="catalog_chip">标签</string>
+    <string name="catalog_buttons">按钮</string>
+    <string name="catalog_text_field">输入框</string>
+    <string name="catalog_switch">开关</string>
+    <string name="catalog_banner">横幅</string>
+    <string name="catalog_progress">进度条</string>
+    <string name="catalog_empty_state">空状态</string>
+    <string name="catalog_screen_header">页面标题栏</string>
+    <string name="catalog_profile_stripe">档案色条</string>
+    <string name="catalog_mark">标记及其变体</string>
+    <string name="catalog_lockup">带名称的标志组合</string>
+</resources>

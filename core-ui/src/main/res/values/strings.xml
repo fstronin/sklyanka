@@ -17,8 +17,11 @@
     -->
     <string name="brand_tagline">приём лекарств</string>
 
-    <!-- Издатель у нижнего края заставки. -->
-    <string name="brand_vendor">Stohastika</string>
+    <!--
+      Издатель у нижнего края заставки. Имя вендора — по языку интерфейса (ПМ-16):
+      в русском «Стохастика», в остальных языках — латиницей.
+    -->
+    <string name="brand_vendor">Стохастика</string>
 
     <!-- Подписи компонентов -->
     <string name="action_taken">Принято</string>

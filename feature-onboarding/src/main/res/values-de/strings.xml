@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="setup_title">Zuverlässigkeit einrichten</string>
+    <string name="setup_intro">Unter EMUI entlädt das System Hintergrund-Apps aggressiv. Ohne die Einstellungen unten kommen die Einnahmen verspätet oder gar nicht an.</string>
+
+    <string name="setup_step_notifications">Benachrichtigungen</string>
+    <string name="setup_step_notifications_caption">Einnahmekarte auf dem Bildschirm</string>
+    <string name="setup_issue_notifications">Benachrichtigungen sind aus</string>
+    <string name="setup_issue_channel">Der Benachrichtigungskanal ist aus</string>
+    <string name="setup_issue_full_screen">Vollbild-Benachrichtigungen sind nicht erlaubt</string>
+
+    <string name="setup_step_exact_alarms">Exakte Alarme</string>
+    <string name="setup_step_exact_alarms_caption">Sonst verschiebt Android die Einnahme auf eine passende Zeit — bis zu einer halben Stunde</string>
+    <string name="setup_exact_alarms_indicator">Das Telefon zeigt die nächste Erinnerung in der Statusleiste als Wecker an. Das ist normal: So zeigt das System, dass die Erinnerung geplant ist.</string>
+
+    <string name="setup_step_app_startup">App-Start</string>
+    <string name="setup_step_app_startup_caption">Einstellungen → Akku → App-Start → Sklyanka → Manuell verwalten</string>
+    <string name="setup_step_app_startup_action">Aktivieren Sie „Autostart“, „Sekundärstart“ und „Im Hintergrund ausführen“</string>
+
+    <string name="setup_step_battery_saving">Energiesparen</string>
+
+    <string name="setup_step_recents_pin">In „Zuletzt verwendet“ fixieren</string>
+    <string name="setup_step_recents_pin_caption">Öffnen Sie die Liste der zuletzt verwendeten Apps, ziehen Sie die Karte „Sklyanka“ nach unten und tippen Sie auf das erscheinende Schloss</string>
+
+    <string name="setup_unverifiable_app_startup">Die App kann das nicht prüfen: Der Autostart-Status ist für sie nicht sichtbar.</string>
+    <string name="setup_unverifiable_battery_saving">Die App kann das nicht prüfen: Der Energiesparstatus ist für sie nicht sichtbar.</string>
+    <string name="setup_unverifiable_recents_pin">Die App kann das nicht prüfen: Die Liste der zuletzt verwendeten Apps ist für sie nicht sichtbar.</string>
+
+    <string name="setup_manual_confirm_app_startup">Ich habe den App-Start eingerichtet</string>
+    <string name="setup_manual_confirm_battery_saving">Ich habe die Energiespar-Beschränkungen aufgehoben</string>
+    <string name="setup_manual_confirm_recents_pin">Sklyanka ist in „Zuletzt verwendet“ fixiert</string>
+    <string name="setup_manual_confirm_caption">Wird nach Ihrer Angabe erfasst: Die App prüft diese Einstellung nicht</string>
+
+    <string name="setup_hint_battery">Indirektes Zeichen: Die Akku-Optimierung für die App ist aus</string>
+
+    <string name="setup_fallback_app_startup">Der Systembereich ließ sich auf diesem Gerät nicht öffnen. Öffnen Sie ihn manuell: Einstellungen → Akku → App-Start → Sklyanka → Manuell verwalten. Aktivieren Sie „Autostart“, „Sekundärstart“ und „Im Hintergrund ausführen“.</string>
+    <string name="setup_fallback_battery_saving">Der Systembereich ließ sich auf diesem Gerät nicht öffnen. Öffnen Sie ihn manuell: Einstellungen → Akku → Sklyanka → heben Sie die Energiespar-Beschränkungen auf („Nicht einschränken“).</string>
+
+    <string name="onboarding_state_granted">Ja</string>
+    <string name="setup_confirmed_by_user">Von Ihnen bestätigt</string>
+
+    <string name="setup_action_allow">Erlauben</string>
+    <string name="setup_action_open_settings">Einstellungen öffnen</string>
+    <string name="setup_action_next">Weiter</string>
+    <string name="setup_action_skip">Überspringen, ich richte es später ein</string>
+    <string name="setup_done">Fertig</string>
+
+    <string name="setup_all_configured">Alles eingerichtet</string>
+    <string name="setup_outage_warning">Alles ist eingerichtet, aber die Erinnerungen kommen seit %1$s nicht an.</string>
+    <string name="setup_check_delivery">Zustellung prüfen</string>
+    <string name="setup_outage_moment_pattern">d. MMMM, HH:mm</string>
+
+    <string name="onboarding_summary_all_resolved">Alles eingerichtet</string>
+
+    <string name="setup_revoked_notifications">Die Benachrichtigungsberechtigung wurde in den Systemeinstellungen entzogen. Solange sie fehlt, kommen keine Erinnerungen an.</string>
+    <string name="setup_revoked_exact_alarms">Die Berechtigung für exakte Alarme wurde entzogen. Erinnerungen kommen verspätet an.</string>
+    <string name="setup_revoked_app_startup">Die Bestätigung für „App-Start“ wurde entfernt.</string>
+    <string name="setup_revoked_battery_saving">Die Bestätigung für „Energiesparen“ wurde entfernt.</string>
+    <string name="setup_revoked_recents_pin">Die Bestätigung für die Fixierung in „Zuletzt verwendet“ wurde entfernt.</string>
+
+    <string name="cd_onboarding_notifications">Benachrichtigungen</string>
+    <string name="cd_onboarding_exact_alarms">Exakte Alarme</string>
+    <string name="cd_setup_app_startup">App-Start</string>
+    <string name="cd_setup_battery_saving">Energiesparen</string>
+    <string name="cd_setup_recents_pin">In „Zuletzt verwendet“ fixieren</string>
+    <string name="cd_onboarding_granted">Berechtigung erteilt</string>
+    <string name="cd_setup_confirmed">Schritt von Ihnen bestätigt</string>
+    <string name="cd_onboarding_hint">Indirektes Zeichen</string>
+    <string name="cd_onboarding_steps">Schritt %1$d von %2$d</string>
+</resources>

@@ -13,7 +13,7 @@ import ru.stohastika.sklyanka.domain.reminder.ReminderSlot
 import ru.stohastika.sklyanka.domain.reminder.port.NotificationGateway
 import ru.stohastika.sklyanka.feature.reminder.DeliveryCheckActivity
 import ru.stohastika.sklyanka.feature.reminder.ReminderActivity
-import ru.stohastika.sklyanka.ui.locale.InterfaceLocale
+import ru.stohastika.sklyanka.ui.locale.interfaceLocale
 import ru.stohastika.sklyanka.ui.locale.withInterfaceLocale
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -58,7 +58,7 @@ class ReminderNotifier @Inject constructor(
             // Локаль интерфейса, а не локаль процесса: уведомление строится из контекста
             // приложения, и на телефоне с чужим языком время в подписи выглядело бы
             // иначе, чем на экране (НФТ-43а).
-            DateTimeFormatter.ofPattern(context.getString(R.string.reminder_time_pattern), InterfaceLocale.VALUE),
+            DateTimeFormatter.ofPattern(context.getString(R.string.reminder_time_pattern), context.interfaceLocale),
         )
         val names = card.items.joinToString(context.getString(R.string.reminder_notification_separator)) {
             it.medicationName
