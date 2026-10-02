@@ -106,6 +106,15 @@ object SklyankaType {
             Overline, OverlineDate, Micro, MicroStrong, MicroOverline,
         )
 
+    /**
+     * Высота строки цифр тайм-пикера, равная полю M3 96×72 dp (ОВ-119).
+     *
+     * Не ступень шкалы, а геометрия моста: подложку слота 96×80 dp строка 72 dp
+     * центрирует (ОВ-118). Вынесена токеном, потому что размер вне пакета токенов
+     * запрещён НФТ-47.
+     */
+    val TimePickerLineHeight: TextUnit = 72.sp
+
     /** Стили, набираемые заголовочным шрифтом. Опора теста правила пары шрифтов (§2.3). */
     val headings: List<TextStyle>
         get() = listOf(Display, Headline, TitleScreen, Title, Stat, Subtitle)

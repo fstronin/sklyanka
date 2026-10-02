@@ -78,6 +78,7 @@
 
     <!-- Переключатель циферблат/клавиатура в диалоге времени (SKL-69, §4.14). -->
     <string name="cd_switch_time_input">Клавиатурный ввод времени</string>
+    <string name="cd_switch_time_dial">Выбор на циферблате</string>
 
     <!-- Выбранный вариант диалога выбора из списка: смысл не одним цветом (SKL-78, НФТ-30). -->
     <string name="cd_list_picker_selected">Выбрано</string>

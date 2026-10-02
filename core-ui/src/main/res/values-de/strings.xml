@@ -38,6 +38,7 @@
     <string name="cd_profile_avatar">Profile</string>
 
     <string name="cd_switch_time_input">Zeiteingabe über Tastatur</string>
+    <string name="cd_switch_time_dial">Auswahl am Zifferblatt</string>
 
     <string name="cd_list_picker_selected">Ausgewählt</string>
 

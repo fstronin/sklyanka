@@ -16,6 +16,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TimeInput
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TimePickerDefaults
+import androidx.compose.material3.Typography
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
@@ -34,6 +35,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import ru.stohastika.sklyanka.ui.R
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
+import ru.stohastika.sklyanka.ui.token.LiterataTime
 import ru.stohastika.sklyanka.ui.token.SklyankaShapes
 import ru.stohastika.sklyanka.ui.token.SklyankaSizes
 import ru.stohastika.sklyanka.ui.token.SklyankaSpacing
@@ -137,12 +139,7 @@ fun DateTimePickerDialog(
     )
     var keyboardInput by remember { mutableStateOf(false) }
     val baseDensity = LocalDensity.current
-    val pickerTypography = MaterialTheme.typography.copy(
-        displayLarge = SklyankaType.Display,
-        displayMedium = SklyankaType.Display,
-        displaySmall = SklyankaType.Display,
-        headlineLarge = SklyankaType.Display,
-    )
+    val pickerTypography = timePickerTypography()
     val pickerColors = TimePickerDefaults.colors(
         clockDialColor = colors.surface,
         clockDialSelectedContentColor = colors.surface,
@@ -178,10 +175,35 @@ fun DateTimePickerDialog(
             }
         }
         QuietButton(
-            text = stringResource(R.string.cd_switch_time_input),
+            text = stringResource(
+                if (keyboardInput) R.string.cd_switch_time_dial else R.string.cd_switch_time_input,
+            ),
             onClick = { keyboardInput = !keyboardInput },
         )
     }
+}
+
+/**
+ * Типографика механизма пикера (ОВ-118/ОВ-119).
+ *
+ * Цифры обоих режимов — `LiterataTime`: метрики шрифта дают строку 72 dp с цифрой
+ * по центру, и подложка слота 96×80 dp центрирует её, а поле ввода 96×72 dp совпадает
+ * со строкой. Высота строки — токен поля: намерение читается и не зависит от метрик
+ * файла. `displaySmall`/`headlineLarge` остаются прежними — цифрами эти роли не набраны.
+ */
+@Composable
+private fun timePickerTypography(): Typography {
+    val base = MaterialTheme.typography
+    val digits = SklyankaType.Display.copy(
+        fontFamily = LiterataTime,
+        lineHeight = SklyankaType.TimePickerLineHeight,
+    )
+    return base.copy(
+        displayLarge = digits,
+        displayMedium = digits,
+        displaySmall = SklyankaType.Display,
+        headlineLarge = SklyankaType.Display,
+    )
 }
 
 /**

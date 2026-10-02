@@ -38,6 +38,7 @@
     <string name="cd_profile_avatar">Perfiles</string>
 
     <string name="cd_switch_time_input">Entrada de hora con teclado</string>
+    <string name="cd_switch_time_dial">Selección en la esfera</string>
 
     <string name="cd_list_picker_selected">Seleccionado</string>
 

@@ -14,11 +14,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.Dp
 import ru.stohastika.sklyanka.domain.today.GroupAction
 import ru.stohastika.sklyanka.domain.today.IntakeItem
 import ru.stohastika.sklyanka.domain.today.IntakePresentation
@@ -57,8 +60,9 @@ internal fun TimeLane(group: TimeGroup, state: TodayUiState.Content, onIntent: (
         // принять каждый, называет его строка (`03-screens.md` §7 «Сегодня — плотный
         // день»; приёмка SKL-31 — «время в каждой строке»).
         val rowsAreDense = !group.isNow && group.items.size > 1
+        val timeWidth = denseTimeColumnWidth(group.items)
         group.items.forEach { item ->
-            if (rowsAreDense) DenseIntakeRow(item, onIntent) else IntakeRow(item, onIntent)
+            if (rowsAreDense) DenseIntakeRow(item, onIntent, timeWidth) else IntakeRow(item, onIntent)
         }
         action?.let { batch ->
             GroupMarkButton(
@@ -170,6 +174,10 @@ internal fun IntakeRow(item: IntakeItem, onIntent: (TodayIntent) -> Unit, modifi
         // владелец телефона, и она подписана. В своём профиле подписи не бывает никогда —
         // `actor_profile_id` там пуст по построению (ИНВ-18).
         markedByYou = item.markedByYou,
+        // Силуэт строки — форма и вид самого лекарства, а не нейтральная пиктограмма:
+        // одно и то же лекарство узнаётся в списке, карточке и на «Сегодня» (§4.15, ОВ-94).
+        form = item.medication.form,
+        shape = item.medication.shape,
         actions = IntakeCardActions(
             onMark = { onIntent(TodayIntent.MarkTaken(item.id)) }.takeIf { item.isMarkable },
             onSkip = { onIntent(TodayIntent.MarkSkipped(item.id)) }.takeIf { item.isMarkable },
@@ -183,11 +191,12 @@ internal fun IntakeRow(item: IntakeItem, onIntent: (TodayIntent) -> Unit, modifi
 /**
  * Строка приёма плотного дня: время отдельной колонкой слева (`MainDense.dc.html`).
  *
- * Колонка шириной с цель нажатия: в плотном дне у каждой строки своё время, и без
- * выровненной колонки список читается как каша.
+ * [timeWidth] — общая ширина колонки для строк одной ленты (ОВ-117): при крупном
+ * системном шрифте она растёт по значению, и все времена группы стоят на одной
+ * вертикали. Карточка получает остаток ширины.
  */
 @Composable
-internal fun DenseIntakeRow(item: IntakeItem, onIntent: (TodayIntent) -> Unit) {
+internal fun DenseIntakeRow(item: IntakeItem, onIntent: (TodayIntent) -> Unit, timeWidth: Dp) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Medium),
@@ -197,10 +206,32 @@ internal fun DenseIntakeRow(item: IntakeItem, onIntent: (TodayIntent) -> Unit) {
             text = item.intake.scheduledAt.toLocalTime().timeLabel(),
             style = SklyankaType.LabelStrong,
             color = SklyankaTheme.colors.textMuted,
-            modifier = Modifier.width(SklyankaSizes.MinTouchTarget),
+            // Машинное время атомарно (ОВ-117): одна строка без переноса по символам.
+            maxLines = 1,
+            softWrap = false,
+            modifier = Modifier.width(timeWidth).testTag(TAG_DENSE_ROW_TIME),
         )
         IntakeRow(item, onIntent, Modifier.weight(1f))
     }
+}
+
+/**
+ * Ширина колонки времени для ленты: самая широкая строка группы при текущем
+ * системном масштабе, но не меньше цели нажатия 44 dp (ОВ-117). Считается один раз
+ * на ленту, а не каждой строкой: иначе «18:00» и «20:30» встали бы по-разному.
+ */
+@Composable
+internal fun denseTimeColumnWidth(items: List<IntakeItem>): Dp {
+    val measurer = rememberTextMeasurer()
+    val widest = items.maxOf { item ->
+        measurer.measure(
+            text = item.intake.scheduledAt.toLocalTime().timeLabel(),
+            style = SklyankaType.LabelStrong,
+            maxLines = 1,
+            softWrap = false,
+        ).size.width
+    }
+    return with(LocalDensity.current) { widest.toDp() }.coerceAtLeast(SklyankaSizes.MinTouchTarget)
 }
 
 /** Вид карточки дизайн-системы по предметному виду приёма. */
@@ -211,6 +242,7 @@ private fun IntakePresentation.cardState(): IntakeCardState = when (this) {
     IntakePresentation.MISSED -> IntakeCardState.Missed
 }
 
+const val TAG_DENSE_ROW_TIME = "dense_row_time"
 const val TAG_LANE_HEADER = "lane_header"
 const val TAG_GROUP_CAPTION = "group_caption"
 const val TAG_GROUP_MARK_ALL = "group_mark_all"

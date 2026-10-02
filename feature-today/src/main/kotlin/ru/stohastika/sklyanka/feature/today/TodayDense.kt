@@ -58,7 +58,8 @@ internal fun LazyListScope.denseSections(
                         TimeLane(group, state, onIntent)
                     } else {
                         Column(verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Default)) {
-                            group.items.forEach { item -> DenseIntakeRow(item, onIntent) }
+                            val timeWidth = denseTimeColumnWidth(group.items)
+                            group.items.forEach { item -> DenseIntakeRow(item, onIntent, timeWidth) }
                         }
                     }
                 }

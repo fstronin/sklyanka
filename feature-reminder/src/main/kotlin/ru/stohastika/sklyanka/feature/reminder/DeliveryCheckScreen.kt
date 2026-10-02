@@ -15,6 +15,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import ru.stohastika.sklyanka.ui.component.PrimaryButton
+import ru.stohastika.sklyanka.ui.modifier.withCappedFontScale
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaSpacing
 import ru.stohastika.sklyanka.ui.token.SklyankaType
@@ -55,7 +56,8 @@ fun DeliveryCheckScreen(at: LocalDateTime, onAcknowledge: () -> Unit, modifier: 
             )
             Text(
                 text = at.timeLabel(),
-                style = SklyankaType.Display,
+                // Тот же потолок 130 %, что у боевого напоминания (§6.3, ОВ-108).
+                style = SklyankaType.Display.withCappedFontScale(),
                 color = colors.text,
                 modifier = Modifier.testTag(TAG_CHECK_TIME),
             )

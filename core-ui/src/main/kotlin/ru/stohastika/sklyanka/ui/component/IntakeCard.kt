@@ -25,6 +25,8 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
+import ru.stohastika.sklyanka.domain.model.MedicationForm
+import ru.stohastika.sklyanka.domain.model.TabletShape
 import ru.stohastika.sklyanka.ui.R
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaShapes
@@ -47,6 +49,7 @@ import ru.stohastika.sklyanka.ui.token.SklyankaType
  * предел (ПР-7), и тогда «Принять» обязано быть недоступным, а не просто не работать.
  * Причину недоступности подписывает экран — она зависит от предела, а не от карточки.
  */
+@Suppress("LongParameterList")
 @Composable
 fun IntakeCard(
     state: IntakeCardState,
@@ -55,9 +58,11 @@ fun IntakeCard(
     markedByYou: Boolean = false,
     actions: IntakeCardActions = IntakeCardActions(),
     actionEnabled: Boolean = true,
+    form: MedicationForm? = null,
+    shape: TabletShape? = null,
 ) {
     val colors = SklyankaTheme.colors
-    val shape = SklyankaShapes.Card
+    val cardShape = SklyankaShapes.Card
     val background = if (state == IntakeCardState.AsNeeded) colors.background else colors.surface
     val border = when (state) {
         IntakeCardState.DueNow -> colors.accentBorder
@@ -67,12 +72,12 @@ fun IntakeCard(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .background(background, shape)
+            .background(background, cardShape)
             .then(
                 if (state == IntakeCardState.AsNeeded) {
                     Modifier.dashedBorder(SklyankaSizes.BorderThin, colors.lineInteractive, SklyankaShapes.CardRadius)
                 } else {
-                    Modifier.border(borderWidth, border, shape)
+                    Modifier.border(borderWidth, border, cardShape)
                 },
             )
             .padding(SklyankaSpacing.Large)
@@ -80,7 +85,7 @@ fun IntakeCard(
         verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Large),
     ) {
         IntakeRow(
-            icon = { IconPlate(state) },
+            icon = { IconPlate(state, form, shape) },
             text = { IntakeText(state, labels, markedByYou) },
             action = { IntakeAction(state, labels, actions, actionEnabled) },
         )
@@ -111,9 +116,16 @@ fun IntakeCard(
     }
 }
 
-/** Плашка иконки 40×40 с радиусом `Button` (§4.1). */
+/**
+ * Плашка иконки 40×40 с радиусом `Button` (§4.1).
+ *
+ * При известной форме лекарства на плашке стоит его силуэт «форма + вид» (§4.15,
+ * ОВ-94): строка «Сегодня» обязана показывать то же лекарство, что список и карточка.
+ * Нейтральная пиктограмма остаётся только там, где лекарства нет вовсе, — в каталоге
+ * и заготовках; `form == null` означает ровно это, а не «форма неизвестна данным».
+ */
 @Composable
-private fun IconPlate(state: IntakeCardState) {
+private fun IconPlate(state: IntakeCardState, form: MedicationForm?, shape: TabletShape?) {
     val colors = SklyankaTheme.colors
     val plate = when (state) {
         IntakeCardState.DueNow -> colors.accentSoft
@@ -131,7 +143,20 @@ private fun IconPlate(state: IntakeCardState) {
             .background(plate, SklyankaShapes.Button),
         contentAlignment = Alignment.Center,
     ) {
-        MedicationPictogram(color = glyph)
+        if (form == null) {
+            MedicationPictogram(
+                color = glyph,
+                modifier = Modifier.testTag(TAG_INTAKE_PICTOGRAM),
+            )
+        } else {
+            MedicationGlyph(
+                form = form,
+                shape = shape,
+                color = glyph,
+                size = SklyankaSizes.IconPlateGlyph,
+                modifier = Modifier.testTag(TAG_INTAKE_GLYPH),
+            )
+        }
     }
 }
 
@@ -273,6 +298,8 @@ private fun Modifier.dashedBorder(width: Dp, color: Color, radius: Dp): Modifier
 )
 
 const val TAG_INTAKE_CARD = "intake_card"
+const val TAG_INTAKE_GLYPH = "intake_glyph"
+const val TAG_INTAKE_PICTOGRAM = "intake_pictogram"
 const val TAG_MARK_BUTTON = "mark_button"
 const val TAG_TAKEN_STATUS = "taken_status"
 const val TAG_MISSED_STATUS = "missed_status"

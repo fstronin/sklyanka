@@ -48,6 +48,8 @@ import ru.stohastika.sklyanka.domain.today.TimeGroup
 import ru.stohastika.sklyanka.domain.today.TodayLayout
 import ru.stohastika.sklyanka.ui.component.TAG_BOTTOM_BAR
 import ru.stohastika.sklyanka.ui.component.TAG_INTAKE_CARD
+import ru.stohastika.sklyanka.ui.component.TAG_INTAKE_GLYPH
+import ru.stohastika.sklyanka.ui.component.TAG_INTAKE_PICTOGRAM
 import ru.stohastika.sklyanka.ui.component.TAG_MARK_BUTTON
 import ru.stohastika.sklyanka.ui.component.TAG_MISSED_STATUS
 import ru.stohastika.sklyanka.ui.component.TAG_PRIMARY_BUTTON
@@ -90,6 +92,34 @@ class TodayScreenTest {
             .onNode(hasText(context.getString(R.string.today_title)) and hasAnyAncestor(hasTestTag(TAG_SCREEN_HEADER)))
             .assertIsDisplayed()
         composeRule.onNodeWithTag(TAG_DAY_PROGRESS).assertIsDisplayed()
+    }
+
+    /**
+     * Строка приёма несёт силуэт самого лекарства, а не нейтральную пиктограмму.
+     *
+     * Находка ручной проверки: на «Сегодня» все строки показывали капсулу независимо
+     * от формы лекарства. У заготовок форма — таблетка, поэтому все плашки обязаны
+     * рисовать `MedicationGlyph`, и ни одной пиктограммы на экране нет.
+     */
+    @Test
+    fun everyIntakeRowCarriesItsMedicationSilhouette() {
+        show(TodayFixtures.plainDay())
+
+        // На карточке «по потребности» выживает её тег, а не тег карточки приёма:
+        // два тега на одном узле не уживаются.
+        val cards = composeRule
+            .onAllNodesWithTag(TAG_INTAKE_CARD, useUnmergedTree = true)
+            .fetchSemanticsNodes()
+            .size + composeRule
+            .onAllNodesWithTag(TAG_PRN_CARD, useUnmergedTree = true)
+            .fetchSemanticsNodes()
+            .size
+        composeRule
+            .onAllNodesWithTag(TAG_INTAKE_GLYPH, useUnmergedTree = true)
+            .assertCountEquals(cards)
+        composeRule
+            .onAllNodesWithTag(TAG_INTAKE_PICTOGRAM, useUnmergedTree = true)
+            .assertCountEquals(0)
     }
 
     @Test

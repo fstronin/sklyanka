@@ -111,6 +111,8 @@ private fun PrnCard(entry: PrnEntry, onIntent: (TodayIntent) -> Unit) {
                 onMark = { onIntent(TodayIntent.TakePrn(entry.medicationId)) }.takeIf { entry.canTake },
             ),
             actionEnabled = entry.canTake,
+            form = entry.medication.form,
+            shape = entry.medication.shape,
             modifier = Modifier.testTag(TAG_PRN_CARD),
         )
         if (!entry.canTake) {

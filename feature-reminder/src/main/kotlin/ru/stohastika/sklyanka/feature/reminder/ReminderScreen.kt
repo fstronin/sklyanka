@@ -23,6 +23,7 @@ import ru.stohastika.sklyanka.ui.component.PrimaryButton
 import ru.stohastika.sklyanka.ui.component.SecondaryButton
 import ru.stohastika.sklyanka.ui.component.SklyankaMark
 import ru.stohastika.sklyanka.ui.component.StackingEqualButtons
+import ru.stohastika.sklyanka.ui.modifier.withCappedFontScale
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaShapes
 import ru.stohastika.sklyanka.ui.token.SklyankaSizes
@@ -95,7 +96,9 @@ private fun Header(state: ReminderUiState.Card) {
         )
         Text(
             text = state.scheduledAt.timeLabel(),
-            style = SklyankaType.Display,
+            // Полноэкранное время ограничено масштабом 130 % (§6.3): при 200 % «20:30»
+            // не помещается на 390 dp и обрезается — единственное, ради чего экран есть.
+            style = SklyankaType.Display.withCappedFontScale(),
             color = colors.text,
             modifier = Modifier.testTag(TAG_TIME),
         )

@@ -38,6 +38,7 @@
     <string name="cd_profile_avatar">Бейіндер</string>
 
     <string name="cd_switch_time_input">Уақытты пернетақтамен енгізу</string>
+    <string name="cd_switch_time_dial">Циферблаттан таңдау</string>
 
     <string name="cd_list_picker_selected">Таңдалды</string>
 

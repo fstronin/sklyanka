@@ -38,6 +38,7 @@
     <string name="cd_profile_avatar">档案</string>
 
     <string name="cd_switch_time_input">键盘输入时间</string>
+    <string name="cd_switch_time_dial">在表盘上选择</string>
 
     <string name="cd_list_picker_selected">已选择</string>
 

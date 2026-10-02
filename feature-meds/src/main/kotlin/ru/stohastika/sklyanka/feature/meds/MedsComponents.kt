@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -291,7 +291,11 @@ internal fun CounterCard(
                     style = SklyankaType.BodyLarge,
                     color = colors.text,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.width(SklyankaSizes.CounterValue),
+                    // Минимум 22 dp держит ритм ряда, но не режет «10» при крупном
+                    // шрифте (тот же класс, что ОВ-117): число растёт, ряд не дёргается.
+                    maxLines = 1,
+                    softWrap = false,
+                    modifier = Modifier.widthIn(min = SklyankaSizes.CounterValue),
                 )
                 GlyphButton(contentDescription = labels.increase, onClick = onIncrease) {
                     PlusGlyph(color = colors.textMuted)

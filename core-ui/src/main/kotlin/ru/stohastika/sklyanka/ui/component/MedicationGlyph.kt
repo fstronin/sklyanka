@@ -33,25 +33,31 @@ import ru.stohastika.sklyanka.ui.token.SklyankaSizes
 /** Толщина штриха относительно стороны — тонкая линия контура без заливки (§4.15). */
 private const val THIN_STROKE_RATIO = 0.07f
 
-/** Середина стороны. */
+/**
+ * Оптический бокс силуэта вида таблетки (ОВ-121): наибольшее измерение — 0,84 стороны
+ * поля по контуру, центр по обеим осям. Пять силуэтов ряда «Вид таблетки» читаются
+ * как одно семейство: круг — диаметр 0,84, овал и продолговатая — ширина 0,84,
+ * треугольник — основание 0,84; высота — из пропорции формы. Внешний контур с обводкой
+ * не выходит за 0,91 стороны поля.
+ */
 private const val MIDDLE = 0.5f
+private const val BOX_LEFT = 0.08f
+private const val BOX_RIGHT = 0.92f
+private const val BOX_HALF = 0.42f
 
-/** Круглая таблетка и её риска. */
-private const val PILL_RADIUS = 0.36f
-private const val PILL_SCORE_TOP = 0.14f
-private const val PILL_SCORE_BOTTOM = 0.86f
+/** Круглая таблетка и её риска по диаметру. */
+private const val PILL_RADIUS = BOX_HALF
+private const val PILL_SCORE_TOP = BOX_LEFT
+private const val PILL_SCORE_BOTTOM = BOX_RIGHT
 
 /** Овал, продолговатая и треугольник. */
-private const val OVAL_RX = 0.42f
+private const val OVAL_RX = BOX_HALF
 private const val OVAL_RY = 0.26f
 private const val OBLONG_TOP = 0.32f
 private const val OBLONG_BOTTOM = 0.68f
-private const val OBLONG_LEFT = 0.08f
-private const val OBLONG_RIGHT = 0.92f
-private const val TRIANGLE_APEX_Y = 0.17f
-private const val TRIANGLE_BASE_Y = 0.79f
-private const val TRIANGLE_LEFT = 0.12f
-private const val TRIANGLE_RIGHT = 0.88f
+private const val TRIANGLE_HEIGHT = 0.62f
+private const val TRIANGLE_APEX_Y = MIDDLE - TRIANGLE_HEIGHT / 2
+private const val TRIANGLE_BASE_Y = MIDDLE + TRIANGLE_HEIGHT / 2
 
 /** Капсула. */
 private const val CAPSULE_TOP = 0.35f
@@ -96,19 +102,7 @@ fun MedicationGlyph(
         val side = this.size.minDimension
         val stroke = thinStroke(side)
         when (form) {
-            MedicationForm.TABLET -> {
-                if (shape == null) {
-                    drawCircle(color, radius = side * PILL_RADIUS, style = stroke)
-                    drawLine(
-                        color = color,
-                        start = Offset(side * (MIDDLE - PILL_RADIUS), side * MIDDLE),
-                        end = Offset(side * (MIDDLE + PILL_RADIUS), side * MIDDLE),
-                        strokeWidth = side * THIN_STROKE_RATIO,
-                    )
-                } else {
-                    drawTabletShape(shape, side, color, stroke)
-                }
-            }
+            MedicationForm.TABLET -> drawTabletShape(shape, side, color, stroke)
 
             MedicationForm.CAPSULE -> {
                 drawRoundRect(
@@ -167,9 +161,24 @@ fun TabletShapeGlyph(
     }
 }
 
-/** Правило силуэта вида: табличное, без обращения к цветам и теме. */
-private fun DrawScope.drawTabletShape(shape: TabletShape, side: Float, color: Color, stroke: Stroke) {
+/**
+ * Правило силуэта вида: табличное, без обращения к цветам и теме.
+ *
+ * `null` — форма «таблетка» без выбранного вида: круг с горизонтальной линией по
+ * диаметру. Все силуэты — в одном оптическом боксе (ОВ-121).
+ */
+internal fun DrawScope.drawTabletShape(shape: TabletShape?, side: Float, color: Color, stroke: Stroke) {
     when (shape) {
+        null -> {
+            drawCircle(color, radius = side * PILL_RADIUS, style = stroke)
+            drawLine(
+                color = color,
+                start = Offset(side * BOX_LEFT, side * MIDDLE),
+                end = Offset(side * BOX_RIGHT, side * MIDDLE),
+                strokeWidth = side * THIN_STROKE_RATIO,
+            )
+        }
+
         TabletShape.ROUND -> drawCircle(color, radius = side * PILL_RADIUS, style = stroke)
         TabletShape.ROUND_SCORED -> {
             drawCircle(color, radius = side * PILL_RADIUS, style = stroke)
@@ -190,8 +199,8 @@ private fun DrawScope.drawTabletShape(shape: TabletShape, side: Float, color: Co
 
         TabletShape.OBLONG -> drawRoundRect(
             color = color,
-            topLeft = Offset(side * OBLONG_LEFT, side * OBLONG_TOP),
-            size = Size(side * (OBLONG_RIGHT - OBLONG_LEFT), side * (OBLONG_BOTTOM - OBLONG_TOP)),
+            topLeft = Offset(side * BOX_LEFT, side * OBLONG_TOP),
+            size = Size(side * (BOX_RIGHT - BOX_LEFT), side * (OBLONG_BOTTOM - OBLONG_TOP)),
             cornerRadius = CornerRadius(side * (OBLONG_BOTTOM - OBLONG_TOP) / 2),
             style = stroke,
         )
@@ -199,8 +208,8 @@ private fun DrawScope.drawTabletShape(shape: TabletShape, side: Float, color: Co
         TabletShape.TRIANGULAR -> drawPath(
             path = Path().apply {
                 moveTo(side * MIDDLE, side * TRIANGLE_APEX_Y)
-                lineTo(side * TRIANGLE_RIGHT, side * TRIANGLE_BASE_Y)
-                lineTo(side * TRIANGLE_LEFT, side * TRIANGLE_BASE_Y)
+                lineTo(side * BOX_RIGHT, side * TRIANGLE_BASE_Y)
+                lineTo(side * BOX_LEFT, side * TRIANGLE_BASE_Y)
                 close()
             },
             color = color,
@@ -228,5 +237,5 @@ private fun DrawScope.drawBottle(side: Float, color: Color, stroke: Stroke) {
     )
 }
 
-private fun thinStroke(side: Float) =
+internal fun thinStroke(side: Float) =
     Stroke(width = side * THIN_STROKE_RATIO, cap = StrokeCap.Round, join = StrokeJoin.Round)

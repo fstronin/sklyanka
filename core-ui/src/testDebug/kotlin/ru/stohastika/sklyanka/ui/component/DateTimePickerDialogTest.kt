@@ -110,6 +110,55 @@ class DateTimePickerDialogTest {
         assertEquals(LocalDate.of(2026, 9, 25), confirmed)
     }
 
+    /**
+     * Переключатель называет режим-назначение (ОВ-120): на циферблате — клавиатуру,
+     * в клавиатурном режиме — возврат на циферблат. Диалог открывается циферблатом,
+     * и после возврата показывает выбранное время.
+     */
+    @Test
+    fun theSwitchNamesTheModeItLeadsTo() {
+        show {
+            DateTimePickerDialog(
+                title = TIME_TITLE,
+                initial = LocalTime.of(8, 0),
+                is24Hour = true,
+                onDismiss = {},
+                onConfirm = {},
+            )
+        }
+
+        composeTestRule.onNodeWithTag(TAG_TIME_PICKER).assertExists()
+        composeTestRule.onNodeWithText(context.getString(R.string.cd_switch_time_input)).performClick()
+
+        composeTestRule.onNodeWithTag(TAG_TIME_INPUT).assertExists()
+        composeTestRule.onNodeWithText(context.getString(R.string.cd_switch_time_dial)).assertExists()
+        composeTestRule.onNodeWithText(context.getString(R.string.cd_switch_time_input)).assertDoesNotExist()
+
+        composeTestRule.onNodeWithText(context.getString(R.string.cd_switch_time_dial)).performClick()
+
+        composeTestRule.onNodeWithTag(TAG_TIME_PICKER).assertExists()
+        composeTestRule.onNodeWithText(context.getString(R.string.cd_switch_time_input)).assertExists()
+    }
+
+    @Test
+    fun switchingTheModeAndConfirmingReturnsTheTime() {
+        var confirmed: LocalTime? = null
+        show {
+            DateTimePickerDialog(
+                title = TIME_TITLE,
+                initial = LocalTime.of(8, 30),
+                is24Hour = true,
+                onDismiss = {},
+                onConfirm = { confirmed = it },
+            )
+        }
+
+        composeTestRule.onNodeWithText(context.getString(R.string.cd_switch_time_input)).performClick()
+        composeTestRule.onNodeWithText(context.getString(R.string.action_done)).performClick()
+
+        assertEquals(LocalTime.of(8, 30), confirmed)
+    }
+
     @Test
     fun theTwelveHourDialShowsThePeriodToggle() {
         show {

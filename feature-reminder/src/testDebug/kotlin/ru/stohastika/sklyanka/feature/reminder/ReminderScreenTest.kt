@@ -2,6 +2,8 @@ package ru.stohastika.sklyanka.feature.reminder
 
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -9,6 +11,7 @@ import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Assert.assertEquals
@@ -177,6 +180,32 @@ class ReminderScreenTest {
         assertStackedWithoutWrappedLabels()
     }
 
+    /**
+     * Время приёма ограничено масштабом 130 % (§6.3, ОВ-117): при 200 % «20:30» не
+     * помещается на 390 dp и обрезается, а это единственное, ради чего экран есть.
+     */
+    @Test
+    fun theTimeIsCappedAtTwoHundredPercent() {
+        show(state(), fontScale = SCALE_200)
+        val layout = timeLayout()
+
+        assertEquals("the time must stay one line", 1, layout.lineCount)
+        assertTrue("the time must not be cut: $layout", !layout.didOverflowHeight)
+        assertEquals(
+            "the time size must be cut to the 130 % ceiling",
+            CAPPED_FONT_SIZE,
+            layout.layoutInput.style.fontSize.value,
+            CAPPED_FONT_TOLERANCE,
+        )
+    }
+
+    private fun timeLayout(): TextLayoutResult {
+        val node = compose.onNodeWithTag(TAG_TIME, useUnmergedTree = true).fetchSemanticsNode()
+        val results = mutableListOf<TextLayoutResult>()
+        node.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(results)
+        return requireNotNull(results.firstOrNull()) { "the time has no text layout" }
+    }
+
     private fun assertStackedWithoutWrappedLabels() {
         val snooze = compose.onNodeWithTag(TAG_ACTION_SNOOZE).fetchSemanticsNode().boundsInRoot
         val skip = compose.onNodeWithTag(TAG_ACTION_SKIP).fetchSemanticsNode().boundsInRoot
@@ -201,6 +230,10 @@ class ReminderScreenTest {
 
         const val SCALE_130 = 1.3f
         const val SCALE_200 = 2.0f
+
+        /** 64 sp · 1,3 / 2 — кегль под потолком 130 % при системном масштабе 200 %. */
+        const val CAPPED_FONT_SIZE = 41.6f
+        const val CAPPED_FONT_TOLERANCE = 0.01f
 
         /** Кнопка с подписью в одну строку: вдвое выше минимальной цели нажатия не бывает. */
         const val MAX_ONE_LINE_HEIGHT = 88f
