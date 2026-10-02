@@ -9,6 +9,7 @@
     <string name="reminder_dose_separator">" · "</string>
 
     <string name="reminder_strength">%1$s %2$s</string>
+    <string name="strength_unit_milligram">mg</string>
 
     <string name="reminder_row_taken">Taken</string>
     <string name="reminder_row_skip">Skip</string>

@@ -30,9 +30,9 @@
 
     <string name="today_strength">%1$s %2$s</string>
 
-    <string name="food_relation_before">饭前</string>
-    <string name="food_relation_with">随餐</string>
-    <string name="food_relation_after">饭后</string>
+    <string name="today_food_before">饭前</string>
+    <string name="today_food_with">随餐</string>
+    <string name="today_food_after">饭后</string>
 
     <string name="today_prn_divider">按需</string>
 

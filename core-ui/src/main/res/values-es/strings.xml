@@ -41,7 +41,7 @@
 
     <string name="cd_list_picker_selected">Seleccionado</string>
 
-    <string name="adherence_legend_taken">Tomado</string>
+    <string name="adherence_legend_taken">Tomada</string>
     <string name="adherence_legend_missed">Omitida</string>
     <string name="adherence_legend_today">Hoy</string>
 

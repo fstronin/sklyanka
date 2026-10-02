@@ -9,6 +9,7 @@
     <string name="reminder_dose_separator">" · "</string>
 
     <string name="reminder_strength">%1$s %2$s</string>
+    <string name="strength_unit_milligram">mg</string>
 
     <string name="reminder_row_taken">Eingenommen</string>
     <string name="reminder_row_skip">Überspringen</string>
@@ -53,7 +54,7 @@
     <string name="diagnostics_permission_notifications">Benachrichtigungen</string>
     <string name="diagnostics_permission_channel">Benachrichtigungskanäle</string>
     <string name="diagnostics_permission_exact_alarms">Exakte Alarme</string>
-    <string name="diagnostics_permission_full_screen">Vollbild-Benachrichtigungen</string>
+    <string name="diagnostics_permission_full_screen">Benachrichtigung im Vollbild</string>
     <string name="diagnostics_permission_dnd">Zugriff auf „Nicht stören“</string>
     <string name="diagnostics_permission_boot">Start-Empfänger</string>
     <string name="diagnostics_permission_autostart">Autostart und Energiesparen</string>

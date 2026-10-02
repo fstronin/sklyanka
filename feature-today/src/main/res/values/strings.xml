@@ -71,9 +71,9 @@
     <!-- «50 мкг»: дозировка и её единица введены человеком и переводу не подлежат. -->
     <string name="today_strength">%1$s %2$s</string>
 
-    <string name="food_relation_before">до еды</string>
-    <string name="food_relation_with">во время еды</string>
-    <string name="food_relation_after">после еды</string>
+    <string name="today_food_before">до еды</string>
+    <string name="today_food_with">во время еды</string>
+    <string name="today_food_after">после еды</string>
 
     <!-- ===== Блок «По потребности» (Main.dc.html) ===== -->
 

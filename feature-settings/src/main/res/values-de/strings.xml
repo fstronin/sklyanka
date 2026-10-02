@@ -55,7 +55,7 @@
     <string name="transfer_replace_title">Alles ersetzen?</string>
     <string name="transfer_replace_warning">Die aktuellen Daten auf diesem Gerät werden gelöscht und durch den Inhalt der Datei ersetzt. Das lässt sich nicht rückgängig machen.</string>
     <string name="transfer_replace_now">Jetzt auf dem Gerät</string>
-    <string name="transfer_replace_after">Wird aus der Datei</string>
+    <string name="transfer_replace_after">Aus der Datei</string>
     <string name="transfer_replace_history_from">Verlauf seit %1$s</string>
     <string name="transfer_replace_history_empty">kein Verlauf</string>
     <string name="transfer_replace_safety_copy">Vor dem Löschen speichert die App eine Sicherheitskopie der aktuellen Daten im internen Speicher, Datei %1$s. Sie ist für andere Apps nicht zugänglich und wird beim nächsten Ersetzen überschrieben.</string>
@@ -127,7 +127,7 @@
 
     <string name="settings_profile_self">Meine Medikamente</string>
     <string name="settings_profile_self_initial">I</string>
-    <string name="settings_profile_mirrored">Erinnerungen werden an mich gespiegelt</string>
+    <string name="settings_profile_mirrored">Ich erhalte diese Erinnerungen auch</string>
     <string name="settings_profile_subtitle">%1$s · %2$s</string>
     <string name="settings_profile_add">Profil hinzufügen</string>
     <string name="settings_profile_add_unavailable">Im nächsten Update verfügbar</string>
@@ -158,7 +158,7 @@
     <string name="profile_delete_medications">Medikamente: %1$d (archiviert %2$d)</string>
     <string name="profile_delete_history">Verlaufseinträge: %1$d</string>
     <string name="profile_delete_reminders">Erinnerungen für die Einnahmen dieses Profils werden entfernt</string>
-    <string name="profile_delete_warning">Das Löschen ist unwiderruflich: Das Profil und alle seine Daten werden von diesem Gerät gelöscht. Eine Rückkehr ist nicht möglich</string>
+    <string name="profile_delete_warning">Das Löschen ist unwiderruflich: Das Profil und alle seine Daten werden von diesem Gerät gelöscht. Eine Wiederherstellung ist nicht möglich</string>
     <string name="profile_delete_export">Übertragungsdatei speichern</string>
     <string name="profile_delete_export_note">Die Datei enthält alle Profile. „%1$s“ lässt sich nur durch Import der ganzen Datei zurückholen</string>
     <string name="profile_delete_export_saved">Datei gespeichert — %1$s</string>

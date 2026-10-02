@@ -30,9 +30,9 @@
 
     <string name="today_strength">%1$s %2$s</string>
 
-    <string name="food_relation_before">vor dem Essen</string>
-    <string name="food_relation_with">zum Essen</string>
-    <string name="food_relation_after">nach dem Essen</string>
+    <string name="today_food_before">vor dem Essen</string>
+    <string name="today_food_with">zum Essen</string>
+    <string name="today_food_after">nach dem Essen</string>
 
     <string name="today_prn_divider">Bei Bedarf</string>
 

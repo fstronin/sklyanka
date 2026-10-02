@@ -41,8 +41,10 @@ import ru.stohastika.sklyanka.ui.component.ScreenHeaderKind
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderLabels
 import ru.stohastika.sklyanka.ui.component.SecondaryButton
 import ru.stohastika.sklyanka.ui.component.SklyankaChip
+import ru.stohastika.sklyanka.ui.component.StackingRow
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaShapes
+import ru.stohastika.sklyanka.ui.token.SklyankaSizes
 import ru.stohastika.sklyanka.ui.token.SklyankaSpacing
 import ru.stohastika.sklyanka.ui.token.SklyankaType
 import java.time.Instant
@@ -314,29 +316,38 @@ private fun PermissionRow(
     onFixPermission: (ReminderPermission) -> Unit,
 ) {
     val colors = SklyankaTheme.colors
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .testTag(TAG_PERMISSION_ROW),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Medium),
-    ) {
-        Text(
-            text = permission.label(),
-            style = SklyankaType.Body,
-            color = colors.text,
-            modifier = Modifier.weight(1f),
-        )
-        Text(text = state.label(), style = SklyankaType.Caption, color = colors.textMuted)
-        // BOOT_RECEIVER человеку исправлять нечего: состояние объявлено манифестом (ПЛ-9).
-        if (permission != ReminderPermission.BOOT_RECEIVER) {
-            QuietButton(
-                text = stringResource(R.string.diagnostics_fix),
-                onClick = { onFixPermission(permission) },
-                modifier = Modifier.testTag(TAG_FIX),
+    // Переведённая подпись разрешения длиннее русской («Auto-launch and power saving»,
+    // «Автозапуск и энергосбережение»): ряд переносит состояние и действие под текст,
+    // а текст не сжимается ниже самого длинного слова (§6.3).
+    StackingRow(
+        leading = {},
+        text = {
+            Text(
+                text = permission.label(),
+                style = SklyankaType.Body,
+                color = colors.text,
             )
-        }
-    }
+        },
+        action = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Medium),
+            ) {
+                Text(text = state.label(), style = SklyankaType.Caption, color = colors.textMuted)
+                // BOOT_RECEIVER человеку исправлять нечего: состояние объявлено манифестом (ПЛ-9).
+                if (permission != ReminderPermission.BOOT_RECEIVER) {
+                    QuietButton(
+                        text = stringResource(R.string.diagnostics_fix),
+                        onClick = { onFixPermission(permission) },
+                        modifier = Modifier.testTag(TAG_FIX),
+                    )
+                }
+            }
+        },
+        gap = SklyankaSpacing.Medium,
+        minTextWidth = SklyankaSizes.MinTextColumn,
+        modifier = Modifier.testTag(TAG_PERMISSION_ROW),
+    )
     // Отказ в доступе к политике «Не беспокоить» — ограничение, а не ошибка (НАП-17).
     if (permission == ReminderPermission.DND_POLICY_ACCESS && state != PermissionState.GRANTED) {
         Value(stringResource(R.string.diagnostics_dnd_hint))

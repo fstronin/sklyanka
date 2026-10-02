@@ -64,6 +64,11 @@ class ScreenTestsConventionPlugin : Plugin<Project> {
 
         val record = providers.gradleProperty(SNAPSHOT_MODE_PROPERTY).orNull == RECORD_MODE
 
+        // Контактные листы для визревью (SKL-91): артефакт ревью, а не эталон, поэтому
+        // собирается явной опцией и не входит в обычный прогон. Тест читает свойство,
+        // а не файл-маркер: без опции он снимается JUnit-предположением за миллисекунды.
+        val visualReview = providers.gradleProperty(VISUAL_REVIEW_PROPERTY).orNull == ENABLED
+
         tasks.withType<Test>().configureEach {
             dependsOn(syncPlatform, writeRobolectricConfig)
 
@@ -74,6 +79,7 @@ class ScreenTestsConventionPlugin : Plugin<Project> {
             // вышел пустым, — то есть тогда, когда их некому включить.
             systemProperty("robolectric.logging", "stdout")
             systemProperty("sklyanka.repo.root", rootProject.projectDir.absolutePath)
+            systemProperty(VISUAL_REVIEW_SYSTEM_PROPERTY, visualReview.toString())
 
             // Эталоны лежат в репозитории рядом с модулем: снимок — такой же исходник,
             // как строка в strings.xml, и в ревью он обязан быть виден файлом.
@@ -124,5 +130,10 @@ class ScreenTestsConventionPlugin : Plugin<Project> {
         const val SNAPSHOT_MODE_PROPERTY = "sklyanka.snapshots"
         const val RECORD_MODE = "record"
         const val TEST_HEAP = "2g"
+
+        /** Витринные листы визревью (SKL-91): собираются только этой опцией. */
+        const val VISUAL_REVIEW_PROPERTY = "sklyanka.visualReview"
+        const val VISUAL_REVIEW_SYSTEM_PROPERTY = "sklyanka.visualReview"
+        const val ENABLED = "true"
     }
 }

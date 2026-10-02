@@ -79,6 +79,7 @@
 
     <string name="strength_unit_milligram">毫克</string>
 
+    <string name="history_month_pattern">yyyy年M月</string>
     <string name="history_date_pattern">M月d日</string>
     <string name="history_date_pattern_full">yyyy年M月d日</string>
     <string name="history_datetime_pattern">yyyy年M月d日 HH:mm</string>

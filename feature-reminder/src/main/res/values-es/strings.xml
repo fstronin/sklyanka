@@ -6,9 +6,10 @@
 
     <string name="reminder_snooze">Posponer %1$d min</string>
 
-    <string name="reminder_dose_separator"> · </string>
+    <string name="reminder_dose_separator">" · "</string>
 
     <string name="reminder_strength">%1$s %2$s</string>
+    <string name="strength_unit_milligram">mg</string>
 
     <string name="reminder_row_taken">Tomado</string>
     <string name="reminder_row_skip">Omitir</string>
@@ -58,8 +59,8 @@
     <string name="diagnostics_permission_boot">Receptor de arranque</string>
     <string name="diagnostics_permission_autostart">Inicio automático y ahorro de energía</string>
 
-    <string name="diagnostics_state_granted">concedido</string>
-    <string name="diagnostics_state_denied">no concedido</string>
+    <string name="diagnostics_state_granted">Permiso concedido</string>
+    <string name="diagnostics_state_denied">Permiso no concedido</string>
     <string name="diagnostics_state_unknown">comprobar manualmente</string>
 
     <string name="diagnostics_dnd_hint">En el modo «No molestar», los recordatorios repetidos serán silenciosos.</string>

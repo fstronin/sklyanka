@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="month_since_suffixes" translatable="false">
+        <item>дан</item>
+        <item>нан</item>
+        <item>дан</item>
+        <item>ден</item>
+        <item>дан</item>
+        <item>нан</item>
+        <item>ден</item>
+        <item>дан</item>
+        <item>тен</item>
+        <item>нан</item>
+        <item>дан</item>
+        <item>нан</item>
+    </string-array>
+</resources>

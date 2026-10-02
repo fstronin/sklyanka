@@ -6,7 +6,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -205,11 +208,21 @@ private fun AddTimeButton(onClick: () -> Unit) {
     }
 }
 
-/** «Связь с едой» — ряд из четырёх кнопок. */
+/**
+ * «Связь с едой» — ряд из четырёх кнопок.
+ *
+ * Высота — минимум цели нажатия, а не жёсткий размер: переведённая подпись («Before food»,
+ * «Тамаққа дейін») длиннее русской и переносится на вторую строку. Ряд растёт по самой
+ * высокой плитке (IntrinsicSize.Min), плитки выравниваются по ней — §6.3 дизайн-системы
+ * требует роста блока, а не обрезки текста.
+ */
 @Composable
 internal fun FoodRelationBlock(state: MedFormUiState, onIntent: (MedFormIntent) -> Unit, anchors: FormAnchors) {
     FormBlock(stringResource(R.string.form_label_food_relation), null, anchors) {
-        Row(horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Small)) {
+        Row(
+            modifier = Modifier.height(IntrinsicSize.Min),
+            horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Small),
+        ) {
             FoodRelation.entries.forEach { relation ->
                 ChoiceTile(
                     label = relation.label(),
@@ -217,7 +230,8 @@ internal fun FoodRelationBlock(state: MedFormUiState, onIntent: (MedFormIntent) 
                     onClick = { onIntent(MedFormIntent.FoodRelationChanged(relation)) },
                     modifier = Modifier
                         .weight(1f)
-                        .height(SklyankaSizes.MinTouchTarget)
+                        .fillMaxHeight()
+                        .defaultMinSize(minHeight = SklyankaSizes.MinTouchTarget)
                         .testTag(TAG_FOOD_RELATION),
                 )
             }

@@ -157,9 +157,9 @@ private fun stockLeftLabel(left: BigDecimal, unit: DoseUnit): String = pluralStr
 @Composable
 private fun FoodRelation.label(): String? = when (this) {
     FoodRelation.ANY -> null
-    FoodRelation.BEFORE_MEAL -> stringResource(R.string.food_relation_before)
-    FoodRelation.WITH_MEAL -> stringResource(R.string.food_relation_with)
-    FoodRelation.AFTER_MEAL -> stringResource(R.string.food_relation_after)
+    FoodRelation.BEFORE_MEAL -> stringResource(R.string.today_food_before)
+    FoodRelation.WITH_MEAL -> stringResource(R.string.today_food_with)
+    FoodRelation.AFTER_MEAL -> stringResource(R.string.today_food_after)
 }
 
 /** Подпись кнопки групповой отметки: «Отметить оба», «Отметить все три», «Отметить все N». */

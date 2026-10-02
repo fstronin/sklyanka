@@ -79,6 +79,7 @@
 
     <string name="strength_unit_milligram">mg</string>
 
+    <string name="history_month_pattern">LLLL yyyy</string>
     <string name="history_date_pattern">"d 'de' MMMM"</string>
     <string name="history_date_pattern_full">"d 'de' MMMM 'de' yyyy"</string>
     <string name="history_datetime_pattern">"d 'de' MMMM 'de' yyyy, HH:mm"</string>

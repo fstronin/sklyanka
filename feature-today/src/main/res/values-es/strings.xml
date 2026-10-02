@@ -26,13 +26,13 @@
 
     <string name="today_now">Ahora</string>
 
-    <string name="today_separator"> · </string>
+    <string name="today_separator">" · "</string>
 
     <string name="today_strength">%1$s %2$s</string>
 
-    <string name="food_relation_before">antes de comer</string>
-    <string name="food_relation_with">durante la comida</string>
-    <string name="food_relation_after">después de comer</string>
+    <string name="today_food_before">antes de comer</string>
+    <string name="today_food_with">durante la comida</string>
+    <string name="today_food_after">después de comer</string>
 
     <string name="today_prn_divider">Según necesidad</string>
 

@@ -25,8 +25,8 @@ import ru.stohastika.sklyanka.domain.stock.StockPanel
 import ru.stohastika.sklyanka.feature.meds.ClockGlyph
 import ru.stohastika.sklyanka.feature.meds.R
 import ru.stohastika.sklyanka.feature.meds.SectionLabel
-import ru.stohastika.sklyanka.feature.meds.dayAndMonth
 import ru.stohastika.sklyanka.feature.meds.formatted
+import ru.stohastika.sklyanka.feature.meds.sinceDayAndMonth
 import ru.stohastika.sklyanka.feature.meds.stockLabel
 import ru.stohastika.sklyanka.feature.meds.stockLeftLabel
 import ru.stohastika.sklyanka.feature.meds.stockPackageLabel
@@ -155,7 +155,7 @@ internal fun CourseBlock(course: CourseProgress, modifier: Modifier = Modifier) 
             modifier = modifier.testTag(TAG_COURSE_BLOCK),
         ) {
             Text(
-                text = stringResource(R.string.meds_period_open, course.start.dayAndMonth()),
+                text = stringResource(R.string.meds_period_open, course.start.sinceDayAndMonth()),
                 style = SklyankaType.BodyStrong,
                 color = colors.text,
             )

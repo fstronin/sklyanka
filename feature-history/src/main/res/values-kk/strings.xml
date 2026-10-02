@@ -65,7 +65,7 @@
     <string name="report_document_medication_share">%2$d ішінен %1$d (%3$s)</string>
     <string name="report_document_as_needed">Қажетіне қарай қабылдау</string>
     <string name="report_document_course">%1$s — %2$s</string>
-    <string name="report_document_course_open">%1$s бастап, мерзімсіз</string>
+    <string name="report_document_course_open">%1$s жылдан бастап, мерзімсіз</string>
     <string name="report_document_archived">Курс мұрағатта</string>
     <string name="report_document_no_misses">Өткізілулер жоқ</string>
     <string name="report_document_missed_dates">Өткізілулер: %1$s</string>
@@ -79,6 +79,7 @@
 
     <string name="strength_unit_milligram">мг</string>
 
+    <string name="history_month_pattern">LLLL yyyy</string>
     <string name="history_date_pattern">d MMMM</string>
     <string name="history_date_pattern_full">d MMMM yyyy</string>
     <string name="history_datetime_pattern">d MMMM yyyy, HH:mm</string>

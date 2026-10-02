@@ -9,6 +9,7 @@
     <string name="reminder_dose_separator">" · "</string>
 
     <string name="reminder_strength">%1$s %2$s</string>
+    <string name="strength_unit_milligram">毫克</string>
 
     <string name="reminder_row_taken">已服用</string>
     <string name="reminder_row_skip">跳过</string>
@@ -20,7 +21,7 @@
     <string name="diagnostics_fix">修复</string>
     <string name="diagnostics_check_done">检查完成 — 提醒已设置</string>
     <string name="diagnostics_check_failed">检查失败：提醒未重新设置</string>
-    <string name="diagnostics_support">供支持人员</string>
+    <string name="diagnostics_support">技术支持</string>
 
     <string name="diagnostics_week_summary">7 天内：%1$d 次触发，%2$d 次漏服</string>
     <string name="diagnostics_week_summary_none">7 天内没有提醒</string>

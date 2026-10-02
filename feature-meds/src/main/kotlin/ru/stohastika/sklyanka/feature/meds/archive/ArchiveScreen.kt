@@ -28,8 +28,8 @@ import ru.stohastika.sklyanka.feature.meds.R
 import ru.stohastika.sklyanka.feature.meds.SectionLabel
 import ru.stohastika.sklyanka.feature.meds.Segment
 import ru.stohastika.sklyanka.feature.meds.SegmentedControl
-import ru.stohastika.sklyanka.feature.meds.dayAndMonth
 import ru.stohastika.sklyanka.feature.meds.screenPadding
+import ru.stohastika.sklyanka.feature.meds.sinceDayAndMonth
 import ru.stohastika.sklyanka.ui.component.Banner
 import ru.stohastika.sklyanka.ui.component.BannerKind
 import ru.stohastika.sklyanka.ui.component.EmptyState
@@ -230,7 +230,7 @@ private fun ArchivedMedicationCard(card: ArchiveCard, onIntent: (ArchiveIntent) 
 @Composable
 private fun ArchiveCaption.text(): String = when (this) {
     is ArchiveCaption.Outcome -> pluralStringResource(R.plurals.archive_outcome, days, days, taken, planned)
-    is ArchiveCaption.ArchivedOn -> stringResource(R.string.archive_caption_since, date.dayAndMonth())
+    is ArchiveCaption.ArchivedOn -> stringResource(R.string.archive_caption_since, date.sinceDayAndMonth())
 }
 
 @Composable

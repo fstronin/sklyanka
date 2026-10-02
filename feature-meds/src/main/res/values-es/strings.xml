@@ -6,7 +6,7 @@
     <string name="meds_tab_archive">Archivo · %1$d</string>
     <string name="meds_as_needed_chip">según necesidad</string>
 
-    <string name="meds_separator"> · </string>
+    <string name="meds_separator">" · "</string>
 
     <string name="meds_frequency_daily">Diariamente</string>
 
@@ -86,7 +86,7 @@
     <string name="tablet_shape_oblong">Alargado</string>
     <string name="tablet_shape_triangular">Triangular</string>
 
-    <string name="food_relation_any">Indiferente</string>
+    <string name="food_relation_any">No importa</string>
     <string name="food_relation_before">Antes de comer</string>
     <string name="food_relation_with">Con la comida</string>
     <string name="food_relation_after">Después de comer</string>

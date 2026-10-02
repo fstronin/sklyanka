@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Суффикс исходного падежа, который язык добавляет к дате перед послелогом «бастап»
+      («с …»). Казахский переопределяет массив в values-kk; остальным языкам он не нужен:
+      их предлог стоит перед датой. Пустые значения — не пропущенный перевод.
+    -->
+    <string-array name="month_since_suffixes" translatable="false">
+        <item></item>
+        <item></item>
+        <item></item>
+        <item></item>
+        <item></item>
+        <item></item>
+        <item></item>
+        <item></item>
+        <item></item>
+        <item></item>
+        <item></item>
+        <item></item>
+    </string-array>
+</resources>

@@ -30,9 +30,9 @@
 
     <string name="today_strength">%1$s %2$s</string>
 
-    <string name="food_relation_before">тамаққа дейін</string>
-    <string name="food_relation_with">тамақ кезінде</string>
-    <string name="food_relation_after">тамақтан кейін</string>
+    <string name="today_food_before">тамаққа дейін</string>
+    <string name="today_food_with">тамақ кезінде</string>
+    <string name="today_food_after">тамақтан кейін</string>
 
     <string name="today_prn_divider">Қажетіне қарай</string>
 

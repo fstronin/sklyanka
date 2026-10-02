@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import ru.stohastika.sklyanka.domain.medication.CourseEndPreset
 import ru.stohastika.sklyanka.domain.medication.DoseUnit
@@ -169,7 +170,7 @@ internal fun trailingTextOf(line: TrailingLine): String = when (line) {
     is TrailingLine.Period -> {
         val end = line.endDate
         if (end == null) {
-            stringResource(R.string.meds_period_open, line.startDate.dayAndMonth())
+            stringResource(R.string.meds_period_open, line.startDate.sinceDayAndMonth())
         } else {
             stringResource(R.string.meds_period_until, end.dayAndMonth())
         }
@@ -260,6 +261,18 @@ internal fun LocalTime.formatted(): String = format(formatter(R.string.time_patt
 /** «12 марта» — месяц в родительном падеже даёт сам форматтер локали. */
 @Composable
 internal fun LocalDate.dayAndMonth(): String = format(formatter(R.string.date_pattern_day_month))
+
+/**
+ * «12 қыркүйектен» — дата перед послелогом «бастап» («с …»).
+ *
+ * Послелог требует исходного падежа, которого ICU для казахских месяцев не даёт:
+ * язык добавляет суффикс из массива, остальные языки оставляют пустые значения.
+ */
+@Composable
+internal fun LocalDate.sinceDayAndMonth(): String {
+    val suffixes = stringArrayResource(R.array.month_since_suffixes)
+    return dayAndMonth() + suffixes.getOrElse(monthValue - 1) { "" }
+}
 
 /** «25 сентября 2026». */
 @Composable

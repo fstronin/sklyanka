@@ -33,9 +33,9 @@
 
       «LLLL» — отдельная форма названия месяца: «сентябрь», а не «сентября». Форма
       родительного падежа («d MMMM») нужна дате внутри строки, а переключателю месяца —
-      именительный.
+      именительный. Порядок «месяц—год» тоже часть перевода: китайский пишет «2026年9月».
     -->
-    <string name="history_month_pattern" translatable="false">LLLL yyyy</string>
+    <string name="history_month_pattern">LLLL yyyy</string>
     <!-- Имя месяца в родительном падеже: «6, 9, 14 сентября» в списке дат документа. -->
     <string name="history_month_name_pattern" translatable="false">MMMM</string>
     <string name="history_date_pattern">d MMMM</string>

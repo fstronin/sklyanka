@@ -112,7 +112,7 @@
     <string name="transfer_date_pattern_full">"d 'de' MMMM 'de' yyyy"</string>
     <string name="transfer_time_pattern">HH:mm</string>
     <string name="transfer_summary_moment">%1$s, %2$s</string>
-    <string name="transfer_times_separator"> y </string>
+    <string name="transfer_times_separator">" y "</string>
 
     <string name="transfer_cd_export">Exportación</string>
     <string name="transfer_cd_import">Importación</string>

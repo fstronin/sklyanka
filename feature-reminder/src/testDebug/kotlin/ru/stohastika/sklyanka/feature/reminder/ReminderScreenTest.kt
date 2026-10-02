@@ -36,13 +36,13 @@ class ReminderScreenTest {
 
     private val at: LocalDateTime = LocalDateTime.of(2026, 9, 25, 14, 0)
 
-    private fun row(id: String = "intake-1", name: String = "Магний B6") = ReminderRow(
+    private fun row(id: String = "intake-1", name: String = "Магний B6", strengthUnit: String = "мг") = ReminderRow(
         intakeId = id,
         name = name,
         form = MedicationForm.TABLET,
         doseAmount = BigDecimal("2"),
         strength = BigDecimal("48"),
-        strengthUnit = "мг",
+        strengthUnit = strengthUnit,
     )
 
     private fun state(rows: List<ReminderRow> = listOf(row()), snoozeMinutes: Int = 15, mirrored: Boolean = false) =
@@ -83,6 +83,17 @@ class ReminderScreenTest {
         compose.onNodeWithTag(TAG_OVERLINE).assertIsDisplayed()
         compose.onNodeWithText("14:00").assertIsDisplayed()
         compose.onNodeWithText("Магний B6").assertIsDisplayed()
+        compose.onNodeWithText("2 таблетки · 48 мг").assertIsDisplayed()
+    }
+
+    /**
+     * Канонический код «mg» показывается словом языка, как в списке и форме
+     * (находка визревью SKL-91): латиница в русской карточке читалась чужим форматом.
+     */
+    @Test
+    fun theMilligramCodeIsShownInTheInterfaceLanguage() {
+        show(state(rows = listOf(row(strengthUnit = "mg"))))
+
         compose.onNodeWithText("2 таблетки · 48 мг").assertIsDisplayed()
     }
 

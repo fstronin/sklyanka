@@ -9,6 +9,7 @@
     <string name="reminder_dose_separator">" · "</string>
 
     <string name="reminder_strength">%1$s %2$s</string>
+    <string name="strength_unit_milligram">мг</string>
 
     <string name="reminder_row_taken">Қабылданды</string>
     <string name="reminder_row_skip">Өткізіп жіберу</string>
@@ -55,7 +56,7 @@
     <string name="diagnostics_permission_exact_alarms">Нақты будильниктер</string>
     <string name="diagnostics_permission_full_screen">Толық экранды хабарламалар</string>
     <string name="diagnostics_permission_dnd">«Мазаламау» саясатына рұқсат</string>
-    <string name="diagnostics_permission_boot">Жүктеу қабылдағышы</string>
+    <string name="diagnostics_permission_boot">Қайта жүктеу қабылдағышы</string>
     <string name="diagnostics_permission_autostart">Автожүгірту және қуат үнемдеу</string>
 
     <string name="diagnostics_state_granted">берілген</string>

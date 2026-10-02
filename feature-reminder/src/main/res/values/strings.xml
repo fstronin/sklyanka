@@ -29,6 +29,7 @@
 
     <!-- «48 мг»: дозировка и её единица введены человеком и переводу не подлежат. -->
     <string name="reminder_strength">%1$s %2$s</string>
+    <string name="strength_unit_milligram">мг</string>
 
     <!-- Отметка строки в карточке из нескольких приёмов (НАП-36). -->
     <string name="reminder_row_taken">Принято</string>

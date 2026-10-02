@@ -53,10 +53,10 @@
     <string name="transfer_strength_unit_milligram">мг</string>
 
     <string name="transfer_replace_title">Барлығын ауыстырайық па?</string>
-    <string name="transfer_replace_warning">Осы құрылғыдағы қазіргі деректер жойылып, файл мазмұнымен ауыстырылады. Мұны болдырмау мүмкін емес.</string>
+    <string name="transfer_replace_warning">Осы құрылғыдағы қазіргі деректер жойылып, файл мазмұнымен ауыстырылады. Мұны қайтару мүмкін емес.</string>
     <string name="transfer_replace_now">Қазір құрылғыда</string>
-    <string name="transfer_replace_after">Файлдан болады</string>
-    <string name="transfer_replace_history_from">%1$s бастап тарих</string>
+    <string name="transfer_replace_after">Файлдан</string>
+    <string name="transfer_replace_history_from">%1$s жылдан бастап тарих</string>
     <string name="transfer_replace_history_empty">тарих жоқ</string>
     <string name="transfer_replace_safety_copy">Жою алдында қолданба қазіргі деректердің сақтық көшірмесін ішкі жадқа сақтайды, %1$s файлы. Ол басқа қолданбаларға қолжетімсіз және келесі ауыстыруда үстінен жазылады.</string>
     <string name="transfer_replace_confirm">Жою және жүктеу</string>

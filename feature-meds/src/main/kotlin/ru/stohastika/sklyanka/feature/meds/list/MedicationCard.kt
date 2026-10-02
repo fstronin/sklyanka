@@ -12,6 +12,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -92,32 +93,52 @@ internal fun MedicationCard(
 /**
  * Название и, у карточки «по потребности», серый чип рядом с ним.
  *
- * Название ужимается, чип — нет. Без `weight(fill = false)` строка названия забирает
- * всю ширину первой, чипу достаётся нулевая, и его подпись разворачивается в столбик
- * по одной букве, раздувая карточку втрое. В макете это выражено `min-width: 0`
- * на колонке (`design/screens/Meds.dc.html`). Найдено переносом экранных проверок
- * на JVM (SKL-24): до него карточку «по потребности» не собирал ни один прогон.
+ * Чип остаётся рядом, пока делит строку с названием, и переносится под него, когда
+ * переведённая подпись чипа («по потребности», «nach Bedarf») отнимала у заголовка всю
+ * ширину: имя схлопывалось в «…», и карточки «по потребности» становились неразличимы
+ * (находка визревью SKL-91). Название при этом сохраняет разрешённое усечение в одну
+ * строку для длинных имён без чипа (§6.3). `FlowRow` для этого не годится: сжимаемая
+ * подпись чипа ужимается до остатка и не доходит до переноса.
  */
 @Composable
 private fun TitleLine(card: MedicationCardUi) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Small),
-    ) {
-        Text(
-            text = card.title,
-            style = SklyankaType.BodyStrong,
-            color = SklyankaTheme.colors.text,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f, fill = false),
-        )
-        if (card.asNeeded != null) {
-            SklyankaChip(
-                text = stringResource(R.string.meds_as_needed_chip),
-                state = ChipState.Info,
-                shape = SklyankaShapes.Pill,
+    Layout(
+        content = {
+            Text(
+                text = card.title,
+                style = SklyankaType.BodyStrong,
+                color = SklyankaTheme.colors.text,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
+            if (card.asNeeded != null) {
+                SklyankaChip(
+                    text = stringResource(R.string.meds_as_needed_chip),
+                    state = ChipState.Info,
+                    shape = SklyankaShapes.Pill,
+                )
+            }
+        },
+    ) { measurables, constraints ->
+        val gap = SklyankaSpacing.Small.roundToPx()
+        val lineGap = SklyankaSpacing.Micro.roundToPx()
+        val title = measurables.first().measure(constraints)
+        val chipMeasure = measurables.getOrNull(1)
+        if (chipMeasure == null) {
+            return@Layout layout(title.width, title.height) { title.placeRelative(0, 0) }
+        }
+        val chip = chipMeasure.measure(constraints)
+        if (title.width + gap + chip.width <= constraints.maxWidth) {
+            val height = maxOf(title.height, chip.height)
+            layout(title.width + gap + chip.width, height) {
+                title.placeRelative(0, (height - title.height) / 2)
+                chip.placeRelative(title.width + gap, (height - chip.height) / 2)
+            }
+        } else {
+            layout(maxOf(title.width, chip.width), title.height + lineGap + chip.height) {
+                title.placeRelative(0, 0)
+                chip.placeRelative(0, title.height + lineGap)
+            }
         }
     }
 }

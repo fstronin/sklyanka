@@ -1,5 +1,6 @@
 package ru.stohastika.sklyanka.feature.meds
 
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -8,12 +9,15 @@ import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.annotation.Config
 import ru.stohastika.sklyanka.domain.medication.DoseUnit
 import ru.stohastika.sklyanka.domain.medication.TrailingLine
 import ru.stohastika.sklyanka.domain.model.MedicationForm
@@ -95,6 +99,54 @@ class MedicationListScreenTest {
         composeRule.onNodeWithTag(TAG_LAST_INTAKE, useUnmergedTree = true).assertIsDisplayed()
         composeRule
             .onNodeWithText(context.getString(UiR.string.action_take), useUnmergedTree = true)
+            .assertIsDisplayed()
+    }
+
+    /**
+     * Чип «по потребности» не съедает название (находка визревью SKL-91).
+     *
+     * Длинный переведённый чип оставлял заголовку ширину в несколько пикселей, и имя
+     * схлопывалось в «…» — список «по потребности» становился неразличим. Название
+     * обязано остаться читаемым целиком: чип переносится под него.
+     */
+    @Test
+    @Config(qualifiers = "ru")
+    fun anAsNeededNameIsNotSwallowedByTheChip() {
+        show(MedsUiState(items = listOf(asNeededCard(title = "med-c")), loading = false))
+
+        val title = composeRule
+            .onNodeWithText("med-c", useUnmergedTree = true)
+            .fetchSemanticsNode()
+        val layouts = mutableListOf<TextLayoutResult>()
+        title.config[SemanticsActions.GetTextLayoutResult].action?.invoke(layouts)
+        val layout = layouts.first()
+
+        assertFalse(
+            "имя «med-c» скрыто чипом: видно ${layout.getLineEnd(0, true)} символов",
+            layout.isLineEllipsized(0),
+        )
+    }
+
+    /**
+     * Дата «с …» берёт исходный падеж месяца (находка визревью SKL-91).
+     *
+     * Послелог «бастап» требует исходного падежа, которого ICU для казахских месяцев
+     * не даёт: суффикс приходит из ресурсного массива языка.
+     */
+    @Test
+    @Config(qualifiers = "kk")
+    fun aKazakhOpenCourseNamesTheMonthInTheAblative() {
+        show(
+            MedsUiState(
+                items = listOf(
+                    scheduledCard(trailingLine = TrailingLine.Period(LocalDate.of(2026, 9, 12), null)),
+                ),
+                loading = false,
+            ),
+        )
+
+        composeRule
+            .onNodeWithText("12 қыркүйектен бастап", substring = true, useUnmergedTree = true)
             .assertIsDisplayed()
     }
 
@@ -193,9 +245,9 @@ class MedicationListScreenTest {
         asNeeded = null,
     )
 
-    private fun asNeededCard(takeEnabled: Boolean = true) = MedicationCardUi(
+    private fun asNeededCard(takeEnabled: Boolean = true, title: String = "med-as-needed") = MedicationCardUi(
         medicationId = "as-needed",
-        title = "med-as-needed",
+        title = title,
         form = MedicationForm.CAPSULE,
         shape = null,
         strength = "200",

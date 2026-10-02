@@ -42,9 +42,23 @@ internal fun ReminderRow.doseLine(): String {
     val strengthValue = strength
     val unit = strengthUnit
     if (strengthValue == null || unit.isNullOrBlank()) return dose
-    val strengthLabel = stringResource(R.string.reminder_strength, strengthValue.toPlainString(), unit)
+    val strengthLabel = stringResource(
+        R.string.reminder_strength,
+        strengthValue.toPlainString(),
+        strengthUnitLabel(unit),
+    )
     return dose + stringResource(R.string.reminder_dose_separator) + strengthLabel
 }
+
+/**
+ * Единица дозировки словами языка: канонический код «mg» показывается как «мг»/«毫克»,
+ * как в списке и форме лекарства. Остальные единицы — ввод человека и не переводятся.
+ */
+@Composable
+private fun strengthUnitLabel(unit: String): String =
+    if (unit == MILLIGRAM_CODE) stringResource(R.string.strength_unit_milligram) else unit
+
+private const val MILLIGRAM_CODE = "mg"
 
 /**
  * «2 таблетки» — доза с единицей по форме выпуска.

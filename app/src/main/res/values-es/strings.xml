@@ -11,7 +11,7 @@
 
     <string name="reminder_overline">Toma programada</string>
     <string name="reminder_time_pattern">HH:mm</string>
-    <string name="reminder_notification_separator"> · </string>
+    <string name="reminder_notification_separator">" · "</string>
     <string name="reminder_notification_text">%1$s · %2$s</string>
 
     <string name="add_medication_shortcut_label">Añadir medicamento</string>
