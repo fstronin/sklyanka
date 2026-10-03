@@ -169,4 +169,10 @@
     <string name="profile_delete_result_active">Tu perfil se ha convertido en el activo</string>
     <string name="profile_delete_no_space">No hay espacio suficiente. El archivo no se guardó y el perfil no se eliminó.</string>
     <string name="profile_delete_no_picker">No hay ninguna aplicación para elegir archivos en el dispositivo. El archivo de transferencia no se puede guardar sin ella.</string>
+
+    <!-- Analítica en la sección de datos (SKL-82, PM-25, OV-123) -->
+
+    <string name="settings_analytics">Analítica</string>
+    <string name="settings_analytics_caption">Estadísticas anónimas: acciones en la aplicación; los datos médicos no se envían</string>
+    <string name="settings_policy">Política de privacidad</string>
 </resources>

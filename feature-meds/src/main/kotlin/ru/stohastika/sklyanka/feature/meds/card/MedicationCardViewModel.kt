@@ -13,6 +13,11 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import ru.stohastika.sklyanka.domain.analytics.Analytics
+import ru.stohastika.sklyanka.domain.analytics.AnalyticsEvent
+import ru.stohastika.sklyanka.domain.analytics.MedicationActionType
+import ru.stohastika.sklyanka.domain.analytics.NoOpAnalytics
+import ru.stohastika.sklyanka.domain.medication.ArchiveOutcome
 import ru.stohastika.sklyanka.domain.medication.CourseCompletion
 import ru.stohastika.sklyanka.domain.medication.CourseProgress
 import ru.stohastika.sklyanka.domain.medication.DayCell
@@ -53,6 +58,8 @@ class MedicationCardViewModel @Inject constructor(
     private val intakes: IntakeRepository,
     private val operations: MedCardOperations,
     private val time: TimeSource,
+    /** Канал событий аналитики (SKL-82): нулевое умолчание — для ручной сборки в тестах. */
+    private val analytics: Analytics = NoOpAnalytics,
 ) : ViewModel() {
 
     private val medicationId = MutableStateFlow<String?>(null)
@@ -151,7 +158,11 @@ class MedicationCardViewModel @Inject constructor(
     private fun archive(reason: ArchiveReason) {
         val id = medicationId.value ?: return
         viewModelScope.launch {
-            operations.archive(id, reason)
+            val outcome = operations.archive(id, reason)
+            // Повторная архивация ничего не пишет (ИНВ-9) — и событием не отмечается.
+            if (outcome is ArchiveOutcome.Archived) {
+                analytics.track(AnalyticsEvent.MedicationAction(MedicationActionType.ARCHIVED, mode = null))
+            }
             // Человек возвращается в список лекарств; карточку закрывает маршрут.
             local.value = local.value.copy(closed = true)
         }

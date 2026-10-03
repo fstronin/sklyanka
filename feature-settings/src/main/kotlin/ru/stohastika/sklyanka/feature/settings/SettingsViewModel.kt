@@ -59,6 +59,11 @@ class SettingsViewModel @Inject constructor(
      * не должно, иначе экран и файл однажды назовут разные числа.
      */
     stamp: AppStamp,
+    /**
+     * Согласие на аналитику (SKL-82): поток состояния переключателя и мгновенное
+     * выключение. Нулевое умолчание — для ручной сборки без аналитики.
+     */
+    private val analyticsConsent: AnalyticsConsentControl = AnalyticsConsentControl.NONE,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(SettingsUiState(version = stamp.versionName))
@@ -66,7 +71,22 @@ class SettingsViewModel @Inject constructor(
 
     init {
         observeProfiles(profiles, context, medications)
+        observeAnalyticsConsent()
         refresh()
+    }
+
+    /**
+     * Переключатель «Аналитика» слушает решение согласия (SKL-82).
+     *
+     * Поток, а не разовое чтение: включение и выключение происходят на другом экране
+     * или в этот же момент, и строка обязана измениться без перезахода (образец — НФТ-52).
+     */
+    private fun observeAnalyticsConsent() {
+        viewModelScope.launch {
+            analyticsConsent.observeEnabled().collect { enabled ->
+                _state.value = _state.value.copy(analyticsEnabled = enabled)
+            }
+        }
     }
 
     /**
@@ -94,9 +114,17 @@ class SettingsViewModel @Inject constructor(
             is SettingsIntent.OpenSnooze -> _state.value = _state.value.copy(snoozePickerVisible = true)
             is SettingsIntent.DismissSnooze -> _state.value = _state.value.copy(snoozePickerVisible = false)
             is SettingsIntent.SetSnooze -> setSnooze(intent.minutes)
+            // Включение сюда не доходит: его перехватывает маршрут и открывает экран
+            // согласия (ПМ-25 п. 4). Выключение — мгновенное, без экрана.
+            is SettingsIntent.SetAnalytics -> if (!intent.enabled) setAnalyticsEnabled(false)
             // Остальные намерения — переходы; их исполняет тот, кто собрал маршруты.
             else -> Unit
         }
+    }
+
+    /** Выключение аналитики: запись решения и немедленное прекращение отправки (ПМ-18). */
+    private fun setAnalyticsEnabled(enabled: Boolean) {
+        viewModelScope.launch { analyticsConsent.setEnabled(enabled) }
     }
 
     /**

@@ -45,6 +45,18 @@ sealed interface SettingsIntent {
 
     data object OpenDataTransfer : SettingsIntent
 
+    /**
+     * Переключатель «Аналитика» (ПМ-25 п. 4).
+     *
+     * Включение не срабатывает «в лоб»: маршрут открывает экран согласия, и аналитика
+     * включается только явным «Разрешить аналитику» на нём. Выключение — немедленное,
+     * сценарий исполняет модель.
+     */
+    data class SetAnalytics(val enabled: Boolean) : SettingsIntent
+
+    /** «Политика конфиденциальности» — системный переход в браузер (ОВ-123). */
+    data object OpenPolicy : SettingsIntent
+
     data object OpenToday : SettingsIntent
 
     data object OpenMedications : SettingsIntent

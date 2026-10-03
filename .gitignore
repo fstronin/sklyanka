@@ -13,6 +13,11 @@ local.properties
 *.keystore
 keystore.properties
 
+# Конфигурация вендора аналитики (SKL-82): выдаётся AppGallery Connect, подкладывается
+# извне и не коммитится — в ней идентификаторы проекта, а не код.
+agconnect-services.json
+**/agconnect-services.json
+
 # Отчёты проверок
 reports/
 

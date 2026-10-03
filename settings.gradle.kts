@@ -26,6 +26,18 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        // Аналитический контур (SKL-82, ADR-0011): единственные разрешённые сетевые
+        // зависимости вне платного контура. Репозиторий вендора ограничен его группами,
+        // чтобы «случайная» библиотека не приехала отсюда молча.
+        maven {
+            url = uri("https://developer.huawei.com/repo/")
+            content {
+                includeGroup("com.huawei.hms")
+                includeGroup("com.huawei.agconnect")
+                includeGroup("com.huawei.android.hms")
+                includeGroup("com.huawei.hmf")
+            }
+        }
     }
 }
 
@@ -40,5 +52,6 @@ include(":feature-history")
 include(":feature-settings")
 include(":core-ui")
 include(":core-data")
+include(":core-analytics")
 include(":core-domain")
 include(":acceptance")

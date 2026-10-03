@@ -633,8 +633,11 @@ class ReminderScheduleSteps(private val world: AcceptanceWorld) {
     /**
      * Журнал не покидает устройство — утверждение о сборке, а не о настроении.
      *
-     * Та же проверка, что у настроек (`SettingsContextSteps.theAppNeverReachesTheNetwork`):
-     * сетевых разрешений манифест не объявляет вовсе (ПЛ-3, НФТ-15). Копия здесь потому,
+     * Сеть в продукте есть, но только аналитическим контуром (ПЛ-3, НФТ-15, ПМ-19,
+     * SKL-82): `INTERNET` объявлен единственным сетевым разрешением, до согласия SDK
+     * не активируется, а журнал наружу не уходит ни при каких условиях (НФТ-19).
+     * Та же проверка, что у настроек (`SettingsContextSteps.theAppNeverReachesTheNetwork`)
+     * и истории: запрещены только разрешения состояния сети. Копия здесь потому,
      * что строка сценария другая, а правило сборки одно.
      */
     @Тогда("^ни одна запись журнала не передаётся за пределы устройства$")
@@ -644,12 +647,16 @@ class ReminderScheduleSteps(private val world: AcceptanceWorld) {
             .map { it.value }
             .filterNot { it.contains(REMOVE_DIRECTIVE) }
             .toList()
-        FORBIDDEN_PERMISSIONS.forEach { permission ->
+        FORBIDDEN_NETWORK_PERMISSIONS.forEach { permission ->
             assertFalse(
                 declarations.any { it.contains(permission) },
                 "the application manifest must not declare $permission (НФТ-15)",
             )
         }
+        assertTrue(
+            declarations.any { it.contains(ANALYTICS_PERMISSION) },
+            "the only network permission must be $ANALYTICS_PERMISSION, and it belongs to the analytics contour",
+        )
     }
 
     @Но("^повторного списания остатка не происходит$")
@@ -739,10 +746,11 @@ class ReminderScheduleSteps(private val world: AcceptanceWorld) {
         const val MANIFEST = "app/src/main/AndroidManifest.xml"
         const val USES_PERMISSION = "<uses-permission[^>]*>"
         const val REMOVE_DIRECTIVE = "tools:node=\"remove\""
+        const val ANALYTICS_PERMISSION = "android.permission.INTERNET"
 
-        val FORBIDDEN_PERMISSIONS = listOf(
-            "android.permission.INTERNET",
+        val FORBIDDEN_NETWORK_PERMISSIONS = listOf(
             "android.permission.ACCESS_NETWORK_STATE",
+            "android.permission.ACCESS_WIFI_STATE",
         )
     }
 }

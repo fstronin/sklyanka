@@ -67,4 +67,20 @@
     <string name="cd_setup_confirmed">Schritt von Ihnen bestätigt</string>
     <string name="cd_onboarding_hint">Indirektes Zeichen</string>
     <string name="cd_onboarding_steps">Schritt %1$d von %2$d</string>
+
+    <!-- Analyse (SKL-82, PM-25, OV-123) -->
+
+    <string name="consent_title">Analyse in „Sklyanka“</string>
+    <string name="consent_lead">Anonyme Statistiken helfen, Unbequemes zu erkennen und die App zu verbessern.</string>
+    <string name="consent_sent_title">Was gesendet wird</string>
+    <string name="consent_sent_body">Aktionen in der App: welche Bildschirme Sie öffnen, was Sie antippen, wie Sie den ersten Start durchlaufen.</string>
+    <string name="consent_not_sent_title">Was nie gesendet wird</string>
+    <string name="consent_not_sent_body">Medikamentennamen, Dosierungen, Zeitpläne und Einnahmezeiten, Markierungen, Bestände, Profilnamen und alles, was Sie selbst eingeben. Diese Daten bleiben nur auf Ihrem Gerät.</string>
+    <string name="consent_variants_title">Bildschirmvarianten</string>
+    <string name="consent_variants_body">Verschiedene Personen können unterschiedliche Varianten von Layouts und Texten sehen. Erinnerungen und Ihre Daten sind nicht betroffen.</string>
+    <string name="consent_banner">Bis Sie zustimmen, sendet die App kein einziges Ereignis. Eine Ablehnung blockiert nichts, und Sie können Ihre Entscheidung in den Einstellungen ändern.</string>
+    <string name="consent_allow">Analyse erlauben</string>
+    <string name="consent_decline">Ohne Analyse fortfahren</string>
+    <string name="consent_decline_settings">Deaktiviert lassen</string>
+    <string name="consent_policy">Datenschutzerklärung</string>
 </resources>

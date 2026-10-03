@@ -322,10 +322,18 @@ class ScreenStandSteps {
 
     @Тогда("сетевого разрешения в собранном приложении нет")
     fun thereIsNoNetworkPermission() {
-        val check = File(RepositoryLayout.root, MANIFEST_CHECK).readText()
+        // После SKL-82 сеть разрешена ровно одному контуру (ПЛ-3, НФТ-15): проверка
+        // по-прежнему обязана требовать INTERNET и запрещать разрешения состояния сети.
+        // Список правил живёт одним местом — AnalyticsContourRules; стенд проверок
+        // не приносит в сборку ни одного своего разрешения.
+        val rules = File(RepositoryLayout.root, CONTOUR_RULES).readText()
         FORBIDDEN_PERMISSIONS.forEach { permission ->
-            assertTrue(check.contains(permission), "the manifest check must still forbid $permission")
+            assertTrue(rules.contains(permission), "the contour rules must still forbid $permission")
         }
+        assertTrue(
+            rules.contains(ANALYTICS_PERMISSION),
+            "the contour rules must require $ANALYTICS_PERMISSION",
+        )
     }
 
     @Тогда("артефактов сервисов Google в зависимостях нет")
@@ -566,6 +574,7 @@ class ScreenStandSteps {
         const val COMPONENT_STATES =
             "core-ui/src/main/kotlin/ru/stohastika/sklyanka/ui/component/ComponentStates.kt"
         const val CONVENTION = "build-logic/convention/src/main/kotlin/ru/stohastika/sklyanka/gradle"
+        const val CONTOUR_RULES = "$CONVENTION/AnalyticsContourRules.kt"
         const val PROJECT_CHECKS = "$CONVENTION/ProjectChecksConventionPlugin.kt"
         const val SCREEN_CONVENTION = "$CONVENTION/ScreenTestsConventionPlugin.kt"
         const val ROBOLECTRIC_CONFIG_TASK = "$CONVENTION/WriteRobolectricConfigTask.kt"
@@ -631,9 +640,10 @@ class ScreenStandSteps {
         val STAND_VERSIONS = listOf("robolectric", "robolectricAndroidAll", "roborazzi")
         val VERSION_LITERALS = listOf("org.robolectric:", "io.github.takahirom.roborazzi:")
         val FORBIDDEN_PERMISSIONS = listOf(
-            "android.permission.INTERNET",
             "android.permission.ACCESS_NETWORK_STATE",
+            "android.permission.ACCESS_WIFI_STATE",
         )
+        const val ANALYTICS_PERMISSION = "android.permission.INTERNET"
         val FORBIDDEN_GROUPS = listOf(
             "com.google.android.gms",
             "com.google.firebase",

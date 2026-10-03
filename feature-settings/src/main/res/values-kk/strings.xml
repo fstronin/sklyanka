@@ -169,4 +169,10 @@
     <string name="profile_delete_result_active">Сіздің бейініңіз белсенді болды</string>
     <string name="profile_delete_no_space">Орын жеткіліксіз. Файл сақталмады, бейін жойылмады.</string>
     <string name="profile_delete_no_picker">Құрылғыда файл таңдайтын қолданба жоқ. Онсыз көшіру файлын сақтау мүмкін емес.</string>
+
+    <!-- Деректер бөліміндегі аналитика (SKL-82, PM-25, OV-123) -->
+
+    <string name="settings_analytics">Аналитика</string>
+    <string name="settings_analytics_caption">Анонимді статистика: қосымшадағы әрекеттер; медициналық деректер жіберілмейді</string>
+    <string name="settings_policy">Құпиялылық саясаты</string>
 </resources>

@@ -10,6 +10,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -20,6 +21,9 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import ru.stohastika.sklyanka.domain.analytics.Analytics
+import ru.stohastika.sklyanka.domain.analytics.AnalyticsEvent
+import ru.stohastika.sklyanka.domain.analytics.ConsentSource
 import ru.stohastika.sklyanka.domain.intake.UndoableMarkStore
 import ru.stohastika.sklyanka.domain.onboarding.OnboardingSource
 import ru.stohastika.sklyanka.domain.onboarding.ShouldShowOnboardingUseCase
@@ -31,10 +35,13 @@ import ru.stohastika.sklyanka.feature.meds.card.MedicationCardViewModel
 import ru.stohastika.sklyanka.feature.meds.form.MedicationFormViewModel
 import ru.stohastika.sklyanka.feature.meds.list.MedicationListViewModel
 import ru.stohastika.sklyanka.feature.onboarding.DeliveryCheckEntry
+import ru.stohastika.sklyanka.feature.onboarding.OnboardingExit
 import ru.stohastika.sklyanka.feature.onboarding.OnboardingViewModel
 import ru.stohastika.sklyanka.feature.onboarding.PermissionsActivity
 import ru.stohastika.sklyanka.feature.onboarding.PermissionsRoute
 import ru.stohastika.sklyanka.feature.onboarding.SystemSettingsNavigator
+import ru.stohastika.sklyanka.feature.onboarding.consent.ConsentRoute
+import ru.stohastika.sklyanka.feature.onboarding.consent.ConsentViewModel
 import ru.stohastika.sklyanka.feature.reminder.DeliveryCheckNotice
 import ru.stohastika.sklyanka.feature.reminder.DiagnosticsActivity
 import ru.stohastika.sklyanka.feature.reminder.ReminderOutageNotice
@@ -54,6 +61,7 @@ import ru.stohastika.sklyanka.navigation.MedsViewModels
 import ru.stohastika.sklyanka.navigation.RootLayer
 import ru.stohastika.sklyanka.navigation.RootNavigation
 import ru.stohastika.sklyanka.navigation.RootTab
+import ru.stohastika.sklyanka.navigation.ScreenViews
 import ru.stohastika.sklyanka.navigation.SettingsDestination
 import ru.stohastika.sklyanka.navigation.SettingsSection
 import ru.stohastika.sklyanka.navigation.SettingsViewModels
@@ -63,6 +71,7 @@ import ru.stohastika.sklyanka.platform.startup.StartupRouter
 import ru.stohastika.sklyanka.reminder.DeliveryCheckAnnouncer
 import ru.stohastika.sklyanka.reminder.ReminderOutageAnnouncer
 import ru.stohastika.sklyanka.startup.StartDestination
+import ru.stohastika.sklyanka.startup.StartupDecision
 import ru.stohastika.sklyanka.startup.StartupFrames
 import ru.stohastika.sklyanka.startup.startupFrame
 import ru.stohastika.sklyanka.ui.locale.withInterfaceLocale
@@ -179,12 +188,28 @@ class MainActivity : ComponentActivity() {
     private val rootNavigation = RootNavigation()
 
     /**
+     * Канал событий аналитики (SKL-82).
+     *
+     * `screen_view` отправляется из одной точки — корня приложения: состояние навигации
+     * видно только здесь, а гейт согласия решает, дойдёт ли событие до вендора.
+     */
+    @Inject
+    lateinit var analytics: Analytics
+
+    /**
      * Экран разрешений поверх «Сегодня» (НАП-21, SKL-29).
      *
      * Поле активности, а не `remember` композиции: возврат под живым окном отмены обязан
      * закрыть этот экран из `onResume`, иначе «Сегодня» осталось бы под ним (SKL-43).
      */
     private var permissionsFromToday by mutableStateOf(false)
+
+    /**
+     * Включение аналитики из настроек открывает тот же экран согласия поверх корня
+     * (ПМ-25 п. 4); после решения возвращаемся в настройки. Поле активности, а не
+     * `remember`: экран показывает корень, а открывает его строка настроек.
+     */
+    private var analyticsConsentFromSettings by mutableStateOf(false)
 
     private val onboarding: OnboardingViewModel by viewModels()
     private val today: TodayViewModel by viewModels()
@@ -196,6 +221,12 @@ class MainActivity : ComponentActivity() {
     private val history: HistoryViewModel by viewModels()
     private val transfer: DataTransferViewModel by viewModels()
     private val deleteProfile: DeleteProfileViewModel by viewModels()
+
+    /**
+     * Экран согласия на аналитику — один на первый запуск и на включение из настроек
+     * (ПМ-25 п. 4): модель одна, источник показа решает сценарий и подписи.
+     */
+    private val consent: ConsentViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
@@ -214,8 +245,12 @@ class MainActivity : ComponentActivity() {
         // на «Сегодня» уже после появления окна.
         val addMedicationRequested = rootNavigation.openFromLaunch(intent?.action)
 
-        var destination by mutableStateOf<StartDestination?>(null)
+        var decision by mutableStateOf<StartupDecision?>(null)
         var onboardingUnseen by mutableStateOf(false)
+        // Решение согласия принято в этом запуске: экран закрывается, дальше — обычный
+        // маршрут запуска (онбординг разрешений или корень), поэтому «флаг» не съедает
+        // онбординг.
+        var consentDone by mutableStateOf(false)
         // Системный кадр приложение не удерживает: на Android 12+ платформа держит его
         // до первого кадра приложения и снимает сама — это и есть передача кадра.
         // `setKeepOnScreenCondition` только отложил бы снятие, а завязанный на отрисовку
@@ -225,7 +260,7 @@ class MainActivity : ComponentActivity() {
             // один раз, и второе чтение дало бы другой ответ — первый запуск перестаёт
             // быть первым сразу после отметки.
             onboardingUnseen = shouldShowOnboarding()
-            destination = startupRouter.resolve()
+            decision = startupRouter.resolve(shortcutLaunch = addMedicationRequested)
         }
 
         setContent {
@@ -241,56 +276,113 @@ class MainActivity : ComponentActivity() {
                 // «Сегодня» (TodayUiState.Opening) мелькнуть не может (ОВ-87).
                 StartupFrames(
                     frame = startupFrame(
-                        destination = destination,
+                        destination = decision?.destination,
                         onboardingUnseen = onboardingUnseen,
                         onboardingDone = onboardingDone,
                         today = todayState,
+                        consentPending = decision?.consentPending == true,
+                        consentDone = consentDone,
                     ),
                 ) {
-                    when {
-                        // Экран разрешений EMUI (SKL-14): запуск, на котором с разрешениями
-                        // непорядок, начинается с него — но только пока человек этого экрана
-                        // не видел. Решение и его причина уже записаны в журнал запуска.
-                        // Ярлык «Добавить лекарство» перебивает самопоказ (SKL-80): человек
-                        // уже сказал, зачем пришёл; разрешения остаются баннером и настройками.
-                        destination == StartDestination.Onboarding &&
-                            onboardingUnseen &&
-                            !onboardingDone &&
-                            !addMedicationRequested ->
-                            PermissionsRoute(
-                                viewModel = onboarding,
-                                source = OnboardingSource.FIRST_LAUNCH,
-                                // Экран подключения часов — SKL-17, и его ещё нет. Исход
-                                // OnboardingExit.WATCH_SETUP вычисляется и попадает в журнал, но
-                                // ведёт туда же, куда пропуск: на «Сегодня». Обещать экран, которого
-                                // нет, хуже, чем не обещать ничего, — критерий приёмки 20 закрывается
-                                // вместе с SKL-17 одной строкой здесь.
-                                onExit = { onboardingDone = true },
-                                onCheckDelivery = { startActivity(deliveryCheckEntry.intentFor(this)) },
-                            )
-
-                        // «Настроить» в предупреждении на «Сегодня» — тот же экран разрешений,
-                        // что при первом запуске, но с источником TODAY_WARNING: индикатора
-                        // шагов на нём нет (НАП-21, критерий приёмки 4 SKL-29). Человек
-                        // возвращается на «Сегодня» — оттуда он и пришёл.
-                        permissionsFromToday -> PermissionsRoute(
-                            viewModel = onboarding,
-                            source = OnboardingSource.TODAY_WARNING,
-                            onExit = { permissionsFromToday = false },
-                            onCheckDelivery = { startActivity(deliveryCheckEntry.intentFor(this)) },
-                        )
-
-                        // Оформление активного профиля — вокруг всего, что человек видит
-                        // в контексте профиля (ПРФ-12). Заставка и экран разрешений в него
-                        // не входят: профиля на них ещё нет, а на первом запуске он всегда
-                        // свой.
-                        else -> ProfileChrome(profileChrome()) {
-                            OutageNotice()
-                            DeliveryCheckBanner()
-                            Root(onOpenPermissions = { permissionsFromToday = true })
-                        }
-                    }
+                    LaunchRouting(
+                        decision = decision,
+                        consentDone = consentDone,
+                        consentFromSettings = analyticsConsentFromSettings,
+                        onboardingUnseen = onboardingUnseen,
+                        onboardingDone = onboardingDone,
+                        addMedicationRequested = addMedicationRequested,
+                        onConsentDecided = { consentDone = true },
+                        onSettingsConsentDecided = {
+                            analyticsConsentFromSettings = false
+                            settings.refresh()
+                        },
+                        onOnboardingDone = { onboardingDone = true },
+                    )
                 }
+            }
+        }
+    }
+
+    /**
+     * Первый экран запуска: согласие, разрешения или корень приложения.
+     *
+     * Вынесено из `onCreate` отдельной функцией, потому что решений здесь три и каждое
+     * со своей причиной; `onCreate` остаётся сборкой состояния. Согласие — шаг перед
+     * онбордингом, а не альтернатива ему: после решения показывается то, что решил бы
+     * обычный маршрут (ПМ-25).
+     */
+    @Composable
+    @Suppress("LongParameterList")
+    private fun LaunchRouting(
+        decision: StartupDecision?,
+        consentDone: Boolean,
+        consentFromSettings: Boolean,
+        onboardingUnseen: Boolean,
+        onboardingDone: Boolean,
+        addMedicationRequested: Boolean,
+        onConsentDecided: () -> Unit,
+        onSettingsConsentDecided: () -> Unit,
+        onOnboardingDone: (OnboardingExit) -> Unit,
+    ) {
+        when {
+            // Согласие — первый экран первого запуска (ПМ-25): после него показывается
+            // онбординг разрешений, если человек его ещё не видел.
+            decision?.consentPending == true && !consentDone -> ConsentRoute(
+                viewModel = consent,
+                // Устаревшая версия текста называется повторным информированием, а не
+                // первым запуском (ПМ-27): по источнику считается доля отказа.
+                source = decision.consentSource ?: ConsentSource.FIRST_LAUNCH,
+                onDecided = onConsentDecided,
+            )
+
+            // Включение аналитики из настроек: тот же экран, источник `settings`;
+            // после решения возвращаемся в настройки и перечитываем переключатель.
+            consentFromSettings -> ConsentRoute(
+                viewModel = consent,
+                source = ConsentSource.SETTINGS,
+                onDecided = onSettingsConsentDecided,
+            )
+
+            // Экран разрешений EMUI (SKL-14): запуск, на котором с разрешениями
+            // непорядок, начинается с него — но только пока человек этого экрана
+            // не видел. Решение и его причина уже записаны в журнал запуска.
+            // Ярлык «Добавить лекарство» перебивает самопоказ (SKL-80): человек
+            // уже сказал, зачем пришёл; разрешения остаются баннером и настройками.
+            decision?.destination == StartDestination.Onboarding &&
+                onboardingUnseen &&
+                !onboardingDone &&
+                !addMedicationRequested ->
+                PermissionsRoute(
+                    viewModel = onboarding,
+                    source = OnboardingSource.FIRST_LAUNCH,
+                    // Экран подключения часов — SKL-17, и его ещё нет. Исход
+                    // OnboardingExit.WATCH_SETUP вычисляется и попадает в журнал, но
+                    // ведёт туда же, куда пропуск: на «Сегодня». Обещать экран, которого
+                    // нет, хуже, чем не обещать ничего, — критерий приёмки 20 закрывается
+                    // вместе с SKL-17 одной строкой здесь.
+                    onExit = onOnboardingDone,
+                    onCheckDelivery = { startActivity(deliveryCheckEntry.intentFor(this)) },
+                )
+
+            // «Настроить» в предупреждении на «Сегодня» — тот же экран разрешений,
+            // что при первом запуске, но с источником TODAY_WARNING: индикатора
+            // шагов на нём нет (НАП-21, критерий приёмки 4 SKL-29). Человек
+            // возвращается на «Сегодня» — оттуда он и пришёл.
+            permissionsFromToday -> PermissionsRoute(
+                viewModel = onboarding,
+                source = OnboardingSource.TODAY_WARNING,
+                onExit = { permissionsFromToday = false },
+                onCheckDelivery = { startActivity(deliveryCheckEntry.intentFor(this)) },
+            )
+
+            // Оформление активного профиля — вокруг всего, что человек видит
+            // в контексте профиля (ПРФ-12). Заставка и экран разрешений в него
+            // не входят: профиля на них ещё нет, а на первом запуске он всегда
+            // свой.
+            else -> ProfileChrome(profileChrome()) {
+                OutageNotice()
+                DeliveryCheckBanner()
+                Root(onOpenPermissions = { permissionsFromToday = true })
             }
         }
     }
@@ -446,6 +538,11 @@ class MainActivity : ComponentActivity() {
             motion = rootNavigation.rootMotion,
             modifier = Modifier.fillMaxSize(),
         ) { layer ->
+            // Открытие экрана — одно событие на смену слоя, а не на рекомпозицию (SKL-82):
+            // значения берутся из закрытого каталога, до согласия гейт события не пускает.
+            LaunchedEffect(layer) {
+                analytics.track(AnalyticsEvent.ScreenView(ScreenViews.of(layer)))
+            }
             when (layer) {
                 // История, открытая с «Сегодня» (ОВ-84, SKL-31): тот же второй уровень, что
                 // из настроек, но место входа — строка прогресса дня. Ветка стоит рядом
@@ -480,6 +577,9 @@ class MainActivity : ComponentActivity() {
                         rootNavigation.openTab(RootTab.SETTINGS)
                     },
                     initial = layer.entry,
+                    onScreenShown = { destination ->
+                        analytics.track(AnalyticsEvent.ScreenView(ScreenViews.of(destination)))
+                    },
                 )
 
                 RootLayer.Settings -> SettingsRoute(
@@ -513,6 +613,10 @@ class MainActivity : ComponentActivity() {
         openDiagnostics = { startActivity(DiagnosticsActivity.intentFor(this)) },
         openHistory = { rootNavigation.openSection(SettingsDestination.HISTORY) },
         openDataTransfer = { rootNavigation.openSection(SettingsDestination.TRANSFER) },
+        // Включение аналитики — осознанное действие: открывается тот же экран согласия
+        // с текущей версией текста, сбор включается только после «Разрешить аналитику»
+        // (ПМ-25 п. 4, уточнение 03.10.2026).
+        openAnalyticsConsent = { analyticsConsentFromSettings = true },
         // «Удалить профиль «Имя»» — экран второго уровня настроек (ОВ-7, SKL-36).
         // Строка появляется только у активного чужого профиля, и «Готово»
         // возвращает в настройки — туда, откуда человек пришёл.

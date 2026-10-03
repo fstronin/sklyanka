@@ -130,6 +130,7 @@ class ProjectChecksConventionPlugin : Plugin<Project> {
             ":app",
             ":core-ui",
             ":core-data",
+            ":core-analytics",
             ":feature-today",
             ":feature-meds",
             ":feature-reminder",

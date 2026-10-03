@@ -4,6 +4,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.stringResource
 
 /**
  * Экран настроек вместе с его состоянием.
@@ -15,6 +17,8 @@ import androidx.compose.ui.Modifier
 @Composable
 fun SettingsRoute(viewModel: SettingsViewModel, navigation: SettingsNavigation, modifier: Modifier = Modifier) {
     val state by viewModel.state.collectAsState()
+    val uriHandler = LocalUriHandler.current
+    val policyUrl = stringResource(R.string.settings_policy_url)
     SettingsScreen(
         state = state,
         onIntent = { intent ->
@@ -30,6 +34,13 @@ fun SettingsRoute(viewModel: SettingsViewModel, navigation: SettingsNavigation, 
                 SettingsIntent.OpenPermissions -> navigation.openDiagnostics()
                 SettingsIntent.OpenHistory -> navigation.openHistory()
                 SettingsIntent.OpenDataTransfer -> navigation.openDataTransfer()
+                // Включение аналитики — информированное действие: тот же экран согласия,
+                // что при первом запуске (ПМ-25 п. 4). Выключение исполняет модель.
+                is SettingsIntent.SetAnalytics ->
+                    if (intent.enabled) navigation.openAnalyticsConsent() else viewModel.onIntent(intent)
+                // Политику открывает браузер системным действием: своего просмотрщика
+                // в приложении нет (ОВ-123).
+                SettingsIntent.OpenPolicy -> uriHandler.openUri(policyUrl)
                 SettingsIntent.OpenToday -> navigation.openToday()
                 SettingsIntent.OpenMedications -> navigation.openMedications()
                 else -> viewModel.onIntent(intent)
@@ -81,6 +92,13 @@ data class SettingsNavigation(
     val openDiagnostics: () -> Unit = {},
     val openHistory: () -> Unit = {},
     val openDataTransfer: () -> Unit = {},
+    /**
+     * Включение «Аналитики»: открыть экран согласия (ПМ-25 п. 4).
+     *
+     * Экран один и тот же на первый запуск и на настройки; хозяин навигации решает,
+     * что это за вход и куда вернуться после решения.
+     */
+    val openAnalyticsConsent: () -> Unit = {},
     val openToday: () -> Unit = {},
     val openMedications: () -> Unit = {},
 )

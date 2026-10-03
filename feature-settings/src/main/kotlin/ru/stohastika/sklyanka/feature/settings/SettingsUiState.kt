@@ -38,6 +38,13 @@ data class SettingsUiState(
     val snoozePickerVisible: Boolean = false,
     val watch: WatchLinkState = WatchLinkState.NotConfigured,
     val permissions: PermissionsSummary = PermissionsSummary(),
+    /**
+     * Переключатель «Аналитика» (SKL-82, ОВ-123).
+     *
+     * Показывает решение [ru.stohastika.sklyanka.domain.analytics.AnalyticsConsent.sendingAllowed]:
+     * «не спрошено», отказ и устаревшая версия текста читаются как выключено.
+     */
+    val analyticsEnabled: Boolean = false,
     /** Версия приложения — та, что собрана, а не та, что нарисована в макете. */
     val version: String = "",
 )

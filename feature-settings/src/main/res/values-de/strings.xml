@@ -169,4 +169,10 @@
     <string name="profile_delete_result_active">Ihr Profil ist jetzt aktiv</string>
     <string name="profile_delete_no_space">Nicht genug Speicherplatz. Die Datei wurde nicht gespeichert, das Profil nicht gelöscht.</string>
     <string name="profile_delete_no_picker">Auf dem Gerät gibt es keine App zur Dateiauswahl. Die Übertragungsdatei kann ohne sie nicht gespeichert werden.</string>
+
+    <!-- Analyse im Datenbereich (SKL-82, PM-25, OV-123) -->
+
+    <string name="settings_analytics">Analyse</string>
+    <string name="settings_analytics_caption">Anonyme Statistiken: Aktionen in der App; medizinische Daten werden nicht gesendet</string>
+    <string name="settings_policy">Datenschutzerklärung</string>
 </resources>

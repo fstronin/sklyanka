@@ -16,6 +16,9 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import ru.stohastika.sklyanka.domain.analytics.Analytics
+import ru.stohastika.sklyanka.domain.analytics.AnalyticsEvent
+import ru.stohastika.sklyanka.domain.analytics.ScreenName
 import ru.stohastika.sklyanka.domain.reminder.port.NotificationGateway
 import ru.stohastika.sklyanka.ui.locale.withInterfaceLocale
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
@@ -37,6 +40,10 @@ class DeliveryCheckActivity : ComponentActivity() {
     @Inject
     lateinit var notifications: NotificationGateway
 
+    /** Канал событий: экран — отдельная Activity, и корень приложения его не видит (SKL-82). */
+    @Inject
+    lateinit var analytics: Analytics
+
     override fun attachBaseContext(base: Context) {
         super.attachBaseContext(base.withInterfaceLocale())
     }
@@ -56,6 +63,7 @@ class DeliveryCheckActivity : ComponentActivity() {
             finish()
             return
         }
+        analytics.track(AnalyticsEvent.ScreenView(ScreenName.DELIVERY_CHECK))
         setContent {
             SklyankaTheme(dark = true) {
                 var closing by remember { mutableStateOf(false) }

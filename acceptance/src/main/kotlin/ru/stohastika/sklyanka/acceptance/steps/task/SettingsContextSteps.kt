@@ -121,11 +121,13 @@ class SettingsContextSteps(private val world: AcceptanceWorld) {
     // --- Приватность ---------------------------------------------------------------------------
 
     /**
-     * Сети нет ни на одном шаге — утверждение о сборке, а не о настроении.
+     * Настройки наружу ничего не отправляют — утверждение о сборке, а не о настроении.
      *
-     * Приложение не объявляет сетевых разрешений вовсе (ПЛ-3, НФТ-15), а конвейер валит
-     * сборку при их появлении; разрешение, приехавшее из чужого манифеста, снимается явно
-     * (`tools:node="remove"`). Та же проверка, что в шаге истории («отчёт… без сети»).
+     * Сеть в продукте есть, но только аналитическим контуром (ПЛ-3, НФТ-15, ПМ-19,
+     * SKL-82): `INTERNET` объявлен единственным сетевым разрешением, до согласия
+     * SDK не активируется и запросов нет, а разрешения состояния сети запрещены
+     * и проверяются конвейером. Разрешение, приехавшее из чужого манифеста, снимается
+     * явно (`tools:node="remove"`); та же проверка, что у истории и журнала.
      */
     @Тогда("^приложение не делает ни одного сетевого обращения$")
     fun theAppNeverReachesTheNetwork() {
@@ -134,12 +136,16 @@ class SettingsContextSteps(private val world: AcceptanceWorld) {
             .map { it.value }
             .filterNot { it.contains(REMOVE_DIRECTIVE) }
             .toList()
-        FORBIDDEN_PERMISSIONS.forEach { permission ->
+        FORBIDDEN_NETWORK_PERMISSIONS.forEach { permission ->
             assertFalse(
                 declarations.any { it.contains(permission) },
                 "the application manifest must not declare $permission (НФТ-15)",
             )
         }
+        assertTrue(
+            declarations.any { it.contains(ANALYTICS_PERMISSION) },
+            "the only network permission must be $ANALYTICS_PERMISSION, and it belongs to the analytics contour",
+        )
     }
 
     private companion object {
@@ -148,10 +154,11 @@ class SettingsContextSteps(private val world: AcceptanceWorld) {
         const val MANIFEST = "app/src/main/AndroidManifest.xml"
         const val USES_PERMISSION = "<uses-permission[^>]*>"
         const val REMOVE_DIRECTIVE = "tools:node=\"remove\""
+        const val ANALYTICS_PERMISSION = "android.permission.INTERNET"
 
-        val FORBIDDEN_PERMISSIONS = listOf(
-            "android.permission.INTERNET",
+        val FORBIDDEN_NETWORK_PERMISSIONS = listOf(
             "android.permission.ACCESS_NETWORK_STATE",
+            "android.permission.ACCESS_WIFI_STATE",
         )
 
         val OWN_INTAKE_TIME: LocalTime = LocalTime.of(12, 0)

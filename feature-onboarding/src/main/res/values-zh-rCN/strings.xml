@@ -67,4 +67,20 @@
     <string name="cd_setup_confirmed">步骤已由您确认</string>
     <string name="cd_onboarding_hint">间接标志</string>
     <string name="cd_onboarding_steps">第 %1$d 步，共 %2$d 步</string>
+
+    <!-- 分析（SKL-82、PM-25、OV-123） -->
+
+    <string name="consent_title">“Sklyanka” 中的分析</string>
+    <string name="consent_lead">匿名统计有助于发现不便之处并改进应用。</string>
+    <string name="consent_sent_title">发送的内容</string>
+    <string name="consent_sent_body">应用中的操作：您打开哪些页面、点击什么、如何完成首次启动。</string>
+    <string name="consent_not_sent_title">永不发送的内容</string>
+    <string name="consent_not_sent_body">药品名称、剂量、服药计划和时间、标记、余量、档案名称以及您自己输入的所有内容。这些数据只保留在您的设备上。</string>
+    <string name="consent_variants_title">界面变体</string>
+    <string name="consent_variants_body">不同的人可能会看到不同的界面和文本变体。提醒和您的数据不受影响。</string>
+    <string name="consent_banner">在您允许之前，应用不会发送任何事件。拒绝不会阻挡任何功能，您可以随时在设置中更改决定。</string>
+    <string name="consent_allow">允许分析</string>
+    <string name="consent_decline">不启用分析继续</string>
+    <string name="consent_decline_settings">保持关闭</string>
+    <string name="consent_policy">隐私政策</string>
 </resources>

@@ -3,6 +3,8 @@
 // Варианты сборки и подпись — sklyanka.release.signing (TDD §4.3).
 // Проверки состава собранного артефакта — sklyanka.artifact.checks (TDD §5.5).
 
+import java.util.Properties
+
 plugins {
     id("sklyanka.android.application")
     id("sklyanka.android.compose")
@@ -23,6 +25,37 @@ plugins {
 val reminderMeasurement: Boolean =
     (project.findProperty("sklyanka.reminderMeasurement") as String?)?.toBoolean() ?: false
 
+/**
+ * Конфигурация вендора аналитики (SKL-82, TDD §12.6, ПМ-18).
+ *
+ * `agconnect-services.json` — идентификаторы проекта AppGallery Connect; файл лежит вне git
+ * и подкладывается извне. Путь задаётся Gradle-свойством
+ * `sklyanka.agconnect.servicesDir` или ключом `agconnect.servicesDir` в `local.properties`.
+ * Отсутствие файла — не отказ сборки: контур честно молчит (аналитический SDK не найдёт
+ * конфигурацию и события дропнутся), а наличие — предусловие публикации SKL-22.
+ */
+val agconnectServicesDir: File? = resolveAgconnectServicesDir()
+val agconnectServicesFile: File? = agconnectServicesDir?.resolve("agconnect-services.json")
+
+fun resolveAgconnectServicesDir(): File? {
+    val raw = providers.gradleProperty("sklyanka.agconnect.servicesDir").orNull
+        ?: rootProject.file("local.properties")
+            .takeIf { it.isFile }
+            ?.let { file ->
+                Properties().apply { file.inputStream().use { load(it) } }
+                    .getProperty("agconnect.servicesDir")
+            }
+        ?: return null
+    return rootProject.file(raw)
+}
+
+if (agconnectServicesFile?.isFile != true) {
+    logger.lifecycle(
+        "analytics vendor config is absent: the analytics contour stays silent " +
+            "(provide sklyanka.agconnect.servicesDir to enable it; see SKL-82 TDD 12.6)",
+    )
+}
+
 android {
     namespace = "ru.stohastika.sklyanka"
     buildFeatures {
@@ -31,12 +64,22 @@ android {
     defaultConfig {
         buildConfigField("boolean", "REMINDER_MEASUREMENT", reminderMeasurement.toString())
     }
+    sourceSets {
+        getByName("main") {
+            // Каталог вендора становится assets только когда файл действительно есть:
+            // пустой srcDir ломал бы сборку на чистой машине.
+            agconnectServicesDir?.takeIf { agconnectServicesFile?.isFile == true }?.let { assets.srcDir(it) }
+        }
+    }
 }
 
 dependencies {
     implementation(project(":core-domain"))
     implementation(project(":core-ui"))
     implementation(project(":core-data"))
+    // Аналитический контур (SKL-82): порт объявлен доменом, адаптер вендора живёт здесь,
+    // чтобы граф Hilt приложения поднял его и гейты проверяли один и тот же состав.
+    implementation(project(":core-analytics"))
     implementation(project(":feature-today"))
     // Список, форма, карточка лекарства и архив курсов (SKL-09, SKL-10, SKL-11).
     implementation(project(":feature-meds"))

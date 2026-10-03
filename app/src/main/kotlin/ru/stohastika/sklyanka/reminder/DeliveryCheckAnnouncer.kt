@@ -3,6 +3,10 @@ package ru.stohastika.sklyanka.reminder
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import ru.stohastika.sklyanka.domain.analytics.Analytics
+import ru.stohastika.sklyanka.domain.analytics.AnalyticsEvent
+import ru.stohastika.sklyanka.domain.analytics.DeliveryCheckOutcome
+import ru.stohastika.sklyanka.domain.analytics.NoOpAnalytics
 import ru.stohastika.sklyanka.domain.reminder.AcknowledgeDeliveryCheckUseCase
 import ru.stohastika.sklyanka.domain.reminder.DeliveryCheckRule
 import ru.stohastika.sklyanka.domain.reminder.DeliveryCheckState
@@ -10,6 +14,7 @@ import ru.stohastika.sklyanka.domain.reminder.FinishDeliveryCheckOnEntryUseCase
 import ru.stohastika.sklyanka.domain.reminder.port.DeliveryCheckAcknowledgements
 import javax.inject.Inject
 import javax.inject.Singleton
+import ru.stohastika.sklyanka.domain.reminder.DeliveryCheckOutcome as ReminderDeliveryCheckOutcome
 
 /**
  * Объявление результата самопроверки доставки при входе (SKL-86, ОВ-108).
@@ -32,6 +37,8 @@ class DeliveryCheckAnnouncer @Inject constructor(
     private val finishCheck: FinishDeliveryCheckOnEntryUseCase,
     private val acknowledgeCheck: AcknowledgeDeliveryCheckUseCase,
     private val acknowledgements: DeliveryCheckAcknowledgements,
+    /** Канал событий аналитики (SKL-82): нулевое умолчание — для ручной сборки в тестах. */
+    private val analytics: Analytics = NoOpAnalytics,
 ) {
 
     private val _current = MutableStateFlow<DeliveryCheckState.Finished?>(null)
@@ -41,7 +48,22 @@ class DeliveryCheckAnnouncer @Inject constructor(
 
     suspend fun refresh() {
         val state = finishCheck()
-        _current.value = DeliveryCheckRule.announcementOf(state, acknowledgements.announced())
+        val announcement = DeliveryCheckRule.announcementOf(state, acknowledgements.announced())
+        // Событие — один раз на проверку: объявление и есть первый момент, когда исход
+        // известен человеку, повторные входы его не повторяют.
+        announcement?.let {
+            analytics.track(AnalyticsEvent.DeliveryCheckResult(result = outcomeOf(it.outcome)))
+        }
+        _current.value = announcement
+    }
+
+    /** Исход проверки — закрытым значением каталога (ПМ-26). */
+    private fun outcomeOf(outcome: ReminderDeliveryCheckOutcome): DeliveryCheckOutcome = when (outcome) {
+        ReminderDeliveryCheckOutcome.ON_TIME -> DeliveryCheckOutcome.PASSED
+        ReminderDeliveryCheckOutcome.LATE -> DeliveryCheckOutcome.LATE
+        ReminderDeliveryCheckOutcome.NOT_DELIVERED,
+        ReminderDeliveryCheckOutcome.NOT_COMPLETED,
+        -> DeliveryCheckOutcome.FAILED
     }
 
     /** Результат доставлен: дальше он виден блоком на «Проверке напоминаний» (ОВ-108). */

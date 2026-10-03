@@ -10,12 +10,18 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import ru.stohastika.sklyanka.domain.analytics.Analytics
+import ru.stohastika.sklyanka.domain.analytics.AnalyticsEvent
+import ru.stohastika.sklyanka.domain.analytics.MedicationActionType
+import ru.stohastika.sklyanka.domain.analytics.MedicationMode
+import ru.stohastika.sklyanka.domain.analytics.NoOpAnalytics
 import ru.stohastika.sklyanka.domain.medication.MedicationDraft
 import ru.stohastika.sklyanka.domain.medication.SaveMedicationUseCase
 import ru.stohastika.sklyanka.domain.medication.SaveResult
 import ru.stohastika.sklyanka.domain.medication.ValidateMedicationDraft
 import ru.stohastika.sklyanka.domain.medication.applicability
 import ru.stohastika.sklyanka.domain.medication.normalized
+import ru.stohastika.sklyanka.domain.model.ScheduleMode
 import ru.stohastika.sklyanka.domain.repository.ActiveProfileRepository
 import ru.stohastika.sklyanka.domain.repository.MedicationRepository
 import ru.stohastika.sklyanka.domain.stock.StockThresholds
@@ -39,6 +45,11 @@ class MedicationFormViewModel @Inject constructor(
     private val medications: MedicationRepository,
     private val saveMedication: SaveMedicationUseCase,
     private val time: TimeSource,
+    /**
+     * Канал событий аналитики (SKL-82). Нулевое умолчание — для ручной сборки в тестах;
+     * гейт согласия решает, дойдёт ли событие до вендора.
+     */
+    private val analytics: Analytics = NoOpAnalytics,
 ) : ViewModel() {
 
     private val validate = ValidateMedicationDraft()
@@ -189,12 +200,26 @@ class MedicationFormViewModel @Inject constructor(
     private fun save(state: MedFormUiState) {
         viewModelScope.launch {
             when (val result = saveMedication(state.draft)) {
-                is SaveResult.Saved -> _closed.tryEmit(Unit)
+                is SaveResult.Saved -> {
+                    _closed.tryEmit(Unit)
+                    analytics.track(
+                        AnalyticsEvent.MedicationAction(
+                            action = MedicationActionType.ADDED,
+                            mode = modeOf(state.draft.scheduleMode),
+                        ),
+                    )
+                }
                 // Черновик не трогается: сохраняется всё, что человек ввёл, включая
                 // текст числовых полей, который в число не разобрался.
                 is SaveResult.Rejected -> _state.value = _state.value?.copy(violations = result.violations)
             }
         }
+    }
+
+    /** Режим приёма — закрытым значением каталога (ПМ-26). */
+    private fun modeOf(mode: ScheduleMode): MedicationMode = when (mode) {
+        ScheduleMode.SCHEDULED -> MedicationMode.SCHEDULED
+        ScheduleMode.PRN -> MedicationMode.PRN
     }
 
     /** Текст числовых полей при открытии правки: то, что уже записано. */

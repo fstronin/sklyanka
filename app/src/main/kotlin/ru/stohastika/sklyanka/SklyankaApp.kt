@@ -7,6 +7,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import ru.stohastika.sklyanka.analytics.AnalyticsBootstrap
 import ru.stohastika.sklyanka.data.log.LogRetention
 import ru.stohastika.sklyanka.data.reminder.ReminderLogRetention
 import ru.stohastika.sklyanka.data.repository.ProfileBootstrap
@@ -96,6 +97,14 @@ class SklyankaApp : Application() {
     @Inject
     lateinit var seeds: Set<@JvmSuppressWildcards StartupSeed>
 
+    /**
+     * Аналитический контур (SKL-82): при старте состояние приводится к записанному
+     * решению согласия. До согласия активации нет — как и после отказа; в debug
+     * контур не активируется никогда (ПМ-19, ПМ-28).
+     */
+    @Inject
+    lateinit var analyticsBootstrap: AnalyticsBootstrap
+
     private val startupScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onCreate() {
@@ -114,6 +123,9 @@ class SklyankaApp : Application() {
         // (bootstrap и подрезка), поэтому здесь достаточно выйти, не уронив процесс.
         if (!isUserUnlocked()) return
         startupScope.launch {
+            // Согласие перечитывается на каждом старте: решение могло быть отозвано
+            // в настройках, а версия предмета согласия — измениться обновлением.
+            analyticsBootstrap.restore()
             directBootTraceDrain.drainIntoJournal()
             profileBootstrap.ensureOwnerProfile(
                 // Имя профиля по умолчанию — текст интерфейса, и язык у него свой (НФТ-43а).

@@ -13,6 +13,9 @@ import androidx.activity.viewModels
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import dagger.hilt.android.AndroidEntryPoint
+import ru.stohastika.sklyanka.domain.analytics.Analytics
+import ru.stohastika.sklyanka.domain.analytics.AnalyticsEvent
+import ru.stohastika.sklyanka.domain.analytics.ScreenName
 import ru.stohastika.sklyanka.domain.reminder.ReminderJournalDocument
 import ru.stohastika.sklyanka.ui.locale.withInterfaceLocale
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
@@ -60,8 +63,13 @@ class DiagnosticsActivity : ComponentActivity() {
     @Inject
     lateinit var settingsFixer: ReminderSettingsFixer
 
+    /** Канал событий: экран — отдельная Activity, и корень приложения его не видит (SKL-82). */
+    @Inject
+    lateinit var analytics: Analytics
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        analytics.track(AnalyticsEvent.ScreenView(ScreenName.REMINDERS_CHECK))
         // Светлый экран — тёмные значки системных панелей (SKL-72 §4).
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.light(AndroidColor.TRANSPARENT, AndroidColor.TRANSPARENT),

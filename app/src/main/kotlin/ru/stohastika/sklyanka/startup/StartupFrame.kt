@@ -41,8 +41,13 @@ fun startupFrame(
     onboardingUnseen: Boolean,
     onboardingDone: Boolean,
     today: TodayUiState,
+    consentPending: Boolean = false,
+    consentDone: Boolean = false,
 ): StartupFrame = when {
     destination == null -> StartupFrame.AppSplash
+    // Согласие — первый экран первого запуска (ПМ-25): он готов сразу и «Сегодня»
+    // под ним не компонуется, даже если поток дня ещё не дал значения.
+    consentPending && !consentDone -> StartupFrame.FirstScreen
     destination == StartDestination.Onboarding && onboardingUnseen && !onboardingDone -> StartupFrame.FirstScreen
     today is TodayUiState.Opening -> StartupFrame.AppSplash
     else -> StartupFrame.FirstScreen

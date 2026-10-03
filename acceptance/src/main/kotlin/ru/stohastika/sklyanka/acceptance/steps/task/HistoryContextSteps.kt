@@ -424,12 +424,14 @@ class HistoryContextSteps(private val world: AcceptanceWorld) {
     }
 
     /**
-     * Сети нет ни на одном шаге, и это утверждение о сборке, а не о настроении.
+     * Сцены истории и отчёта сети не требуют, и это утверждение о сборке, а не о настроении.
      *
-     * Приложение не объявляет сетевых разрешений вовсе (ПЛ-3, НФТ-15), а конвейер
-     * валит сборку при их появлении: шаг, которому нужна была бы сеть, не собрался бы.
-     * Разрешение, приехавшее из чужого манифеста, снимается явно (`tools:node="remove"`) —
-     * так обработано `ACCESS_NETWORK_STATE` из `androidx.work`, и снятие здесь не объявление.
+     * Сеть в продукте есть, но только аналитическим контуром (ПЛ-3, НФТ-15, ПМ-19,
+     * SKL-82): `INTERNET` объявлен единственным сетевым разрешением, до согласия SDK
+     * не активируется, а отчёт и журнал не уходят наружу ни при каких условиях.
+     * Разрешения состояния сети запрещены, конвейер требует `INTERNET` вместе с контуром;
+     * разрешение, приехавшее из чужого манифеста, снимается явно (`tools:node="remove"`) —
+     * так обработано `ACCESS_NETWORK_STATE` из `androidx.work`.
      */
     @Then("^приложение не обращается в сеть ни на одном шаге$")
     fun theApplicationNeverReachesTheNetwork() {
@@ -438,19 +440,27 @@ class HistoryContextSteps(private val world: AcceptanceWorld) {
             .map { it.value }
             .filterNot { it.contains(REMOVE_DIRECTIVE) }
             .toList()
-        FORBIDDEN_PERMISSIONS.forEach { permission ->
+        FORBIDDEN_NETWORK_PERMISSIONS.forEach { permission ->
             assertFalse(
                 declarations.any { it.contains(permission) },
                 "the application manifest must not declare $permission (НФТ-15)",
             )
         }
-        val pipelineCheck = File(RepositoryLayout.root, MANIFEST_CHECK).readText()
-        FORBIDDEN_PERMISSIONS.forEach { permission ->
+        assertTrue(
+            declarations.any { it.contains(ANALYTICS_PERMISSION) },
+            "the only network permission must be $ANALYTICS_PERMISSION, and it belongs to the analytics contour",
+        )
+        val pipelineCheck = File(RepositoryLayout.root, CONTOUR_RULES).readText()
+        FORBIDDEN_NETWORK_PERMISSIONS.forEach { permission ->
             assertTrue(
                 pipelineCheck.contains(permission),
                 "the build must still fail on $permission, otherwise the absence is not guarded",
             )
         }
+        assertTrue(
+            pipelineCheck.contains(ANALYTICS_PERMISSION),
+            "the build must require $ANALYTICS_PERMISSION together with the analytics contour (SKL-82)",
+        )
     }
 
     @Then("^в локальном журнале приложения есть запись о формировании отчёта с периодом и числом записей$")
@@ -589,14 +599,15 @@ class HistoryContextSteps(private val world: AcceptanceWorld) {
         const val ARCHIVE_TIME = "12:00"
         const val SHORTEST_SENSITIVE = 1
         const val MANIFEST = "app/src/main/AndroidManifest.xml"
-        const val MANIFEST_CHECK =
-            "build-logic/convention/src/main/kotlin/ru/stohastika/sklyanka/gradle/VerifyMergedManifestTask.kt"
+        const val CONTOUR_RULES =
+            "build-logic/convention/src/main/kotlin/ru/stohastika/sklyanka/gradle/AnalyticsContourRules.kt"
         const val USES_PERMISSION = """<uses-permission[^>]*>"""
         const val REMOVE_DIRECTIVE = """tools:node="remove""""
+        const val ANALYTICS_PERMISSION = "android.permission.INTERNET"
 
-        val FORBIDDEN_PERMISSIONS = listOf(
-            "android.permission.INTERNET",
+        val FORBIDDEN_NETWORK_PERMISSIONS = listOf(
             "android.permission.ACCESS_NETWORK_STATE",
+            "android.permission.ACCESS_WIFI_STATE",
         )
         val REPORT_DETAIL = Regex("""records=\d+;medications=\d+""")
     }

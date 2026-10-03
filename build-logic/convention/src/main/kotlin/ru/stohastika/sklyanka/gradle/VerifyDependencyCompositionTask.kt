@@ -12,10 +12,16 @@ import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 
 /**
- * ПЛ-4, НФТ-39, НФТ-16: ни Google Play Services, ни Firebase, ни аналитики и крашлитики.
+ * ПЛ-4, НФТ-15/16/39: состав сетевых зависимостей варианта.
  *
- * Проверяется и каталог версий (одно место, где перечислены координаты), и фактически
- * разрешённый classpath варианта: зависимость способна приехать транзитивно.
+ * Три правила в одном отчёте:
+ * 1. запрещённые группы — GMS, Firebase, реклама и чужая аналитика — отсутствуют
+ *    и в разрешённом classpath, и в каталоге версий;
+ * 2. каждая координата `com.huawei.*` входит в белый список аналитического контура
+ *    (`AnalyticsContourRules`) — новая библиотека вендора не просачивается молча;
+ * 3. обязательная координата контура присутствует — `INTERNET` без контура не бывает.
+ *
+ * Правила вынесены в общий объект, чтобы проверка манифеста и проверка графа не разошлись.
  */
 abstract class VerifyDependencyCompositionTask : DefaultTask() {
 
@@ -35,7 +41,7 @@ abstract class VerifyDependencyCompositionTask : DefaultTask() {
         val catalogText = versionCatalog.get().asFile.readText()
 
         val problems = mutableListOf<String>()
-        FORBIDDEN_GROUPS.forEach { group ->
+        AnalyticsContourRules.FORBIDDEN_GROUPS.forEach { group ->
             resolved.filter { it.contains(group) }.forEach { hit ->
                 problems += "resolved dependency '$hit' belongs to the forbidden group '$group' " +
                     "(PLATFORM-4, NFR-39, NFR-16)"
@@ -45,6 +51,20 @@ abstract class VerifyDependencyCompositionTask : DefaultTask() {
             }
         }
 
+        val huawei = resolved.filter { it.startsWith("com.huawei.") }
+        huawei.filterNot(AnalyticsContourRules::allows).forEach { hit ->
+            problems += "resolved dependency '$hit' is outside the analytics contour white list " +
+                "(SKL-82, ADR-0011). Add it to AnalyticsContourRules consciously, or remove it."
+        }
+
+        val missing = AnalyticsContourRules.REQUIRED_COORDINATES.filterNot { required ->
+            huawei.any { it.startsWith(required) }
+        }
+        if (missing.isNotEmpty()) {
+            problems += "the analytics contour is missing required coordinates ${missing.joinToString()}: " +
+                "INTERNET is declared, but nothing may use it (PLATFORM-3, NFR-15)"
+        }
+
         val reportFile = report.get().asFile
         reportFile.parentFile.mkdirs()
         reportFile.writeText(
@@ -52,14 +72,17 @@ abstract class VerifyDependencyCompositionTask : DefaultTask() {
                 appendLine("Resolved runtime dependencies (${resolved.size}):")
                 resolved.forEach { appendLine("  $it") }
                 appendLine()
-                appendLine("Forbidden groups checked: ${FORBIDDEN_GROUPS.joinToString()}")
+                appendLine("Forbidden groups checked: ${AnalyticsContourRules.FORBIDDEN_GROUPS.joinToString()}")
+                appendLine("Analytics contour required: ${AnalyticsContourRules.REQUIRED_COORDINATES.joinToString()}")
+                appendLine("Analytics contour resolved: ${huawei.joinToString().ifEmpty { "none" }}")
                 problems.forEach { appendLine("  FAIL $it") }
             },
         )
 
         logger.lifecycle(
             "  [dependencies] OK   ${resolved.size} artifacts, none from " +
-                FORBIDDEN_GROUPS.joinToString(),
+                AnalyticsContourRules.FORBIDDEN_GROUPS.joinToString() +
+                "; analytics contour: ${huawei.size} coordinate(s)",
         )
 
         if (problems.isNotEmpty()) {
@@ -71,16 +94,5 @@ abstract class VerifyDependencyCompositionTask : DefaultTask() {
                 },
             )
         }
-    }
-
-    private companion object {
-        val FORBIDDEN_GROUPS = listOf(
-            "com.google.android.gms",
-            "com.google.firebase",
-            "com.google.android.play",
-            "com.crashlytics",
-            "io.fabric",
-            "com.google.mlkit",
-        )
     }
 }

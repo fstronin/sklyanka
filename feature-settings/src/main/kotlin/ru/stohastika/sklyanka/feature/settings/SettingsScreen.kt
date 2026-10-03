@@ -79,7 +79,7 @@ fun SettingsScreen(state: SettingsUiState, onIntent: (SettingsIntent) -> Unit, m
             profilesBlock(state, onIntent)
             remindersBlock(state, onIntent)
             systemBlock(state, onIntent)
-            dataBlock(onIntent)
+            dataBlock(state, onIntent)
             item { AboutPlate(state.version) }
         }
         BottomBar(
@@ -342,8 +342,8 @@ private fun PermissionsRow(permissions: PermissionsSummary, onClick: () -> Unit)
     )
 }
 
-/** Раздел «Данные»: история приёмов (SKL-18) и перенос данных (SKL-19). */
-private fun LazyListScope.dataBlock(onIntent: (SettingsIntent) -> Unit) {
+/** Раздел «Данные»: история приёмов (SKL-18), перенос данных (SKL-19) и аналитика (SKL-82). */
+private fun LazyListScope.dataBlock(state: SettingsUiState, onIntent: (SettingsIntent) -> Unit) {
     item {
         SettingsBlock(stringResource(R.string.settings_rubric_data)) {
             SettingsRow(
@@ -357,6 +357,22 @@ private fun LazyListScope.dataBlock(onIntent: (SettingsIntent) -> Unit) {
                 subtitle = RowSubtitle(stringResource(R.string.settings_transfer_caption)),
                 onClick = { onIntent(SettingsIntent.OpenDataTransfer) },
                 modifier = Modifier.testTag(TAG_TRANSFER_ROW),
+            )
+            RowDivider()
+            // Включение открывает экран согласия, выключение — мгновенное (ПМ-25 п. 4):
+            // решает маршрут, строка только отдаёт намерение.
+            SklyankaSwitchRow(
+                label = stringResource(R.string.settings_analytics),
+                caption = stringResource(R.string.settings_analytics_caption),
+                checked = state.analyticsEnabled,
+                onCheckedChange = { onIntent(SettingsIntent.SetAnalytics(it)) },
+                modifier = Modifier.testTag(TAG_ANALYTICS_ROW),
+            )
+            RowDivider()
+            SettingsRow(
+                title = stringResource(R.string.settings_policy),
+                onClick = { onIntent(SettingsIntent.OpenPolicy) },
+                modifier = Modifier.testTag(TAG_POLICY_ROW),
             )
         }
     }
@@ -430,3 +446,5 @@ internal const val TAG_DELETE_PROFILE_ROW = "settings_delete_profile_row"
 internal const val TAG_DELETE_DIVIDER = "settings_delete_divider"
 internal const val TAG_HISTORY_ROW = "settings_history_row"
 internal const val TAG_TRANSFER_ROW = "settings_transfer_row"
+internal const val TAG_ANALYTICS_ROW = "settings_analytics_row"
+internal const val TAG_POLICY_ROW = "settings_policy_row"

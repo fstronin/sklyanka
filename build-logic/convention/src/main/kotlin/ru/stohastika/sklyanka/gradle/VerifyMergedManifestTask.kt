@@ -16,6 +16,11 @@ import org.gradle.api.tasks.TaskAction
  *
  * Смотрит слитый манифест, а не исходный: разрешение способна добавить зависимость
  * при слиянии манифестов, и проверка исходника этого не увидит.
+ *
+ * Сеть в продукте есть — но только аналитическим контуром (ПЛ-3, НФТ-15, ПМ-19):
+ * `INTERNET` обязан присутствовать, разрешения состояния сети запрещены. Связка
+ * «разрешение ↔ контур» держится парой проверок: здесь требуется `INTERNET`,
+ * а `verifyDependencies<Config>` требует координаты аналитического контура.
  */
 abstract class VerifyMergedManifestTask : DefaultTask() {
 
@@ -41,8 +46,19 @@ abstract class VerifyMergedManifestTask : DefaultTask() {
         val problems = mutableListOf<String>()
         val notes = mutableListOf<String>()
 
-        // ПЛ-3, НФТ-15: сети нет. Это свойство продукта, а не временное состояние.
-        FORBIDDEN_PERMISSIONS.forEach { permission ->
+        // ПЛ-3, НФТ-15, ПМ-19: INTERNET — только для аналитического контура, поэтому он
+        // обязателен; разрешения состояния сети и рекламный идентификатор запрещены.
+        // Правила объявлены одним местом — AnalyticsContourRules.
+        listOf(AnalyticsContourRules.REQUIRED_PERMISSION).forEach { permission ->
+            if (manifest.contains("\"$permission\"")) {
+                notes += "$permission is present (analytics contour only)"
+            } else {
+                problems += "required permission $permission is missing from the merged manifest " +
+                    "(PLATFORM-3, NFR-15). The analytics contour is declared but cannot run: " +
+                    "declare INTERNET in app/AndroidManifest.xml."
+            }
+        }
+        AnalyticsContourRules.FORBIDDEN_PERMISSIONS.forEach { permission ->
             if (manifest.contains("\"$permission\"")) {
                 problems += "forbidden permission $permission is present in the merged manifest " +
                     "(PLATFORM-3, NFR-15). A dependency may have merged it in."
@@ -104,11 +120,6 @@ abstract class VerifyMergedManifestTask : DefaultTask() {
     }
 
     private companion object {
-        val FORBIDDEN_PERMISSIONS = listOf(
-            "android.permission.INTERNET",
-            "android.permission.ACCESS_NETWORK_STATE",
-            "android.permission.ACCESS_WIFI_STATE",
-        )
         val PACKAGE = Regex("package=\"([^\"]+)\"")
         val MIN_SDK = Regex("android:minSdkVersion=\"(\\d+)\"")
     }

@@ -169,4 +169,10 @@
     <string name="profile_delete_result_active">Your profile became active</string>
     <string name="profile_delete_no_space">Not enough space. The file was not saved, the profile was not deleted.</string>
     <string name="profile_delete_no_picker">There is no file picker app on the device. The transfer file cannot be saved without it.</string>
+
+    <!-- Analytics in the data section (SKL-82, PM-25, OV-123) -->
+
+    <string name="settings_analytics">Analytics</string>
+    <string name="settings_analytics_caption">Anonymous statistics: actions in the app; medical data is not sent</string>
+    <string name="settings_policy">Privacy policy</string>
 </resources>

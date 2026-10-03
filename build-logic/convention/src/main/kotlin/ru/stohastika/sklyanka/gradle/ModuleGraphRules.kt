@@ -52,5 +52,5 @@ object ModuleGraphRules {
     private const val APP = "app"
     private const val CORE_DOMAIN = "core-domain"
     private const val FEATURE_PREFIX = "feature-"
-    private val CORE_MODULES = setOf("core-ui", "core-data")
+    private val CORE_MODULES = setOf("core-ui", "core-data", "core-analytics")
 }
