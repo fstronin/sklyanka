@@ -12,6 +12,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import ru.stohastika.sklyanka.data.analytics.AnalyticsConsentPreferences
+import ru.stohastika.sklyanka.data.experiment.ExperimentCachePreferences
 import ru.stohastika.sklyanka.data.room.SklyankaDatabase
 import ru.stohastika.sklyanka.data.room.SklyankaMigrations
 import ru.stohastika.sklyanka.data.room.dao.IntakeDao
@@ -72,9 +73,26 @@ object DataModule {
             context.preferencesDataStoreFile(ANALYTICS_CONSENT_NAME)
         }
 
+    /**
+     * Файл кэша вариантов A/B — отдельно от настроек и согласия (SKL-83, ПЕР-37).
+     *
+     * Снимок переживает перезапуск, но не участвует в переносе данных: отдельный файл
+     * делает это свойством хранилища, а не обещанием.
+     */
+    @Provides
+    @Singleton
+    @ExperimentCachePreferences
+    fun provideExperimentCachePreferences(@ApplicationContext context: Context): DataStore<Preferences> =
+        PreferenceDataStoreFactory.create {
+            context.preferencesDataStoreFile(EXPERIMENT_CACHE_NAME)
+        }
+
     /** Имя файла постоянных настроек. Активный профиль живёт здесь, а не в памяти процесса (ПРФ-17). */
     private const val SETTINGS_NAME = "sklyanka_settings"
 
     /** Имя файла согласия на аналитику. */
     private const val ANALYTICS_CONSENT_NAME = "sklyanka_analytics_consent"
+
+    /** Имя файла кэша вариантов A/B. */
+    private const val EXPERIMENT_CACHE_NAME = "sklyanka_experiment_cache"
 }

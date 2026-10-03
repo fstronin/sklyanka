@@ -148,6 +148,7 @@
 
     <string name="settings_history">服药历史</string>
     <string name="settings_transfer_caption">通过文件导出和导入，无云端</string>
+    <string name="settings_transfer_caption_alt">一个文件往返，依然没有云端</string>
 
     <string name="settings_about_app">Sklyanka %1$s</string>
     <string name="settings_about_vendor">Stohastika · 非医疗器械</string>

@@ -23,6 +23,11 @@ import ru.stohastika.sklyanka.domain.analytics.DeclineAnalyticsConsentUseCase
 import ru.stohastika.sklyanka.domain.analytics.GrantAnalyticsConsentUseCase
 import ru.stohastika.sklyanka.domain.analytics.ScreenName
 import ru.stohastika.sklyanka.domain.analytics.SetAnalyticsEnabledUseCase
+import ru.stohastika.sklyanka.domain.experiment.ConsentedExperiments
+import ru.stohastika.sklyanka.domain.experiment.ExperimentCacheStore
+import ru.stohastika.sklyanka.domain.experiment.ExperimentId
+import ru.stohastika.sklyanka.domain.experiment.ExperimentVendor
+import ru.stohastika.sklyanka.domain.experiment.VariantKey
 import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -90,8 +95,9 @@ class AnalyticsContourSteps {
 
     @Тогда("^ни один вариант A/B не запрашивается$")
     fun noAbVariantIsRequested() {
-        staticProblems = abContourProblems()
-        assertTrue(staticProblems.isEmpty(), "A/B-контур в сборке отсутствует: $staticProblems")
+        val problems = abContourProblems()
+        assertTrue(problems.isEmpty(), "A/B-контур нарушен: $problems")
+        assertEquals(0, contour.vendor.calls.get(), "до согласия вендор вариантов не вызывается")
     }
 
     @Тогда("^ни один сетевой запрос аналитического контура не выполняется$")
@@ -138,14 +144,13 @@ class AnalyticsContourSteps {
     fun noAbVariantIsRequestedOrApplied() {
         val problems = abContourProblems()
         assertTrue(problems.isEmpty(), "варианты A/B не должны запрашиваться: $problems")
+        assertEquals(0, contour.vendor.calls.get(), "до согласия вендор вариантов не вызывается")
     }
 
     @Тогда("^интерфейс остаётся базовым$")
     fun theInterfaceStaysDefault() {
-        val variantApis = productionSources().filter { source ->
-            VARIANT_APIS.any { api -> source.readText().contains(api) }
-        }.map { it.name }
-        assertTrue(variantApis.isEmpty(), "ни одна точка не получает вариант: $variantApis")
+        val applied = ExperimentId.entries.filter { contour.experiments.variantOf(it) != VariantKey.BASE }
+        assertTrue(applied.isEmpty(), "ни одна точка не получает вариант: $applied")
     }
 
     @Тогда("^этот гейт наследует задача A/B-экспериментов$")
@@ -190,7 +195,10 @@ class AnalyticsContourSteps {
 
     @Тогда("^ни один вариант A/B больше не запрашивается$")
     fun noAbVariantIsRequestedAfterDisabling() {
-        assertTrue(abContourProblems().isEmpty())
+        val before = contour.vendor.calls.get()
+        runBlocking { contour.experiments.refresh() }
+        assertEquals(before, contour.vendor.calls.get(), "после выключения запросов вариантов нет")
+        assertEquals(VariantKey.BASE, contour.experiments.variantOf(ExperimentId.TODAY_EMPTY_STATE))
         assertFalse(contour.stored.value.sendingAllowed(AnalyticsConsentVersion.MATERIAL))
     }
 
@@ -655,17 +663,61 @@ class AnalyticsContourSteps {
         }
 
         val gate = ConsentedAnalytics(sink = sink, debuggable = debuggable, log = SilentLog)
+
+        // A/B-контур (SKL-83): тот же гейт согласия, подменённые вендор и кэш.
+        val vendor = RecordingExperimentVendor()
+        val experiments = ConsentedExperiments(
+            vendor = vendor,
+            cache = InMemoryExperimentCache(),
+            analytics = gate,
+            debuggable = debuggable,
+            log = SilentLog,
+        )
         private val grantUseCase = GrantAnalyticsConsentUseCase(store, gate)
         private val declineUseCase = DeclineAnalyticsConsentUseCase(store, gate)
         private val setEnabledUseCase = SetAnalyticsEnabledUseCase(store, gate)
 
-        suspend fun bootstrap() = gate.applyConsent(stored.value)
+        suspend fun bootstrap() {
+            gate.applyConsent(stored.value)
+            experiments.applyConsent(stored.value)
+            experiments.refresh()
+        }
 
-        suspend fun grant(source: ConsentSource) = grantUseCase(source)
+        suspend fun grant(source: ConsentSource) {
+            grantUseCase(source)
+            experiments.applyConsent(stored.value)
+            experiments.refresh()
+        }
 
-        suspend fun decline(policyUpdate: Boolean) = declineUseCase(policyUpdate)
+        suspend fun decline(policyUpdate: Boolean) {
+            declineUseCase(policyUpdate)
+            experiments.applyConsent(stored.value)
+        }
 
-        suspend fun setEnabled(enabled: Boolean) = setEnabledUseCase(enabled)
+        suspend fun setEnabled(enabled: Boolean) {
+            setEnabledUseCase(enabled)
+            experiments.applyConsent(stored.value)
+            if (enabled) experiments.refresh()
+        }
+    }
+
+    private class RecordingExperimentVendor : ExperimentVendor {
+        val calls = AtomicInteger()
+
+        override suspend fun fetchVariants(): Map<ExperimentId, VariantKey> {
+            calls.incrementAndGet()
+            return emptyMap()
+        }
+    }
+
+    private class InMemoryExperimentCache : ExperimentCacheStore {
+        private var stored = emptyMap<ExperimentId, VariantKey>()
+
+        override suspend fun read(): Map<ExperimentId, VariantKey> = stored
+
+        override suspend fun write(variants: Map<ExperimentId, VariantKey>) {
+            stored = variants
+        }
     }
 
     private class RecordingSink : AnalyticsSink {
@@ -693,6 +745,10 @@ class AnalyticsContourSteps {
         override fun debugSuppressed() = Unit
 
         override fun sendFailed(reason: String) = Unit
+
+        override fun experimentsUpdated(count: Int) = Unit
+
+        override fun experimentsUnavailable(reason: String) = Unit
     }
 
     private data class EventClass(val name: String, val params: String)
@@ -714,17 +770,18 @@ class AnalyticsContourSteps {
         return problems
     }
 
-    /** A/B-контур: координат и API получения варианта в сборке нет (рамка SKL-83). */
+    /** A/B-контур: чужой SDK в исходниках и применённые варианты (SKL-83). */
     private fun abContourProblems(): List<String> {
         val problems = mutableListOf<String>()
-        val catalog = read(VERSION_CATALOG).lowercase()
-        if (catalog.contains("abtest") || catalog.contains("remoteconfig")) {
-            problems += "A/B coordinates are declared before SKL-83"
-        }
         productionSources().forEach { source ->
             val text = source.readText()
             if (text.contains("com.huawei.hms:abtest") || text.contains("com.huawei.hms:remoteconfig")) {
                 problems += "${source.name} references an A/B SDK"
+            }
+        }
+        ExperimentId.entries.forEach { experiment ->
+            if (contour.experiments.variantOf(experiment) != VariantKey.BASE) {
+                problems += "${experiment.name} is applied"
             }
         }
         return problems
@@ -860,7 +917,6 @@ class AnalyticsContourSteps {
         val THIRD_PARTY_GROUPS = listOf("com.crashlytics", "io.fabric", "com.google.mlkit")
 
         val CONSENT_WORDS = Regex("(?i)analytics|consent|согласи")
-        val VARIANT_APIS = listOf("getVariant", "ABTest", "RemoteConfig", "remoteConfig")
         val HUAWEI_COORDINATES = listOf(
             "com.huawei.hms:",
             "com.huawei.agconnect:",

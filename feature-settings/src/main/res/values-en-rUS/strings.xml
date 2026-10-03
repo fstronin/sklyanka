@@ -148,6 +148,7 @@
 
     <string name="settings_history">Intake history</string>
     <string name="settings_transfer_caption">Export and import by file, no cloud</string>
+    <string name="settings_transfer_caption_alt">One file back and forth — still no cloud</string>
 
     <string name="settings_about_app">Sklyanka %1$s</string>
     <string name="settings_about_vendor">Stohastika · Not a medical device</string>

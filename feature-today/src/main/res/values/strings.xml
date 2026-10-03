@@ -115,6 +115,11 @@
 
     <string name="today_empty_title">Пока ничего не запланировано</string>
     <string name="today_empty_text">Добавьте лекарство — и его приёмы появятся здесь по часам.</string>
+    <!--
+      Вариант A эксперимента TODAY_EMPTY_STATE (SKL-83): текст — предложение задачи,
+      утверждается продакт-менеджером до запуска эксперимента в консоли AGC.
+    -->
+    <string name="today_empty_text_alt">Добавьте первое лекарство — расписание и напоминания появятся сами.</string>
     <string name="today_empty_action">Добавить лекарство</string>
 
     <!--

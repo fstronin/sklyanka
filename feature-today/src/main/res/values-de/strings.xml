@@ -54,6 +54,7 @@
 
     <string name="today_empty_title">Noch nichts geplant</string>
     <string name="today_empty_text">Fügen Sie ein Medikament hinzu — seine Einnahmen erscheinen hier nach der Uhr.</string>
+    <string name="today_empty_text_alt">Fügen Sie Ihr erstes Medikament hinzu — Zeitplan und Erinnerungen erscheinen von selbst.</string>
     <string name="today_empty_action">Medikament hinzufügen</string>
 
     <string name="today_nothing_today">Für heute keine Einnahmen</string>

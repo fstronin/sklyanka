@@ -22,6 +22,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.semantics
+import ru.stohastika.sklyanka.domain.experiment.VariantKey
 import ru.stohastika.sklyanka.domain.reminder.SnoozeIntervals
 import ru.stohastika.sklyanka.ui.component.BottomBar
 import ru.stohastika.sklyanka.ui.component.BottomBarTab
@@ -354,7 +355,17 @@ private fun LazyListScope.dataBlock(state: SettingsUiState, onIntent: (SettingsI
             RowDivider()
             SettingsRow(
                 title = stringResource(R.string.transfer_title),
-                subtitle = RowSubtitle(stringResource(R.string.settings_transfer_caption)),
+                // Вариант A эксперимента SETTINGS_TRANSFER_HINT (SKL-83): база — текущая
+                // подпись, вариант действует только после согласия и назначения AGC.
+                subtitle = RowSubtitle(
+                    stringResource(
+                        if (state.transferHint == VariantKey.A) {
+                            R.string.settings_transfer_caption_alt
+                        } else {
+                            R.string.settings_transfer_caption
+                        },
+                    ),
+                ),
                 onClick = { onIntent(SettingsIntent.OpenDataTransfer) },
                 modifier = Modifier.testTag(TAG_TRANSFER_ROW),
             )

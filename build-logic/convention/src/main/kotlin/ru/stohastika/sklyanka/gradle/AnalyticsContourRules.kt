@@ -34,6 +34,11 @@ object AnalyticsContourRules {
         "com.huawei.hms:ui",
         "com.huawei.hms:network-",
         "com.huawei.agconnect",
+        // A/B-контур (SKL-83, ПМ-20): перечислены точно, чтобы отчёт гейтов и приёмка
+        // называли состав контура. Обязательными не становятся: состав A/B первой
+        // публикации решает заказчик, аналитика выходит независимо (ПМ-20 п. 6).
+        "com.huawei.agconnect:agconnect-remoteconfig",
+        "com.huawei.agconnect:agconnect-abtest",
         "com.huawei.android.hms:security-",
         "com.huawei.hmf:tasks",
     )

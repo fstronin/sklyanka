@@ -438,6 +438,10 @@ internal object AnalyticsConsentStand {
         override fun debugSuppressed() = Unit
 
         override fun sendFailed(reason: String) = Unit
+
+        override fun experimentsUpdated(count: Int) = Unit
+
+        override fun experimentsUnavailable(reason: String) = Unit
     }
 
     private class RecordingUriHandler : UriHandler {

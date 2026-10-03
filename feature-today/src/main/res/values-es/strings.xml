@@ -54,6 +54,7 @@
 
     <string name="today_empty_title">Aún no hay nada programado</string>
     <string name="today_empty_text">Añade un medicamento y sus tomas aparecerán aquí por horas.</string>
+    <string name="today_empty_text_alt">Añade tu primer medicamento: el horario y los recordatorios aparecerán solos.</string>
     <string name="today_empty_action">Añadir medicamento</string>
 
     <string name="today_nothing_today">No hay tomas para hoy</string>

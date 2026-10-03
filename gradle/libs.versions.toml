@@ -56,6 +56,11 @@ kotlinpoet = "1.18.1"
 # контура (ADR-0011); координаты проверяются правилом графа зависимостей.
 # Артефакт называется hianalytics, а не analytics: имя официальной публикации вендора.
 hianalytics = "6.12.0.301"
+# A/B-контур (SKL-83): AppGallery Connect Remote Configuration и A/B Testing.
+# Версии AGC идут одним поездом; 1.9.6.300 — release в репозитории вендора на 03.10.2026.
+# Семантика fetch(long)/fetchDiscrete уточнена по документации/байткоду в SKL-83 (фаза 0);
+# внешний таймаут держит доменный гейт, а не SDK.
+agconnect = "1.9.6.300"
 
 [libraries]
 # --- Домен: чистый Kotlin, без Android ---
@@ -116,6 +121,13 @@ androidx-work-runtime = { module = "androidx.work:work-runtime", version.ref = "
 # идут в Huawei Cloud (152-ФЗ — проверка до первой публикации, ПМ-18). SDK присутствует
 # в обеих конфигурациях, но активируется только после согласия и только не в debug.
 huawei-hianalytics = { module = "com.huawei.hms:hianalytics", version.ref = "hianalytics" }
+
+# A/B Testing и Remote Configuration (SKL-83, ПМ-20): варианты приходят значениями
+# Remote Configuration; agconnect-abtest регистрирует сервис и отчётность A/B.
+# Обе координаты — данные белого списка AnalyticsContourRules, не обязательные:
+# состав A/B первой публикации решает заказчик (ПМ-20 п. 6).
+huawei-agconnect-remoteconfig = { module = "com.huawei.agconnect:agconnect-remoteconfig", version.ref = "agconnect" }
+huawei-agconnect-abtest = { module = "com.huawei.agconnect:agconnect-abtest", version.ref = "agconnect" }
 
 # --- Инструментальные тесты ---
 junit4 = { module = "junit:junit", version.ref = "junit4" }

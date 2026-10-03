@@ -7,6 +7,7 @@ import ru.stohastika.sklyanka.domain.analytics.AnalyticsEvent
 import ru.stohastika.sklyanka.domain.analytics.ConsentOutcome
 import ru.stohastika.sklyanka.domain.analytics.ConsentSource
 import ru.stohastika.sklyanka.domain.analytics.DeliveryCheckOutcome
+import ru.stohastika.sklyanka.domain.analytics.ExperimentExposed
 import ru.stohastika.sklyanka.domain.analytics.IntakeActionType
 import ru.stohastika.sklyanka.domain.analytics.MedicationActionType
 import ru.stohastika.sklyanka.domain.analytics.MedicationMode
@@ -20,6 +21,8 @@ import ru.stohastika.sklyanka.domain.analytics.ScreenName
 import ru.stohastika.sklyanka.domain.analytics.StepResult
 import ru.stohastika.sklyanka.domain.analytics.SubscriptionPlan
 import ru.stohastika.sklyanka.domain.analytics.TransferDirection
+import ru.stohastika.sklyanka.domain.experiment.ExperimentId
+import ru.stohastika.sklyanka.domain.experiment.VariantKey
 
 /**
  * Отображение события каталога на технический формат вендора (TDD §5.3).
@@ -63,6 +66,10 @@ internal fun AnalyticsEvent.toVendorEvent(): VendorEvent = when (this) {
     is AnalyticsEvent.PurchaseResult -> event("purchase_result") {
         putString("result", result.code)
         putString("plan", plan.code)
+    }
+    is ExperimentExposed -> event("experiment_exposed") {
+        putString("experiment_id", experiment.code)
+        putString("variant", variant.code)
     }
 }
 
@@ -207,4 +214,18 @@ private val PurchaseOutcome.code: String
         PurchaseOutcome.RESTORED -> "restored"
         PurchaseOutcome.CANCELLED -> "cancelled"
         PurchaseOutcome.FAILED -> "failed"
+    }
+
+private val ExperimentId.code: String
+    get() = when (this) {
+        ExperimentId.TODAY_EMPTY_STATE -> "today_empty_state"
+        ExperimentId.SETTINGS_TRANSFER_HINT -> "settings_transfer_hint"
+    }
+
+private val VariantKey.code: String
+    get() = when (this) {
+        VariantKey.BASE -> "base"
+        VariantKey.A -> "a"
+        VariantKey.B -> "b"
+        VariantKey.C -> "c"
     }

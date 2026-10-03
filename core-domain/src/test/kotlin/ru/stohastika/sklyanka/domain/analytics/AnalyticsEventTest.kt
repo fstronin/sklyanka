@@ -136,5 +136,6 @@ class AnalyticsEventTest {
         is AnalyticsEvent.PaywallShown -> "paywall_shown"
         is AnalyticsEvent.PaywallPlanSelected -> "paywall_plan_selected"
         is AnalyticsEvent.PurchaseResult -> "purchase_result"
+        is ExperimentExposed -> "experiment_exposed"
     }
 }

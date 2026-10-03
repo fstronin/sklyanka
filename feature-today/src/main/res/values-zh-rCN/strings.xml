@@ -54,6 +54,7 @@
 
     <string name="today_empty_title">还没有任何计划</string>
     <string name="today_empty_text">添加药物后，它的服药时间会按钟点显示在这里。</string>
+    <string name="today_empty_text_alt">添加第一种药物，用药时间和提醒会自动出现。</string>
     <string name="today_empty_action">添加药物</string>
 
     <string name="today_nothing_today">今天没有服药</string>

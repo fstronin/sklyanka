@@ -11,6 +11,9 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
+import ru.stohastika.sklyanka.domain.experiment.ExperimentId
+import ru.stohastika.sklyanka.domain.experiment.Experiments
+import ru.stohastika.sklyanka.domain.experiment.NoOpExperiments
 import ru.stohastika.sklyanka.domain.model.Profile
 import ru.stohastika.sklyanka.domain.profile.ProfileContextProvider
 import ru.stohastika.sklyanka.domain.profile.SwitchProfileUseCase
@@ -39,6 +42,9 @@ import javax.inject.Inject
  * который и решает, что считать переключением, и оставляет след в журнале (ПРФ-30).
  */
 @HiltViewModel
+// Каждая из восьми зависимостей — отдельный контракт экрана: профили, медикаменты,
+// переключение, состояние системы, версия, согласие, A/B (SKL-83) и его поток.
+@Suppress("LongParameterList")
 class SettingsViewModel @Inject constructor(
     profiles: ProfileRepository,
     /**
@@ -64,6 +70,11 @@ class SettingsViewModel @Inject constructor(
      * выключение. Нулевое умолчание — для ручной сборки без аналитики.
      */
     private val analyticsConsent: AnalyticsConsentControl = AnalyticsConsentControl.NONE,
+    /**
+     * A/B-канал (SKL-83): подпись строки переноса. Нулевое умолчание — база,
+     * как и у аналитики.
+     */
+    private val experiments: Experiments = NoOpExperiments,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(SettingsUiState(version = stamp.versionName))
@@ -103,6 +114,7 @@ class SettingsViewModel @Inject constructor(
                 reminders = snapshot.reminders,
                 watch = snapshot.watch,
                 permissions = snapshot.permissions,
+                transferHint = experiments.variantOf(ExperimentId.SETTINGS_TRANSFER_HINT),
             )
         }
     }

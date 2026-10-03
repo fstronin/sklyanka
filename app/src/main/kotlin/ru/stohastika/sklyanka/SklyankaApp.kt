@@ -8,6 +8,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import ru.stohastika.sklyanka.analytics.AnalyticsBootstrap
+import ru.stohastika.sklyanka.analytics.ExperimentsBootstrap
 import ru.stohastika.sklyanka.data.log.LogRetention
 import ru.stohastika.sklyanka.data.reminder.ReminderLogRetention
 import ru.stohastika.sklyanka.data.repository.ProfileBootstrap
@@ -105,6 +106,16 @@ class SklyankaApp : Application() {
     @Inject
     lateinit var analyticsBootstrap: AnalyticsBootstrap
 
+    /**
+     * A/B-контур (SKL-83): поток согласия применяется к экспериментам отдельной корутиной.
+     *
+     * Обновление вариантов не удлиняет путь планирования: `run()` живёт параллельно
+     * и никогда не ждёт ничего, кроме собственного запроса с таймаутом. До согласия
+     * гейт не выпускает ни одного запроса (ПМ-20 п. 2).
+     */
+    @Inject
+    lateinit var experimentsBootstrap: ExperimentsBootstrap
+
     private val startupScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onCreate() {
@@ -122,6 +133,9 @@ class SklyankaApp : Application() {
         // которая их трогает, запускает `USER_UNLOCKED` (план) и следующий открытый запуск
         // (bootstrap и подрезка), поэтому здесь достаточно выйти, не уронив процесс.
         if (!isUserUnlocked()) return
+        // A/B-контур живёт отдельной корутиной: получение вариантов не удлиняет путь
+        // планирования и не задерживает ни один сценарий (SKL-83, НФТ-16а).
+        startupScope.launch { experimentsBootstrap.run() }
         startupScope.launch {
             // Согласие перечитывается на каждом старте: решение могло быть отозвано
             // в настройках, а версия предмета согласия — измениться обновлением.

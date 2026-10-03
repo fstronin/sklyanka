@@ -36,6 +36,26 @@ class AnalyticsBoundaryTest {
         assertEquals(listOf("HuaweiAnalyticsSink.kt"), importers)
     }
 
+    @Test
+    fun `the AGC SDK is imported only by the core-analytics module`() {
+        val offenders = productionSources()
+            .filterNot { it.path.contains("/core-analytics/") }
+            .filter { it.readText().contains(AGC_PACKAGE) }
+            .map { it.relativeTo(repositoryRoot).path }
+
+        assertTrue("the AGC SDK leaks outside core-analytics: $offenders", offenders.isEmpty())
+    }
+
+    @Test
+    fun `only the experiment vendor reaches into AGC`() {
+        val importers = productionSources()
+            .filter { it.path.contains("/core-analytics/") }
+            .filter { it.readText().contains(AGC_PACKAGE) }
+            .map { it.name }
+
+        assertEquals(listOf("HuaweiExperimentVendor.kt"), importers)
+    }
+
     private fun productionSources(): List<File> = repositoryRoot.listFiles()
         .orEmpty()
         .filter { it.isDirectory && it.name != "build" && !it.name.startsWith(".") }
@@ -56,5 +76,8 @@ class AnalyticsBoundaryTest {
 
     private companion object {
         const val VENDOR_PACKAGE = "com.huawei.hms.analytics"
+
+        /** Пакет AGC Remote Configuration: A/B-контур ходит в него одним классом (SKL-83). */
+        const val AGC_PACKAGE = "com.huawei.agconnect.remoteconfig"
     }
 }

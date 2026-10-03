@@ -10,10 +10,12 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import dagger.hilt.testing.TestInstallIn
 import ru.stohastika.sklyanka.analytics.di.AnalyticsModule
+import ru.stohastika.sklyanka.analytics.di.ExperimentsModule
 import ru.stohastika.sklyanka.data.analytics.AnalyticsConsentPreferences
 import ru.stohastika.sklyanka.data.di.DataModule
 import ru.stohastika.sklyanka.data.di.DirectBootModule
 import ru.stohastika.sklyanka.data.di.DirectBootPreferences
+import ru.stohastika.sklyanka.data.experiment.ExperimentCachePreferences
 import ru.stohastika.sklyanka.data.room.SklyankaDatabase
 import ru.stohastika.sklyanka.data.room.dao.IntakeDao
 import ru.stohastika.sklyanka.data.room.dao.MedicationDao
@@ -24,6 +26,8 @@ import ru.stohastika.sklyanka.domain.analytics.Analytics
 import ru.stohastika.sklyanka.domain.analytics.AnalyticsLog
 import ru.stohastika.sklyanka.domain.analytics.AnalyticsSink
 import ru.stohastika.sklyanka.domain.analytics.ConsentedAnalytics
+import ru.stohastika.sklyanka.domain.experiment.Experiments
+import ru.stohastika.sklyanka.domain.experiment.NoOpExperiments
 import ru.stohastika.sklyanka.domain.time.TimeSource
 import ru.stohastika.sklyanka.screen.support.DeviceTestClock
 import ru.stohastika.sklyanka.screen.support.DeviceTestStores
@@ -67,6 +71,12 @@ internal object DeviceStorageModule {
     @AnalyticsConsentPreferences
     fun provideAnalyticsConsentPreferences(@ApplicationContext context: Context): DataStore<Preferences> =
         DeviceTestStores.analyticsConsent(context)
+
+    @Provides
+    @Singleton
+    @ExperimentCachePreferences
+    fun provideExperimentCachePreferences(@ApplicationContext context: Context): DataStore<Preferences> =
+        DeviceTestStores.experimentCache(context)
 }
 
 /**
@@ -111,4 +121,19 @@ internal object DeviceAnalyticsModule {
     @Singleton
     fun provideAnalytics(sink: AnalyticsSink, log: AnalyticsLog): Analytics =
         ConsentedAnalytics(sink = sink, debuggable = false, log = log)
+}
+
+/**
+ * Эксперименты в тестовом графе: вариант всегда базовый, вендор не вызывается (SKL-83).
+ *
+ * Проверкам волны A/B не предмет: базовый вариант — это ровно то, что продукт показывает
+ * без эксперимента, и реальный AGC в инструментальных проверках не нужен (НФТ-39).
+ */
+@Module
+@TestInstallIn(components = [SingletonComponent::class], replaces = [ExperimentsModule::class])
+internal object DeviceExperimentModule {
+
+    @Provides
+    @Singleton
+    fun provideExperiments(): Experiments = NoOpExperiments
 }

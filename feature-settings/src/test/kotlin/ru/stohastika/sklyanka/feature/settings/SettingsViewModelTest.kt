@@ -14,6 +14,11 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import ru.stohastika.sklyanka.domain.analytics.AnalyticsConsent
+import ru.stohastika.sklyanka.domain.experiment.ExperimentId
+import ru.stohastika.sklyanka.domain.experiment.Experiments
+import ru.stohastika.sklyanka.domain.experiment.NoOpExperiments
+import ru.stohastika.sklyanka.domain.experiment.VariantKey
 import ru.stohastika.sklyanka.domain.profile.SwitchProfileUseCase
 import ru.stohastika.sklyanka.domain.profile.SwitchReason
 import ru.stohastika.sklyanka.domain.reminder.port.PermissionState
@@ -267,7 +272,7 @@ class SettingsViewModelTest {
         assertEquals(VERSION, model.state.value.version)
     }
 
-    private fun viewModel() = SettingsViewModel(
+    private fun viewModel(experiments: Experiments = NoOpExperiments) = SettingsViewModel(
         profiles = profiles,
         context = FakeProfileContext(profiles, active),
         medications = medications,
@@ -278,7 +283,25 @@ class SettingsViewModelTest {
             watch = watch,
         ),
         stamp = AppStamp(versionName = VERSION, versionCode = VERSION_CODE),
+        experiments = experiments,
     )
+
+    @Test
+    fun theTransferHintComesFromTheExperimentPort() = runTest(dispatcher) {
+        val model = viewModel(FakeExperiments(VariantKey.A))
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(VariantKey.A, model.state.value.transferHint)
+    }
+
+    private class FakeExperiments(private val variant: VariantKey) : Experiments {
+
+        override fun variantOf(experiment: ExperimentId): VariantKey = variant
+
+        override suspend fun applyConsent(consent: AnalyticsConsent) = Unit
+
+        override suspend fun refresh() = Unit
+    }
 
     private companion object {
         const val SELF_MEDICATIONS = 2

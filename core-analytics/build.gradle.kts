@@ -24,6 +24,12 @@ dependencies {
 
     implementation(libs.huawei.hianalytics)
 
+    // A/B-контур (SKL-83): Remote Configuration — единственный канал вариантов;
+    // agconnect-abtest приходит транзитивно, но объявлен явно, чтобы состав контура
+    // был виден в каталоге версий и отчёте гейтов.
+    implementation(libs.huawei.agconnect.remoteconfig)
+    implementation(libs.huawei.agconnect.abtest)
+
     testImplementation(libs.junit4)
     testImplementation(libs.kotlinx.coroutines.test)
 }

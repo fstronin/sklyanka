@@ -5,6 +5,7 @@ import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import ru.stohastika.sklyanka.data.analytics.AnalyticsConsentDataStore
+import ru.stohastika.sklyanka.data.experiment.ExperimentCacheDataStore
 import ru.stohastika.sklyanka.data.log.RoomOperationLog
 import ru.stohastika.sklyanka.data.prefs.DeviceProtectedDirectBootStore
 import ru.stohastika.sklyanka.data.repository.ActiveProfileContext
@@ -17,6 +18,7 @@ import ru.stohastika.sklyanka.data.repository.RoomProfileLossesSource
 import ru.stohastika.sklyanka.data.room.SklyankaTransactor
 import ru.stohastika.sklyanka.domain.Transactor
 import ru.stohastika.sklyanka.domain.analytics.AnalyticsConsentStore
+import ru.stohastika.sklyanka.domain.experiment.ExperimentCacheStore
 import ru.stohastika.sklyanka.domain.log.OperationLog
 import ru.stohastika.sklyanka.domain.profile.ProfileContextProvider
 import ru.stohastika.sklyanka.domain.profile.ProfileEraser
@@ -93,4 +95,9 @@ abstract class DataBindings {
     @Binds
     @Singleton
     abstract fun bindAnalyticsConsentStore(impl: AnalyticsConsentDataStore): AnalyticsConsentStore
+
+    /** Снимок вариантов A/B живёт отдельным файлом и не участвует в переносе (SKL-83, ПЕР-37). */
+    @Binds
+    @Singleton
+    abstract fun bindExperimentCacheStore(impl: ExperimentCacheDataStore): ExperimentCacheStore
 }
