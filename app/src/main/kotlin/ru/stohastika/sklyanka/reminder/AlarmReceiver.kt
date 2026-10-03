@@ -25,7 +25,10 @@ import ru.stohastika.sklyanka.platform.reminder.ReminderAlarms
 class AlarmReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
-        val graph = ReminderEntryPoint.of(context)
+        // Граф может отсутствовать: в процессе без приложения продукта (инструментальный
+        // прогон тестовой сборки) система всё равно доставляет системные broadcast'ы,
+        // и приёмник обязан их пережить, а не уронить процесс (SKL-97).
+        val graph = runCatching { ReminderEntryPoint.of(context) }.getOrNull() ?: return
         val pending = goAsync()
         graph.reminderScope().launch {
             try {

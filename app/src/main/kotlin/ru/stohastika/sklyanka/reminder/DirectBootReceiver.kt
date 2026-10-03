@@ -24,7 +24,11 @@ import ru.stohastika.sklyanka.domain.reminder.RescheduleReason
 class DirectBootReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
-        val graph = DirectBootEntryPoint.of(context)
+        // Компонент может отсутствовать: систему не интересует, под какой точкой сборки
+        // поднят процесс, и broadcast приходит в процесс, графа ещё не имеющий
+        // (например, инструментальный процесс тестовой сборки). Восстанавливать
+        // напоминания такому процессу нечего, а падение приёмника роняло бы процесс.
+        val graph = runCatching { DirectBootEntryPoint.of(context) }.getOrNull() ?: return
         val pending = goAsync()
         graph.reminderScope().launch {
             try {

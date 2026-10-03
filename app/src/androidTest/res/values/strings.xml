@@ -9,4 +9,18 @@
 -->
 <resources>
     <string name="device_test_medication_name">Стенд %1$s</string>
+    <!--
+      Имя профиля владельца, которого сеет тестовый граф до запуска Activity (SKL-97).
+      Русский текст — в ресурсах, как и у имени лекарства.
+    -->
+    <string name="device_test_profile_name">Стенд</string>
+    <!--
+      Сид сценариев волны (SKL-97): нейтральные имена состояний. Русский текст — в ресурсах;
+      в кадрах нет медицинских данных.
+    -->
+    <string name="device_test_medication_due">Стенд Приём</string>
+    <string name="device_test_medication_card">Стенд Карточка</string>
+    <string name="device_test_medication_edit">Стенд Правка</string>
+    <string name="device_test_medication_edit_renamed">Стенд После правки</string>
+    <string name="device_test_group_medication">Стенд Группа %1$d</string>
 </resources>

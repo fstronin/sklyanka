@@ -89,6 +89,9 @@ androidx-compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-mani
 # --- Hilt ---
 hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
 hilt-compiler = { module = "com.google.dagger:hilt-android-compiler", version.ref = "hilt" }
+# Hilt-стенд устройства (SKL-97): приложение тестов, компонент на проверку и подмены
+# `@TestInstallIn`. Артефакт Dagger, не GMS (ПЛ-4); живёт только в androidTest-конфигурациях.
+hilt-android-testing = { module = "com.google.dagger:hilt-android-testing", version.ref = "hilt" }
 
 # --- Room ---
 room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }

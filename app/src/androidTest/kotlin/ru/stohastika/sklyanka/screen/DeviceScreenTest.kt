@@ -1,50 +1,100 @@
 package ru.stohastika.sklyanka.screen
 
 import android.content.Context
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.ComposeTimeoutException
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasScrollAction
+import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasTestTag
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.isRoot
+import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performTextClearance
+import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.printToLog
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import dagger.hilt.android.testing.HiltAndroidRule
+import org.junit.Before
 import org.junit.Rule
 import org.junit.rules.RuleChain
 import org.junit.rules.TestName
-import ru.stohastika.sklyanka.MainActivity
+import org.junit.rules.TestRule
+import org.junit.runner.RunWith
+import org.junit.runners.model.Statement
+import ru.stohastika.sklyanka.domain.analytics.AnalyticsConsentDecision
+import ru.stohastika.sklyanka.domain.medication.MedicationDraft
+import ru.stohastika.sklyanka.domain.model.Profile
 import ru.stohastika.sklyanka.feature.meds.list.TAG_MEDICATION_LIST
 import ru.stohastika.sklyanka.feature.onboarding.TAG_PERMISSIONS_SCREEN
 import ru.stohastika.sklyanka.feature.onboarding.TAG_SKIP
+import ru.stohastika.sklyanka.feature.onboarding.consent.TAG_CONSENT_SCREEN
+import ru.stohastika.sklyanka.feature.settings.TAG_SETTINGS_SCREEN
 import ru.stohastika.sklyanka.feature.today.TAG_TODAY_SCREEN
+import ru.stohastika.sklyanka.platform.startup.SystemStartupState
+import ru.stohastika.sklyanka.screen.support.DeviceActivities
+import ru.stohastika.sklyanka.screen.support.DeviceTestClock
+import ru.stohastika.sklyanka.screen.support.DeviceTestSeed
+import ru.stohastika.sklyanka.screen.support.DeviceTestStores
+import ru.stohastika.sklyanka.test.R
 import ru.stohastika.sklyanka.ui.component.TAG_BOTTOM_BAR
+import ru.stohastika.sklyanka.ui.component.TAG_SECONDARY_BUTTON
 import java.io.File
+import java.math.BigDecimal
+import java.time.LocalDate
+import java.time.LocalTime
 import ru.stohastika.sklyanka.ui.R as UiR
 
 /**
- * Основа экранных проверок устройства (SKL-96, TDD §4).
+ * Основа экранных проверок устройства (SKL-96, переработано SKL-97, TDD §7).
  *
- * Проверка запускает настоящую [MainActivity] с настоящим `SklyankaApp`: Hilt-граф,
- * ресурсы, шрифты и окно — платформенные, тестовой замены приложения нет. Это не
- * Robolectric: квалификаторы не задаются, конфигурацию даёт образ.
+ * Проверка идёт на тестовом Hilt-графе: приложение тестов (`DeviceTestApplication`),
+ * Room в памяти, чистые DataStore, управляемые часы. Настоящая `MainActivity` запускается
+ * ручным [DeviceActivities.launch], а не `ActivityScenario`: заставка и асинхронное
+ * чтение DataStore не дают правилу дождаться простоя главного потока.
  *
- * Проверки не предполагают ни пустой базы, ни конкретного её содержимого: образ может
- * нести нагрузку SKL-27 или данные прошлого прогона. Утверждается только то, что
- * создала сама проверка.
- *
+ * `@Before` чистит хранилища и часы, снимает отметку о запуске и сеет владельца;
+ * состояние, на которое проверка не смотрит (онбординг, согласие), сеет [seedDefaultState].
  * Каждый кадр — свидетельство (см. [ScreenCapture]); ни один не сверяется с эталоном.
  */
+@RunWith(AndroidJUnit4::class)
 abstract class DeviceScreenTest {
 
     private val testName = TestName()
 
-    protected val compose = createAndroidComposeRule<MainActivity>()
+    private val hilt = HiltAndroidRule(this)
+
+    protected val compose = createEmptyComposeRule()
+
+    /**
+     * Уборка после проверки: `singleTask` и Hilt-граф на проверку не терпят живую
+     * Activity прошлого сценария, поэтому все активности закрываются до того, как
+     * Hilt снимет тестовый компонент (TDD §7.1).
+     */
+    private val lifecycle = TestRule { base, _ ->
+        object : Statement() {
+            override fun evaluate() {
+                try {
+                    base.evaluate()
+                } finally {
+                    runCatching { DeviceActivities.closeAll(compose) }
+                }
+            }
+        }
+    }
 
     @get:Rule
-    val rules: RuleChain = RuleChain.outerRule(testName).around(compose)
+    val rules: RuleChain = RuleChain.outerRule(testName).around(hilt).around(compose).around(lifecycle)
 
     /** Контекст тестового APK: только его собственные ресурсы (строки стенда). */
     protected val testContext: Context
@@ -54,19 +104,65 @@ abstract class DeviceScreenTest {
     protected val targetContext: Context
         get() = InstrumentationRegistry.getInstrumentation().targetContext
 
+    /** Владелец, созданный сидом: лекарства сеются в его профиль. */
+    protected lateinit var ownerProfile: Profile
+        private set
+
+    @Before
+    fun setUpDeviceStand() {
+        DeviceTestStores.clearAll(targetContext)
+        DeviceTestClock.reset()
+        clearLaunchMark()
+        hilt.inject()
+        ownerProfile =
+            DeviceTestSeed.ownerProfile(targetContext, testContext.getString(R.string.device_test_profile_name))
+        seedDefaultState()
+    }
+
     /**
-     * Дождаться корня приложения.
+     * Состояние, на которое проверка не смотрит: онбординг пройден, согласие принято.
+     * Сценарий первого запуска и включения аналитики переопределяет этот сид.
+     */
+    protected open fun seedDefaultState() {
+        DeviceTestSeed.onboardingSeen(targetContext)
+        DeviceTestSeed.consent(targetContext, AnalyticsConsentDecision.ACCEPTED)
+    }
+
+    /** Запустить настоящую `MainActivity` и дождаться, что она возобновлена. */
+    protected fun launchApp() {
+        DeviceActivities.launch(targetContext)
+        waitUntil(LAUNCH_TIMEOUT_MS, "запуска MainActivity") { DeviceActivities.resumed() != null }
+    }
+
+    /**
+     * Довести приложение до корня — «Сегодня».
      *
-     * На чистой установке первый экран — разрешения (`MainActivity` показывает
-     * `PermissionsRoute`, пока человек не ушёл с него): проверка нажимает «Пропустить»
-     * и ждёт «Сегодня». Последующие запуски в тех же данных идут на «Сегодня» сразу.
+     * В управляемом состоянии экран согласия и онбординг не показываются: решения посеяны.
+     * Запасные ветки сохранены для сценариев, где экран всё же появится.
      */
     protected fun awaitRoot() {
-        compose.waitUntil(ROOT_TIMEOUT_MS) { exists(TAG_TODAY_SCREEN) || exists(TAG_PERMISSIONS_SCREEN) }
-        if (exists(TAG_PERMISSIONS_SCREEN)) {
-            compose.onNodeWithTag(TAG_SKIP, useUnmergedTree = true).performClick()
-            compose.waitUntil(ROOT_TIMEOUT_MS) { exists(TAG_TODAY_SCREEN) }
+        declineAnalyticsIfAsked()
+        leaveOnboardingIfShown()
+        waitUntil(ROOT_TIMEOUT_MS, "экрана «Сегодня»") { exists(TAG_TODAY_SCREEN) }
+    }
+
+    private fun declineAnalyticsIfAsked() {
+        waitUntil(ROOT_TIMEOUT_MS, "первого экрана") { exists(TAG_TODAY_SCREEN) || exists(TAG_CONSENT_SCREEN) }
+        if (!exists(TAG_CONSENT_SCREEN)) return
+        compose.onNode(
+            hasTestTag(TAG_SECONDARY_BUTTON) and hasAnyAncestor(hasTestTag(TAG_CONSENT_SCREEN)),
+            useUnmergedTree = true,
+        ).performClick()
+        waitUntil(ROOT_TIMEOUT_MS, "ухода с экрана согласия") { !exists(TAG_CONSENT_SCREEN) }
+    }
+
+    private fun leaveOnboardingIfShown() {
+        waitUntil(ROOT_TIMEOUT_MS, "экрана разрешений или «Сегодня»") {
+            exists(TAG_TODAY_SCREEN) || exists(TAG_PERMISSIONS_SCREEN)
         }
+        if (!exists(TAG_PERMISSIONS_SCREEN)) return
+        compose.onNodeWithTag(TAG_SKIP, useUnmergedTree = true).performClick()
+        waitUntil(ROOT_TIMEOUT_MS, "экрана «Сегодня» после пропуска") { exists(TAG_TODAY_SCREEN) }
     }
 
     /** Открыть раздел «Лекарства» вкладкой нижней панели. */
@@ -79,18 +175,124 @@ abstract class DeviceScreenTest {
         waitForTag(TAG_MEDICATION_LIST)
     }
 
+    /** Открыть раздел «Настройки» вкладкой нижней панели. */
+    protected fun openSettings() {
+        val label = targetContext.getString(UiR.string.tab_settings)
+        compose.onNode(
+            hasContentDescription(label) and hasAnyAncestor(hasTestTag(TAG_BOTTOM_BAR)),
+            useUnmergedTree = true,
+        ).performClick()
+        waitForTag(TAG_SETTINGS_SCREEN)
+    }
+
+    /**
+     * Ввести значение в поле по тегу-обёртке: поле адресуется действием ввода среди
+     * потомков, потому что на экране не одно поле (TDD §8.3).
+     */
+    protected fun typeInto(fieldTag: String, value: String) {
+        val input = inputOf(fieldTag)
+        input.performScrollTo()
+        input.performTextInput(value)
+        compose.waitForIdle()
+    }
+
+    /** Заменить значение поля: черновик правки уже заполнен прежним текстом. */
+    protected fun replaceText(fieldTag: String, value: String) {
+        val input = inputOf(fieldTag)
+        input.performScrollTo()
+        input.performTextClearance()
+        input.performTextInput(value)
+        compose.waitForIdle()
+    }
+
+    private fun inputOf(fieldTag: String): SemanticsNodeInteraction = compose.onNode(
+        hasSetTextAction() and hasAnyAncestor(hasTestTag(fieldTag)),
+        useUnmergedTree = true,
+    )
+
+    /** Прокрутить ленивый список до узла: далёкие строки не компонуются без прокрутки. */
+    protected fun scrollTo(containerTag: String, nodeTag: String) {
+        compose.onNode(
+            hasScrollAction() and hasAnyAncestor(hasTestTag(containerTag)),
+            useUnmergedTree = true,
+        ).performScrollToNode(hasTestTag(nodeTag))
+        waitForTag(nodeTag)
+    }
+
+    /** Прокрутить к узлу и нажать: форма и карточка прокручиваются целиком. */
+    protected fun scrollToAndClick(tag: String) {
+        waitForTag(tag).performScrollTo().performClick()
+    }
+
+    /** Текст узла одной строкой: проверки сравнивают показанное, а не внутренние числа. */
+    protected fun nodeText(tag: String): String = compose.onNodeWithTag(tag, useUnmergedTree = true)
+        .fetchSemanticsNode()
+        .config
+        .getOrNull(SemanticsProperties.Text)
+        .orEmpty()
+        .joinToString(" ") { it.text }
+
+    /**
+     * Сохранить лекарство в профиль владельца.
+     *
+     * Курс начинается вчера, а не сегодня: `ScheduleExpander` не порождает приём, время
+     * которого на дне начала курса уже прошло (`skipPastTimesOnCourseStart`, SKL-06) —
+     * человек, заводящий лекарство днём, утренний приём не пропускал. С вчерашним началом
+     * посеянный приём сегодняшнего утра существует и уже наступил (TDD §6.4).
+     *
+     * Черновик берётся из домена: его правила те же, что у формы, и лекарство получается
+     * валидным по инвариантам модели (ИНВ-4, ИНВ-6).
+     */
+    protected fun seedMedication(
+        id: String,
+        name: String,
+        times: List<LocalTime>,
+        startDate: LocalDate = DeviceTestClock.today.minusDays(1),
+        endDate: LocalDate? = null,
+        stockLeft: BigDecimal? = null,
+        packageSize: BigDecimal? = null,
+    ) {
+        val draft = MedicationDraft.new(profileId = ownerProfile.id, today = startDate).copy(
+            name = name,
+            doseAmount = BigDecimal.ONE,
+            times = times,
+            endDate = endDate,
+            stockLeft = stockLeft,
+            packageSize = packageSize,
+        )
+        DeviceTestSeed.medication(targetContext, draft.toMedication(id))
+    }
+
+    /** Приёмы на окно вперёд по профилю владельца — явная замена стартовой генерации. */
+    protected fun planIntakes() {
+        DeviceTestSeed.planIntakes(targetContext, ownerProfile.id)
+    }
+
     protected fun exists(tag: String): Boolean = nodesWithTag(tag).isNotEmpty()
 
     protected fun textExists(text: String): Boolean =
         compose.onAllNodesWithText(text, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
 
     protected fun waitForTag(tag: String, timeoutMs: Long = SCREEN_TIMEOUT_MS): SemanticsNodeInteraction {
-        compose.waitUntil(timeoutMs) { exists(tag) }
+        waitUntil(timeoutMs, "узла «$tag»") { exists(tag) }
         return compose.onNodeWithTag(tag, useUnmergedTree = true)
     }
 
     protected fun click(tag: String) {
         compose.onNodeWithTag(tag, useUnmergedTree = true).performClick()
+    }
+
+    /** Ожидание условия; по таймауту — дерево семантики в logcat и понятная ошибка. */
+    protected fun waitUntil(timeoutMs: Long = SCREEN_TIMEOUT_MS, what: String = "условия", condition: () -> Boolean) {
+        try {
+            compose.waitUntil(timeoutMs) { condition() }
+        } catch (e: ComposeTimeoutException) {
+            dumpTree()
+            throw AssertionError(
+                "Не дождались $what за $timeoutMs мс (дерево — в logcat, тег ${DeviceActivities.LOG_TAG})",
+                e,
+            )
+        }
     }
 
     /**
@@ -109,9 +311,31 @@ abstract class DeviceScreenTest {
         )
     }
 
+    /**
+     * Снять отметку о запуске: без неё `StartupRouter` считает запуск первым, и маршрут
+     * первого экрана зависел бы от порядка проверок. Имена — из `SystemStartupState`.
+     */
+    private fun clearLaunchMark() {
+        targetContext.getSharedPreferences(SystemStartupState.STARTUP_PREFERENCES, Context.MODE_PRIVATE)
+            .edit()
+            .clear()
+            .commit()
+    }
+
+    private fun dumpTree() {
+        runCatching {
+            compose
+                .onAllNodes(isRoot(), useUnmergedTree = true)
+                .printToLog(DeviceActivities.LOG_TAG, maxDepth = Int.MAX_VALUE)
+        }
+    }
+
     private fun nodesWithTag(tag: String) = compose.onAllNodesWithTag(tag, useUnmergedTree = true).fetchSemanticsNodes()
 
     companion object {
+        /** Запуск Hilt-графа и первого экрана: заставка держится до готовности данных. */
+        const val LAUNCH_TIMEOUT_MS = 30_000L
+
         /** Первый экран поднимается вместе с DataStore, профилем и планировщиком. */
         const val ROOT_TIMEOUT_MS = 30_000L
 

@@ -211,12 +211,15 @@ internal fun SettingsValueRow(title: String, value: String, modifier: Modifier =
 }
 
 /** Метки строк — точки опоры экранных проверок. */
-internal const val TAG_SETTINGS_SCREEN = "settings_screen"
+const val TAG_SETTINGS_SCREEN = "settings_screen"
 internal const val TAG_PROFILE_ROW = "settings_profile_row"
 internal const val TAG_ACTIVE_PROFILE = "settings_profile_active"
 internal const val TAG_PERMISSIONS_ROW = "settings_permissions_row"
 internal const val TAG_ABOUT = "settings_about"
 internal const val TAG_ABOUT_SITE = "settings_about_site"
 internal const val TAG_SOUND_ROW = "settings_sound_row"
-internal const val TAG_SNOOZE_ROW = "settings_snooze_row"
-internal const val TAG_SNOOZE_DIALOG = "settings_snooze_dialog"
+
+// Публичные метки (SKL-97): на них опираются экранные проверки устройства в модуле app,
+// который не видит `internal` чужих модулей.
+const val TAG_SNOOZE_ROW = "settings_snooze_row"
+const val TAG_SNOOZE_DIALOG = "settings_snooze_dialog"

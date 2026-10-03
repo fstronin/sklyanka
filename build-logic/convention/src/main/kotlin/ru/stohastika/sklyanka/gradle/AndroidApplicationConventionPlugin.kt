@@ -50,6 +50,12 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
             add("androidTestImplementation", libs.findLibrary("androidx-test-junit").get())
             add("androidTestImplementation", libs.findLibrary("androidx-test-core").get())
             add("androidTestImplementation", libs.findLibrary("androidx-test-runner").get())
+            // Стенд устройства (SKL-97): androidTest-исходникам приложения и KSP тестового
+            // графа нужны типы Room и DataStore. В core-data они объявлены implementation
+            // и наружу не экспортируются, поэтому тестовое ребро объявляется здесь —
+            // одним местом на приложение, а не руками в его build-файле.
+            add("androidTestImplementation", libs.findLibrary("room-runtime").get())
+            add("androidTestImplementation", libs.findLibrary("androidx-datastore-preferences").get())
         }
     }
 }

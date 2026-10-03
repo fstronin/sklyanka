@@ -18,6 +18,10 @@ class HiltConventionPlugin : Plugin<Project> {
         dependencies {
             add("implementation", libs.findLibrary("hilt-android").get())
             add("ksp", libs.findLibrary("hilt-compiler").get())
+            // Стенд устройства (SKL-97): приложение тестов из androidTest обязано быть
+            // обработано Hilt — иначе @TestInstallIn и @CustomTestApplication не сгенерируются.
+            add("androidTestImplementation", libs.findLibrary("hilt-android-testing").get())
+            add("kspAndroidTest", libs.findLibrary("hilt-compiler").get())
         }
     }
 }

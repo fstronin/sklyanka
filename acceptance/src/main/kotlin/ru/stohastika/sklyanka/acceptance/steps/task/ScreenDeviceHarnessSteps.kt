@@ -70,24 +70,45 @@ class ScreenDeviceHarnessSteps {
 
     @Тогда("среди них есть проверка, запускающая настоящую MainActivity")
     fun aCheckLaunchesTheRealMainActivity() {
+        val launcher = appChecks.firstOrNull { file ->
+            val text = file.readText()
+            text.contains(MANUAL_LAUNCH) && text.contains(MAIN_ACTIVITY)
+        }
         assertTrue(
-            appChecks.any { it.readText().contains(COMPOSE_ACTIVITY_RULE) },
-            "a device screen check must launch the real MainActivity: $COMPOSE_ACTIVITY_RULE is missing",
+            launcher != null,
+            "a device screen check must launch the real MainActivity by $MANUAL_LAUNCH (SKL-97): $MAIN_ACTIVITY",
+        )
+        assertTrue(
+            appChecks.any { it.readText().contains(EMPTY_COMPOSE_RULE) },
+            "the device screen checks must take the Compose rule from $EMPTY_COMPOSE_RULE",
         )
     }
 
-    @Тогда("ни одной новой зависимости для них не объявлено")
-    fun noNewDependencyIsDeclared() {
+    @Тогда("зависимости тестового стенда объявлены каталогом и конвенцией")
+    fun theStandDependenciesComeFromTheCatalogAndConvention() {
         val appBuild = RepositoryLayout.moduleBuildFile(APP_MODULE).readText()
         assertFalse(
             appBuild.contains("androidTestImplementation"),
             "$APP_MODULE must take its androidTest dependencies from the conventions, not by hand",
         )
+        val catalog = File(RepositoryLayout.root, VERSION_CATALOG).readText()
+        assertTrue(
+            catalog.contains(HILT_ANDROID_TESTING),
+            "the version catalog must declare $HILT_ANDROID_TESTING (SKL-97)",
+        )
+        val hiltConvention = File(RepositoryLayout.root, HILT_CONVENTION).readText()
+        assertTrue(
+            hiltConvention.contains(HILT_ANDROID_TESTING),
+            "the Hilt convention must put $HILT_ANDROID_TESTING on the androidTest classpath",
+        )
+        assertTrue(
+            hiltConvention.contains(KSP_ANDROID_TEST) && hiltConvention.contains(HILT_COMPILER),
+            "the Hilt convention must process test components: $KSP_ANDROID_TEST($HILT_COMPILER)",
+        )
         assertTrue(
             File(RepositoryLayout.root, COMPOSE_CONVENTION).readText().contains(UI_TEST_JUNIT4),
             "the Compose convention must keep declaring $UI_TEST_JUNIT4 for androidTest",
         )
-        val catalog = File(RepositoryLayout.root, VERSION_CATALOG).readText()
         FORBIDDEN_GROUPS.forEach { group ->
             assertFalse(catalog.contains(group), "the version catalog must not mention $group (ПЛ-4)")
         }
@@ -501,12 +522,19 @@ class ScreenDeviceHarnessSteps {
         const val TESTS_SCRIPT = "run-tests.sh"
         const val HARNESS_README = "README.md"
 
-        const val COMPOSE_ACTIVITY_RULE = "createAndroidComposeRule<MainActivity>"
+        const val MANUAL_LAUNCH = "ActivityLifecycleMonitorRegistry"
+        const val MAIN_ACTIVITY = "MainActivity"
+        const val EMPTY_COMPOSE_RULE = "createEmptyComposeRule"
         const val COMPOSE_CONVENTION =
             "build-logic/convention/src/main/kotlin/ru/stohastika/sklyanka/gradle/AndroidComposeConventionPlugin.kt"
+        const val HILT_CONVENTION =
+            "build-logic/convention/src/main/kotlin/ru/stohastika/sklyanka/gradle/HiltConventionPlugin.kt"
         const val SCREEN_CONVENTION =
             "build-logic/convention/src/main/kotlin/ru/stohastika/sklyanka/gradle/ScreenTestsConventionPlugin.kt"
         const val UI_TEST_JUNIT4 = "androidx-compose-ui-test-junit4"
+        const val HILT_ANDROID_TESTING = "hilt-android-testing"
+        const val HILT_COMPILER = "hilt-compiler"
+        const val KSP_ANDROID_TEST = "kspAndroidTest"
         const val VERSION_CATALOG = "gradle/libs.versions.toml"
         const val CAPTURE_FILE = "$APP_MODULE/src/androidTest/kotlin/ru/stohastika/sklyanka/screen/ScreenCapture.kt"
         const val CAPTURE_CALLER_FILE =

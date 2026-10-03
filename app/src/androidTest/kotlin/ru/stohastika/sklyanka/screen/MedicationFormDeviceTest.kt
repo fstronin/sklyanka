@@ -3,15 +3,11 @@ package ru.stohastika.sklyanka.screen
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasScrollAction
-import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
-import androidx.compose.ui.test.performTextInput
+import dagger.hilt.android.testing.HiltAndroidTest
 import org.junit.Test
 import ru.stohastika.sklyanka.feature.meds.form.TAG_ADD_TIME
 import ru.stohastika.sklyanka.feature.meds.form.TAG_DOSE_FIELD
@@ -22,19 +18,20 @@ import ru.stohastika.sklyanka.feature.meds.form.TAG_TIME_ROW
 import ru.stohastika.sklyanka.feature.meds.list.TAG_ADD_MEDICATION
 import ru.stohastika.sklyanka.feature.meds.list.TAG_MEDICATION_LIST
 import ru.stohastika.sklyanka.test.R
-import java.util.UUID
 
 /**
- * Форма лекарства на настоящем устройстве (SKL-96, TDD §4.4–4.5).
+ * Форма лекарства на настоящем устройстве (SKL-96, переработано SKL-97, TDD §9).
  *
- * Самый длинный экран продукта: здесь настоящая платформа проверяет ввод, вставки,
- * окно и ленивый список. Лекарство получает уникальное нейтральное имя из ресурсов
- * тестового APK — медицинских данных нет, прежние записи не мешают.
+ * Самый длинный экран продукта: настоящая платформа проверяет ввод, вставки, окно
+ * и ленивый список. Лекарство создаётся в базе в памяти тестового графа, имя —
+ * из ресурсов тестового APK; случайный суффикс не нужен, столкновений нет.
  */
+@HiltAndroidTest
 class MedicationFormDeviceTest : DeviceScreenTest() {
 
     @Test
     fun theFormOpensFromTheMedicationList() {
+        launchApp()
         awaitRoot()
         openMedications()
 
@@ -46,6 +43,7 @@ class MedicationFormDeviceTest : DeviceScreenTest() {
 
     @Test
     fun theTypedMedicationIsSavedAndAppearsInTheList() {
+        launchApp()
         awaitRoot()
         openMedications()
         click(TAG_ADD_MEDICATION)
@@ -53,7 +51,7 @@ class MedicationFormDeviceTest : DeviceScreenTest() {
 
         // Новый черновик пуст: без названия и дозы сохранение не проходит, без времени
         // «по расписанию» черновик невалиден (ИНВ-4, ИНВ-6). Заполняем минимум.
-        val name = medicationName()
+        val name = testContext.getString(R.string.device_test_medication_name, "form")
         typeInto(TAG_NAME_FIELD, name)
         typeInto(TAG_DOSE_FIELD, DOSE)
         scrollToAndClick(TAG_ADD_TIME)
@@ -66,30 +64,12 @@ class MedicationFormDeviceTest : DeviceScreenTest() {
         capture("medication-list")
     }
 
-    private fun medicationName(): String =
-        testContext.getString(R.string.device_test_medication_name, UUID.randomUUID().toString().take(UNIQUE_SUFFIX))
-
-    /** Поле адресуется обёрткой и действием ввода: на форме не одно поле ввода. */
-    private fun typeInto(fieldTag: String, value: String) {
-        val input = compose.onNode(
-            hasSetTextAction() and hasAnyAncestor(hasTestTag(fieldTag)),
-            useUnmergedTree = true,
-        )
-        input.performScrollTo()
-        input.performTextInput(value)
-        compose.waitForIdle()
-    }
-
-    private fun scrollToAndClick(tag: String) {
-        compose.onNodeWithTag(tag, useUnmergedTree = true).performScrollTo().performClick()
-    }
-
     /**
      * Созданное лекарство ищется в ленивом списке: нижние карточки не компонуются,
      * пока к ним не прокрутили, поэтому проверка прокручивает список до имени.
      */
     private fun assertMedicationInList(name: String) {
-        compose.waitUntil(SCREEN_TIMEOUT_MS) {
+        waitUntil(SCREEN_TIMEOUT_MS, "лекарства «$name» в списке") {
             if (textExists(name)) {
                 true
             } else {
@@ -107,8 +87,6 @@ class MedicationFormDeviceTest : DeviceScreenTest() {
     }.isSuccess
 
     private companion object {
-        /** Длина случайного суффикса имени: различим в списке и не сталкивается между прогонами. */
-        const val UNIQUE_SUFFIX = 8
         const val DOSE = "1"
     }
 }

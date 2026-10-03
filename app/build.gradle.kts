@@ -63,6 +63,9 @@ android {
     }
     defaultConfig {
         buildConfigField("boolean", "REMINDER_MEASUREMENT", reminderMeasurement.toString())
+        // Стенд устройства (SKL-97): приложение тестов и Hilt-граф на проверку.
+        // Конвенция оставляет стандартный раннер модулям core-data/feature-history.
+        testInstrumentationRunner = "ru.stohastika.sklyanka.screen.support.DeviceTestRunner"
     }
     sourceSets {
         getByName("main") {

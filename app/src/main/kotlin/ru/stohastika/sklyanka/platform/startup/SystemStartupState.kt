@@ -61,7 +61,11 @@ class SystemStartupState @Inject constructor(@ApplicationContext private val con
 
     private fun preferences() = context.getSharedPreferences(STARTUP_PREFERENCES, Context.MODE_PRIVATE)
 
-    private companion object {
+    /**
+     * Имена файла и ключа отметки о запуске — `internal`, а не `private` (SKL-97):
+     * стенд устройства снимает отметку перед каждой проверкой и не дублирует строки.
+     */
+    internal companion object {
         const val STARTUP_PREFERENCES = "sklyanka_startup"
         const val KEY_LAUNCHED = "launched"
     }

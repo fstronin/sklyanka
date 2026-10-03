@@ -446,5 +446,8 @@ internal const val TAG_DELETE_PROFILE_ROW = "settings_delete_profile_row"
 internal const val TAG_DELETE_DIVIDER = "settings_delete_divider"
 internal const val TAG_HISTORY_ROW = "settings_history_row"
 internal const val TAG_TRANSFER_ROW = "settings_transfer_row"
-internal const val TAG_ANALYTICS_ROW = "settings_analytics_row"
+
+// Публичная метка (SKL-97): переключатель адресуется экранной проверкой устройства
+// в модуле app, который не видит `internal` чужих модулей.
+const val TAG_ANALYTICS_ROW = "settings_analytics_row"
 internal const val TAG_POLICY_ROW = "settings_policy_row"
