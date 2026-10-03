@@ -44,7 +44,12 @@ class MedicationDeletionDeviceTest : DeviceScreenTest() {
 
         waitForTag(TAG_MEDICATION_CARD_SCREEN)
         // Действие удаления — нижний блок карточки, вне прокручиваемой колонки:
-        // прокручивать к нему нечего, он виден всегда.
+        // прокручивать к нему нечего, он виден всегда. Кадр берётся после того,
+        // как доступное удаление утверждено: тихая Danger-кнопка и пояснение условия.
+        waitForTag(TAG_DELETE)
+        waitForTag(TAG_DELETE_HINT)
+        capture("med-card-deletable")
+
         click(TAG_DELETE)
         waitForTag(TAG_DELETE_SHEET)
         // Шторка — отдельное окно: у корня композиции два корня, кадр берётся у диалога.
