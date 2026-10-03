@@ -69,7 +69,10 @@ class RoomDeferredRemindersTest {
     @Test
     fun findReturnsTheRecordOfThatIntakeOnly() = runTest {
         seedIntake(INTAKE_ID)
-        database.intakeDao().insertAll(listOf(TestData.scheduledIntake(SECOND_INTAKE_ID)))
+        val secondInserted = database.intakeDao()
+            .insertAll(listOf(TestData.scheduledIntake(SECOND_INTAKE_ID, scheduledAt = TestData.LATE_EVENING)))
+
+        assertTrue("the second intake must be inserted", secondInserted.none { it == -1L })
 
         assertNull("nothing was deferred yet", deferred.find(INTAKE_ID))
 
