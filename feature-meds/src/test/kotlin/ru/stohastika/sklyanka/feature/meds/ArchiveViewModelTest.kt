@@ -6,20 +6,24 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import ru.stohastika.sklyanka.domain.medication.ArchiveCaption
 import ru.stohastika.sklyanka.domain.medication.RestoreMedicationUseCase
+import ru.stohastika.sklyanka.domain.medication.UndoDeleteMedicationUseCase
 import ru.stohastika.sklyanka.domain.model.ArchiveReason
 import ru.stohastika.sklyanka.domain.model.IntakeStatus
 import ru.stohastika.sklyanka.domain.model.ScheduleMode
 import ru.stohastika.sklyanka.domain.schedule.PlanReason
+import ru.stohastika.sklyanka.domain.undo.UndoableActionStore
 import ru.stohastika.sklyanka.feature.meds.archive.ArchiveIntent
 import ru.stohastika.sklyanka.feature.meds.archive.ArchiveNotice
 import ru.stohastika.sklyanka.feature.meds.archive.ArchiveUiState
@@ -44,6 +48,7 @@ class ArchiveViewModelTest {
     private val log = RecordingLog()
     private val planner = RecordingPlanner(created = 4)
     private val transactor = DirectTransactor()
+    private val undoActions = UndoableActionStore(clock)
 
     private fun viewModel() = ArchiveViewModel(
         activeProfile = activeProfile,
@@ -51,6 +56,8 @@ class ArchiveViewModelTest {
         intakes = intakes,
         restoreMedication = RestoreMedicationUseCase(medications, planner, transactor, clock, log),
         time = clock,
+        undoDelete = UndoDeleteMedicationUseCase(medications, planner),
+        undoActions = undoActions,
     )
 
     @Before
@@ -240,5 +247,25 @@ class ArchiveViewModelTest {
             .atTime(MedsTestData.MORNING)
             .atZone(MedsTestData.ZONE)
             .toInstant()
+    }
+
+    // --- Мягкое удаление (SKL-99, ОВ-124) ---------------------------------------------------
+
+    @Test
+    fun `a deletion window is shown in the archive and the undo returns the medication`() = runTest(dispatcher) {
+        medications.put(manual("archived"))
+        val model = viewModel()
+        advanceUntilIdle()
+
+        undoActions.publishDeletion(medicationId = "archived", medicationName = "med-archived")
+        // runCurrent, а не advanceUntilIdle: таймер окна сжёг бы его вместе с временем.
+        runCurrent()
+
+        assertNotNull(model.state.value.deletion)
+        model.onIntent(ArchiveIntent.UndoDeletion("archived"))
+        runCurrent()
+
+        assertNull(model.state.value.deletion)
+        assertNull(undoActions.live())
     }
 }

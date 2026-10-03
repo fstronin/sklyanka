@@ -13,6 +13,10 @@ import ru.stohastika.sklyanka.data.room.entity.IntakeEntity
  * Сутки и периоды выбираются диапазоном по текстовому локальному времени —
  * без арифметики «минус 24 часа»: в сутках с переводом времени их 23 или 25 (НФТ-37).
  * Границы приходят из домена уже в формате хранения.
+ *
+ * Экранные выборки выпадают из удалённого лекарства (ПР-14). Исключения сознательные
+ * и названы у своих запросов: проход по просроченным обязан довести его приёмы до
+ * `MISSED`, а сравнение плана с фактом — увидеть будущие `PENDING`, чтобы снять их.
  */
 @Dao
 interface IntakeDao {
@@ -22,6 +26,7 @@ interface IntakeDao {
         SELECT i.* FROM intake i
         JOIN medication m ON m.id = i.medication_id
         WHERE m.profile_id = :profileId
+          AND m.deleted_at IS NULL
           AND i.scheduled_at >= :dayStart AND i.scheduled_at < :nextDayStart
         ORDER BY i.scheduled_at
         """,
@@ -33,6 +38,7 @@ interface IntakeDao {
         SELECT i.* FROM intake i
         JOIN medication m ON m.id = i.medication_id
         WHERE m.profile_id = :profileId
+          AND m.deleted_at IS NULL
           AND i.scheduled_at >= :from AND i.scheduled_at < :to
         ORDER BY i.scheduled_at
         """,
@@ -51,6 +57,7 @@ interface IntakeDao {
         SELECT i.* FROM intake i
         JOIN medication m ON m.id = i.medication_id
         WHERE i.medication_id = :medicationId AND m.profile_id = :profileId
+          AND m.deleted_at IS NULL
           AND i.scheduled_at >= :from AND i.scheduled_at < :to
         ORDER BY i.scheduled_at
         """,
@@ -61,6 +68,37 @@ interface IntakeDao {
         from: String,
         to: String,
     ): Flow<List<IntakeEntity>>
+
+    /**
+     * Есть ли у лекарства отметка `TAKEN` — граница мягкого удаления (ИНВ-22).
+     *
+     * `EXISTS` останавливается на первой найденной строке и идёт по индексу
+     * `(medication_id, scheduled_at, schedule_slot)`: спрашивается это на каждой сборке
+     * карточки, пока действие «Удалить» доступно.
+     */
+    @Query(
+        """
+        SELECT EXISTS(
+            SELECT 1 FROM intake i
+            JOIN medication m ON m.id = i.medication_id
+            WHERE i.medication_id = :medicationId AND m.profile_id = :profileId
+              AND i.status = 'TAKEN'
+        )
+        """,
+    )
+    fun observeHasTaken(profileId: String, medicationId: String): Flow<Boolean>
+
+    @Query(
+        """
+        SELECT EXISTS(
+            SELECT 1 FROM intake i
+            JOIN medication m ON m.id = i.medication_id
+            WHERE i.medication_id = :medicationId AND m.profile_id = :profileId
+              AND i.status = 'TAKEN'
+        )
+        """,
+    )
+    suspend fun hasTaken(profileId: String, medicationId: String): Boolean
 
     @Query("SELECT * FROM intake WHERE id = :intakeId")
     suspend fun getById(intakeId: String): IntakeEntity?
@@ -215,6 +253,7 @@ interface IntakeDao {
         SELECT COUNT(*) FROM intake i
         JOIN medication m ON m.id = i.medication_id
         WHERE i.medication_id = :medicationId AND m.profile_id = :profileId
+          AND m.deleted_at IS NULL
           AND i.scheduled_at >= :dayStart AND i.scheduled_at < :nextDayStart
         """,
     )

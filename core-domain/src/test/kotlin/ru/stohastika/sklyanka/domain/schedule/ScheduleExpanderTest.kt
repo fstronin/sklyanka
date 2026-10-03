@@ -31,6 +31,7 @@ class ScheduleExpanderTest {
         endDate: LocalDate? = null,
         mode: ScheduleMode = ScheduleMode.SCHEDULED,
         archivedAt: java.time.Instant? = null,
+        deletedAt: java.time.Instant? = null,
     ): List<LocalDateTime> = expander.expand(
         Planning.medication(
             times = times,
@@ -38,6 +39,7 @@ class ScheduleExpanderTest {
             endDate = endDate,
             mode = mode,
             archivedAt = archivedAt,
+            deletedAt = deletedAt,
         ),
         Planning.window(clock.today()),
     )
@@ -220,6 +222,19 @@ class ScheduleExpanderTest {
         )
 
         assertTrue(moments.isEmpty())
+    }
+
+    @Test
+    fun `a deleted medication produces no moments`() {
+        // ПР-14: удалённое лекарство новых приёмов не порождает — ни по расписанию, ни «по потребности».
+        val scheduled = expand(deletedAt = Planning.TODAY.minusDays(1).atTime(10, 0).atZone(Planning.ZONE).toInstant())
+        assertTrue(scheduled.isEmpty())
+
+        val prn = expand(
+            mode = ScheduleMode.PRN,
+            deletedAt = Planning.TODAY.atTime(10, 0).atZone(Planning.ZONE).toInstant(),
+        )
+        assertTrue(prn.isEmpty())
     }
 
     // --- День начала курса и времена, которые уже прошли --------------------------------

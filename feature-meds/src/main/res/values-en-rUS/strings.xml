@@ -135,6 +135,12 @@
 
     <string name="card_section_limit">Limit</string>
     <string name="card_restore">Restore</string>
+    <string name="card_delete">Delete</string>
+    <string name="card_delete_hint">You can delete it while no intake has been marked “taken”</string>
+    <string name="card_delete_sheet_title">Delete “%1$s”?</string>
+    <string name="card_delete_sheet_text">The medication will disappear from lists and reminders. Right after deleting, you can bring it back with “Undo”.</string>
+    <string name="meds_deleted_snackbar">%1$s — medication deleted</string>
+    <string name="meds_undo_action">Undo</string>
     <string name="card_course_last_day">last day</string>
     <string name="card_course_over">course finished</string>
 

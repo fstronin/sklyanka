@@ -31,8 +31,7 @@ import ru.stohastika.sklyanka.domain.intake.MarkResult
 import ru.stohastika.sklyanka.domain.intake.UndoMarkUseCase
 import ru.stohastika.sklyanka.domain.intake.UndoOutcome
 import ru.stohastika.sklyanka.domain.intake.UndoRequest
-import ru.stohastika.sklyanka.domain.intake.UndoableMark
-import ru.stohastika.sklyanka.domain.intake.UndoableMarkStore
+import ru.stohastika.sklyanka.domain.medication.UndoDeleteMedicationUseCase
 import ru.stohastika.sklyanka.domain.model.IntakeSource
 import ru.stohastika.sklyanka.domain.reminder.ReadReminderReliabilityUseCase
 import ru.stohastika.sklyanka.domain.time.TimeSource
@@ -42,6 +41,9 @@ import ru.stohastika.sklyanka.domain.today.MarkIntakeGroupUseCase
 import ru.stohastika.sklyanka.domain.today.ObserveTodayAgendaUseCase
 import ru.stohastika.sklyanka.domain.today.PartOfDay
 import ru.stohastika.sklyanka.domain.today.TodayAgenda
+import ru.stohastika.sklyanka.domain.undo.UndoableActionStore
+import ru.stohastika.sklyanka.domain.undo.UndoableDeletion
+import ru.stohastika.sklyanka.domain.undo.UndoableMark
 import java.time.Duration
 import java.time.LocalTime
 import javax.inject.Inject
@@ -70,7 +72,9 @@ class TodayViewModel @Inject constructor(
     private val markGroup: MarkIntakeGroupUseCase,
     private val createPrn: CreatePrnIntakeUseCase,
     private val undoMark: UndoMarkUseCase,
-    private val undoMarks: UndoableMarkStore,
+    private val undoActions: UndoableActionStore,
+    /** Возврат удаления лекарства в коротком окне (SKL-99, ОВ-124). */
+    private val undoDelete: UndoDeleteMedicationUseCase,
     private val time: TimeSource,
     /**
      * Надёжность напоминаний читается при каждом построении состояния, а не кешируется:
@@ -148,13 +152,13 @@ class TodayViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            undoMarks.current.collect { mark ->
+            undoActions.current.collect { action ->
                 undoJob?.cancel()
                 undoJob = null
-                if (mark == null) {
-                    view.update { it.copy(undo = null) }
-                } else {
-                    showUndo(mark)
+                when (action) {
+                    null -> view.update { it.copy(undo = null, deletion = null) }
+                    is UndoableMark -> showUndo(action)
+                    is UndoableDeletion -> showDeletion(action)
                 }
             }
         }
@@ -195,6 +199,11 @@ class TodayViewModel @Inject constructor(
                 undo(intent.intakeIds)
             }
 
+            is TodayIntent.UndoDeletion -> {
+                clearConfirmation()
+                undoDeletion(intent.medicationId)
+            }
+
             is TodayIntent.TakePrn -> {
                 clearConfirmation()
                 viewModelScope.launch {
@@ -232,7 +241,10 @@ class TodayViewModel @Inject constructor(
      */
     fun onScreenLeft() {
         clearConfirmation()
-        undoMarks.clear()
+        undoJob?.cancel()
+        undoJob = null
+        view.update { it.copy(undo = null, deletion = null) }
+        undoActions.clear()
     }
 
     /**
@@ -274,7 +286,7 @@ class TodayViewModel @Inject constructor(
             if (outcome.isCompleted) {
                 val recorded = outcome.intake?.status?.let(MarkResult::of) ?: result
                 analytics.track(AnalyticsEvent.IntakeAction(action = actionFor(recorded), source = ActionSource.PHONE))
-                undoMarks.publish(
+                undoActions.publishMark(
                     intakeIds = listOf(intakeId),
                     // Текст говорит о записанном исходе, а не о нажатой кнопке: при
                     // замещении они расходятся (TDD.md §15.2).
@@ -295,7 +307,7 @@ class TodayViewModel @Inject constructor(
                         AnalyticsEvent.IntakeAction(action = IntakeActionType.TAKEN, source = ActionSource.PHONE),
                     )
                 }
-                undoMarks.publish(
+                undoActions.publishMark(
                     intakeIds = outcome.changedIntakeIds,
                     result = MarkResult.TAKEN,
                     medicationNames = outcome.changedIntakeIds.mapNotNull(::medicationName),
@@ -316,7 +328,7 @@ class TodayViewModel @Inject constructor(
     private fun undo(intakeIds: List<String>) {
         undoJob?.cancel()
         undoJob = null
-        undoMarks.clear()
+        undoActions.clear()
         view.update { it.copy(undo = null) }
         viewModelScope.launch {
             val outcome = undoMark(UndoRequest(intakeIds = intakeIds, source = IntakeSource.PHONE))
@@ -341,7 +353,7 @@ class TodayViewModel @Inject constructor(
         val remaining = Duration.between(time.now(), mark.expiresAt)
         if (remaining.isNegative || remaining.isZero) {
             view.update { it.copy(undo = null) }
-            undoMarks.clearIf(mark)
+            undoActions.clearIf(mark)
             return
         }
         view.update { it.copy(undo = mark.toNotice()) }
@@ -349,8 +361,36 @@ class TodayViewModel @Inject constructor(
             delay(remaining.toMillis())
             view.update { it.copy(undo = null) }
             // Защита от таймера прошлого действия: он не гасит чужую замену.
-            undoMarks.clearIf(mark)
+            undoActions.clearIf(mark)
         }
+    }
+
+    /** Окно удаления на «Сегодня» (ОВ-124): тот же срок и та же защита от чужого таймера. */
+    private fun showDeletion(deletion: UndoableDeletion) {
+        val remaining = Duration.between(time.now(), deletion.expiresAt)
+        if (remaining.isNegative || remaining.isZero) {
+            view.update { it.copy(deletion = null) }
+            undoActions.clearIf(deletion)
+            return
+        }
+        view.update { it.copy(deletion = deletion) }
+        undoJob = viewModelScope.launch {
+            delay(remaining.toMillis())
+            view.update { it.copy(deletion = null) }
+            undoActions.clearIf(deletion)
+        }
+    }
+
+    /**
+     * «Отменить» удаление: окно закрывается синхронно, до запуска возврата, — новая
+     * команда в тот же миг открывает новое окно, а не ждёт завершения старой.
+     */
+    private fun undoDeletion(medicationId: String) {
+        undoJob?.cancel()
+        undoJob = null
+        view.update { it.copy(deletion = null) }
+        undoActions.clear()
+        viewModelScope.launch { undoDelete(medicationId) }
     }
 
     /** Имя лекарства по идентификатору приёма — из очереди суток, второго чтения нет. */
@@ -369,7 +409,11 @@ class TodayViewModel @Inject constructor(
     )
 
     private fun screen(agenda: TodayAgenda, current: ViewState): TodayUiState = if (agenda.isFirstRun) {
-        TodayUiState.Empty(agenda.date, experiments.variantOf(ExperimentId.TODAY_EMPTY_STATE))
+        TodayUiState.Empty(
+            date = agenda.date,
+            copy = experiments.variantOf(ExperimentId.TODAY_EMPTY_STATE),
+            deletion = current.deletion,
+        )
     } else {
         TodayUiState.Content(
             date = agenda.date,
@@ -378,6 +422,7 @@ class TodayViewModel @Inject constructor(
             // Читается на каждой сборке состояния — не только при первом показе (НФТ-52).
             reliability = readReliability().warning,
             undo = current.undo,
+            deletion = current.deletion,
             layout = agenda.layout,
             prn = agenda.prn,
             toggledSections = current.toggledSections,
@@ -405,6 +450,7 @@ class TodayViewModel @Inject constructor(
         val confirmingGroup: LocalTime? = null,
         val prnCollapsed: Boolean = false,
         val undo: UndoNotice? = null,
+        val deletion: UndoableDeletion? = null,
     ) {
         fun withToggledSection(partOfDay: PartOfDay): ViewState = copy(
             toggledSections = if (partOfDay in toggledSections) {

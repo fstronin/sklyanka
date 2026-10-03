@@ -20,7 +20,7 @@ interface MedicationDao {
     @Query(
         """
         SELECT * FROM medication
-        WHERE profile_id = :profileId AND archived_at IS NULL
+        WHERE profile_id = :profileId AND archived_at IS NULL AND deleted_at IS NULL
         ORDER BY name
         """,
     )
@@ -29,7 +29,7 @@ interface MedicationDao {
     @Query(
         """
         SELECT * FROM medication
-        WHERE profile_id = :profileId AND archived_at IS NOT NULL
+        WHERE profile_id = :profileId AND archived_at IS NOT NULL AND deleted_at IS NULL
         ORDER BY archived_at DESC
         """,
     )
@@ -52,15 +52,44 @@ interface MedicationDao {
     /**
      * Архивация условна по `archived_at IS NULL` и возвращает число изменённых строк:
      * повторная архивация — не ошибка, но и не событие, и в журнал уходит только первая.
-     * Момент и причина проставляются вместе (INV-9).
+     * Момент и причина проставляются вместе (INV-9). Удалённое лекарство не архивируется
+     * (ИНВ-21): «удалено» и «в архиве» не сосуществуют.
      */
     @Query(
         """
         UPDATE medication SET archived_at = :at, archive_reason = :reason
-        WHERE id = :medicationId AND archived_at IS NULL
+        WHERE id = :medicationId AND archived_at IS NULL AND deleted_at IS NULL
         """,
     )
     suspend fun archive(medicationId: String, at: Long, reason: String): Int
+
+    /**
+     * Мягкое удаление одной условной записью (ПР-14, ИНВ-21, ИНВ-22).
+     *
+     * Условие «нет ни одной отметки `TAKEN`» стоит внутри самого UPDATE: между чтением
+     * карточки и подтверждением отметку мог поставить другой путь (часы, групповая
+     * отметка), и удаление, скрывшее факт приёма, недопустимо. Здесь же очищаются поля
+     * архива: частично заполненного состояния не бывает даже на время. Строки `intake`
+     * не трогаются — история сохраняется (ПР-14).
+     *
+     * @return число изменённых строк: 0 — повтор, гонка с отметкой или чужой профиль.
+     */
+    @Query(
+        """
+        UPDATE medication
+        SET deleted_at = :at, archived_at = NULL, archive_reason = NULL
+        WHERE id = :medicationId AND deleted_at IS NULL
+          AND NOT EXISTS (
+            SELECT 1 FROM intake i
+            WHERE i.medication_id = :medicationId AND i.status = 'TAKEN'
+          )
+        """,
+    )
+    suspend fun delete(medicationId: String, at: Long): Int
+
+    /** Возврат удаления в коротком окне: очистка момента. true — строка была удалена. */
+    @Query("UPDATE medication SET deleted_at = NULL WHERE id = :medicationId AND deleted_at IS NOT NULL")
+    suspend fun undelete(medicationId: String): Int
 
     /**
      * Принимает уже посчитанное значение остатка.

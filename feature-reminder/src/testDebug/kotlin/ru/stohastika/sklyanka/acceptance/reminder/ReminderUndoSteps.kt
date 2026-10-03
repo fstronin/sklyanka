@@ -149,13 +149,13 @@ class ReminderUndoSteps(private val world: AcceptanceWorld) {
     fun todayDoesNotOpen() {
         // Частичная отметка карточку не закрывает: окно отмены не публикуется, и перейти
         // на «Сегодня» человеку нечем — второго слоя поверх напоминания не появляется.
-        assertTrue("no undo window may open from a partial row mark", world.undoMarks.live() == null)
+        assertTrue("no undo window may open from a partial row mark", world.undoActions.live() == null)
     }
 
     @И("^отмены для этого действия не предлагается$")
     fun noUndoIsOfferedForThatAction() {
         assertNoSnackbarOnTheCard()
-        assertTrue("«Отложить» must not open an undo window", world.undoMarks.live() == null)
+        assertTrue("«Отложить» must not open an undo window", world.undoActions.live() == null)
     }
 
     // --- Обвязка --------------------------------------------------------------------------

@@ -19,6 +19,9 @@ sealed interface ArchiveOutcome {
     /** Курс уже был в архиве: повторная архивация — не ошибка, но и не событие. */
     data object AlreadyArchived : ArchiveOutcome
 
+    /** Лекарство мягко удалено: архивация удалённого не производится (ИНВ-21). */
+    data object Deleted : ArchiveOutcome
+
     /** Лекарства с таким идентификатором нет: карточку открыли, пока курс уносил перенос данных. */
     data object UnknownMedication : ArchiveOutcome
 }
@@ -45,12 +48,16 @@ sealed interface ArchiveOutcome {
  */
 class ArchiveMedicationUseCase(private val medications: MedicationRepository, private val planner: MedicationPlanner) {
 
-    suspend operator fun invoke(medicationId: String, reason: ArchiveReason): ArchiveOutcome = when {
-        medications.get(medicationId) == null -> ArchiveOutcome.UnknownMedication
-        // Архивация условна по пустому моменту архивации: повторный вызов ничего не пишет
-        // и не порождает события (ИНВ-9).
-        !medications.archive(medicationId, reason) -> ArchiveOutcome.AlreadyArchived
-        else -> ArchiveOutcome.Archived(reason = reason, revokedIntakes = revokePlannedIntakes(medicationId))
+    suspend operator fun invoke(medicationId: String, reason: ArchiveReason): ArchiveOutcome {
+        val medication = medications.get(medicationId) ?: return ArchiveOutcome.UnknownMedication
+        return when {
+            // Удалённое лекарство не архивируется (ИНВ-21): «удалено» и «в архиве» не вместе.
+            medication.isDeleted -> ArchiveOutcome.Deleted
+            // Архивация условна по пустому моменту архивации: повторный вызов ничего не пишет
+            // и не порождает события (ИНВ-9).
+            !medications.archive(medicationId, reason) -> ArchiveOutcome.AlreadyArchived
+            else -> ArchiveOutcome.Archived(reason = reason, revokedIntakes = revokePlannedIntakes(medicationId))
+        }
     }
 
     /**

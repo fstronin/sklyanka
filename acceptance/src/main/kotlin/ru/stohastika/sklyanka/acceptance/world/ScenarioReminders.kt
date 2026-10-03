@@ -429,7 +429,9 @@ class ScenarioReminders(
 
         override suspend fun pendingInSlot(slot: ReminderSlot): List<ReminderIntake> = intakes.all()
             .mapNotNull { projection(it.id) }
-            .filter { it.slot == slot && it.status == IntakeStatus.PENDING }
+            // Карточка удалённого лекарства не собирается вовсе (ПР-14) — тем же правилом,
+            // что у настоящего `ReminderDataSource`.
+            .filter { it.slot == slot && it.status == IntakeStatus.PENDING && !it.medicationDeleted }
 
         override suspend fun card(slot: ReminderSlot, mirroredToWatch: Boolean): ReminderCard? {
             val profile = profiles.byId(slot.profileId) ?: return null
@@ -472,6 +474,7 @@ class ScenarioReminders(
                     status = intake.status,
                     scheduleMode = medication.scheduleMode,
                     medicationArchived = medication.isArchived,
+                    medicationDeleted = medication.isDeleted,
                     profileIsSelf = profile.isSelf,
                     profileMirrorsReminders = profile.mirrorReminders,
                 )

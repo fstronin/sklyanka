@@ -11,6 +11,7 @@ import ru.stohastika.sklyanka.domain.medication.ArchiveGrouping
 import ru.stohastika.sklyanka.domain.medication.MedicationListRules
 import ru.stohastika.sklyanka.domain.medication.RestoreMedicationUseCase
 import ru.stohastika.sklyanka.domain.medication.RestoreOutcome
+import ru.stohastika.sklyanka.domain.undo.UndoableDeletion
 import ru.stohastika.sklyanka.feature.meds.archive.ArchiveIntent
 import ru.stohastika.sklyanka.feature.meds.archive.ArchiveNotice
 import ru.stohastika.sklyanka.feature.meds.archive.ArchiveScreen
@@ -56,6 +57,7 @@ internal object ArchiveStand {
             archiveCount = content.total,
             content = content.takeUnless { it.isEmpty },
             notice = noticeHere,
+            deletion = world.undoActions.live() as? UndoableDeletion,
             loading = false,
         )
     }
@@ -89,11 +91,21 @@ internal object ArchiveStand {
     private fun apply(world: AcceptanceWorld, intent: ArchiveIntent) {
         when (intent) {
             is ArchiveIntent.Restore -> restore(world, intent.medicationId)
+            is ArchiveIntent.UndoDeletion -> {
+                // «Отменить» закрывает окно синхронно, как в `ArchiveViewModel`.
+                world.undoActions.clear()
+                world.undoDeleteMedication(medicationName(world, intent.medicationId))
+            }
             // Переключение вкладки и открытие карточки — состояние маршрута: архив их
             // только сообщает наружу.
             else -> Unit
         }
     }
+
+    /** Имя ключа сценария по идентификатору лекарства: мир хранит безымянные записи (НФТ-19). */
+    private fun medicationName(world: AcceptanceWorld, medicationId: String): String = requireNotNull(
+        world.medications.names().firstOrNull { world.medications.get(it).id == medicationId },
+    ) { "unknown medication id: $medicationId" }
 
     /** Возврат тем же use-case, что в продукте; отказ объясняется, а не проглатывается. */
     private fun restore(world: AcceptanceWorld, medicationId: String) {

@@ -31,6 +31,7 @@ import ru.stohastika.sklyanka.ui.component.PrimaryButtonKind
 import ru.stohastika.sklyanka.ui.component.ProfileStripe
 import ru.stohastika.sklyanka.ui.component.ProgressPurpose
 import ru.stohastika.sklyanka.ui.component.QuietButton
+import ru.stohastika.sklyanka.ui.component.QuietButtonKind
 import ru.stohastika.sklyanka.ui.component.ScreenHeader
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderKind
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderLabels
@@ -130,7 +131,9 @@ fun ButtonGallery(modifier: Modifier = Modifier) {
             ButtonState.entries.filter { it != ButtonState.Busy }.forEach { state ->
                 QuietButton(text = quiet, onClick = {}, state = state)
             }
-            QuietButton(text = quiet, onClick = {}, muted = true)
+            QuietButton(text = quiet, onClick = {}, kind = QuietButtonKind.Muted)
+            // Опасная тихая — композиция того же вида (ОВ-124): новых компонентов нет.
+            QuietButton(text = quiet, onClick = {}, kind = QuietButtonKind.Danger)
         }
     }
 }

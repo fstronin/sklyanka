@@ -4,6 +4,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 
 /**
@@ -14,6 +17,12 @@ import androidx.compose.ui.Modifier
  *
  * Архивация возвращает человека в список лекарств (`docs/spec/03-screens.md`), и это
  * делает маршрут, а не экран: сам экран о существовании списка не знает.
+ *
+ * Мягкое удаление (SKL-99, ОВ-124) закрывает карточку двумя путями, и оба ведут сюда:
+ * подтверждение выставляет `closed`, а сама запись исчезает из активных и архивных
+ * выборок — состояние становится `null`. Память «карточка уже открывалась» нужна
+ * затем, чтобы второй путь не оставил поверх списка пустой слой: закрывать его было бы
+ * некому. До первого состояния идёт чтение, и назад уходить рано.
  */
 @Composable
 fun MedicationCardRoute(
@@ -26,9 +35,17 @@ fun MedicationCardRoute(
     LaunchedEffect(medicationId) { viewModel.open(medicationId) }
     val state by viewModel.state.collectAsState()
 
-    val current = state ?: return
-    // Карточка чужого профиля не открывается: состояние остаётся пустым, и экран
-    // не рисуется вовсе (ПР-10). Уход с экрана — дело того, кто собрал маршрут.
+    var wasOpen by remember(medicationId) { mutableStateOf(false) }
+    val current = state
+    if (current != null) {
+        wasOpen = true
+    } else {
+        // Карточка чужого профиля не открывается вовсе (ПР-10), и назад уходить некуда:
+        // состояние так и не появилось. Уже открытая карточка, потерявшая запись, —
+        // другое дело: человек удалил лекарство, и его возвращают в список.
+        if (wasOpen) LaunchedEffect(medicationId) { onBack() }
+        return
+    }
     LaunchedEffect(current.closed) { if (current.closed) onBack() }
 
     MedicationCardScreen(

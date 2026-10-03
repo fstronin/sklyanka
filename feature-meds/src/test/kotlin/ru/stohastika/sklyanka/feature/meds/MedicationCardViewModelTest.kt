@@ -18,6 +18,7 @@ import org.junit.Before
 import org.junit.Test
 import ru.stohastika.sklyanka.domain.medication.ArchiveMedicationUseCase
 import ru.stohastika.sklyanka.domain.medication.CourseProgress
+import ru.stohastika.sklyanka.domain.medication.DeleteMedicationUseCase
 import ru.stohastika.sklyanka.domain.medication.RestoreMedicationUseCase
 import ru.stohastika.sklyanka.domain.medication.ToggleWatchMirrorUseCase
 import ru.stohastika.sklyanka.domain.model.ArchiveReason
@@ -26,6 +27,8 @@ import ru.stohastika.sklyanka.domain.model.ScheduleMode
 import ru.stohastika.sklyanka.domain.schedule.PlanReason
 import ru.stohastika.sklyanka.domain.stock.RefillStockUseCase
 import ru.stohastika.sklyanka.domain.stock.StockPanel
+import ru.stohastika.sklyanka.domain.undo.UndoableActionStore
+import ru.stohastika.sklyanka.domain.undo.UndoableDeletion
 import ru.stohastika.sklyanka.feature.meds.card.MedCardIntent
 import ru.stohastika.sklyanka.feature.meds.card.MedCardNotice
 import ru.stohastika.sklyanka.feature.meds.card.MedCardOperations
@@ -50,6 +53,7 @@ class MedicationCardViewModelTest {
     private val intakes = FakeIntakes()
     private val log = RecordingLog()
     private val planner = RecordingPlanner(created = 4, deleted = 2)
+    private val undoActions = UndoableActionStore(clock)
     private val transactor = DirectTransactor()
 
     private fun viewModel() = MedicationCardViewModel(
@@ -61,8 +65,10 @@ class MedicationCardViewModelTest {
             restore = RestoreMedicationUseCase(medications, planner, transactor, clock, log),
             watchMirror = ToggleWatchMirrorUseCase(medications, log),
             refillStock = RefillStockUseCase(medications, log),
+            delete = DeleteMedicationUseCase(medications, intakes, planner),
         ),
         time = clock,
+        undoActions = undoActions,
     )
 
     @Before
@@ -333,6 +339,65 @@ class MedicationCardViewModelTest {
         archivedAt = archivedAt,
         mirrorToWatch = mirrorToWatch,
     )
+
+    // --- Мягкое удаление (SKL-99, ОВ-124) ---------------------------------------------------
+
+    @Test
+    fun `the delete action disappears once an intake is taken`() = runTest(dispatcher) {
+        medications.put(scheduled())
+        intakes.put(MedsTestData.taken(MEDICATION_ID, MedsTestData.TODAY.atTime(MedsTestData.MORNING)))
+
+        assertEquals(false, requireNotNull(open()).canDelete)
+    }
+
+    @Test
+    fun `an empty history keeps the delete action available`() = runTest(dispatcher) {
+        medications.put(scheduled())
+
+        assertEquals(true, requireNotNull(open()).canDelete)
+    }
+
+    @Test
+    fun `confirming the deletion closes the card and opens the undo window`() = runTest(dispatcher) {
+        medications.put(scheduled())
+        val model = viewModel()
+        advanceUntilIdle()
+        model.open(MEDICATION_ID)
+        advanceUntilIdle()
+
+        model.onIntent(MedCardIntent.DeleteRequested)
+        advanceUntilIdle()
+        assertEquals(true, model.state.value?.deleteConfirmation)
+
+        model.onIntent(MedCardIntent.DeleteConfirmed)
+        advanceUntilIdle()
+
+        assertTrue(medications.snapshot().single().isDeleted)
+        assertEquals(listOf(MEDICATION_ID to PlanReason.MEDICATION_DELETED), planner.calls)
+        assertTrue("the undo window must be published", undoActions.live() is UndoableDeletion)
+        // Запись уходит из выборок, и состояние карточки может стать `null` раньше, чем
+        // маршрут прочитает `closed`; оба исхода значат одно — открытой карточки нет
+        // (закрытие маршрутом проверяет устройство, `MedicationDeletionDeviceTest`).
+        val state = model.state.value
+        assertTrue("the deleted card must not stay open: $state", state == null || state.closed)
+        assertTrue("the sheet must not stay open: $state", state?.deleteConfirmation != true)
+    }
+
+    @Test
+    fun `dismissing the sheet changes nothing`() = runTest(dispatcher) {
+        medications.put(scheduled())
+        val model = viewModel()
+        advanceUntilIdle()
+        model.open(MEDICATION_ID)
+        advanceUntilIdle()
+
+        model.onIntent(MedCardIntent.DeleteRequested)
+        model.onIntent(MedCardIntent.DeleteDismissed)
+        advanceUntilIdle()
+
+        assertEquals(false, model.state.value?.deleteConfirmation)
+        assertFalse(medications.snapshot().single().isDeleted)
+    }
 
     private companion object {
         const val MEDICATION_ID = "medication-1"

@@ -33,6 +33,7 @@ import ru.stohastika.sklyanka.feature.meds.stockPackageLabel
 import ru.stohastika.sklyanka.ui.component.AdherenceWeek
 import ru.stohastika.sklyanka.ui.component.ProgressPurpose
 import ru.stohastika.sklyanka.ui.component.QuietButton
+import ru.stohastika.sklyanka.ui.component.QuietButtonKind
 import ru.stohastika.sklyanka.ui.component.SecondaryButton
 import ru.stohastika.sklyanka.ui.component.SklyankaProgressTrack
 import ru.stohastika.sklyanka.ui.component.SklyankaTextField
@@ -295,7 +296,7 @@ private fun RefillRow(refill: RefillUi, unit: DoseUnit, onIntent: (MedCardIntent
             QuietButton(
                 text = stringResource(UiR.string.action_cancel),
                 onClick = { onIntent(MedCardIntent.RefillCancelled) },
-                muted = true,
+                kind = QuietButtonKind.Muted,
                 modifier = Modifier.testTag(TAG_REFILL_CANCEL),
             )
             SecondaryButton(

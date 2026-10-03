@@ -283,7 +283,7 @@ internal object TodayScreenProbe {
         // Отброшенная отметка — не новое действие человека: окно не открывается,
         // и срок снэкбара идёт от единственной состоявшейся (приёмка, строка 203).
         if (!outcome.isCompleted) return
-        world.undoMarks.publish(
+        world.undoActions.publishMark(
             intakeIds = listOf(intakeId),
             result = outcome.intake?.status?.let(MarkResult::of) ?: result,
             medicationNames = listOfNotNull(medicationNameOfIntake(world, intakeId)),
@@ -293,7 +293,7 @@ internal object TodayScreenProbe {
     private fun markTheGroup(world: AcceptanceWorld, intakeIds: List<String>) {
         when (val outcome = world.markGroup(intakeIds, world.clock.nowLocal())) {
             is GroupMarkOutcome.Applied -> if (outcome.changedIntakeIds.isNotEmpty()) {
-                world.undoMarks.publish(
+                world.undoActions.publishMark(
                     intakeIds = outcome.changedIntakeIds,
                     result = MarkResult.TAKEN,
                     medicationNames = outcome.changedIntakeIds.mapNotNull { medicationNameOfIntake(world, it) },
@@ -306,7 +306,7 @@ internal object TodayScreenProbe {
 
     /** «Отменить»: окно закрывается синхронно, как в `TodayViewModel` (SKL-30). */
     private fun undo(world: AcceptanceWorld, intakeIds: List<String>) {
-        world.undoMarks.clear()
+        world.undoActions.clear()
         world.undo(intakeIds, world.clock.nowLocal())
     }
 

@@ -12,6 +12,8 @@ import ru.stohastika.sklyanka.domain.analytics.AnalyticsConsentDecision
 import ru.stohastika.sklyanka.domain.analytics.AnalyticsConsentStore
 import ru.stohastika.sklyanka.domain.analytics.AnalyticsConsentVersion
 import ru.stohastika.sklyanka.domain.model.Intake
+import ru.stohastika.sklyanka.domain.model.IntakeSource
+import ru.stohastika.sklyanka.domain.model.IntakeStatus
 import ru.stohastika.sklyanka.domain.model.Medication
 import ru.stohastika.sklyanka.domain.model.Profile
 import ru.stohastika.sklyanka.domain.onboarding.port.OnboardingStateStore
@@ -84,6 +86,11 @@ internal object DeviceTestSeed {
     /** Приёмы профиля за календарный день: следствия действий карточек читаются отсюда. */
     fun dayIntakes(context: Context, profileId: String, date: LocalDate): List<Intake> = runBlocking {
         graph(context).intakes().observeDay(profileId, date).first()
+    }
+
+    /** Отметка «принято» сидом: проверка «после первой отметки удаления нет» (SKL-99). */
+    fun markTaken(context: Context, intakeId: String) = runBlocking {
+        graph(context).intakes().markIfPending(intakeId, IntakeStatus.TAKEN, IntakeSource.PHONE)
     }
 
     /** Отложенная запись приёма, если срабатывание перенесено, — иначе `null`. */

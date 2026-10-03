@@ -7,6 +7,8 @@ import ru.stohastika.sklyanka.domain.reminder.ReadReminderReliabilityUseCase
 import ru.stohastika.sklyanka.domain.stock.StockWarning
 import ru.stohastika.sklyanka.domain.stock.StockWarningForProfileUseCase
 import ru.stohastika.sklyanka.domain.today.BuildTodayAgenda
+import ru.stohastika.sklyanka.domain.undo.UndoableDeletion
+import ru.stohastika.sklyanka.domain.undo.UndoableMark
 import ru.stohastika.sklyanka.feature.today.TodayUiState
 import ru.stohastika.sklyanka.feature.today.UndoNotice
 
@@ -27,9 +29,13 @@ internal object TodayFromWorld {
         val profileName = world.profiles.active
         val profile = world.profiles.get(profileName)
         val date = world.clock.today()
-        val medications = world.medications.all().filter { it.profileId == profile.id && !it.isArchived }
+        val medications = world.medications.all()
+            .filter { it.profileId == profile.id && !it.isArchived && !it.isDeleted }
         val intakes = world.intakes.ofProfile(world.profiles, profileName)
             .filter { it.scheduledAt.toLocalDate() == date }
+            // Приёмы удалённого лекарства из повестки выпадают — тем же правилом, что
+            // в `IntakeDao.observeDay` (ПР-14).
+            .filter { world.medications.byId(it.medicationId)?.isDeleted != true }
         val agenda = BuildTodayAgenda()(
             date = date,
             intakes = intakes,
@@ -39,7 +45,10 @@ internal object TodayFromWorld {
             stockWarning = stockWarning(world, profile.id),
         )
         return if (agenda.isFirstRun) {
-            TodayUiState.Empty(agenda.date)
+            TodayUiState.Empty(
+                date = agenda.date,
+                deletion = world.undoActions.live() as? UndoableDeletion,
+            )
         } else {
             TodayUiState.Content(
                 date = agenda.date,
@@ -50,9 +59,10 @@ internal object TodayFromWorld {
                 reliability = ReadReminderReliabilityUseCase(world.system)().warning,
                 // Окно отмены — из того же магазина, что в продукте (SKL-30): срок
                 // проверяет магазин, а разметка показывает готовый факт.
-                undo = world.undoMarks.live()?.let { mark ->
+                undo = (world.undoActions.live() as? UndoableMark)?.let { mark ->
                     UndoNotice(mark.intakeIds, mark.result, mark.medicationNames)
                 },
+                deletion = world.undoActions.live() as? UndoableDeletion,
                 layout = agenda.layout,
                 prn = agenda.prn,
                 toggledSections = emptySet(),

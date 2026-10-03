@@ -2,6 +2,7 @@ package ru.stohastika.sklyanka.feature.meds.archive
 
 import androidx.compose.runtime.Immutable
 import ru.stohastika.sklyanka.domain.medication.ArchiveContent
+import ru.stohastika.sklyanka.domain.undo.UndoableDeletion
 
 /**
  * Состояние вкладки «Архив» экрана «Лекарства» (`design/screens/Archive.dc.html`).
@@ -22,6 +23,8 @@ data class ArchiveUiState(
     /** `null` — архив пуст: сегмент остаётся доступным, вместо списка идёт пояснение. */
     val content: ArchiveContent? = null,
     val notice: ArchiveNotice? = null,
+    /** Окно «Отменить» после удаления из архивного вида (ОВ-124); `null` — отменять нечего. */
+    val deletion: UndoableDeletion? = null,
     val loading: Boolean = true,
 )
 

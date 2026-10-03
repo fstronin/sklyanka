@@ -84,6 +84,8 @@ internal object ReminderPlanReasons {
         RescheduleReason.SCHEDULE_EDITED -> PlanReason.MEDICATION_SAVED
         RescheduleReason.MEDICATION_ADDED -> PlanReason.MEDICATION_ADDED
         RescheduleReason.MEDICATION_ARCHIVED -> PlanReason.MEDICATION_ARCHIVED
+        RescheduleReason.MEDICATION_DELETED -> PlanReason.MEDICATION_DELETED
+        RescheduleReason.MEDICATION_UNDELETED -> PlanReason.MEDICATION_UNDELETED
         RescheduleReason.MEDICATION_UNARCHIVED -> PlanReason.MEDICATION_RESTORED
         RescheduleReason.ANCHOR -> PlanReason.ANCHOR_ALARM
         RescheduleReason.MANUAL -> PlanReason.MANUAL_CHECK
@@ -106,6 +108,8 @@ internal object ReminderPlanReasons {
         PlanReason.MEDICATION_ADDED -> RescheduleReason.MEDICATION_ADDED
         PlanReason.MEDICATION_SAVED -> RescheduleReason.SCHEDULE_EDITED
         PlanReason.MEDICATION_ARCHIVED -> RescheduleReason.MEDICATION_ARCHIVED
+        PlanReason.MEDICATION_DELETED -> RescheduleReason.MEDICATION_DELETED
+        PlanReason.MEDICATION_UNDELETED -> RescheduleReason.MEDICATION_UNDELETED
         PlanReason.MEDICATION_RESTORED -> RescheduleReason.MEDICATION_UNARCHIVED
         else -> error("Generation for reason ${reason.code} does not change one medication: no reminder reason for it")
     }

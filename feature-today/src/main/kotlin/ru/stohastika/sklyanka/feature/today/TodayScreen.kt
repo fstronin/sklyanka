@@ -35,6 +35,7 @@ import androidx.compose.ui.text.style.TextAlign
 import ru.stohastika.sklyanka.domain.experiment.VariantKey
 import ru.stohastika.sklyanka.domain.reminder.ReminderWarning
 import ru.stohastika.sklyanka.domain.today.TodayLayout
+import ru.stohastika.sklyanka.domain.undo.UndoableDeletion
 import ru.stohastika.sklyanka.ui.component.Banner
 import ru.stohastika.sklyanka.ui.component.BannerKind
 import ru.stohastika.sklyanka.ui.component.BottomBar
@@ -79,7 +80,11 @@ fun TodayScreen(state: TodayUiState, onIntent: (TodayIntent) -> Unit, modifier: 
             .background(colors.background)
             .testTag(TAG_TODAY_SCREEN),
     ) {
-        val undo = (state as? TodayUiState.Content)?.undo
+        val deletion = when (state) {
+            is TodayUiState.Empty -> state.deletion
+            is TodayUiState.Content -> state.deletion
+            TodayUiState.Opening -> null
+        }
         // Содержимое и снэкбар живут в одном Box над нижней панелью: снэкбар всплывает
         // поверх контента, а панель остаётся видимой и нажимаемой (ОВ-81/ОВ-6, SKL-30).
         Box(Modifier.fillMaxWidth().weight(1f)) {
@@ -88,7 +93,11 @@ fun TodayScreen(state: TodayUiState, onIntent: (TodayIntent) -> Unit, modifier: 
                 is TodayUiState.Empty -> TodayEmpty(state, onIntent, Modifier.fillMaxSize())
                 is TodayUiState.Content -> TodayContent(state, onIntent, Modifier.fillMaxSize())
             }
-            UndoSnackbar(undo = undo, onIntent = onIntent)
+            UndoSnackbar(
+                undo = (state as? TodayUiState.Content)?.undo,
+                deletion = deletion,
+                onIntent = onIntent,
+            )
         }
         BottomBar(
             selected = BottomBarTab.Today,
@@ -104,14 +113,19 @@ fun TodayScreen(state: TodayUiState, onIntent: (TodayIntent) -> Unit, modifier: 
 }
 
 @Composable
-private fun BoxScope.UndoSnackbar(undo: UndoNotice?, onIntent: (TodayIntent) -> Unit) {
+private fun BoxScope.UndoSnackbar(undo: UndoNotice?, deletion: UndoableDeletion?, onIntent: (TodayIntent) -> Unit) {
     var lastUndo by remember { mutableStateOf<UndoNotice?>(null) }
-    LaunchedEffect(undo) { if (undo != null) lastUndo = undo }
+    var lastDeletion by remember { mutableStateOf<UndoableDeletion?>(null) }
+    LaunchedEffect(undo, deletion) {
+        if (undo != null) lastUndo = undo
+        if (deletion != null) lastDeletion = deletion
+    }
+    val visible = undo != null || deletion != null
     val rise = with(LocalDensity.current) { SklyankaSpacing.Block.roundToPx() }
     val enterTiming = motionTiming(MotionPhase.SnackbarEnter)
     val exitTiming = motionTiming(MotionPhase.SnackbarExit)
     AnimatedVisibility(
-        visible = undo != null,
+        visible = visible,
         enter = slideInVertically(
             animationSpec = tween(enterTiming.durationMillis, easing = enterTiming.easing),
             initialOffsetY = { rise },
@@ -128,12 +142,24 @@ private fun BoxScope.UndoSnackbar(undo: UndoNotice?, onIntent: (TodayIntent) -> 
                 bottom = SklyankaSpacing.Medium,
             ),
     ) {
-        lastUndo?.let { notice ->
-            Snackbar(
-                text = notice.text(),
-                actionLabel = stringResource(R.string.today_undo_action),
-                onAction = { onIntent(TodayIntent.UndoMark(notice.intakeIds)) },
-            )
+        // Ячейка «последнее действие» одна (ОВ-124): показывается либо отметка,
+        // либо удаление; одновременными они не бывают.
+        if (undo != null) {
+            lastUndo?.let { notice ->
+                Snackbar(
+                    text = notice.text(),
+                    actionLabel = stringResource(R.string.today_undo_action),
+                    onAction = { onIntent(TodayIntent.UndoMark(notice.intakeIds)) },
+                )
+            }
+        } else {
+            lastDeletion?.let { shown ->
+                Snackbar(
+                    text = stringResource(R.string.today_deleted_snackbar, shown.medicationName),
+                    actionLabel = stringResource(R.string.today_undo_action),
+                    onAction = { onIntent(TodayIntent.UndoDeletion(shown.medicationId)) },
+                )
+            }
         }
     }
 }

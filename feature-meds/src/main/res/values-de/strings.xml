@@ -135,6 +135,12 @@
 
     <string name="card_section_limit">Limit</string>
     <string name="card_restore">Zurückholen</string>
+    <string name="card_delete">Löschen</string>
+    <string name="card_delete_hint">Löschen ist möglich, solange keine Markierung „eingenommen“ existiert</string>
+    <string name="card_delete_sheet_title">„%1$s“ löschen?</string>
+    <string name="card_delete_sheet_text">Das Medikament verschwindet aus Listen und Erinnerungen. Direkt nach dem Löschen lässt es sich mit „Rückgängig“ zurückholen.</string>
+    <string name="meds_deleted_snackbar">%1$s — Medikament gelöscht</string>
+    <string name="meds_undo_action">Rückgängig</string>
     <string name="card_course_last_day">letzter Tag</string>
     <string name="card_course_over">Kur beendet</string>
 

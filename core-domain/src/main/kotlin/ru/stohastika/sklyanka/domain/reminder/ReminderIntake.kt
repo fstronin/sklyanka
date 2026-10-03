@@ -25,6 +25,8 @@ data class ReminderIntake(
     val scheduleMode: ScheduleMode,
     /** Лекарство в архиве: его приёмы в планировании не участвуют (ПР-11). */
     val medicationArchived: Boolean,
+    /** Лекарство мягко удалено: приёмы не напоминают и на часы не уходят (ПР-14). */
+    val medicationDeleted: Boolean,
     /** Профиль владельца приложения (ИНВ-1). */
     val profileIsSelf: Boolean,
     /** Дублировать ли напоминания чужого профиля владельцу (ПРФ-6). */

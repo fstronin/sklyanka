@@ -80,6 +80,8 @@ class TransferFileBuilder(private val clock: ScenarioClock) {
         stockLeft: BigDecimal? = null,
         stockThresholdDays: Int? = null,
         archived: Boolean = false,
+        /** Мягко удалённая запись файла (ПМ-24, ПЕР-10): едет удалённой и остаётся скрытой. */
+        deleted: Boolean = false,
     ): TransferFileBuilder {
         val profile = requireNotNull(profilesByKey[profileKey]) { "unknown file profile: $profileKey" }
         val medication = Medication(
@@ -102,6 +104,7 @@ class TransferFileBuilder(private val clock: ScenarioClock) {
             stockThresholdDays = stockThresholdDays,
             archivedAt = if (archived) clock.now() else null,
             archiveReason = if (archived) ArchiveReason.COURSE_FINISHED else null,
+            deletedAt = if (deleted) clock.now() else null,
         )
         medicationsByKey[key] = medication
         fileMedications += medication

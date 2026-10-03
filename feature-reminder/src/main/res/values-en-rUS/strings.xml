@@ -119,6 +119,8 @@
     <string name="diagnostics_reason_schedule_edited">medication schedule changed</string>
     <string name="diagnostics_reason_medication_added">medication added</string>
     <string name="diagnostics_reason_medication_archived">medication archived</string>
+    <string name="diagnostics_reason_medication_deleted">medication deleted</string>
+    <string name="diagnostics_reason_medication_undeleted">medication restored</string>
     <string name="diagnostics_reason_medication_unarchived">medication restored from the archive</string>
     <string name="diagnostics_reason_alarm_fired">reminder fired</string>
     <string name="diagnostics_reason_profile_set_changed">profile set changed</string>

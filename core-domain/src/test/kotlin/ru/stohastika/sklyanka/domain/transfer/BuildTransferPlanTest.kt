@@ -256,6 +256,42 @@ class BuildTransferPlanTest {
         assertEquals(1, plan.report.intakesSkipped)
     }
 
+    @Test
+    @DisplayName("A softly deleted record is added deleted and is never matched")
+    fun deletedRecordTravelsDeleted() {
+        // Файл несёт удалённую запись — она остаётся удалённой и не участвует в решениях:
+        // «взять из файла» молча удаляло бы запись устройства, «оставить моё» воскрешало бы файл.
+        val deleted = Transfers.magnesium(id = "file-med").copy(deletedAt = Instant.parse("2026-10-01T10:00:00Z"))
+        val file = Transfers.snapshot(
+            profiles = listOf(Transfers.self()),
+            medications = listOf(deleted),
+            intakes = listOf(Transfers.pending("file-intake", medicationId = "file-med")),
+        )
+
+        val plan = build.merge(device, file, decisions = emptyMap())
+
+        assertEquals(1, plan.medicationsToInsert.size)
+        assertTrue(plan.medicationsToInsert.single().isDeleted, "PER-10: the state travels as is")
+        assertTrue(plan.medicationsToUpdate.isEmpty(), "a deleted record must not overwrite the device one")
+        assertEquals(0, plan.report.matchesResolved)
+    }
+
+    @Test
+    @DisplayName("Replace all carries the deletion moment and does not resurrect anything")
+    fun replaceAllKeepsTheDeletionMoment() {
+        val deleted = Transfers.magnesium(id = "file-med").copy(deletedAt = Instant.parse("2026-10-01T10:00:00Z"))
+        val file = Transfers.snapshot(
+            profiles = listOf(Transfers.self()),
+            medications = listOf(deleted),
+            intakes = emptyList(),
+        )
+
+        val plan = build.replaceAll(file)
+
+        assertTrue(plan.erase)
+        assertTrue(plan.medicationsToInsert.single().isDeleted)
+    }
+
     private fun merge(decision: MatchDecision): TransferPlan =
         build.merge(device, snapshot, mapOf("file-med" to decision))
 

@@ -25,4 +25,7 @@ sealed interface MedsIntent {
      * исчерпанном суточном ограничении кнопка недоступна и намерение не порождается.
      */
     data class TakeNow(val medicationId: String) : MedsIntent
+
+    /** «Отменить» в снэкбаре удаления: очищает `deleted_at` и возвращает лекарство (ОВ-124). */
+    data class UndoDeletion(val medicationId: String) : MedsIntent
 }

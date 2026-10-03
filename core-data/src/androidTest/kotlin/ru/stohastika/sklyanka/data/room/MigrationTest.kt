@@ -16,7 +16,8 @@ import org.junit.runner.RunWith
  * Версия 1 — скелет SKL-02 с единственной технической таблицей-маркером; версия 2 —
  * схема данных «Склянки»; версия 3 — признак дублирования напоминаний на часы у лекарства
  * (SKL-10, ЧАС-15); версия 4 — журнал напоминаний (SKL-13); версия 5 — размер упаковки
- * у лекарства (SKL-34, ОВ-45); версия 6 — таблица отложенных срабатываний (SKL-35, ОВ-75).
+ * у лекарства (SKL-34, ОВ-45); версия 6 — таблица отложенных срабатываний (SKL-35, ОВ-75);
+ * версия 7 — момент мягкого удаления лекарства (SKL-99, ПМ-24).
  * Тест доказывает заодно, что экспорт схемы действительно работает: без файлов
  * в `core-data/schemas` помощник не смог бы создать базу предыдущей версии.
  *
@@ -192,6 +193,44 @@ class MigrationTest {
             db.query("SELECT COUNT(*) FROM `deferred_reminder`").use { cursor ->
                 cursor.moveToFirst()
                 assertEquals("the reminder must follow its intake", 0, cursor.getInt(0))
+            }
+        }
+    }
+
+    /**
+     * Версия 6 → 7 на реальной базе с данными (МГ-3, ПМ-24, SKL-99).
+     *
+     * Старое лекарство не получает выдуманного удаления: колонка nullable, `NULL` —
+     * ровно состояние «удаления не было». Ни строка лекарства с полями архива,
+     * ни история приёмов не трогаются: добавление колонки не перестраивает таблицу.
+     */
+    @Test
+    fun theDeletedAtColumnArrivesWithoutTouchingAnyRow() {
+        helper.createDatabase(TEST_DB, 6).use { old ->
+            old.execSQL(INSERT_PROFILE)
+            old.execSQL(INSERT_MEDICATION)
+            old.execSQL(INSERT_INTAKE)
+        }
+
+        val migrated = helper.runMigrationsAndValidate(
+            TEST_DB,
+            SklyankaDatabase.VERSION,
+            true,
+            *SklyankaMigrations.ALL,
+        )
+
+        migrated.use { db ->
+            db.query(
+                "SELECT `deleted_at`, `archived_at`, `archive_reason` FROM `medication` WHERE `id` = 'medication-1'",
+            )
+                .use { cursor ->
+                    assertTrue("the medication row must survive the migration", cursor.moveToFirst())
+                    assertTrue("an old course must have no deletion moment", cursor.isNull(0))
+                    assertTrue("the archive fields must stay untouched", cursor.isNull(1) && cursor.isNull(2))
+                }
+            db.query("SELECT COUNT(*) FROM `intake`").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals("no intake record may be lost (MG-2)", 1, cursor.getInt(0))
             }
         }
     }

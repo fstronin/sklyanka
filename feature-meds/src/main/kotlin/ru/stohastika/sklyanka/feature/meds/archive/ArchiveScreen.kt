@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -24,6 +25,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import ru.stohastika.sklyanka.domain.medication.ArchiveCaption
 import ru.stohastika.sklyanka.domain.medication.ArchiveCard
+import ru.stohastika.sklyanka.feature.meds.DeletionSnackbarHost
 import ru.stohastika.sklyanka.feature.meds.R
 import ru.stohastika.sklyanka.feature.meds.SectionLabel
 import ru.stohastika.sklyanka.feature.meds.Segment
@@ -53,59 +55,71 @@ import ru.stohastika.sklyanka.ui.token.SklyankaType
 @Composable
 fun ArchiveScreen(state: ArchiveUiState, onIntent: (ArchiveIntent) -> Unit, modifier: Modifier = Modifier) {
     val colors = SklyankaTheme.colors
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(colors.background)
-            .testTag(TAG_ARCHIVE_SCREEN),
-        verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Large),
-    ) {
-        ScreenHeader(labels = ScreenHeaderLabels(title = stringResource(R.string.meds_title)))
-        SegmentedControl(
-            segments = listOf(
-                Segment(
-                    label = stringResource(R.string.meds_tab_active, state.activeCount),
-                    selected = false,
-                    onClick = { onIntent(ArchiveIntent.SelectActive) },
+    Box(modifier = modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(colors.background)
+                .testTag(TAG_ARCHIVE_SCREEN),
+            verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Large),
+        ) {
+            ScreenHeader(labels = ScreenHeaderLabels(title = stringResource(R.string.meds_title)))
+            SegmentedControl(
+                segments = listOf(
+                    Segment(
+                        label = stringResource(R.string.meds_tab_active, state.activeCount),
+                        selected = false,
+                        onClick = { onIntent(ArchiveIntent.SelectActive) },
+                    ),
+                    Segment(
+                        label = stringResource(R.string.meds_tab_archive, state.archiveCount),
+                        selected = true,
+                        onClick = {},
+                    ),
                 ),
-                Segment(
-                    label = stringResource(R.string.meds_tab_archive, state.archiveCount),
-                    selected = true,
-                    onClick = {},
-                ),
-            ),
-            modifier = Modifier.screenPadding(),
-        )
-        state.notice?.let { notice -> NoticeBanner(notice, onIntent) }
-        val content = state.content
-        when {
-            state.loading -> Box(modifier = Modifier.weight(1f))
-            content == null -> EmptyState(
-                title = stringResource(R.string.archive_empty_title),
-                text = stringResource(R.string.archive_empty_text),
-                modifier = Modifier
-                    .padding(top = SklyankaSpacing.Screen)
-                    .testTag(TAG_ARCHIVE_EMPTY),
+                modifier = Modifier.screenPadding(),
             )
+            state.notice?.let { notice -> NoticeBanner(notice, onIntent) }
+            val content = state.content
+            when {
+                state.loading -> Box(modifier = Modifier.weight(1f))
+                content == null -> EmptyState(
+                    title = stringResource(R.string.archive_empty_title),
+                    text = stringResource(R.string.archive_empty_text),
+                    modifier = Modifier
+                        .padding(top = SklyankaSpacing.Screen)
+                        .testTag(TAG_ARCHIVE_EMPTY),
+                )
 
-            else -> ArchiveList(
-                groups = listOf(
-                    ArchiveGroupUi(
-                        title = stringResource(R.string.archive_group_finished),
-                        tag = TAG_GROUP_FINISHED,
-                        cards = content.finished,
+                else -> ArchiveList(
+                    groups = listOf(
+                        ArchiveGroupUi(
+                            title = stringResource(R.string.archive_group_finished),
+                            tag = TAG_GROUP_FINISHED,
+                            cards = content.finished,
+                        ),
+                        ArchiveGroupUi(
+                            title = stringResource(R.string.archive_group_manual),
+                            tag = TAG_GROUP_MANUAL,
+                            cards = content.manual,
+                        ),
                     ),
-                    ArchiveGroupUi(
-                        title = stringResource(R.string.archive_group_manual),
-                        tag = TAG_GROUP_MANUAL,
-                        cards = content.manual,
-                    ),
-                ),
-                banner = stringResource(R.string.archive_history_banner),
-                onIntent = onIntent,
-                modifier = Modifier.weight(1f),
-            )
+                    banner = stringResource(R.string.archive_history_banner),
+                    onIntent = onIntent,
+                    modifier = Modifier.weight(1f),
+                )
+            }
         }
+        // Окно «Отменить» после удаления из архивного вида (ОВ-124): тот же снэкбар §4.12.
+        DeletionNotice(state, onIntent)
+    }
+}
+
+/** Окно отмены удаления на архивном экране: разметка не знает, откуда взялось окно. */
+@Composable
+private fun BoxScope.DeletionNotice(state: ArchiveUiState, onIntent: (ArchiveIntent) -> Unit) {
+    DeletionSnackbarHost(state.deletion) { deletion ->
+        onIntent(ArchiveIntent.UndoDeletion(deletion.medicationId))
     }
 }
 

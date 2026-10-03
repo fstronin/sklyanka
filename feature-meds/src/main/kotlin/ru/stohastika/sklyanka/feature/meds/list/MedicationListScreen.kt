@@ -20,6 +20,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import ru.stohastika.sklyanka.feature.meds.DeletionSnackbarHost
 import ru.stohastika.sklyanka.feature.meds.PlusGlyph
 import ru.stohastika.sklyanka.feature.meds.R
 import ru.stohastika.sklyanka.feature.meds.Segment
@@ -87,6 +88,10 @@ fun MedicationListScreen(state: MedsUiState, onIntent: (MedsIntent) -> Unit, mod
                 .align(Alignment.BottomEnd)
                 .padding(SklyankaSpacing.Section),
         )
+        // Окно «Отменить» после удаления лекарства (ОВ-124): тот же снэкбар §4.12.
+        DeletionSnackbarHost(state.deletion) { deletion ->
+            onIntent(MedsIntent.UndoDeletion(deletion.medicationId))
+        }
     }
 }
 

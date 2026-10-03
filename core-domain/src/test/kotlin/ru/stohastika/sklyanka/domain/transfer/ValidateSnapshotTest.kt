@@ -68,6 +68,41 @@ class ValidateSnapshotTest {
     }
 
     @Test
+    @DisplayName("A deleted medication with a taken intake is refused (INV-22)")
+    fun deletedWithTakenIsRefused() {
+        // Такое состояние продукт не создаёт; файл — единственный вход из рук.
+        val deleted = Transfers.magnesium().copy(deletedAt = java.time.Instant.parse("2026-10-01T10:00:00Z"))
+        val taken = Transfers.taken("taken-1", medicationId = Transfers.MAGNESIUM_ID)
+        val snapshot = Transfers.snapshot(
+            profiles = listOf(Transfers.self()),
+            medications = listOf(deleted),
+            intakes = listOf(taken),
+        )
+
+        val reject = validate(snapshot)
+
+        assertEquals(TransferRejectReason.INVALID_RECORD, reject?.reason)
+        assertEquals("intakes:INV-22", reject?.detail)
+    }
+
+    @Test
+    @DisplayName("A deleted medication with only skipped history is accepted")
+    fun deletedWithSkippedHistoryIsAccepted() {
+        // ПМ-24: осознанное «пропущено» удалению не мешает — файл с таким состоянием законен.
+        val deleted = Transfers.magnesium().copy(deletedAt = java.time.Instant.parse("2026-10-01T10:00:00Z"))
+        val skipped = Transfers.taken("skipped-1", medicationId = Transfers.MAGNESIUM_ID).copy(
+            status = ru.stohastika.sklyanka.domain.model.IntakeStatus.SKIPPED,
+        )
+        val snapshot = Transfers.snapshot(
+            profiles = listOf(Transfers.self()),
+            medications = listOf(deleted),
+            intakes = listOf(skipped),
+        )
+
+        assertNull(validate(snapshot))
+    }
+
+    @Test
     @DisplayName("A repeated identifier inside one section rejects the file")
     fun duplicateIdentifierIsRejected() {
         val snapshot = Transfers.snapshot(

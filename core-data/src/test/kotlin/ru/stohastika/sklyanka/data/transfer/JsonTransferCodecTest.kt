@@ -107,6 +107,32 @@ class JsonTransferCodecTest {
     }
 
     @Test
+    fun `the deletion moment travels through the file`() {
+        // ПЕР-10: «удалено» — состояние лекарства; файл несёт его вместе с записью.
+        val deleted = TransferFixtures.snapshot().medications.first().copy(deletedAt = TransferFixtures.EXPORTED_AT)
+        val snapshot = TransferFixtures.snapshot().copy(medications = listOf(deleted))
+
+        val text = codec.encode(snapshot)
+        val restored = (codec.decode(text) as TransferDecoded.Loaded).snapshot
+
+        assertTrue("the file must name the field", text.contains("\"deleted_at\""))
+        assertEquals(TransferFixtures.EXPORTED_AT, restored.medications.single().deletedAt)
+    }
+
+    @Test
+    fun `a file without the deletion field reads it as not deleted`() {
+        // Необязательное поле: старая сборка читает новый файл, новая — старый (ПЕР-7).
+        val withoutField = codec.encode(TransferFixtures.snapshot())
+            .replace(Regex(",\\s*\"deleted_at\": null"), "")
+
+        val decoded = codec.decode(withoutField)
+
+        val restored = (decoded as TransferDecoded.Loaded).snapshot
+        assertEquals(null, restored.medications.first().deletedAt)
+        assertTrue("an absent optional field is not a loss: ${decoded.notices}", decoded.notices.isEmpty())
+    }
+
+    @Test
     fun `dates are calendar dates and moments carry the offset`() {
         val text = codec.encode(TransferFixtures.snapshot())
 

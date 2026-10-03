@@ -1,6 +1,7 @@
 package ru.stohastika.sklyanka.feature.meds.card
 
 import ru.stohastika.sklyanka.domain.medication.ArchiveMedicationUseCase
+import ru.stohastika.sklyanka.domain.medication.DeleteMedicationUseCase
 import ru.stohastika.sklyanka.domain.medication.RestoreMedicationUseCase
 import ru.stohastika.sklyanka.domain.medication.ToggleWatchMirrorUseCase
 import ru.stohastika.sklyanka.domain.stock.RefillStockUseCase
@@ -21,4 +22,6 @@ class MedCardOperations @Inject constructor(
     val restore: RestoreMedicationUseCase,
     val watchMirror: ToggleWatchMirrorUseCase,
     val refillStock: RefillStockUseCase,
+    /** Мягкое удаление ошибочно заведённой записи (SKL-99, ПМ-24). */
+    val delete: DeleteMedicationUseCase,
 )

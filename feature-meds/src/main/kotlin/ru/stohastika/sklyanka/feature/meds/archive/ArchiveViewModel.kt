@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -18,12 +20,17 @@ import ru.stohastika.sklyanka.domain.medication.ArchiveGrouping
 import ru.stohastika.sklyanka.domain.medication.MedicationListRules
 import ru.stohastika.sklyanka.domain.medication.RestoreMedicationUseCase
 import ru.stohastika.sklyanka.domain.medication.RestoreOutcome
+import ru.stohastika.sklyanka.domain.medication.UndoDeleteMedicationUseCase
 import ru.stohastika.sklyanka.domain.model.Intake
 import ru.stohastika.sklyanka.domain.model.Medication
 import ru.stohastika.sklyanka.domain.repository.ActiveProfileRepository
 import ru.stohastika.sklyanka.domain.repository.IntakeRepository
 import ru.stohastika.sklyanka.domain.repository.MedicationRepository
 import ru.stohastika.sklyanka.domain.time.TimeSource
+import ru.stohastika.sklyanka.domain.undo.UndoableAction
+import ru.stohastika.sklyanka.domain.undo.UndoableActionStore
+import ru.stohastika.sklyanka.domain.undo.UndoableDeletion
+import java.time.Duration
 import javax.inject.Inject
 
 /**
@@ -44,22 +51,77 @@ class ArchiveViewModel @Inject constructor(
     private val intakes: IntakeRepository,
     private val restoreMedication: RestoreMedicationUseCase,
     private val time: TimeSource,
+    /** Возврат удаления в коротком окне (SKL-99): очищает `deleted_at` и планирует заново. */
+    private val undoDelete: UndoDeleteMedicationUseCase,
+    /** Общая ячейка «последнее действие» (SKL-30/99). */
+    private val undoActions: UndoableActionStore,
 ) : ViewModel() {
 
     private val notice = MutableStateFlow<ArchiveNotice?>(null)
+    private val deletion = MutableStateFlow<UndoableDeletion?>(null)
+    private var deletionJob: Job? = null
 
     val state: StateFlow<ArchiveUiState> = activeProfile.activeProfileId
         .flatMapLatest { profileId -> screen(profileId) }
         .combine(notice) { screen, pending -> screen.copy(notice = pending) }
+        .combine(deletion) { screen, pending -> screen.copy(deletion = pending) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, ArchiveUiState())
+
+    init {
+        viewModelScope.launch {
+            undoActions.current.collect { action -> showDeletion(action) }
+        }
+    }
 
     fun onIntent(intent: ArchiveIntent) {
         when (intent) {
             is ArchiveIntent.Restore -> restore(intent.medicationId)
+            is ArchiveIntent.UndoDeletion -> undoDeletion(intent.medicationId)
             ArchiveIntent.NoticeDismissed -> notice.value = null
             // Переходы наружу состояния архива не меняют: их разбирает маршрут экрана.
             ArchiveIntent.SelectActive, is ArchiveIntent.OpenMedication -> Unit
         }
+    }
+
+    /**
+     * Уход с экрана закрывает окно удаления: возврата через интерфейс больше нет
+     * (правило SKL-30, ОВ-124). Зовёт маршрут архива при снятии с композиции.
+     */
+    fun onScreenLeft() {
+        deletionJob?.cancel()
+        deletionJob = null
+        deletion.value = null
+        undoActions.clear()
+    }
+
+    private fun showDeletion(action: UndoableAction?) {
+        deletionJob?.cancel()
+        deletionJob = null
+        val shown = action as? UndoableDeletion
+        if (shown == null) {
+            deletion.value = null
+            return
+        }
+        val remaining = Duration.between(time.now(), shown.expiresAt)
+        if (remaining.isNegative || remaining.isZero) {
+            deletion.value = null
+            undoActions.clearIf(shown)
+            return
+        }
+        deletion.value = shown
+        deletionJob = viewModelScope.launch {
+            delay(remaining.toMillis())
+            deletion.value = null
+            undoActions.clearIf(shown)
+        }
+    }
+
+    private fun undoDeletion(medicationId: String) {
+        deletionJob?.cancel()
+        deletionJob = null
+        deletion.value = null
+        undoActions.clear()
+        viewModelScope.launch { undoDelete(medicationId) }
     }
 
     private fun screen(profileId: String): Flow<ArchiveUiState> = combine(

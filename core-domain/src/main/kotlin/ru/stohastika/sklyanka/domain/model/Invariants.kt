@@ -37,8 +37,13 @@ object Invariants {
         if (medication.stockLeft != null && medication.stockLeft < BigDecimal.ZERO) add("INV-8")
         if (medication.packageSize != null && medication.packageSize <= BigDecimal.ZERO) add("INV-20")
         if ((medication.archivedAt == null) != (medication.archiveReason == null)) add("INV-9")
+        if (conflictsWithArchive(medication)) add("INV-21")
         if (medication.shape != null && !medication.form.allowsShape) add("INV-16")
     }
+
+    /** ИНВ-21: «удалено» и «в архиве» не сосуществуют — проверка вынесена ради читаемости списка. */
+    private fun conflictsWithArchive(medication: Medication): Boolean =
+        medication.deletedAt != null && (medication.archivedAt != null || medication.archiveReason != null)
 
     /** Приём сам по себе: INV-10 и INV-11 — поля отметки согласованы со статусом. */
     fun violations(intake: Intake): List<String> = buildList {

@@ -74,6 +74,7 @@ internal class TransferMapping(private val zone: ZoneId) {
             stockThresholdDays = dto.stockThresholdDays,
             archivedAt = dto.archivedAt?.let { TransferValues.moment(it, "medications.archived_at") },
             archiveReason = archiveReason(dto, notices),
+            deletedAt = dto.deletedAt?.let { TransferValues.moment(it, "medications.deleted_at") },
         )
     }
 
@@ -146,6 +147,7 @@ internal class TransferMapping(private val zone: ZoneId) {
         stockThresholdDays = medication.stockThresholdDays,
         archivedAt = medication.archivedAt?.let(::momentText),
         archiveReason = medication.archiveReason?.name,
+        deletedAt = medication.deletedAt?.let(::momentText),
     )
 
     fun intakeDto(intake: Intake) = IntakeDto(

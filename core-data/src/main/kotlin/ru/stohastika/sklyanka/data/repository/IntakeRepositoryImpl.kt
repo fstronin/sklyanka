@@ -47,6 +47,7 @@ import javax.inject.Singleton
  * текстового диапазона до обращения к базе: арифметики над временем в SQL нет вовсе.
  */
 @Singleton
+@Suppress("TooManyFunctions")
 class IntakeRepositoryImpl @Inject constructor(
     private val dao: IntakeDao,
     private val medications: MedicationDao,
@@ -71,6 +72,12 @@ class IntakeRepositoryImpl @Inject constructor(
     ): Flow<List<Intake>> =
         dao.observeByMedication(profileId, medicationId, startOfDay(from), startOfDay(to.plusDays(1)))
             .map { entities -> entities.mapNotNull { decodeOrLog(it) } }
+
+    override suspend fun hasTaken(profileId: String, medicationId: String): Boolean =
+        dao.hasTaken(profileId, medicationId)
+
+    override fun observeHasTaken(profileId: String, medicationId: String): Flow<Boolean> =
+        dao.observeHasTaken(profileId, medicationId)
 
     override suspend fun get(intakeId: String): Intake? = dao.getById(intakeId)?.let { decodeOrLog(it) }
 
@@ -299,6 +306,9 @@ class IntakeRepositoryImpl @Inject constructor(
     override suspend fun createPrnAtomically(command: PrnCommand): PrnOutcome = transactor.inTransaction {
         val medication = medications.getById(command.medicationId)
             ?: return@inTransaction PrnOutcome.UnknownMedication
+        // Удалённое лекарство новых приёмов не порождает (ПР-14): кнопка «Принять» на экране
+        // недостижима, а проверка здесь — защита будущего пути записи.
+        if (medication.deletedAt != null) return@inTransaction PrnOutcome.Deleted
         val mode = SklyankaConverters.textToEnum<ScheduleMode>(medication.scheduleMode)
         if (mode != ScheduleMode.PRN) return@inTransaction PrnOutcome.NotOnDemand
 

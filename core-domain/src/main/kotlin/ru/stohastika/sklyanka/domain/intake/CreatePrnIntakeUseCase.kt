@@ -41,6 +41,9 @@ sealed interface PrnOutcome {
 
     /** Лекарство принимается по расписанию: его приёмы порождает планировщик (SKL-06). */
     data object NotOnDemand : PrnOutcome
+
+    /** Лекарство мягко удалено: новых приёмов оно не порождает (ПР-14). */
+    data object Deleted : PrnOutcome
 }
 
 /**
@@ -76,6 +79,7 @@ class CreatePrnIntakeUseCase(
         val moment = actedAt ?: time.now()
         return when {
             medication == null -> PrnOutcome.UnknownMedication
+            medication.isDeleted -> PrnOutcome.Deleted
             medication.scheduleMode != ScheduleMode.PRN -> PrnOutcome.NotOnDemand
             else -> intakes.createPrnAtomically(
                 PrnCommand(

@@ -121,6 +121,7 @@ internal object UndoAppProbe {
                     TodayScreen(state = TodayFromWorld.state(world), onIntent = intents::add)
                 }
             }
+            waitForIdle()
             action(this)
             waitForIdle()
         }
@@ -151,7 +152,7 @@ internal object UndoAppProbe {
             is TodayIntent.MarkGroupTaken -> markTheGroup(world, intent.intakeIds)
             is TodayIntent.UndoMark -> {
                 // «Отменить» закрывает окно синхронно, как в `TodayViewModel`.
-                world.undoMarks.clear()
+                world.undoActions.clear()
                 world.undo(intent.intakeIds, world.clock.nowLocal())
             }
 
@@ -163,7 +164,7 @@ internal object UndoAppProbe {
         world.markFromScreen(intakeId, world.clock.nowLocal(), result)
         val outcome = world.intakes.outcomes.last()
         if (!outcome.isCompleted) return
-        world.undoMarks.publish(
+        world.undoActions.publishMark(
             intakeIds = listOf(intakeId),
             result = outcome.intake?.status?.let(MarkResult::of) ?: result,
             medicationNames = listOfNotNull(medicationName(world, intakeId)),
@@ -173,7 +174,7 @@ internal object UndoAppProbe {
     private fun markTheGroup(world: AcceptanceWorld, intakeIds: List<String>) {
         when (val outcome = world.markGroup(intakeIds, world.clock.nowLocal())) {
             is GroupMarkOutcome.Applied -> if (outcome.changedIntakeIds.isNotEmpty()) {
-                world.undoMarks.publish(
+                world.undoActions.publishMark(
                     intakeIds = outcome.changedIntakeIds,
                     result = MarkResult.TAKEN,
                     medicationNames = outcome.changedIntakeIds.mapNotNull { medicationName(world, it) },
@@ -200,7 +201,7 @@ internal object UndoAppProbe {
         ),
         snooze = world.reminders.snoozeReminder(),
         settings = world.reminders.settingsStore,
-        undoMarks = world.undoMarks,
+        undoActions = world.undoActions,
     )
 
     /** Язык интерфейса закреплён: склонения и даты читаются по-русски при любом телефоне. */

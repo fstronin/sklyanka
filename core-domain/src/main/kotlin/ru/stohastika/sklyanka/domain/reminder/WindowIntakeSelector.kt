@@ -71,12 +71,13 @@ object WindowIntakeSelector {
             isPlannable(candidate)
     }
 
-    /** Признаки, не зависящие от времени: статус, режим, архив, профиль. */
+    /** Признаки, не зависящие от времени: статус, режим, архив, удаление, профиль. */
     private fun isRemindable(candidate: ReminderIntake): Boolean =
         candidate.status == IntakeStatus.PENDING && isPlannable(candidate)
 
-    /** Всё, кроме статуса: режим приёма, архив лекарства, профиль. */
+    /** Всё, кроме статуса: режим приёма, архив и удаление лекарства, профиль. */
     private fun isPlannable(candidate: ReminderIntake): Boolean = candidate.scheduleMode == ScheduleMode.SCHEDULED &&
         !candidate.medicationArchived &&
+        !candidate.medicationDeleted &&
         (candidate.profileIsSelf || candidate.profileMirrorsReminders)
 }

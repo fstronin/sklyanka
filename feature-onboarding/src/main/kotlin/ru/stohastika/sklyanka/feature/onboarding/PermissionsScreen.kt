@@ -43,6 +43,7 @@ import ru.stohastika.sklyanka.ui.component.CheckGlyph
 import ru.stohastika.sklyanka.ui.component.OnboardingSteps
 import ru.stohastika.sklyanka.ui.component.PrimaryButton
 import ru.stohastika.sklyanka.ui.component.QuietButton
+import ru.stohastika.sklyanka.ui.component.QuietButtonKind
 import ru.stohastika.sklyanka.ui.component.SklyankaSwitchRow
 import ru.stohastika.sklyanka.ui.component.StackingRow
 import ru.stohastika.sklyanka.ui.locale.interfaceLocale
@@ -514,14 +515,14 @@ private fun Footer(source: OnboardingSource, actions: PermissionsActions) {
             QuietButton(
                 text = stringResource(R.string.setup_action_skip),
                 onClick = actions.onSkip,
-                muted = true,
+                kind = QuietButtonKind.Muted,
                 modifier = Modifier.testTag(TAG_SKIP),
             )
         } else {
             QuietButton(
                 text = stringResource(R.string.setup_done),
                 onClick = actions.onDone,
-                muted = true,
+                kind = QuietButtonKind.Muted,
                 modifier = Modifier.testTag(TAG_DONE),
             )
         }

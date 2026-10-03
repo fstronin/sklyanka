@@ -23,7 +23,6 @@ import ru.stohastika.sklyanka.domain.intake.PrnCommand
 import ru.stohastika.sklyanka.domain.intake.PrnOutcome
 import ru.stohastika.sklyanka.domain.intake.UndoCommand
 import ru.stohastika.sklyanka.domain.intake.UndoOutcome
-import ru.stohastika.sklyanka.domain.intake.UndoableMarkStore
 import ru.stohastika.sklyanka.domain.medication.DoseUnit
 import ru.stohastika.sklyanka.domain.model.ArchiveReason
 import ru.stohastika.sklyanka.domain.model.FoodRelation
@@ -60,6 +59,8 @@ import ru.stohastika.sklyanka.domain.repository.ProfileRepository
 import ru.stohastika.sklyanka.domain.schedule.IntakePlanDiff
 import ru.stohastika.sklyanka.domain.schedule.PlanApplyResult
 import ru.stohastika.sklyanka.domain.time.FixedTimeSource
+import ru.stohastika.sklyanka.domain.undo.UndoableActionStore
+import ru.stohastika.sklyanka.domain.undo.UndoableMark
 import java.math.BigDecimal
 import java.time.Instant
 import java.time.LocalDate
@@ -101,7 +102,7 @@ class ReminderViewModelUndoTest {
         viewModel.onTaken("i-1")
 
         assertEquals(ReminderUiState.Closed, viewModel.state.value)
-        val mark = requireNotNull(world.undoMarks.live())
+        val mark = requireNotNull(world.undoActions.live()) as UndoableMark
         assertEquals(listOf("i-1"), mark.intakeIds)
         assertEquals(listOf("Magnesium B6"), mark.medicationNames)
     }
@@ -117,7 +118,7 @@ class ReminderViewModelUndoTest {
         val state = viewModel.state.value
         assertTrue("the card must stay open", state is ReminderUiState.Card)
         assertEquals(listOf("i-2"), (state as ReminderUiState.Card).items.map { it.intakeId })
-        assertNull(world.undoMarks.live())
+        assertNull(world.undoActions.live())
     }
 
     @Test
@@ -131,7 +132,7 @@ class ReminderViewModelUndoTest {
         viewModel.onTakenAll()
 
         assertEquals(ReminderUiState.Closed, viewModel.state.value)
-        val mark = requireNotNull(world.undoMarks.live())
+        val mark = requireNotNull(world.undoActions.live()) as UndoableMark
         assertEquals(listOf("i-1"), mark.intakeIds)
         assertEquals(listOf("Magnesium B6"), mark.medicationNames)
     }
@@ -145,7 +146,7 @@ class ReminderViewModelUndoTest {
         viewModel.onSnooze()
 
         assertEquals(ReminderUiState.Closed, viewModel.state.value)
-        assertNull(world.undoMarks.live())
+        assertNull(world.undoActions.live())
     }
 
     @Test
@@ -158,7 +159,7 @@ class ReminderViewModelUndoTest {
         viewModel.onTaken("i-1")
 
         assertEquals(ReminderUiState.Closed, viewModel.state.value)
-        assertNull(world.undoMarks.live())
+        assertNull(world.undoActions.live())
     }
 }
 
@@ -169,7 +170,7 @@ private class ReminderTestWorld(withSecondRow: Boolean = false) {
     val scheduledAt: LocalDateTime = LocalDateTime.of(2026, 9, 25, 14, 0)
     val zone: ZoneId = ZoneId.of("Europe/Moscow")
     val clock = FixedTimeSource(scheduledAt.atZone(zone).toInstant(), zone)
-    val undoMarks = UndoableMarkStore(clock)
+    val undoActions = UndoableActionStore(clock)
 
     private val intakes = linkedMapOf<String, Intake>(
         "i-1" to pending("i-1", "m-1"),
@@ -204,7 +205,7 @@ private class ReminderTestWorld(withSecondRow: Boolean = false) {
         mark = MarkIntakeUseCase(FakeIntakes(), FakeMedications(), FakeProfiles(), clock),
         snooze = SnoozeReminderUseCase(NoSnoozePlan(), NoAlarms(), NoNotifications(), NoJournal(), NoDeferred(), clock),
         settings = FakeSettings(),
-        undoMarks = undoMarks,
+        undoActions = undoActions,
     )
 
     private fun pending(id: String, medicationId: String) = Intake(
@@ -277,6 +278,13 @@ private class ReminderTestWorld(withSecondRow: Boolean = false) {
             to: LocalDate,
         ): Flow<List<Intake>> = flowOf(emptyList())
 
+        override suspend fun hasTaken(profileId: String, medicationId: String): Boolean =
+            intakes.values.any { it.medicationId == medicationId && it.status == IntakeStatus.TAKEN }
+
+        override fun observeHasTaken(profileId: String, medicationId: String): Flow<Boolean> = flowOf(
+            intakes.values.any { it.medicationId == medicationId && it.status == IntakeStatus.TAKEN },
+        )
+
         override suspend fun get(intakeId: String): Intake? = intakes[intakeId]
 
         override suspend fun insertMissing(intakes: List<Intake>): Int = 0
@@ -336,6 +344,10 @@ private class ReminderTestWorld(withSecondRow: Boolean = false) {
         override suspend fun save(medication: Medication) = Unit
 
         override suspend fun archive(medicationId: String, reason: ArchiveReason): Boolean = false
+
+        override suspend fun delete(medicationId: String): Boolean = false
+
+        override suspend fun undelete(medicationId: String): Boolean = false
 
         override suspend fun setStock(medicationId: String, stockLeft: BigDecimal?) = Unit
     }

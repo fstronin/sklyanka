@@ -17,6 +17,7 @@ import ru.stohastika.sklyanka.domain.model.Intake
 import ru.stohastika.sklyanka.domain.model.IntakeStatus
 import ru.stohastika.sklyanka.domain.model.Medication
 import ru.stohastika.sklyanka.domain.model.ScheduleMode
+import ru.stohastika.sklyanka.domain.undo.UndoableDeletion
 import ru.stohastika.sklyanka.feature.meds.list.AsNeededCardUi
 import ru.stohastika.sklyanka.feature.meds.list.MedicationCardUi
 import ru.stohastika.sklyanka.feature.meds.list.MedicationListScreen
@@ -63,6 +64,7 @@ internal object MedsListStand {
             items = MedicationListOrder.sorted(active, world.clock.nowLocal())
                 .map { card(it, history, world.clock.today()) },
             loading = false,
+            deletion = world.undoActions.live() as? UndoableDeletion,
         )
     }
 
@@ -126,6 +128,11 @@ internal object MedsListStand {
     private fun apply(world: AcceptanceWorld, intent: MedsIntent) {
         when (intent) {
             is MedsIntent.TakeNow -> world.pressTakeOnDemand(nameOf(world, intent.medicationId))
+            is MedsIntent.UndoDeletion -> {
+                // «Отменить» закрывает окно синхронно, как в `MedicationListViewModel`.
+                world.undoActions.clear()
+                world.undoDeleteMedication(nameOf(world, intent.medicationId))
+            }
             // Переключение вкладки, открытие карточки и добавление — состояние маршрута:
             // список их только сообщает наружу.
             else -> Unit

@@ -49,7 +49,9 @@ class ScenarioHistory(
      * обязаны остаться нейтральными (`DayState.BEFORE_HISTORY`).
      */
     fun slice(profileId: String, window: HistoryWindow): HistorySlice {
-        val owned = medications.all().filter { it.profileId == profileId }
+        // Мягко удалённые исключены из истории и отчёта (ПР-14): их дни и приёмы
+        // не участвуют ни в календаре, ни в разбивке, ни в приверженности.
+        val owned = medications.all().filter { it.profileId == profileId && !it.isDeleted }
         val ownedIds = owned.mapTo(mutableSetOf()) { it.id }
         val history = intakes.all().filter { it.medicationId in ownedIds }
         return HistorySlice(

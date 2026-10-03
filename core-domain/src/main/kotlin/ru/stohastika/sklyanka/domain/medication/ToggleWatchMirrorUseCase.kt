@@ -23,6 +23,9 @@ sealed interface WatchMirrorOutcome {
     /** Курс в архиве: напоминаний у него нет, и дублировать их некуда (ПР-11). */
     data object Archived : WatchMirrorOutcome
 
+    /** Лекарство мягко удалено: напоминаний нет и не будет (ПР-14). */
+    data object Deleted : WatchMirrorOutcome
+
     data object UnknownMedication : WatchMirrorOutcome
 }
 
@@ -47,6 +50,7 @@ class ToggleWatchMirrorUseCase(private val medications: MedicationRepository, pr
         return when {
             medication == null -> WatchMirrorOutcome.UnknownMedication
             medication.scheduleMode != ScheduleMode.SCHEDULED -> WatchMirrorOutcome.NotApplicable
+            medication.isDeleted -> WatchMirrorOutcome.Deleted
             medication.isArchived -> WatchMirrorOutcome.Archived
             // Значение, равное записанному, не пишется и не журналируется: повторное
             // нажатие тумблера в ту же сторону — не событие.

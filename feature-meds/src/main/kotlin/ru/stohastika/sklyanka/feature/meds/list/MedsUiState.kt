@@ -4,6 +4,7 @@ import androidx.compose.runtime.Immutable
 import ru.stohastika.sklyanka.domain.medication.TrailingLine
 import ru.stohastika.sklyanka.domain.model.MedicationForm
 import ru.stohastika.sklyanka.domain.model.TabletShape
+import ru.stohastika.sklyanka.domain.undo.UndoableDeletion
 import java.time.LocalDate
 import java.time.LocalTime
 
@@ -25,6 +26,8 @@ data class MedsUiState(
     val items: List<MedicationCardUi> = emptyList(),
     /** Пока профиль и его лекарства не прочитаны, пустое состояние показывать рано. */
     val loading: Boolean = true,
+    /** Окно «Отменить» после удаления лекарства (ОВ-124); `null` — отменять нечего. */
+    val deletion: UndoableDeletion? = null,
 ) {
     /** Пустой список активных показывает призыв добавить лекарство, а не пустоту. */
     val isEmpty: Boolean get() = !loading && items.isEmpty()

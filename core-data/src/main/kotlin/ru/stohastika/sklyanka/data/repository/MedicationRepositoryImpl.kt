@@ -59,6 +59,31 @@ class MedicationRepositoryImpl @Inject constructor(
         return true
     }
 
+    override suspend fun delete(medicationId: String): Boolean {
+        val at = time.now().toEpochMilli()
+        val changed = dao.delete(medicationId, at)
+        if (changed == 0) return false
+        val medication = dao.getById(medicationId)
+        log.record(
+            event = OpEvent.MEDICATION_DELETED,
+            profileId = medication?.profileId,
+            medicationId = medicationId,
+        )
+        return true
+    }
+
+    override suspend fun undelete(medicationId: String): Boolean {
+        val changed = dao.undelete(medicationId)
+        if (changed == 0) return false
+        val medication = dao.getById(medicationId)
+        log.record(
+            event = OpEvent.MEDICATION_DELETED_UNDONE,
+            profileId = medication?.profileId,
+            medicationId = medicationId,
+        )
+        return true
+    }
+
     override suspend fun setStock(medicationId: String, stockLeft: BigDecimal?) {
         dao.setStock(medicationId, stockLeft?.toPlainString())
     }

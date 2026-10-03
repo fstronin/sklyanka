@@ -51,7 +51,7 @@ class ReturnToTodaySteps(private val world: AcceptanceWorld) {
         world.clock.moveTo(world.localMoment(date, time))
         // Жизненный цикл Activity стенд не воспроизводит: роль «человек оказался
         // в приложении» играет та же точка, которую зовёт `MainActivity.onResume` (SKL-43).
-        UndoReturn.onAppeared(world.undoMarks, navigation)
+        UndoReturn.onAppeared(world.undoActions, navigation)
     }
 
     // --- Проверки -------------------------------------------------------------------------

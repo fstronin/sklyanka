@@ -51,8 +51,8 @@ class TodayRouteLeaveTest {
         val world = AcceptanceWorld()
         world.profiles.use("self")
         val viewModel = TodayStand.viewModel(world)
-        world.undoMarks.publish(listOf("intake-1"), MarkResult.TAKEN, listOf("med"))
-        assertNotNull(world.undoMarks.live())
+        world.undoActions.publishMark(listOf("intake-1"), MarkResult.TAKEN, listOf("med"))
+        assertNotNull(world.undoActions.live())
 
         var routeIsShown by mutableStateOf(true)
         runComposeUiTest {
@@ -67,6 +67,6 @@ class TodayRouteLeaveTest {
             waitForIdle()
         }
 
-        assertNull(world.undoMarks.live())
+        assertNull(world.undoActions.live())
     }
 }

@@ -59,6 +59,8 @@ class ScheduleExpander(private val time: TimeSource, private val policy: IntakeG
      * потребности. ПР-4, ПР-8, НАП-10: запись о приёме по потребности рождается в момент
      * нажатия «Принять», и планировать по ней нечего.
      */
-    private fun producesScheduledIntakes(medication: Medication): Boolean =
-        !medication.isArchived && medication.scheduleMode == ScheduleMode.SCHEDULED && medication.times.isNotEmpty()
+    private fun producesScheduledIntakes(medication: Medication): Boolean = !medication.isArchived &&
+        !medication.isDeleted &&
+        medication.scheduleMode == ScheduleMode.SCHEDULED &&
+        medication.times.isNotEmpty()
 }

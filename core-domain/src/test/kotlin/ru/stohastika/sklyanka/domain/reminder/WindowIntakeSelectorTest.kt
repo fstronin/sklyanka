@@ -35,6 +35,7 @@ class WindowIntakeSelectorTest {
         status = status,
         scheduleMode = mode,
         medicationArchived = false,
+        medicationDeleted = false,
         profileIsSelf = true,
         profileMirrorsReminders = false,
     )
@@ -55,6 +56,13 @@ class WindowIntakeSelectorTest {
     @Test
     fun `an archived medication produces no alarm`() {
         assertTrue(select(candidate().copy(medicationArchived = true)).isEmpty())
+    }
+
+    @Test
+    fun `a deleted medication produces no alarm and no watch card`() {
+        // ПР-14: удалённое лекарство уходит из плана — будильники и карточка часов питаются им же.
+        assertTrue(select(candidate().copy(medicationDeleted = true)).isEmpty())
+        assertTrue(WindowIntakeSelector.expected(listOf(candidate().copy(medicationDeleted = true))).isEmpty())
     }
 
     @Test

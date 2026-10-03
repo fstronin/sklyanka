@@ -119,6 +119,8 @@
     <string name="diagnostics_reason_schedule_edited">дәрі кестесі өзгертілді</string>
     <string name="diagnostics_reason_medication_added">дәрі қосылды</string>
     <string name="diagnostics_reason_medication_archived">дәрі мұрағатқа жіберілді</string>
+    <string name="diagnostics_reason_medication_deleted">дәрі жойылды</string>
+    <string name="diagnostics_reason_medication_undeleted">дәрі қайтарылды</string>
     <string name="diagnostics_reason_medication_unarchived">дәрі мұрағаттан қайтарылды</string>
     <string name="diagnostics_reason_alarm_fired">еске салғыш іске қосылды</string>
     <string name="diagnostics_reason_profile_set_changed">бейіндер құрамы өзгерді</string>

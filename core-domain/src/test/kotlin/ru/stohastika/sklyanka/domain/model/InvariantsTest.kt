@@ -111,6 +111,25 @@ class InvariantsTest {
     }
 
     @Test
+    fun `a deleted medication must not carry archive fields`() {
+        val deleted = Fixtures.scheduledMedication().copy(deletedAt = Instant.EPOCH)
+        assertTrue(Invariants.violations(deleted).isEmpty())
+
+        val archivedToo = Fixtures.scheduledMedication().copy(
+            deletedAt = Instant.EPOCH,
+            archivedAt = Instant.EPOCH,
+            archiveReason = ArchiveReason.MANUAL,
+        )
+        assertEquals(listOf("INV-21"), Invariants.violations(archivedToo))
+    }
+
+    @Test
+    fun `a deleted medication is recognised by state`() {
+        assertTrue(Fixtures.scheduledMedication().copy(deletedAt = Instant.EPOCH).isDeleted)
+        assertEquals(null, Fixtures.scheduledMedication().deletedAt)
+    }
+
+    @Test
     fun `shape belongs to tablets only`() {
         val medication = Fixtures.scheduledMedication().copy(form = MedicationForm.SYRUP)
 

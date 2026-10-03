@@ -8,7 +8,11 @@ import ru.stohastika.sklyanka.domain.intake.CreatePrnIntakeUseCase
 import ru.stohastika.sklyanka.domain.intake.MarkIntakeUseCase
 import ru.stohastika.sklyanka.domain.intake.SweepMissedIntakesUseCase
 import ru.stohastika.sklyanka.domain.intake.UndoMarkUseCase
+import ru.stohastika.sklyanka.domain.medication.UndoDeleteMedicationUseCase
 import ru.stohastika.sklyanka.domain.reminder.ReadReminderReliabilityUseCase
+import ru.stohastika.sklyanka.domain.schedule.GenerationWindow
+import ru.stohastika.sklyanka.domain.schedule.MedicationPlanner
+import ru.stohastika.sklyanka.domain.schedule.PlanResult
 import ru.stohastika.sklyanka.domain.stock.StockWarning
 import ru.stohastika.sklyanka.domain.stock.StockWarningForProfileUseCase
 import ru.stohastika.sklyanka.domain.today.BuildTodayAgenda
@@ -18,6 +22,7 @@ import ru.stohastika.sklyanka.domain.today.ObserveTodayAgendaUseCase
 import ru.stohastika.sklyanka.domain.today.PartOfDay
 import ru.stohastika.sklyanka.domain.today.TodayAgenda
 import ru.stohastika.sklyanka.domain.today.TodayLayout
+import ru.stohastika.sklyanka.domain.undo.UndoableMark
 import ru.stohastika.sklyanka.feature.today.TodayUiState
 import ru.stohastika.sklyanka.feature.today.TodayViewModel
 import ru.stohastika.sklyanka.feature.today.UndoNotice
@@ -87,7 +92,7 @@ internal object TodayStand {
                 reliability = reliability(world),
                 // Окно отмены — из того же магазина, что в продукте (SKL-30): срок
                 // проверяется магазином, а не таймером стенда.
-                undo = world.undoMarks.live()?.let { mark ->
+                undo = (world.undoActions.live() as? UndoableMark)?.let { mark ->
                     UndoNotice(mark.intakeIds, mark.result, mark.medicationNames)
                 },
                 layout = agenda.layout,
@@ -166,12 +171,25 @@ internal object TodayStand {
                 world.repositories.medicationStore,
                 world.repositories.profileStore,
             ),
-            undoMarks = world.undoMarks,
+            undoActions = world.undoActions,
+            undoDelete = UndoDeleteMedicationUseCase(
+                world.repositories.medicationStore,
+                MedicationPlanner { _, reason ->
+                    PlanResult(
+                        window = GenerationWindow.of(world.clock.today(), MIN_PLAN_DEPTH_DAYS),
+                        reason = reason,
+                        medications = emptyList(),
+                    )
+                },
+            ),
             time = time,
             readReliability = ReadReminderReliabilityUseCase(world.system),
         )
     }
 }
+
+/** Наименьшая глубина окна генерации: тесты «Сегодня» ничего не планируют. */
+private const val MIN_PLAN_DEPTH_DAYS = 3
 
 /**
  * Ручные переключения экрана, накопленные сценарием.

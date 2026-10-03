@@ -119,6 +119,8 @@
     <string name="diagnostics_reason_schedule_edited">horario del medicamento modificado</string>
     <string name="diagnostics_reason_medication_added">medicamento añadido</string>
     <string name="diagnostics_reason_medication_archived">medicamento archivado</string>
+    <string name="diagnostics_reason_medication_deleted">medicamento eliminado</string>
+    <string name="diagnostics_reason_medication_undeleted">medicamento restaurado</string>
     <string name="diagnostics_reason_medication_unarchived">medicamento restaurado del archivo</string>
     <string name="diagnostics_reason_alarm_fired">recordatorio disparado</string>
     <string name="diagnostics_reason_profile_set_changed">cambio del conjunto de perfiles</string>

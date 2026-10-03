@@ -29,6 +29,9 @@ sealed interface RestoreOutcome {
     /** Курс не в архиве: возвращать нечего. */
     data object NotArchived : RestoreOutcome
 
+    /** Лекарство мягко удалено: поля архива очищены, возврат из архива к нему неприменим (ПР-14). */
+    data object Deleted : RestoreOutcome
+
     data object UnknownMedication : RestoreOutcome
 }
 
@@ -62,6 +65,7 @@ class RestoreMedicationUseCase(
         val endInThePast = medication?.endDate?.takeIf { it < time.today() }
         return when {
             medication == null -> RestoreOutcome.UnknownMedication
+            medication.isDeleted -> RestoreOutcome.Deleted
             !medication.isArchived -> RestoreOutcome.NotArchived
             endInThePast != null -> refuse(medication, endInThePast)
             else -> restore(medication)

@@ -152,6 +152,40 @@ class ScenarioMedications(private val clock: ScenarioClock) {
     }
 
     /**
+     * Мягкое удаление хранилищем (SKL-99, ПР-14).
+     *
+     * Условия те же, что у условного `UPDATE` настоящей базы: запись не удалена и у неё
+     * нет ни одной отметки `TAKEN` (ИНВ-22). Архивные поля очищаются той же записью
+     * (ИНВ-21); строки приёмов не трогаются.
+     */
+    fun deleteById(medicationId: String, hasTaken: Boolean): Boolean {
+        val entry = byName.entries
+            .firstOrNull { it.value.id == medicationId && !it.value.isDeleted }
+            ?: return false
+        return if (hasTaken) {
+            false
+        } else {
+            byName[entry.key] = entry.value.copy(
+                deletedAt = clock.now(),
+                archivedAt = null,
+                archiveReason = null,
+            )
+            last = entry.key
+            true
+        }
+    }
+
+    /** Возврат удаления в коротком окне: очистка момента (ПМ-24). */
+    fun undeleteById(medicationId: String): Boolean {
+        val entry = byName.entries
+            .firstOrNull { it.value.id == medicationId && it.value.isDeleted }
+            ?: return false
+        byName[entry.key] = entry.value.copy(deletedAt = null)
+        last = entry.key
+        return true
+    }
+
+    /**
      * Архивация хранилищем — так её видит настоящий `ArchiveMedicationUseCase` (SKL-09).
      *
      * Момент берётся у часов сценария (НФТ-48), а не у системных. Повторная архивация

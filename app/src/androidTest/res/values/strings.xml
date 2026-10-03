@@ -29,4 +29,8 @@
     -->
     <string name="device_test_medication_archive">Стенд Архив</string>
     <string name="device_test_medication_reminder">Стенд Напоминание</string>
+    <!--
+      Имя курса проверки мягкого удаления (SKL-99): нейтральное, без медицинских данных.
+    -->
+    <string name="device_test_medication_deletion">Стенд Удаление</string>
 </resources>

@@ -135,6 +135,12 @@
 
     <string name="card_section_limit">限制</string>
     <string name="card_restore">恢复</string>
+    <string name="card_delete">删除</string>
+    <string name="card_delete_hint">在没有任何“已服用”标记时可以删除</string>
+    <string name="card_delete_sheet_title">删除“%1$s”？</string>
+    <string name="card_delete_sheet_text">药物将从列表和提醒中消失。删除后可以用“撤销”立即恢复。</string>
+    <string name="meds_deleted_snackbar">%1$s — 药物已删除</string>
+    <string name="meds_undo_action">撤销</string>
     <string name="card_course_last_day">最后一天</string>
     <string name="card_course_over">疗程已结束</string>
 

@@ -15,12 +15,12 @@ import ru.stohastika.sklyanka.domain.analytics.NoOpAnalytics
 import ru.stohastika.sklyanka.domain.intake.MarkIntakeUseCase
 import ru.stohastika.sklyanka.domain.intake.MarkRequest
 import ru.stohastika.sklyanka.domain.intake.MarkResult
-import ru.stohastika.sklyanka.domain.intake.UndoableMarkStore
 import ru.stohastika.sklyanka.domain.model.IntakeSource
 import ru.stohastika.sklyanka.domain.reminder.ReminderSlot
 import ru.stohastika.sklyanka.domain.reminder.SnoozeReminderUseCase
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderCardSource
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderSettings
+import ru.stohastika.sklyanka.domain.undo.UndoableActionStore
 import java.time.LocalDateTime
 import javax.inject.Inject
 
@@ -44,7 +44,7 @@ class ReminderViewModel @Inject constructor(
     private val snooze: SnoozeReminderUseCase,
     private val settings: ReminderSettings,
     /** Носитель последнего действия: снэкбар покажет «Сегодня» (ОВ-81, SKL-30). */
-    private val undoMarks: UndoableMarkStore,
+    private val undoActions: UndoableActionStore,
     /**
      * Канал событий аналитики (SKL-82). Нулевое умолчание — для ручной сборки в тестах;
      * гейт согласия решает, дойдёт ли событие до вендора.
@@ -107,7 +107,7 @@ class ReminderViewModel @Inject constructor(
             val closed = reload()
             if (!closed || !outcome.isCompleted) return@launch
             analytics.track(AnalyticsEvent.IntakeAction(action = actionFor(result), source = ActionSource.PHONE))
-            undoMarks.publish(
+            undoActions.publishMark(
                 intakeIds = listOf(intakeId),
                 result = outcome.intake?.status?.let(MarkResult::of) ?: result,
                 medicationNames = listOfNotNull(name),
@@ -136,7 +136,7 @@ class ReminderViewModel @Inject constructor(
             completed.forEach {
                 analytics.track(AnalyticsEvent.IntakeAction(action = actionFor(result), source = ActionSource.PHONE))
             }
-            undoMarks.publish(
+            undoActions.publishMark(
                 intakeIds = completed.map { it.first },
                 result = result,
                 medicationNames = completed.mapNotNull { (intakeId, _) -> names[intakeId] },

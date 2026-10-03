@@ -11,6 +11,8 @@ import ru.stohastika.sklyanka.domain.medication.ArchiveMedicationUseCase
 import ru.stohastika.sklyanka.domain.medication.CourseCompletion
 import ru.stohastika.sklyanka.domain.medication.CourseProgress
 import ru.stohastika.sklyanka.domain.medication.DayCell
+import ru.stohastika.sklyanka.domain.medication.DeleteMedicationUseCase
+import ru.stohastika.sklyanka.domain.medication.DeleteOutcome
 import ru.stohastika.sklyanka.domain.medication.DoseUnit
 import ru.stohastika.sklyanka.domain.medication.MedicationSubtitle
 import ru.stohastika.sklyanka.domain.medication.WeekAdherence
@@ -70,6 +72,7 @@ internal object MedCardStand {
         world: AcceptanceWorld,
         medication: String,
         refill: RefillUi? = null,
+        deleteConfirmation: Boolean = false,
         question: (ComposeUiTest) -> T,
     ): T {
         var answer: T? = null
@@ -77,7 +80,8 @@ internal object MedCardStand {
             setContent {
                 SklyankaTheme {
                     MedicationCardScreen(
-                        state = state(world, medication).copy(refill = refill),
+                        state = state(world, medication)
+                            .copy(refill = refill, deleteConfirmation = deleteConfirmation),
                         onIntent = {},
                     )
                 }
@@ -89,12 +93,20 @@ internal object MedCardStand {
     }
 
     /** Действие человека: карточка отдаёт намерения, стенд применяет их к миру. */
-    fun act(world: AcceptanceWorld, medication: String, action: (ComposeUiTest) -> Unit): List<MedCardIntent> {
+    fun act(
+        world: AcceptanceWorld,
+        medication: String,
+        deleteConfirmation: Boolean = false,
+        action: (ComposeUiTest) -> Unit,
+    ): List<MedCardIntent> {
         val intents = mutableListOf<MedCardIntent>()
         runComposeUiTest {
             setContent {
                 SklyankaTheme {
-                    MedicationCardScreen(state = state(world, medication), onIntent = intents::add)
+                    MedicationCardScreen(
+                        state = state(world, medication).copy(deleteConfirmation = deleteConfirmation),
+                        onIntent = intents::add,
+                    )
                 }
             }
             action(this)
@@ -138,6 +150,8 @@ internal object MedCardStand {
             },
             isArchived = card.isArchived,
             courseFinishedOffer = CourseCompletion.isFinished(card, today),
+            canDelete = runBlocking { world.repositories.intakeStore.hasTaken(profileId, card.id) }.not(),
+            deleteConfirmation = false,
             refill = null,
             notice = null,
         )
@@ -162,6 +176,25 @@ internal object MedCardStand {
                 runBlocking { useCase(card.id, ArchiveReason.MANUAL) }
                 closedHere = true
             }
+
+            MedCardIntent.DeleteConfirmed -> {
+                // Удаление — тем же доменным сценарием, что в продукте (SKL-99, ПР-14).
+                val card = world.medications.get(world.medicationNamed(medication))
+                val useCase = DeleteMedicationUseCase(
+                    medications = world.repositories.medicationStore,
+                    intakes = world.repositories.intakeStore,
+                    planner = world.planner(),
+                    analytics = world.analytics,
+                )
+                val outcome = runBlocking { useCase(card.id) }
+                if (outcome is DeleteOutcome.Deleted) {
+                    world.undoActions.publishDeletion(medicationId = card.id, medicationName = card.name)
+                    closedHere = true
+                }
+            }
+
+            // «Удалить» открывает шторку и состояние карточки не меняет; отмена — тем более.
+            MedCardIntent.DeleteRequested, MedCardIntent.DeleteDismissed -> Unit
 
             // Переходы наружу состояние карточки не меняют: их разбирает маршрут.
             else -> Unit

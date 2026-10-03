@@ -21,6 +21,7 @@ import ru.stohastika.sklyanka.domain.medication.ArchiveOutcome
 import ru.stohastika.sklyanka.domain.medication.CourseCompletion
 import ru.stohastika.sklyanka.domain.medication.CourseProgress
 import ru.stohastika.sklyanka.domain.medication.DayCell
+import ru.stohastika.sklyanka.domain.medication.DeleteOutcome
 import ru.stohastika.sklyanka.domain.medication.DoseUnit
 import ru.stohastika.sklyanka.domain.medication.MedicationSubtitle
 import ru.stohastika.sklyanka.domain.medication.RestoreOutcome
@@ -36,6 +37,7 @@ import ru.stohastika.sklyanka.domain.repository.MedicationRepository
 import ru.stohastika.sklyanka.domain.stock.RefillOutcome
 import ru.stohastika.sklyanka.domain.stock.StockPanel
 import ru.stohastika.sklyanka.domain.time.TimeSource
+import ru.stohastika.sklyanka.domain.undo.UndoableActionStore
 import java.math.BigDecimal
 import javax.inject.Inject
 
@@ -60,6 +62,11 @@ class MedicationCardViewModel @Inject constructor(
     private val time: TimeSource,
     /** Канал событий аналитики (SKL-82): нулевое умолчание — для ручной сборки в тестах. */
     private val analytics: Analytics = NoOpAnalytics,
+    /**
+     * Одна ячейка «последнее действие» (SKL-30/99): удаление кладёт в неё окно «Отменить»,
+     * которое показывает экран-источник.
+     */
+    private val undoActions: UndoableActionStore,
 ) : ViewModel() {
 
     private val medicationId = MutableStateFlow<String?>(null)
@@ -89,6 +96,9 @@ class MedicationCardViewModel @Inject constructor(
             MedCardIntent.Archive -> archive(ArchiveReason.MANUAL)
             MedCardIntent.ArchiveFinishedCourse -> archive(ArchiveReason.COURSE_FINISHED)
             MedCardIntent.Restore -> restore()
+            MedCardIntent.DeleteRequested -> local.value = local.value.copy(confirmDelete = true)
+            MedCardIntent.DeleteDismissed -> local.value = local.value.copy(confirmDelete = false)
+            MedCardIntent.DeleteConfirmed -> delete()
             MedCardIntent.NoticeDismissed -> local.value = local.value.copy(notice = null)
             // Переходы наружу состояния карточки не меняют: их разбирает маршрут экрана.
             MedCardIntent.Back, MedCardIntent.Edit -> Unit
@@ -108,12 +118,15 @@ class MedicationCardViewModel @Inject constructor(
             medications.observeActive(profileId),
             medications.observeArchived(profileId),
             intakes.observeByMedication(profileId, id, from, today),
-        ) { active, archived, history ->
-            (active + archived).firstOrNull { it.id == id }?.let { medication -> screen(medication, history) }
+            // Действие «Удалить» доступно, пока у лекарства нет ни одной отметки `TAKEN`
+            // (ПР-14, ОВ-124); поток перечитывается на каждую отметку, в том числе с часов.
+            intakes.observeHasTaken(profileId, id),
+        ) { active, archived, history, hasTaken ->
+            (active + archived).firstOrNull { it.id == id }?.let { medication -> screen(medication, history, hasTaken) }
         }
     }
 
-    private fun screen(medication: Medication, history: List<Intake>): MedCardUiState {
+    private fun screen(medication: Medication, history: List<Intake>, hasTaken: Boolean): MedCardUiState {
         val today = time.today()
         val scheduled = medication.scheduleMode == ScheduleMode.SCHEDULED
         return MedCardUiState(
@@ -135,6 +148,8 @@ class MedicationCardViewModel @Inject constructor(
             },
             isArchived = medication.isArchived,
             courseFinishedOffer = CourseCompletion.isFinished(medication, today),
+            canDelete = !hasTaken,
+            deleteConfirmation = false,
             refill = null,
             notice = null,
         )
@@ -152,8 +167,12 @@ class MedicationCardViewModel @Inject constructor(
             ScheduleBlockUi.AsNeeded(maxPerDay = medication.maxPerDay ?: 0)
         }
 
-    private fun MedCardUiState.with(overlay: LocalState): MedCardUiState =
-        copy(refill = overlay.refill, notice = overlay.notice, closed = overlay.closed)
+    private fun MedCardUiState.with(overlay: LocalState): MedCardUiState = copy(
+        refill = overlay.refill,
+        notice = overlay.notice,
+        closed = overlay.closed,
+        deleteConfirmation = overlay.confirmDelete,
+    )
 
     private fun archive(reason: ArchiveReason) {
         val id = medicationId.value ?: return
@@ -176,6 +195,34 @@ class MedicationCardViewModel @Inject constructor(
                 else -> null
             }
             local.value = local.value.copy(notice = notice)
+        }
+    }
+
+    /**
+     * Подтверждение шторки: мягкое удаление (ПМ-24, ОВ-124).
+     *
+     * Шторка закрывается синхронно, до запуска операции: человек уже сказал «да», и
+     * секунда ожидания не имеет права выглядеть зависшей кнопкой. Успешное удаление
+     * публикует окно «Отменить» в общую ячейку — его покажет экран, куда вернётся
+     * человек; гонка с отметкой (`HasTakenIntakes`) окна не открывает: удаления не было,
+     * а состояние экрана само перечитается и уберёт действие.
+     */
+    private fun delete() {
+        val id = medicationId.value ?: return
+        val name = state.value?.title
+        local.value = local.value.copy(confirmDelete = false)
+        viewModelScope.launch {
+            when (operations.delete(id)) {
+                is DeleteOutcome.Deleted -> {
+                    if (name != null) undoActions.publishDeletion(medicationId = id, medicationName = name)
+                    local.value = local.value.copy(closed = true)
+                }
+
+                DeleteOutcome.HasTakenIntakes,
+                DeleteOutcome.AlreadyDeleted,
+                DeleteOutcome.UnknownMedication,
+                -> Unit
+            }
         }
     }
 
@@ -218,5 +265,6 @@ class MedicationCardViewModel @Inject constructor(
         val refill: RefillUi? = null,
         val notice: MedCardNotice? = null,
         val closed: Boolean = false,
+        val confirmDelete: Boolean = false,
     )
 }

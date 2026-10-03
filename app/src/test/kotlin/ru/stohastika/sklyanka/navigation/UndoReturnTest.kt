@@ -5,8 +5,8 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import ru.stohastika.sklyanka.domain.intake.MarkResult
-import ru.stohastika.sklyanka.domain.intake.UndoableMarkStore
 import ru.stohastika.sklyanka.domain.time.FixedTimeSource
+import ru.stohastika.sklyanka.domain.undo.UndoableActionStore
 import java.time.Instant
 import java.time.ZoneId
 
@@ -22,11 +22,11 @@ class UndoReturnTest {
 
     private val moment: Instant = Instant.parse("2026-09-25T11:01:00Z")
     private val clock = FixedTimeSource(moment, ZoneId.of("Europe/Moscow"))
-    private val undoMarks = UndoableMarkStore(clock)
+    private val undoActions = UndoableActionStore(clock)
     private val navigation = RootNavigation()
 
     private fun publishWindow() {
-        undoMarks.publish(
+        undoActions.publishMark(
             intakeIds = listOf("intake-1"),
             result = MarkResult.TAKEN,
             medicationNames = listOf("med-1"),
@@ -38,7 +38,7 @@ class UndoReturnTest {
         navigation.openMeds(MedsDestination.Card("med-1"))
         publishWindow()
 
-        assertTrue(UndoReturn.onAppeared(undoMarks, navigation))
+        assertTrue(UndoReturn.onAppeared(undoActions, navigation))
         assertTrue(navigation.showsToday)
     }
 
@@ -48,7 +48,7 @@ class UndoReturnTest {
         navigation.openSection(SettingsDestination.HISTORY)
         publishWindow()
 
-        assertTrue(UndoReturn.onAppeared(undoMarks, navigation))
+        assertTrue(UndoReturn.onAppeared(undoActions, navigation))
         assertTrue(navigation.showsToday)
     }
 
@@ -56,9 +56,9 @@ class UndoReturnTest {
     fun `an expired window switches nothing`() {
         navigation.openMeds(MedsDestination.List)
         publishWindow()
-        clock.advanceTo(moment.plus(UndoableMarkStore.WINDOW))
+        clock.advanceTo(moment.plus(UndoableActionStore.WINDOW))
 
-        assertFalse(UndoReturn.onAppeared(undoMarks, navigation))
+        assertFalse(UndoReturn.onAppeared(undoActions, navigation))
         assertEquals(MedsDestination.List, navigation.meds)
         assertFalse(navigation.showsToday)
     }
@@ -67,7 +67,7 @@ class UndoReturnTest {
     fun `no window at all switches nothing`() {
         navigation.openTab(RootTab.SETTINGS)
 
-        assertFalse(UndoReturn.onAppeared(undoMarks, navigation))
+        assertFalse(UndoReturn.onAppeared(undoActions, navigation))
         assertEquals(RootTab.SETTINGS, navigation.tab)
     }
 
@@ -75,7 +75,18 @@ class UndoReturnTest {
     fun `a person already on today stays there`() {
         publishWindow()
 
-        assertTrue(UndoReturn.onAppeared(undoMarks, navigation))
+        assertTrue(UndoReturn.onAppeared(undoActions, navigation))
         assertTrue(navigation.showsToday)
+    }
+
+    @Test
+    fun `a live deletion window switches nothing`() {
+        // Окно удаления живёт на экране, откуда человек удалил (ОВ-124): на «Сегодня»
+        // за ним не уводит, иначе окно пропало бы с глаз вместе со способом вернуть.
+        navigation.openMeds(MedsDestination.List)
+        undoActions.publishDeletion(medicationId = "med-1", medicationName = "med-1")
+
+        assertFalse(UndoReturn.onAppeared(undoActions, navigation))
+        assertEquals(MedsDestination.List, navigation.meds)
     }
 }

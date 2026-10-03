@@ -57,6 +57,8 @@ internal object Planning {
         endDate: LocalDate? = null,
         mode: ScheduleMode = ScheduleMode.SCHEDULED,
         archivedAt: Instant? = null,
+        /** Мягко удалённое лекарство (ПР-14): с `archivedAt` не сочетается (ИНВ-21). */
+        deletedAt: Instant? = null,
     ) = Medication(
         id = id,
         profileId = profileId,
@@ -77,6 +79,7 @@ internal object Planning {
         stockThresholdDays = null,
         archivedAt = archivedAt,
         archiveReason = archivedAt?.let { ArchiveReason.MANUAL },
+        deletedAt = deletedAt,
     )
 
     fun pending(at: LocalDateTime, id: String = "pending-$at", medicationId: String = MEDICATION_ID) = Intake(

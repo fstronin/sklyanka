@@ -10,6 +10,7 @@ import ru.stohastika.sklyanka.domain.today.PartOfDay
 import ru.stohastika.sklyanka.domain.today.PrnEntry
 import ru.stohastika.sklyanka.domain.today.StockNotice
 import ru.stohastika.sklyanka.domain.today.TodayLayout
+import ru.stohastika.sklyanka.domain.undo.UndoableDeletion
 import java.time.LocalDate
 import java.time.LocalTime
 
@@ -56,7 +57,15 @@ sealed interface TodayUiState {
      * экран сообщал бы неправду (`docs/spec/03-screens.md`, ОВ-34). [copy] — вариант
      * текста пустого состояния (SKL-83): база остаётся текущей формулировкой.
      */
-    data class Empty(val date: LocalDate, val copy: VariantKey = VariantKey.BASE) : TodayUiState
+    data class Empty(
+        val date: LocalDate,
+        val copy: VariantKey = VariantKey.BASE,
+        /**
+         * Окно отмены удаления (ОВ-124) показывается и над пустым состоянием: удалив
+         * последнее лекарство, человек обязан видеть, что произошло, и способ вернуть.
+         */
+        val deletion: UndoableDeletion? = null,
+    ) : TodayUiState
 
     @Immutable
     data class Content(
@@ -79,6 +88,13 @@ sealed interface TodayUiState {
          * сюда не попадает — срок живёт в таймере `TodayViewModel`, а не в состоянии.
          */
         val undo: UndoNotice? = null,
+        /**
+         * Окно «Отменить» после удаления лекарства (ОВ-124); `null` — отменять нечего.
+         *
+         * Живёт рядом с [undo], а не вместо: ячейка «последнее действие» одна, и экран
+         * показывает либо отметку, либо удаление — одновременно их не бывает.
+         */
+        val deletion: UndoableDeletion? = null,
         val layout: TodayLayout,
         val prn: List<PrnEntry>,
         /**

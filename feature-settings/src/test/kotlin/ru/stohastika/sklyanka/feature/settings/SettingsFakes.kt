@@ -101,6 +101,10 @@ internal class FakeMedications(private val byProfile: Map<String, Int>) : Medica
 
     override suspend fun archive(medicationId: String, reason: ArchiveReason): Boolean = false
 
+    override suspend fun delete(medicationId: String): Boolean = false
+
+    override suspend fun undelete(medicationId: String): Boolean = false
+
     override suspend fun setStock(medicationId: String, stockLeft: BigDecimal?) = Unit
 
     /**

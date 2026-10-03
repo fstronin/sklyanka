@@ -36,5 +36,14 @@ sealed interface MedCardIntent {
     /** «Вернуть» у архивированного лекарства (SKL-11). */
     data object Restore : MedCardIntent
 
+    /** «Удалить»: открывает шторку подтверждения (ОВ-124). */
+    data object DeleteRequested : MedCardIntent
+
+    /** «Отмена», системная «Назад» и тап вне шторки: закрывают её без изменений. */
+    data object DeleteDismissed : MedCardIntent
+
+    /** Подтверждение шторки: мягкое удаление и окно «Отменить» (ПМ-24, ОВ-124). */
+    data object DeleteConfirmed : MedCardIntent
+
     data object NoticeDismissed : MedCardIntent
 }

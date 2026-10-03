@@ -1,10 +1,17 @@
 package ru.stohastika.sklyanka.feature.meds
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,15 +21,25 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
+import ru.stohastika.sklyanka.domain.undo.UndoableDeletion
+import ru.stohastika.sklyanka.ui.component.Snackbar
 import ru.stohastika.sklyanka.ui.locale.interfaceLocale
 import ru.stohastika.sklyanka.ui.modifier.minTouchTarget
+import ru.stohastika.sklyanka.ui.motion.MotionPhase
+import ru.stohastika.sklyanka.ui.motion.motionTiming
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaShapes
 import ru.stohastika.sklyanka.ui.token.SklyankaSizes
@@ -320,6 +337,45 @@ internal fun FormPlate(glyph: @Composable () -> Unit, modifier: Modifier = Modif
 
 /** Боковое поле экрана; вынесено, чтобы список и форма не разъезжались по краям. */
 internal fun Modifier.screenPadding(): Modifier = padding(horizontal = SklyankaSpacing.Section)
+
+/**
+ * Снэкбар окна отмены удаления на светлом экране (§4.12, ОВ-124).
+ *
+ * Один хост на «Лекарства» и «Архив»: сообщение, срок и замена живут в магазине
+ * «последнее действие», а разметке достаётся готовый факт. Действие одно — «Отменить»;
+ * уход с экрана окно закрывает (точка выхода — `onScreenLeft` у ViewModel).
+ */
+@Composable
+internal fun BoxScope.DeletionSnackbarHost(deletion: UndoableDeletion?, onUndo: (UndoableDeletion) -> Unit) {
+    var lastDeletion by remember { mutableStateOf<UndoableDeletion?>(null) }
+    LaunchedEffect(deletion) { if (deletion != null) lastDeletion = deletion }
+    val enterTiming = motionTiming(MotionPhase.SnackbarEnter)
+    val exitTiming = motionTiming(MotionPhase.SnackbarExit)
+    AnimatedVisibility(
+        visible = deletion != null,
+        enter = slideInVertically(
+            animationSpec = tween(enterTiming.durationMillis, easing = enterTiming.easing),
+        ) { height -> height } + fadeIn(tween(enterTiming.durationMillis, easing = enterTiming.easing)),
+        exit = slideOutVertically(
+            animationSpec = tween(exitTiming.durationMillis, easing = exitTiming.easing),
+        ) { height -> height } + fadeOut(tween(exitTiming.durationMillis, easing = exitTiming.easing)),
+        modifier = Modifier
+            .align(Alignment.BottomCenter)
+            .padding(
+                start = SklyankaSpacing.Section,
+                end = SklyankaSpacing.Section,
+                bottom = SklyankaSpacing.Medium,
+            ),
+    ) {
+        lastDeletion?.let { shown ->
+            Snackbar(
+                text = stringResource(R.string.meds_deleted_snackbar, shown.medicationName),
+                actionLabel = stringResource(R.string.meds_undo_action),
+                onAction = { onUndo(shown) },
+            )
+        }
+    }
+}
 
 /** Опоры экранных тестов. */
 const val TAG_SEGMENTED_CONTROL = "meds_segmented_control"

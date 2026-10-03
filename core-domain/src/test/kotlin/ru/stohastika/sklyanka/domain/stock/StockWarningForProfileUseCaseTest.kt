@@ -115,4 +115,13 @@ class StockWarningForProfileUseCaseTest {
         val EVENING: LocalTime = LocalTime.of(20, 0)
         const val FIVE_DAYS = 5
     }
+
+    @Test
+    fun `a deleted medication does not ask to buy more`() = runTest {
+        // ПР-14: удалённое лекарство не показывается в активных, и предупреждение о покупке
+        // по нему не строится — оно питается той же выборкой.
+        medications.put(onceADay(id = "gone", stock = "1").copy(deletedAt = clock.now()))
+
+        assertNull(warnings(Fixtures.PROFILE_ID).first())
+    }
 }

@@ -62,4 +62,5 @@
     <string name="today_undo_action">Undo</string>
     <string name="today_undo_taken_single">%1$s — intake marked as taken</string>
     <string name="today_undo_skipped_single">%1$s — intake marked as skipped</string>
+    <string name="today_deleted_snackbar">%1$s — medication deleted</string>
 </resources>

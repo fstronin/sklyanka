@@ -118,7 +118,7 @@ class UndoCompositionSteps(private val world: AcceptanceWorld) {
     @Допустим("^на «Сегодня» показан снэкбар с отменой$")
     fun theUndoSnackbarIsShownOnToday() {
         val intake = world.intakes.current()
-        world.undoMarks.publish(
+        world.undoActions.publishMark(
             intakeIds = listOf(intake.id),
             result = MarkResult.of(intake.status) ?: MarkResult.TAKEN,
             medicationNames = listOfNotNull(world.medications.byId(intake.medicationId)?.name),
@@ -162,7 +162,7 @@ class UndoCompositionSteps(private val world: AcceptanceWorld) {
         world.clock.moveTo(world.localMoment(date, time))
         // Уход с «Сегодня» — конец окна отмены: та же точка выхода, которую зовёт
         // `TodayRoute` при снятии с композиции (`TDD.md §12.2`, §15.5).
-        world.undoMarks.clear()
+        world.undoActions.clear()
     }
 
     @Когда("^(.+?) в (\\d{2}:\\d{2}:\\d{2}) возвращается на «Сегодня»$")
@@ -175,7 +175,7 @@ class UndoCompositionSteps(private val world: AcceptanceWorld) {
     @Тогда("^карточка закрывается, и открывается «Сегодня»$")
     fun theCardClosesAndTodayOpens() {
         assertTrue("the card must close", UndoAppProbe.reminderState(world) is ReminderUiState.Closed)
-        assertTrue("the undo window must wait on Today", world.undoMarks.live() != null)
+        assertTrue("the undo window must wait on Today", world.undoActions.live() != null)
     }
 
     @И("^на «Сегодня» показан снэкбар «([^»]+)»$")
@@ -186,7 +186,7 @@ class UndoCompositionSteps(private val world: AcceptanceWorld) {
 
     @Тогда("^снэкбара на «Сегодня» нет$")
     fun thereIsNoSnackbarOnToday() {
-        assertTrue("the undo window must be over", world.undoMarks.live() == null)
+        assertTrue("the undo window must be over", world.undoActions.live() == null)
         UndoAppProbe.today(world) { test ->
             test.onAllNodesWithTag(TAG_SNACKBAR, useUnmergedTree = true).assertCountEquals(0)
         }

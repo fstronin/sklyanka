@@ -11,12 +11,12 @@ import ru.stohastika.sklyanka.domain.intake.MarkIntakeUseCase
 import ru.stohastika.sklyanka.domain.intake.MarkSideEffects
 import ru.stohastika.sklyanka.domain.intake.SweepMissedIntakesUseCase
 import ru.stohastika.sklyanka.domain.intake.UndoMarkUseCase
-import ru.stohastika.sklyanka.domain.intake.UndoableMarkStore
 import ru.stohastika.sklyanka.domain.log.OperationLog
 import ru.stohastika.sklyanka.domain.repository.IntakeRepository
 import ru.stohastika.sklyanka.domain.repository.MedicationRepository
 import ru.stohastika.sklyanka.domain.repository.ProfileRepository
 import ru.stohastika.sklyanka.domain.time.TimeSource
+import ru.stohastika.sklyanka.domain.undo.UndoableActionStore
 import javax.inject.Singleton
 
 /**
@@ -90,7 +90,7 @@ object IntakeModule {
      */
     @Provides
     @Singleton
-    fun provideUndoableMarkStore(time: TimeSource): UndoableMarkStore = UndoableMarkStore(time)
+    fun provideUndoableActionStore(time: TimeSource): UndoableActionStore = UndoableActionStore(time)
 
     @Provides
     @Singleton

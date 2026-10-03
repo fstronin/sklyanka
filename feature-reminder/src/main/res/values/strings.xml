@@ -170,6 +170,8 @@
     <string name="diagnostics_reason_schedule_edited">изменение расписания лекарства</string>
     <string name="diagnostics_reason_medication_added">добавление лекарства</string>
     <string name="diagnostics_reason_medication_archived">архивация лекарства</string>
+    <string name="diagnostics_reason_medication_deleted">удаление лекарства</string>
+    <string name="diagnostics_reason_medication_undeleted">возврат удаления</string>
     <string name="diagnostics_reason_medication_unarchived">возврат лекарства из архива</string>
     <string name="diagnostics_reason_alarm_fired">сработавшее напоминание</string>
     <string name="diagnostics_reason_profile_set_changed">изменение состава профилей</string>

@@ -260,7 +260,11 @@ private fun BackAction(kind: ScreenHeaderKind, onBack: () -> Unit) {
         ScreenHeaderKind.Modal -> stringResource(R.string.action_cancel)
         else -> stringResource(R.string.action_back)
     }
-    QuietButton(text = label, onClick = onBack, muted = kind == ScreenHeaderKind.Modal)
+    QuietButton(
+        text = label,
+        onClick = onBack,
+        kind = if (kind == ScreenHeaderKind.Modal) QuietButtonKind.Muted else QuietButtonKind.Accent,
+    )
 }
 
 @Composable

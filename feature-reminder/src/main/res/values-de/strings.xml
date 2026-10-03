@@ -119,6 +119,8 @@
     <string name="diagnostics_reason_schedule_edited">Medikamentenplan geändert</string>
     <string name="diagnostics_reason_medication_added">Medikament hinzugefügt</string>
     <string name="diagnostics_reason_medication_archived">Medikament archiviert</string>
+    <string name="diagnostics_reason_medication_deleted">Medikament gelöscht</string>
+    <string name="diagnostics_reason_medication_undeleted">Medikament wiederhergestellt</string>
     <string name="diagnostics_reason_medication_unarchived">Medikament aus dem Archiv zurückgeholt</string>
     <string name="diagnostics_reason_alarm_fired">Erinnerung ausgelöst</string>
     <string name="diagnostics_reason_profile_set_changed">Profilbestand geändert</string>

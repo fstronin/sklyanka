@@ -147,18 +147,30 @@ internal class FakeMedications : MedicationRepository {
     fun snapshot(): List<Medication> = stored.value
 
     override fun observeActive(profileId: String): Flow<List<Medication>> =
-        stored.map { all -> all.filter { it.profileId == profileId && !it.isArchived } }
+        stored.map { all -> all.filter { it.profileId == profileId && !it.isArchived && !it.isDeleted } }
 
     override fun observeArchived(profileId: String): Flow<List<Medication>> =
-        stored.map { all -> all.filter { it.profileId == profileId && it.isArchived } }
+        stored.map { all -> all.filter { it.profileId == profileId && it.isArchived && !it.isDeleted } }
 
     override suspend fun get(medicationId: String): Medication? = stored.value.firstOrNull { it.id == medicationId }
 
     override suspend fun save(medication: Medication) = put(medication)
 
     override suspend fun archive(medicationId: String, reason: ArchiveReason): Boolean {
-        val medication = get(medicationId)?.takeIf { !it.isArchived }
+        val medication = get(medicationId)?.takeIf { !it.isArchived && !it.isDeleted }
         medication?.let { put(it.copy(archivedAt = Instant.EPOCH, archiveReason = reason)) }
+        return medication != null
+    }
+
+    override suspend fun delete(medicationId: String): Boolean {
+        val medication = get(medicationId)?.takeIf { !it.isDeleted }
+        medication?.let { put(it.copy(deletedAt = Instant.EPOCH, archivedAt = null, archiveReason = null)) }
+        return medication != null
+    }
+
+    override suspend fun undelete(medicationId: String): Boolean {
+        val medication = get(medicationId)?.takeIf { it.isDeleted }
+        medication?.let { put(it.copy(deletedAt = null)) }
         return medication != null
     }
 
@@ -195,6 +207,12 @@ internal class FakeIntakes : IntakeRepository {
         from: LocalDate,
         to: LocalDate,
     ): Flow<List<Intake>> = stored.map { all -> all.filter { it.medicationId == medicationId } }
+
+    override suspend fun hasTaken(profileId: String, medicationId: String): Boolean =
+        stored.value.any { it.medicationId == medicationId && it.status == IntakeStatus.TAKEN }
+
+    override fun observeHasTaken(profileId: String, medicationId: String): Flow<Boolean> =
+        stored.map { all -> all.any { it.medicationId == medicationId && it.status == IntakeStatus.TAKEN } }
 
     override suspend fun get(intakeId: String): Intake? = stored.value.firstOrNull { it.id == intakeId }
 

@@ -24,11 +24,11 @@ import kotlinx.coroutines.launch
 import ru.stohastika.sklyanka.domain.analytics.Analytics
 import ru.stohastika.sklyanka.domain.analytics.AnalyticsEvent
 import ru.stohastika.sklyanka.domain.analytics.ConsentSource
-import ru.stohastika.sklyanka.domain.intake.UndoableMarkStore
 import ru.stohastika.sklyanka.domain.onboarding.OnboardingSource
 import ru.stohastika.sklyanka.domain.onboarding.ShouldShowOnboardingUseCase
 import ru.stohastika.sklyanka.domain.profile.ProfileContextProvider
 import ru.stohastika.sklyanka.domain.time.TimeSource
+import ru.stohastika.sklyanka.domain.undo.UndoableActionStore
 import ru.stohastika.sklyanka.feature.history.HistoryViewModel
 import ru.stohastika.sklyanka.feature.meds.archive.ArchiveViewModel
 import ru.stohastika.sklyanka.feature.meds.card.MedicationCardViewModel
@@ -182,7 +182,7 @@ class MainActivity : ComponentActivity() {
      * (SKL-43, дополнение ОВ-81).
      */
     @Inject
-    lateinit var undoMarks: UndoableMarkStore
+    lateinit var undoActions: UndoableActionStore
 
     /** Состояние корня приложения — маршрут и возврат из `onResume` (SKL-43). */
     private val rootNavigation = RootNavigation()
@@ -241,9 +241,9 @@ class MainActivity : ComponentActivity() {
 
         // Ярлык быстрого доступа «Добавить лекарство» (SKL-80, ОВ-96): явное действие
         // человека важнее самопоказа онбординга, поэтому форма кладётся в стек раздела
-        // до первой композиции. Живое окно отмены (SKL-43) остаётся сильнее — оно уводит
-        // на «Сегодня» уже после появления окна.
-        val addMedicationRequested = rootNavigation.openFromLaunch(intent?.action)
+        // до первой композиции. Живое окно удаления (SKL-99, ОВ-124) сильнее ярлыка —
+        // человек остаётся на экране с окном.
+        val addMedicationRequested = rootNavigation.openFromLaunch(intent?.action, undoActions.live())
 
         var decision by mutableStateOf<StartupDecision?>(null)
         var onboardingUnseen by mutableStateOf(false)
@@ -398,7 +398,8 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        rootNavigation.openFromLaunch(intent.action)
+        // Окно удаления сильнее ярлыка и здесь: форма не ложится поверх окна (SKL-99).
+        rootNavigation.openFromLaunch(intent.action, undoActions.live())
     }
 
     /**
@@ -508,7 +509,7 @@ class MainActivity : ComponentActivity() {
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
         if (!hasFocus) return
-        if (UndoReturn.onAppeared(undoMarks, rootNavigation)) permissionsFromToday = false
+        if (UndoReturn.onAppeared(undoActions, rootNavigation)) permissionsFromToday = false
     }
 
     /**

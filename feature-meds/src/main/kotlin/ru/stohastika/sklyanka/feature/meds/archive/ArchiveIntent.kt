@@ -12,5 +12,8 @@ sealed interface ArchiveIntent {
     /** «Вернуть»: очищает момент и причину архивации вместе и перепланирует приёмы. */
     data class Restore(val medicationId: String) : ArchiveIntent
 
+    /** «Отменить» в снэкбаре удаления: очищает `deleted_at` и возвращает лекарство (ОВ-124). */
+    data class UndoDeletion(val medicationId: String) : ArchiveIntent
+
     data object NoticeDismissed : ArchiveIntent
 }

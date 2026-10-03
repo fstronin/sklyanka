@@ -67,7 +67,10 @@ class SaveMedicationUseCase(
 
         val previous = normalized.id?.let { medications.get(it) }
         val created = previous == null
+        // Форма правки мягким удалением не управляет: запись, удалённую в другом месте,
+        // сохранение не воскрешает (ПР-14). Для нового лекарства значение остаётся null.
         val medication = normalized.toMedication(id = normalized.id ?: newId())
+            .copy(deletedAt = previous?.deletedAt)
         transactor.inTransaction { medications.save(medication) }
         val changed = previous?.let { changedFields(it, medication) } ?: emptyList()
         record(medication, previous, changed)

@@ -26,6 +26,7 @@ import ru.stohastika.sklyanka.ui.component.PrimaryButtonKind
 import ru.stohastika.sklyanka.ui.component.ProfileStripe
 import ru.stohastika.sklyanka.ui.component.ProgressPurpose
 import ru.stohastika.sklyanka.ui.component.QuietButton
+import ru.stohastika.sklyanka.ui.component.QuietButtonKind
 import ru.stohastika.sklyanka.ui.component.ScreenHeader
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderKind
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderLabels
@@ -113,7 +114,12 @@ class ComponentStateSnapshotTest {
                 QuietButton(text = quiet, onClick = {}, state = state)
             }
         }
-        capture("button-quiet-muted") { QuietButton(text = quiet, onClick = {}, muted = true) }
+        // Три вида тихой кнопки названы своими именами: проверка «у каждого состояния
+        // есть эталон» ищет снимок по имени вида (SKL-24).
+        capture("button-quiet-accent") { QuietButton(text = quiet, onClick = {}) }
+        capture("button-quiet-muted") { QuietButton(text = quiet, onClick = {}, kind = QuietButtonKind.Muted) }
+        // Опасная тихая — вид той же кнопки (ОВ-124, §4.3): «Удалить» на карточке лекарства.
+        capture("button-quiet-danger") { QuietButton(text = quiet, onClick = {}, kind = QuietButtonKind.Danger) }
     }
 
     /**

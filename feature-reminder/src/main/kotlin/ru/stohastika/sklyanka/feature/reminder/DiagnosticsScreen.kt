@@ -36,6 +36,7 @@ import ru.stohastika.sklyanka.domain.reminder.port.ReminderPermission
 import ru.stohastika.sklyanka.ui.component.Banner
 import ru.stohastika.sklyanka.ui.component.ChipState
 import ru.stohastika.sklyanka.ui.component.QuietButton
+import ru.stohastika.sklyanka.ui.component.QuietButtonKind
 import ru.stohastika.sklyanka.ui.component.ScreenHeader
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderKind
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderLabels
@@ -442,7 +443,7 @@ private fun RunningCheck(onCancelDeliveryCheck: () -> Unit) {
     QuietButton(
         text = stringResource(R.string.diagnostics_check_cancel),
         onClick = onCancelDeliveryCheck,
-        muted = true,
+        kind = QuietButtonKind.Muted,
         modifier = Modifier.testTag(TAG_CHECK_CANCEL),
     )
 }

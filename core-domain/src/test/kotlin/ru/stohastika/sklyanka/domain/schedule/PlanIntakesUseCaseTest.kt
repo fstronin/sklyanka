@@ -251,6 +251,40 @@ class PlanIntakesUseCaseTest {
     }
 
     @Test
+    fun `a deleted medication is not planned by a full pass`() = runTest {
+        medications.put(
+            Planning.medication(
+                times = listOf(LocalTime.of(9, 0)),
+                startDate = Planning.TODAY.minusDays(5),
+                deletedAt = Planning.TODAY.minusDays(1).atTime(10, 0).atZone(Planning.ZONE).toInstant(),
+            ),
+        )
+
+        plan()
+
+        assertTrue(intakes.stored.isEmpty(), "PR-14: a deleted medication produces nothing")
+    }
+
+    @Test
+    fun `deleting sweeps the future pending intakes and keeps the marked history`() = runTest {
+        val medication = Planning.medication(
+            times = listOf(LocalTime.of(9, 0)),
+            startDate = Planning.TODAY.minusDays(5),
+        )
+        medications.put(medication)
+        plan()
+        val history = Planning.taken(Planning.TODAY.minusDays(1).atTime(9, 0), id = "history")
+        intakes.put(history)
+
+        medications.delete(medication.id)
+        val result = plan(PlanScope.Medication(medication.id), PlanReason.MEDICATION_DELETED)
+
+        assertEquals(Planning.DEPTH_DAYS, result.deleted)
+        assertTrue(pendingOf().isEmpty(), "future pending intakes must be revoked")
+        assertEquals(history, intakes.stored["history"], "the marked history stays (PR-14)")
+    }
+
+    @Test
     fun `archiving sweeps the future pending intakes and keeps the marked history`() = runTest {
         val medication = Planning.medication(
             times = listOf(LocalTime.of(9, 0)),

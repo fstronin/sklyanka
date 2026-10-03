@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import ru.stohastika.sklyanka.feature.meds.BackGlyph
 import ru.stohastika.sklyanka.feature.meds.GlyphButton
 import ru.stohastika.sklyanka.feature.meds.R
@@ -28,6 +29,7 @@ import ru.stohastika.sklyanka.ui.component.BannerKind
 import ru.stohastika.sklyanka.ui.component.MedicationGlyph
 import ru.stohastika.sklyanka.ui.component.ProfileIndication
 import ru.stohastika.sklyanka.ui.component.QuietButton
+import ru.stohastika.sklyanka.ui.component.QuietButtonKind
 import ru.stohastika.sklyanka.ui.component.SecondaryButton
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaShapes
@@ -80,6 +82,13 @@ fun MedicationCardScreen(state: MedCardUiState, onIntent: (MedCardIntent) -> Uni
             WeekBlock(state.week)
         }
         ArchiveAction(state, onIntent)
+        if (state.deleteConfirmation) {
+            DeleteMedicationSheet(
+                medicationName = state.title,
+                onDismiss = { onIntent(MedCardIntent.DeleteDismissed) },
+                onConfirm = { onIntent(MedCardIntent.DeleteConfirmed) },
+            )
+        }
     }
 }
 
@@ -206,14 +215,20 @@ private fun NoticeBanner(notice: MedCardNotice, onIntent: (MedCardIntent) -> Uni
  *
  * Одна кнопка на два действия, а не две рядом: архивный вид карточки макета не имеет,
  * и словами `docs/spec/03-screens.md` задано именно замещение.
+ *
+ * Ниже, если удаление доступно (ПМ-24, ОВ-124), стоит тихая кнопка `Danger` «Удалить»
+ * и пояснение условия: удалить можно только запись без единой отметки «принято».
+ * При наличии `TAKEN` в разметке нет ни кнопки, ни пояснения — состояние `canDelete`.
  */
 @Composable
 private fun ArchiveAction(state: MedCardUiState, onIntent: (MedCardIntent) -> Unit) {
+    val colors = SklyankaTheme.colors
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .screenPadding()
             .padding(PaddingValues(top = SklyankaSpacing.Block, bottom = SklyankaSpacing.Screen)),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         SecondaryButton(
             text = if (state.isArchived) {
@@ -228,6 +243,26 @@ private fun ArchiveAction(state: MedCardUiState, onIntent: (MedCardIntent) -> Un
                 .fillMaxWidth()
                 .testTag(if (state.isArchived) TAG_RESTORE else TAG_ARCHIVE),
         )
+        if (state.canDelete) {
+            QuietButton(
+                text = stringResource(R.string.card_delete),
+                onClick = { onIntent(MedCardIntent.DeleteRequested) },
+                kind = QuietButtonKind.Danger,
+                modifier = Modifier
+                    .padding(top = SklyankaSpacing.Small)
+                    .testTag(TAG_DELETE),
+            )
+            Text(
+                text = stringResource(R.string.card_delete_hint),
+                style = SklyankaType.CaptionSmall,
+                color = colors.textMuted,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = SklyankaSpacing.Micro)
+                    .testTag(TAG_DELETE_HINT),
+            )
+        }
     }
 }
 
@@ -239,5 +274,7 @@ const val TAG_SUBTITLE = "med_card_subtitle"
 const val TAG_EDIT = "med_card_edit"
 const val TAG_ARCHIVE = "med_card_archive"
 const val TAG_RESTORE = "med_card_restore"
+const val TAG_DELETE = "med_card_delete"
+const val TAG_DELETE_HINT = "med_card_delete_hint"
 const val TAG_FINISHED_OFFER = "med_card_finished_offer"
 const val TAG_NOTICE = "med_card_notice"

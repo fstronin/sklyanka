@@ -16,6 +16,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import ru.stohastika.sklyanka.ui.component.PrimaryButton
 import ru.stohastika.sklyanka.ui.component.QuietButton
+import ru.stohastika.sklyanka.ui.component.QuietButtonKind
 import ru.stohastika.sklyanka.ui.component.ScreenHeader
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderKind
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderLabels
@@ -81,7 +82,7 @@ fun DeliveryCheckSheet(onStart: () -> Unit, onDismiss: () -> Unit, modifier: Mod
             QuietButton(
                 text = stringResource(R.string.diagnostics_check_sheet_cancel),
                 onClick = onDismiss,
-                muted = true,
+                kind = QuietButtonKind.Muted,
                 modifier = Modifier.testTag(TAG_CHECK_SHEET_CANCEL),
             )
         }

@@ -35,6 +35,12 @@ enum class RescheduleReason(val code: String) {
     /** Архивация: приёмы выбывают из плана немедленно (ПР-11). */
     MEDICATION_ARCHIVED("medication_archived"),
 
+    /** Мягкое удаление: приёмы выбывают из плана, будильники снимаются (ПМ-24, ПР-14). */
+    MEDICATION_DELETED("medication_deleted"),
+
+    /** Возврат удаления: приёмы возвращаются в план. */
+    MEDICATION_UNDELETED("medication_undeleted"),
+
     /** Возврат из архива: приёмы возвращаются в план. */
     MEDICATION_UNARCHIVED("medication_unarchived"),
 

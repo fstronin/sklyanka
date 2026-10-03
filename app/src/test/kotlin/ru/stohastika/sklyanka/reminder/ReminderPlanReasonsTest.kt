@@ -73,6 +73,15 @@ class ReminderPlanReasonsTest {
             PlanReason.MEDICATION_RESTORED,
             ReminderPlanReasons.intakeReason(RescheduleReason.MEDICATION_UNARCHIVED),
         )
+        // SKL-99: удаление и возврат удаления — такие же события перепланирования (НАП-11, ПМ-24).
+        assertEquals(
+            PlanReason.MEDICATION_DELETED,
+            ReminderPlanReasons.intakeReason(RescheduleReason.MEDICATION_DELETED),
+        )
+        assertEquals(
+            PlanReason.MEDICATION_UNDELETED,
+            ReminderPlanReasons.intakeReason(RescheduleReason.MEDICATION_UNDELETED),
+        )
         assertEquals(PlanReason.ANCHOR_ALARM, ReminderPlanReasons.intakeReason(RescheduleReason.ANCHOR))
         assertEquals(PlanReason.MANUAL_CHECK, ReminderPlanReasons.intakeReason(RescheduleReason.MANUAL))
         assertEquals(PlanReason.DATA_IMPORTED, ReminderPlanReasons.intakeReason(RescheduleReason.DATA_IMPORTED))
@@ -97,13 +106,22 @@ class ReminderPlanReasonsTest {
             RescheduleReason.MEDICATION_UNARCHIVED,
             ReminderPlanReasons.rescheduleReason(PlanReason.MEDICATION_RESTORED),
         )
+        assertEquals(
+            RescheduleReason.MEDICATION_DELETED,
+            ReminderPlanReasons.rescheduleReason(PlanReason.MEDICATION_DELETED),
+        )
+        assertEquals(
+            RescheduleReason.MEDICATION_UNDELETED,
+            ReminderPlanReasons.rescheduleReason(PlanReason.MEDICATION_UNDELETED),
+        )
     }
 
     @Test
     fun `a generation reason that does not change one medication refuses loudly`() {
-        // Через порт перепланирования одного лекарства проходят только четыре причины;
-        // всё остальное — ошибка программиста, и молчаливая подмена причины запрещена
-        // (НАП-14): журнал напоминаний по ней разбирают, почему напоминание не пришло.
+        // Через порт перепланирования одного лекарства проходят только причины изменения
+        // одного лекарства; всё остальное — ошибка программиста, и молчаливая подмена
+        // причины запрещена (НАП-14): журнал напоминаний по ней разбирают, почему
+        // напоминание не пришло.
         for (reason in setOf(
             PlanReason.APP_START,
             PlanReason.BOOT,

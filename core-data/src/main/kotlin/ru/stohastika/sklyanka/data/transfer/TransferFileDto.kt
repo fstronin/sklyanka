@@ -102,6 +102,13 @@ internal data class MedicationDto(
     /** Архив — состояние записи, а не отдельный раздел (ПЕР-10). */
     @SerialName("archived_at") val archivedAt: String? = null,
     @SerialName("archive_reason") val archiveReason: String? = null,
+    /**
+     * Мягкое удаление — тоже состояние записи (ПЕР-10, ПМ-24): непустой момент переносится
+     * файлом. Поле необязательное и пишется всегда, как `archived_at`: старая сборка читает
+     * файл без изменений, новая читает старый (значение по умолчанию `null`); версия формата
+     * от добавления необязательного поля не повышается (ПЕР-7).
+     */
+    @SerialName("deleted_at") val deletedAt: String? = null,
 )
 
 @Serializable

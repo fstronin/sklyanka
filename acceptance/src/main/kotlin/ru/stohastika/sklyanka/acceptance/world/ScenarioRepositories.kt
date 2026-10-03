@@ -70,6 +70,13 @@ class ScenarioRepositories(
         return intakes.all().filter { it.medicationId in owned }.sortedBy { it.scheduledAt }
     }
 
+    /**
+     * Приёмы профиля, видимые экранам: приёмы удалённого лекарства из выборок выпадают
+     * (ПР-14), хотя строки в мире остаются — как и в базе.
+     */
+    private fun visibleOfProfile(profileId: String): List<Intake> =
+        ofProfile(profileId).filter { medications.byId(it.medicationId)?.isDeleted != true }
+
     private fun applyStock(medicationId: String, effect: StockEffect) {
         val medication = medications.byId(medicationId) ?: return
         // Правило списания — доменное и одно на всё приложение (SKL-12): копия
@@ -96,10 +103,10 @@ class ScenarioRepositories(
     private inner class Medications : MedicationRepository {
 
         override fun observeActive(profileId: String): Flow<List<Medication>> =
-            flowOf(medications.all().filter { it.profileId == profileId && !it.isArchived })
+            flowOf(medications.all().filter { it.profileId == profileId && !it.isArchived && !it.isDeleted })
 
         override fun observeArchived(profileId: String): Flow<List<Medication>> =
-            flowOf(medications.all().filter { it.profileId == profileId && it.isArchived })
+            flowOf(medications.all().filter { it.profileId == profileId && it.isArchived && !it.isDeleted })
 
         override suspend fun get(medicationId: String): Medication? = medications.byId(medicationId)
 
@@ -107,6 +114,33 @@ class ScenarioRepositories(
 
         override suspend fun archive(medicationId: String, reason: ArchiveReason): Boolean =
             medications.archiveById(medicationId, reason)
+
+        override suspend fun delete(medicationId: String): Boolean {
+            val changed = medications.deleteById(
+                medicationId = medicationId,
+                hasTaken = intakes.all().any { it.medicationId == medicationId && it.status == IntakeStatus.TAKEN },
+            )
+            if (changed) {
+                log.record(
+                    event = OpEvent.MEDICATION_DELETED,
+                    profileId = medications.byId(medicationId)?.profileId,
+                    medicationId = medicationId,
+                )
+            }
+            return changed
+        }
+
+        override suspend fun undelete(medicationId: String): Boolean {
+            val changed = medications.undeleteById(medicationId)
+            if (changed) {
+                log.record(
+                    event = OpEvent.MEDICATION_DELETED_UNDONE,
+                    profileId = medications.byId(medicationId)?.profileId,
+                    medicationId = medicationId,
+                )
+            }
+            return changed
+        }
 
         override suspend fun setStock(medicationId: String, stockLeft: BigDecimal?) {
             medications.setStock(medicationId, stockLeft)
@@ -119,10 +153,10 @@ class ScenarioRepositories(
     private inner class Intakes : IntakeRepository {
 
         override fun observeDay(profileId: String, date: LocalDate): Flow<List<Intake>> =
-            flowOf(ofProfile(profileId).filter { it.scheduledAt.toLocalDate() == date })
+            flowOf(visibleOfProfile(profileId).filter { it.scheduledAt.toLocalDate() == date })
 
         override fun observePeriod(profileId: String, from: LocalDate, to: LocalDate): Flow<List<Intake>> =
-            flowOf(ofProfile(profileId).filter { it.scheduledAt.toLocalDate() in from..to })
+            flowOf(visibleOfProfile(profileId).filter { it.scheduledAt.toLocalDate() in from..to })
 
         override fun observeByMedication(
             profileId: String,
@@ -130,8 +164,17 @@ class ScenarioRepositories(
             from: LocalDate,
             to: LocalDate,
         ): Flow<List<Intake>> = flowOf(
-            ofProfile(profileId)
+            visibleOfProfile(profileId)
                 .filter { it.medicationId == medicationId && it.scheduledAt.toLocalDate() in from..to },
+        )
+
+        override suspend fun hasTaken(profileId: String, medicationId: String): Boolean =
+            medications.byId(medicationId)?.profileId == profileId &&
+                intakes.all().any { it.medicationId == medicationId && it.status == IntakeStatus.TAKEN }
+
+        override fun observeHasTaken(profileId: String, medicationId: String): Flow<Boolean> = flowOf(
+            medications.byId(medicationId)?.profileId == profileId &&
+                intakes.all().any { it.medicationId == medicationId && it.status == IntakeStatus.TAKEN },
         )
 
         override suspend fun get(intakeId: String): Intake? = intakes.get(intakeId)
@@ -247,7 +290,18 @@ class ScenarioRepositories(
         }
 
         override suspend fun createPrnAtomically(command: PrnCommand): PrnOutcome {
-            val medication = medications.byId(command.medicationId) ?: return PrnOutcome.UnknownMedication
+            val medication = medications.byId(command.medicationId)
+            return when {
+                medication == null -> PrnOutcome.UnknownMedication
+                medication.isDeleted -> PrnOutcome.Deleted
+                else -> createPrn(command, medication)
+            }
+        }
+
+        private fun createPrn(
+            command: PrnCommand,
+            medication: ru.stohastika.sklyanka.domain.model.Medication,
+        ): PrnOutcome {
             val day = command.scheduledAt.toLocalDate()
             val countToday = intakes.all()
                 .count { it.medicationId == medication.id && it.scheduledAt.toLocalDate() == day }

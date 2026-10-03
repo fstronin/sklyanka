@@ -495,7 +495,7 @@ class TodayViewModelTest {
             advanceTimeBy(1)
             runCurrent()
             assertNull((viewModel.state.value as TodayUiState.Content).undo)
-            assertNull(world.undoMarks.live())
+            assertNull(world.undoActions.live())
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -544,7 +544,7 @@ class TodayViewModelTest {
             assertEquals(IntakeStatus.PENDING, world.intakes.stored.getValue("i-magnesium").status)
             assertEquals(BigDecimal("9"), world.medications.stored.getValue("m-magnesium").stockLeft)
             assertNull((viewModel.state.value as TodayUiState.Content).undo)
-            assertNull(world.undoMarks.live())
+            assertNull(world.undoActions.live())
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -579,7 +579,7 @@ class TodayViewModelTest {
             while (content.prn.single().takenToday == 0) content = awaitItem() as TodayUiState.Content
 
             assertNull(content.undo)
-            assertNull(world.undoMarks.live())
+            assertNull(world.undoActions.live())
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -597,7 +597,7 @@ class TodayViewModelTest {
             viewModel.onScreenLeft()
 
             assertNull((viewModel.state.value as TodayUiState.Content).undo)
-            assertNull(world.undoMarks.live())
+            assertNull(world.undoActions.live())
             assertEquals(IntakeStatus.TAKEN, world.intakes.stored.getValue("i-magnesium").status)
             cancelAndIgnoreRemainingEvents()
         }
@@ -618,7 +618,7 @@ class TodayViewModelTest {
             assertEquals(LocalTime.of(14, 0), armed.confirmingGroup)
             assertTrue(world.intakes.stored.values.all { it.status == IntakeStatus.PENDING })
             assertTrue(world.log.events().isEmpty())
-            assertNull(world.undoMarks.live())
+            assertNull(world.undoActions.live())
 
             advanceTimeBy(9_999)
             runCurrent()
@@ -870,6 +870,47 @@ class TodayViewModelTest {
         var state = this
         while (state is TodayUiState.Opening) state = turbine.awaitItem()
         return state
+    }
+
+    @Test
+    fun `a deletion window is shown on today and undo closes it`() = runTest {
+        val world = worldWithDay(startAt = 14, minute = 5)
+        val viewModel = world.viewModel()
+
+        viewModel.state.test {
+            awaitContent()
+            world.undoActions.publishDeletion(medicationId = "m-magnesium", medicationName = "med-magnesium")
+
+            var shown = awaitItem()
+            while ((shown as? TodayUiState.Content)?.deletion == null) shown = awaitItem()
+            assertEquals("med-magnesium", (shown as TodayUiState.Content).deletion?.medicationName)
+
+            viewModel.onIntent(TodayIntent.UndoDeletion("m-magnesium"))
+            var cleared = awaitItem()
+            while ((cleared as? TodayUiState.Content)?.deletion != null) cleared = awaitItem()
+            assertNull(world.undoActions.live())
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `a deletion window is shown over the empty state`() = runTest {
+        // Удалили последнее лекарство — «Сегодня» пусто, но окно «Отменить» обязано быть
+        // видимым (ОВ-124): иначе способ вернуть пропадает вместе с записью.
+        val world = TodayTestWorld(testScheduler, TodayTest.at(14, 5))
+        val viewModel = world.viewModel()
+
+        viewModel.state.test {
+            var state = awaitItem()
+            while (state !is TodayUiState.Empty) state = awaitItem()
+
+            world.undoActions.publishDeletion(medicationId = "m-gone", medicationName = "med-gone")
+
+            var shown = awaitItem()
+            while ((shown as? TodayUiState.Empty)?.deletion == null) shown = awaitItem()
+            assertEquals("med-gone", (shown as TodayUiState.Empty).deletion?.medicationName)
+            cancelAndIgnoreRemainingEvents()
+        }
     }
 
     /** Обычный день сценария приёмки: 08:00, 14:00 и 21:00. */

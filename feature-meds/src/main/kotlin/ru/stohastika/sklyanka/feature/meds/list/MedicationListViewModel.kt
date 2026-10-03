@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -16,6 +18,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import ru.stohastika.sklyanka.domain.medication.MedicationListOrder
 import ru.stohastika.sklyanka.domain.medication.MedicationListRules
+import ru.stohastika.sklyanka.domain.medication.UndoDeleteMedicationUseCase
 import ru.stohastika.sklyanka.domain.model.Intake
 import ru.stohastika.sklyanka.domain.model.IntakeStatus
 import ru.stohastika.sklyanka.domain.model.Medication
@@ -24,6 +27,10 @@ import ru.stohastika.sklyanka.domain.repository.ActiveProfileRepository
 import ru.stohastika.sklyanka.domain.repository.IntakeRepository
 import ru.stohastika.sklyanka.domain.repository.MedicationRepository
 import ru.stohastika.sklyanka.domain.time.TimeSource
+import ru.stohastika.sklyanka.domain.undo.UndoableAction
+import ru.stohastika.sklyanka.domain.undo.UndoableActionStore
+import ru.stohastika.sklyanka.domain.undo.UndoableDeletion
+import java.time.Duration
 import java.time.LocalDate
 import javax.inject.Inject
 
@@ -44,22 +51,82 @@ class MedicationListViewModel @Inject constructor(
     private val intakes: IntakeRepository,
     private val time: TimeSource,
     private val takePrn: TakePrnAction,
+    /** Возврат удаления в коротком окне (SKL-99): очищает `deleted_at` и планирует заново. */
+    private val undoDelete: UndoDeleteMedicationUseCase,
+    /** Общая ячейка «последнее действие» (SKL-30/99). */
+    private val undoActions: UndoableActionStore,
 ) : ViewModel() {
 
     private val tab = MutableStateFlow(MedsTab.ACTIVE)
+    private val deletion = MutableStateFlow<UndoableDeletion?>(null)
+    private var deletionJob: Job? = null
 
     val state: StateFlow<MedsUiState> = activeProfile.activeProfileId
         .flatMapLatest { profileId -> screen(profileId) }
         .combine(tab) { state, selected -> state.copy(tab = selected) }
+        .combine(deletion) { state, pending -> state.copy(deletion = pending) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, MedsUiState())
+
+    init {
+        viewModelScope.launch {
+            undoActions.current.collect { action -> showDeletion(action) }
+        }
+    }
 
     fun onIntent(intent: MedsIntent) {
         when (intent) {
             is MedsIntent.SelectTab -> tab.value = intent.tab
             is MedsIntent.TakeNow -> viewModelScope.launch { takePrn(intent.medicationId) }
+            is MedsIntent.UndoDeletion -> undoDeletion(intent.medicationId)
             // Переходы наружу состояния списка не меняют: их разбирает маршрут экрана.
             is MedsIntent.OpenMedication, MedsIntent.AddMedication -> Unit
         }
+    }
+
+    /**
+     * Уход с экрана закрывает окно удаления: возврата через интерфейс больше нет
+     * (правило SKL-30, ОВ-124). Зовёт маршрут списка при снятии с композиции.
+     */
+    fun onScreenLeft() {
+        deletionJob?.cancel()
+        deletionJob = null
+        deletion.value = null
+        undoActions.clear()
+    }
+
+    /** Показ окна по дедлайну магазина: истёкшее окно не показывается вовсе. */
+    private fun showDeletion(action: UndoableAction?) {
+        deletionJob?.cancel()
+        deletionJob = null
+        val shown = action as? UndoableDeletion
+        if (shown == null) {
+            deletion.value = null
+            return
+        }
+        val remaining = Duration.between(time.now(), shown.expiresAt)
+        if (remaining.isNegative || remaining.isZero) {
+            deletion.value = null
+            undoActions.clearIf(shown)
+            return
+        }
+        deletion.value = shown
+        deletionJob = viewModelScope.launch {
+            delay(remaining.toMillis())
+            deletion.value = null
+            undoActions.clearIf(shown)
+        }
+    }
+
+    /**
+     * «Отменить»: окно закрывается синхронно, до запуска возврата, — новая команда
+     * в тот же миг открывает новое окно, а не ждёт завершения старой.
+     */
+    private fun undoDeletion(medicationId: String) {
+        deletionJob?.cancel()
+        deletionJob = null
+        deletion.value = null
+        undoActions.clear()
+        viewModelScope.launch { undoDelete(medicationId) }
     }
 
     private fun screen(profileId: String): Flow<MedsUiState> = combine(

@@ -135,6 +135,12 @@
 
     <string name="card_section_limit">Шектеу</string>
     <string name="card_restore">Қайтару</string>
+    <string name="card_delete">Жою</string>
+    <string name="card_delete_hint">«Қабылданды» белгісі жоқ кезде жоюға болады</string>
+    <string name="card_delete_sheet_title">«%1$s» жойылсын ба?</string>
+    <string name="card_delete_sheet_text">Дәрі тізімдерден және еске салғыштардан жоғалады. Жойғаннан кейін оны «Болдырмау» түймесімен қайтаруға болады.</string>
+    <string name="meds_deleted_snackbar">%1$s — дәрі жойылды</string>
+    <string name="meds_undo_action">Болдырмау</string>
     <string name="card_course_last_day">соңғы күн</string>
     <string name="card_course_over">курс аяқталды</string>
 

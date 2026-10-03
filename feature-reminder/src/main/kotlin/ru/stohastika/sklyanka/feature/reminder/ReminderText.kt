@@ -131,6 +131,8 @@ internal val REASON_LABELS: Map<RescheduleReason, Int> = mapOf(
     RescheduleReason.SCHEDULE_EDITED to R.string.diagnostics_reason_schedule_edited,
     RescheduleReason.MEDICATION_ADDED to R.string.diagnostics_reason_medication_added,
     RescheduleReason.MEDICATION_ARCHIVED to R.string.diagnostics_reason_medication_archived,
+    RescheduleReason.MEDICATION_DELETED to R.string.diagnostics_reason_medication_deleted,
+    RescheduleReason.MEDICATION_UNDELETED to R.string.diagnostics_reason_medication_undeleted,
     RescheduleReason.MEDICATION_UNARCHIVED to R.string.diagnostics_reason_medication_unarchived,
     RescheduleReason.ALARM_FIRED to R.string.diagnostics_reason_alarm_fired,
     RescheduleReason.PROFILE_SET_CHANGED to R.string.diagnostics_reason_profile_set_changed,

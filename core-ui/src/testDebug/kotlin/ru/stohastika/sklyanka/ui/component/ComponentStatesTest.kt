@@ -75,6 +75,25 @@ class ComponentStatesTest {
         composeTestRule.onNodeWithText(label).assertIsDisplayed()
     }
 
+    @Test
+    fun theDangerQuietButtonBelongsToTheDesignSystem() {
+        // ОВ-124, §4.3: удаление — вид тихой кнопки, а не новый компонент.
+        org.junit.Assert.assertEquals(
+            setOf(QuietButtonKind.Accent, QuietButtonKind.Muted, QuietButtonKind.Danger),
+            QuietButtonKind.entries.toSet(),
+        )
+        composeTestRule.setContent {
+            SklyankaTheme {
+                QuietButton(
+                    text = context.getString(R.string.preview_quiet_action),
+                    onClick = {},
+                    kind = QuietButtonKind.Danger,
+                )
+            }
+        }
+        composeTestRule.onNodeWithTag(TAG_QUIET_BUTTON).assertIsDisplayed()
+    }
+
     private fun showCard(state: IntakeCardState) {
         composeTestRule.setContent {
             SklyankaTheme {

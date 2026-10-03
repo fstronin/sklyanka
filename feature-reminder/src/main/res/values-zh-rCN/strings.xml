@@ -119,6 +119,8 @@
     <string name="diagnostics_reason_schedule_edited">药物日程变更</string>
     <string name="diagnostics_reason_medication_added">添加药物</string>
     <string name="diagnostics_reason_medication_archived">药物归档</string>
+    <string name="diagnostics_reason_medication_deleted">药物删除</string>
+    <string name="diagnostics_reason_medication_undeleted">药物恢复</string>
     <string name="diagnostics_reason_medication_unarchived">药物从归档恢复</string>
     <string name="diagnostics_reason_alarm_fired">提醒触发</string>
     <string name="diagnostics_reason_profile_set_changed">档案组成变更</string>

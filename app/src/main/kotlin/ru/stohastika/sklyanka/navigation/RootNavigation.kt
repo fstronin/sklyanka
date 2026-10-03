@@ -3,6 +3,8 @@ package ru.stohastika.sklyanka.navigation
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import ru.stohastika.sklyanka.domain.undo.UndoableAction
+import ru.stohastika.sklyanka.domain.undo.UndoableDeletion
 import ru.stohastika.sklyanka.ui.motion.LayerMotion
 
 /**
@@ -60,12 +62,18 @@ class RootNavigation {
      * действия живёт в [AddMedicationLaunch], решение о маршруте — здесь, и потому обе
      * половины проверяются на JVM без Activity.
      *
+     * Живое окно удаления сильнее ярлыка (SKL-99, ОВ-124): пока человек может вернуть
+     * лекарство кнопкой «Отменить», форма поверх окна его бы его лишила — вызов
+     * возвращает `false`, а стек раздела не трогается.
+     *
      * @return `true`, если действие было ярлыком и форма открыта.
      */
-    fun openFromLaunch(action: String?): Boolean {
-        if (!AddMedicationLaunch.matches(action)) return false
-        openMeds(MedsDestination.NewMedication)
-        return true
+    fun openFromLaunch(action: String?, liveAction: UndoableAction? = null): Boolean {
+        // Живое окно удаления сильнее ярлыка (SKL-99, ОВ-124): пока человек может вернуть
+        // лекарство кнопкой «Отменить», форма поверх окна лишила бы его этой возможности.
+        val opensTheForm = AddMedicationLaunch.matches(action) && liveAction !is UndoableDeletion
+        if (opensTheForm) openMeds(MedsDestination.NewMedication)
+        return opensTheForm
     }
 
     fun leaveMeds() {

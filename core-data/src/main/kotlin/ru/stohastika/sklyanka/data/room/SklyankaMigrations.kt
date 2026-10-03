@@ -101,6 +101,20 @@ object SklyankaMigrations {
         }
     }
 
+    /**
+     * Версия 6 → 7: у лекарства появляется момент мягкого удаления (SKL-99, ПМ-24).
+     *
+     * Один `ALTER TABLE ADD COLUMN` без перестроения таблицы: строки не переписываются,
+     * индексы и внешние ключи остаются на месте, ни одна запись приёма не затрагивается
+     * (МГ-2). Старые строки получают `NULL` — «удаления не было»; очистка поля возвращает
+     * лекарство, отдельной сущности для этого не заводится (ПР-14).
+     */
+    val MIGRATION_6_7 = object : Migration(6, 7) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE `medication` ADD COLUMN `deleted_at` INTEGER")
+        }
+    }
+
     /** Все миграции по порядку. Room выбирает путь сам; пропусков в цепочке быть не должно. */
     val ALL: Array<Migration> = arrayOf(
         MIGRATION_1_2,
@@ -108,6 +122,7 @@ object SklyankaMigrations {
         MIGRATION_3_4,
         MIGRATION_4_5,
         MIGRATION_5_6,
+        MIGRATION_6_7,
     )
 
     /**

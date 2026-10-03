@@ -23,10 +23,10 @@ import ru.stohastika.sklyanka.domain.intake.UndoCommand
 import ru.stohastika.sklyanka.domain.intake.UndoDecision
 import ru.stohastika.sklyanka.domain.intake.UndoMarkUseCase
 import ru.stohastika.sklyanka.domain.intake.UndoOutcome
-import ru.stohastika.sklyanka.domain.intake.UndoableMarkStore
 import ru.stohastika.sklyanka.domain.log.OpEvent
 import ru.stohastika.sklyanka.domain.log.OpLogRecord
 import ru.stohastika.sklyanka.domain.log.OperationLog
+import ru.stohastika.sklyanka.domain.medication.UndoDeleteMedicationUseCase
 import ru.stohastika.sklyanka.domain.model.ArchiveReason
 import ru.stohastika.sklyanka.domain.model.Intake
 import ru.stohastika.sklyanka.domain.model.IntakeSource
@@ -42,14 +42,18 @@ import ru.stohastika.sklyanka.domain.repository.ActiveProfileRepository
 import ru.stohastika.sklyanka.domain.repository.IntakeRepository
 import ru.stohastika.sklyanka.domain.repository.MedicationRepository
 import ru.stohastika.sklyanka.domain.repository.ProfileRepository
+import ru.stohastika.sklyanka.domain.schedule.GenerationWindow
 import ru.stohastika.sklyanka.domain.schedule.IntakePlanDiff
+import ru.stohastika.sklyanka.domain.schedule.MedicationPlanner
 import ru.stohastika.sklyanka.domain.schedule.PlanApplyResult
+import ru.stohastika.sklyanka.domain.schedule.PlanResult
 import ru.stohastika.sklyanka.domain.stock.StockWarningForProfileUseCase
 import ru.stohastika.sklyanka.domain.time.TimeSource
 import ru.stohastika.sklyanka.domain.today.BuildTodayAgenda
 import ru.stohastika.sklyanka.domain.today.DenseLayoutRule
 import ru.stohastika.sklyanka.domain.today.MarkIntakeGroupUseCase
 import ru.stohastika.sklyanka.domain.today.ObserveTodayAgendaUseCase
+import ru.stohastika.sklyanka.domain.undo.UndoableActionStore
 import java.math.BigDecimal
 import java.time.Instant
 import java.time.LocalDate
@@ -100,7 +104,7 @@ internal class TodayTestWorld(scheduler: TestCoroutineScheduler, startAt: LocalD
 
     val markIntake = MarkIntakeUseCase(intakes, medications, profiles, clock)
     val undoMark = UndoMarkUseCase(intakes, medications, profiles)
-    val undoMarks = UndoableMarkStore(clock)
+    val undoActions = UndoableActionStore(clock)
 
     init {
         profiles.put(
@@ -122,11 +126,27 @@ internal class TodayTestWorld(scheduler: TestCoroutineScheduler, startAt: LocalD
         markGroup = MarkIntakeGroupUseCase(markIntake, DirectTransactor, clock, log),
         createPrn = CreatePrnIntakeUseCase(intakes, medications, profiles, clock),
         undoMark = undoMark,
-        undoMarks = undoMarks,
+        undoActions = undoActions,
+        undoDelete = UndoDeleteMedicationUseCase(medications, noOpPlanner(clock)),
         time = clock,
         readReliability = ReadReminderReliabilityUseCase(permissionReader),
     )
 }
+
+/**
+ * Планировщик без изменений: тестам «Сегодня» нечего порождать и снимать, но сценарий
+ * удаления получает настоящий порт, а не заглушку, которая молча съела бы вызов.
+ */
+internal fun noOpPlanner(clock: TimeSource): MedicationPlanner = MedicationPlanner { _, reason ->
+    PlanResult(
+        window = GenerationWindow.of(clock.today(), MIN_PLAN_DEPTH_DAYS),
+        reason = reason,
+        medications = emptyList(),
+    )
+}
+
+/** Наименьшая глубина окна генерации: `GenerationWindow` не принимает меньше трёх суток. */
+private const val MIN_PLAN_DEPTH_DAYS = 3
 
 /**
  * Часы, идущие вместе с виртуальным временем теста.
@@ -164,6 +184,7 @@ internal class InMemoryIntakeRepository(
     override fun observeDay(profileId: String, date: LocalDate): Flow<List<Intake>> = revision.map {
         stored.values
             .filter { it.scheduledAt.toLocalDate() == date && medications.profileOf(it.medicationId) == profileId }
+            .filter { medications.isVisible(it.medicationId) }
             .sortedBy { it.scheduledAt }
     }
 
@@ -176,6 +197,13 @@ internal class InMemoryIntakeRepository(
         from: LocalDate,
         to: LocalDate,
     ): Flow<List<Intake>> = flowOf(emptyList())
+
+    override suspend fun hasTaken(profileId: String, medicationId: String): Boolean =
+        stored.values.any { it.medicationId == medicationId && it.status == IntakeStatus.TAKEN }
+
+    override fun observeHasTaken(profileId: String, medicationId: String): Flow<Boolean> = revision.map {
+        stored.values.any { it.medicationId == medicationId && it.status == IntakeStatus.TAKEN }
+    }
 
     override suspend fun get(intakeId: String): Intake? = stored[intakeId]
 
@@ -306,6 +334,9 @@ internal class InMemoryMedicationRepository : MedicationRepository {
 
     fun profileOf(medicationId: String): String? = stored[medicationId]?.profileId
 
+    /** Видно ли лекарство экранам: удалённое скрыто (ПР-14). */
+    fun isVisible(medicationId: String): Boolean = stored[medicationId]?.isDeleted != true
+
     fun applyStock(medicationId: String, effect: StockEffect) {
         val medication = stored[medicationId]
         val stock = medication?.stockLeft
@@ -319,7 +350,7 @@ internal class InMemoryMedicationRepository : MedicationRepository {
     }
 
     override fun observeActive(profileId: String): Flow<List<Medication>> = revision.map {
-        stored.values.filter { it.profileId == profileId && !it.isArchived }
+        stored.values.filter { it.profileId == profileId && !it.isArchived && !it.isDeleted }
     }
 
     override fun observeArchived(profileId: String): Flow<List<Medication>> = flowOf(emptyList())
@@ -329,6 +360,18 @@ internal class InMemoryMedicationRepository : MedicationRepository {
     override suspend fun save(medication: Medication) = put(medication)
 
     override suspend fun archive(medicationId: String, reason: ArchiveReason): Boolean = false
+
+    override suspend fun delete(medicationId: String): Boolean {
+        val medication = stored[medicationId]?.takeIf { !it.isDeleted } ?: return false
+        put(medication.copy(deletedAt = Instant.EPOCH, archivedAt = null, archiveReason = null))
+        return true
+    }
+
+    override suspend fun undelete(medicationId: String): Boolean {
+        val medication = stored[medicationId]?.takeIf { it.isDeleted } ?: return false
+        put(medication.copy(deletedAt = null))
+        return true
+    }
 
     override suspend fun setStock(medicationId: String, stockLeft: BigDecimal?) {
         stored[medicationId]?.let { put(it.copy(stockLeft = stockLeft)) }

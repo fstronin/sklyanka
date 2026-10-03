@@ -35,6 +35,17 @@ interface IntakeRepository {
         to: LocalDate,
     ): Flow<List<Intake>>
 
+    /**
+     * Есть ли у лекарства хоть одна отметка `TAKEN` — граница мягкого удаления (ИНВ-22).
+     *
+     * Профиль обязателен: идентификатор лекарства приходит из навигации, и запрос без
+     * профиля выглядел бы одинаково правильно и в верном, и в ошибочном вызове (ПР-10).
+     */
+    suspend fun hasTaken(profileId: String, medicationId: String): Boolean
+
+    /** То же потоком: карточка показывает действие «Удалить», пока отметок `TAKEN` нет. */
+    fun observeHasTaken(profileId: String, medicationId: String): Flow<Boolean>
+
     suspend fun get(intakeId: String): Intake?
 
     /**

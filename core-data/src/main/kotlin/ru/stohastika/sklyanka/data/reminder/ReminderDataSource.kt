@@ -45,7 +45,9 @@ class ReminderDataSource @Inject constructor(
     override suspend fun pendingInSlot(slot: ReminderSlot): List<ReminderIntake> = dao
         .slot(profileId = slot.profileId, scheduledAt = SklyankaConverters.dateTimeToText(slot.scheduledAt))
         .mapNotNull(::toDomain)
-        .filter { it.status == IntakeStatus.PENDING }
+        // Карточка удалённого лекарства не собирается вовсе (ПР-14): напоминать о нём
+        // нечего, а старая запись приёма могла остаться в прошлом окне.
+        .filter { it.status == IntakeStatus.PENDING && !it.medicationDeleted }
 
     override suspend fun card(slot: ReminderSlot, mirroredToWatch: Boolean): ReminderCard? {
         val profile = profiles.get(slot.profileId) ?: return null
@@ -95,6 +97,7 @@ class ReminderDataSource @Inject constructor(
                 status = status,
                 scheduleMode = mode,
                 medicationArchived = row.archivedAt != null,
+                medicationDeleted = row.deletedAt != null,
                 profileIsSelf = row.isSelf,
                 profileMirrorsReminders = row.mirrorReminders,
             )

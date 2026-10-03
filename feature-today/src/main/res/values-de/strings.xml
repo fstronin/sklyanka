@@ -62,4 +62,5 @@
     <string name="today_undo_action">Rückgängig</string>
     <string name="today_undo_taken_single">%1$s — Einnahme als eingenommen markiert</string>
     <string name="today_undo_skipped_single">%1$s — Einnahme als übersprungen markiert</string>
+    <string name="today_deleted_snackbar">%1$s — Medikament gelöscht</string>
 </resources>

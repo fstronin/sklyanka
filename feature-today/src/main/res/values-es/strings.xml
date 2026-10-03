@@ -62,4 +62,5 @@
     <string name="today_undo_action">Deshacer</string>
     <string name="today_undo_taken_single">%1$s — toma marcada como realizada</string>
     <string name="today_undo_skipped_single">%1$s — toma marcada como omitida</string>
+    <string name="today_deleted_snackbar">%1$s — medicamento eliminado</string>
 </resources>

@@ -40,6 +40,9 @@ sealed interface TodayIntent {
     /** «Отменить» в снэкбаре: ровно приёмы последнего действия (SKL-30). */
     data class UndoMark(val intakeIds: List<String>) : TodayIntent
 
+    /** «Отменить» в снэкбаре удаления: возвращает лекарство, его приёмы и будильники (ОВ-124). */
+    data class UndoDeletion(val medicationId: String) : TodayIntent
+
     // --- Переходы наружу: состояние экрана они не меняют, их разбирает маршрут ---
 
     /** Нажатие на строку приёма — карточка лекарства (SKL-10). */

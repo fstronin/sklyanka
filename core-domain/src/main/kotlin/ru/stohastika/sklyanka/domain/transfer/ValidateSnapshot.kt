@@ -2,6 +2,7 @@ package ru.stohastika.sklyanka.domain.transfer
 
 import ru.stohastika.sklyanka.domain.medication.MedicationDraft
 import ru.stohastika.sklyanka.domain.medication.ValidateMedicationDraft
+import ru.stohastika.sklyanka.domain.model.IntakeStatus
 import ru.stohastika.sklyanka.domain.model.Invariants
 import ru.stohastika.sklyanka.domain.model.Medication
 
@@ -32,6 +33,7 @@ class ValidateSnapshot(private val validateMedication: ValidateMedicationDraft =
     operator fun invoke(snapshot: TransferSnapshot): TransferReject? = selfProfileReject(snapshot)
         ?: duplicateIdReject(snapshot)
         ?: brokenLinkReject(snapshot)
+        ?: deletedWithTakenReject(snapshot)
         ?: recordReject(snapshot)
 
     /** ИНВ-1: своего профиля ровно один. Ноль своих профилей — файл, из которого нельзя собрать базу. */
@@ -63,6 +65,20 @@ class ValidateSnapshot(private val validateMedication: ValidateMedicationDraft =
 
             else -> null
         }
+    }
+
+    /**
+     * ИНВ-22: у мягко удалённого лекарства не бывает отметки `TAKEN`.
+     *
+     * Продукт такого состояния не создаёт (удаление условно по отсутствию отметок),
+     * но файл — единственный вход, который может прийти из рук. В отличие от ИНВ-15,
+     * проверка не отвергает ни одного законного состояния: «удалено» и «принято»
+     * не сосуществуют ни в одной выпущенной сборке.
+     */
+    private fun deletedWithTakenReject(snapshot: TransferSnapshot): TransferReject? {
+        val deletedIds = snapshot.medications.filter { it.isDeleted }.map { it.id }.toSet()
+        val offending = snapshot.intakes.any { it.medicationId in deletedIds && it.status == IntakeStatus.TAKEN }
+        return if (offending) reject(TransferRejectReason.INVALID_RECORD, "intakes:INV-22") else null
     }
 
     /**

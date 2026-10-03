@@ -444,6 +444,7 @@ internal class FakeReminderPlanSource(
                 status = intake.status,
                 scheduleMode = medication.scheduleMode,
                 medicationArchived = medication.isArchived,
+                medicationDeleted = medication.isDeleted,
                 profileIsSelf = profile.isSelf,
                 profileMirrorsReminders = profile.mirrorReminders,
             )

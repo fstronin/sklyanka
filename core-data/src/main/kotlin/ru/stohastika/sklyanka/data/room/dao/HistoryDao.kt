@@ -25,6 +25,7 @@ interface HistoryDao {
      * Фильтра `archived_at` здесь нет намеренно. Во всех прочих выборках он обязателен:
      * архивированный курс не порождает приёмов, не планируется и не показывается в списке.
      * В истории он равноправен — завершённый курс остаётся в картине месяца.
+     * Мягко удалённые исключены: их нет ни в истории, ни в отчёте (ПР-14).
      *
      * Запрос идёт по индексу `Medication(profile_id, archived_at)`, тому же, что обслуживает
      * выборки активных и архивированных.
@@ -32,7 +33,7 @@ interface HistoryDao {
     @Query(
         """
         SELECT * FROM medication
-        WHERE profile_id = :profileId
+        WHERE profile_id = :profileId AND deleted_at IS NULL
         ORDER BY name
         """,
     )
@@ -52,7 +53,7 @@ interface HistoryDao {
         """
         SELECT MIN(i.scheduled_at) FROM intake i
         JOIN medication m ON m.id = i.medication_id
-        WHERE m.profile_id = :profileId
+        WHERE m.profile_id = :profileId AND m.deleted_at IS NULL
         """,
     )
     fun observeFirstScheduledAt(profileId: String): Flow<String?>

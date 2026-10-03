@@ -13,14 +13,18 @@ import ru.stohastika.sklyanka.domain.intake.SweepReason
 import ru.stohastika.sklyanka.domain.intake.UndoMarkUseCase
 import ru.stohastika.sklyanka.domain.intake.UndoOutcome
 import ru.stohastika.sklyanka.domain.intake.UndoRequest
-import ru.stohastika.sklyanka.domain.intake.UndoableMarkStore
+import ru.stohastika.sklyanka.domain.medication.DeleteMedicationUseCase
+import ru.stohastika.sklyanka.domain.medication.DeleteOutcome
 import ru.stohastika.sklyanka.domain.medication.MedicationDraft
 import ru.stohastika.sklyanka.domain.medication.MedicationListRules
 import ru.stohastika.sklyanka.domain.medication.SaveMedicationUseCase
 import ru.stohastika.sklyanka.domain.medication.SaveResult
+import ru.stohastika.sklyanka.domain.medication.UndoDeleteMedicationUseCase
+import ru.stohastika.sklyanka.domain.medication.UndoDeleteOutcome
 import ru.stohastika.sklyanka.domain.medication.ValidateMedicationDraft
 import ru.stohastika.sklyanka.domain.model.Intake
 import ru.stohastika.sklyanka.domain.model.IntakeSource
+import ru.stohastika.sklyanka.domain.model.IntakeStatus
 import ru.stohastika.sklyanka.domain.reminder.RescheduleReason
 import ru.stohastika.sklyanka.domain.reminder.port.PermissionState
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPermission
@@ -32,6 +36,7 @@ import ru.stohastika.sklyanka.domain.schedule.PlanResult
 import ru.stohastika.sklyanka.domain.schedule.PlanScope
 import ru.stohastika.sklyanka.domain.today.GroupMarkOutcome
 import ru.stohastika.sklyanka.domain.today.MarkIntakeGroupUseCase
+import ru.stohastika.sklyanka.domain.undo.UndoableActionStore
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -63,6 +68,14 @@ class AcceptanceWorld {
     val intakes = ScenarioIntakes(clock, medications)
 
     val log = ScenarioLog(clock)
+
+    /**
+     * Канал аналитики сценария (SKL-82, SKL-99): события остаются в памяти.
+     *
+     * Событие удаления/отмены отправляет use case — тот же путь, что в продукте;
+     * шаг приёмки читает записанное, а не эмулирует точку вызова.
+     */
+    val analytics = ScenarioAnalytics()
 
     /** Репозитории поверх состояния: под ними гоняются настоящие доменные сценарии. */
     val repositories = ScenarioRepositories(profiles, medications, intakes, log)
@@ -236,6 +249,8 @@ class AcceptanceWorld {
         PlanReason.MEDICATION_ADDED -> RescheduleReason.MEDICATION_ADDED
         PlanReason.MEDICATION_SAVED -> RescheduleReason.SCHEDULE_EDITED
         PlanReason.MEDICATION_ARCHIVED -> RescheduleReason.MEDICATION_ARCHIVED
+        PlanReason.MEDICATION_DELETED -> RescheduleReason.MEDICATION_DELETED
+        PlanReason.MEDICATION_UNDELETED -> RescheduleReason.MEDICATION_UNDELETED
         PlanReason.MEDICATION_RESTORED -> RescheduleReason.MEDICATION_UNARCHIVED
         else -> error("Generation for reason ${reason.code} does not change one medication")
     }
@@ -407,7 +422,7 @@ class AcceptanceWorld {
     // --- Действия: отмена отметки (SKL-30) ------------------------------------------------------
 
     /** Окно отмены: последнее действие и его срок — той же ячейкой, что и на экране. */
-    val undoMarks = UndoableMarkStore(clock.time)
+    val undoActions = UndoableActionStore(clock.time)
 
     /** Чем кончилась последняя отмена: сценарий судит по этому исходу. */
     var lastUndoOutcome: UndoOutcome? = null
@@ -441,6 +456,53 @@ class AcceptanceWorld {
         lastUndoneIds = intakeIds
         lastUndoAt = clock.now()
         return outcome
+    }
+
+    // --- Действия: мягкое удаление лекарства (SKL-99) ------------------------------------------
+
+    /**
+     * Мягкое удаление настоящим `DeleteMedicationUseCase` (ПМ-24, ПР-14).
+     *
+     * Планировщик — порт мира: тот же порядок «сначала запись, потом снятие будущих
+     * приёмов и пересборка будильников», что у продукта. Окно «Отменить» публикуется
+     * отдельным действием — так же, как его публикует карточка.
+     */
+    fun deleteMedication(medication: String): DeleteOutcome {
+        val medicationId = medications.get(medication).id
+        val useCase = DeleteMedicationUseCase(
+            medications = repositories.medicationStore,
+            intakes = repositories.intakeStore,
+            planner = planner(),
+            analytics = analytics,
+        )
+        return runBlocking { useCase(medicationId) }
+    }
+
+    /** Удаление с открытым окном «Отменить»: путь человека, а не Предыстории. */
+    fun deleteMedicationWithWindow(medication: String): DeleteOutcome {
+        val outcome = deleteMedication(medication)
+        if (outcome is DeleteOutcome.Deleted) {
+            undoActions.publishDeletion(
+                medicationId = medications.get(medication).id,
+                medicationName = medications.get(medication).name,
+            )
+        }
+        return outcome
+    }
+
+    /** Возврат удаления настоящим `UndoDeleteMedicationUseCase`. */
+    fun undoDeleteMedication(medication: String): UndoDeleteOutcome {
+        val useCase = UndoDeleteMedicationUseCase(
+            medications = repositories.medicationStore,
+            planner = planner(),
+            analytics = analytics,
+        )
+        return runBlocking { useCase(medications.get(medication).id) }
+    }
+
+    /** Есть ли у лекарства хоть одна отметка «принято»: граница удаления (ИНВ-22). */
+    fun hasTaken(medication: String): Boolean = intakes.all().any {
+        it.medicationId == medications.get(medication).id && it.status == IntakeStatus.TAKEN
     }
 
     /**

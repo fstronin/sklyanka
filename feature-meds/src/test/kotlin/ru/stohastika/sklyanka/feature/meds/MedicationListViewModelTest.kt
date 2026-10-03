@@ -5,6 +5,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
@@ -16,9 +17,11 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import ru.stohastika.sklyanka.domain.medication.TrailingLine
+import ru.stohastika.sklyanka.domain.medication.UndoDeleteMedicationUseCase
 import ru.stohastika.sklyanka.domain.model.MedicationForm
 import ru.stohastika.sklyanka.domain.model.ScheduleMode
 import ru.stohastika.sklyanka.domain.model.TabletShape
+import ru.stohastika.sklyanka.domain.undo.UndoableActionStore
 import ru.stohastika.sklyanka.feature.meds.list.MedicationListViewModel
 import ru.stohastika.sklyanka.feature.meds.list.MedsIntent
 import ru.stohastika.sklyanka.feature.meds.list.MedsTab
@@ -41,6 +44,7 @@ class MedicationListViewModelTest {
     private val medications = FakeMedications()
     private val intakes = FakeIntakes()
     private val taken = mutableListOf<String>()
+    private val undoActions = UndoableActionStore(clock)
 
     private fun viewModel() = MedicationListViewModel(
         activeProfile = activeProfile,
@@ -48,6 +52,8 @@ class MedicationListViewModelTest {
         intakes = intakes,
         time = clock,
         takePrn = TakePrnAction { medicationId -> taken += medicationId },
+        undoDelete = UndoDeleteMedicationUseCase(medications, RecordingPlanner()),
+        undoActions = undoActions,
     )
 
     @Before
@@ -276,5 +282,44 @@ class MedicationListViewModelTest {
 
         assertFalse(model.state.value.isEmpty)
         assertTrue(model.state.value.loading)
+    }
+
+    // --- Мягкое удаление (SKL-99, ОВ-124) ---------------------------------------------------
+
+    @Test
+    fun `a deletion window is shown and the undo returns the medication`() = runTest(dispatcher) {
+        medications.put(MedsTestData.medication(id = "scheduled"))
+        val model = viewModel()
+        advanceUntilIdle()
+
+        undoActions.publishDeletion(medicationId = "scheduled", medicationName = "med-scheduled")
+        // runCurrent, а не advanceUntilIdle: окно живёт пять секунд, и «до простоя»
+        // виртуальное время сожгло бы его вместе с таймером.
+        runCurrent()
+
+        assertNotNull(model.state.value.deletion)
+        model.onIntent(MedsIntent.UndoDeletion("scheduled"))
+        runCurrent()
+
+        assertNull(model.state.value.deletion)
+        assertNull(undoActions.live())
+    }
+
+    @Test
+    fun `leaving the screen closes the deletion window`() = runTest(dispatcher) {
+        medications.put(MedsTestData.medication(id = "scheduled"))
+        val model = viewModel()
+        advanceUntilIdle()
+        undoActions.publishDeletion(medicationId = "scheduled", medicationName = "med-scheduled")
+        // runCurrent, а не advanceUntilIdle: окно живёт пять секунд, и «до простоя»
+        // виртуальное время сожгло бы его вместе с таймером.
+        runCurrent()
+        assertNotNull(model.state.value.deletion)
+
+        model.onScreenLeft()
+        runCurrent()
+
+        assertNull(model.state.value.deletion)
+        assertNull(undoActions.live())
     }
 }

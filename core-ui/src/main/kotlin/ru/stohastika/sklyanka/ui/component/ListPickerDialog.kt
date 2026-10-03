@@ -98,7 +98,7 @@ public fun <T> ListPickerDialog(
                     QuietButton(
                         text = stringResource(R.string.action_cancel),
                         onClick = onDismiss,
-                        muted = true,
+                        kind = QuietButtonKind.Muted,
                     )
                 }
             }

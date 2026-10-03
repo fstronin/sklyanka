@@ -118,8 +118,9 @@ fun SecondaryButton(
  * Без фона и границы, поэтому нарисована она мельче нормы. Цель нажатия доводится
  * до 44 dp модификатором, а не увеличением рисунка (§3.3, критерий 6).
  *
- * [muted] — вариант «Отмена»: то же действие приглушённым текстом, чтобы рядом с
- * «Готово» оно читалось как отказ, а не как второе равноправное действие.
+ * [kind] — вид, а не цвет: `Muted` — вариант «Отмена» (то же действие приглушённым
+ * текстом, чтобы рядом с «Готово» оно читалось как отказ), `Danger` — удаление
+ * (цвет опасности, в чужом профиле не тонируется; ОВ-67, ОВ-124).
  */
 @Composable
 fun QuietButton(
@@ -127,13 +128,17 @@ fun QuietButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     state: ButtonState = ButtonState.Normal,
-    muted: Boolean = false,
+    kind: QuietButtonKind = QuietButtonKind.Accent,
 ) {
     val colors = SklyankaTheme.colors
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
     val showPressed = state == ButtonState.Pressed || pressed
-    val base = if (muted) colors.textMuted else colors.accent
+    val base = when (kind) {
+        QuietButtonKind.Accent -> colors.accent
+        QuietButtonKind.Muted -> colors.textMuted
+        QuietButtonKind.Danger -> colors.danger
+    }
     Box(
         modifier = modifier
             .clickable(

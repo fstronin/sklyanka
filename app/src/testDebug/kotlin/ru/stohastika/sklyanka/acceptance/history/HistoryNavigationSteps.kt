@@ -40,7 +40,11 @@ import ru.stohastika.sklyanka.domain.intake.CreatePrnIntakeUseCase
 import ru.stohastika.sklyanka.domain.intake.MarkIntakeUseCase
 import ru.stohastika.sklyanka.domain.intake.SweepMissedIntakesUseCase
 import ru.stohastika.sklyanka.domain.intake.UndoMarkUseCase
+import ru.stohastika.sklyanka.domain.medication.UndoDeleteMedicationUseCase
 import ru.stohastika.sklyanka.domain.reminder.ReadReminderReliabilityUseCase
+import ru.stohastika.sklyanka.domain.schedule.GenerationWindow
+import ru.stohastika.sklyanka.domain.schedule.MedicationPlanner
+import ru.stohastika.sklyanka.domain.schedule.PlanResult
 import ru.stohastika.sklyanka.domain.stock.StockWarningForProfileUseCase
 import ru.stohastika.sklyanka.domain.today.BuildTodayAgenda
 import ru.stohastika.sklyanka.domain.today.MarkIntakeGroupUseCase
@@ -254,10 +258,25 @@ class HistoryNavigationSteps(private val world: AcceptanceWorld) {
                 world.repositories.medicationStore,
                 world.repositories.profileStore,
             ),
-            undoMarks = world.undoMarks,
+            undoActions = world.undoActions,
+            undoDelete = UndoDeleteMedicationUseCase(
+                world.repositories.medicationStore,
+                MedicationPlanner { _, reason ->
+                    PlanResult(
+                        window = GenerationWindow.of(world.clock.today(), MIN_PLAN_DEPTH_DAYS),
+                        reason = reason,
+                        medications = emptyList(),
+                    )
+                },
+            ),
             time = time,
             readReliability = ReadReminderReliabilityUseCase(world.system),
         )
+    }
+
+    /** Наименьшая глубина окна генерации: навигационным шагам планировать нечего. */
+    private companion object {
+        const val MIN_PLAN_DEPTH_DAYS = 3
     }
 
     /** Язык интерфейса закреплён: шаги зовут строки по-русски при любом телефоне (НФТ-43). */

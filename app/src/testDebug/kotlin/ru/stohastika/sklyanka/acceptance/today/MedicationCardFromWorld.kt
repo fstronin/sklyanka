@@ -23,22 +23,27 @@ import ru.stohastika.sklyanka.feature.meds.card.WatchMirrorUi
  */
 internal object MedicationCardFromWorld {
 
-    fun state(world: AcceptanceWorld, medication: Medication): MedCardUiState = MedCardUiState(
-        medicationId = medication.id,
-        title = medication.name,
-        form = medication.form,
-        subtitle = MedicationSubtitle.of(medication),
-        schedule = scheduleOf(medication),
-        course = CourseProgress.of(medication, world.clock.today()),
-        stock = StockPanel.of(medication),
-        stockUnit = doseUnitOf(medication),
-        week = WeekAdherenceStrip(days = emptyList(), taken = 0, planned = 0),
-        watchMirror = WatchMirrorUi(checked = medication.mirrorToWatch, enabled = !medication.isArchived),
-        isArchived = medication.isArchived,
-        courseFinishedOffer = false,
-        refill = null,
-        notice = null,
-    )
+    fun state(world: AcceptanceWorld, medication: Medication, deleteConfirmation: Boolean = false): MedCardUiState =
+        MedCardUiState(
+            medicationId = medication.id,
+            title = medication.name,
+            form = medication.form,
+            subtitle = MedicationSubtitle.of(medication),
+            schedule = scheduleOf(medication),
+            course = CourseProgress.of(medication, world.clock.today()),
+            stock = StockPanel.of(medication),
+            stockUnit = doseUnitOf(medication),
+            week = WeekAdherenceStrip(days = emptyList(), taken = 0, planned = 0),
+            watchMirror = WatchMirrorUi(checked = medication.mirrorToWatch, enabled = !medication.isArchived),
+            isArchived = medication.isArchived,
+            courseFinishedOffer = false,
+            canDelete = !kotlinx.coroutines.runBlocking {
+                world.repositories.intakeStore.hasTaken(medication.profileId, medication.id)
+            },
+            deleteConfirmation = deleteConfirmation,
+            refill = null,
+            notice = null,
+        )
 
     private fun scheduleOf(medication: Medication): ScheduleBlockUi =
         if (medication.scheduleMode == ScheduleMode.SCHEDULED) {

@@ -135,6 +135,12 @@
 
     <string name="card_section_limit">Límite</string>
     <string name="card_restore">Restaurar</string>
+    <string name="card_delete">Eliminar</string>
+    <string name="card_delete_hint">Puedes eliminarlo mientras no haya ninguna marca de «tomado»</string>
+    <string name="card_delete_sheet_title">¿Eliminar «%1$s»?</string>
+    <string name="card_delete_sheet_text">El medicamento desaparecerá de las listas y los recordatorios. Justo después de eliminarlo puedes recuperarlo con «Deshacer».</string>
+    <string name="meds_deleted_snackbar">%1$s — medicamento eliminado</string>
+    <string name="meds_undo_action">Deshacer</string>
     <string name="card_course_last_day">último día</string>
     <string name="card_course_over">tratamiento finalizado</string>
 

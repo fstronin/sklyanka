@@ -2,6 +2,7 @@ package ru.stohastika.sklyanka.feature.meds
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -44,6 +45,10 @@ fun MedsRoute(
 ) {
     val listState by listViewModel.state.collectAsState()
     var formOpen by remember { mutableStateOf(false) }
+    // Уход с экрана закрывает окно удаления (SKL-30, ОВ-124): точка выхода одна.
+    DisposableEffect(Unit) {
+        onDispose { listViewModel.onScreenLeft() }
+    }
 
     AnimatedLayer(
         layer = formOpen,
@@ -72,6 +77,7 @@ fun MedsRoute(
                             }
 
                             is MedsIntent.TakeNow -> listViewModel.onIntent(intent)
+                            is MedsIntent.UndoDeletion -> listViewModel.onIntent(intent)
                         }
                     },
                     modifier = Modifier.weight(1f),

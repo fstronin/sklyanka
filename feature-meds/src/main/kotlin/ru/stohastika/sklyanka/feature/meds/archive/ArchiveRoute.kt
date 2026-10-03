@@ -2,6 +2,7 @@ package ru.stohastika.sklyanka.feature.meds.archive
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -14,6 +15,9 @@ import ru.stohastika.sklyanka.ui.component.BottomBarTab
  * Переходы наружу — к списку активных и в карточку лекарства — подняты в параметры по той
  * же причине, что и у остальных экранов раздела: `feature-meds` не знает, из чего собран
  * граф навигации. «Архив» — корень вкладки «Лекарства» и несёт ту же нижнюю панель (ОВ-91).
+ *
+ * Уход с экрана закрывает окно удаления: точка выхода одна на все пути навигации,
+ * как у «Сегодня» (SKL-30, ОВ-124).
  */
 @Composable
 fun ArchiveRoute(
@@ -25,6 +29,9 @@ fun ArchiveRoute(
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsState()
+    DisposableEffect(Unit) {
+        onDispose { viewModel.onScreenLeft() }
+    }
     Column(modifier = modifier) {
         ArchiveScreen(
             state = state,

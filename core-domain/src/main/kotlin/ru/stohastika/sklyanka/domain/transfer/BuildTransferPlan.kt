@@ -35,7 +35,17 @@ class BuildTransferPlan(
         notices: List<TransferNotice> = emptyList(),
     ): TransferPlan {
         val profiles = matchProfiles(device.profiles, snapshot.profiles)
-        val matching = findMatches(device.medications, snapshot.medications, profiles)
+        // Мягко удалённые (ПР-14) в поиске совпадений не участвуют: решение «взять из файла»
+        // молча удаляло бы запись устройства, а «оставить моё» — молча воскрешало удалённую.
+        // Записи файла возвращаются в unmatched и добавляются в своём состоянии — удалёнными
+        // и скрытыми; удалённые записи устройства не переписываются ни одним решением.
+        val matching = findMatches(
+            device.medications.filterNot { it.isDeleted },
+            snapshot.medications.filterNot { it.isDeleted },
+            profiles,
+        ).let { found ->
+            found.copy(unmatched = found.unmatched + snapshot.medications.filter { it.isDeleted })
+        }
         val routing = routeMedications(matching, decisions, profiles)
         val incoming = remapIntakes(snapshot.intakes, routing.medicationIdByFileId, profiles)
         val history = mergeHistory(device.intakes, incoming.intakes)

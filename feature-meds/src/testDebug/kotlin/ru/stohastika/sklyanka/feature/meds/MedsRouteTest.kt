@@ -14,6 +14,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import ru.stohastika.sklyanka.domain.medication.SaveMedicationUseCase
+import ru.stohastika.sklyanka.domain.medication.UndoDeleteMedicationUseCase
 import ru.stohastika.sklyanka.domain.medication.ValidateMedicationDraft
 import ru.stohastika.sklyanka.domain.model.Profile
 import ru.stohastika.sklyanka.domain.repository.ActiveProfileRepository
@@ -21,6 +22,7 @@ import ru.stohastika.sklyanka.domain.schedule.IntakeGenerationPolicy
 import ru.stohastika.sklyanka.domain.schedule.MedicationPlanner
 import ru.stohastika.sklyanka.domain.schedule.PlanIntakesUseCase
 import ru.stohastika.sklyanka.domain.schedule.PlanScope
+import ru.stohastika.sklyanka.domain.undo.UndoableActionStore
 import ru.stohastika.sklyanka.feature.meds.form.MedFormIntent
 import ru.stohastika.sklyanka.feature.meds.form.MedicationFormViewModel
 import ru.stohastika.sklyanka.feature.meds.form.TAG_MEDICATION_FORM
@@ -54,6 +56,7 @@ class MedsRouteTest {
     private val intakes = FakeIntakes()
     private val profiles = FakeProfiles()
     private val log = RecordingLog()
+    private val undoActions = UndoableActionStore(clock)
 
     private val form = MedicationFormViewModel(
         activeProfile = activeProfile,
@@ -84,6 +87,8 @@ class MedsRouteTest {
         intakes = intakes,
         time = clock,
         takePrn = TakePrnAction {},
+        undoDelete = UndoDeleteMedicationUseCase(medications, RecordingPlanner()),
+        undoActions = undoActions,
     )
 
     private fun show() {

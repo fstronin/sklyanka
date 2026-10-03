@@ -231,6 +231,12 @@
     -->
     <string name="card_section_limit">Ограничение</string>
     <string name="card_restore">Вернуть</string>
+    <string name="card_delete">Удалить</string>
+    <string name="card_delete_hint">Удалить можно, пока нет ни одной отметки „принято“</string>
+    <string name="card_delete_sheet_title">Удалить „%1$s“?</string>
+    <string name="card_delete_sheet_text">Лекарство исчезнет из списков и напоминаний. Сразу после удаления его можно вернуть кнопкой «Отменить».</string>
+    <string name="meds_deleted_snackbar">%1$s — лекарство удалено</string>
+    <string name="meds_undo_action">Отменить</string>
     <string name="card_course_last_day">последний день</string>
     <string name="card_course_over">курс закончился</string>
 

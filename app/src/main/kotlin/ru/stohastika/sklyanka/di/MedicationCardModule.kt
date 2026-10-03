@@ -5,15 +5,19 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import ru.stohastika.sklyanka.domain.Transactor
+import ru.stohastika.sklyanka.domain.analytics.Analytics
 import ru.stohastika.sklyanka.domain.intake.CreatePrnIntakeUseCase
 import ru.stohastika.sklyanka.domain.log.OperationLog
 import ru.stohastika.sklyanka.domain.medication.ArchiveMedicationUseCase
+import ru.stohastika.sklyanka.domain.medication.DeleteMedicationUseCase
 import ru.stohastika.sklyanka.domain.medication.RestoreMedicationUseCase
 import ru.stohastika.sklyanka.domain.medication.SaveMedicationUseCase
 import ru.stohastika.sklyanka.domain.medication.ToggleWatchMirrorUseCase
+import ru.stohastika.sklyanka.domain.medication.UndoDeleteMedicationUseCase
 import ru.stohastika.sklyanka.domain.medication.ValidateMedicationDraft
 import ru.stohastika.sklyanka.domain.model.IntakeSource
 import ru.stohastika.sklyanka.domain.reminder.RescheduleRemindersUseCase
+import ru.stohastika.sklyanka.domain.repository.IntakeRepository
 import ru.stohastika.sklyanka.domain.repository.MedicationRepository
 import ru.stohastika.sklyanka.domain.schedule.MedicationPlanner
 import ru.stohastika.sklyanka.domain.stock.RefillStockUseCase
@@ -79,6 +83,38 @@ object MedicationCardModule {
         transactor = transactor,
         time = time,
         log = log,
+    )
+
+    /**
+     * Мягкое удаление и возврат удаления (SKL-99, ПМ-24).
+     *
+     * События аналитики уходят отсюда, а не из экранов: отмена приходит с трёх хостов
+     * («Лекарства», «Архив», «Сегодня»), и точка вызова обязана быть одна.
+     */
+    @Provides
+    @Singleton
+    fun provideDeleteMedication(
+        medications: MedicationRepository,
+        intakes: IntakeRepository,
+        planner: MedicationPlanner,
+        analytics: Analytics,
+    ): DeleteMedicationUseCase = DeleteMedicationUseCase(
+        medications = medications,
+        intakes = intakes,
+        planner = planner,
+        analytics = analytics,
+    )
+
+    @Provides
+    @Singleton
+    fun provideUndoDeleteMedication(
+        medications: MedicationRepository,
+        planner: MedicationPlanner,
+        analytics: Analytics,
+    ): UndoDeleteMedicationUseCase = UndoDeleteMedicationUseCase(
+        medications = medications,
+        planner = planner,
+        analytics = analytics,
     )
 
     @Provides

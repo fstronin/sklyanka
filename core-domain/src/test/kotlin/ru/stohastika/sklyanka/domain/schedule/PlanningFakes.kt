@@ -81,6 +81,12 @@ internal class FakeIntakeRepository(
         to: LocalDate,
     ): Flow<List<Intake>> = flowOf(of(medicationId))
 
+    override suspend fun hasTaken(profileId: String, medicationId: String): Boolean =
+        stored.values.any { it.medicationId == medicationId && it.status == IntakeStatus.TAKEN }
+
+    override fun observeHasTaken(profileId: String, medicationId: String): Flow<Boolean> =
+        flowOf(stored.values.any { it.medicationId == medicationId && it.status == IntakeStatus.TAKEN })
+
     override suspend fun get(intakeId: String): Intake? = stored[intakeId]
 
     override suspend fun insertMissing(intakes: List<Intake>): Int {
@@ -248,10 +254,10 @@ internal class FakeMedicationRepository(private val time: TimeSource) : Medicati
     }
 
     override fun observeActive(profileId: String): Flow<List<Medication>> =
-        flowOf(stored.values.filter { it.profileId == profileId && !it.isArchived })
+        flowOf(stored.values.filter { it.profileId == profileId && !it.isArchived && !it.isDeleted })
 
     override fun observeArchived(profileId: String): Flow<List<Medication>> =
-        flowOf(stored.values.filter { it.profileId == profileId && it.isArchived })
+        flowOf(stored.values.filter { it.profileId == profileId && it.isArchived && !it.isDeleted })
 
     override suspend fun get(medicationId: String): Medication? = stored[medicationId]
 
@@ -259,8 +265,22 @@ internal class FakeMedicationRepository(private val time: TimeSource) : Medicati
 
     override suspend fun archive(medicationId: String, reason: ArchiveReason): Boolean {
         val medication = stored[medicationId]
-        if (medication == null || medication.isArchived) return false
+        if (medication == null || medication.isArchived || medication.isDeleted) return false
         put(medication.copy(archivedAt = time.now(), archiveReason = reason))
+        return true
+    }
+
+    override suspend fun delete(medicationId: String): Boolean {
+        val medication = stored[medicationId]
+        if (medication == null || medication.isDeleted) return false
+        put(medication.copy(deletedAt = time.now(), archivedAt = null, archiveReason = null))
+        return true
+    }
+
+    override suspend fun undelete(medicationId: String): Boolean {
+        val medication = stored[medicationId]
+        if (medication == null || !medication.isDeleted) return false
+        put(medication.copy(deletedAt = null))
         return true
     }
 

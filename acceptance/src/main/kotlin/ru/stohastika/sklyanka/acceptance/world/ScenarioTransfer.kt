@@ -244,7 +244,13 @@ class ScenarioTransfer(
     fun findMatches(): List<MedicationMatch> {
         val snapshot = requireNotNull(prepared) { "no file was prepared before looking for matches" }
         val matching = MatchProfiles(ScenarioTransferIds())(profiles.all(), snapshot.profiles)
-        return FindMedicationMatches()(medications.all(), snapshot.medications, matching).matches.also {
+        // Мягко удалённые не участвуют в поиске совпадений — тем же правилом, что в продукте
+        // (`BuildTransferPlan`): решения не имеют права молча удалять или воскрешать.
+        return FindMedicationMatches()(
+            medications.all().filterNot { it.isDeleted },
+            snapshot.medications.filterNot { it.isDeleted },
+            matching,
+        ).matches.also {
             lastMatches = it
         }
     }
