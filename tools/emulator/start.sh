@@ -1,12 +1,16 @@
 #!/usr/bin/env bash
-# Запуск образа без окна и ожидание готовности (SKL-27).
+# Запуск образа и ожидание готовности (SKL-27).
 #
 # Идемпотентно: уже запущенный образ вторым не поднимается.
 #
-#   ./start.sh [API] [--wipe]
+#   ./start.sh [API] [--wipe] [--window]
 #
 # --wipe стирает данные образа. По умолчанию данные СОХРАНЯЮТСЯ: испытания И-1 и И-10
 # живут между перезагрузками, и стирающий запуск уничтожал бы предмет измерения.
+#
+# --window поднимает образ с видимым окном (SKL-96). По умолчанию запуск безоконный:
+# окно — осознанное исключение экранного прогона, а не новое поведение механических
+# испытаний (start.sh добавляет SKL_HEADLESS_FLAG всем остальным запускам).
 set -euo pipefail
 
 SKL_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
@@ -16,7 +20,16 @@ source "$SKL_DIR/config.sh"
 source "$SKL_DIR/lib.sh"
 
 api="${1:-${SKL_API_LEVELS[0]}}"
-wipe="${2:-}"
+shift || true
+wipe=0
+window=0
+for arg in "$@"; do
+    case "$arg" in
+        --wipe) wipe=1 ;;
+        --window) window=1 ;;
+        *) skl_die "неизвестный параметр: $arg (--wipe | --window)" ;;
+    esac
+done
 
 skl_avd_exists "$api" || skl_die "образа для API $api нет: сначала ./avd.sh create $api"
 
@@ -30,7 +43,10 @@ name="$(skl_avd_name "$api")"
 port="$(skl_avd_port "$api")"
 log_file="$(skl_results_dir "$api")/emulator.log"
 flags=("${SKL_EMULATOR_FLAGS[@]}")
-if [[ "$wipe" == "--wipe" ]]; then
+if (( window == 0 )); then
+    flags+=("$SKL_HEADLESS_FLAG")
+fi
+if (( wipe == 1 )); then
     skl_warn "данные образа $name будут стёрты (--wipe)"
     flags+=("$SKL_WIPE_FLAG")
 fi
@@ -41,7 +57,11 @@ if [[ "$(uname -s)" == "Linux" && ! -w /dev/kvm ]]; then
     skl_warn "/dev/kvm недоступен: загрузка и прогон будут в разы медленнее (README.md §1)"
 fi
 
-skl_log "запуск $name на порту $port без окна; лог: $log_file"
+if (( window == 1 )); then
+    skl_log "запуск $name на порту $port с видимым окном; лог: $log_file"
+else
+    skl_log "запуск $name на порту $port без окна; лог: $log_file"
+fi
 nohup "$(skl_require_tool emulator)" -avd "$name" -port "$port" "${flags[@]}" \
     >"$log_file" 2>&1 &
 emulator_pid=$!

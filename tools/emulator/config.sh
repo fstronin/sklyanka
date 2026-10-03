@@ -83,11 +83,9 @@ SKL_FIRST_PORT=5560
 
 # --- Параметры запуска ---------------------------------------------------------
 #
-# Без окна и без звука: прогон идёт в терминале, и окно, которого никто не видит,
-# только отнимает кадры у отрисовки. swiftshader_indirect — программная отрисовка:
+# Без звука: прогон идёт в терминале. swiftshader_indirect — программная отрисовка:
 # у машины сборки может не быть ни дисплея, ни GPU.
 SKL_EMULATOR_FLAGS=(
-    -no-window
     -no-audio
     -no-boot-anim
     -no-snapshot-save
@@ -95,6 +93,12 @@ SKL_EMULATOR_FLAGS=(
     -camera-back none
     -camera-front none
 )
+
+# Безоконный режим — поведение по умолчанию (SKL-27): окно, которого никто не видит,
+# только отнимает кадры у отрисовки. Отдельной строкой, а не в общем наборе, потому что
+# видимое окно — осознанное исключение экранного прогона (SKL-96): start.sh добавляет
+# этот признак всем запускам, кроме запуска с окном.
+SKL_HEADLESS_FLAG="-no-window"
 
 # Отдельно от общих флагов: очистка данных образа НЕ входит в обычный запуск.
 # Прогон испытаний живёт между перезагрузками эмулятора (И-1, И-10), и запуск,
@@ -131,12 +135,23 @@ SKL_TEST_MODULES=(":core-data" ":feature-history")
 SKL_TEST_TASK="connectedDebugAndroidTest"
 
 SKL_GROUP_FAST_PACKAGES="ru.stohastika.sklyanka.data.repository"
-SKL_GROUP_DATA_PACKAGES="ru.stohastika.sklyanka.data.room,ru.stohastika.sklyanka.data.transfer,ru.stohastika.sklyanka.data.reminder,ru.stohastika.sklyanka.data.history,ru.stohastika.sklyanka.feature.history"
+SKL_GROUP_DATA_PACKAGES="ru.stohastika.sklyanka.data.room,ru.stohastika.sklyanka.data.transfer,ru.stohastika.sklyanka.data.reminder,ru.stohastika.sklyanka.data.history,ru.stohastika.sklyanka.feature.history,ru.stohastika.sklyanka.screen"
 # Объёмные и гоночные проверки: тысяча повторов в двух потоках и база годового объёма.
 SKL_GROUP_HEAVY_CLASSES="ru.stohastika.sklyanka.data.room.VolumeTest,ru.stohastika.sklyanka.data.room.ConcurrencyTest,ru.stohastika.sklyanka.data.history.HistoryQueriesTest"
 # Миграции — отдельной группой: они поднимают базу предыдущей версии из экспортированных
 # схем, и падение здесь означает совсем другое, чем падение запроса (МГ-3).
 SKL_GROUP_MIGRATION_CLASSES="ru.stohastika.sklyanka.data.room.MigrationTest,ru.stohastika.sklyanka.data.reminder.ReminderLogMigrationTest"
+
+# --- Экранный прогон (SKL-96) --------------------------------------------------
+#
+# Compose-проверки на настоящей платформе: модуль app (настоящий MainActivity и весь
+# граф), своя группа ui. Пакет проверок дописан в SKL_GROUP_DATA_PACKAGES выше,
+# потому что приёмка SKL-27 читает ровно четыре ключа групп и по ним сверяет, что ни
+# один файл проверок не выпал; пятый ключ она не увидит, и файлы выглядели бы
+# непокрытыми. Исполняет их группа ui (run-tests.sh), а не группа data.
+SKL_UI_API_LEVEL=35
+SKL_GROUP_UI_PACKAGES="ru.stohastika.sklyanka.screen"
+SKL_UI_SCREENSHOT_DIR="ui-screens"
 
 # --- Приложение ----------------------------------------------------------------
 SKL_APP_ID="ru.stohastika.sklyanka"

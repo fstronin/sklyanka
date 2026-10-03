@@ -12,10 +12,12 @@
 #   data       DAO, журнал, перенос, история — настоящий движок базы
 #   heavy      объём и гонки: тысяча повторов в двух потоках, база годового объёма
 #   migration  миграции из экспортированных схем (МГ-3) — отдельно от всего
+#   ui         Compose-проверки экранов на настоящей платформе (SKL-96): модуль app
 #   all        всё подряд, одной задачей (по умолчанию)
 #
 # Группы fast/heavy/migration описывают базу и адресуются core-data; data и all идут
-# по всем модулям: отчёту врачу тоже нужна настоящая платформа, а не JVM.
+# по всем модулям: отчёту врачу тоже нужна настоящая платформа, а не JVM. Группа ui
+# идёт по :app — единственному модулю, видящему настоящий MainActivity и весь граф.
 set -euo pipefail
 
 SKL_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
@@ -40,14 +42,24 @@ case "$group" in
         ;;
     heavy) filter=("-Pandroid.testInstrumentationRunnerArguments.class=$SKL_GROUP_HEAVY_CLASSES") ;;
     migration) filter=("-Pandroid.testInstrumentationRunnerArguments.class=$SKL_GROUP_MIGRATION_CLASSES") ;;
+    ui)
+        filter=(
+            "-Pandroid.testInstrumentationRunnerArguments.package=$SKL_GROUP_UI_PACKAGES"
+            # AGP удаляет APK после connected-прогона, а кадры экранного прогона лежат
+            # во внутреннем каталоге приложения и забираются screenshots.sh уже после
+            # прогона: без этого AGP-свойства снимать было бы нечего.
+            "-Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true"
+        )
+        ;;
     all) filter=() ;;
-    *) skl_die "неизвестная группа: $group (fast|data|heavy|migration|all)" ;;
+    *) skl_die "неизвестная группа: $group (fast|data|heavy|migration|ui|all)" ;;
 esac
 
 # Какие модули исполняют группу: heavy, migration и fast — предмет core-data,
-# data и all — все модули проверок.
+# data и all — все модули проверок, ui — модуль приложения (SKL-96).
 case "$group" in
     data | all) modules=("${SKL_TEST_MODULES[@]}") ;;
+    ui) modules=(":app") ;;
     *) modules=("${SKL_TEST_MODULES[0]}") ;;
 esac
 
