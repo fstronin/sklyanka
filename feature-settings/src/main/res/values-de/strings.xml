@@ -148,7 +148,6 @@
 
     <string name="settings_history">Einnahmeverlauf</string>
     <string name="settings_transfer_caption">Export und Import per Datei, ohne Cloud</string>
-    <string name="settings_transfer_caption_alt">Eine Datei hin und zurück — weiterhin ohne Cloud</string>
 
     <string name="settings_about_app">Sklyanka %1$s</string>
     <string name="settings_about_vendor">Stohastika · Kein Medizinprodukt</string>

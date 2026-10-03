@@ -8,9 +8,6 @@ import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import ru.stohastika.sklyanka.data.repository.ProfileBootstrap
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsConsentDecision
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsConsentStore
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsConsentVersion
 import ru.stohastika.sklyanka.domain.model.Intake
 import ru.stohastika.sklyanka.domain.model.IntakeSource
 import ru.stohastika.sklyanka.domain.model.IntakeStatus
@@ -45,8 +42,6 @@ internal interface DeviceTestGraph {
 
     fun onboardingState(): OnboardingStateStore
 
-    fun analyticsConsent(): AnalyticsConsentStore
-
     fun medications(): MedicationRepository
 
     fun planIntakes(): PlanIntakesUseCase
@@ -69,10 +64,6 @@ internal object DeviceTestSeed {
 
     fun onboardingSeen(context: Context) = runBlocking {
         graph(context).onboardingState().markSeen()
-    }
-
-    fun consent(context: Context, decision: AnalyticsConsentDecision) = runBlocking {
-        graph(context).analyticsConsent().record(decision, AnalyticsConsentVersion.MATERIAL)
     }
 
     fun medication(context: Context, medication: Medication) = runBlocking {

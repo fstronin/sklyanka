@@ -653,9 +653,9 @@ class ReminderScheduleSteps(private val world: AcceptanceWorld) {
                 "the application manifest must not declare $permission (НФТ-15)",
             )
         }
-        assertTrue(
+        assertFalse(
             declarations.any { it.contains(ANALYTICS_PERMISSION) },
-            "the only network permission must be $ANALYTICS_PERMISSION, and it belongs to the analytics contour",
+            "the application manifest must not declare $ANALYTICS_PERMISSION (ПМ-31: релиз без сети)",
         )
     }
 

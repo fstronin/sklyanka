@@ -446,9 +446,9 @@ class HistoryContextSteps(private val world: AcceptanceWorld) {
                 "the application manifest must not declare $permission (НФТ-15)",
             )
         }
-        assertTrue(
+        assertFalse(
             declarations.any { it.contains(ANALYTICS_PERMISSION) },
-            "the only network permission must be $ANALYTICS_PERMISSION, and it belongs to the analytics contour",
+            "the application manifest must not declare $ANALYTICS_PERMISSION (ПМ-31: релиз без сети)",
         )
         val pipelineCheck = File(RepositoryLayout.root, CONTOUR_RULES).readText()
         FORBIDDEN_NETWORK_PERMISSIONS.forEach { permission ->
@@ -459,7 +459,7 @@ class HistoryContextSteps(private val world: AcceptanceWorld) {
         }
         assertTrue(
             pipelineCheck.contains(ANALYTICS_PERMISSION),
-            "the build must require $ANALYTICS_PERMISSION together with the analytics contour (SKL-82)",
+            "the build must forbid $ANALYTICS_PERMISSION in the offline release (ПМ-31)",
         )
     }
 

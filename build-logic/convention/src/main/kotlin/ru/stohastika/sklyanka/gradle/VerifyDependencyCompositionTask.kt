@@ -17,9 +17,9 @@ import org.gradle.api.tasks.TaskAction
  * Три правила в одном отчёте:
  * 1. запрещённые группы — GMS, Firebase, реклама и чужая аналитика — отсутствуют
  *    и в разрешённом classpath, и в каталоге версий;
- * 2. каждая координата `com.huawei.*` входит в белый список аналитического контура
- *    (`AnalyticsContourRules`) — новая библиотека вендора не просачивается молча;
- * 3. обязательная координата контура присутствует — `INTERNET` без контура не бывает.
+ * 2. ни одна координата `com.huawei.*` не проезжает мимо белого списка
+ *    (`AnalyticsContourRules`): в релизе без сетевого контура список пуст (ПМ-31);
+ * 3. если у контура объявлены обязательные координаты, они присутствуют в classpath.
  *
  * Правила вынесены в общий объект, чтобы проверка манифеста и проверка графа не разошлись.
  */
@@ -53,16 +53,16 @@ abstract class VerifyDependencyCompositionTask : DefaultTask() {
 
         val huawei = resolved.filter { it.startsWith("com.huawei.") }
         huawei.filterNot(AnalyticsContourRules::allows).forEach { hit ->
-            problems += "resolved dependency '$hit' is outside the analytics contour white list " +
-                "(SKL-82, ADR-0011). Add it to AnalyticsContourRules consciously, or remove it."
+            problems += "resolved dependency '$hit' is outside the contour white list " +
+                "(SKL-100, ADR-0011). Add it to AnalyticsContourRules consciously, or remove it."
         }
 
         val missing = AnalyticsContourRules.REQUIRED_COORDINATES.filterNot { required ->
             huawei.any { it.startsWith(required) }
         }
         if (missing.isNotEmpty()) {
-            problems += "the analytics contour is missing required coordinates ${missing.joinToString()}: " +
-                "INTERNET is declared, but nothing may use it (PLATFORM-3, NFR-15)"
+            problems += "the contour is missing required coordinates ${missing.joinToString()} " +
+                "(PLATFORM-3, NFR-15)"
         }
 
         val reportFile = report.get().asFile
@@ -73,8 +73,11 @@ abstract class VerifyDependencyCompositionTask : DefaultTask() {
                 resolved.forEach { appendLine("  $it") }
                 appendLine()
                 appendLine("Forbidden groups checked: ${AnalyticsContourRules.FORBIDDEN_GROUPS.joinToString()}")
-                appendLine("Analytics contour required: ${AnalyticsContourRules.REQUIRED_COORDINATES.joinToString()}")
-                appendLine("Analytics contour resolved: ${huawei.joinToString().ifEmpty { "none" }}")
+                appendLine(
+                    "Contour required coordinates: " +
+                        AnalyticsContourRules.REQUIRED_COORDINATES.joinToString().ifEmpty { "none" },
+                )
+                appendLine("Huawei coordinates resolved: ${huawei.joinToString().ifEmpty { "none" }}")
                 problems.forEach { appendLine("  FAIL $it") }
             },
         )
@@ -82,7 +85,7 @@ abstract class VerifyDependencyCompositionTask : DefaultTask() {
         logger.lifecycle(
             "  [dependencies] OK   ${resolved.size} artifacts, none from " +
                 AnalyticsContourRules.FORBIDDEN_GROUPS.joinToString() +
-                "; analytics contour: ${huawei.size} coordinate(s)",
+                "; huawei coordinates resolved: ${huawei.size}",
         )
 
         if (problems.isNotEmpty()) {

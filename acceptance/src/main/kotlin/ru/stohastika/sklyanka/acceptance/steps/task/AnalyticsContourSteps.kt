@@ -23,11 +23,6 @@ import ru.stohastika.sklyanka.domain.analytics.DeclineAnalyticsConsentUseCase
 import ru.stohastika.sklyanka.domain.analytics.GrantAnalyticsConsentUseCase
 import ru.stohastika.sklyanka.domain.analytics.ScreenName
 import ru.stohastika.sklyanka.domain.analytics.SetAnalyticsEnabledUseCase
-import ru.stohastika.sklyanka.domain.experiment.ConsentedExperiments
-import ru.stohastika.sklyanka.domain.experiment.ExperimentCacheStore
-import ru.stohastika.sklyanka.domain.experiment.ExperimentId
-import ru.stohastika.sklyanka.domain.experiment.ExperimentVendor
-import ru.stohastika.sklyanka.domain.experiment.VariantKey
 import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -93,13 +88,6 @@ class AnalyticsContourSteps {
         assertTrue(contour.sink.events.isEmpty(), "до согласия sink не видит ни одного события")
     }
 
-    @Тогда("^ни один вариант A/B не запрашивается$")
-    fun noAbVariantIsRequested() {
-        val problems = abContourProblems()
-        assertTrue(problems.isEmpty(), "A/B-контур нарушен: $problems")
-        assertEquals(0, contour.vendor.calls.get(), "до согласия вендор вариантов не вызывается")
-    }
-
     @Тогда("^ни один сетевой запрос аналитического контура не выполняется$")
     fun noNetworkRequestOfTheContour() {
         // Сеть в сборке есть только у вендора: без активации sink SDK не поднят,
@@ -140,32 +128,6 @@ class AnalyticsContourSteps {
         assertTrue(showings > 0, "экран согласия обязан иметь точку показа")
     }
 
-    @Тогда("^ни один вариант A/B не запрашивается и не применяется$")
-    fun noAbVariantIsRequestedOrApplied() {
-        val problems = abContourProblems()
-        assertTrue(problems.isEmpty(), "варианты A/B не должны запрашиваться: $problems")
-        assertEquals(0, contour.vendor.calls.get(), "до согласия вендор вариантов не вызывается")
-    }
-
-    @Тогда("^интерфейс остаётся базовым$")
-    fun theInterfaceStaysDefault() {
-        val applied = ExperimentId.entries.filter { contour.experiments.variantOf(it) != VariantKey.BASE }
-        assertTrue(applied.isEmpty(), "ни одна точка не получает вариант: $applied")
-    }
-
-    @Тогда("^этот гейт наследует задача A/B-экспериментов$")
-    fun theGateIsInheritedByTheAbTask() {
-        // Наследование техническое: конкретные координаты контура — данные белого списка,
-        // а логика проверки знает только префикс группы. SKL-83 добавит координаты,
-        // не трогая задачу проверки.
-        val task = read(DEPENDENCY_TASK)
-        assertTrue(
-            HUAWEI_COORDINATES.none { task.contains(it) },
-            "конкретные координаты не должны жить в логике проверки",
-        )
-        assertTrue(read(CONTOUR_RULES).contains("ALLOWED_COORDINATES"))
-    }
-
     // =======================================================================================
     // Выключение (сценарий 8)
     // =======================================================================================
@@ -191,15 +153,6 @@ class AnalyticsContourSteps {
         val before = contour.sink.events.size
         contour.gate.track(AnalyticsEvent.ScreenView(ScreenName.ARCHIVE))
         assertEquals(before, contour.sink.events.size, "после выключения события не уходят")
-    }
-
-    @Тогда("^ни один вариант A/B больше не запрашивается$")
-    fun noAbVariantIsRequestedAfterDisabling() {
-        val before = contour.vendor.calls.get()
-        runBlocking { contour.experiments.refresh() }
-        assertEquals(before, contour.vendor.calls.get(), "после выключения запросов вариантов нет")
-        assertEquals(VariantKey.BASE, contour.experiments.variantOf(ExperimentId.TODAY_EMPTY_STATE))
-        assertFalse(contour.stored.value.sendingAllowed(AnalyticsConsentVersion.MATERIAL))
     }
 
     @Тогда("^событие о самом выключении не отправляется$")
@@ -412,7 +365,7 @@ class AnalyticsContourSteps {
         assertFalse(forbiddenBlock.contains("INTERNET"), "INTERNET больше не в списке запрещённых")
     }
 
-    @Тогда("^проверка графа зависимостей требует разрешённые координаты аналитического контура$")
+    @Тогда("^проверка графа зависимостей знает правила контура$")
     fun theDependencyCheckRequiresTheContour() {
         val task = read(DEPENDENCY_TASK)
         assertTrue(task.contains("REQUIRED_COORDINATES"))
@@ -427,12 +380,12 @@ class AnalyticsContourSteps {
         assertTrue(offenders.isEmpty(), "запрещённые группы обязаны остаться в правилах: $offenders")
     }
 
-    @Тогда("^проверки сообщают, какие координаты контура проверены$")
+    @Тогда("^проверки печатают проверенный состав координат$")
     fun theChecksReportTheContourCoordinates() {
         val task = read(DEPENDENCY_TASK)
         assertTrue(
-            task.contains("Analytics contour required") && task.contains("Analytics contour resolved"),
-            "отчёт обязан печатать проверенный состав контура",
+            task.contains("Contour required coordinates") && task.contains("Huawei coordinates resolved"),
+            "отчёт обязан печатать проверенный состав координат",
         )
     }
 
@@ -454,8 +407,8 @@ class AnalyticsContourSteps {
     fun theBuildFailsOnUnknownHuaweiArtifacts() {
         val task = read(DEPENDENCY_TASK)
         assertTrue(
-            task.contains("allows") && task.contains("outside the analytics contour white list"),
-            "координата Huawei вне белого списка обязана валить сборку",
+            task.contains("allows") && task.contains("outside the contour white list"),
+            "координата вне белого списка обязана валить сборку",
         )
     }
 
@@ -488,10 +441,7 @@ class AnalyticsContourSteps {
         assertTrue(plugin.contains("\"check\""))
     }
 
-    @Тогда(
-        "^белый список устроен так, что координаты A/B Testing и Remote Configuration " +
-            "добавляются в него данными, без переписывания правила$",
-    )
+    @Тогда("^белый список устроен данными, а не логикой$")
     fun theAllowListIsDataNotLogic() {
         val task = read(DEPENDENCY_TASK)
         assertTrue(
@@ -547,12 +497,12 @@ class AnalyticsContourSteps {
         contour.gate.track(AnalyticsEvent.ScreenView(ScreenName.TODAY))
     }
 
-    @Тогда("^аналитический SDK присутствует в сборке$")
+    @Тогда("^вендора аналитики в сборке нет$")
     fun theSdkIsPresentInTheBuild() {
         val catalog = read(VERSION_CATALOG)
-        assertTrue(catalog.contains("com.huawei.hms:hianalytics"), "SDK вендора объявлен в каталоге версий")
+        assertFalse(catalog.contains("com.huawei.hms:hianalytics"), "координаты вендора убраны из каталога")
         val module = read(CORE_ANALYTICS_BUILD)
-        assertTrue(module.contains("huawei.hianalytics"), "модуль контура подключает SDK")
+        assertFalse(module.contains("huawei.hianalytics"), "модуль контура не подключает вендор")
     }
 
     @Тогда("^гейты сборки проверяют обе конфигурации одинаково$")
@@ -588,7 +538,7 @@ class AnalyticsContourSteps {
     fun aStrangerDoesNotNeedTheFile() {
         val build = read(APP_BUILD)
         assertTrue(
-            build.contains("analytics vendor config is absent"),
+            build.contains("vendor config is absent"),
             "отсутствие файла обязано сообщаться, а не молчать",
         )
         assertTrue(
@@ -599,10 +549,13 @@ class AnalyticsContourSteps {
 
     @Тогда("^отсутствие файла не ломает приложение$")
     fun theAbsentFileDoesNotBreakTheApp() {
-        assertTrue(read(HUAWEI_SINK).contains("runCatching"), "сбой SDK не выходит наружу")
+        assertTrue(
+            read(NOOP_ANALYTICS).contains("override fun track(event: AnalyticsEvent) = Unit"),
+            "заглушка не отправляет события",
+        )
         assertTrue(
             read(CONSENTED_ANALYTICS).contains("runCatching { sink.activate() }"),
-            "сбой активации не валит старт приложения",
+            "сбой активации не валит старт приложения (механизм на полке)",
         )
     }
 
@@ -663,61 +616,17 @@ class AnalyticsContourSteps {
         }
 
         val gate = ConsentedAnalytics(sink = sink, debuggable = debuggable, log = SilentLog)
-
-        // A/B-контур (SKL-83): тот же гейт согласия, подменённые вендор и кэш.
-        val vendor = RecordingExperimentVendor()
-        val experiments = ConsentedExperiments(
-            vendor = vendor,
-            cache = InMemoryExperimentCache(),
-            analytics = gate,
-            debuggable = debuggable,
-            log = SilentLog,
-        )
         private val grantUseCase = GrantAnalyticsConsentUseCase(store, gate)
         private val declineUseCase = DeclineAnalyticsConsentUseCase(store, gate)
         private val setEnabledUseCase = SetAnalyticsEnabledUseCase(store, gate)
 
-        suspend fun bootstrap() {
-            gate.applyConsent(stored.value)
-            experiments.applyConsent(stored.value)
-            experiments.refresh()
-        }
+        suspend fun bootstrap() = gate.applyConsent(stored.value)
 
-        suspend fun grant(source: ConsentSource) {
-            grantUseCase(source)
-            experiments.applyConsent(stored.value)
-            experiments.refresh()
-        }
+        suspend fun grant(source: ConsentSource) = grantUseCase(source)
 
-        suspend fun decline(policyUpdate: Boolean) {
-            declineUseCase(policyUpdate)
-            experiments.applyConsent(stored.value)
-        }
+        suspend fun decline(policyUpdate: Boolean) = declineUseCase(policyUpdate)
 
-        suspend fun setEnabled(enabled: Boolean) {
-            setEnabledUseCase(enabled)
-            experiments.applyConsent(stored.value)
-            if (enabled) experiments.refresh()
-        }
-    }
-
-    private class RecordingExperimentVendor : ExperimentVendor {
-        val calls = AtomicInteger()
-
-        override suspend fun fetchVariants(): Map<ExperimentId, VariantKey> {
-            calls.incrementAndGet()
-            return emptyMap()
-        }
-    }
-
-    private class InMemoryExperimentCache : ExperimentCacheStore {
-        private var stored = emptyMap<ExperimentId, VariantKey>()
-
-        override suspend fun read(): Map<ExperimentId, VariantKey> = stored
-
-        override suspend fun write(variants: Map<ExperimentId, VariantKey>) {
-            stored = variants
-        }
+        suspend fun setEnabled(enabled: Boolean) = setEnabledUseCase(enabled)
     }
 
     private class RecordingSink : AnalyticsSink {
@@ -745,10 +654,6 @@ class AnalyticsContourSteps {
         override fun debugSuppressed() = Unit
 
         override fun sendFailed(reason: String) = Unit
-
-        override fun experimentsUpdated(count: Int) = Unit
-
-        override fun experimentsUnavailable(reason: String) = Unit
     }
 
     private data class EventClass(val name: String, val params: String)
@@ -765,25 +670,8 @@ class AnalyticsContourSteps {
         if (!plugin.contains("verifyManifest")) problems += "manifest check is not registered"
         if (!plugin.contains("verifyDependencies")) problems += "dependency check is not registered"
         if (!plugin.contains("\"check\"")) problems += "debug checks are not part of check"
-        if (!read(MANIFEST_TASK).contains("REQUIRED_PERMISSION")) problems += "manifest rule is not wired"
+        if (!read(MANIFEST_TASK).contains("FORBIDDEN_PERMISSIONS")) problems += "manifest rule is not wired"
         if (!read(DEPENDENCY_TASK).contains("AnalyticsContourRules")) problems += "dependency rule is not wired"
-        return problems
-    }
-
-    /** A/B-контур: чужой SDK в исходниках и применённые варианты (SKL-83). */
-    private fun abContourProblems(): List<String> {
-        val problems = mutableListOf<String>()
-        productionSources().forEach { source ->
-            val text = source.readText()
-            if (text.contains("com.huawei.hms:abtest") || text.contains("com.huawei.hms:remoteconfig")) {
-                problems += "${source.name} references an A/B SDK"
-            }
-        }
-        ExperimentId.entries.forEach { experiment ->
-            if (contour.experiments.variantOf(experiment) != VariantKey.BASE) {
-                problems += "${experiment.name} is applied"
-            }
-        }
         return problems
     }
 
@@ -815,7 +703,7 @@ class AnalyticsContourSteps {
         if (!build.contains("sklyanka.agconnect.servicesDir")) {
             problems += "the vendor config path is not a Gradle property"
         }
-        if (!build.contains("analytics vendor config is absent")) {
+        if (!build.contains("vendor config is absent")) {
             problems += "the absent config is not reported"
         }
         return problems
@@ -866,7 +754,7 @@ class AnalyticsContourSteps {
         const val ONBOARDING_STRINGS = "feature-onboarding/src/main/res/values/strings.xml"
         const val SETTINGS_STRINGS = "feature-settings/src/main/res/values/strings.xml"
 
-        const val HUAWEI_SINK = "core-analytics/src/main/kotlin/ru/stohastika/sklyanka/analytics/HuaweiAnalyticsSink.kt"
+        const val NOOP_ANALYTICS = "$ANALYTICS/NoOpAnalytics.kt"
         const val CORE_ANALYTICS_BUILD = "core-analytics/build.gradle.kts"
         const val APP_BUILD = "app/build.gradle.kts"
         const val VERSION_CATALOG = "gradle/libs.versions.toml"

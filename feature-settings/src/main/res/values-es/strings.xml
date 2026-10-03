@@ -148,7 +148,6 @@
 
     <string name="settings_history">Historial de tomas</string>
     <string name="settings_transfer_caption">Exportación e importación por archivo, sin nube</string>
-    <string name="settings_transfer_caption_alt">Un archivo de ida y vuelta, sin nube</string>
 
     <string name="settings_about_app">Sklyanka %1$s</string>
     <string name="settings_about_vendor">Stohastika · No es un producto sanitario</string>

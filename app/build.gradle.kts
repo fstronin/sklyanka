@@ -26,13 +26,13 @@ val reminderMeasurement: Boolean =
     (project.findProperty("sklyanka.reminderMeasurement") as String?)?.toBoolean() ?: false
 
 /**
- * Конфигурация вендора аналитики (SKL-82, TDD §12.6, ПМ-18).
+ * Конфигурация вендора для будущих сетевых контуров (SKL-100, ПМ-31).
  *
  * `agconnect-services.json` — идентификаторы проекта AppGallery Connect; файл лежит вне git
  * и подкладывается извне. Путь задаётся Gradle-свойством
  * `sklyanka.agconnect.servicesDir` или ключом `agconnect.servicesDir` в `local.properties`.
- * Отсутствие файла — не отказ сборки: контур честно молчит (аналитический SDK не найдёт
- * конфигурацию и события дропнутся), а наличие — предусловие публикации SKL-22.
+ * В первой публикации аналитики нет: файл сохранён для будущих контуров (SKL-50, H2),
+ * его отсутствие — не отказ сборки.
  */
 val agconnectServicesDir: File? = resolveAgconnectServicesDir()
 val agconnectServicesFile: File? = agconnectServicesDir?.resolve("agconnect-services.json")
@@ -51,8 +51,8 @@ fun resolveAgconnectServicesDir(): File? {
 
 if (agconnectServicesFile?.isFile != true) {
     logger.lifecycle(
-        "analytics vendor config is absent: the analytics contour stays silent " +
-            "(provide sklyanka.agconnect.servicesDir to enable it; see SKL-82 TDD 12.6)",
+        "vendor config is absent: kept for future network contours only " +
+            "(provide sklyanka.agconnect.servicesDir when a contour needs it; see SKL-100 TDD 8)",
     )
 }
 

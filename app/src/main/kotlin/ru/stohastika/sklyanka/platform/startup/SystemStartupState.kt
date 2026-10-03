@@ -7,8 +7,6 @@ import android.util.Log
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.edit
 import dagger.hilt.android.qualifiers.ApplicationContext
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsConsentStore
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsConsentVersion
 import ru.stohastika.sklyanka.startup.SplashRoute
 import ru.stohastika.sklyanka.startup.StartDestination
 import ru.stohastika.sklyanka.startup.StartReason
@@ -33,12 +31,10 @@ import javax.inject.Singleton
 class SystemStartupState @Inject constructor(@ApplicationContext private val context: Context) {
 
     /** Признаки текущего запуска. Отметку о запуске не ставит — это делает [rememberLaunch]. */
-    fun read(consentAsked: Boolean, shortcutLaunch: Boolean = false): StartupConditions = StartupConditions(
+    fun read(): StartupConditions = StartupConditions(
         firstLaunch = !preferences().getBoolean(KEY_LAUNCHED, false),
         notificationsAllowed = NotificationManagerCompat.from(context).areNotificationsEnabled(),
         exactAlarmsAllowed = exactAlarmsAllowed(),
-        consentAsked = consentAsked,
-        shortcutLaunch = shortcutLaunch,
     )
 
     /** Отметить, что запуск состоялся: со следующего раза он уже не первый. */
@@ -98,32 +94,13 @@ class StartupLog @Inject constructor() {
  *
  * Собрано в один класс, чтобы заставка не спрашивала систему дважды: первый запуск
  * перестаёт быть первым сразу после отметки, и повторное чтение дало бы другой ответ.
- *
- * Состояние согласия читается здесь же (ПМ-25): «не спрошено» и устаревшая версия
- * решения значат «показать экран согласия при ближайшем обычном запуске».
  */
 @Singleton
-class StartupRouter @Inject constructor(
-    private val state: SystemStartupState,
-    private val log: StartupLog,
-    private val consent: AnalyticsConsentStore,
-) {
+class StartupRouter @Inject constructor(private val state: SystemStartupState, private val log: StartupLog) {
 
-    suspend fun resolve(shortcutLaunch: Boolean = false): StartupDecision {
-        val decision = consent.read()
-        val conditions = state.read(
-            consentAsked = !decision.needsDecision(AnalyticsConsentVersion.MATERIAL),
-            shortcutLaunch = shortcutLaunch,
-        )
-        val startup = SplashRoute.decisionOf(conditions)
-        // Источник показа: «не спрошено» — первый запуск, устаревшая версия — повторное
-        // информирование (ПМ-27). Событие показа обязано называть разницу.
-        val source = if (startup.consentPending) {
-            decision.pendingSource(AnalyticsConsentVersion.MATERIAL)
-        } else {
-            null
-        }
-        val resolved = startup.copy(consentSource = source)
+    suspend fun resolve(): StartupDecision {
+        val conditions = state.read()
+        val resolved = SplashRoute.decisionOf(conditions)
         log.splashLeftTo(resolved.destination, resolved.reason)
         state.rememberLaunch()
         return resolved

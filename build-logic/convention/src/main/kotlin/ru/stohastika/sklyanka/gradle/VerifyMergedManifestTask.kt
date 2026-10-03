@@ -17,10 +17,10 @@ import org.gradle.api.tasks.TaskAction
  * Смотрит слитый манифест, а не исходный: разрешение способна добавить зависимость
  * при слиянии манифестов, и проверка исходника этого не увидит.
  *
- * Сеть в продукте есть — но только аналитическим контуром (ПЛ-3, НФТ-15, ПМ-19):
- * `INTERNET` обязан присутствовать, разрешения состояния сети запрещены. Связка
- * «разрешение ↔ контур» держится парой проверок: здесь требуется `INTERNET`,
- * а `verifyDependencies<Config>` требует координаты аналитического контура.
+ * ПМ-31: первая публикация — без сетевого контура, поэтому сетевые разрешения
+ * запрещены (ПЛ-3, НФТ-15). Связка «разрешение ↔ контур» сохранена в запрещённом
+ * виде: `verifyDependencies<Config>` валит любую непроверенную координату,
+ * а здесь запрещены разрешения.
  */
 abstract class VerifyMergedManifestTask : DefaultTask() {
 
@@ -46,22 +46,14 @@ abstract class VerifyMergedManifestTask : DefaultTask() {
         val problems = mutableListOf<String>()
         val notes = mutableListOf<String>()
 
-        // ПЛ-3, НФТ-15, ПМ-19: INTERNET — только для аналитического контура, поэтому он
-        // обязателен; разрешения состояния сети и рекламный идентификатор запрещены.
-        // Правила объявлены одним местом — AnalyticsContourRules.
-        listOf(AnalyticsContourRules.REQUIRED_PERMISSION).forEach { permission ->
-            if (manifest.contains("\"$permission\"")) {
-                notes += "$permission is present (analytics contour only)"
-            } else {
-                problems += "required permission $permission is missing from the merged manifest " +
-                    "(PLATFORM-3, NFR-15). The analytics contour is declared but cannot run: " +
-                    "declare INTERNET in app/AndroidManifest.xml."
-            }
-        }
+        // ПЛ-3, НФТ-15, ПМ-31: в релизе сетевых разрешений нет; разрешения состояния
+        // сети и рекламный идентификатор запрещены. Правила объявлены одним местом —
+        // AnalyticsContourRules.
         AnalyticsContourRules.FORBIDDEN_PERMISSIONS.forEach { permission ->
             if (manifest.contains("\"$permission\"")) {
                 problems += "forbidden permission $permission is present in the merged manifest " +
-                    "(PLATFORM-3, NFR-15). A dependency may have merged it in."
+                    "(PLATFORM-3, NFR-15). A dependency may have merged it in; remove it with " +
+                    "tools:node=\"remove\" or return it with the contour decision (PM-31)."
             } else {
                 notes += "no $permission"
             }

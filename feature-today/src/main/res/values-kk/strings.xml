@@ -54,7 +54,6 @@
 
     <string name="today_empty_title">Әзірге ештеңе жоспарланбаған</string>
     <string name="today_empty_text">Дәрі қосыңыз — оның қабылдаулары осында сағат бойынша пайда болады.</string>
-    <string name="today_empty_text_alt">Бірінші дәріңізді қосыңыз — кесте мен еске салғыштар өздігінен пайда болады.</string>
     <string name="today_empty_action">Дәрі қосу</string>
 
     <string name="today_nothing_today">Бүгінге қабылдау жоқ</string>

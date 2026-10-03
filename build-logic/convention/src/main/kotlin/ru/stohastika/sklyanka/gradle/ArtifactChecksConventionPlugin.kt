@@ -23,8 +23,8 @@ class ArtifactChecksConventionPlugin : Plugin<Project> {
                 val manifestCheck = tasks.register<VerifyMergedManifestTask>("verifyManifest$suffix") {
                     group = VERIFICATION_GROUP
                     description = "Checks the merged manifest of the $suffix artifact: " +
-                        "INTERNET present for the analytics contour only, network state permissions " +
-                        "absent, package name and minSdk (PLATFORM-1..3, NFR-15/38/41)."
+                        "no network permissions (INTERNET and network state are forbidden), " +
+                        "package name and minSdk (PLATFORM-1..3, NFR-15/38/41, PM-31)."
                     mergedManifest.set(variant.artifacts.get(SingleArtifact.MERGED_MANIFEST))
                     expectedPackageName.set(ProjectDefaults.APPLICATION_ID)
                     packageNameLimit.set(ProjectDefaults.PACKAGE_NAME_LIMIT)
@@ -37,8 +37,8 @@ class ArtifactChecksConventionPlugin : Plugin<Project> {
                     tasks.register<VerifyDependencyCompositionTask>("verifyDependencies$suffix") {
                         group = VERIFICATION_GROUP
                         description = "Checks that the $suffix runtime classpath carries no Google " +
-                            "Play Services, Firebase, ads or third-party analytics; the Huawei analytics " +
-                            "contour is the only allowed network dependency (PLATFORM-4, NFR-15/16/39)."
+                            "Play Services, Firebase, ads or third-party analytics; no network " +
+                            "dependency rides outside the contour white list (PLATFORM-4, NFR-15/16/39, PM-31)."
                         coordinates.set(
                             provider {
                                 runtimeConfiguration.incoming.resolutionResult.allComponents

@@ -32,7 +32,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import ru.stohastika.sklyanka.domain.experiment.VariantKey
 import ru.stohastika.sklyanka.domain.reminder.ReminderWarning
 import ru.stohastika.sklyanka.domain.today.TodayLayout
 import ru.stohastika.sklyanka.domain.undo.UndoableDeletion
@@ -182,11 +181,7 @@ private fun TodayEmpty(state: TodayUiState.Empty, onIntent: (TodayIntent) -> Uni
         Box(modifier = Modifier.fillMaxSize().weight(1f), contentAlignment = Alignment.Center) {
             EmptyState(
                 title = stringResource(R.string.today_empty_title),
-                // Вариант A эксперимента TODAY_EMPTY_STATE (SKL-83): база — текущая строка,
-                // вариант действует только после согласия и назначения AGC.
-                text = stringResource(
-                    if (state.copy == VariantKey.A) R.string.today_empty_text_alt else R.string.today_empty_text,
-                ),
+                text = stringResource(R.string.today_empty_text),
                 actionLabel = stringResource(R.string.today_empty_action),
                 onAction = { onIntent(TodayIntent.AddMedication) },
                 modifier = Modifier.testTag(TAG_TODAY_EMPTY),

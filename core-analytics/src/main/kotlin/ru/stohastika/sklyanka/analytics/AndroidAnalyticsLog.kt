@@ -32,14 +32,6 @@ class AndroidAnalyticsLog @Inject constructor() : AnalyticsLog {
         Log.i(TAG, "analytics send failed: $reason")
     }
 
-    override fun experimentsUpdated(count: Int) {
-        Log.i(TAG, "experiments updated: $count")
-    }
-
-    override fun experimentsUnavailable(reason: String) {
-        Log.i(TAG, "experiments unavailable: $reason")
-    }
-
     private companion object {
         const val TAG = "SklyankaAnalytics"
     }

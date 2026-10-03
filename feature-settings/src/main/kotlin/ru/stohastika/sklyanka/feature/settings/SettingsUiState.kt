@@ -1,6 +1,5 @@
 package ru.stohastika.sklyanka.feature.settings
 
-import ru.stohastika.sklyanka.domain.experiment.VariantKey
 import ru.stohastika.sklyanka.domain.reminder.port.PermissionState
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPermission
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderSettingsValues
@@ -46,13 +45,6 @@ data class SettingsUiState(
      * «не спрошено», отказ и устаревшая версия текста читаются как выключено.
      */
     val analyticsEnabled: Boolean = false,
-    /**
-     * Вариант подписи строки «Перенос данных» (SKL-83).
-     *
-     * База — текущая формулировка; вариант приходит только после согласия и назначения
-     * AGC, поэтому отсутствие эксперимента ничего не меняет.
-     */
-    val transferHint: VariantKey = VariantKey.BASE,
     /** Версия приложения — та, что собрана, а не та, что нарисована в макете. */
     val version: String = "",
 )

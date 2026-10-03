@@ -158,11 +158,5 @@ class ConsentedAnalyticsTest {
         override fun sendFailed(reason: String) {
             sendFailureReasons += reason
         }
-
-        override fun experimentsUpdated(count: Int) = Unit
-
-        override fun experimentsUnavailable(reason: String) {
-            unavailableReasons += reason
-        }
     }
 }

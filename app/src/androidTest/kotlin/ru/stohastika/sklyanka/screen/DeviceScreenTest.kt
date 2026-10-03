@@ -34,13 +34,11 @@ import org.junit.rules.TestName
 import org.junit.rules.TestRule
 import org.junit.runner.RunWith
 import org.junit.runners.model.Statement
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsConsentDecision
 import ru.stohastika.sklyanka.domain.medication.MedicationDraft
 import ru.stohastika.sklyanka.domain.model.Profile
 import ru.stohastika.sklyanka.feature.meds.list.TAG_MEDICATION_LIST
 import ru.stohastika.sklyanka.feature.onboarding.TAG_PERMISSIONS_SCREEN
 import ru.stohastika.sklyanka.feature.onboarding.TAG_SKIP
-import ru.stohastika.sklyanka.feature.onboarding.consent.TAG_CONSENT_SCREEN
 import ru.stohastika.sklyanka.feature.settings.TAG_SETTINGS_SCREEN
 import ru.stohastika.sklyanka.feature.today.TAG_TODAY_SCREEN
 import ru.stohastika.sklyanka.platform.startup.SystemStartupState
@@ -50,7 +48,6 @@ import ru.stohastika.sklyanka.screen.support.DeviceTestSeed
 import ru.stohastika.sklyanka.screen.support.DeviceTestStores
 import ru.stohastika.sklyanka.test.R
 import ru.stohastika.sklyanka.ui.component.TAG_BOTTOM_BAR
-import ru.stohastika.sklyanka.ui.component.TAG_SECONDARY_BUTTON
 import java.io.File
 import java.math.BigDecimal
 import java.time.LocalDate
@@ -122,12 +119,11 @@ abstract class DeviceScreenTest {
     }
 
     /**
-     * Состояние, на которое проверка не смотрит: онбординг пройден, согласие принято.
-     * Сценарий первого запуска и включения аналитики переопределяет этот сид.
+     * Состояние, на которое проверка не смотрит: онбординг пройден. Сценарий первого
+     * запуска переопределяет этот сид; согласия в релизе нет (ПМ-31).
      */
     protected open fun seedDefaultState() {
         DeviceTestSeed.onboardingSeen(targetContext)
-        DeviceTestSeed.consent(targetContext, AnalyticsConsentDecision.ACCEPTED)
     }
 
     /** Запустить настоящую `MainActivity` и дождаться, что она возобновлена. */
@@ -158,23 +154,12 @@ abstract class DeviceScreenTest {
     /**
      * Довести приложение до корня — «Сегодня».
      *
-     * В управляемом состоянии экран согласия и онбординг не показываются: решения посеяны.
-     * Запасные ветки сохранены для сценариев, где экран всё же появится.
+     * В управляемом состоянии онбординг не показывается: отметка посеяна. Экрана
+     * согласия в релизе нет вовсе (ПМ-31).
      */
     protected fun awaitRoot() {
-        declineAnalyticsIfAsked()
         leaveOnboardingIfShown()
         waitUntil(ROOT_TIMEOUT_MS, "экрана «Сегодня»") { exists(TAG_TODAY_SCREEN) }
-    }
-
-    private fun declineAnalyticsIfAsked() {
-        waitUntil(ROOT_TIMEOUT_MS, "первого экрана") { exists(TAG_TODAY_SCREEN) || exists(TAG_CONSENT_SCREEN) }
-        if (!exists(TAG_CONSENT_SCREEN)) return
-        compose.onNode(
-            hasTestTag(TAG_SECONDARY_BUTTON) and hasAnyAncestor(hasTestTag(TAG_CONSENT_SCREEN)),
-            useUnmergedTree = true,
-        ).performClick()
-        waitUntil(ROOT_TIMEOUT_MS, "ухода с экрана согласия") { !exists(TAG_CONSENT_SCREEN) }
     }
 
     private fun leaveOnboardingIfShown() {

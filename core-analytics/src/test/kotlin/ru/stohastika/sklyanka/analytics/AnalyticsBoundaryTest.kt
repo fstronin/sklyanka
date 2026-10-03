@@ -1,69 +1,54 @@
 package ru.stohastika.sklyanka.analytics
 
-import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
 
 /**
- * Граница вендора: SDK вызывается ровно из одного модуля и одного класса (TDD §17).
+ * Отсутствие вендора в продукте (SKL-100, ПМ-31).
  *
- * Правило держалось бы на внимательности ревью; тест делает его проверкой. Импорт SDK
- * в feature-модуле или в домене — это либо утечка технической детали, либо второй
- * контур, который разойдётся с первым.
+ * Huawei-аналитика и A/B убраны из релиза; страж держит это свойство кода: ни один
+ * продуктовый исходник не импортирует пакеты Huawei, вендорские классы не возвращаются
+ * молча. Возврат провайдера — новое решение, и тогда этот тест меняется осознанно.
  */
 class AnalyticsBoundaryTest {
 
     private val repositoryRoot: File = findRepositoryRoot()
 
     @Test
-    fun `the vendor SDK is imported only by the core-analytics module`() {
+    fun `no product source imports a Huawei package`() {
         val offenders = productionSources()
-            .filterNot { it.path.contains("/core-analytics/") }
-            .filter { it.readText().contains(VENDOR_PACKAGE) }
+            .filter { it.readText().contains(VENDOR_IMPORT_PREFIX) }
             .map { it.relativeTo(repositoryRoot).path }
 
-        assertTrue("the vendor SDK leaks outside core-analytics: $offenders", offenders.isEmpty())
+        assertTrue("a Huawei package leaked into the product: $offenders", offenders.isEmpty())
     }
 
     @Test
-    fun `only the vendor sink reaches into the SDK`() {
-        val importers = productionSources()
-            .filter { it.path.contains("/core-analytics/") }
-            .filter { it.readText().contains(VENDOR_PACKAGE) }
-            .map { it.name }
-
-        assertEquals(listOf("HuaweiAnalyticsSink.kt"), importers)
-    }
-
-    @Test
-    fun `the AGC SDK is imported only by the core-analytics module`() {
-        val offenders = productionSources()
-            .filterNot { it.path.contains("/core-analytics/") }
-            .filter { it.readText().contains(AGC_PACKAGE) }
+    fun `the vendor adapter classes are gone`() {
+        val leftovers = VENDOR_CLASSES
+            .map { name -> File(repositoryRoot, name) }
+            .filter { it.isFile }
             .map { it.relativeTo(repositoryRoot).path }
 
-        assertTrue("the AGC SDK leaks outside core-analytics: $offenders", offenders.isEmpty())
+        assertFalse("vendor adapter classes are back: $leftovers", leftovers.isNotEmpty())
     }
 
-    @Test
-    fun `only the experiment vendor reaches into AGC`() {
-        val importers = productionSources()
-            .filter { it.path.contains("/core-analytics/") }
-            .filter { it.readText().contains(AGC_PACKAGE) }
-            .map { it.name }
-
-        assertEquals(listOf("HuaweiExperimentVendor.kt"), importers)
-    }
-
-    private fun productionSources(): List<File> = repositoryRoot.listFiles()
-        .orEmpty()
-        .filter { it.isDirectory && it.name != "build" && !it.name.startsWith(".") }
-        .flatMap { module ->
-            File(module, "src/main").walkTopDown()
-                .filter { it.isFile && it.extension == "kt" }
-                .toList()
+    private fun productionSources(): List<File> {
+        val productModule = { name: String ->
+            name == "app" || name.startsWith("core-") || name.startsWith("feature-")
         }
+        return repositoryRoot.listFiles()
+            .orEmpty()
+            .filter { it.isDirectory && it.name != "build" && !it.name.startsWith(".") }
+            .filter { module -> productModule(module.name) }
+            .flatMap { module ->
+                File(module, "src/main").walkTopDown()
+                    .filter { it.isFile && it.extension == "kt" }
+                    .toList()
+            }
+    }
 
     private fun findRepositoryRoot(): File {
         val startedAt = requireNotNull(System.getProperty("user.dir")) { "Working directory is unknown" }
@@ -75,9 +60,13 @@ class AnalyticsBoundaryTest {
     }
 
     private companion object {
-        const val VENDOR_PACKAGE = "com.huawei.hms.analytics"
+        const val VENDOR_IMPORT_PREFIX = "import com.huawei."
 
-        /** Пакет AGC Remote Configuration: A/B-контур ходит в него одним классом (SKL-83). */
-        const val AGC_PACKAGE = "com.huawei.agconnect.remoteconfig"
+        /** Вендорские классы SKL-82/83; в релизе без вендора их быть не должно. */
+        val VENDOR_CLASSES = listOf(
+            "core-analytics/src/main/kotlin/ru/stohastika/sklyanka/analytics/HuaweiAnalyticsSink.kt",
+            "core-analytics/src/main/kotlin/ru/stohastika/sklyanka/analytics/HuaweiEventMapping.kt",
+            "core-analytics/src/main/kotlin/ru/stohastika/sklyanka/analytics/HuaweiExperimentVendor.kt",
+        )
     }
 }

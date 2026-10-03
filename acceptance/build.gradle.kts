@@ -283,7 +283,7 @@ val acceptanceChecklist by tasks.registering {
                     "--glue",
                     "ru.stohastika.sklyanka.acceptance",
                     "--tags",
-                    "@manual",
+                    "@manual and not $postponedTag",
                     "--dry-run",
                     "--plugin",
                     "pretty",
@@ -333,7 +333,7 @@ val acceptanceScreenList by tasks.registering {
                     "--glue",
                     "ru.stohastika.sklyanka.acceptance",
                     "--tags",
-                    screenTag,
+                    "$screenTag and not $postponedTag",
                     "--dry-run",
                     "--plugin",
                     "pretty",
@@ -379,7 +379,7 @@ val acceptanceDeviceList by tasks.registering {
                     "--glue",
                     "ru.stohastika.sklyanka.acceptance",
                     "--tags",
-                    deviceTag,
+                    "$deviceTag and not $postponedTag",
                     "--dry-run",
                     "--plugin",
                     "pretty",
@@ -514,8 +514,17 @@ val screenTag = "@screen"
  */
 val deviceTag = "@device"
 
-/** Что берёт автоматический прогон: всё, кроме ручного, медленного, экранного и устройственного. */
-val automaticTags = "not @manual and not @slow and not $screenTag and not $deviceTag"
+/**
+ * Тег отложенных сценариев (SKL-100).
+ *
+ * Сервисы Huawei сняты, A/B исключён из релиза, UX согласия скрыт — сценарии SKL-83
+ * и часть сценариев SKL-82 остаются историей, но не выполняются и не печатаются
+ * чек-листами до решения о провайдере. Исключение видно в отчёте задачи, а не молчит.
+ */
+val postponedTag = "@postponed"
+
+/** Что берёт автоматический прогон: всё, кроме ручного, медленного, отложенного, экранного и устройственного. */
+val automaticTags = "not @manual and not @slow and not $postponedTag and not $screenTag and not $deviceTag"
 
 /** Строка итога реестра шагов: с неё начинается то, что стоит печатать в лог. */
 val dictionarySummary = "Словарь шагов:"

@@ -18,10 +18,4 @@ interface AnalyticsLog {
     fun debugSuppressed()
 
     fun sendFailed(reason: String)
-
-    /** Обновление вариантов A/B: сколько значений получено (SKL-83). */
-    fun experimentsUpdated(count: Int)
-
-    /** A/B-контур недоступен или не обновился: причина классом сбоя, без тел данных. */
-    fun experimentsUnavailable(reason: String)
 }

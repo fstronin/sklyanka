@@ -1,7 +1,6 @@
 package ru.stohastika.sklyanka.feature.today
 
 import androidx.compose.runtime.Immutable
-import ru.stohastika.sklyanka.domain.experiment.VariantKey
 import ru.stohastika.sklyanka.domain.intake.MarkResult
 import ru.stohastika.sklyanka.domain.reminder.ReminderWarning
 import ru.stohastika.sklyanka.domain.today.DayProgress
@@ -54,12 +53,10 @@ sealed interface TodayUiState {
      * У профиля нет ни одного активного лекарства — `Empty.dc.html`.
      *
      * Именно «нет лекарств», а не «нет приёмов на сегодня»: второму случаю этот
-     * экран сообщал бы неправду (`docs/spec/03-screens.md`, ОВ-34). [copy] — вариант
-     * текста пустого состояния (SKL-83): база остаётся текущей формулировкой.
+     * экран сообщал бы неправду (`docs/spec/03-screens.md`, ОВ-34).
      */
     data class Empty(
         val date: LocalDate,
-        val copy: VariantKey = VariantKey.BASE,
         /**
          * Окно отмены удаления (ОВ-124) показывается и над пустым состоянием: удалив
          * последнее лекарство, человек обязан видеть, что произошло, и способ вернуть.

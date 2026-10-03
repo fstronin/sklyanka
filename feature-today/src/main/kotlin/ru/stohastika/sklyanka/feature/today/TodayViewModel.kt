@@ -21,9 +21,6 @@ import ru.stohastika.sklyanka.domain.analytics.Analytics
 import ru.stohastika.sklyanka.domain.analytics.AnalyticsEvent
 import ru.stohastika.sklyanka.domain.analytics.IntakeActionType
 import ru.stohastika.sklyanka.domain.analytics.NoOpAnalytics
-import ru.stohastika.sklyanka.domain.experiment.ExperimentId
-import ru.stohastika.sklyanka.domain.experiment.Experiments
-import ru.stohastika.sklyanka.domain.experiment.NoOpExperiments
 import ru.stohastika.sklyanka.domain.intake.CreatePrnIntakeUseCase
 import ru.stohastika.sklyanka.domain.intake.MarkIntakeUseCase
 import ru.stohastika.sklyanka.domain.intake.MarkRequest
@@ -88,11 +85,6 @@ class TodayViewModel @Inject constructor(
      * гейт согласия решает, дойдёт ли событие до вендора.
      */
     private val analytics: Analytics = NoOpAnalytics,
-    /**
-     * A/B-канал (SKL-83). Нулевое умолчание — для ручной сборки в тестах; гейт согласия
-     * решает, действует ли вариант, а без варианта остаётся база.
-     */
-    private val experiments: Experiments = NoOpExperiments,
 ) : ViewModel() {
 
     private val view = MutableStateFlow(ViewState())
@@ -411,7 +403,6 @@ class TodayViewModel @Inject constructor(
     private fun screen(agenda: TodayAgenda, current: ViewState): TodayUiState = if (agenda.isFirstRun) {
         TodayUiState.Empty(
             date = agenda.date,
-            copy = experiments.variantOf(ExperimentId.TODAY_EMPTY_STATE),
             deletion = current.deletion,
         )
     } else {

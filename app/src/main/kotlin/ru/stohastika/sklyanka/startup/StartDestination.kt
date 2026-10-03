@@ -1,7 +1,5 @@
 package ru.stohastika.sklyanka.startup
 
-import ru.stohastika.sklyanka.domain.analytics.ConsentSource
-
 /**
  * Куда уходит заставка.
  *
@@ -34,12 +32,6 @@ enum class StartReason {
     /** Точные будильники не разрешены — напоминание придёт когда-нибудь. */
     ExactAlarmsDenied,
 
-    /**
-     * Согласие на аналитику ещё не принято (или устарело после изменения текста):
-     * первым экраном идёт согласие (ПМ-25, ПМ-27).
-     */
-    ConsentPending,
-
     /** Всё на месте. */
     Ready,
 }
@@ -51,36 +43,22 @@ enum class StartReason {
  * (НФТ-52): человек мог отозвать разрешение из настроек, и сохранённое «онбординг
  * пройден» означало бы молча сломанные напоминания.
  *
- * `consentAsked` — решение по аналитике принято и его версия текущая; `shortcutLaunch` —
- * запуск пришёл ярлыком «Добавить лекарство»: явное действие человека сильнее самопоказа
- * согласия (ПМ-25 п. 5), и такой запуск экран согласия не показывает.
+ * Согласия на аналитику здесь нет: в первой публикации UX согласия скрыт до
+ * подключения провайдера (ПМ-31), и первый запуск идёт сразу в онбординг разрешений.
  */
 data class StartupConditions(
     val firstLaunch: Boolean,
     val notificationsAllowed: Boolean,
     val exactAlarmsAllowed: Boolean,
-    val consentAsked: Boolean = false,
-    val shortcutLaunch: Boolean = false,
 )
 
 /**
  * Что показать первым и куда идти после.
  *
- * Согласие — не альтернатива онбордингу, а шаг перед ним, поэтому решение хранит оба
- * ответа сразу: [consentPending] говорит, показать ли экран согласия, а [destination] —
- * куда вести после него (или сразу, если согласие уже решено). Иначе показ согласия
- * «съел» бы онбординг: к моменту решения первый запуск перестал бы быть первым.
+ * [destination] — экран онбординга разрешений или корень; [reason] объясняет журналу,
+ * почему заставка ушла именно туда.
  */
-data class StartupDecision(
-    val consentPending: Boolean,
-    val destination: StartDestination,
-    val reason: StartReason,
-    /**
-     * Каким источником назвать показ согласия: первый запуск или повторное
-     * информирование после изменения предмета согласия (ПМ-27). `null` — показа нет.
-     */
-    val consentSource: ConsentSource? = null,
-)
+data class StartupDecision(val destination: StartDestination, val reason: StartReason)
 
 /**
  * Правило ухода с заставки — единственное место, где оно записано.
@@ -103,18 +81,13 @@ object SplashRoute {
     }
 
     /**
-     * Полное решение запуска: показать ли согласие и куда вести после.
+     * Полное решение запуска: куда вести и почему.
      *
-     * Причина `ConsentPending` называет журналу, почему первым показано согласие;
-     * [StartupDecision.destination] при этом остаётся прежним — онбординг разрешений
-     * после решения согласия никуда не девается.
+     * Согласия в решении нет — ПМ-31: UX согласия скрыт до подключения провайдера,
+     * первый запуск идёт «заставка → «Настроить надёжность» → приложение».
      */
-    fun decisionOf(conditions: StartupConditions): StartupDecision {
-        val consentPending = !conditions.consentAsked && !conditions.shortcutLaunch
-        return StartupDecision(
-            consentPending = consentPending,
-            destination = destinationOf(conditions),
-            reason = if (consentPending) StartReason.ConsentPending else reasonOf(conditions),
-        )
-    }
+    fun decisionOf(conditions: StartupConditions): StartupDecision = StartupDecision(
+        destination = destinationOf(conditions),
+        reason = reasonOf(conditions),
+    )
 }

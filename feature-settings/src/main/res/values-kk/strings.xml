@@ -148,7 +148,6 @@
 
     <string name="settings_history">Қабылдау тарихы</string>
     <string name="settings_transfer_caption">Файлмен шығару және жүктеу, бұлтсыз</string>
-    <string name="settings_transfer_caption_alt">Бір файл барып-қайту — бұлт әлі де жоқ</string>
 
     <string name="settings_about_app">Sklyanka %1$s</string>
     <string name="settings_about_vendor">Stohastika · Медициналық өнім емес</string>

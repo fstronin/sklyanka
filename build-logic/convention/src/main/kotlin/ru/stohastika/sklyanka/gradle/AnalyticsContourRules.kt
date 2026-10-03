@@ -1,47 +1,31 @@
 package ru.stohastika.sklyanka.gradle
 
 /**
- * Правила аналитического контура (SKL-82, ADR-0011, ПЛ-3/ПЛ-4, НФТ-15/16).
+ * Правила состава артефакта (SKL-82 → SKL-100, ПЛ-3/ПЛ-4, ПМ-31).
  *
- * Одно место, где записано, что такое «аналитический контур»: обязательные координаты,
- * белый список и запрещённые группы. Задачи проверки манифеста и графа зависимостей
- * читают эти правила, поэтому разрешение и зависимости не могут разойтись.
+ * Одно место, где записано, чему разрешено ехать в сборке: запрещённые группы,
+ * белый список сетевых координат и сетевые разрешения. Задачи проверки манифеста
+ * и графа зависимостей читают эти правила, поэтому разрешение и зависимости
+ * не могут разойтись.
+ *
+ * ПМ-31: в первой публикации сетевого контура нет — Huawei-аналитика и A/B убраны.
+ * Белый список и обязательные координаты пусты: любая `com.huawei.*` валит сборку,
+ * пока будущий контур (SKL-50, H2) не внесёт свои координаты осознанно. `INTERNET`
+ * возвращается в запрещённые, как до ПМ-19.
  */
 object AnalyticsContourRules {
 
-    /** Координата самого контура: Huawei Analytics Kit. Без неё `INTERNET` объявлять нечем. */
-    val REQUIRED_COORDINATES = listOf("com.huawei.hms:hianalytics")
+    /** Обязательных координат у релиза нет: сетевого контура в первой публикации нет (ПМ-31). */
+    val REQUIRED_COORDINATES = emptyList<String>()
 
     /**
-     * Белый список координат — данные, а не логика: SKL-83 дополняет его координатами
-     * A/B Testing и Remote Configuration, не переписывая проверку.
+     * Белый список сетевых координат — данные, а не логика.
      *
-     * Здесь только транзитивное замыкание публикации Analytics Kit 6.12.0.301: базовые
-     * модули HMS, AppGallery Connect, криптография и задачи. Любая новая координата
-     * `com.huawei.*` валит сборку, пока её не внесут сюда осознанно; реклама, push и
-     * прочие сервисы HMS так в сборку не просочатся.
+     * Пуст осознанно: координаты будущих контуров вносятся вместе с их задачами.
+     * Любая новая координата `com.huawei.*` (и вообще `com.huawei.*`) валит сборку,
+     * пока её не внесут сюда; реклама, GMS и чужая аналитика запрещены отдельно.
      */
-    val ALLOWED_COORDINATES = listOf(
-        "com.huawei.hms:hianalytics",
-        "com.huawei.hms:base",
-        "com.huawei.hms:baselegacyapi",
-        "com.huawei.hms:availableupdate",
-        "com.huawei.hms:device",
-        "com.huawei.hms:hatool",
-        "com.huawei.hms:log",
-        "com.huawei.hms:opendevice",
-        "com.huawei.hms:stats",
-        "com.huawei.hms:ui",
-        "com.huawei.hms:network-",
-        "com.huawei.agconnect",
-        // A/B-контур (SKL-83, ПМ-20): перечислены точно, чтобы отчёт гейтов и приёмка
-        // называли состав контура. Обязательными не становятся: состав A/B первой
-        // публикации решает заказчик, аналитика выходит независимо (ПМ-20 п. 6).
-        "com.huawei.agconnect:agconnect-remoteconfig",
-        "com.huawei.agconnect:agconnect-abtest",
-        "com.huawei.android.hms:security-",
-        "com.huawei.hmf:tasks",
-    )
+    val ALLOWED_COORDINATES = emptyList<String>()
 
     /** Запрещённые группы: GMS, Firebase, реклама, чужая аналитика и крашлитика (ПЛ-4, НФТ-16/39). */
     val FORBIDDEN_GROUPS = listOf(
@@ -53,15 +37,14 @@ object AnalyticsContourRules {
         "com.google.mlkit",
     )
 
-    /** Разрешение аналитического контура: обязательно — иначе SDK не работает (ПМ-19). */
-    const val REQUIRED_PERMISSION = "android.permission.INTERNET"
-
     /**
-     * Разрешения состояния сети запрещены: сеть принадлежит контуру, а не продукту.
+     * Сетевые разрешения запрещены: релиз без сетевого контура (ПЛ-3, НФТ-15, ПМ-31).
+     *
      * `com.google.gms.permission.AD_ID` — тоже запрещено: рекламные идентификаторы
      * не собираются ни при каких условиях (ПМ-17 п. 4).
      */
     val FORBIDDEN_PERMISSIONS = listOf(
+        "android.permission.INTERNET",
         "android.permission.ACCESS_NETWORK_STATE",
         "android.permission.ACCESS_WIFI_STATE",
         "com.google.gms.permission.AD_ID",

@@ -54,7 +54,6 @@
 
     <string name="today_empty_title">Nothing is scheduled yet</string>
     <string name="today_empty_text">Add a medication and its intakes will appear here by the clock.</string>
-    <string name="today_empty_text_alt">Add your first medication — the schedule and reminders will appear by themselves.</string>
     <string name="today_empty_action">Add medication</string>
 
     <string name="today_nothing_today">No intakes for today</string>

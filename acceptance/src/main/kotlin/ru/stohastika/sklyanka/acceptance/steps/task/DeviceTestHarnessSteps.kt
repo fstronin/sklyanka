@@ -56,15 +56,15 @@ class DeviceTestHarnessSteps {
         assertTrue(File(RepositoryLayout.root, RUN_UI).isFile, "$RUN_UI must exist")
     }
 
-    @Допустим("экран согласия первым экраном первого запуска описан задачей SKL-82")
-    fun theConsentScreenIsDescribedBySkl82() {
+    @Допустим("сворачивание вендора аналитики описано задачей SKL-100")
+    fun theVendorRollbackIsDescribedBySkl100() {
         assertTrue(
-            File(RepositoryLayout.root, SKL82_DESIGN).isFile,
-            "the SKL-82 design must exist: $SKL82_DESIGN",
+            File(RepositoryLayout.root, SKL100_DESIGN).isFile,
+            "the SKL-100 design must exist: $SKL100_DESIGN",
         )
-        assertTrue(
+        assertFalse(
             text(File(RepositoryLayout.root, MAIN_ACTIVITY)).contains("ConsentRoute"),
-            "the launch route must know the consent screen ($MAIN_ACTIVITY)",
+            "the launch route must not show the consent screen (PM-31)",
         )
     }
 
@@ -149,6 +149,7 @@ class DeviceTestHarnessSteps {
         storesText = text(appChecks.single { it.name == "DeviceTestStores.kt" })
         baseText = text(appChecks.single { it.name == "DeviceScreenTest.kt" })
         graphText = text(appChecks.single { it.name == "DeviceTestGraph.kt" })
+        modulesText = text(appChecks.single { it.name == "DeviceTestModules.kt" })
     }
 
     @Тогда("база проверок поднимается в памяти на каждую проверку")
@@ -202,13 +203,16 @@ class DeviceTestHarnessSteps {
         assertTrue(baseText.contains("DeviceTestSeed.planIntakes"), "the base must plan the seeded intakes")
     }
 
-    @Тогда("согласие и отметка онбординга записываются в тестовые хранилища")
+    @Тогда("отметка онбординга записывается в тестовое хранилище, а согласие остаётся на полке")
     fun consentAndOnboardingAreSeeded() {
         assertTrue(graphText.contains("OnboardingStateStore"), "the onboarding mark must be seeded")
-        assertTrue(graphText.contains("AnalyticsConsentStore"), "the consent decision must be seeded")
+        assertFalse(
+            baseText.contains("AnalyticsConsentDecision"),
+            "no consent decision is seeded: there is no consent UX in the release (PM-31)",
+        )
         assertTrue(
-            baseText.contains("AnalyticsConsentDecision.ACCEPTED"),
-            "checks that do not test consent must get the accepted decision by seed",
+            modulesText.contains("DeviceTestStores.analyticsConsent"),
+            "the consent store stays real on the shelf for the future provider",
         )
     }
 
@@ -341,43 +345,49 @@ class DeviceTestHarnessSteps {
                 modulesText.contains("DeviceTestStores.analyticsConsent"),
             "the test graph must provide the real consent DataStore",
         )
-        assertTrue(graphText.contains("AnalyticsConsentStore"), "the consent decision must be seeded through its port")
         val fakeStores = appChecks.filter { text(it).contains(": AnalyticsConsentStore {") }.map { it.name }
         assertEquals(emptyList<String>(), fakeStores, "the consent store must not be faked in tests")
     }
 
-    @Тогда("проверка первого запуска проходит согласие и экран разрешений до «Сегодня»")
+    @Тогда("проверка первого запуска проходит экран разрешений до «Сегодня»")
     fun theFirstLaunchCheckWalksTheWholeChain() {
-        listOf("TAG_CONSENT_SCREEN", "TAG_PERMISSIONS_SCREEN", "TAG_SKIP", "TAG_TODAY_SCREEN").forEach { tag ->
+        listOf("TAG_PERMISSIONS_SCREEN", "TAG_SKIP", "TAG_TODAY_SCREEN").forEach { tag ->
             assertTrue(firstLaunchText.contains(tag), "the first-launch check must walk $tag")
         }
+        assertFalse(
+            firstLaunchText.contains("TAG_CONSENT_SCREEN"),
+            "the first-launch check must not meet the hidden consent screen (PM-31)",
+        )
         assertTrue(
             firstLaunchText.contains("override fun seedDefaultState() = Unit"),
-            "the first-launch check must not seed the consent decision",
+            "the first-launch check must not seed the onboarding mark",
         )
     }
 
-    @Тогда("остальные проверки получают решение согласия сидом, а не нажатием в каждом сценарии")
+    @Тогда("остальные проверки не зависят от согласия")
     fun theOtherChecksGetConsentBySeed() {
-        assertTrue(baseText.contains("AnalyticsConsentDecision.ACCEPTED"), "the base must seed the accepted decision")
+        assertFalse(
+            baseText.contains("AnalyticsConsentDecision"),
+            "the base must not seed a consent decision: there is no consent UX in the release",
+        )
         val showingConsent = scenarioFiles()
             .filter { text(it).contains("TAG_CONSENT_SCREEN") }
             .map { it.name }
             .sorted()
         assertEquals(
-            listOf("FirstLaunchDeviceTest.kt", "SettingsDeviceTest.kt"),
+            emptyList<String>(),
             showingConsent,
-            "only the first launch and the settings entry may meet the consent screen",
+            "no device check may meet the hidden consent screen (PM-31)",
         )
     }
 
-    @Тогда("экран согласия не подменяется и не пропускается правкой продукта")
+    @Тогда("экран согласия не подменяется тестами и остаётся в коде на полке")
     fun theConsentScreenIsNotReplacedOrSkipped() {
         val productSources = mainAppFiles().map(::text).joinToString("\n")
-        assertTrue(productSources.contains("ConsentRoute"), "the product route must keep the consent screen")
+        assertFalse(productSources.contains("ConsentRoute"), "the product route must not show the consent screen")
         assertTrue(
             text(File(RepositoryLayout.root, CONSENT_SCREEN)).contains("TAG_CONSENT_SCREEN"),
-            "the product consent screen must keep its tags",
+            "the product consent screen must stay on the shelf with its tags",
         )
         val replaced = appChecks.filter { text(it).contains("fun ConsentScreen(") }.map { it.name }
         assertEquals(emptyList<String>(), replaced, "the consent screen must not be redefined in tests")
@@ -696,8 +706,8 @@ class DeviceTestHarnessSteps {
         const val TEST_STRINGS = "app/src/androidTest/res/values/strings.xml"
         const val GUARD_TEST = "core-data/src/test/kotlin/ru/stohastika/sklyanka/data/GuardTest.kt"
         const val SKL24_DESIGN = "docs/tasks/SKL-24/TDD.md"
-        const val SKL82_DESIGN = "docs/tasks/SKL-82/TDD.md"
         const val SKL96_DESIGN = "docs/tasks/SKL-96/TDD.md"
+        const val SKL100_DESIGN = "docs/tasks/SKL-100/TDD.md"
         const val VERSION_CATALOG = "gradle/libs.versions.toml"
         const val HILT_CONVENTION =
             "build-logic/convention/src/main/kotlin/ru/stohastika/sklyanka/gradle/HiltConventionPlugin.kt"

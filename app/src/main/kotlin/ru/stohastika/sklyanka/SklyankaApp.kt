@@ -7,8 +7,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import ru.stohastika.sklyanka.analytics.AnalyticsBootstrap
-import ru.stohastika.sklyanka.analytics.ExperimentsBootstrap
 import ru.stohastika.sklyanka.data.log.LogRetention
 import ru.stohastika.sklyanka.data.repository.ProfileBootstrap
 import ru.stohastika.sklyanka.domain.log.OperationLog
@@ -105,24 +103,6 @@ class SklyankaApp : Application() {
     @Inject
     lateinit var seeds: Set<@JvmSuppressWildcards StartupSeed>
 
-    /**
-     * Аналитический контур (SKL-82): при старте состояние приводится к записанному
-     * решению согласия. До согласия активации нет — как и после отказа; в debug
-     * контур не активируется никогда (ПМ-19, ПМ-28).
-     */
-    @Inject
-    lateinit var analyticsBootstrap: AnalyticsBootstrap
-
-    /**
-     * A/B-контур (SKL-83): поток согласия применяется к экспериментам отдельной корутиной.
-     *
-     * Обновление вариантов не удлиняет путь планирования: `run()` живёт параллельно
-     * и никогда не ждёт ничего, кроме собственного запроса с таймаутом. До согласия
-     * гейт не выпускает ни одного запроса (ПМ-20 п. 2).
-     */
-    @Inject
-    lateinit var experimentsBootstrap: ExperimentsBootstrap
-
     private val startupScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onCreate() {
@@ -140,13 +120,7 @@ class SklyankaApp : Application() {
         // которая их трогает, запускает `USER_UNLOCKED` (план) и следующий открытый запуск
         // (bootstrap и подрезка), поэтому здесь достаточно выйти, не уронив процесс.
         if (!isUserUnlocked()) return
-        // A/B-контур живёт отдельной корутиной: получение вариантов не удлиняет путь
-        // планирования и не задерживает ни один сценарий (SKL-83, НФТ-16а).
-        startupScope.launch { experimentsBootstrap.run() }
         startupScope.launch {
-            // Согласие перечитывается на каждом старте: решение могло быть отозвано
-            // в настройках, а версия предмета согласия — измениться обновлением.
-            analyticsBootstrap.restore()
             directBootTraceDrain.drainIntoJournal()
             profileBootstrap.ensureOwnerProfile(
                 // Имя профиля по умолчанию — текст интерфейса, и язык у него свой (НФТ-43а).

@@ -23,7 +23,6 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import ru.stohastika.sklyanka.domain.analytics.Analytics
 import ru.stohastika.sklyanka.domain.analytics.AnalyticsEvent
-import ru.stohastika.sklyanka.domain.analytics.ConsentSource
 import ru.stohastika.sklyanka.domain.onboarding.OnboardingSource
 import ru.stohastika.sklyanka.domain.onboarding.ShouldShowOnboardingUseCase
 import ru.stohastika.sklyanka.domain.profile.ProfileContextProvider
@@ -40,8 +39,6 @@ import ru.stohastika.sklyanka.feature.onboarding.OnboardingViewModel
 import ru.stohastika.sklyanka.feature.onboarding.PermissionsActivity
 import ru.stohastika.sklyanka.feature.onboarding.PermissionsRoute
 import ru.stohastika.sklyanka.feature.onboarding.SystemSettingsNavigator
-import ru.stohastika.sklyanka.feature.onboarding.consent.ConsentRoute
-import ru.stohastika.sklyanka.feature.onboarding.consent.ConsentViewModel
 import ru.stohastika.sklyanka.feature.reminder.DeliveryCheckNotice
 import ru.stohastika.sklyanka.feature.reminder.DiagnosticsActivity
 import ru.stohastika.sklyanka.feature.reminder.ReminderOutageNotice
@@ -204,13 +201,6 @@ class MainActivity : ComponentActivity() {
      */
     private var permissionsFromToday by mutableStateOf(false)
 
-    /**
-     * Включение аналитики из настроек открывает тот же экран согласия поверх корня
-     * (ПМ-25 п. 4); после решения возвращаемся в настройки. Поле активности, а не
-     * `remember`: экран показывает корень, а открывает его строка настроек.
-     */
-    private var analyticsConsentFromSettings by mutableStateOf(false)
-
     private val onboarding: OnboardingViewModel by viewModels()
     private val today: TodayViewModel by viewModels()
     private val medsList: MedicationListViewModel by viewModels()
@@ -221,12 +211,6 @@ class MainActivity : ComponentActivity() {
     private val history: HistoryViewModel by viewModels()
     private val transfer: DataTransferViewModel by viewModels()
     private val deleteProfile: DeleteProfileViewModel by viewModels()
-
-    /**
-     * Экран согласия на аналитику — один на первый запуск и на включение из настроек
-     * (ПМ-25 п. 4): модель одна, источник показа решает сценарий и подписи.
-     */
-    private val consent: ConsentViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
@@ -247,10 +231,6 @@ class MainActivity : ComponentActivity() {
 
         var decision by mutableStateOf<StartupDecision?>(null)
         var onboardingUnseen by mutableStateOf(false)
-        // Решение согласия принято в этом запуске: экран закрывается, дальше — обычный
-        // маршрут запуска (онбординг разрешений или корень), поэтому «флаг» не съедает
-        // онбординг.
-        var consentDone by mutableStateOf(false)
         // Системный кадр приложение не удерживает: на Android 12+ платформа держит его
         // до первого кадра приложения и снимает сама — это и есть передача кадра.
         // `setKeepOnScreenCondition` только отложил бы снятие, а завязанный на отрисовку
@@ -260,7 +240,7 @@ class MainActivity : ComponentActivity() {
             // один раз, и второе чтение дало бы другой ответ — первый запуск перестаёт
             // быть первым сразу после отметки.
             onboardingUnseen = shouldShowOnboarding()
-            decision = startupRouter.resolve(shortcutLaunch = addMedicationRequested)
+            decision = startupRouter.resolve()
         }
 
         setContent {
@@ -280,22 +260,13 @@ class MainActivity : ComponentActivity() {
                         onboardingUnseen = onboardingUnseen,
                         onboardingDone = onboardingDone,
                         today = todayState,
-                        consentPending = decision?.consentPending == true,
-                        consentDone = consentDone,
                     ),
                 ) {
                     LaunchRouting(
                         decision = decision,
-                        consentDone = consentDone,
-                        consentFromSettings = analyticsConsentFromSettings,
                         onboardingUnseen = onboardingUnseen,
                         onboardingDone = onboardingDone,
                         addMedicationRequested = addMedicationRequested,
-                        onConsentDecided = { consentDone = true },
-                        onSettingsConsentDecided = {
-                            analyticsConsentFromSettings = false
-                            settings.refresh()
-                        },
                         onOnboardingDone = { onboardingDone = true },
                     )
                 }
@@ -304,45 +275,23 @@ class MainActivity : ComponentActivity() {
     }
 
     /**
-     * Первый экран запуска: согласие, разрешения или корень приложения.
+     * Первый экран запуска: разрешения или корень приложения.
      *
-     * Вынесено из `onCreate` отдельной функцией, потому что решений здесь три и каждое
-     * со своей причиной; `onCreate` остаётся сборкой состояния. Согласие — шаг перед
-     * онбордингом, а не альтернатива ему: после решения показывается то, что решил бы
-     * обычный маршрут (ПМ-25).
+     * Вынесено из `onCreate` отдельной функцией, потому что решений здесь два и каждое
+     * со своей причиной; `onCreate` остаётся сборкой состояния. Согласия среди них нет:
+     * UX скрыт до подключения провайдера (ПМ-31), первый запуск идёт в онбординг
+     * разрешений.
      */
     @Composable
     @Suppress("LongParameterList")
     private fun LaunchRouting(
         decision: StartupDecision?,
-        consentDone: Boolean,
-        consentFromSettings: Boolean,
         onboardingUnseen: Boolean,
         onboardingDone: Boolean,
         addMedicationRequested: Boolean,
-        onConsentDecided: () -> Unit,
-        onSettingsConsentDecided: () -> Unit,
         onOnboardingDone: (OnboardingExit) -> Unit,
     ) {
         when {
-            // Согласие — первый экран первого запуска (ПМ-25): после него показывается
-            // онбординг разрешений, если человек его ещё не видел.
-            decision?.consentPending == true && !consentDone -> ConsentRoute(
-                viewModel = consent,
-                // Устаревшая версия текста называется повторным информированием, а не
-                // первым запуском (ПМ-27): по источнику считается доля отказа.
-                source = decision.consentSource ?: ConsentSource.FIRST_LAUNCH,
-                onDecided = onConsentDecided,
-            )
-
-            // Включение аналитики из настроек: тот же экран, источник `settings`;
-            // после решения возвращаемся в настройки и перечитываем переключатель.
-            consentFromSettings -> ConsentRoute(
-                viewModel = consent,
-                source = ConsentSource.SETTINGS,
-                onDecided = onSettingsConsentDecided,
-            )
-
             // Экран разрешений EMUI (SKL-14): запуск, на котором с разрешениями
             // непорядок, начинается с него — но только пока человек этого экрана
             // не видел. Решение и его причина уже записаны в журнал запуска.
@@ -614,10 +563,6 @@ class MainActivity : ComponentActivity() {
         openDiagnostics = { startActivity(DiagnosticsActivity.intentFor(this)) },
         openHistory = { rootNavigation.openSection(SettingsDestination.HISTORY) },
         openDataTransfer = { rootNavigation.openSection(SettingsDestination.TRANSFER) },
-        // Включение аналитики — осознанное действие: открывается тот же экран согласия
-        // с текущей версией текста, сбор включается только после «Разрешить аналитику»
-        // (ПМ-25 п. 4, уточнение 03.10.2026).
-        openAnalyticsConsent = { analyticsConsentFromSettings = true },
         // «Удалить профиль «Имя»» — экран второго уровня настроек (ОВ-7, SKL-36).
         // Строка появляется только у активного чужого профиля, и «Готово»
         // возвращает в настройки — туда, откуда человек пришёл.

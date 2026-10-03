@@ -22,7 +22,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.semantics
-import ru.stohastika.sklyanka.domain.experiment.VariantKey
 import ru.stohastika.sklyanka.domain.reminder.SnoozeIntervals
 import ru.stohastika.sklyanka.ui.component.BottomBar
 import ru.stohastika.sklyanka.ui.component.BottomBarTab
@@ -80,7 +79,7 @@ fun SettingsScreen(state: SettingsUiState, onIntent: (SettingsIntent) -> Unit, m
             profilesBlock(state, onIntent)
             remindersBlock(state, onIntent)
             systemBlock(state, onIntent)
-            dataBlock(state, onIntent)
+            dataBlock(onIntent)
             item { AboutPlate(state.version) }
         }
         BottomBar(
@@ -343,8 +342,8 @@ private fun PermissionsRow(permissions: PermissionsSummary, onClick: () -> Unit)
     )
 }
 
-/** Раздел «Данные»: история приёмов (SKL-18), перенос данных (SKL-19) и аналитика (SKL-82). */
-private fun LazyListScope.dataBlock(state: SettingsUiState, onIntent: (SettingsIntent) -> Unit) {
+/** Раздел «Данные»: история приёмов (SKL-18), перенос данных (SKL-19) и политика. */
+private fun LazyListScope.dataBlock(onIntent: (SettingsIntent) -> Unit) {
     item {
         SettingsBlock(stringResource(R.string.settings_rubric_data)) {
             SettingsRow(
@@ -355,31 +354,14 @@ private fun LazyListScope.dataBlock(state: SettingsUiState, onIntent: (SettingsI
             RowDivider()
             SettingsRow(
                 title = stringResource(R.string.transfer_title),
-                // Вариант A эксперимента SETTINGS_TRANSFER_HINT (SKL-83): база — текущая
-                // подпись, вариант действует только после согласия и назначения AGC.
-                subtitle = RowSubtitle(
-                    stringResource(
-                        if (state.transferHint == VariantKey.A) {
-                            R.string.settings_transfer_caption_alt
-                        } else {
-                            R.string.settings_transfer_caption
-                        },
-                    ),
-                ),
+                subtitle = RowSubtitle(stringResource(R.string.settings_transfer_caption)),
                 onClick = { onIntent(SettingsIntent.OpenDataTransfer) },
                 modifier = Modifier.testTag(TAG_TRANSFER_ROW),
             )
             RowDivider()
-            // Включение открывает экран согласия, выключение — мгновенное (ПМ-25 п. 4):
-            // решает маршрут, строка только отдаёт намерение.
-            SklyankaSwitchRow(
-                label = stringResource(R.string.settings_analytics),
-                caption = stringResource(R.string.settings_analytics_caption),
-                checked = state.analyticsEnabled,
-                onCheckedChange = { onIntent(SettingsIntent.SetAnalytics(it)) },
-                modifier = Modifier.testTag(TAG_ANALYTICS_ROW),
-            )
-            RowDivider()
+            // Строки «Аналитика» здесь нет (ПМ-31): UX согласия скрыт до подключения
+            // провайдера. Интент, маршрут и `AnalyticsConsentControl` остаются на полке —
+            // возврат строки идёт вместе с провайдером новым решением.
             SettingsRow(
                 title = stringResource(R.string.settings_policy),
                 onClick = { onIntent(SettingsIntent.OpenPolicy) },
