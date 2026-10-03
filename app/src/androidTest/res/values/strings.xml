@@ -33,4 +33,12 @@
       Имя курса проверки мягкого удаления (SKL-99): нейтральное, без медицинских данных.
     -->
     <string name="device_test_medication_deletion">Стенд Удаление</string>
+    <!--
+      Названия лекарств для кадров карточки магазина (SKL-22, §9 store-listing.md):
+      осмысленные, реальные препараты вместо «Стенд …». Русский текст — в ресурсах
+      тестового APK, не в Kotlin (НФТ-42); медицинских данных человека здесь нет.
+    -->
+    <string name="store_medication_magnesium">Магний B6</string>
+    <string name="store_medication_vitamin_d">Витамин D3</string>
+    <string name="store_medication_omega">Омега-3</string>
 </resources>

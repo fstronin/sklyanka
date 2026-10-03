@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Medikamentennamen für die Store-Karten-Bilder auf de (SKL-22).
+-->
+<resources>
+    <string name="store_medication_magnesium">Magnesium B6</string>
+    <string name="store_medication_vitamin_d">Vitamin D3</string>
+    <string name="store_medication_omega">Omega-3</string>
+</resources>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Дәрі атаулары дүкен карточкасының кадрлары үшін, kk (SKL-22).
+-->
+<resources>
+    <string name="store_medication_magnesium">Магний B6</string>
+    <string name="store_medication_vitamin_d">D3 дәрумені</string>
+    <string name="store_medication_omega">Омега-3</string>
+</resources>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  应用商店卡片截图中的药品名称，zh-CN（SKL-22）。
+-->
+<resources>
+    <string name="store_medication_magnesium">镁 B6</string>
+    <string name="store_medication_vitamin_d">维生素 D3</string>
+    <string name="store_medication_omega">欧米伽-3</string>
+</resources>

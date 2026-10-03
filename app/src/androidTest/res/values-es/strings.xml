@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Nombres de los medicamentos para las capturas de la ficha de tienda en es (SKL-22).
+-->
+<resources>
+    <string name="store_medication_magnesium">Magnesio B6</string>
+    <string name="store_medication_vitamin_d">Vitamina D3</string>
+    <string name="store_medication_omega">Omega-3</string>
+</resources>
