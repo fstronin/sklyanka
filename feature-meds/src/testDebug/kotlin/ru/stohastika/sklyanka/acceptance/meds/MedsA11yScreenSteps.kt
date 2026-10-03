@@ -6,7 +6,6 @@ import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.test.core.app.ApplicationProvider
-import io.cucumber.java.ru.Допустим
 import io.cucumber.java.ru.Когда
 import io.cucumber.java.ru.Тогда
 import org.junit.Assert.assertTrue
@@ -39,11 +38,6 @@ class MedsA11yScreenSteps(private val world: AcceptanceWorld) {
 
     /** Что программа произнесла последним: сверяется со словом сценария. */
     private var spoken: List<String> = emptyList()
-
-    @Допустим("^человек открыл форму нового лекарства$")
-    fun thePersonHasOpenedTheNewMedicationForm() {
-        MedsFormStand.open(world)
-    }
 
     @Когда("^программа чтения с экрана читает (.+)$")
     fun theScreenReaderReads(element: String) {

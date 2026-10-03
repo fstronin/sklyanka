@@ -10,6 +10,18 @@ import ru.stohastika.sklyanka.acceptance.RepositoryLayout
 import java.io.File
 
 /**
+ * Потолок обозримости эталонных снимков — один на обе проверки (SKL-24 и SKL-91).
+ *
+ * Число держится сценариями приёмки: выше потолка картинки перестают просматриваться
+ * в ревью, и снимок превращается из проверки в шум. Второй экземпляр константы разошёлся
+ * бы с первым молча, поэтому `LocalizationContactSheetSteps` берёт её отсюда.
+ *
+ * 110 — решение владельца 03.10.2026 (было 100): два снимка пресетов формы (SKL-75)
+ * не влезали в сотню, а поднимать потолок дальше без нужды значит терять обозримость.
+ */
+internal const val GOLDEN_LIMIT = 110
+
+/**
  * Шаги приёмки SKL-24 — структурная часть.
  *
  * Эти сценарии говорят не о поведении приложения, а об устройстве конвейера: где живут
@@ -271,8 +283,8 @@ class ScreenStandSteps {
         goldens = goldenFiles()
     }
 
-    @Тогда("снимков не больше сотни")
-    fun thereAreNoMoreThanAHundred() {
+    @Тогда("снимков не больше ста десяти")
+    fun thereAreNoMoreThanTheLimit() {
         assertTrue(
             goldens.size <= GOLDEN_LIMIT,
             "${goldens.size} goldens stop being reviewed and become noise",
@@ -549,9 +561,6 @@ class ScreenStandSteps {
 
         /** Сколько проверок переехало на JVM: меньше — значит что-то потерялось. */
         const val MOVED_CHECKS = 104
-
-        /** Потолок обозримости: больше сотни картинок перестают просматриваться. */
-        const val GOLDEN_LIMIT = 100
 
         const val VERSION_CATALOG = "gradle/libs.versions.toml"
         const val COMPONENT_STATES =

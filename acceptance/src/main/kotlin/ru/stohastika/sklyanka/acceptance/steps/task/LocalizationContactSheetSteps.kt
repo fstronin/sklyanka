@@ -84,8 +84,5 @@ class LocalizationContactSheetSteps {
         const val SNAPSHOT_DIRECTORY = "screenshots"
         const val VISUAL_REVIEW_PROPERTY = "sklyanka.visualReview"
         const val PNG = "png"
-
-        /** Потолок обозримости эталонов SKL-24: матрица его не поднимает. */
-        const val GOLDEN_LIMIT = 100
     }
 }

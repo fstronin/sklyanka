@@ -246,6 +246,7 @@ internal fun StockBlock(state: MedCardUiState, onIntent: (MedCardIntent) -> Unit
             },
             gap = SklyankaSpacing.Medium,
             minTextWidth = SklyankaSizes.MinTextColumn,
+            stackedActionFullWidth = true,
         )
         packageShare?.let { (share, label) ->
             SklyankaProgressTrack(

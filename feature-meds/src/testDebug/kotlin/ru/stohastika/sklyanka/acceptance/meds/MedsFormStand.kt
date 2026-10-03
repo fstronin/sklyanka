@@ -1,5 +1,6 @@
 package ru.stohastika.sklyanka.acceptance.meds
 
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.onNodeWithText
@@ -65,6 +66,19 @@ internal object MedsFormStand {
         return MedFormUiState.of(draft, FormMode.Edit(medication.name), inputsOf(draft)).also { state = it }
     }
 
+    /**
+     * Показать форму правки всегда заново (SKL-57).
+     *
+     * [openEdit] отдаёт уже собранное состояние: в обычном сценарии форма одна. Шагам
+     * повторного открытия нужна именно новая форма — тем же путём `MedicationDraft.of`,
+     * каким её собирает `MedicationFormViewModel.open(medicationId)`.
+     */
+    fun showEdit(world: AcceptanceWorld, medication: Medication): MedFormUiState {
+        resetIfNewWorld(world)
+        val draft = MedicationDraft.of(medication)
+        return MedFormUiState.of(draft, FormMode.Edit(medication.name), inputsOf(draft)).also { state = it }
+    }
+
     /** Открыта ли форма в этом сценарии и была ли она закрыта «Отменой». */
     val cancelled: Boolean get() = cancelledHere
 
@@ -111,12 +125,19 @@ internal object MedsFormStand {
     /** Действие человека: экран отдаёт намерения, стенд применяет их к черновику. */
     fun act(world: AcceptanceWorld, action: (ComposeUiTest) -> Unit): List<MedFormIntent> {
         val intents = mutableListOf<MedFormIntent>()
+        // Состояние меняется прямо в намерении, а не после композиции: поле ввода —
+        // контролируемое, и экран, увидевший старый текст, вернул бы прежнее значение
+        // вторым намерением. Продукт ведёт себя так же — состояние приходит из модели.
+        val interactive = mutableStateOf(open(world))
         runComposeUiTest {
             setContent {
                 SklyankaTheme {
                     MedicationFormScreen(
-                        state = open(world),
-                        onIntent = intents::add,
+                        state = interactive.value,
+                        onIntent = { intent ->
+                            intents += intent
+                            interactive.value = apply(interactive.value, intent)
+                        },
                         onCancel = { cancelledHere = true },
                         onPickDate = {},
                         onPickTime = { _, _ -> },
@@ -126,7 +147,7 @@ internal object MedsFormStand {
             action(this)
             waitForIdle()
         }
-        intents.forEach { state = apply(open(world), it) }
+        state = interactive.value
         return intents
     }
 

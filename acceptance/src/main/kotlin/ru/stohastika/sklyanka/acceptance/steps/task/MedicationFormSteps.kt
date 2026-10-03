@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import ru.stohastika.sklyanka.acceptance.RussianDates
+import ru.stohastika.sklyanka.domain.medication.CourseEndPreset
 import ru.stohastika.sklyanka.domain.medication.DoseUnit
 import ru.stohastika.sklyanka.domain.medication.DraftField
 import ru.stohastika.sklyanka.domain.medication.DraftViolation
@@ -51,6 +52,17 @@ class MedicationFormSteps {
     private var submitted: MedicationDraft? = null
 
     private var violations: List<DraftViolation> = emptyList()
+
+    /**
+     * Нажатие «Сохранить» на собранной форме — крючок экранного прогона (SKL-57).
+     *
+     * Строка «человек сохраняет лекарство» объявлена здесь один раз и ловит сценарии
+     * девяти задач; второе объявление в модуле экрана словарь шагов запрещает. Шаг
+     * «Тогда форма закрывается» проверял бы тогда не действие человека, а своё нажатие.
+     * Поэтому домен остаётся один, а экранный прогон подставляет сюда нажатие на форме:
+     * в доменном прогоне крючок пуст, и шаг работает как раньше.
+     */
+    var submitOnScreen: (() -> Unit)? = null
 
     // --- Название -----------------------------------------------------------------------
 
@@ -210,6 +222,30 @@ class MedicationFormSteps {
         draft = defaultDraft()
     }
 
+    /**
+     * Форма нового лекарства с названием — доменный черновик сценариев SKL-74/SKL-75.
+     *
+     * Остальные поля берутся из [defaultDraft]: сценарий называет только название,
+     * а черновик без дозы и времени не прошёл бы проверку сохранения. Предмет сценария —
+     * порог и пресет, а не валидация SKL-09; та же оговорка, что у шага-стенда.
+     */
+    @Given("^человек заполняет форму нового лекарства с названием «([^»]+)»$")
+    fun theNewMedicationFormIsFilledWith(name: String) {
+        draft = defaultDraft().copy(name = name)
+    }
+
+    @Given("^дата начала курса — (.+)$")
+    fun theCourseStartDateIs(date: String) {
+        draft = draft.copy(startDate = RussianDates.date(date, REFERENCE_DATE))
+    }
+
+    @Given("^человек открыл форму нового лекарства$")
+    fun thePersonHasOpenedTheNewMedicationForm() {
+        // В доменном прогоне формы нет: строка Предыстории утверждает, что человек
+        // на форме, а экранные прогоны собирают её сами.
+        draft = defaultDraft()
+    }
+
     @When("^он выбирает форму выпуска «(.+)»$")
     fun theReleaseFormIsChosen(form: String) {
         draft = draft.copy(form = releaseForm(form)).normalized()
@@ -330,9 +366,54 @@ class MedicationFormSteps {
         assertEquals(violations.first().field, violations.first().field)
     }
 
+    // --- Порог покупки и пресет срока (SKL-74, SKL-75) ----------------------------------------------
+
+    @Given("^человек включил «Напомнить о покупке» и выбрал порог (\\d+) дней$")
+    fun theStockReminderIsOnWithThreshold(days: Int) {
+        draft = draft.copy(stockThresholdDays = days)
+    }
+
+    @Then("^у сохранённого лекарства порог напоминания равен (\\d+) дням$")
+    fun theSavedCourseKeepsThatThreshold(days: Int) {
+        submit()
+        assertEquals(emptyList<DraftViolation>(), violations)
+        assertEquals(days, draft.toMedication(MEDICATION_ID).stockThresholdDays)
+    }
+
+    @Given("^человек выбирает пресет «([^»]+)» при начале (.+)$")
+    fun thePresetIsChosenFromThatStart(preset: String, start: String) {
+        val day = RussianDates.date(start, REFERENCE_DATE)
+        draft = draft.copy(startDate = day, endDate = presetOf(preset).endDateFrom(day))
+    }
+
+    @Then("^у сохранённого лекарства дата окончания — (.+)$")
+    fun theSavedCourseEndsOn(date: String) {
+        submit()
+        assertEquals(emptyList<DraftViolation>(), violations)
+        assertEquals(RussianDates.date(date, REFERENCE_DATE), draft.toMedication(MEDICATION_ID).endDate)
+    }
+
+    @Then("^курс завершается (.+) включительно$")
+    fun theCourseRunsThroughThatDay(date: String) {
+        // Последний день курса включительный: дата окончания и есть день приёма (ПР-6).
+        assertEquals(RussianDates.date(date, REFERENCE_DATE), draft.toMedication(MEDICATION_ID).endDate)
+    }
+
+    private fun presetOf(label: String): CourseEndPreset = when (label) {
+        "1 неделя" -> CourseEndPreset.WEEK_1
+        "2 недели" -> CourseEndPreset.WEEKS_2
+        "1 месяц" -> CourseEndPreset.MONTH_1
+        "2 месяца" -> CourseEndPreset.MONTHS_2
+        "3 месяца" -> CourseEndPreset.MONTHS_3
+        "6 месяцев" -> CourseEndPreset.MONTHS_6
+        "1 год" -> CourseEndPreset.YEAR_1
+        else -> error("unknown preset: $label")
+    }
+
     private fun submit() {
         submitted = draft
         violations = validate(draft.normalized())
+        submitOnScreen?.invoke()
     }
 
     /** Времена из перечисления в кавычках: «08:00», «20:00» и «08:00». */

@@ -68,6 +68,19 @@ class LockedBootAlarmReplayerTest {
         ShadowAlarmManager.setCanScheduleExactAlarms(true)
     }
 
+    /**
+     * Будильники приёмов: восстановитель ставит только их.
+     *
+     * `SklyankaApp` при создании пересобирает план в фоновом потоке и ставит свой якорь
+     * и границу суток — настоящее поведение продукта. Проверка считает будильники своего
+     * адреса, а не весь список Robolectric, иначе зависела бы от гонки с фоном
+     * (`ProbeStandTest` — тот же приём).
+     */
+    @Suppress("DEPRECATION")
+    private fun intakeAlarms(): List<ShadowAlarmManager.ScheduledAlarm> = shadow.scheduledAlarms.filter { alarm ->
+        alarm.operation?.let { shadowOf(it).savedIntent }?.action == ReminderAlarms.ACTION_INTAKE
+    }
+
     @Test
     fun `only future alarms are placed and the trace counts skipped ones`() = runTest {
         val future = DirectBootAlarm("intake-future", now.plusSeconds(3600), 0)
@@ -76,7 +89,7 @@ class LockedBootAlarmReplayerTest {
 
         replayer(FakeStore(snapshot(alarms = listOf(future, past))), traces).replay()
 
-        assertEquals(1, shadow.scheduledAlarms.size)
+        assertEquals(1, intakeAlarms().size)
         val trace = traces.appended.single()
         assertEquals(1, trace.replayed)
         assertEquals(1, trace.skipped)
@@ -106,7 +119,7 @@ class LockedBootAlarmReplayerTest {
         val decision = replayer(FakeStore(stale), traces).replay()
 
         assertEquals(DirectBootReplayDecision.Skip(DirectBootTraceReason.STALE), decision)
-        assertTrue(shadow.scheduledAlarms.isEmpty())
+        assertTrue(intakeAlarms().isEmpty())
         assertEquals(DirectBootTraceReason.STALE.code, traces.appended.single().reason)
     }
 
@@ -129,7 +142,7 @@ class LockedBootAlarmReplayerTest {
         val decision = replayer(FakeStore(snapshot(alarms = listOf(future))), traces).replay()
 
         assertEquals(DirectBootReplayDecision.Skip(DirectBootTraceReason.EXACT_DENIED), decision)
-        assertTrue(shadow.scheduledAlarms.isEmpty())
+        assertTrue(intakeAlarms().isEmpty())
         assertEquals(DirectBootTraceReason.EXACT_DENIED.code, traces.appended.single().reason)
     }
 }

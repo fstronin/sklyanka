@@ -13,6 +13,10 @@ import ru.stohastika.sklyanka.acceptance.run.ScreenAcceptanceRun
  * Шаги видят ресурсы и композицию `feature-settings` (`SKL-26/TDD.md §4.3`): экран
  * подтверждения и строка в настройках живут в этом модуле, и отдельный стенд в `app`
  * был бы вторым способом собрать те же состояния.
+ *
+ * Здесь же исполняется сценарий SKL-15 «Удаление активного профиля…» (тег `@deletion`):
+ * он говорит о явном возврате в свой профиль после каскадного удаления (`ПРФ-30`,
+ * `ПРФ-31`), а его шаги — экран удаления; из прогона `app` он исключён по тегу.
  */
 @RunWith(AndroidJUnit4::class)
 // Экран подтверждения длиннее окна телефона: числа, слово, выгрузка и кнопки иначе
@@ -31,7 +35,19 @@ class DeleteProfileAcceptanceTest {
         }
     }
 
+    @Test
+    fun theActiveProfileDeletionScenarioOfSkl15RunsOnTheScreenStand() {
+        try {
+            assertNull(ScreenAcceptanceRun.run(task = PROFILE_TASK, tags = PROFILE_DELETION_TAG))
+        } finally {
+            DeleteProfileScreenProbe.dropMainDispatcher()
+            SettingsScreenProbe.dropMainDispatcher()
+        }
+    }
+
     private companion object {
         const val TASK = "SKL-36"
+        const val PROFILE_TASK = "SKL-15"
+        const val PROFILE_DELETION_TAG = "@deletion"
     }
 }

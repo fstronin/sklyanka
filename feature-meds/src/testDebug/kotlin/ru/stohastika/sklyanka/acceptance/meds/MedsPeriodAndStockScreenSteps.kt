@@ -18,7 +18,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
-import ru.stohastika.sklyanka.acceptance.steps.dateOf
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
 import ru.stohastika.sklyanka.domain.medication.CourseEndPreset
 import ru.stohastika.sklyanka.domain.stock.StockThresholds
@@ -86,12 +85,6 @@ class MedsPeriodAndStockScreenSteps(private val world: AcceptanceWorld) {
     }
 
     // --- SKL-75: пресеты срока окончания -------------------------------------------------------
-
-    @Допустим("^дата начала курса — (.+)$")
-    fun theCourseStartDateIs(date: String) {
-        MedsFormStand.open(world)
-        MedsFormStand.showDraft(world, MedsFormStand.open(world).draft.copy(startDate = world.dateOf(date)))
-    }
 
     @Допустим("^в блоке «Период приёма» выключено «Принимать бессрочно»$")
     fun theIndefiniteSwitchIsOff() {

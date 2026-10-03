@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.Dp
  * а не свойство карточки приёма.
  */
 @Composable
+@Suppress("LongParameterList")
 fun StackingRow(
     leading: @Composable () -> Unit,
     text: @Composable () -> Unit,
@@ -51,24 +52,35 @@ fun StackingRow(
     gap: Dp,
     minTextWidth: Dp,
     modifier: Modifier = Modifier,
+    stackedActionFullWidth: Boolean = false,
 ) {
     Layout(
         contents = listOf(leading, text, action),
         modifier = modifier.fillMaxWidth(),
-        measurePolicy = StackingRowMeasurePolicy(gap = gap, minTextWidth = minTextWidth),
+        measurePolicy = StackingRowMeasurePolicy(
+            gap = gap,
+            minTextWidth = minTextWidth,
+            stackedActionFullWidth = stackedActionFullWidth,
+        ),
     )
 }
 
-private class StackingRowMeasurePolicy(private val gap: Dp, private val minTextWidth: Dp) : MultiContentMeasurePolicy {
+private class StackingRowMeasurePolicy(
+    private val gap: Dp,
+    private val minTextWidth: Dp,
+    private val stackedActionFullWidth: Boolean,
+) : MultiContentMeasurePolicy {
 
     override fun MeasureScope.measure(measurables: List<List<Measurable>>, constraints: Constraints): MeasureResult {
         val gapPx = gap.roundToPx()
         val loose = Constraints()
         val lead = measurables[LEADING].firstOrNull()?.measure(loose)
-        val act = measurables[ACTION].firstOrNull()?.measure(loose)
+        val actMeasurable = measurables[ACTION].firstOrNull()
         val textMeasurable = measurables[TEXT].first()
         val leadWidth = lead.widthOrZero()
-        val actionWidth = act.widthOrZero()
+        // Ширина действия — внутренняя: измерить и потом перемерить один Measurable
+        // за проход нельзя, а от ширины зависит, встанет ли действие в столбец.
+        val actionWidth = actMeasurable?.maxIntrinsicWidth(0) ?: 0
         val floor = maxOf(minTextWidth.roundToPx(), textMeasurable.longestWord())
 
         // Ширина может прийти неограниченной (горизонтальная прокрутка): тогда ряд
@@ -85,6 +97,17 @@ private class StackingRowMeasurePolicy(private val gap: Dp, private val minTextW
             actionWidth = actionWidth,
             gapPx = gapPx,
             floor = floor,
+        )
+        // Действие в столбце занимает всю ширину текстовой колонки — так ряд
+        // «значение — действие» читается как один блок при крупном шрифте (SKL-59, §6.3).
+        val act = actMeasurable?.measure(
+            if (boundaries.actionStacked && stackedActionFullWidth) {
+                val start = boundaries.leadWidth + boundaries.leadGap
+                val width = (available - start).coerceAtLeast(0)
+                Constraints(minWidth = width, maxWidth = width)
+            } else {
+                loose
+            },
         )
         val textPlaceable = textMeasurable.measure(Constraints(maxWidth = boundaries.textWidth.coerceAtLeast(0)))
         val rowHeight = rowHeightOf(boundaries, lead, act, textPlaceable.height)

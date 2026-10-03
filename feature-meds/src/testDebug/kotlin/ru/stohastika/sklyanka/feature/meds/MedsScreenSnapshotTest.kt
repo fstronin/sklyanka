@@ -15,6 +15,7 @@ import org.junit.runner.RunWith
 import ru.stohastika.sklyanka.domain.medication.ArchiveCaption
 import ru.stohastika.sklyanka.domain.medication.ArchiveCard
 import ru.stohastika.sklyanka.domain.medication.ArchiveContent
+import ru.stohastika.sklyanka.domain.medication.CourseEndPreset
 import ru.stohastika.sklyanka.domain.medication.CourseProgress
 import ru.stohastika.sklyanka.domain.medication.DayCell
 import ru.stohastika.sklyanka.domain.medication.DoseUnit
@@ -88,6 +89,28 @@ class MedsScreenSnapshotTest {
     }
 
     @Test
+    fun theMedicationFormWithTheChosenPreset() = capture("meds-form-preset", heightDp = TALL) {
+        MedicationFormScreen(
+            state = MedFormUiState.of(presetDraft(), FormMode.Create, FormInputs()),
+            onIntent = {},
+            onCancel = {},
+            onPickDate = {},
+            onPickTime = { _, _ -> },
+        )
+    }
+
+    @Test
+    fun theMedicationFormWithACustomEndDate() = capture("meds-form-other-date", heightDp = TALL) {
+        MedicationFormScreen(
+            state = MedFormUiState.of(customEndDateDraft(), FormMode.Create, FormInputs()),
+            onIntent = {},
+            onCancel = {},
+            onPickDate = {},
+            onPickTime = { _, _ -> },
+        )
+    }
+
+    @Test
     fun theMedicationCard() = capture("meds-card", heightDp = TALL) {
         MedicationCardScreen(state = cardState(), onIntent = {})
     }
@@ -135,6 +158,16 @@ class MedsScreenSnapshotTest {
         scheduleMode = ScheduleMode.SCHEDULED,
         times = listOf(LocalTime.of(8, 0)),
         startDate = START_DATE,
+    )
+
+    /** Пресет «1 месяц» от [START_DATE]: ряд пресетов показывает выбранный чип (SKL-75). */
+    private fun presetDraft() = draft().copy(
+        endDate = CourseEndPreset.MONTH_1.endDateFrom(START_DATE),
+    )
+
+    /** Дата окончания, не совпавшая ни с одним пресетом: ни один чип не выбран (SKL-75). */
+    private fun customEndDateDraft() = draft().copy(
+        endDate = LocalDate.of(2026, 11, 17),
     )
 
     private fun cardState() = MedCardUiState(

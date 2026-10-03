@@ -13,6 +13,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Shadows.shadowOf
+import org.robolectric.shadows.ShadowAlarmManager
 import ru.stohastika.sklyanka.domain.reminder.AlarmKind
 import ru.stohastika.sklyanka.domain.reminder.DirectBootAlarm
 import ru.stohastika.sklyanka.domain.reminder.DirectBootAlarms
@@ -46,12 +47,29 @@ class AlarmManagerGatewayTest {
      * Снять будильники, оставшиеся от соседних проверок в общем снимке Robolectric.
      *
      * Соседние классы (например, стенд проб SKL-89) ставят будильники через настоящий
-     * `AlarmManager`, и без очистки `scheduledAlarms.single()` увидел бы чужой будильник.
+     * `AlarmManager`, и без очистки проверки увидели бы чужой будильник. Одной очистки
+     * мало: `SklyankaApp` пересобирает план в фоновом потоке и может поставить свой якорь
+     * в любой момент, поэтому проверки считают будильники своего адреса (`alarmsAt`).
      */
     @Before
     fun clearScheduledAlarms() {
         alarms.cancelAll()
     }
+
+    /**
+     * Будильники названного адреса.
+     *
+     * `SklyankaApp` при создании пересобирает план в фоновом потоке и ставит свой якорь
+     * и границу суток — настоящее поведение продукта, не зависящее от тела теста. Поэтому
+     * проверки считают будильники своего адреса, а не весь список Robolectric: иначе
+     * `single()` и `isEmpty()` зависели бы от гонки с фоном (в `ProbeStandTest` — тот же
+     * приём).
+     */
+    @Suppress("DEPRECATION")
+    private fun alarmsAt(action: String): List<ShadowAlarmManager.ScheduledAlarm> =
+        shadow.scheduledAlarms.filter { alarm ->
+            alarm.operation?.let { shadowOf(it).savedIntent }?.action == action
+        }
 
     private class StoredSettings(var values: ReminderSettingsValues) : ReminderSettings {
         override suspend fun read(): ReminderSettingsValues = values
@@ -121,7 +139,7 @@ class AlarmManagerGatewayTest {
     fun `an intake alarm goes through the system alarm clock with a show intent`() = runTest {
         gateway(AlarmKind.ALARM_CLOCK).schedule("intake-1", at)
 
-        val alarm = shadow.scheduledAlarms.single()
+        val alarm = alarmsAt(ReminderAlarms.ACTION_INTAKE).single()
         assertEquals(at.toEpochMilli(), alarm.triggerAtTime)
         val clockInfo = requireNotNull(alarm.getAlarmClockInfo()) { "setAlarmClock must carry AlarmClockInfo" }
         assertEquals(at.toEpochMilli(), clockInfo.triggerTime)
@@ -135,7 +153,7 @@ class AlarmManagerGatewayTest {
 
         gateway.schedule("intake-1", at)
 
-        val alarm = shadow.scheduledAlarms.single()
+        val alarm = alarmsAt(ReminderAlarms.ACTION_INTAKE).single()
         assertEquals(at.toEpochMilli(), alarm.triggerAtTime)
         assertNull("a quiet alarm must not show a status bar entry", alarm.getAlarmClockInfo())
         assertTrue("it must still pierce Doze", alarm.isAllowWhileIdle)
@@ -148,7 +166,10 @@ class AlarmManagerGatewayTest {
 
         gateway.schedule("intake-1", at)
 
-        assertNotNull("a normal build always uses the alarm clock", shadow.scheduledAlarms.single().getAlarmClockInfo())
+        assertNotNull(
+            "a normal build always uses the alarm clock",
+            alarmsAt(ReminderAlarms.ACTION_INTAKE).single().getAlarmClockInfo(),
+        )
         assertEquals(AlarmKind.ALARM_CLOCK, gateway.alarmKind())
     }
 
@@ -159,8 +180,11 @@ class AlarmManagerGatewayTest {
         gateway.scheduleAnchor(at)
         gateway.scheduleDayBoundary(at.plusSeconds(3600))
 
-        assertEquals(2, shadow.scheduledAlarms.size)
-        shadow.scheduledAlarms.forEach { alarm ->
+        val anchor = alarmsAt(ReminderAlarms.ACTION_ANCHOR)
+        val dayBoundary = alarmsAt(ReminderAlarms.ACTION_DAY_BOUNDARY)
+        assertEquals("the anchor must be armed", 1, anchor.size)
+        assertEquals("the day boundary must be armed", 1, dayBoundary.size)
+        (anchor + dayBoundary).forEach { alarm ->
             assertNull("a service alarm must stay quiet (НАП-42)", alarm.getAlarmClockInfo())
             assertTrue(alarm.isAllowWhileIdle)
         }
@@ -173,7 +197,7 @@ class AlarmManagerGatewayTest {
         assertEquals(AlarmKind.EXACT_IDLE, gateway.alarmKind())
         gateway.schedule("intake-1", at)
 
-        assertNull(shadow.scheduledAlarms.single().getAlarmClockInfo())
+        assertNull(alarmsAt(ReminderAlarms.ACTION_INTAKE).single().getAlarmClockInfo())
     }
 
     @Test
@@ -183,8 +207,9 @@ class AlarmManagerGatewayTest {
         gateway.schedule("intake-1", at)
         gateway.schedule("intake-1", at.plusSeconds(900), attempt = 1)
 
-        assertEquals("one intake is one alarm address (НАП-9)", 1, shadow.scheduledAlarms.size)
-        assertEquals(at.plusSeconds(900).toEpochMilli(), shadow.scheduledAlarms.single().triggerAtTime)
+        val intakeAlarms = alarmsAt(ReminderAlarms.ACTION_INTAKE)
+        assertEquals("one intake is one alarm address (НАП-9)", 1, intakeAlarms.size)
+        assertEquals(at.plusSeconds(900).toEpochMilli(), intakeAlarms.single().triggerAtTime)
     }
 
     @Test
@@ -264,7 +289,7 @@ class AlarmManagerGatewayTest {
 
         gateway.scheduleDeliveryCheck(checkAt)
 
-        val check = shadow.scheduledAlarms.single()
+        val check = alarmsAt(ReminderAlarms.ACTION_DELIVERY_CHECK).single()
         assertEquals(checkAt.toEpochMilli(), check.triggerAtTime)
         assertNotNull("the check repeats the intake alarm mechanism", check.getAlarmClockInfo())
         assertTrue("the check is not an intake alarm", gateway.scheduled().isEmpty())
@@ -272,7 +297,7 @@ class AlarmManagerGatewayTest {
 
         gateway.cancelDeliveryCheck()
 
-        assertTrue("the check must be taken away", shadow.scheduledAlarms.isEmpty())
+        assertTrue("the check must be taken away", alarmsAt(ReminderAlarms.ACTION_DELIVERY_CHECK).isEmpty())
     }
 
     @Test
@@ -281,7 +306,7 @@ class AlarmManagerGatewayTest {
 
         gateway.scheduleDeliveryCheck(at)
 
-        val check = shadow.scheduledAlarms.single()
+        val check = alarmsAt(ReminderAlarms.ACTION_DELIVERY_CHECK).single()
         assertNull("the quiet variant stays quiet", check.getAlarmClockInfo())
         assertTrue("but still pierces Doze", check.isAllowWhileIdle)
 
@@ -293,6 +318,6 @@ class AlarmManagerGatewayTest {
     fun `cancelling an absent delivery check is not an error`() = runTest {
         gateway(AlarmKind.ALARM_CLOCK).cancelDeliveryCheck()
 
-        assertTrue(shadow.scheduledAlarms.isEmpty())
+        assertTrue(alarmsAt(ReminderAlarms.ACTION_DELIVERY_CHECK).isEmpty())
     }
 }
