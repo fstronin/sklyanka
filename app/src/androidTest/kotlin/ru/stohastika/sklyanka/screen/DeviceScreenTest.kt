@@ -1,6 +1,8 @@
 package ru.stohastika.sklyanka.screen
 
+import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ComposeTimeoutException
@@ -132,6 +134,25 @@ abstract class DeviceScreenTest {
     protected fun launchApp() {
         DeviceActivities.launch(targetContext)
         waitUntil(LAUNCH_TIMEOUT_MS, "запуска MainActivity") { DeviceActivities.resumed() != null }
+    }
+
+    /** Запустить экран-активность продукта его же намерением (SKL-98). */
+    protected fun launchScreen(intent: Intent) {
+        DeviceActivities.launchIntent(targetContext, intent)
+    }
+
+    /** Дождаться, что возобновлена активность указанного класса. */
+    protected fun awaitActivity(clazz: Class<out Activity>) {
+        waitUntil(LAUNCH_TIMEOUT_MS, "активности ${clazz.simpleName}") {
+            clazz.isInstance(DeviceActivities.resumedActivity())
+        }
+    }
+
+    /** Дождаться, что активность указанного класса больше не на экране. */
+    protected fun awaitScreenClosed(clazz: Class<out Activity>) {
+        waitUntil(LAUNCH_TIMEOUT_MS, "закрытия ${clazz.simpleName}") {
+            !clazz.isInstance(DeviceActivities.resumedActivity())
+        }
     }
 
     /**
@@ -308,6 +329,8 @@ abstract class DeviceScreenTest {
             step = step,
             test = "${javaClass.simpleName}.${testName.methodName}",
             node = node,
+            // Повтор после разового таймаута RenderThread ждёт простоя, а не спит.
+            awaitRetry = { compose.waitForIdle() },
         )
     }
 

@@ -23,4 +23,10 @@
     <string name="device_test_medication_edit">Стенд Правка</string>
     <string name="device_test_medication_edit_renamed">Стенд После правки</string>
     <string name="device_test_group_medication">Стенд Группа %1$d</string>
+    <!--
+      Имена волны 3 (SKL-98): курс архива и курс карточки напоминания. Нейтральные,
+      без медицинских данных.
+    -->
+    <string name="device_test_medication_archive">Стенд Архив</string>
+    <string name="device_test_medication_reminder">Стенд Напоминание</string>
 </resources>

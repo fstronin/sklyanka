@@ -30,6 +30,9 @@ internal object DeviceTestClock {
 
     val today: LocalDate get() = source.today()
 
+    /** Слот карточки напоминания и время самопроверки: дата и время одного управляемого момента. */
+    val scheduledAt: LocalDateTime get() = LocalDateTime.of(today, scheduledTime)
+
     fun reset() {
         source = fixed(start)
     }

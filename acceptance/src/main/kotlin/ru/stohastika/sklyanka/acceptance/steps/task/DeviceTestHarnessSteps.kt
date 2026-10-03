@@ -214,8 +214,17 @@ class DeviceTestHarnessSteps {
 
     @Тогда("каждая проверка утверждает только то, что создала сама")
     fun everyCheckAssertsOnlyWhatItSeeded() {
-        val withoutLaunch = scenarioFiles().filterNot { text(it).contains("launchApp()") }.map { it.name }
-        assertEquals(emptyList<String>(), withoutLaunch, "every scenario must launch the app on the test graph")
+        val withoutLaunch = scenarioFiles()
+            .filterNot { file ->
+                val body = text(file)
+                body.contains("launchApp()") || body.contains("launchScreen(")
+            }
+            .map { it.name }
+        assertEquals(
+            emptyList<String>(),
+            withoutLaunch,
+            "every scenario must launch the app on the test graph: launchApp() or a direct screen launch",
+        )
         val directStorage = (scenarioFiles() + appChecks.single { it.name == "DeviceScreenTest.kt" })
             .filter { text(it).contains(ROOM_PACKAGE) }
             .map { it.name }

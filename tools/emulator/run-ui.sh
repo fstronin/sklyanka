@@ -84,8 +84,11 @@ shots_status=0
 "$SKL_DIR/screenshots.sh" "$api" || shots_status=$?
 
 # Сводка прогона — по машинно читаемым отчётам AGP, а не по выводу терминала.
+# Без python3 сводка не собирается, но прогон продолжается: гашение образа и коды
+# возврата стоят ниже и выполняются всегда (SKL-98).
 summary_file="$results/ui-summary.txt"
-python3 - "$results/androidTest-results/ui" >"$summary_file" <<'PY'
+if command -v python3 >/dev/null 2>&1; then
+    python3 - "$results/androidTest-results/ui" >"$summary_file" <<'PY'
 import glob
 import os
 import sys
@@ -106,11 +109,15 @@ for path in glob.glob(os.path.join(root, "**", "*.xml"), recursive=True):
     seconds += float(suite.get("time", 0.0))
 print(f"проверок: {tests}; падений: {failures + errors}; пропущено: {skipped}; время: {seconds:.1f} с")
 PY
-summary="$(cat "$summary_file")"
-skl_log "сводка: $summary"
-skl_log "сводка файлом: $summary_file"
-if [[ "$summary" == "проверок: 0;"* ]]; then
-    skl_warn "отчётов проверок нет: прогон не дошёл до исполнения"
+    summary="$(cat "$summary_file")"
+    skl_log "сводка: $summary"
+    skl_log "сводка файлом: $summary_file"
+    if [[ "$summary" == "проверок: 0;"* ]]; then
+        skl_warn "отчётов проверок нет: прогон не дошёл до исполнения"
+    fi
+else
+    printf 'сводка недоступна: python3 не найден в PATH\n' >"$summary_file"
+    skl_warn "python3 не найден: сводка не собрана, прогон продолжается (файл: $summary_file)"
 fi
 
 skl_log "проверки: статус $tests_status; отчёты: $results/androidTest-results/ui"

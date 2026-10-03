@@ -22,11 +22,20 @@ internal object DeviceActivities {
 
     private val instrumentation get() = InstrumentationRegistry.getInstrumentation()
 
-    fun launch(context: Context, intent: Intent = Intent(context, MainActivity::class.java)) {
+    /** Обычный запуск приложения: настоящая `MainActivity`. */
+    fun launch(context: Context) {
+        launchIntent(context, Intent(context, MainActivity::class.java))
+    }
+
+    /** Прямой запуск экрана-активности продукта его же намерением (SKL-98). */
+    fun launchIntent(context: Context, intent: Intent) {
         context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     }
 
-    fun resumed(): MainActivity? = inStages(Stage.RESUMED).filterIsInstance<MainActivity>().firstOrNull()
+    /** Любая возобновлённая активность приложения: экраны-активности живут вне графа `MainActivity`. */
+    fun resumedActivity(): Activity? = inStages(Stage.RESUMED).firstOrNull()
+
+    fun resumed(): MainActivity? = resumedActivity() as? MainActivity
 
     fun closeAll(compose: ComposeTestRule) {
         val alive = inStages(
