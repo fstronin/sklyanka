@@ -40,8 +40,16 @@ class ReleaseSigningConventionPlugin : Plugin<Project> {
                     isMinifyEnabled = false
                 }
                 getByName(RELEASE) {
-                    // Обфускация и сжатие ресурсов — SKL-22, не этот скелет.
-                    isMinifyEnabled = false
+                    // Обфускация, удаление мёртвого кода и сжатие ресурсов (SKL-22,
+                    // задачи 9 и 33). Правила, к которым обращаются по имени строкой,
+                    // собраны в app/proguard-rules.pro; остальное покрывают
+                    // consumer-правила библиотек.
+                    isMinifyEnabled = true
+                    isShrinkResources = true
+                    proguardFiles(
+                        getDefaultProguardFile("proguard-android-optimize.txt"),
+                        "proguard-rules.pro",
+                    )
                     signingConfig = signingConfigs.findByName(RELEASE)
                 }
                 create(WATCH_TEST) {
@@ -50,6 +58,9 @@ class ReleaseSigningConventionPlugin : Plugin<Project> {
                     // не примет отправку; отладка при этом остаётся доступной.
                     isDebuggable = true
                     isMinifyEnabled = false
+                    // Сжатие ресурсов требует включённой минификации, а здесь её нет:
+                    // вариант остаётся неминифицированным, как и был (SKL-22).
+                    isShrinkResources = false
                     signingConfig = signingConfigs.findByName(RELEASE)
                     matchingFallbacks += RELEASE
                 }
