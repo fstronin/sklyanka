@@ -135,6 +135,7 @@
     <string name="diagnostics_event_snoozed">pospuesto</string>
     <string name="diagnostics_event_deferred">disparo diferido</string>
     <string name="diagnostics_event_rescheduled">plan reconstruido</string>
+    <string name="diagnostics_event_rotated">recorte del registro</string>
     <string name="diagnostics_event_missed_sweep">pasado a omitidas</string>
     <string name="diagnostics_event_outage">interrupción de recordatorios</string>
     <string name="diagnostics_event_settings_changed">ajuste modificado</string>

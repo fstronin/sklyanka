@@ -7,37 +7,19 @@ import ru.stohastika.sklyanka.domain.reminder.ReminderChannel
 import ru.stohastika.sklyanka.domain.reminder.ReminderEvent
 import ru.stohastika.sklyanka.domain.reminder.ReminderLogEntry
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderJournal
-import ru.stohastika.sklyanka.domain.time.TimeSource
-import java.time.Duration
 import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** Пределы хранения журнала срабатываний (НФТ-51). */
-object ReminderLogRetention {
-    /** Не меньше 30 суток: жалоба «напоминание не пришло на прошлой неделе» разбираема. */
-    const val KEEP_DAYS: Long = 30L
-
-    /**
-     * Верхняя граница по числу записей.
-     *
-     * НФТ-51 задаёт предел в двух мегабайтах, а считать байты таблицы дорого и
-     * неустойчиво. Число подобрано по составу записи: одна запись — порядка 200 байт,
-     * значит 8 000 записей укладываются в полтора мегабайта с запасом, а срабатываний
-     * при восьми приёмах в сутки столько набегает за два года.
-     */
-    const val KEEP_RECORDS: Int = 8_000
-}
-
 /**
  * Журнал срабатываний поверх той же базы, что и данные.
  *
- * Момент записи приходит из домена (он же считает отклонение), а подрезка берёт время
- * из подменяемого источника: иначе вытеснение по возрасту непроверяемо (НФТ-48).
+ * Времени здесь нет: пороги хранения и момент ротации считает домен
+ * (`RotateReminderJournalUseCase`), а хранилище умеет только то, что умеет SQL, —
+ * удалить старше момента, вытеснить старейших снаружи окна и оценить объём.
  */
 @Singleton
-class RoomReminderJournal @Inject constructor(private val dao: ReminderLogDao, private val time: TimeSource) :
-    ReminderJournal {
+class RoomReminderJournal @Inject constructor(private val dao: ReminderLogDao) : ReminderJournal {
 
     override suspend fun record(entry: ReminderLogEntry) {
         dao.insert(entry.toEntity())
@@ -91,10 +73,13 @@ class RoomReminderJournal @Inject constructor(private val dao: ReminderLogDao, p
     override suspend fun firedIntakeIds(since: Instant): Set<String> =
         dao.firedIntakeIds(ReminderEvent.FIRED.name, since.toEpochMilli()).toSet()
 
-    override suspend fun prune(keepDays: Long, keepRecords: Int) {
-        dao.pruneOlderThan(time.now().minus(Duration.ofDays(keepDays)).toEpochMilli())
-        dao.pruneToLast(keepRecords)
-    }
+    /** Оценка объёма — деталь хранения: домен сравнивает её с потолком (НФТ-51). */
+    override suspend fun storedBytes(): Long = dao.storedBytes()
+
+    override suspend fun deleteOlderThan(before: Instant): Int = dao.deleteOlderThan(before.toEpochMilli())
+
+    override suspend fun deleteOldest(protectedSince: Instant, limit: Int): Int =
+        dao.deleteOldest(protectedSince.toEpochMilli(), limit)
 
     /**
      * Незнакомый вид записи не роняет чтение, а выпадает из выборки (МГ-6): журнал,

@@ -135,6 +135,7 @@
     <string name="diagnostics_event_snoozed">aufgeschoben</string>
     <string name="diagnostics_event_deferred">verzögerte Auslösung</string>
     <string name="diagnostics_event_rescheduled">Plan neu aufgebaut</string>
+    <string name="diagnostics_event_rotated">Protokollkürzung</string>
     <string name="diagnostics_event_missed_sweep">als ausgelassen vermerkt</string>
     <string name="diagnostics_event_outage">Erinnerungsausfall</string>
     <string name="diagnostics_event_settings_changed">Einstellung geändert</string>

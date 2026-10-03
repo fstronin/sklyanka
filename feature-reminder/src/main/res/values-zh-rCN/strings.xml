@@ -135,6 +135,7 @@
     <string name="diagnostics_event_snoozed">已推迟</string>
     <string name="diagnostics_event_deferred">延迟触发</string>
     <string name="diagnostics_event_rescheduled">计划已重建</string>
+    <string name="diagnostics_event_rotated">记录精简</string>
     <string name="diagnostics_event_missed_sweep">转为漏服</string>
     <string name="diagnostics_event_outage">提醒中断</string>
     <string name="diagnostics_event_settings_changed">设置已更改</string>

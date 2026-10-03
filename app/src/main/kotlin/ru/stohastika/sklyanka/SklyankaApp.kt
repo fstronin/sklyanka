@@ -10,14 +10,13 @@ import kotlinx.coroutines.launch
 import ru.stohastika.sklyanka.analytics.AnalyticsBootstrap
 import ru.stohastika.sklyanka.analytics.ExperimentsBootstrap
 import ru.stohastika.sklyanka.data.log.LogRetention
-import ru.stohastika.sklyanka.data.reminder.ReminderLogRetention
 import ru.stohastika.sklyanka.data.repository.ProfileBootstrap
 import ru.stohastika.sklyanka.domain.log.OperationLog
 import ru.stohastika.sklyanka.domain.reminder.RescheduleReason
-import ru.stohastika.sklyanka.domain.reminder.port.ReminderJournal
 import ru.stohastika.sklyanka.platform.AppForegroundTracker
 import ru.stohastika.sklyanka.platform.notification.ReminderChannels
 import ru.stohastika.sklyanka.reminder.DirectBootTraceDrain
+import ru.stohastika.sklyanka.reminder.ReminderLogRotationTrigger
 import ru.stohastika.sklyanka.reminder.ReminderOutageAnnouncer
 import ru.stohastika.sklyanka.reminder.ReminderPlanningTrigger
 import ru.stohastika.sklyanka.startup.StartupSeed
@@ -33,7 +32,9 @@ import javax.inject.Inject
  * каждом старте, а не только при создании базы, — базу мог создать перенос данных.
  *
  * Здесь же подрезается журнал операций. Подрезка идёт отдельной операцией и вне
- * транзакции: она не имеет права откатить отметку приёма.
+ * транзакции: она не имеет права откатить отметку приёма. Ротация журнала срабатываний
+ * (ПМ-30) только планируется здесь и выполняется отдельной корутиной — вне критического
+ * пути запуска.
  *
  * И здесь же пополняется окно приёмов (SKL-06): приложение на EMUI выгружается, и старт —
  * единственное событие, которое случается наверняка. Остальные события перепланирования
@@ -68,8 +69,14 @@ class SklyankaApp : Application() {
     @Inject
     lateinit var reminderChannels: ReminderChannels
 
+    /**
+     * Ротация журнала срабатываний (SKL-65, ПМ-30).
+     *
+     * Запускается здесь и отдельной корутиной: уборка не имеет права задерживать
+     * ни запуск, ни пересборку будильников и не поднимает ни службы, ни уведомлений.
+     */
     @Inject
-    lateinit var reminderJournal: ReminderJournal
+    lateinit var reminderLogRotation: ReminderLogRotationTrigger
 
     /**
      * Перенос следов locked-фазы в журнал при старте (SKL-87).
@@ -166,7 +173,7 @@ class SklyankaApp : Application() {
             // над содержимым при входе, а не только записью в журнал (НАП-38).
             outageAnnouncer.refresh()
             operationLog.prune(LogRetention.KEEP_DAYS, LogRetention.KEEP_RECORDS)
-            reminderJournal.prune(ReminderLogRetention.KEEP_DAYS, ReminderLogRetention.KEEP_RECORDS)
+            reminderLogRotation.schedule()
         }
     }
 

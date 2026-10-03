@@ -187,6 +187,7 @@
     <string name="diagnostics_event_snoozed">отложено</string>
     <string name="diagnostics_event_deferred">отложенное срабатывание</string>
     <string name="diagnostics_event_rescheduled">план пересобран</string>
+    <string name="diagnostics_event_rotated">подрезка журнала</string>
     <string name="diagnostics_event_missed_sweep">переведено в пропущенные</string>
     <string name="diagnostics_event_outage">перерыв в напоминаниях</string>
     <string name="diagnostics_event_settings_changed">изменена настройка</string>

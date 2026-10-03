@@ -22,10 +22,12 @@ import ru.stohastika.sklyanka.domain.reminder.ReminderChannel
 import ru.stohastika.sklyanka.domain.reminder.ReminderEvent
 import ru.stohastika.sklyanka.domain.reminder.ReminderIntake
 import ru.stohastika.sklyanka.domain.reminder.ReminderLogEntry
+import ru.stohastika.sklyanka.domain.reminder.ReminderLogRotation
 import ru.stohastika.sklyanka.domain.reminder.ReminderSlot
 import ru.stohastika.sklyanka.domain.reminder.RescheduleOutcome
 import ru.stohastika.sklyanka.domain.reminder.RescheduleReason
 import ru.stohastika.sklyanka.domain.reminder.RescheduleRemindersUseCase
+import ru.stohastika.sklyanka.domain.reminder.RotateReminderJournalUseCase
 import ru.stohastika.sklyanka.domain.reminder.SnoozeReminderUseCase
 import ru.stohastika.sklyanka.domain.reminder.StartDeliveryCheckUseCase
 import ru.stohastika.sklyanka.domain.reminder.SweepAtDayBoundaryUseCase
@@ -231,6 +233,30 @@ class ScenarioReminders(
             environment = environmentSource,
             time = clock.time,
         )(reason)
+    }
+
+    /**
+     * Ротация журнала срабатываний (SKL-65): тот же сценарий домена, что зовёт
+     * приложение при старте; правила ПМ-30 проверяются, а не пересказываются шагом.
+     */
+    fun rotateJournal(): ReminderLogRotation? = runBlocking {
+        RotateReminderJournalUseCase(journal = journal, time = clock.time)()
+    }
+
+    /** Все записи журнала как они лежат: сценарию ротации нужен весь список, а не последние N. */
+    fun journalEntries(): List<ReminderLogEntry> = (journal as InMemoryReminderJournal).entries.toList()
+
+    /** Оценка объёма журнала — та же мера, которой пользуется правило ротации (ПМ-30). */
+    fun journalStoredBytes(): Long = runBlocking { journal.storedBytes() }
+
+    /**
+     * Данность Предыстории: журнал уже что-то накопил (SKL-65).
+     *
+     * Записи кладутся напрямую, без боевого пути: сценарию нужен журнал заданного
+     * возраста и объёма, а не прожитая история срабатываний.
+     */
+    fun seedJournal(entries: List<ReminderLogEntry>) {
+        runBlocking { entries.forEach { journal.record(it) } }
     }
 
     /**
@@ -634,7 +660,48 @@ private class InMemoryReminderJournal : ReminderJournal {
         .mapNotNull { it.intakeId }
         .toSet()
 
-    override suspend fun prune(keepDays: Long, keepRecords: Int) = Unit
+    /**
+     * Ротация по-настоящему, а не no-op: сценарии SKL-65 проверяют правило ПМ-30,
+     * и журнал, который «делает вид», проверял бы сам себя.
+     */
+    override suspend fun storedBytes(): Long = entries.sumOf { it.estimatedBytes() }
+
+    override suspend fun deleteOlderThan(before: Instant): Int {
+        val removed = entries.count { it.occurredAt.isBefore(before) }
+        entries.removeAll { it.occurredAt.isBefore(before) }
+        return removed
+    }
+
+    override suspend fun deleteOldest(protectedSince: Instant, limit: Int): Int {
+        val victims = entries.withIndex()
+            .filter { it.value.occurredAt.isBefore(protectedSince) }
+            .sortedBy { it.value.occurredAt }
+            .take(limit)
+            .map { it.index }
+            .toSet()
+        if (victims.isEmpty()) return 0
+        val kept = entries.filterIndexed { index, _ -> index !in victims }
+        val removed = entries.size - kept.size
+        entries.clear()
+        entries += kept
+        return removed
+    }
+
+    /**
+     * Оценка цены записи: слагаемые те же, что у SQL-оценки `RoomReminderJournal`
+     * (`TDD.md §8`), в упрощённом виде. Приёмке важно, чтобы объём рос с данными
+     * и падал после удаления, а не точная байтовая величина.
+     */
+    private fun ReminderLogEntry.estimatedBytes(): Long {
+        var bytes = ROW_OVERHEAD_BYTES.toLong()
+        bytes += (intakeId?.length ?: 0) + (medicationId?.length ?: 0) + (profileId?.length ?: 0)
+        bytes += (reason?.length ?: 0) + (watchResult?.length ?: 0) + (channel?.id?.length ?: 0)
+        return bytes
+    }
+
+    private companion object {
+        const val ROW_OVERHEAD_BYTES = 48
+    }
 }
 
 /**

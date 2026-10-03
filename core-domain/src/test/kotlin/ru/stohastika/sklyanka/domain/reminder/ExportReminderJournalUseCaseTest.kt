@@ -171,10 +171,16 @@ class ExportReminderJournalUseCaseTest {
 
     @Test
     fun `records older than the retained window stay out`() = runTest {
-        firing(at = now.minusSeconds(DAY * 31))
-        firing(at = now.minusSeconds(DAY * 29))
+        firing(at = now.minusSeconds(DAY * 91))
+        firing(at = now.minusSeconds(DAY * 40))
 
-        assertEquals(1, export.document().records, "the export covers the window the journal must keep")
+        val document = export.document()
+
+        assertEquals(1, document.records, "the export covers the window the journal must keep")
+        assertTrue(
+            document.content.contains("2026-08-16T09:00:00Z"),
+            "the forty-day record must be in the file: the export window is not thirty days anymore",
+        )
     }
 
     @Test

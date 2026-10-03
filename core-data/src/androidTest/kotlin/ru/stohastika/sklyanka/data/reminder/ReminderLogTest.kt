@@ -10,6 +10,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -23,6 +24,9 @@ import ru.stohastika.sklyanka.domain.reminder.ReminderChannel
 import ru.stohastika.sklyanka.domain.reminder.ReminderEnvironment
 import ru.stohastika.sklyanka.domain.reminder.ReminderEvent
 import ru.stohastika.sklyanka.domain.reminder.ReminderLogEntry
+import ru.stohastika.sklyanka.domain.reminder.ReminderLogRetention
+import ru.stohastika.sklyanka.domain.reminder.ReminderLogRotation
+import ru.stohastika.sklyanka.domain.reminder.RotateReminderJournalUseCase
 import ru.stohastika.sklyanka.domain.time.FixedTimeSource
 import java.time.Duration
 import java.time.Instant
@@ -48,7 +52,7 @@ class ReminderLogTest {
             ApplicationProvider.getApplicationContext(),
             SklyankaDatabase::class.java,
         ).build()
-        journal = RoomReminderJournal(database.reminderLogDao(), clock)
+        journal = RoomReminderJournal(database.reminderLogDao())
     }
 
     @After
@@ -149,40 +153,103 @@ class ReminderLogTest {
     }
 
     @Test
-    fun recordsOlderThanTheRetentionPeriodAreEvicted() = runTest {
+    fun recordsOlderThanTheAgeLimitAreEvicted() = runTest {
         journal.record(
             ReminderLogEntry(
-                occurredAt = NOW.minus(Duration.ofDays(31)),
+                occurredAt = NOW.minus(Duration.ofDays(91)),
                 event = ReminderEvent.SHOWN,
                 intakeId = "old",
             ),
         )
-        journal.record(ReminderLogEntry(occurredAt = NOW, event = ReminderEvent.SHOWN, intakeId = "fresh"))
+        journal.record(
+            ReminderLogEntry(
+                occurredAt = NOW.minus(Duration.ofDays(89)),
+                event = ReminderEvent.SHOWN,
+                intakeId = "kept",
+            ),
+        )
 
-        journal.prune(ReminderLogRetention.KEEP_DAYS, ReminderLogRetention.KEEP_RECORDS)
+        val rotation = requireNotNull(rotate())
 
-        assertEquals(listOf("fresh"), journal.recent(limit = 10).map { it.intakeId })
+        assertEquals(1, rotation.removedByAge)
+        assertEquals(listOf("kept"), shownIntakeIds())
     }
 
     @Test
-    fun theNumberOfRecordsIsBounded() = runTest {
-        val keep = 5
-        repeat(keep * 2) { index ->
-            journal.record(
-                ReminderLogEntry(
-                    occurredAt = NOW.plusSeconds(index.toLong()),
-                    event = ReminderEvent.SHOWN,
-                    intakeId = "intake-$index",
-                ),
-            )
+    fun aRecordExactlyAtTheAgeLimitSurvives() = runTest {
+        journal.record(
+            ReminderLogEntry(
+                occurredAt = NOW.minus(ReminderLogRetention.MAX_AGE),
+                event = ReminderEvent.SHOWN,
+                intakeId = "at-limit",
+            ),
+        )
+
+        assertNull("strictly older than 90 days is evicted, exactly 90 is not", rotate())
+        assertEquals(listOf("at-limit"), shownIntakeIds())
+    }
+
+    /**
+     * Потолок объёма — байты, а не число записей (ПМ-30, п. 1): политика с малым
+     * потолком проверяет тот же самый запрос, которым живёт продукт.
+     */
+    @Test
+    fun theVolumeCapEvictsTheOldestAndKeepsTheProtectedWindow() = runTest {
+        val retention = ReminderLogRetention(maxBytes = 4_000L)
+        val protectedIds = (1..5).map { "protected-$it" }
+        protectedIds.forEach { id ->
+            journal.record(paddedEntry(daysAgo = 1, intakeId = id))
+        }
+        repeat(40) { index ->
+            journal.record(paddedEntry(daysAgo = 8L + index % 20, intakeId = "old-$index"))
         }
 
-        journal.prune(keepDays = ReminderLogRetention.KEEP_DAYS, keepRecords = keep)
+        val rotation = requireNotNull(rotate(retention))
 
-        val stored = journal.recent(limit = 100)
-        assertEquals(keep, stored.size)
-        assertTrue("the newest records must survive", stored.first().intakeId == "intake-9")
+        assertTrue("the volume cap must evict something", rotation.removedBySize > 0)
+        assertTrue("the journal must fit the cap", journal.storedBytes() <= retention.maxBytes)
+        val kept = shownIntakeIds()
+        protectedIds.forEach { id ->
+            assertTrue("the protected record $id must stay", kept.contains(id))
+        }
+        assertTrue("only the oldest records may go", kept.none { it.startsWith("old-") })
     }
+
+    /**
+     * Неприкосновенное окно важнее потолка: если журнал в последние 7 суток сам больше
+     * двух мегабайт, ротация не удаляет ничего (ПМ-30, п. 2).
+     */
+    @Test
+    fun theProtectedWindowIsNeverTrimmedEvenOverTheCap() = runTest {
+        val retention = ReminderLogRetention(maxBytes = 200L)
+        repeat(10) { index -> journal.record(paddedEntry(daysAgo = 1, intakeId = "protected-$index")) }
+
+        assertNull("there is nothing outside the window to remove", rotate(retention))
+        assertEquals(10, shownIntakeIds().size)
+        assertTrue("the window outweighs the cap", journal.storedBytes() > retention.maxBytes)
+    }
+
+    /** Оценка объёма растёт вместе с журналом — иначе потолок не имел бы меры. */
+    @Test
+    fun theStoredBytesEstimateGrowsWithTheJournal() = runTest {
+        val empty = journal.storedBytes()
+        journal.record(paddedEntry(daysAgo = 1, intakeId = "grown"))
+
+        assertTrue(journal.storedBytes() > empty)
+    }
+
+    private suspend fun rotate(retention: ReminderLogRetention = ReminderLogRetention.DEFAULT): ReminderLogRotation? =
+        RotateReminderJournalUseCase(journal, clock, retention)()
+
+    private fun paddedEntry(daysAgo: Long, intakeId: String): ReminderLogEntry = ReminderLogEntry(
+        occurredAt = NOW.minus(Duration.ofDays(daysAgo)),
+        event = ReminderEvent.SHOWN,
+        intakeId = intakeId,
+        reason = "x".repeat(80),
+    )
+
+    private suspend fun shownIntakeIds(): List<String> =
+        journal.recent(limit = 1_000).filter { it.event == ReminderEvent.SHOWN }.mapNotNull { it.intakeId }
 
     /**
      * Восстановление пишется один раз на факт (SKL-47).

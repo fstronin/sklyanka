@@ -135,6 +135,7 @@
     <string name="diagnostics_event_snoozed">snoozed</string>
     <string name="diagnostics_event_deferred">deferred firing</string>
     <string name="diagnostics_event_rescheduled">plan rebuilt</string>
+    <string name="diagnostics_event_rotated">journal trim</string>
     <string name="diagnostics_event_missed_sweep">moved to missed</string>
     <string name="diagnostics_event_outage">reminder outage</string>
     <string name="diagnostics_event_settings_changed">setting changed</string>

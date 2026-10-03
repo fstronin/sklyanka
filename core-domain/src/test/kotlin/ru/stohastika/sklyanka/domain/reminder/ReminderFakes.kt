@@ -278,7 +278,36 @@ internal class RecordingReminderJournal : ReminderJournal {
         .mapNotNull { it.intakeId }
         .toSet()
 
-    override suspend fun prune(keepDays: Long, keepRecords: Int) = Unit
+    /**
+     * Оценка объёма в памяти: тесты задают её ценой записи, а не колонками.
+     *
+     * Хранилище настоящего журнала меряет байты по строке (`TDD.md §8`); фейку для
+     * проверки самого правила достаточно счётной меры, которой удобно управлять.
+     */
+    var bytesPerEntry: Long = 200L
+
+    override suspend fun storedBytes(): Long = entries.size.toLong() * bytesPerEntry
+
+    override suspend fun deleteOlderThan(before: Instant): Int {
+        val removed = entries.count { it.occurredAt.isBefore(before) }
+        entries.removeAll { it.occurredAt.isBefore(before) }
+        return removed
+    }
+
+    override suspend fun deleteOldest(protectedSince: Instant, limit: Int): Int {
+        val victims = entries.withIndex()
+            .filter { it.value.occurredAt.isBefore(protectedSince) }
+            .sortedBy { it.value.occurredAt }
+            .take(limit)
+            .map { it.index }
+            .toSet()
+        if (victims.isEmpty()) return 0
+        val kept = entries.filterIndexed { index, _ -> index !in victims }
+        val removed = entries.size - kept.size
+        entries.clear()
+        entries.addAll(kept)
+        return removed
+    }
 }
 
 /** Настройки напоминания в памяти. Значения по умолчанию — те же, что в продукте. */

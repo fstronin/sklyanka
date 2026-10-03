@@ -39,7 +39,11 @@ class DirectBootTraceDrainTest {
         override suspend fun last(event: ReminderEvent): ReminderLogEntry? = entries.lastOrNull { it.event == event }
 
         override suspend fun firedIntakeIds(since: Instant): Set<String> = emptySet()
-        override suspend fun prune(keepDays: Long, keepRecords: Int) = Unit
+        override suspend fun storedBytes(): Long = 0
+
+        override suspend fun deleteOlderThan(before: Instant): Int = 0
+
+        override suspend fun deleteOldest(protectedSince: Instant, limit: Int): Int = 0
     }
 
     private val now: Instant = Instant.parse("2026-09-27T02:05:00Z")

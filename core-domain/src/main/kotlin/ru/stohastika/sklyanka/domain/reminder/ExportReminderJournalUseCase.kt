@@ -4,7 +4,6 @@ import ru.stohastika.sklyanka.domain.reminder.port.ReminderJournal
 import ru.stohastika.sklyanka.domain.time.TimeSource
 import ru.stohastika.sklyanka.domain.transfer.ExportTarget
 import ru.stohastika.sklyanka.domain.transfer.TransferFiles
-import java.time.Duration
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -88,7 +87,7 @@ class ExportReminderJournalUseCase(
 
     /** Содержимое целиком: собирается до открытия цели, чтобы полуфайла не появилось. */
     suspend fun document(): ReminderJournalDocument {
-        val entries = journal.since(time.now().minus(WINDOW))
+        val entries = journal.since(time.now().minus(ReminderLogRetention.MAX_AGE))
         return ReminderJournalDocument(
             fileName = fileName(),
             content = ReminderJournalCsv.of(entries),
@@ -114,14 +113,6 @@ class ExportReminderJournalUseCase(
     }
 
     private companion object {
-        /**
-         * Глубина выгрузки — 30 суток.
-         *
-         * Столько журнал обязан хранить (НФТ-51), и ровно столько выгрузка отдаёт:
-         * обещать больше нечем, а отдавать меньше незачем.
-         */
-        val WINDOW: Duration = Duration.ofDays(30)
-
         /** Тот же двукратный запас по месту, что у выгрузки данных (ПЕР-31). */
         const val SPACE_MARGIN = 2L
     }

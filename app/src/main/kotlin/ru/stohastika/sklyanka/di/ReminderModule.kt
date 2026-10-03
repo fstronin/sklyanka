@@ -18,6 +18,7 @@ import ru.stohastika.sklyanka.domain.reminder.HandleFiredReminderUseCase
 import ru.stohastika.sklyanka.domain.reminder.ReadReminderReliabilityUseCase
 import ru.stohastika.sklyanka.domain.reminder.RecordReminderOutageUseCase
 import ru.stohastika.sklyanka.domain.reminder.RescheduleRemindersUseCase
+import ru.stohastika.sklyanka.domain.reminder.RotateReminderJournalUseCase
 import ru.stohastika.sklyanka.domain.reminder.SnoozeReminderUseCase
 import ru.stohastika.sklyanka.domain.reminder.SweepAtDayBoundaryUseCase
 import ru.stohastika.sklyanka.domain.reminder.port.AlarmGateway
@@ -49,6 +50,7 @@ import ru.stohastika.sklyanka.platform.reminder.AlarmManagerGateway
 import ru.stohastika.sklyanka.platform.reminder.AndroidReminderSettingsFixer
 import ru.stohastika.sklyanka.platform.reminder.BuildMeasurementMode
 import ru.stohastika.sklyanka.reminder.DeliveryCheckScenarios
+import ru.stohastika.sklyanka.reminder.ReminderJournalRotation
 import ru.stohastika.sklyanka.reminder.ReminderOutageDetector
 import ru.stohastika.sklyanka.reminder.ReminderPlanningTrigger
 import javax.inject.Qualifier
@@ -269,6 +271,24 @@ object ReminderModule {
         files: TransferFiles,
         time: TimeSource,
     ): ExportReminderJournalUseCase = ExportReminderJournalUseCase(journal = journal, files = files, time = time)
+
+    /**
+     * Ротация журнала срабатываний (SKL-65, ПМ-30).
+     *
+     * Пороги — продуктовые (`ReminderLogRetention.DEFAULT`): 90 суток, потолок 2 МБ,
+     * последние 7 суток неприкосновенны. Хранилище даёт примитивы, правило считает
+     * домен и проверяется тестом на JVM.
+     */
+    @Provides
+    @Singleton
+    fun provideRotateReminderJournal(journal: ReminderJournal, time: TimeSource): RotateReminderJournalUseCase =
+        RotateReminderJournalUseCase(journal = journal, time = time)
+
+    /** Операция ротации для триггера запуска: домен, а не планировщик. */
+    @Provides
+    @Singleton
+    fun provideJournalRotation(rotate: RotateReminderJournalUseCase): ReminderJournalRotation =
+        ReminderJournalRotation { rotate() }
 
     /**
      * Куда ведёт «Пройти настройку заново» с экрана диагностики (НАП-21).

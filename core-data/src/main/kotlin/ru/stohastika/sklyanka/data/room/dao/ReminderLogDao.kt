@@ -56,19 +56,60 @@ abstract class ReminderLogDao {
     abstract suspend fun firedIntakeIds(firedEvent: String, since: Long): List<String>
 
     @Query("DELETE FROM reminder_log WHERE occurred_at < :before")
-    abstract suspend fun pruneOlderThan(before: Long): Int
+    abstract suspend fun deleteOlderThan(before: Long): Int
 
     /**
-     * Вытеснение по числу записей (НФТ-51): всплеск срабатываний иначе съест место
-     * раньше, чем наступит срок хранения.
+     * Вытеснение по объёму (НФТ-51, ПМ-30): старейшие снаружи неприкосновенного окна.
+     *
+     * `occurred_at < :protectedSince` стоит в самом запросе, а не только в домене:
+     * окно неприкосновенно даже при ошибке вызывающего. Ноль удалённых строк означает
+     * «дальше только окно» — и цикл вытеснения останавливается.
      */
     @Query(
         """
-        DELETE FROM reminder_log WHERE id NOT IN
-        (SELECT id FROM reminder_log ORDER BY id DESC LIMIT :keep)
+        DELETE FROM reminder_log WHERE id IN (
+            SELECT id FROM reminder_log
+            WHERE occurred_at < :protectedSince
+            ORDER BY occurred_at ASC, id ASC
+            LIMIT :limit
+        )
         """,
     )
-    abstract suspend fun pruneToLast(keep: Int): Int
+    abstract suspend fun deleteOldest(protectedSince: Long, limit: Int): Int
+
+    /**
+     * Оценка занятого журналом объёма в байтах (НФТ-51, ПМ-30).
+     *
+     * `LENGTH(CAST(x AS BLOB))` — UTF-8-длина текста, а для чисел — длина их десятичной
+     * записи: намеренный перебор против varint, чтобы потолок не оказался превышен
+     * из-за недооценки. Константа 12 — заголовок записи и rowid; перебор по числам
+     * с запасом покрывает и индексные записи, которые построчно не считаются
+     * (`docs/tasks/SKL-65/TDD.md §8`).
+     */
+    @Query(
+        """
+        SELECT CAST(COALESCE(SUM(
+            12
+            + COALESCE(LENGTH(CAST(occurred_at AS BLOB)), 0)
+            + COALESCE(LENGTH(CAST(event AS BLOB)), 0)
+            + COALESCE(LENGTH(CAST(intake_id AS BLOB)), 0)
+            + COALESCE(LENGTH(CAST(medication_id AS BLOB)), 0)
+            + COALESCE(LENGTH(CAST(profile_id AS BLOB)), 0)
+            + COALESCE(LENGTH(CAST(scheduled_at AS BLOB)), 0)
+            + COALESCE(LENGTH(CAST(fired_at AS BLOB)), 0)
+            + COALESCE(LENGTH(CAST(deviation_seconds AS BLOB)), 0)
+            + COALESCE(LENGTH(CAST(channel AS BLOB)), 0)
+            + COALESCE(LENGTH(CAST(delivered AS BLOB)), 0)
+            + COALESCE(LENGTH(CAST(reason AS BLOB)), 0)
+            + COALESCE(LENGTH(CAST(alarms_cancelled AS BLOB)), 0)
+            + COALESCE(LENGTH(CAST(alarms_scheduled AS BLOB)), 0)
+            + COALESCE(LENGTH(CAST(attempt AS BLOB)), 0)
+            + COALESCE(LENGTH(CAST(snooze_minutes AS BLOB)), 0)
+            + COALESCE(LENGTH(CAST(watch_result AS BLOB)), 0)
+        ), 0) AS INTEGER) FROM reminder_log
+        """,
+    )
+    abstract suspend fun storedBytes(): Long
 
     @Query("SELECT COUNT(*) FROM reminder_log")
     abstract suspend fun count(): Int

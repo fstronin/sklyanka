@@ -135,6 +135,7 @@
     <string name="diagnostics_event_snoozed">кейінге қалдырылды</string>
     <string name="diagnostics_event_deferred">кешіктірілген іске қосылу</string>
     <string name="diagnostics_event_rescheduled">жоспар қайта құрылды</string>
+    <string name="diagnostics_event_rotated">журналды қысқарту</string>
     <string name="diagnostics_event_missed_sweep">өткізілгенге ауыстырылды</string>
     <string name="diagnostics_event_outage">еске салғыштар үзілісі</string>
     <string name="diagnostics_event_settings_changed">параметр өзгертілді</string>
