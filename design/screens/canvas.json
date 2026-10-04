@@ -191,6 +191,14 @@
       "title": "Сегодня — плотный день",
       "is_interactive": true,
       "radius": 34
+    },
+    "Diagnostics.dc.html": {
+      "x": 0,
+      "y": 4000,
+      "w": 3400,
+      "h": 3350,
+      "title": "Проверка напоминаний — состояния",
+      "is_interactive": true
     }
   },
   "order": [
@@ -214,7 +222,8 @@
     "SoundPicker.dc.html",
     "DataTransfer.dc.html",
     "MainProfile.dc.html",
-    "MainDense.dc.html"
+    "MainDense.dc.html",
+    "Diagnostics.dc.html"
   ],
   "notes": {
     "t1": {
@@ -237,6 +246,13 @@
       "text": "Остальные экраны и состояния",
       "kind": "title1",
       "maxW": 5090
+    },
+    "t4": {
+      "x": 0,
+      "y": 3700,
+      "text": "Проверка напоминаний — новый первый уровень",
+      "kind": "title1",
+      "maxW": 2980
     }
   },
   "designSystems": []

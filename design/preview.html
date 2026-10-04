@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Склянка — макеты экранов</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&amp;family=Literata:opsz,wght@7..72,400;7..72,600&amp;display=swap">
+<style>
+:root{--bg:#FBF7F1;--text:#241F1B;--muted:#5F564D;--line:#E6DED2;--line-surface:#EFE7DB;--accent:#B4512F;--neutral-soft:#F3EDE3}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'Golos Text',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1420px;margin:0 auto;padding:40px 24px 88px}
+.eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600}
+h1{font-family:'Literata',Georgia,serif;font-size:34px;font-weight:600;letter-spacing:-.01em;margin:12px 0 10px;line-height:1.15}
+.lead{font-size:16px;color:var(--muted);max-width:920px;line-height:1.55;margin:0}
+.note{font-size:12px;color:var(--muted);background:var(--neutral-soft);border-radius:12px;padding:11px 14px;margin-top:16px;max-width:920px;line-height:1.5}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:22px;margin-top:30px}
+.card{display:flex;flex-direction:column;gap:10px;align-items:flex-start}
+.thumb{position:relative;width:260px;height:480px;overflow:hidden;border:1px solid var(--line-surface);border-radius:20px;background:var(--neutral-soft)}
+.thumb iframe{position:absolute;top:0;left:0;width:390px;height:1000px;border:0;transform:scale(.66667);transform-origin:top left;pointer-events:none;background:var(--bg)}
+.card--sheet{grid-column:1/-1}
+.thumb--sheet{position:relative;width:100%;max-width:1372px;aspect-ratio:3400/3350;overflow:hidden;border:1px solid var(--line-surface);border-radius:20px;background:var(--neutral-soft)}
+.thumb--sheet iframe{position:absolute;top:0;left:0;width:3400px;height:3350px;border:0;transform:scale(.4);transform-origin:top left;pointer-events:none;background:var(--bg)}
+.hit{position:absolute;inset:0;border-radius:20px}
+.hit:hover{outline:2px solid var(--accent);outline-offset:-2px}
+.cap-name{font-size:15px;font-weight:600;color:var(--text);text-decoration:none}
+.cap-name:hover{color:var(--accent)}
+.cap-file{display:block;font-size:12px;color:var(--muted);margin-top:3px}
+.badge{display:inline-block;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#FFFFFF;background:var(--accent);border-radius:999px;padding:2px 8px;margin-left:8px;vertical-align:2px}
+.foot{margin-top:44px;font-size:13px;color:var(--muted);max-width:920px;line-height:1.6}
+.foot code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;background:var(--neutral-soft);border-radius:5px;padding:1px 5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Склянка · приём лекарств · Android/EMUI</div>
+  <h1>Макеты экранов</h1>
+  <p class="lead">Все экраны приложения одним листом: миниатюра показывает верх экрана, клик по ней
+    или по названию открывает файл целиком. Макеты нарисованы в ширину 390&nbsp;px и используют
+    Literata и Golos&nbsp;Text.</p>
+  <div class="note">Миниатюры — это встроенные страницы макетов. Интерактивный DC-рантайм
+    (<code>support.js</code>) в репозиторий не входит, поэтому в статическом просмотре
+    подстановка акцентного цвета профиля может не применяться. Полный интерактивный вид —
+    в редакторе DC. Лист состояний «Проверка напоминаний» пересобран: 12 состояний одного
+    экрана как один путь — вердикт → «Разрешения» → «Проверка доставки» → «Напоминания» →
+    «Сообщить о проблеме».</div>
+  <div class="grid">
+      <div class="card">
+        <div class="thumb">
+          <iframe src="screens/Main.dc.html" title="Сегодня" scrolling="no" loading="lazy"></iframe>
+          <a class="hit" href="screens/Main.dc.html" target="_blank" rel="noopener" aria-label="Открыть макет: Сегодня"></a>
+        </div>
+        <div class="cap">
+          <a class="cap-name" href="screens/Main.dc.html" target="_blank" rel="noopener">Сегодня</a>
+          <span class="cap-file">Главный экран приёмов · Main.dc.html</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="thumb">
+          <iframe src="screens/Meds.dc.html" title="Лекарства" scrolling="no" loading="lazy"></iframe>
+          <a class="hit" href="screens/Meds.dc.html" target="_blank" rel="noopener" aria-label="Открыть макет: Лекарства"></a>
+        </div>
+        <div class="cap">
+          <a class="cap-name" href="screens/Meds.dc.html" target="_blank" rel="noopener">Лекарства</a>
+          <span class="cap-file">Список лекарств · Meds.dc.html</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="thumb">
+          <iframe src="screens/AddMed.dc.html" title="Новое лекарство" scrolling="no" loading="lazy"></iframe>
+          <a class="hit" href="screens/AddMed.dc.html" target="_blank" rel="noopener" aria-label="Открыть макет: Новое лекарство"></a>
+        </div>
+        <div class="cap">
+          <a class="cap-name" href="screens/AddMed.dc.html" target="_blank" rel="noopener">Новое лекарство</a>
+          <span class="cap-file">Форма, длинный экран · AddMed.dc.html</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="thumb">
+          <iframe src="screens/MedCard.dc.html" title="Карточка лекарства" scrolling="no" loading="lazy"></iframe>
+          <a class="hit" href="screens/MedCard.dc.html" target="_blank" rel="noopener" aria-label="Открыть макет: Карточка лекарства"></a>
+        </div>
+        <div class="cap">
+          <a class="cap-name" href="screens/MedCard.dc.html" target="_blank" rel="noopener">Карточка лекарства</a>
+          <span class="cap-file">MedCard.dc.html</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="thumb">
+          <iframe src="screens/Reminder.dc.html" title="Напоминание" scrolling="no" loading="lazy"></iframe>
+          <a class="hit" href="screens/Reminder.dc.html" target="_blank" rel="noopener" aria-label="Открыть макет: Напоминание"></a>
+        </div>
+        <div class="cap">
+          <a class="cap-name" href="screens/Reminder.dc.html" target="_blank" rel="noopener">Напоминание</a>
+          <span class="cap-file">Тёмная среда · Reminder.dc.html</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="thumb">
+          <iframe src="screens/Watch.dc.html" title="Часы" scrolling="no" loading="lazy"></iframe>
+          <a class="hit" href="screens/Watch.dc.html" target="_blank" rel="noopener" aria-label="Открыть макет: Часы"></a>
+        </div>
+        <div class="cap">
+          <a class="cap-name" href="screens/Watch.dc.html" target="_blank" rel="noopener">Часы</a>
+          <span class="cap-file">Шаблон Wear Engine · Watch.dc.html</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="thumb">
+          <iframe src="screens/SklyankaMark.dc.html" title="Знак — донце склянки" scrolling="no" loading="lazy"></iframe>
+          <a class="hit" href="screens/SklyankaMark.dc.html" target="_blank" rel="noopener" aria-label="Открыть макет: Знак — донце склянки"></a>
+        </div>
+        <div class="cap">
+          <a class="cap-name" href="screens/SklyankaMark.dc.html" target="_blank" rel="noopener">Знак — донце склянки</a>
+          <span class="cap-file">SklyankaMark.dc.html</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="thumb">
+          <iframe src="screens/SklyankaIcon.dc.html" title="Иконка" scrolling="no" loading="lazy"></iframe>
+          <a class="hit" href="screens/SklyankaIcon.dc.html" target="_blank" rel="noopener" aria-label="Открыть макет: Иконка"></a>
+        </div>
+        <div class="cap">
+          <a class="cap-name" href="screens/SklyankaIcon.dc.html" target="_blank" rel="noopener">Иконка</a>
+          <span class="cap-file">Тёмная и светлая · SklyankaIcon.dc.html</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="thumb">
+          <iframe src="screens/SklyankaLockup.dc.html" title="Логотип с названием" scrolling="no" loading="lazy"></iframe>
+          <a class="hit" href="screens/SklyankaLockup.dc.html" target="_blank" rel="noopener" aria-label="Открыть макет: Логотип с названием"></a>
+        </div>
+        <div class="cap">
+          <a class="cap-name" href="screens/SklyankaLockup.dc.html" target="_blank" rel="noopener">Логотип с названием</a>
+          <span class="cap-file">SklyankaLockup.dc.html</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="thumb">
+          <iframe src="screens/SklyankaScale.dc.html" title="Плоская редукция" scrolling="no" loading="lazy"></iframe>
+          <a class="hit" href="screens/SklyankaScale.dc.html" target="_blank" rel="noopener" aria-label="Открыть макет: Плоская редукция"></a>
+        </div>
+        <div class="cap">
+          <a class="cap-name" href="screens/SklyankaScale.dc.html" target="_blank" rel="noopener">Плоская редукция</a>
+          <span class="cap-file">Мелкие размеры · SklyankaScale.dc.html</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="thumb">
+          <iframe src="screens/Splash.dc.html" title="Заставка" scrolling="no" loading="lazy"></iframe>
+          <a class="hit" href="screens/Splash.dc.html" target="_blank" rel="noopener" aria-label="Открыть макет: Заставка"></a>
+        </div>
+        <div class="cap">
+          <a class="cap-name" href="screens/Splash.dc.html" target="_blank" rel="noopener">Заставка</a>
+          <span class="cap-file">Splash.dc.html</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="thumb">
+          <iframe src="screens/Onboarding.dc.html" title="Разрешения EMUI / Настроить надёжность" scrolling="no" loading="lazy"></iframe>
+          <a class="hit" href="screens/Onboarding.dc.html" target="_blank" rel="noopener" aria-label="Открыть макет: Разрешения EMUI / Настроить надёжность"></a>
+        </div>
+        <div class="cap">
+          <a class="cap-name" href="screens/Onboarding.dc.html" target="_blank" rel="noopener">Разрешения EMUI / Настроить надёжность</a>
+          <span class="cap-file">Onboarding.dc.html</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="thumb">
+          <iframe src="screens/WatchSetup.dc.html" title="Подключение часов" scrolling="no" loading="lazy"></iframe>
+          <a class="hit" href="screens/WatchSetup.dc.html" target="_blank" rel="noopener" aria-label="Открыть макет: Подключение часов"></a>
+        </div>
+        <div class="cap">
+          <a class="cap-name" href="screens/WatchSetup.dc.html" target="_blank" rel="noopener">Подключение часов</a>
+          <span class="cap-file">WatchSetup.dc.html</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="thumb">
+          <iframe src="screens/Archive.dc.html" title="Архив" scrolling="no" loading="lazy"></iframe>
+          <a class="hit" href="screens/Archive.dc.html" target="_blank" rel="noopener" aria-label="Открыть макет: Архив"></a>
+        </div>
+        <div class="cap">
+          <a class="cap-name" href="screens/Archive.dc.html" target="_blank" rel="noopener">Архив</a>
+          <span class="cap-file">Archive.dc.html</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="thumb">
+          <iframe src="screens/History.dc.html" title="История приёмов" scrolling="no" loading="lazy"></iframe>
+          <a class="hit" href="screens/History.dc.html" target="_blank" rel="noopener" aria-label="Открыть макет: История приёмов"></a>
+        </div>
+        <div class="cap">
+          <a class="cap-name" href="screens/History.dc.html" target="_blank" rel="noopener">История приёмов</a>
+          <span class="cap-file">History.dc.html</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="thumb">
+          <iframe src="screens/Settings.dc.html" title="Настройки" scrolling="no" loading="lazy"></iframe>
+          <a class="hit" href="screens/Settings.dc.html" target="_blank" rel="noopener" aria-label="Открыть макет: Настройки"></a>
+        </div>
+        <div class="cap">
+          <a class="cap-name" href="screens/Settings.dc.html" target="_blank" rel="noopener">Настройки</a>
+          <span class="cap-file">Settings.dc.html</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="thumb">
+          <iframe src="screens/Empty.dc.html" title="Пустое состояние" scrolling="no" loading="lazy"></iframe>
+          <a class="hit" href="screens/Empty.dc.html" target="_blank" rel="noopener" aria-label="Открыть макет: Пустое состояние"></a>
+        </div>
+        <div class="cap">
+          <a class="cap-name" href="screens/Empty.dc.html" target="_blank" rel="noopener">Пустое состояние</a>
+          <span class="cap-file">Empty.dc.html</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="thumb">
+          <iframe src="screens/SoundPicker.dc.html" title="Звук напоминания" scrolling="no" loading="lazy"></iframe>
+          <a class="hit" href="screens/SoundPicker.dc.html" target="_blank" rel="noopener" aria-label="Открыть макет: Звук напоминания"></a>
+        </div>
+        <div class="cap">
+          <a class="cap-name" href="screens/SoundPicker.dc.html" target="_blank" rel="noopener">Звук напоминания</a>
+          <span class="cap-file">Отложено · SoundPicker.dc.html</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="thumb">
+          <iframe src="screens/DataTransfer.dc.html" title="Перенос данных" scrolling="no" loading="lazy"></iframe>
+          <a class="hit" href="screens/DataTransfer.dc.html" target="_blank" rel="noopener" aria-label="Открыть макет: Перенос данных"></a>
+        </div>
+        <div class="cap">
+          <a class="cap-name" href="screens/DataTransfer.dc.html" target="_blank" rel="noopener">Перенос данных</a>
+          <span class="cap-file">DataTransfer.dc.html</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="thumb">
+          <iframe src="screens/MainProfile.dc.html" title="Сегодня — профиль «Мама»" scrolling="no" loading="lazy"></iframe>
+          <a class="hit" href="screens/MainProfile.dc.html" target="_blank" rel="noopener" aria-label="Открыть макет: Сегодня — профиль «Мама»"></a>
+        </div>
+        <div class="cap">
+          <a class="cap-name" href="screens/MainProfile.dc.html" target="_blank" rel="noopener">Сегодня — профиль «Мама»</a>
+          <span class="cap-file">MainProfile.dc.html</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="thumb">
+          <iframe src="screens/MainDense.dc.html" title="Сегодня — плотный день" scrolling="no" loading="lazy"></iframe>
+          <a class="hit" href="screens/MainDense.dc.html" target="_blank" rel="noopener" aria-label="Открыть макет: Сегодня — плотный день"></a>
+        </div>
+        <div class="cap">
+          <a class="cap-name" href="screens/MainDense.dc.html" target="_blank" rel="noopener">Сегодня — плотный день</a>
+          <span class="cap-file">MainDense.dc.html</span>
+        </div>
+      </div>
+      <div class="card card--sheet">
+        <div class="thumb thumb--sheet">
+          <iframe src="screens/Diagnostics.dc.html" title="Проверка напоминаний" scrolling="no" loading="lazy"></iframe>
+          <a class="hit" href="screens/Diagnostics.dc.html" target="_blank" rel="noopener" aria-label="Открыть макет: Проверка напоминаний — состояния"></a>
+        </div>
+        <div class="cap">
+          <a class="cap-name" href="screens/Diagnostics.dc.html" target="_blank" rel="noopener">Проверка напоминаний — 12 состояний</a><span class="badge">Новое</span>
+          <span class="cap-file">Диагностика напоминаний: лист состояний и переходов · Diagnostics.dc.html</span>
+        </div>
+      </div>
+  </div>
+  <p class="foot">Экраны: 22. Источники — <code>design/screens/*.dc.html</code>.
+    Дизайн-система — <code>docs/spec/08-design-system.md</code>; решения — <code>docs/spec/design-decisions.md</code>.</p>
+</div>
+</body>
+</html>

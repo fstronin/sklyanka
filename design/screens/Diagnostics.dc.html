@@ -1,0 +1,724 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Проверка напоминаний — состояния</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&amp;family=Literata:opsz,wght@7..72,400;7..72,600&amp;display=swap">
+<style>
+body{margin:0;background:#F3EDE3;color:#241F1B;font-family:'Golos Text',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#B4512F;text-decoration:none}
+.preview-head{max-width:1040px;padding:40px 40px 8px}
+.preview-eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#5F564D;font-weight:600}
+.preview-head h1{margin:12px 0 12px;font-family:'Literata',Georgia,serif;font-size:36px;font-weight:600;letter-spacing:-.01em;line-height:1.15}
+.preview-head p{margin:0;font-size:16px;color:#3B342E;line-height:1.55}
+.sheet-grid{display:flex;flex-wrap:wrap;gap:28px;padding:28px 40px 60px;align-items:flex-start}
+.state{width:390px;margin:0}
+.state-label{font-size:13px;font-weight:600;color:#5F564D;margin-bottom:10px;letter-spacing:.02em}
+.phone{position:relative;width:390px;min-height:1240px;box-sizing:border-box;background:#FBF7F1;color:#241F1B;border:1px solid #E6DED2;border-radius:30px;overflow:hidden;display:flex;flex-direction:column}
+.topbar{padding:26px 20px 4px;display:flex;align-items:center;flex:0 0 auto}
+.back{width:44px;height:44px;margin-left:-10px;display:flex;align-items:center;justify-content:center}
+.title{padding:2px 20px 14px;font-family:'Literata',Georgia,serif;font-size:30px;font-weight:600;letter-spacing:-.01em;line-height:1.15;flex:0 0 auto}
+.content{padding:0 20px 28px;display:flex;flex-direction:column;gap:14px;flex:1 1 auto}
+.overline{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#5F564D;padding-left:4px;margin-top:2px}
+.status{display:flex;align-items:center;gap:13px;background:#FFFFFF;border:1px solid #EFE7DB;border-radius:18px;padding:14px 16px}
+.status-glyph{width:38px;height:38px;flex-shrink:0;border-radius:13px;background:#E2EEF0;display:flex;align-items:center;justify-content:center}
+.status-t{font-size:17px;font-weight:600;color:#1F5F6B;line-height:1.25}
+.status-c{font-size:13px;color:#5F564D;line-height:1.4;margin-top:2px}
+.banner{display:flex;align-items:flex-start;gap:10px;border-radius:16px;padding:13px 15px;font-size:13px;line-height:1.4}
+.banner--warn{background:#F6E7DF;color:#6B3620}
+.banner--neutral{background:#F3EDE3;color:#5F564D}
+.banner svg{flex-shrink:0;margin-top:1px}
+.banner .b-act{margin-left:auto;color:#8F3E23;font-weight:600;white-space:nowrap;flex-shrink:0}
+.permgroups{background:#FFFFFF;border:1px solid #EFE7DB;border-radius:18px;padding:2px 16px}
+.pgroup{padding:13px 0 3px}
+.pgroup + .pgroup{border-top:1px solid #EFE7DB}
+.pgroup-label{font-size:13px;font-weight:600;color:#5F564D;line-height:1.4;padding-bottom:2px}
+.pitem{display:flex;align-items:center;gap:12px;padding:12px 0}
+.pitem + .pitem{border-top:1px solid #EFE7DB}
+.pmark{width:40px;height:40px;flex-shrink:0;border-radius:13px;display:flex;align-items:center;justify-content:center}
+.pmark--warn{background:#F6E7DF}
+.pmark--info{background:#F3EDE3}
+.pmark--ok{background:#E2EEF0}
+.pbody{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.pname{font-size:15px;font-weight:600;color:#241F1B;line-height:1.35}
+.pname--ok{font-size:14px;color:#5F564D}
+.pcons{font-size:12px;color:#5F564D;line-height:1.45}
+/* Колонка действия фиксированной ширины: подпись — по левому краю колонки,
+   шеврон — по правому, поэтому начала подписей и шевроны стоят на одной
+   вертикали во всех строках. Ширина — под самую длинную подпись при 100 %. */
+.paction{display:flex;align-items:center;justify-content:space-between;width:100px;flex-shrink:0;font-family:inherit;font-size:14px;font-weight:600;color:#B4512F;background:none;border:none;padding:0;cursor:default;min-height:44px;text-align:left}
+.paction .plabel{white-space:nowrap}
+/* «Пройти настройку заново» — действие-футер карточки: та же колонка справа,
+   подпись — по левому краю карточки, как плитки строк. */
+.pfoot-action{display:flex;align-items:center;justify-content:space-between;width:100%;border-top:1px solid #EFE7DB;background:none;border-left:none;border-right:none;border-bottom:none;font-family:inherit;font-size:14px;font-weight:600;color:#B4512F;padding:0;cursor:default;min-height:44px;text-align:left}
+.chev{color:#B0A597;font-weight:400}
+.card-block{background:#FFFFFF;border:1px solid #EFE7DB;border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.bt{font-size:15px;font-weight:600;color:#241F1B}
+.bv{font-size:15px;color:#241F1B;line-height:1.45}
+.bs{font-size:12px;color:#5F564D;line-height:1.45}
+.plate{background:#F3EDE3;border-radius:16px;padding:13px 15px;font-size:13px;color:#5F564D;line-height:1.45}
+.sheet-body .plate{font-size:15px;line-height:1.5}
+.field{display:flex;flex-direction:column;gap:6px}
+.field-label{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#5F564D}
+.field-opt{font-size:12px;font-weight:400;letter-spacing:0;text-transform:none;color:#5F564D;white-space:nowrap}
+.field-box{min-height:112px;background:#FBF7F1;border:1px solid #E6DED2;border-radius:14px;padding:13px 14px;box-sizing:border-box}
+.field-ph{font-size:16px;color:#A79C90;line-height:1.4}
+.sheet.sheet--raised{bottom:207px}
+.scroll-hint{height:22px;overflow:hidden;display:flex;align-items:flex-end}
+.field-box--focus{border:1.5px solid #B4512F}
+.field-value{font-size:16px;color:#241F1B;line-height:1.4}
+.field-caret{display:inline-block;width:2px;height:18px;background:#B4512F;margin-left:1px;vertical-align:-3px}
+.keyboard{position:absolute;left:0;right:0;bottom:0;height:207px;box-sizing:border-box;background:#E6DED2;display:flex;flex-direction:column;justify-content:flex-end;gap:6px;padding:9px 6px 12px;z-index:70}
+.kb-row{display:flex;gap:4px}
+.kb-key{flex:1;height:42px;border-radius:8px;background:#FFFFFF;color:#241F1B;font-size:15px;font-weight:500;display:flex;align-items:center;justify-content:center}
+.kb-key--k2{flex:2}
+.kb-key--space{flex:5;font-size:14px;color:#5F564D}
+.kb-key--enter{flex:2;background:#F6E7DF;color:#6B3620;font-weight:600}
+.btn{height:50px;border-radius:15px;font-family:inherit;font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:center;width:100%;border:none;cursor:default}
+.btn--secondary{background:transparent;border:1px solid #D9CDBD;color:#241F1B}
+.btn--primary{background:#B4512F;color:#FFFFFF}
+.quiet{font-family:inherit;font-size:14px;font-weight:600;color:#B4512F;background:none;border:none;padding:0;cursor:default;display:inline-flex;align-items:center;gap:7px;min-height:44px;text-align:left}
+.quiet--muted{color:#5F564D}
+.week{font-size:13px;color:#5F564D;line-height:1.45;padding-left:4px}
+.report{display:flex;flex-direction:column;align-items:center;gap:4px;border-top:1px solid #E6DED2;padding-top:16px;margin-top:auto}
+.report .bs{text-align:center}
+.scrim{position:absolute;inset:0;background:rgba(25,21,18,.32);z-index:50}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:60;background:#FFFFFF;border-radius:16px 16px 0 0;display:flex;flex-direction:column}
+.sheet-head{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:14px 20px 12px;border-bottom:1px solid #EFE7DB}
+.sheet-cancel{font-size:15px;color:#5F564D}
+.sheet-title{font-size:15px;font-weight:600;text-align:center;white-space:nowrap}
+.sheet-body{padding:16px 20px;display:flex;flex-direction:column;gap:14px}
+.sheet-actions{padding:0 20px 24px;display:flex;flex-direction:column;gap:10px}
+.success{display:flex;flex-direction:column;align-items:center;text-align:center;padding:30px 24px 36px;gap:8px}
+.success-t{font-family:'Literata',Georgia,serif;font-size:23px;font-weight:600;line-height:1.25}
+.success-s{font-size:15px;color:#5F564D}
+figcaption{max-width:390px;font-size:12px;color:#5F564D;margin-top:12px;line-height:1.5}
+</style>
+</helmet>
+<div class="preview-head">
+<div class="preview-eyebrow">Склянка · диагностика напоминаний · ОВ-126</div>
+<h1>Проверка напоминаний — новый первый уровень</h1>
+<p>Один экран и <b>один порядок секций во всех состояниях</b>: вердикт → «Разрешения» → «Проверка доставки» → «Напоминания» → «Сообщить о проблеме». Между состояниями меняются только вердикт и та секция, к которой относится изменение; порядок и постоянный низ не двигаются. Отладочные блоки («Для поддержки», журнал, счётчики пересборки, список будильников), кнопки «Повторить проверку» и «Проверить сейчас» убраны; вместо них — тихое «Сообщить о проблеме» (отчёт отправляет само приложение, ОВ-127). «Пройти настройку заново» осталось тихой строкой в «Разрешениях». Лист показывает 12 состояний как один путь: исправный экран → проблемы с разрешениями и возврат после исправления → проверка доставки и её исходы → перерыв → отсутствие следующего напоминания → отчёт разработчику (шторка, ввод, успех, ошибка).</p>
+</div>
+<div class="sheet-grid">
+
+<figure class="state">
+<div class="state-label">1 · Всё в порядке</div>
+<div class="phone">
+<div class="topbar"><span class="back"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3B342E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7"></path></svg></span></div>
+<div class="title">Проверка напоминаний</div>
+<div class="content">
+<div class="status">
+<div class="status-glyph"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1F5F6B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></div>
+<div><div class="status-t">Всё в порядке</div><div class="status-c">Напоминания приходят вовремя.</div></div>
+</div>
+<div class="overline">Разрешения</div>
+<div class="permgroups">
+<div class="pitem">
+<div class="pmark pmark--ok"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1F5F6B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></div>
+<div class="pbody"><div class="pname">Разрешения выданы</div></div>
+</div>
+<button class="pfoot-action" type="button">Пройти настройку заново<span class="chev">›</span></button>
+</div>
+<div class="overline">Проверка доставки</div>
+<div class="card-block">
+<div class="bv">Последняя проверка пройдена: тестовое напоминание дошло вовремя.</div>
+<button class="quiet" type="button">Понятно</button>
+</div>
+<div class="overline">Напоминания</div>
+<div class="week">За 7 дней сработало 14 напоминаний, пропущено 2 приёма.</div>
+<div class="card-block">
+<div class="bt">Последнее напоминание</div>
+<div class="bv">Магний B6 — 8:00</div>
+<div class="bs">Показано в 8:00 · вовремя</div>
+</div>
+<div class="card-block">
+<div class="bt">Следующее напоминание</div>
+<div class="bv">Эутирокс — завтра, 8:00 · план</div>
+<div class="bs">Это время телефон показывает в статус-баре как будильник — так и должно быть.</div>
+</div>
+<div class="report">
+<button class="quiet" type="button"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#B4512F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 5.5h15v10.5h-9.5L6.5 19v-3H4.5z"></path></svg>Сообщить о проблеме</button>
+<div class="bs">Технический отчёт для разработчика. Без названий лекарств и истории приёмов.</div>
+</div>
+</div>
+</div>
+<figcaption><b>Всё в порядке — проверка доставки пройдена.</b> Первый элемент — вердикт-строка: галочка и «Всё в порядке». «Разрешения» свёрнуты до одной строки «Разрешения выданы» и футера «Пройти настройку заново». Блок проверки показывает последний результат и тихое «Понятно»; ниже — сводка 7 дней, последнее и следующее напоминание и постоянный низ. Порядок секций тот же, что во всех состояниях.</figcaption>
+</figure>
+
+<figure class="state">
+<div class="state-label">2 · Всё в порядке — результат проверки закрыт</div>
+<div class="phone">
+<div class="topbar"><span class="back"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3B342E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7"></path></svg></span></div>
+<div class="title">Проверка напоминаний</div>
+<div class="content">
+<div class="status">
+<div class="status-glyph"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1F5F6B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></div>
+<div><div class="status-t">Всё в порядке</div><div class="status-c">Напоминания приходят вовремя.</div></div>
+</div>
+<div class="overline">Разрешения</div>
+<div class="permgroups">
+<div class="pitem">
+<div class="pmark pmark--ok"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1F5F6B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></div>
+<div class="pbody"><div class="pname">Разрешения выданы</div></div>
+</div>
+<button class="pfoot-action" type="button">Пройти настройку заново<span class="chev">›</span></button>
+</div>
+<div class="overline">Проверка доставки</div>
+<div class="card-block">
+<div class="bs">Поставит тестовое напоминание через 1–2 минуты и проверит, что оно дошло при закрытом приложении.</div>
+<button class="btn btn--secondary" type="button">Проверить доставку</button>
+</div>
+<div class="overline">Напоминания</div>
+<div class="week">За 7 дней сработало 14 напоминаний, пропущено 2 приёма.</div>
+<div class="card-block">
+<div class="bt">Последнее напоминание</div>
+<div class="bv">Магний B6 — 8:00</div>
+<div class="bs">Показано в 8:00 · вовремя</div>
+</div>
+<div class="card-block">
+<div class="bt">Следующее напоминание</div>
+<div class="bv">Эутирокс — завтра, 8:00 · план</div>
+<div class="bs">Это время телефон показывает в статус-баре как будильник — так и должно быть.</div>
+</div>
+<div class="report">
+<button class="quiet" type="button"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#B4512F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 5.5h15v10.5h-9.5L6.5 19v-3H4.5z"></path></svg>Сообщить о проблеме</button>
+<div class="bs">Технический отчёт для разработчика. Без названий лекарств и истории приёмов.</div>
+</div>
+</div>
+</div>
+<figcaption><b>Результат проверки закрыт.</b> После «Понятно» блок «Проверка доставки» возвращается к обычному виду — пояснение и второстепенная «Проверить доставку»; вердикт и «Разрешения» не меняются. Это базовый вид исправного экрана: его же человек видит при обычном входе, когда свежего результата проверки нет. «Понятно» подтверждает только результат, повтор — обычный запуск проверки.</figcaption>
+</figure>
+
+<figure class="state">
+<div class="state-label">3 · Есть проблемы с разрешениями</div>
+<div class="phone">
+<div class="topbar"><span class="back"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3B342E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7"></path></svg></span></div>
+<div class="title">Проверка напоминаний</div>
+<div class="content">
+<div class="banner banner--warn">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8F3E23" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 21 20H3z"></path><path d="M12 10v4.5"></path><path d="M12 17.4v.1"></path></svg>
+<div>Напоминания могут приходить с опозданием: не выдано право на точные будильники.</div>
+</div>
+<div class="overline">Разрешения</div>
+<div class="permgroups">
+<div class="pgroup">
+<div class="pgroup-label">Исправьте сначала — иначе напоминания не придут или опоздают</div>
+<div class="pitem">
+<div class="pmark pmark--warn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8F3E23" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 21 20H3z"></path><path d="M12 10v4.5"></path><path d="M12 17.4v.1"></path></svg></div>
+<div class="pbody"><div class="pname">Точные будильники</div><div class="pcons">Телефон может сдвинуть приём — до получаса.</div></div>
+<button class="paction" type="button"><span class="plabel">Исправить</span><span class="chev">›</span></button>
+</div>
+<div class="pitem">
+<div class="pmark pmark--info"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5F564D" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5.5"></path><path d="M12 7.8v.2"></path></svg></div>
+<div class="pbody"><div class="pname">Автозапуск и энергосбережение</div><div class="pcons">Приложение не видит настройки EMUI — проверьте сами.</div></div>
+<button class="paction" type="button"><span class="plabel">Исправить</span><span class="chev">›</span></button>
+</div>
+</div>
+<div class="pgroup">
+<div class="pgroup-label">Можно отложить — напоминания придут, но не полностью</div>
+<div class="pitem">
+<div class="pmark pmark--warn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8F3E23" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 21 20H3z"></path><path d="M12 10v4.5"></path><path d="M12 17.4v.1"></path></svg></div>
+<div class="pbody"><div class="pname">Полноэкранные уведомления</div><div class="pcons">Карточка не появится на заблокированном экране.</div></div>
+<button class="paction" type="button"><span class="plabel">Исправить</span><span class="chev">›</span></button>
+</div>
+<div class="pitem">
+<div class="pmark pmark--info"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5F564D" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5.5"></path><path d="M12 7.8v.2"></path></svg></div>
+<div class="pbody"><div class="pname">Доступ к политике «Не беспокоить»</div><div class="pcons">Повторные напоминания будут беззвучными.</div></div>
+<button class="paction" type="button"><span class="plabel">Исправить</span><span class="chev">›</span></button>
+</div>
+</div>
+<div class="pitem">
+<div class="pmark pmark--ok"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1F5F6B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></div>
+<div class="pbody"><div class="pname pname--ok">Остальные разрешения выданы</div></div>
+</div>
+<button class="pfoot-action" type="button">Пройти настройку заново<span class="chev">›</span></button>
+</div>
+<div class="overline">Проверка доставки</div>
+<div class="card-block">
+<div class="bs">Поставит тестовое напоминание через 1–2 минуты и проверит, что оно дошло при закрытом приложении.</div>
+<button class="btn btn--secondary" type="button">Проверить доставку</button>
+</div>
+<div class="overline">Напоминания</div>
+<div class="week">За 7 дней сработало 14 напоминаний, пропущено 2 приёма.</div>
+<div class="card-block">
+<div class="bt">Последнее напоминание</div>
+<div class="bv">Магний B6 — 8:00</div>
+<div class="bs">Показано в 8:00 · вовремя</div>
+</div>
+<div class="card-block">
+<div class="bt">Следующее напоминание</div>
+<div class="bv">Эутирокс — завтра, 8:00 · план</div>
+<div class="bs">Это время телефон показывает в статус-баре как будильник — так и должно быть.</div>
+</div>
+<div class="report">
+<button class="quiet" type="button"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#B4512F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 5.5h15v10.5h-9.5L6.5 19v-3H4.5z"></path></svg>Сообщить о проблеме</button>
+<div class="bs">Технический отчёт для разработчика. Без названий лекарств и истории приёмов.</div>
+</div>
+</div>
+</div>
+<figcaption><b>Есть проблемы.</b> Баннер сверху — вердикт одним предложением (теми же словами, что на «Сегодня» и «Настроить надёжность»); карточка — список дел, а не повтор баннера. Две группы по приоритету, у строки — маркер состояния, последствие словами и переход в системные настройки. <b>Действие выровнено в колонку фиксированной ширины</b> (подпись — по левому краю колонки, шеврон — по правому), поэтому начала подписей и шевроны стоят на одной вертикали; футер и «Пройти настройку заново» используют ту же сетку. «Проверьте вручную» отличается от «не выдано» нейтральным маркером. Возврат из системных настроек перечитывает список: исправленная строка исчезает (состояние 4); когда исправлен последний пункт, секция сворачивается до строки «Разрешения выданы», а вердикт становится «Всё в порядке» (состояния 1–2).</figcaption>
+</figure>
+
+<figure class="state">
+<div class="state-label">4 · Вернулись после исправления</div>
+<div class="phone">
+<div class="topbar"><span class="back"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3B342E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7"></path></svg></span></div>
+<div class="title">Проверка напоминаний</div>
+<div class="content">
+<div class="banner banner--warn">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8F3E23" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 21 20H3z"></path><path d="M12 10v4.5"></path><path d="M12 17.4v.1"></path></svg>
+<div>Карточка приёма не появится на заблокированном экране: не выдано право на полноэкранные уведомления.</div>
+</div>
+<div class="overline">Разрешения</div>
+<div class="permgroups">
+<div class="pgroup">
+<div class="pgroup-label">Можно отложить — напоминания придут, но не полностью</div>
+<div class="pitem">
+<div class="pmark pmark--warn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8F3E23" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 21 20H3z"></path><path d="M12 10v4.5"></path><path d="M12 17.4v.1"></path></svg></div>
+<div class="pbody"><div class="pname">Полноэкранные уведомления</div><div class="pcons">Карточка не появится на заблокированном экране.</div></div>
+<button class="paction" type="button"><span class="plabel">Исправить</span><span class="chev">›</span></button>
+</div>
+<div class="pitem">
+<div class="pmark pmark--info"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5F564D" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5.5"></path><path d="M12 7.8v.2"></path></svg></div>
+<div class="pbody"><div class="pname">Доступ к политике «Не беспокоить»</div><div class="pcons">Повторные напоминания будут беззвучными.</div></div>
+<button class="paction" type="button"><span class="plabel">Исправить</span><span class="chev">›</span></button>
+</div>
+</div>
+<div class="pitem">
+<div class="pmark pmark--ok"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1F5F6B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></div>
+<div class="pbody"><div class="pname pname--ok">Остальные разрешения выданы</div></div>
+</div>
+<button class="pfoot-action" type="button">Пройти настройку заново<span class="chev">›</span></button>
+</div>
+<div class="overline">Проверка доставки</div>
+<div class="card-block">
+<div class="bs">Поставит тестовое напоминание через 1–2 минуты и проверит, что оно дошло при закрытом приложении.</div>
+<button class="btn btn--secondary" type="button">Проверить доставку</button>
+</div>
+<div class="overline">Напоминания</div>
+<div class="week">За 7 дней сработало 14 напоминаний, пропущено 2 приёма.</div>
+<div class="card-block">
+<div class="bt">Последнее напоминание</div>
+<div class="bv">Магний B6 — 8:00</div>
+<div class="bs">Показано в 8:00 · вовремя</div>
+</div>
+<div class="card-block">
+<div class="bt">Следующее напоминание</div>
+<div class="bv">Эутирокс — завтра, 8:00 · план</div>
+<div class="bs">Это время телефон показывает в статус-баре как будильник — так и должно быть.</div>
+</div>
+<div class="report">
+<button class="quiet" type="button"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#B4512F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 5.5h15v10.5h-9.5L6.5 19v-3H4.5z"></path></svg>Сообщить о проблеме</button>
+<div class="bs">Технический отчёт для разработчика. Без названий лекарств и истории приёмов.</div>
+</div>
+</div>
+</div>
+<figcaption><b>Вернулись после исправления.</b> Список перечитан: исправленные разрешения исчезли, осталась только группа «Можно отложить», а футер «Остальные разрешения выданы» подтверждает, что исправленное не потерялось. Вердикт пересчитан по старшей оставшейся причине — теперь это полноэкранные уведомления. Когда исправлен и последний пункт, секция сворачивается до строки «Разрешения выданы», а вердикт становится «Всё в порядке» (состояния 1–2).</figcaption>
+</figure>
+
+<figure class="state">
+<div class="state-label">5 · Проверка доставки идёт</div>
+<div class="phone">
+<div class="topbar"><span class="back"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3B342E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7"></path></svg></span></div>
+<div class="title">Проверка напоминаний</div>
+<div class="content">
+<div class="status">
+<div class="status-glyph"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1F5F6B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></div>
+<div><div class="status-t">Всё в порядке</div><div class="status-c">Напоминания приходят вовремя.</div></div>
+</div>
+<div class="overline">Разрешения</div>
+<div class="permgroups">
+<div class="pitem">
+<div class="pmark pmark--ok"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1F5F6B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></div>
+<div class="pbody"><div class="pname">Разрешения выданы</div></div>
+</div>
+<button class="pfoot-action" type="button">Пройти настройку заново<span class="chev">›</span></button>
+</div>
+<div class="overline">Проверка доставки</div>
+<div class="card-block">
+<div class="plate">Проверка идёт: тестовое напоминание сработает примерно через минуту. Закройте приложение — смахните его из списка недавних.</div>
+<button class="quiet quiet--muted" type="button">Отменить проверку</button>
+</div>
+<div class="overline">Напоминания</div>
+<div class="week">За 7 дней сработало 14 напоминаний, пропущено 2 приёма.</div>
+<div class="card-block">
+<div class="bt">Последнее напоминание</div>
+<div class="bv">Магний B6 — 8:00</div>
+<div class="bs">Показано в 8:00 · вовремя</div>
+</div>
+<div class="card-block">
+<div class="bt">Следующее напоминание</div>
+<div class="bv">Эутирокс — завтра, 8:00 · план</div>
+<div class="bs">Это время телефон показывает в статус-баре как будильник — так и должно быть.</div>
+</div>
+<div class="report">
+<button class="quiet" type="button"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#B4512F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 5.5h15v10.5h-9.5L6.5 19v-3H4.5z"></path></svg>Сообщить о проблеме</button>
+<div class="bs">Технический отчёт для разработчика. Без названий лекарств и истории приёмов.</div>
+</div>
+</div>
+</div>
+<figcaption><b>Идёт.</b> Полный экран: вердикт, «Разрешения» (одна строка), «Проверка доставки» — на месте кнопки нейтральная плашка и тихая «Отменить проверку», ниже «Напоминания» (сводка, последнее, следующее) и постоянный низ «Сообщить о проблеме». Проверка меняет только свой блок: вердикт и «Разрешения» остаются такими, какими были при запуске. «Отменить проверку» снимает тестовое срабатывание и возвращает блок к кнопке.</figcaption>
+</figure>
+
+<figure class="state">
+<div class="state-label">6 · Результат проверки: не дошло / с опозданием</div>
+<div class="phone">
+<div class="topbar"><span class="back"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3B342E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7"></path></svg></span></div>
+<div class="title">Проверка напоминаний</div>
+<div class="content">
+<div class="banner banner--warn">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8F3E23" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 21 20H3z"></path><path d="M12 10v4.5"></path><path d="M12 17.4v.1"></path></svg>
+<div>Последняя проверка доставки не прошла.</div>
+</div>
+<div class="overline">Разрешения</div>
+<div class="permgroups">
+<div class="pitem">
+<div class="pmark pmark--ok"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1F5F6B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></div>
+<div class="pbody"><div class="pname">Разрешения выданы</div></div>
+</div>
+<button class="pfoot-action" type="button">Пройти настройку заново<span class="chev">›</span></button>
+</div>
+<div class="overline">Проверка доставки</div>
+<div class="card-block">
+<div class="bv">Тестовое напоминание не пришло. Проверьте настройки запуска и энергосбережения.</div>
+<button class="btn btn--secondary" type="button">Исправить</button>
+</div>
+<div class="overline">Напоминания</div>
+<div class="week">За 7 дней сработало 14 напоминаний, пропущено 2 приёма.</div>
+<div class="card-block">
+<div class="bt">Последнее напоминание</div>
+<div class="bv">Магний B6 — 8:00</div>
+<div class="bs">Показано в 8:00 · вовремя</div>
+</div>
+<div class="card-block">
+<div class="bt">Следующее напоминание</div>
+<div class="bv">Эутирокс — завтра, 8:00 · план</div>
+<div class="bs">Это время телефон показывает в статус-баре как будильник — так и должно быть.</div>
+</div>
+<div class="report">
+<button class="quiet" type="button"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#B4512F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 5.5h15v10.5h-9.5L6.5 19v-3H4.5z"></path></svg>Сообщить о проблеме</button>
+<div class="bs">Технический отчёт для разработчика. Без названий лекарств и истории приёмов.</div>
+</div>
+</div>
+</div>
+<figcaption><b>Не дошло.</b> Полный экран: баннер-вердикт с причиной, «Разрешения» выданы, блок проверки называет результат и ведёт одним шагом в «Настроить надёжность»; ниже «Напоминания» и постоянный низ «Сообщить о проблеме». Исход «Дошло с опозданием на N мин» отличается только текстом блока («телефон задержал его — проверьте настройки запуска и энергосбережения») и той же кнопкой «Исправить». Исход «Проверка не состоялась» (приложение было открыто) показывается прямо в блоке, без баннера-вердикта, и закрывается тихим «Понятно». Повтора внутри блока нет: после исправления проверку запускают обычной «Проверить доставку».</figcaption>
+</figure>
+
+<figure class="state">
+<div class="state-label">7 · Перерыв в напоминаниях (предупреждение)</div>
+<div class="phone">
+<div class="topbar"><span class="back"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3B342E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7"></path></svg></span></div>
+<div class="title">Проверка напоминаний</div>
+<div class="content">
+<div class="banner banner--warn">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8F3E23" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 21 20H3z"></path><path d="M12 10v4.5"></path><path d="M12 17.4v.1"></path></svg>
+<div>Напоминания не приходили с 1 октября, 22:40. Приёмы за это время можно отметить вручную.</div>
+<div class="b-act">Исправить</div>
+</div>
+<div class="overline">Разрешения</div>
+<div class="permgroups">
+<div class="pitem">
+<div class="pmark pmark--ok"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1F5F6B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></div>
+<div class="pbody"><div class="pname">Разрешения выданы</div></div>
+</div>
+<button class="pfoot-action" type="button">Пройти настройку заново<span class="chev">›</span></button>
+</div>
+<div class="overline">Проверка доставки</div>
+<div class="card-block">
+<div class="bs">Поставит тестовое напоминание через 1–2 минуты и проверит, что оно дошло при закрытом приложении.</div>
+<button class="btn btn--secondary" type="button">Проверить доставку</button>
+</div>
+<div class="overline">Напоминания</div>
+<div class="week">За 7 дней сработало 14 напоминаний, пропущено 2 приёма.</div>
+<div class="card-block">
+<div class="bt">Последнее напоминание</div>
+<div class="bv">Магний B6 — 8:00</div>
+<div class="bs">Показано в 8:00 · вовремя</div>
+</div>
+<div class="card-block">
+<div class="bt">Следующее напоминание</div>
+<div class="bv">Эутирокс — завтра, 8:00 · план</div>
+<div class="bs">Это время телефон показывает в статус-баре как будильник — так и должно быть.</div>
+</div>
+<div class="report">
+<button class="quiet" type="button"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#B4512F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 5.5h15v10.5h-9.5L6.5 19v-3H4.5z"></path></svg>Сообщить о проблеме</button>
+<div class="bs">Технический отчёт для разработчика. Без названий лекарств и истории приёмов.</div>
+</div>
+</div>
+</div>
+<figcaption><b>Перерыв.</b> Полный экран: перерыв — событие с датой, а не «всё сломалось»; разрешения исправлять нечего, поэтому действие «Исправить» стоит в самом баннере и ведёт в «Настроить надёжность» (как на «Сегодня»). Ниже «Проверка доставки», «Напоминания» и постоянный низ «Сообщить о проблеме». Вердикт-строки здесь нет: баннер называет событие и дату.</figcaption>
+</figure>
+
+<figure class="state">
+<div class="state-label">8 · Следующего напоминания нет</div>
+<div class="phone">
+<div class="topbar"><span class="back"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3B342E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7"></path></svg></span></div>
+<div class="title">Проверка напоминаний</div>
+<div class="content">
+<div class="status">
+<div class="status-glyph"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1F5F6B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></div>
+<div><div class="status-t">Всё в порядке</div><div class="status-c">Напоминания приходят вовремя. Новых пока не запланировано.</div></div>
+</div>
+<div class="overline">Разрешения</div>
+<div class="permgroups">
+<div class="pitem">
+<div class="pmark pmark--ok"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1F5F6B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></div>
+<div class="pbody"><div class="pname">Разрешения выданы</div></div>
+</div>
+<button class="pfoot-action" type="button">Пройти настройку заново<span class="chev">›</span></button>
+</div>
+<div class="overline">Проверка доставки</div>
+<div class="card-block">
+<div class="bs">Поставит тестовое напоминание через 1–2 минуты и проверит, что оно дошло при закрытом приложении.</div>
+<button class="btn btn--secondary" type="button">Проверить доставку</button>
+</div>
+<div class="overline">Напоминания</div>
+<div class="week">За 7 дней сработало 14 напоминаний, пропущено 2 приёма.</div>
+<div class="card-block">
+<div class="bt">Последнее напоминание</div>
+<div class="bv">Магний B6 — 8:00</div>
+<div class="bs">Показано в 8:00 · вовремя</div>
+</div>
+<div class="card-block">
+<div class="bt">Следующее напоминание</div>
+<div class="bv">Пока не запланировано</div>
+<div class="bs">Активных лекарств с расписанием нет — напоминать пока не о чем.</div>
+</div>
+<div class="report">
+<button class="quiet" type="button"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#B4512F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 5.5h15v10.5h-9.5L6.5 19v-3H4.5z"></path></svg>Сообщить о проблеме</button>
+<div class="bs">Технический отчёт для разработчика. Без названий лекарств и истории приёмов.</div>
+</div>
+</div>
+</div>
+<figcaption><b>Следующего нет.</b> Разрешения в порядке и доставка не проверялась, но будущих приёмов нет: карточка «Следующее напоминание» заменяется фактом «Пока не запланировано» и объяснением — активных лекарств с расписанием нет. Вердикт остаётся исправным («Всё в порядке») и уточняет, что о будущем напоминать пока не о чем; это не ошибка и не повод чинить.</figcaption>
+</figure>
+
+<figure class="state">
+<div class="state-label">9 · Отчёт разработчику</div>
+<div class="phone">
+<div class="topbar"><span class="back"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3B342E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7"></path></svg></span></div>
+<div class="title">Проверка напоминаний</div>
+<div class="content">
+<div class="status">
+<div class="status-glyph"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1F5F6B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></div>
+<div><div class="status-t">Всё в порядке</div><div class="status-c">Напоминания приходят вовремя.</div></div>
+</div>
+<div class="overline">Разрешения</div>
+<div class="permgroups">
+<div class="pitem">
+<div class="pmark pmark--ok"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1F5F6B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></div>
+<div class="pbody"><div class="pname">Разрешения выданы</div></div>
+</div>
+<button class="pfoot-action" type="button">Пройти настройку заново<span class="chev">›</span></button>
+</div>
+<div class="overline">Проверка доставки</div>
+<div class="card-block">
+<div class="bv">Последняя проверка пройдена: тестовое напоминание дошло вовремя.</div>
+<button class="quiet" type="button">Понятно</button>
+</div>
+<div class="overline">Напоминания</div>
+<div class="week">За 7 дней сработало 14 напоминаний, пропущено 2 приёма.</div>
+<div class="card-block">
+<div class="bt">Последнее напоминание</div>
+<div class="bv">Магний B6 — 8:00</div>
+<div class="bs">Показано в 8:00 · вовремя</div>
+</div>
+<div class="card-block">
+<div class="bt">Следующее напоминание</div>
+<div class="bv">Эутирокс — завтра, 8:00 · план</div>
+<div class="bs">Это время телефон показывает в статус-баре как будильник — так и должно быть.</div>
+</div>
+<div class="report">
+<button class="quiet" type="button"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#B4512F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 5.5h15v10.5h-9.5L6.5 19v-3H4.5z"></path></svg>Сообщить о проблеме</button>
+<div class="bs">Технический отчёт для разработчика. Без названий лекарств и истории приёмов.</div>
+</div>
+</div>
+<div class="scrim"></div>
+<div class="sheet">
+<div class="sheet-head"><span class="sheet-cancel">Отмена</span><span class="sheet-title">Отчёт разработчику</span><span></span></div>
+<div class="sheet-body">
+<div class="plate">Технический отчёт для разработчика — по вашему нажатию.<br>Он собирается автоматически и не содержит названий лекарств, доз и истории приёмов.</div>
+<div class="field">
+<div class="field-label"><span>Что не работает?</span><span class="field-opt">необязательно</span></div>
+<div class="field-box"><span class="field-ph">Например: напоминание не приходит утром</span></div>
+</div>
+</div>
+<div class="sheet-actions"><button class="btn btn--primary" type="button">Отправить отчёт</button></div>
+</div>
+</div>
+<figcaption><b>Отчёт.</b> В шторке: короткое объяснение, необязательное поле «Что не работает?» и «Отправить отчёт». Поле многострочное (≈3–4 строки), текст 16 sp, растёт и при переполнении прокручивается; при клавиатуре полотно поднимается на её высоту — кнопка остаётся над клавиатурой, содержимое прокручивается (§3.4, §4.18). Перечня состава отчёта нет.</figcaption>
+</figure>
+
+<figure class="state">
+<div class="state-label">9б · Отчёт разработчику — ввод комментария (клавиатура открыта)</div>
+<div class="phone">
+<div class="topbar"><span class="back"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3B342E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7"></path></svg></span></div>
+<div class="title">Проверка напоминаний</div>
+<div class="content">
+<div class="status">
+<div class="status-glyph"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1F5F6B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></div>
+<div><div class="status-t">Всё в порядке</div><div class="status-c">Напоминания приходят вовремя.</div></div>
+</div>
+<div class="overline">Разрешения</div>
+<div class="permgroups">
+<div class="pitem">
+<div class="pmark pmark--ok"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1F5F6B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></div>
+<div class="pbody"><div class="pname">Разрешения выданы</div></div>
+</div>
+<button class="pfoot-action" type="button">Пройти настройку заново<span class="chev">›</span></button>
+</div>
+<div class="overline">Проверка доставки</div>
+<div class="card-block">
+<div class="bv">Последняя проверка пройдена: тестовое напоминание дошло вовремя.</div>
+<button class="quiet" type="button">Понятно</button>
+</div>
+<div class="overline">Напоминания</div>
+<div class="week">За 7 дней сработало 14 напоминаний, пропущено 2 приёма.</div>
+</div>
+<div class="scrim"></div>
+<div class="sheet sheet--raised">
+<div class="sheet-head"><span class="sheet-cancel">Отмена</span><span class="sheet-title">Отчёт разработчику</span><span></span></div>
+<div class="sheet-body">
+<div class="scroll-hint"><div class="plate">Технический отчёт для разработчика — по вашему нажатию. Он собирается автоматически и не содержит названий лекарств, доз и истории приёмов.</div></div>
+<div class="field">
+<div class="field-label"><span>Что не работает?</span><span class="field-opt">необязательно</span></div>
+<div class="field-box field-box--focus"><span class="field-value">Напоминание не приходит по утрам</span><span class="field-caret"></span></div>
+</div>
+</div>
+<div class="sheet-actions"><button class="btn btn--primary" type="button">Отправить отчёт</button></div>
+</div>
+<div class="keyboard">
+<div class="kb-row"><span class="kb-key">Й</span><span class="kb-key">Ц</span><span class="kb-key">У</span><span class="kb-key">К</span><span class="kb-key">Е</span><span class="kb-key">Н</span><span class="kb-key">Г</span><span class="kb-key">Ш</span><span class="kb-key">Щ</span><span class="kb-key">З</span></div>
+<div class="kb-row"><span class="kb-key">Ф</span><span class="kb-key">Ы</span><span class="kb-key">В</span><span class="kb-key">А</span><span class="kb-key">П</span><span class="kb-key">Р</span><span class="kb-key">О</span><span class="kb-key">Л</span><span class="kb-key">Д</span><span class="kb-key">Ж</span></div>
+<div class="kb-row"><span class="kb-key">Я</span><span class="kb-key">Ч</span><span class="kb-key">С</span><span class="kb-key">М</span><span class="kb-key">И</span><span class="kb-key">Т</span><span class="kb-key">Ь</span><span class="kb-key">Б</span><span class="kb-key">Ю</span></div>
+<div class="kb-row"><span class="kb-key kb-key--k2">123</span><span class="kb-key kb-key--space">пробел</span><span class="kb-key kb-key--enter">Ввод</span></div>
+</div>
+</div>
+<figcaption><b>Клавиатура.</b> Поле в фокусе — человек печатает. Нижняя грань шторки совпадает с верхом системной клавиатуры (IME-inset, §3.4/§4.18): поле ввода видно целиком над клавиатурой, «Отправить отчёт» — тоже, заголовок закреплён. Верхняя часть содержимого (плашка-объяснение) прокручена и обрезана сверху; поле не обрезается.</figcaption>
+</figure>
+
+<figure class="state">
+<div class="state-label">10 · Отчёт отправлен</div>
+<div class="phone">
+<div class="topbar"><span class="back"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3B342E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7"></path></svg></span></div>
+<div class="title">Проверка напоминаний</div>
+<div class="content">
+<div class="status">
+<div class="status-glyph"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1F5F6B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></div>
+<div><div class="status-t">Всё в порядке</div><div class="status-c">Напоминания приходят вовремя.</div></div>
+</div>
+<div class="overline">Разрешения</div>
+<div class="permgroups">
+<div class="pitem">
+<div class="pmark pmark--ok"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1F5F6B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></div>
+<div class="pbody"><div class="pname">Разрешения выданы</div></div>
+</div>
+<button class="pfoot-action" type="button">Пройти настройку заново<span class="chev">›</span></button>
+</div>
+<div class="overline">Проверка доставки</div>
+<div class="card-block">
+<div class="bv">Последняя проверка пройдена: тестовое напоминание дошло вовремя.</div>
+<button class="quiet" type="button">Понятно</button>
+</div>
+<div class="overline">Напоминания</div>
+<div class="week">За 7 дней сработало 14 напоминаний, пропущено 2 приёма.</div>
+<div class="card-block">
+<div class="bt">Последнее напоминание</div>
+<div class="bv">Магний B6 — 8:00</div>
+<div class="bs">Показано в 8:00 · вовремя</div>
+</div>
+<div class="card-block">
+<div class="bt">Следующее напоминание</div>
+<div class="bv">Эутирокс — завтра, 8:00 · план</div>
+<div class="bs">Это время телефон показывает в статус-баре как будильник — так и должно быть.</div>
+</div>
+<div class="report">
+<button class="quiet" type="button"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#B4512F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 5.5h15v10.5h-9.5L6.5 19v-3H4.5z"></path></svg>Сообщить о проблеме</button>
+<div class="bs">Технический отчёт для разработчика. Без названий лекарств и истории приёмов.</div>
+</div>
+</div>
+<div class="scrim"></div>
+<div class="sheet">
+<div class="sheet-head"><span class="sheet-cancel">Готово</span><span class="sheet-title">Отчёт разработчику</span><span></span></div>
+<div class="success">
+<div class="success-t">Отчёт отправлен</div>
+<div class="success-s">Спасибо! Это помогает сделать напоминания надёжнее.</div>
+<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#1F5F6B" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l5 5 9-11"></path></svg>
+</div>
+</div>
+</div>
+<figcaption><b>Отправлен.</b> Отчёт отправляет само приложение по сети — решение заказчика (ОВ-127); содержимое шторки заменяется подтверждением с галочкой (рисунок ОВ-125). Успех наступает после «Отправить отчёт»; если отправить не удалось, шторка показывает ошибку и «Повторить» (состояние 11). Реализация — заглушка; НАП-39, политика и юр. проверка ещё требуют правок.</figcaption>
+</figure>
+
+<figure class="state">
+<div class="state-label">11 · Отчёт не отправлен — ошибка</div>
+<div class="phone">
+<div class="topbar"><span class="back"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3B342E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7"></path></svg></span></div>
+<div class="title">Проверка напоминаний</div>
+<div class="content">
+<div class="status">
+<div class="status-glyph"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1F5F6B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></div>
+<div><div class="status-t">Всё в порядке</div><div class="status-c">Напоминания приходят вовремя.</div></div>
+</div>
+<div class="overline">Разрешения</div>
+<div class="permgroups">
+<div class="pitem">
+<div class="pmark pmark--ok"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1F5F6B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></div>
+<div class="pbody"><div class="pname">Разрешения выданы</div></div>
+</div>
+<button class="pfoot-action" type="button">Пройти настройку заново<span class="chev">›</span></button>
+</div>
+<div class="overline">Проверка доставки</div>
+<div class="card-block">
+<div class="bv">Последняя проверка пройдена: тестовое напоминание дошло вовремя.</div>
+<button class="quiet" type="button">Понятно</button>
+</div>
+<div class="overline">Напоминания</div>
+<div class="week">За 7 дней сработало 14 напоминаний, пропущено 2 приёма.</div>
+<div class="card-block">
+<div class="bt">Последнее напоминание</div>
+<div class="bv">Магний B6 — 8:00</div>
+<div class="bs">Показано в 8:00 · вовремя</div>
+</div>
+<div class="card-block">
+<div class="bt">Следующее напоминание</div>
+<div class="bv">Эутирокс — завтра, 8:00 · план</div>
+<div class="bs">Это время телефон показывает в статус-баре как будильник — так и должно быть.</div>
+</div>
+<div class="report">
+<button class="quiet" type="button"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#B4512F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 5.5h15v10.5h-9.5L6.5 19v-3H4.5z"></path></svg>Сообщить о проблеме</button>
+<div class="bs">Технический отчёт для разработчика. Без названий лекарств и истории приёмов.</div>
+</div>
+</div>
+<div class="scrim"></div>
+<div class="sheet">
+<div class="sheet-head"><span class="sheet-cancel">Отмена</span><span class="sheet-title">Отчёт разработчику</span><span></span></div>
+<div class="sheet-body">
+<div class="banner banner--warn">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8F3E23" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 21 20H3z"></path><path d="M12 10v4.5"></path><path d="M12 17.4v.1"></path></svg>
+<div>Не удалось отправить отчёт. Проверьте подключение к интернету и попробуйте снова. Введённый текст сохранён.</div>
+</div>
+</div>
+<div class="sheet-actions"><button class="btn btn--primary" type="button">Повторить</button></div>
+</div>
+</div>
+<figcaption><b>Ошибка.</b> Отправка — заглушка (ОВ-127), поэтому поведение при неудаче фиксируется здесь: содержимое шторки не пропадает, а показывает предупреждение и одно действие «Повторить»; «Отмена» в шапке закрывает шторку несолоно, ничего не отправляя. Введённый комментарий сохраняется, повтор отправляет тот же отчёт. Успех и ошибка — два исхода одного действия, других кнопок у шторки нет.</figcaption>
+</figure>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#B4512F","options":["#B4512F","#1F5F6B","#7A5B2E","#6B4A6B"]},"$preview":{"width":3400,"height":3350}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { accent: this.props.accent ?? '#B4512F' };
+  }
+}
+</script>
+</body>
+</html>
