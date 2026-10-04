@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Шапка экрана при прокрутке — состояния</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&amp;family=Literata:opsz,wght@7..72,400;7..72,600&amp;display=swap">
+<style>
+body{margin:0;background:#F3EDE3;color:#241F1B;font-family:'Golos Text',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#B4512F;text-decoration:none}
+.preview-head{max-width:1040px;padding:40px 40px 8px}
+.preview-eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#5F564D;font-weight:600}
+.preview-head h1{margin:12px 0 12px;font-family:'Literata',Georgia,serif;font-size:36px;font-weight:600;letter-spacing:-.01em;line-height:1.15}
+.preview-head p{margin:0;font-size:16px;color:#3B342E;line-height:1.55}
+.sheet-grid{display:flex;flex-wrap:wrap;gap:28px;padding:28px 40px 60px;align-items:flex-start}
+.state{width:390px;margin:0}
+.state-label{font-size:13px;font-weight:600;color:#5F564D;margin-bottom:10px;letter-spacing:.02em}
+.phone{position:relative;width:390px;height:760px;box-sizing:border-box;background:#FBF7F1;color:#241F1B;border:1px solid #E6DED2;border-radius:30px;overflow:hidden;display:flex;flex-direction:column}
+figcaption{max-width:390px;font-size:12px;color:#5F564D;margin-top:12px;line-height:1.5}
+/* --- шапка: закреплённый компактный ряд (рекомендация, вариант 2) --- */
+.bar{display:flex;align-items:center;gap:8px;padding:6px 20px;min-height:56px;background:#FBF7F1;flex:0 0 auto}
+.bar--scrolled{border-bottom:1px solid #E6DED2}
+.bar-back{width:44px;height:44px;margin-left:-10px;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+.bar-title{flex:1;min-width:0;font-size:17px;font-weight:600;color:#241F1B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar-action{flex:0 0 auto;height:36px;padding:0 14px;border:1px solid #D9CDBD;border-radius:11px;background:transparent;font-family:inherit;font-size:13px;font-weight:500;color:#3B342E;display:flex;align-items:center;justify-content:center;min-height:44px;box-sizing:border-box}
+/* --- шапка: развёрнутое состояние --- */
+.expand{flex:0 0 auto}
+.backrow{padding:26px 20px 8px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.bigtitle{padding:4px 20px 16px;font-family:'Literata',Georgia,serif;font-size:30px;font-weight:600;letter-spacing:-.01em;line-height:1.15}
+.overline-date{padding:26px 20px 0;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#5F564D}
+/* --- контент --- */
+.content{padding:8px 20px 24px;display:flex;flex-direction:column;gap:14px;flex:1 1 auto;min-height:0}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.tile{padding:14px 12px;background:#FFFFFF;border:1px solid #EFE7DB;border-radius:16px;display:flex;flex-direction:column;gap:4px}
+.tile .n{font-family:'Literata',Georgia,serif;font-size:26px;font-weight:600;line-height:1}
+.tile .c{font-size:11px;color:#5F564D;line-height:1.3}
+.card{background:#FFFFFF;border:1px solid #EFE7DB;border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.card .ov{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#5F564D}
+.rowline{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid #EFE7DB;font-size:15px}
+.rowline:first-of-type{border-top:none}
+.muted{color:#5F564D}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:7px}
+.cal .dow{font-size:10px;color:#8C8177;text-align:center}
+.cal .cell{height:28px;border-radius:9px;display:block}
+.cal .ok{background:#1F5F6B}.cal .pt{background:#6E9FA8}.cal .ms{background:#C9BFB1}.cal .off{background:#F3EDE3}
+.legend{display:flex;gap:14px;font-size:11px;color:#5F564D;flex-wrap:wrap}
+.legend span{display:flex;align-items:center;gap:6px}
+.legend i{width:10px;height:10px;border-radius:3px;display:block}
+.barprog{height:8px;border-radius:999px;background:#EDE3D6;overflow:hidden}
+.barprog i{display:block;width:40%;height:8px;border-radius:999px;background:#B4512F}
+.banner{display:flex;align-items:center;gap:10px;padding:11px 14px;background:#F6E7DF;border-radius:14px;font-size:13px;color:#6B3620;line-height:1.35}
+.medhead{display:flex;align-items:center;gap:14px}
+.medicon{width:62px;height:62px;flex-shrink:0;border-radius:20px;background:#F6E7DF;display:flex;align-items:center;justify-content:center}
+.medname{font-family:'Literata',Georgia,serif;font-size:27px;font-weight:600;letter-spacing:-.01em;margin:0}
+/* --- варианты --- */
+.bar--morph{min-height:64px;align-items:flex-end;padding-bottom:8px}
+.bar--morph .bar-title{font-family:'Literata',Georgia,serif;font-size:24px;font-weight:600}
+.bar--glass{background:rgba(251,247,241,.72);backdrop-filter:blur(6px);border-bottom:1px solid rgba(230,222,210,.7)}
+.transparent-note{position:relative}
+.transparent-note .ghost{opacity:.5}
+.bottombar{padding:12px 20px 24px;display:flex;gap:10px;background:#FFFFFF;border-top:1px solid #E6DED2;flex:0 0 auto}
+.btn-primary{flex:1;height:52px;border:none;border-radius:16px;background:#B4512F;color:#FFFFFF;font-family:inherit;font-size:15px;font-weight:600}
+</style>
+</helmet>
+<div class="preview-head">
+  <div class="preview-eyebrow">Склянка · шапка экрана и прокрутка · ОВ-133</div>
+  <h1>Шапка экрана: заголовок уезжает, компактный ряд остаётся</h1>
+  <p>Утверждено заказчиком 04.10.2026 — <b>вариант 2</b>: крупный заголовок и всё, что стоит над контентом
+    (ряд «Назад + действие», дата, полоса дня, баннер, сегмент «Активные/Архив»), прокручиваются
+    вместе с содержимым как обычный контент. Сверху остаётся неподвижный компактный ряд 56&nbsp;dp:
+    «Назад» и функциональное действие доступны на любом уровне прокрутки; компактный заголовок
+    (Golos Text 17/600) появляется, когда крупный вышел за верхнюю грань. Крупный заголовок
+    не «морфит» и не анимируется — он уезжает прокруткой, поэтому §9.1 не нарушается.
+    Ниже: три состояния на вложенном экране («История» с «Отчётом врачу») и на корневом
+    («Настройки»), затем запасной (вариант 1) и отклонённые (варианты 3–4) направления.</p>
+</div>
+<div class="sheet-grid">
+
+  <!-- ============ ИСТОРИЯ: ПОКОЙ ============ -->
+  <figure class="state">
+    <div class="state-label">Утверждён · «История» — покой (прокрутка вверху)</div>
+    <div class="phone">
+      <div class="expand">
+        <div class="backrow">
+          <span class="bar-back"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3B342E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7"></path></svg></span>
+          <button class="bar-action" type="button">Отчёт врачу</button>
+        </div>
+        <div class="bigtitle">История</div>
+      </div>
+      <div class="content">
+        <div class="grid3">
+          <div class="tile"><div class="n">86%</div><div class="c">принято вовремя</div></div>
+          <div class="tile"><div class="n">9</div><div class="c">дней без пропусков</div></div>
+          <div class="tile"><div class="n">12</div><div class="c">пропусков за месяц</div></div>
+        </div>
+        <div class="card">
+          <div class="rowline" style="border-top:none"><span style="font-weight:600">Сентябрь 2026</span><span class="muted">&#8249; &#8250;</span></div>
+          <div class="cal">
+            <span class="dow">Пн</span><span class="dow">Вт</span><span class="dow">Ср</span><span class="dow">Чт</span><span class="dow">Пт</span><span class="dow">Сб</span><span class="dow">Вс</span>
+            <span class="cell ok"></span><span class="cell ok"></span><span class="cell ok"></span><span class="cell ok"></span><span class="cell pt"></span><span class="cell ok"></span><span class="cell ok"></span>
+            <span class="cell ok"></span><span class="cell ms"></span><span class="cell ok"></span><span class="cell ok"></span><span class="cell pt"></span><span class="cell ok"></span><span class="cell ok"></span>
+          </div>
+          <div class="legend">
+            <span><i style="background:#1F5F6B"></i>всё принято</span>
+            <span><i style="background:#6E9FA8"></i>частично</span>
+            <span><i style="background:#C9BFB1"></i>пропуск</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <figcaption><b>Покой.</b> Как сейчас: ряд «Назад + Отчёт врачу», под ним крупный заголовок
+      «История». Всё это — поток контента, а не закреплённая шапка.</figcaption>
+  </figure>
+
+  <!-- ============ ИСТОРИЯ: СЕРЕДИНА ============ -->
+  <figure class="state">
+    <div class="state-label">Утверждён · «История» — середина прокрутки</div>
+    <div class="phone">
+      <div class="bar bar--scrolled">
+        <span class="bar-back"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3B342E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7"></path></svg></span>
+        <span class="bar-title">История</span>
+        <button class="bar-action" type="button">Отчёт врачу</button>
+      </div>
+      <div class="content">
+        <div class="card">
+          <div class="rowline" style="border-top:none"><span style="font-weight:600">Сентябрь 2026</span><span class="muted">&#8249; &#8250;</span></div>
+          <div class="cal">
+            <span class="dow">Пн</span><span class="dow">Вт</span><span class="dow">Ср</span><span class="dow">Чт</span><span class="dow">Пт</span><span class="dow">Сб</span><span class="dow">Вс</span>
+            <span class="cell ok"></span><span class="cell ok"></span><span class="cell ok"></span><span class="cell ms"></span><span class="cell ok"></span><span class="cell ok"></span><span class="cell ok"></span>
+            <span class="cell ok"></span><span class="cell pt"></span><span class="cell ok"></span><span class="cell ok"></span><span class="cell ok"></span><span class="cell ok"></span><span class="cell ms"></span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="ov">По лекарствам</div>
+          <div class="rowline" style="border-top:none"><span>Эутирокс</span><span class="muted">96%</span></div>
+          <div class="rowline"><span>Витамин D3</span><span class="muted">91%</span></div>
+          <div class="rowline"><span>Магний B6</span><span class="muted">71%</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption><b>Середина.</b> Крупный заголовок уехал; сверху — неподвижный ряд
+      с «Назад», компактным «История» и действием «Отчёт врачу». Плитки сводки ушли под край,
+      календарь и разбивка читаются на полной высоте.</figcaption>
+  </figure>
+
+  <!-- ============ ИСТОРИЯ: КОНЕЦ ============ -->
+  <figure class="state">
+    <div class="state-label">Утверждён · «История» — конец прокрутки</div>
+    <div class="phone">
+      <div class="bar bar--scrolled">
+        <span class="bar-back"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3B342E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7"></path></svg></span>
+        <span class="bar-title">История</span>
+        <button class="bar-action" type="button">Отчёт врачу</button>
+      </div>
+      <div class="content">
+        <div class="card">
+          <div class="ov">По лекарствам</div>
+          <div class="rowline" style="border-top:none"><span>Магний B6</span><span class="muted">71%</span></div>
+          <div class="rowline"><span>Назонекс</span><span class="muted">64%</span></div>
+        </div>
+        <div class="card">
+          <div style="font-size:13px;color:#5F564D;line-height:1.45">Чаще всего пропускается вечерний приём в 20:00.</div>
+        </div>
+      </div>
+    </div>
+    <figcaption><b>Конец.</b> Тот же компактный ряд: «Назад» и «Отчёт врачу» никуда не уехали.
+      Возврат и главное действие экрана доступны на любом уровне прокрутки.</figcaption>
+  </figure>
+
+  <!-- ============ НАСТРОЙКИ: ПОКОЙ ============ -->
+  <figure class="state">
+    <div class="state-label">Утверждён · «Настройки» — покой</div>
+    <div class="phone">
+      <div class="expand"><div class="bigtitle" style="padding-top:30px">Настройки</div></div>
+      <div class="content">
+        <div class="card">
+          <div class="ov">Профили</div>
+          <div class="rowline" style="border-top:none"><span style="display:flex;align-items:center;gap:12px"><span style="width:34px;height:34px;border-radius:999px;background:#E2EEF0;color:#1F5F6B;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px">Я</span>Мои лекарства</span><span style="color:#1F5F6B">&#10003;</span></div>
+          <div class="rowline"><span style="display:flex;align-items:center;gap:12px"><span style="width:34px;height:34px;border-radius:999px;background:#F6E7DF;color:#8F3E23;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px">М</span><span>Мама<br><span class="muted" style="font-size:12px">4 лекарства · напоминания дублируются мне</span></span></span><span class="muted">&#8250;</span></div>
+        </div>
+        <div class="card">
+          <div class="ov">Напоминания</div>
+          <div class="rowline" style="border-top:none"><span>Настойчивое напоминание</span><span class="muted">вкл</span></div>
+          <div class="rowline"><span>Отложить на</span><span class="muted">15 минут &#8250;</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption><b>Покой.</b> Корневой экран без кнопки «Назад» и без функциональных кнопок:
+      один крупный заголовок, под ним длинный список настроек.</figcaption>
+  </figure>
+
+  <!-- ============ НАСТРОЙКИ: СЕРЕДИНА ============ -->
+  <figure class="state">
+    <div class="state-label">Утверждён · «Настройки» — середина</div>
+    <div class="phone">
+      <div class="bar bar--scrolled"><span class="bar-title" style="padding-left:4px">Настройки</span></div>
+      <div class="content">
+        <div class="card">
+          <div class="ov">Напоминания</div>
+          <div class="rowline" style="border-top:none"><span>Настойчивое напоминание</span><span class="muted">вкл</span></div>
+          <div class="rowline"><span>Отложить на</span><span class="muted">15 минут &#8250;</span></div>
+        </div>
+        <div class="card">
+          <div class="ov">Часы и система</div>
+          <div class="rowline" style="border-top:none"><span>Часы Huawei<br><span class="muted" style="font-size:12px">GT 6 Pro · подключены</span></span><span class="muted">&#8250;</span></div>
+          <div class="rowline"><span>Разрешения и автозапуск<br><span style="font-size:12px;color:#B4512F">Одно не выдано</span></span><span class="muted">&#8250;</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption><b>Середина.</b> Компактный ряд: только название экрана. Область списка выросла
+      на высоту крупного заголовка — именно её сейчас занимает статическая шапка.</figcaption>
+  </figure>
+
+  <!-- ============ НАСТРОЙКИ: КОНЕЦ ============ -->
+  <figure class="state">
+    <div class="state-label">Утверждён · «Настройки» — конец</div>
+    <div class="phone">
+      <div class="bar bar--scrolled"><span class="bar-title" style="padding-left:4px">Настройки</span></div>
+      <div class="content">
+        <div class="card">
+          <div class="ov">Данные</div>
+          <div class="rowline" style="border-top:none"><span>История приёмов</span><span class="muted">&#8250;</span></div>
+          <div class="rowline"><span>Перенос данных</span><span class="muted">&#8250;</span></div>
+        </div>
+        <div class="card" style="background:#F3EDE3;border-color:#F3EDE3;flex-direction:row;align-items:center;gap:13px">
+          <span style="width:40px;height:40px;border-radius:999px;background:#EFE7DB;display:flex;align-items:center;justify-content:center;color:#8C8177;font-size:18px">&#9673;</span>
+          <span><b style="font-size:15px">Склянка 1.0</b><br><span class="muted" style="font-size:12px">Heuri · не является медицинским изделием</span></span>
+        </div>
+      </div>
+    </div>
+    <figcaption><b>Конец.</b> До низа списка шапка остаётся компактной. Ни один элемент
+      не «всплывает» заново и не дублируется.</figcaption>
+  </figure>
+
+  <!-- ============ КАРТОЧКА ЛЕКАРСТВА ============ -->
+  <figure class="state">
+    <div class="state-label">Утверждён · «Карточка лекарства» — сжато</div>
+    <div class="phone">
+      <div class="bar bar--scrolled">
+        <span class="bar-back"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3B342E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7"></path></svg></span>
+        <span class="bar-title">Магний B6</span>
+        <button class="bar-action" type="button" style="border:none;padding:0;color:#B4512F">Изменить</button>
+      </div>
+      <div class="content">
+        <div class="card"><div class="ov">Расписание</div><div style="font-size:16px;font-weight:600">2 приёма в сутки · по 2 таблетки</div></div>
+        <div class="card"><div class="ov">Остаток</div><div style="font-size:16px;font-weight:600">9 таблеток из 60</div><div class="barprog"><i style="width:15%;background:#8F3E23"></i></div></div>
+      </div>
+    </div>
+    <figcaption><b>Карточка лекарства.</b> Крупный блок «иконка + название + доза» уезжает;
+      в компактном ряду остаются «Назад», название лекарства и «Изменить». Название — Golos Text,
+      не Literata: это уже интерфейс, а не заголовок.</figcaption>
+  </figure>
+
+  <!-- ============ СЕГОДНЯ ============ -->
+  <figure class="state">
+    <div class="state-label">Утверждён · «Сегодня» — сжато</div>
+    <div class="phone">
+      <div class="bar bar--scrolled">
+        <span class="bar-title" style="padding-left:4px">Сегодня</span>
+        <button class="bar-action" type="button" style="border:none;padding:0 6px;color:#5F564D">Я &#9662;</button>
+      </div>
+      <div class="content">
+        <div style="font-size:14px;font-weight:600">14:00</div>
+        <div class="card"><div style="font-size:15px;font-weight:600">Магний B6</div><div style="font-size:13px" class="muted">2 таблетки</div><div style="display:flex;gap:10px"><span style="flex:1;height:44px;border-radius:13px;background:#B4512F;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600">Принято</span><span style="width:124px;height:44px;border:1px solid #D9CDBD;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:14px;color:#5F564D">Пропустить</span></div></div>
+        <div class="card"><div style="font-size:15px;font-weight:600">Лозартан</div><div style="font-size:13px" class="muted">1 таблетка · 50 мг</div></div>
+      </div>
+    </div>
+    <figcaption><b>«Сегодня».</b> Дата, полоса дня и баннер остатка не закрепляются: они —
+      контент и уезжают вместе со списком. Сверху остаётся название дня и переключатель профиля;
+      вкладка нижней панели, как и раньше, не двигается.</figcaption>
+  </figure>
+
+  <!-- ============ ВАРИАНТ 1 ============ -->
+  <figure class="state">
+    <div class="state-label">Запасной · вариант 1: «морфящая» шапка (M3 LargeTopAppBar)</div>
+    <div class="phone">
+      <div class="bar bar--morph bar--scrolled">
+        <span class="bar-back"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3B342E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7"></path></svg></span>
+        <span class="bar-title">История</span>
+        <button class="bar-action" type="button">Отчёт врачу</button>
+      </div>
+      <div class="content">
+        <div class="grid3">
+          <div class="tile"><div class="n">86%</div><div class="c">принято вовремя</div></div>
+          <div class="tile"><div class="n">9</div><div class="c">дней без пропусков</div></div>
+          <div class="tile"><div class="n">12</div><div class="c">пропусков за месяц</div></div>
+        </div>
+      </div>
+    </div>
+    <figcaption><b>Вариант 1.</b> Крупный заголовок непрерывно уменьшается до компактного
+      (Literata 30 → 24 → 17), высота шапки плавно падает. Привычно на Android, но добавляет
+      непрерывное движение — второе исключение к §9.1 — и дороже на дешёвых EMUI-устройствах.
+      Для аудитории 60+ предпочтён спокойный вариант 2.</figcaption>
+  </figure>
+
+  <!-- ============ ВАРИАНТ 3 ============ -->
+  <figure class="state">
+    <div class="state-label">Отклонено · вариант 3: прозрачная шапка поверх контента</div>
+    <div class="phone">
+      <div class="bar bar--glass">
+        <span class="bar-back"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3B342E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7"></path></svg></span>
+        <button class="bar-action" type="button">Отчёт врачу</button>
+      </div>
+      <div class="content transparent-note" style="margin-top:-56px;padding-top:64px">
+        <div class="bigtitle ghost" style="padding:0 0 8px">История</div>
+        <div class="grid3 ghost">
+          <div class="tile"><div class="n">86%</div><div class="c">принято вовремя</div></div>
+          <div class="tile"><div class="n">9</div><div class="c">дней без пропусков</div></div>
+          <div class="tile"><div class="n">12</div><div class="c">пропусков за месяц</div></div>
+        </div>
+      </div>
+    </div>
+    <figcaption><b>Вариант 3.</b> Заголовок лежит поверх прокручиваемого контента, фон
+      проявляется при прокрутке. Экономит место, но текст в покое наезжает на карточки: для
+      медицинского приложения и аудитории 60+ читаемость важнее «воздуха». Отклонён.</figcaption>
+  </figure>
+
+  <!-- ============ ВАРИАНТ 4 ============ -->
+  <figure class="state">
+    <div class="state-label">Отклонено в v1 · вариант 4: действие вынести из шапки</div>
+    <div class="phone">
+      <div class="bar bar--scrolled">
+        <span class="bar-back"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3B342E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7"></path></svg></span>
+        <span class="bar-title">История</span>
+      </div>
+      <div class="content">
+        <div class="card"><div class="ov">Сентябрь 2026</div><div class="cal"><span class="dow">Пн</span><span class="dow">Вт</span><span class="dow">Ср</span><span class="dow">Чт</span><span class="dow">Пт</span><span class="dow">Сб</span><span class="dow">Вс</span><span class="cell ok"></span><span class="cell ok"></span><span class="cell ok"></span><span class="cell pt"></span><span class="cell ok"></span><span class="cell ok"></span><span class="cell ok"></span></div></div>
+      </div>
+      <div class="bottombar"><button class="btn-primary" type="button">Отчёт врачу</button></div>
+    </div>
+    <figcaption><b>Вариант 4 (продуктовая развилка).</b> «Отчёт врачу» уезжает из шапки
+      в нижнее действие. Шапка чище, но главное действие экрана хуже заметно для человека 60+,
+      а нижняя кнопка конкурирует с нижней панелью вкладок. Решение — за продакт-менеджером;
+      в v1 дизайн рекомендует оставить действие в шапке (вариант 2).</figcaption>
+  </figure>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#B4512F","options":["#B4512F","#1F5F6B","#7A5B2E","#6B4A6B"]},"$preview":{"width":1820,"height":3400}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { accent: this.props.accent ?? '#B4512F' };
+  }
+}
+</script>
+</body>
+</html>

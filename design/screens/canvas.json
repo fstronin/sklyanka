@@ -199,6 +199,14 @@
       "h": 3350,
       "title": "Проверка напоминаний — состояния",
       "is_interactive": true
+    },
+    "HeaderScroll.dc.html": {
+      "x": 0,
+      "y": 7600,
+      "w": 1820,
+      "h": 3000,
+      "title": "Шапка экрана при прокрутке — состояния",
+      "is_interactive": true
     }
   },
   "order": [
@@ -223,7 +231,8 @@
     "DataTransfer.dc.html",
     "MainProfile.dc.html",
     "MainDense.dc.html",
-    "Diagnostics.dc.html"
+    "Diagnostics.dc.html",
+    "HeaderScroll.dc.html"
   ],
   "notes": {
     "t1": {
