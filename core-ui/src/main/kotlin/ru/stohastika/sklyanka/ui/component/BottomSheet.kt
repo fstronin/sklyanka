@@ -1,6 +1,7 @@
 package ru.stohastika.sklyanka.ui.component
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -28,6 +29,7 @@ import ru.stohastika.sklyanka.ui.motion.MotionPhase
 import ru.stohastika.sklyanka.ui.motion.motionTiming
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.Palette
+import ru.stohastika.sklyanka.ui.token.SklyankaMotion
 import ru.stohastika.sklyanka.ui.token.SklyankaShapes
 
 /**
@@ -96,6 +98,14 @@ fun SklyankaBottomSheet(
                         .align(Alignment.BottomCenter)
                         .fillMaxWidth()
                         .heightIn(max = sheetMaxHeight)
+                        // Смена состава меняет высоту полотна: без анимации шторка
+                        // прыгает на новую высоту одним кадром (SKL-101, дефект 1).
+                        .animateContentSize(
+                            animationSpec = tween(
+                                durationMillis = SklyankaMotion.DurationShort,
+                                easing = SklyankaMotion.EasingEnter,
+                            ),
+                        )
                         .clip(SklyankaShapes.TopLarge)
                         .background(colors.surface)
                         .navigationBarsPadding()

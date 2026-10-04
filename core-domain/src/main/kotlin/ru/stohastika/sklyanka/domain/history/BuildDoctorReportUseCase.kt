@@ -69,7 +69,8 @@ class TransferDoctorReportUseCase(
     private val log: OperationLog,
 ) {
 
-    suspend fun share(document: ReportDocument): ReportTransferOutcome = record(transfer.share(document), document)
+    suspend fun share(document: ReportDocument, launcher: ReportShareLauncher): ReportTransferOutcome =
+        record(transfer.share(document, launcher), document)
 
     suspend fun save(document: ReportDocument, target: ReportTarget): ReportTransferOutcome =
         record(transfer.save(document, target), document)
@@ -95,6 +96,17 @@ class TransferDoctorReportUseCase(
     suspend fun saveUnavailable(document: ReportDocument): ReportTransferOutcome =
         record(ReportTransferOutcome.Failed(NO_SAVE_HANDLER), document)
 
+    /**
+     * Передать отчёт некому: системного обмена в устройстве нет.
+     *
+     * Исход — отказ, а не отмена: системный диалог не открывался вовсе, и человеку
+     * говорится то же, что при сорванной передаче, — «отчёт не удалось передать».
+     * След в журнале остаётся по той же причине, что у отмены: без него этот исход
+     * неотличим от «человек не дошёл до кнопки».
+     */
+    suspend fun shareUnavailable(document: ReportDocument): ReportTransferOutcome =
+        record(ReportTransferOutcome.Failed(NO_SHARE_HANDLER), document)
+
     private suspend fun record(outcome: ReportTransferOutcome, document: ReportDocument): ReportTransferOutcome {
         val detail = when (outcome) {
             ReportTransferOutcome.Shared -> "shared"
@@ -119,3 +131,11 @@ class TransferDoctorReportUseCase(
  * не открывался, и запускать его было нечем (SKL-46).
  */
 private const val NO_SAVE_HANDLER = "no_activity_for_create_document"
+
+/**
+ * Причина отказа в журнале: обработчика `ACTION_SEND`/`ACTION_CHOOSER` в устройстве нет.
+ *
+ * Строка называет платформенный факт, а не решение продукта: системный диалог
+ * не открывался, и запускать его было нечем.
+ */
+private const val NO_SHARE_HANDLER = "no_activity_for_share"

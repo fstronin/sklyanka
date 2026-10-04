@@ -1,8 +1,11 @@
 package ru.stohastika.sklyanka.feature.history
 
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -22,6 +25,7 @@ import ru.stohastika.sklyanka.domain.history.MissedPatternRule
 import ru.stohastika.sklyanka.domain.history.ObserveAdherenceUseCase
 import ru.stohastika.sklyanka.domain.history.OnTimeShare
 import ru.stohastika.sklyanka.domain.history.ReportPreset
+import ru.stohastika.sklyanka.domain.history.ReportShareResult
 import ru.stohastika.sklyanka.domain.history.ReportTransferOutcome
 import ru.stohastika.sklyanka.domain.history.TransferDoctorReportUseCase
 import ru.stohastika.sklyanka.domain.log.OpEvent
@@ -262,6 +266,34 @@ class HistoryViewModelTest {
         assertEquals(ReportPreset.PREVIOUS_MONTH, viewModel.state.value.report?.preset)
     }
 
+    /**
+     * Смена пресета не обнуляет открытый отчёт: пока собирается новый состав, старый
+     * остаётся на месте. Обнуление здесь заставляло шторку исчезнуть и вернуться —
+     * она дёргалась и теряла прокрутку (SKL-101, дефект 1).
+     */
+    @Test
+    fun `changing the preset never blanks the open report`() = runTest(dispatcher) {
+        fillSeptember()
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        viewModel.onIntent(HistoryIntent.ReportRequested)
+        advanceUntilIdle()
+
+        val reports = mutableListOf<ReportUi?>()
+        val collector = launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.state.collect { reports += it.report }
+        }
+        viewModel.onIntent(HistoryIntent.ReportPresetChosen(ReportPreset.PREVIOUS_MONTH))
+        advanceUntilIdle()
+        collector.cancel()
+
+        assertTrue(
+            "the open report must never disappear: $reports",
+            reports.isNotEmpty() && reports.none { it == null },
+        )
+        assertEquals(ReportPreset.PREVIOUS_MONTH, viewModel.state.value.report?.preset)
+    }
+
     @Test
     fun `the last three months preset spans three calendar months`() = runTest(dispatcher) {
         fillSeptember()
@@ -353,6 +385,49 @@ class HistoryViewModelTest {
         assertEquals(1, transfer.shared.size)
         assertNotNull(viewModel.state.value.report)
         assertEquals(ReportOutcome.SHARED, viewModel.state.value.reportOutcome)
+    }
+
+    /**
+     * Успех не объявляется, пока системный выбор открыт: результат приходит только
+     * с возвратом диалога (SKL-101, дефект 4).
+     */
+    @Test
+    fun `the success waits for the chosen target`() = runTest(dispatcher) {
+        fillSeptember()
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        viewModel.onIntent(HistoryIntent.ReportRequested)
+        advanceUntilIdle()
+
+        val decision = CompletableDeferred<ReportShareResult>()
+        viewModel.attachShareLauncher { decision.await() }
+        viewModel.onIntent(HistoryIntent.ShareReport)
+        advanceUntilIdle()
+
+        assertNull("no success may be shown while the chooser is open", viewModel.state.value.reportOutcome)
+        assertNotNull("the report must stay open", viewModel.state.value.report)
+
+        decision.complete(ReportShareResult.CHOSEN)
+        advanceUntilIdle()
+
+        assertEquals(ReportOutcome.SHARED, viewModel.state.value.reportOutcome)
+    }
+
+    /** Закрытие системного выбора без получателя — отмена, а не ложный успех. */
+    @Test
+    fun `a dismissed chooser is a cancellation, not a success`() = runTest(dispatcher) {
+        fillSeptember()
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        viewModel.onIntent(HistoryIntent.ReportRequested)
+        advanceUntilIdle()
+
+        viewModel.attachShareLauncher { ReportShareResult.DISMISSED }
+        viewModel.onIntent(HistoryIntent.ShareReport)
+        advanceUntilIdle()
+
+        assertEquals(ReportOutcome.CANCELLED, viewModel.state.value.reportOutcome)
+        assertNotNull(viewModel.state.value.report)
     }
 
     @Test
@@ -558,5 +633,9 @@ class HistoryViewModelTest {
         renderer = renderer,
         missedPattern = MissedPatternRule(),
         time = clock,
-    )
+    ).apply {
+        // По умолчанию системный выбор отвечает «выбран»: проверкам, которым важен
+        // не он, не нужно возиться с его результатом.
+        attachShareLauncher { ReportShareResult.CHOSEN }
+    }
 }

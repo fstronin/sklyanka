@@ -1,8 +1,6 @@
 package ru.stohastika.sklyanka.platform.report
 
-import android.content.ClipData
 import android.content.Context
-import android.content.Intent
 import android.net.Uri
 import androidx.core.content.FileProvider
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -10,6 +8,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import ru.stohastika.sklyanka.domain.history.DoctorReportTransfer
 import ru.stohastika.sklyanka.domain.history.ReportDocument
+import ru.stohastika.sklyanka.domain.history.ReportShare
+import ru.stohastika.sklyanka.domain.history.ReportShareLauncher
+import ru.stohastika.sklyanka.domain.history.ReportShareResult
 import ru.stohastika.sklyanka.domain.history.ReportTarget
 import ru.stohastika.sklyanka.domain.history.ReportTransferOutcome
 import java.io.File
@@ -35,35 +36,26 @@ class SystemDoctorReportTransfer @Inject constructor(@ApplicationContext private
     DoctorReportTransfer {
 
     /**
-     * Отдать отчёт системному обмену.
+     * Выложить отчёт и отдать его системному выбору получателя.
      *
-     * Исход «передан» означает «передан системе»: какое приложение человек выберет в
-     * системном диалоге и доведёт ли он дело до конца, приложению не сообщается, и
-     * выдавать это за подтверждённую отправку нельзя.
+     * Исход «передан» означает «отдан выбранному приложению»: пока системный выбор
+     * открыт, приложению не сообщается, выберет ли человек получателя и доведёт ли он
+     * дело до конца. Поэтому успех ставится не в момент запуска диалога, а по решению
+     * [launcher] — и доставку не обещает.
      */
-    override suspend fun share(document: ReportDocument): ReportTransferOutcome = withContext(Dispatchers.Main) {
-        val uri = try {
-            withContext(Dispatchers.IO) { stage(document) }
-        } catch (failure: IOException) {
-            return@withContext ReportTransferOutcome.Failed(failure.javaClass.simpleName)
+    override suspend fun share(document: ReportDocument, launcher: ReportShareLauncher): ReportTransferOutcome =
+        withContext(Dispatchers.Main) {
+            val uri = try {
+                withContext(Dispatchers.IO) { stage(document) }
+            } catch (failure: IOException) {
+                return@withContext ReportTransferOutcome.Failed(failure.javaClass.simpleName)
+            }
+            when (launcher.launch(ReportShare(uri.toString(), document.fileName, document.mediaType))) {
+                ReportShareResult.CHOSEN -> ReportTransferOutcome.Shared
+                ReportShareResult.DISMISSED -> ReportTransferOutcome.Cancelled
+                ReportShareResult.UNAVAILABLE -> ReportTransferOutcome.Failed(NO_TARGET)
+            }
         }
-        val send = Intent(Intent.ACTION_SEND).apply {
-            type = document.mediaType
-            putExtra(Intent.EXTRA_TITLE, document.fileName)
-            putExtra(Intent.EXTRA_STREAM, uri)
-            // ClipData и флаг — способ выдать получателю доступ ровно к одному файлу
-            // и только на чтение, не открывая каталог кеша целиком.
-            clipData = ClipData.newRawUri(document.fileName, uri)
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }
-        // Диалог запускается из контекста приложения, а не из активности: отчёт
-        // формируется в ViewModel, и активности у неё нет.
-        val chooser = Intent.createChooser(send, null).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
-        runCatching { context.startActivity(chooser) }.fold(
-            onSuccess = { ReportTransferOutcome.Shared },
-            onFailure = { ReportTransferOutcome.Failed(NO_TARGET) },
-        )
-    }
 
     /**
      * Записать отчёт в документ, созданный системным выбором места.

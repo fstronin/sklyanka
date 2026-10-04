@@ -149,7 +149,7 @@ class HistoryUseCasesTest {
         val document = ReportDocument(fileName = "report.pdf", mediaType = "application/pdf", bytes = "x".toByteArray())
 
         transfer.next = ReportTransferOutcome.Shared
-        assertEquals(ReportTransferOutcome.Shared, useCase.share(document))
+        assertEquals(ReportTransferOutcome.Shared, useCase.share(document, { ReportShareResult.CHOSEN }))
         transfer.next = ReportTransferOutcome.Cancelled
         assertEquals(ReportTransferOutcome.Cancelled, useCase.save(document, ReportTarget("target")))
         transfer.next = ReportTransferOutcome.Failed("write_failed")
@@ -248,8 +248,9 @@ internal class RecordingTransfer : DoctorReportTransfer {
     val shared: MutableList<ReportDocument> = mutableListOf()
     val saved: MutableList<ReportDocument> = mutableListOf()
 
-    override suspend fun share(document: ReportDocument): ReportTransferOutcome {
+    override suspend fun share(document: ReportDocument, launcher: ReportShareLauncher): ReportTransferOutcome {
         shared += document
+        launcher.launch(ReportShare("content://share/report.pdf", document.fileName, document.mediaType))
         return next
     }
 

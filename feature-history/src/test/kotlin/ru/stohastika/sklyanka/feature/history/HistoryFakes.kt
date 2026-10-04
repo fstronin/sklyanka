@@ -8,6 +8,9 @@ import ru.stohastika.sklyanka.domain.history.DoctorReportTransfer
 import ru.stohastika.sklyanka.domain.history.HistorySlice
 import ru.stohastika.sklyanka.domain.history.HistoryWindow
 import ru.stohastika.sklyanka.domain.history.ReportDocument
+import ru.stohastika.sklyanka.domain.history.ReportShare
+import ru.stohastika.sklyanka.domain.history.ReportShareLauncher
+import ru.stohastika.sklyanka.domain.history.ReportShareResult
 import ru.stohastika.sklyanka.domain.history.ReportTarget
 import ru.stohastika.sklyanka.domain.history.ReportTransferOutcome
 import ru.stohastika.sklyanka.domain.log.OpEvent
@@ -217,19 +220,26 @@ internal class FakeRenderer : DoctorReportRenderer {
 /** Передача отчёта, которой можно назначить исход: настоящая живёт в `app`. */
 internal class FakeTransfer : DoctorReportTransfer {
 
-    var next: ReportTransferOutcome = ReportTransferOutcome.Shared
+    /** Принудительный исход вместо выбора получателя: проверки отказа (иначе `null`). */
+    var next: ReportTransferOutcome? = null
 
     val shared: MutableList<ReportDocument> = mutableListOf()
     val saved: MutableList<Pair<ReportDocument, ReportTarget>> = mutableListOf()
 
-    override suspend fun share(document: ReportDocument): ReportTransferOutcome {
+    override suspend fun share(document: ReportDocument, launcher: ReportShareLauncher): ReportTransferOutcome {
         shared += document
-        return next
+        next?.let { return it }
+        val share = ReportShare("content://share/report.pdf", document.fileName, document.mediaType)
+        return when (launcher.launch(share)) {
+            ReportShareResult.CHOSEN -> ReportTransferOutcome.Shared
+            ReportShareResult.DISMISSED -> ReportTransferOutcome.Cancelled
+            ReportShareResult.UNAVAILABLE -> ReportTransferOutcome.Failed("no_activity_for_share")
+        }
     }
 
     override suspend fun save(document: ReportDocument, target: ReportTarget): ReportTransferOutcome {
         saved += document to target
-        return next
+        return next ?: ReportTransferOutcome.Saved
     }
 }
 

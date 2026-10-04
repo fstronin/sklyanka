@@ -1,7 +1,6 @@
 package ru.stohastika.sklyanka.platform.report
 
 import android.app.Application
-import android.content.Intent
 import android.net.Uri
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -22,6 +21,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Shadows.shadowOf
 import ru.stohastika.sklyanka.domain.history.ReportDocument
+import ru.stohastika.sklyanka.domain.history.ReportShare
+import ru.stohastika.sklyanka.domain.history.ReportShareResult
 import ru.stohastika.sklyanka.domain.history.ReportTarget
 import ru.stohastika.sklyanka.domain.history.ReportTransferOutcome
 import java.io.ByteArrayOutputStream
@@ -55,27 +56,26 @@ class SystemDoctorReportTransferTest {
         Dispatchers.resetMain()
     }
 
+    /**
+     * Выкладка файла и решение системного выбора.
+     *
+     * Всё в одной проверке намеренно: `FileProvider` кеширует стратегию путей на процесс,
+     * а каждый метод Robolectric живёт в своём каталоге — второй метод того же класса
+     * получил бы стратегию первого и упал бы на чужом корне.
+     */
     @Test
-    fun theShareHandsThePdfFileToTheSystem() = runTest(scheduler) {
-        val outcome = transfer.share(document())
+    fun theShareStagesThePdfAndMapsTheChooserDecision() = runTest(scheduler) {
+        val presented = mutableListOf<ReportShare>()
+        val chosen = transfer.share(document()) { share ->
+            presented += share
+            ReportShareResult.CHOSEN
+        }
 
-        assertEquals(ReportTransferOutcome.Shared, outcome)
-        val chooser = shadowOf(application).nextStartedActivity
-        val send = requireNotNull(chooser.getParcelableExtra(Intent.EXTRA_INTENT, Intent::class.java)) {
-            "the chooser must carry the send intent"
-        }
-        assertEquals("application/pdf", send.type)
-        assertTrue(
-            "the receiver must be granted read access only",
-            send.flags and Intent.FLAG_GRANT_READ_URI_PERMISSION != 0,
-        )
-        assertTrue(
-            "the receiver must not be granted write access",
-            send.flags and Intent.FLAG_GRANT_WRITE_URI_PERMISSION == 0,
-        )
-        val uri = requireNotNull(send.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)) {
-            "the send intent must carry the document uri"
-        }
+        assertEquals(ReportTransferOutcome.Shared, chosen)
+        val share = presented.single()
+        assertEquals("application/pdf", share.mediaType)
+        assertEquals("sklyanka-report-2026-09.pdf", share.fileName)
+        val uri = Uri.parse(share.handle)
         assertEquals("content", uri.scheme)
         assertEquals(
             "the authority must belong to the application",
@@ -83,10 +83,22 @@ class SystemDoctorReportTransferTest {
             uri.authority,
         )
         assertArrayEquals(
-            "the shared file must be the document itself",
+            "the staged file must be the document itself",
             DOCUMENT_BYTES,
             application.contentResolver.openInputStream(uri)?.use { it.readBytes() },
         )
+
+        assertEquals(
+            "a dismissed chooser is a cancellation, not success",
+            ReportTransferOutcome.Cancelled,
+            transfer.share(document()) { ReportShareResult.DISMISSED },
+        )
+        val unavailable = transfer.share(document()) { ReportShareResult.UNAVAILABLE }
+        assertTrue(
+            "the refusal must be named, not swallowed: $unavailable",
+            unavailable is ReportTransferOutcome.Failed,
+        )
+        assertNotNull((unavailable as ReportTransferOutcome.Failed).reason)
     }
 
     @Test

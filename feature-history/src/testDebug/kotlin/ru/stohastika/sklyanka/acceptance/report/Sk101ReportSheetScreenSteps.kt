@@ -30,7 +30,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
 import ru.stohastika.sklyanka.domain.history.HistoryWindow
-import ru.stohastika.sklyanka.domain.history.ReportPreset
 import ru.stohastika.sklyanka.feature.history.HistoryIntent
 import ru.stohastika.sklyanka.feature.history.HistoryScreen
 import ru.stohastika.sklyanka.feature.history.HistoryStates
@@ -86,7 +85,28 @@ class Sk101ReportSheetScreenSteps(private val world: AcceptanceWorld) {
 
     @Когда("^человек выбирает пресет «([^»]+)»$")
     fun thePersonChoosesThePreset(label: String) {
-        state = state.copy(report = requireNotNull(state.report).copy(preset = presetOf(label)))
+        // Нажатие идёт на сам чип настоящей разметки, а не подстановкой пресета в
+        // состояние: сценарий обязан заметить, что чип перестал переключать режим
+        // (SKL-101, дефект 2).
+        runComposeUiTest {
+            var current by mutableStateOf(state)
+            setContent {
+                SklyankaTheme {
+                    HistoryScreen(
+                        state = current,
+                        onIntent = { intent ->
+                            if (intent is HistoryIntent.ReportPresetChosen) {
+                                val report = requireNotNull(current.report)
+                                current = current.copy(report = report.copy(preset = intent.preset))
+                            }
+                        },
+                    )
+                }
+            }
+            onNodeWithText(label).performClick()
+            waitForIdle()
+            state = current
+        }
     }
 
     @Когда("^исход передачи — «([^»]+)»$")
@@ -246,14 +266,6 @@ class Sk101ReportSheetScreenSteps(private val world: AcceptanceWorld) {
     @Composable
     private fun Content() {
         SklyankaTheme { HistoryScreen(state = state, onIntent = {}) }
-    }
-
-    private fun presetOf(label: String): ReportPreset = when (label) {
-        context.getString(R.string.history_report_period_this_month) -> ReportPreset.THIS_MONTH
-        context.getString(R.string.history_report_period_previous_month) -> ReportPreset.PREVIOUS_MONTH
-        context.getString(R.string.history_report_period_last_three_months) -> ReportPreset.LAST_THREE_MONTHS
-        context.getString(R.string.history_report_period_custom) -> ReportPreset.CUSTOM
-        else -> error("unknown preset: $label")
     }
 
     private fun outcomeOf(label: String): ReportOutcome = when (label) {

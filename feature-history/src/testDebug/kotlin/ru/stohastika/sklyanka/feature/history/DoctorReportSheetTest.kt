@@ -2,6 +2,9 @@ package ru.stohastika.sklyanka.feature.history
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertIsDisplayed
@@ -19,6 +22,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import ru.stohastika.sklyanka.domain.history.ReportPreset
+import ru.stohastika.sklyanka.ui.component.TAG_DATE_TIME_PICKER
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaSizes
 import ru.stohastika.sklyanka.ui.token.SklyankaType
@@ -107,6 +111,36 @@ class DoctorReportSheetTest {
         composeRule.onNodeWithTag(TAG_REPORT_START, useUnmergedTree = true).assertIsDisplayed()
         composeRule.onNodeWithTag(TAG_REPORT_END, useUnmergedTree = true).assertIsDisplayed()
         composeRule.onNodeWithTag(TAG_REPORT_PERIOD, useUnmergedTree = true).assertDoesNotExist()
+    }
+
+    /**
+     * Чип «Другой период» включает режим и показывает строки «С»/«По», а строка открывает
+     * диалог даты. Нажатие идёт на сам чип, а не подстановкой состояния: иначе проверка
+     * не заметила бы, что чип перестал переключать режим (SKL-101, дефект 2).
+     */
+    @Test
+    fun theCustomChipShowsTheRowsAndARowOpensTheDateDialog() {
+        var state by mutableStateOf(HistoryStates.withReport())
+        composeRule.setContent {
+            SklyankaTheme {
+                HistoryScreen(
+                    state = state,
+                    onIntent = { intent ->
+                        if (intent is HistoryIntent.ReportPresetChosen) {
+                            state = state.copy(report = requireNotNull(state.report).copy(preset = intent.preset))
+                        }
+                    },
+                )
+            }
+        }
+
+        composeRule.onNodeWithText(context.getString(R.string.history_report_period_custom)).performClick()
+
+        composeRule.onNodeWithTag(TAG_REPORT_START, useUnmergedTree = true).assertIsDisplayed()
+        composeRule.onNodeWithTag(TAG_REPORT_END, useUnmergedTree = true).assertIsDisplayed()
+
+        composeRule.onNodeWithTag(TAG_REPORT_START, useUnmergedTree = true).performClick()
+        composeRule.onNodeWithTag(TAG_DATE_TIME_PICKER, useUnmergedTree = true).assertIsDisplayed()
     }
 
     @Test

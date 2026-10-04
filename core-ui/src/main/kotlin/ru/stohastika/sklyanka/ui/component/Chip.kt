@@ -11,6 +11,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
@@ -50,6 +51,11 @@ fun SklyankaChip(
             .then(
                 if (clickable) {
                     Modifier
+                        // Индикация нажатия обрезается формой чипа: без этого мазок
+                        // нажима выходит за скругление квадратными углами (SKL-101,
+                        // дефект 3). Фон и рамка и так нарисованы по форме — обрезка
+                        // их не меняет, а нежимаемые чипы остаются без лишнего слоя.
+                        .clip(shape)
                         .clickable(role = Role.RadioButton, onClick = { onClick?.invoke() })
                         .defaultMinSize(minHeight = SklyankaSizes.ChipHeight)
                 } else {

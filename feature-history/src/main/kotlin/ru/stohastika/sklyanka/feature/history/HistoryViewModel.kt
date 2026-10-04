@@ -22,6 +22,7 @@ import ru.stohastika.sklyanka.domain.history.MissedPatternRule
 import ru.stohastika.sklyanka.domain.history.ObserveAdherenceUseCase
 import ru.stohastika.sklyanka.domain.history.ReportPeriodRules
 import ru.stohastika.sklyanka.domain.history.ReportPreset
+import ru.stohastika.sklyanka.domain.history.ReportShareLauncher
 import ru.stohastika.sklyanka.domain.history.ReportTarget
 import ru.stohastika.sklyanka.domain.history.ReportTransferOutcome
 import ru.stohastika.sklyanka.domain.history.TransferDoctorReportUseCase
@@ -64,6 +65,19 @@ class HistoryViewModel @Inject constructor(
 
     private val month = MutableStateFlow(YearMonth.from(time.today()))
     private val local = MutableStateFlow(LocalState())
+
+    /**
+     * Показ системного выбора получателя.
+     *
+     * Приходит из разметки: результат системного диалога умеет получить только она.
+     * До подстановки передавать нечем — попытка честно кончается отказом.
+     */
+    private var shareLauncher: ReportShareLauncher? = null
+
+    /** Связать передачу с системным выбором получателя, который живёт на экране. */
+    fun attachShareLauncher(launcher: ReportShareLauncher) {
+        shareLauncher = launcher
+    }
 
     val state: StateFlow<HistoryUiState> = combine(
         month.flatMapLatest { selected -> observeAdherence(selected) },
@@ -152,11 +166,19 @@ class HistoryViewModel @Inject constructor(
      *
      * Сообщение исхода сбрасывается: оно относилось к прошлому составу, и оставить его
      * рядом с новым числом значит сказать человеку неправду (ОВ-125).
+     *
+     * **Прежний состав остаётся на месте, пока не готов новый.** Обнуление здесь
+     * заставляло шторку исчезнуть и вернуться: она дёргалась, теряла прокрутку и
+     * выглядела «не нажавшейся» (SKL-101, дефект 1). Мелкая гонка двух быстрых
+     * нажатий решается сверкой выбора: применяется результат только последнего.
      */
     private fun rebuild(selection: Selection) {
-        local.value = local.value.copy(report = null, outcome = null, selection = selection)
+        local.value = local.value.copy(outcome = null, selection = selection)
         viewModelScope.launch {
             val report = buildReport(windowOf(selection)) ?: return@launch
+            // Сборку обогнал более новый выбор — её результат уже не актуален,
+            // и рисовать документ ради выброшенной версии не нужно.
+            if (local.value.selection != selection) return@launch
             val zone = time.zone()
             local.value = local.value.copy(
                 report = ReportUi(
@@ -179,9 +201,24 @@ class HistoryViewModel @Inject constructor(
         ReportPeriodRules.window(selection.preset, time.today())
     }
 
+    /**
+     * Передать отчёт системным обменом.
+     *
+     * Исход ставится только после решения системного выбора: пока диалог открыт,
+     * результат неизвестен (SKL-101, дефект 4). Без обработчика на экране передавать
+     * нечем — честный отказ, как у выбора места.
+     */
     private fun share() {
         val report = local.value.report ?: return
-        viewModelScope.launch { outcome(transferReport.share(report.document), onFailure = ReportOutcome.FAILED_SHARE) }
+        val launcher = shareLauncher
+        viewModelScope.launch {
+            val outcome = if (launcher == null) {
+                transferReport.shareUnavailable(report.document)
+            } else {
+                transferReport.share(report.document, launcher)
+            }
+            outcome(outcome, onFailure = ReportOutcome.FAILED_SHARE)
+        }
     }
 
     private fun save(target: ReportTarget) {
