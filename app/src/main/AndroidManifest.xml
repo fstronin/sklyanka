@@ -57,6 +57,18 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <!--
+      Доступ к политике «Не беспокоить» (НАП-17, ОВ-126/ОВ-134).
+
+      Без объявления этого разрешения приложение не попадает в системный список
+      «Доступ к режиму „Не беспокоить“»: человек не может выдать доступ, проверка
+      `isNotificationPolicyAccessGranted` всегда возвращает `false`, и строка
+      диагностики навсегда остаётся «проверьте вручную» — исправить её нечем.
+      Разрешение обычное (protection level normal): диалога не показывает, доступ
+      выдаётся вручную на системном экране, куда ведёт «Исправить» в диагностике.
+    -->
+    <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
+
+    <!--
       Точные будильники: объявляются оба разрешения (НАП-16).
 
       USE_EXACT_ALARM — основное: приложение является календарём приёма лекарств, то есть
@@ -192,12 +204,17 @@
           на прямой запуск опираются прогоны устройством (НАП-40, SKL-27), а вопрос
           снятия атрибута — отдельный. Медицинских данных на экране нет по построению
           (НФТ-19), поэтому цена открытости нулевая.
+
+          `adjustResize` — чтобы окно не «уезжало» вверх при показе клавиатуры: инсеты
+          IME обрабатывает сама шторка (`SklyankaBottomSheet`), а `adjustPan` сдвинул бы
+          полотно и оставил полосу над клавиатурой (ОВ-140).
         -->
         <activity
             android:name="ru.stohastika.sklyanka.feature.reminder.DiagnosticsActivity"
             android:exported="true"
             android:label="@string/diagnostics_shortcut_label"
-            android:theme="@style/Theme.Sklyanka" />
+            android:theme="@style/Theme.Sklyanka"
+            android:windowSoftInputMode="adjustResize" />
 
         <!--
           Экран разрешений EMUI при повторном входе (SKL-14, НАП-21).
