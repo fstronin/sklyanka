@@ -5,10 +5,8 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -16,7 +14,6 @@ import dagger.hilt.android.AndroidEntryPoint
 import ru.stohastika.sklyanka.domain.analytics.Analytics
 import ru.stohastika.sklyanka.domain.analytics.AnalyticsEvent
 import ru.stohastika.sklyanka.domain.analytics.ScreenName
-import ru.stohastika.sklyanka.domain.reminder.ReminderJournalDocument
 import ru.stohastika.sklyanka.ui.locale.withInterfaceLocale
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import javax.inject.Inject
@@ -78,41 +75,31 @@ class DiagnosticsActivity : ComponentActivity() {
         setContent {
             SklyankaTheme {
                 val state by viewModel.state.collectAsState()
-                // Системный выбор места (SAF) живёт здесь, а не в `ViewModel` и не в домене:
-                // это результат чужой активности, и получить его может только composable.
-                // Наружу уходит непрозрачная ссылка строкой, разрешений на внешнее
-                // хранилище приложение не запрашивает (НФТ-17).
-                val saveLauncher = rememberLauncherForActivityResult(
-                    contract = ActivityResultContracts.CreateDocument(ReminderJournalDocument.MEDIA_TYPE),
-                ) { uri -> uri?.let { viewModel.onExportTo(it.toString()) } }
                 DiagnosticsScreen(
                     state = state,
-                    onCheckNow = viewModel::onCheckNow,
-                    onExportJournal = { saveLauncher.launch(state.exportFileName) },
                     onRestartSetup = {
                         startActivity(setupEntry.intentFor(this@DiagnosticsActivity))
                     },
-                    onToggleSupport = viewModel::onToggleSupport,
                     // Исход фиксера не глотается: экран покажет запасную инструкцию,
                     // если системный раздел не открылся (НФТ-8, ОВ-106).
                     onFixPermission = { permission ->
                         viewModel.onFixResult(permission, settingsFixer.fix(permission))
                     },
-                    onAlarmKindChange = viewModel::onAlarmKindChange,
                     onCheckDelivery = viewModel::onCheckDelivery,
                     onDismissCheckSheet = viewModel::onDismissCheckSheet,
                     onStartDeliveryCheck = viewModel::onStartDeliveryCheck,
                     onCancelDeliveryCheck = viewModel::onCancelDeliveryCheck,
-                    // Результат прочитан — он подтверждается до действия, иначе вернулся бы
+                    // Исход прочитан — он подтверждается до действия, иначе вернулся бы
                     // баннером при следующем входе (ОВ-108).
-                    onRepeatDeliveryCheck = {
-                        viewModel.onAcknowledgeDeliveryCheck()
-                        viewModel.onCheckDelivery()
-                    },
+                    onAcknowledgeDeliveryCheck = viewModel::onAcknowledgeDeliveryCheck,
                     onFixDeliveryCheck = {
                         viewModel.onAcknowledgeDeliveryCheck()
                         startActivity(setupEntry.intentFor(this@DiagnosticsActivity))
                     },
+                    onReportOpen = viewModel::onReportOpen,
+                    onReportCommentChange = viewModel::onReportCommentChange,
+                    onReportSend = viewModel::onReportSend,
+                    onReportDismiss = viewModel::onReportDismiss,
                     onBack = ::finish,
                     toLocal = viewModel::local,
                 )

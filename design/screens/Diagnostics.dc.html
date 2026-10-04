@@ -47,6 +47,9 @@ a{color:#B4512F;text-decoration:none}
 .pbody{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .pname{font-size:15px;font-weight:600;color:#241F1B;line-height:1.35}
 .pname--ok{font-size:14px;color:#5F564D}
+/* Слово состояния — видимая метка под названием (ОВ-134/ОВ-143): CaptionStrong 13px/600.
+   Кегль и начертание отделяют метку от последствия-предложения (.pcons), не вводя новый цвет. */
+.pstate{font-size:13px;font-weight:600;color:#5F564D;line-height:1.35}
 .pcons{font-size:12px;color:#5F564D;line-height:1.45}
 /* Колонка действия фиксированной ширины: подпись — по левому краю колонки,
    шеврон — по правому, поэтому начала подписей и шевроны стоят на одной
@@ -79,7 +82,7 @@ a{color:#B4512F;text-decoration:none}
 .kb-key--k2{flex:2}
 .kb-key--space{flex:5;font-size:14px;color:#5F564D}
 .kb-key--enter{flex:2;background:#F6E7DF;color:#6B3620;font-weight:600}
-.btn{height:50px;border-radius:15px;font-family:inherit;font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:center;width:100%;border:none;cursor:default}
+.btn{height:50px;border-radius:15px;font-family:inherit;font-size:16px;font-weight:600;display:flex;align-items:center;justify-content:center;width:100%;border:none;cursor:default}
 .btn--secondary{background:transparent;border:1px solid #D9CDBD;color:#241F1B}
 .btn--primary{background:#B4512F;color:#FFFFFF}
 .quiet{font-family:inherit;font-size:14px;font-weight:600;color:#B4512F;background:none;border:none;padding:0;cursor:default;display:inline-flex;align-items:center;gap:7px;min-height:44px;text-align:left}
@@ -211,12 +214,12 @@ figcaption{max-width:390px;font-size:12px;color:#5F564D;margin-top:12px;line-hei
 <div class="pgroup-label">Исправьте сначала — иначе напоминания не придут или опоздают</div>
 <div class="pitem">
 <div class="pmark pmark--warn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8F3E23" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 21 20H3z"></path><path d="M12 10v4.5"></path><path d="M12 17.4v.1"></path></svg></div>
-<div class="pbody"><div class="pname">Точные будильники</div><div class="pcons">Телефон может сдвинуть приём — до получаса.</div></div>
+<div class="pbody"><div class="pname">Точные будильники</div><div class="pstate">не выдано</div><div class="pcons">Телефон может сдвинуть приём — до получаса.</div></div>
 <button class="paction" type="button"><span class="plabel">Исправить</span><span class="chev">›</span></button>
 </div>
 <div class="pitem">
 <div class="pmark pmark--info"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5F564D" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5.5"></path><path d="M12 7.8v.2"></path></svg></div>
-<div class="pbody"><div class="pname">Автозапуск и энергосбережение</div><div class="pcons">Приложение не видит настройки EMUI — проверьте сами.</div></div>
+<div class="pbody"><div class="pname">Автозапуск и энергосбережение</div><div class="pstate">проверьте вручную</div><div class="pcons">Приложение не видит настройки EMUI — проверьте сами.</div></div>
 <button class="paction" type="button"><span class="plabel">Исправить</span><span class="chev">›</span></button>
 </div>
 </div>
@@ -224,12 +227,12 @@ figcaption{max-width:390px;font-size:12px;color:#5F564D;margin-top:12px;line-hei
 <div class="pgroup-label">Можно отложить — напоминания придут, но не полностью</div>
 <div class="pitem">
 <div class="pmark pmark--warn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8F3E23" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 21 20H3z"></path><path d="M12 10v4.5"></path><path d="M12 17.4v.1"></path></svg></div>
-<div class="pbody"><div class="pname">Полноэкранные уведомления</div><div class="pcons">Карточка не появится на заблокированном экране.</div></div>
+<div class="pbody"><div class="pname">Полноэкранные уведомления</div><div class="pstate">не выдано</div><div class="pcons">Карточка не появится на заблокированном экране.</div></div>
 <button class="paction" type="button"><span class="plabel">Исправить</span><span class="chev">›</span></button>
 </div>
 <div class="pitem">
 <div class="pmark pmark--info"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5F564D" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5.5"></path><path d="M12 7.8v.2"></path></svg></div>
-<div class="pbody"><div class="pname">Доступ к политике «Не беспокоить»</div><div class="pcons">Повторные напоминания будут беззвучными.</div></div>
+<div class="pbody"><div class="pname">Доступ к политике «Не беспокоить»</div><div class="pstate">проверьте вручную</div><div class="pcons">Повторные напоминания будут беззвучными.</div></div>
 <button class="paction" type="button"><span class="plabel">Исправить</span><span class="chev">›</span></button>
 </div>
 </div>
@@ -262,7 +265,7 @@ figcaption{max-width:390px;font-size:12px;color:#5F564D;margin-top:12px;line-hei
 </div>
 </div>
 </div>
-<figcaption><b>Есть проблемы.</b> Баннер сверху — вердикт одним предложением (теми же словами, что на «Сегодня» и «Настроить надёжность»); карточка — список дел, а не повтор баннера. Две группы по приоритету, у строки — маркер состояния, последствие словами и переход в системные настройки. <b>Действие выровнено в колонку фиксированной ширины</b> (подпись — по левому краю колонки, шеврон — по правому), поэтому начала подписей и шевроны стоят на одной вертикали; футер и «Пройти настройку заново» используют ту же сетку. «Проверьте вручную» отличается от «не выдано» нейтральным маркером. Возврат из системных настроек перечитывает список: исправленная строка исчезает (состояние 4); когда исправлен последний пункт, секция сворачивается до строки «Разрешения выданы», а вердикт становится «Всё в порядке» (состояния 1–2).</figcaption>
+<figcaption><b>Есть проблемы.</b> Баннер сверху — вердикт одним предложением (теми же словами, что на «Сегодня» и «Настроить надёжность»); карточка — список дел, а не повтор баннера. Две группы по приоритету, у строки — маркер состояния, видимое слово состояния отдельной строкой (13 px/600, приглушённое) и последствие-предложение (12 px), затем переход в системные настройки. <b>Действие выровнено в колонку фиксированной ширины</b> (подпись — по левому краю колонки, шеврон — по правому), поэтому начала подписей и шевроны стоят на одной вертикали; футер и «Пройти настройку заново» используют ту же сетку. «Проверьте вручную» отличается от «не выдано» нейтральным маркером; слово состояния одинаково приглушённое, состояние читается словом и маркером вместе (НФТ-30/AC-10). Слово — короткая метка без точки, последствие — отдельное предложение, поэтому они не сливаются даже при близких словах. Возврат из системных настроек перечитывает список: исправленная строка исчезает (состояние 4); когда исправлен последний пункт, секция сворачивается до строки «Разрешения выданы», а вердикт становится «Всё в порядке» (состояния 1–2).</figcaption>
 </figure>
 
 <figure class="state">
@@ -281,12 +284,12 @@ figcaption{max-width:390px;font-size:12px;color:#5F564D;margin-top:12px;line-hei
 <div class="pgroup-label">Можно отложить — напоминания придут, но не полностью</div>
 <div class="pitem">
 <div class="pmark pmark--warn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8F3E23" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 21 20H3z"></path><path d="M12 10v4.5"></path><path d="M12 17.4v.1"></path></svg></div>
-<div class="pbody"><div class="pname">Полноэкранные уведомления</div><div class="pcons">Карточка не появится на заблокированном экране.</div></div>
+<div class="pbody"><div class="pname">Полноэкранные уведомления</div><div class="pstate">не выдано</div><div class="pcons">Карточка не появится на заблокированном экране.</div></div>
 <button class="paction" type="button"><span class="plabel">Исправить</span><span class="chev">›</span></button>
 </div>
 <div class="pitem">
 <div class="pmark pmark--info"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5F564D" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5.5"></path><path d="M12 7.8v.2"></path></svg></div>
-<div class="pbody"><div class="pname">Доступ к политике «Не беспокоить»</div><div class="pcons">Повторные напоминания будут беззвучными.</div></div>
+<div class="pbody"><div class="pname">Доступ к политике «Не беспокоить»</div><div class="pstate">проверьте вручную</div><div class="pcons">Повторные напоминания будут беззвучными.</div></div>
 <button class="paction" type="button"><span class="plabel">Исправить</span><span class="chev">›</span></button>
 </div>
 </div>

@@ -11,25 +11,30 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
-import ru.stohastika.sklyanka.domain.intake.SweepReason
+import ru.stohastika.sklyanka.domain.model.IntakeStatus
+import ru.stohastika.sklyanka.domain.model.ScheduleMode
 import ru.stohastika.sklyanka.domain.reminder.BuildReminderDiagnosticsUseCase
 import ru.stohastika.sklyanka.domain.reminder.DeliveryCheckRule
 import ru.stohastika.sklyanka.domain.reminder.DeliveryCheckState
-import ru.stohastika.sklyanka.domain.reminder.ExportReminderJournalUseCase
 import ru.stohastika.sklyanka.domain.reminder.ReadReminderReliabilityUseCase
+import ru.stohastika.sklyanka.domain.reminder.ReminderIntake
+import ru.stohastika.sklyanka.domain.reminder.ReminderSlot
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPermission
-import ru.stohastika.sklyanka.domain.schedule.PlanReason
-import ru.stohastika.sklyanka.domain.schedule.PlanScope
+import ru.stohastika.sklyanka.domain.reminder.port.ReminderPlanSource
+import ru.stohastika.sklyanka.domain.time.TimeSource
 import ru.stohastika.sklyanka.feature.reminder.DeliveryCheckController
 import ru.stohastika.sklyanka.feature.reminder.DeliveryCheckNotice
 import ru.stohastika.sklyanka.feature.reminder.DeliveryCheckScreen
+import ru.stohastika.sklyanka.feature.reminder.DeveloperReportOutcome
+import ru.stohastika.sklyanka.feature.reminder.DeveloperReportSender
 import ru.stohastika.sklyanka.feature.reminder.DiagnosticsScreen
 import ru.stohastika.sklyanka.feature.reminder.DiagnosticsUiState
 import ru.stohastika.sklyanka.feature.reminder.DiagnosticsViewModel
-import ru.stohastika.sklyanka.feature.reminder.ReminderCheckNow
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
+import java.time.Duration
 import java.time.Instant
 import java.time.LocalDateTime
+import java.time.ZoneId
 
 /**
  * Стенд экрана диагностики напоминаний: настоящий `DiagnosticsViewModel` на мире сценария
@@ -37,17 +42,13 @@ import java.time.LocalDateTime
  *
  * Диагностика — часть продукта, а не отладочный экран, и её снимок собирает настоящий
  * `BuildReminderDiagnosticsUseCase` из тех же портов, что в `app`: журнала, будильников,
- * разрешений и плана. «Проверить сейчас» идёт тем же полным обходом, что
- * `ReminderPlanningTrigger` (НАП-11): проход по просроченным, генерация окна, пересборка
- * будильников. Выгрузка журнала — тем же файловым портом, что перенос данных (НФТ-51).
+ * разрешений, плана и подтверждений самопроверки. Отправка отчёта идёт через подставной
+ * шов без сети: исход задаётся сценарием, а реальная заглушка `app` всегда отвечает «отправлено».
  *
  * Подменённый главный диспетчер обязан сниматься прогоном (`dropMainDispatcher`).
  */
 @OptIn(ExperimentalTestApi::class)
 internal object DiagnosticsStand {
-
-    /** Место выгрузки журнала в стенде: системный выбор места — порт платформы (НФТ-17). */
-    const val JOURNAL_HANDLE = "chosen://journal"
 
     private var lastWorld: AcceptanceWorld? = null
     private var viewModel: DiagnosticsViewModel? = null
@@ -59,6 +60,23 @@ internal object DiagnosticsStand {
     /** Системная «Назад» нажата. */
     var backRequested: Boolean = false
         private set
+
+    /** «Исправить» у блока проверки: результат прочитан, человек ушёл на «Настроить надёжность». */
+    var fixedSetup: Boolean = false
+        private set
+
+    /** «Пройти настройку заново» под карточкой: человек ушёл на «Настроить надёжность» (AC-12). */
+    var restartSetupRequested: Boolean = false
+        private set
+
+    /** Исход отправки отчёта, который вернёт шов; сценарии переключают его на отказ (AC-33). */
+    var reportOutcome: DeveloperReportOutcome = DeveloperReportOutcome.SENT
+
+    /** Комментарии, дошедшие до шва отправки: проверяется, что текст не потерян (AC-33). */
+    val sentComments: MutableList<String> = mutableListOf()
+
+    /** Подмена шва отправки для проверки отмены; `null` — обычный исход сценария. */
+    var reportSenderOverride: DeveloperReportSender? = null
 
     /**
      * Что объявляется баннером при входе (SKL-86): результат проверки или ничего.
@@ -76,7 +94,12 @@ internal object DiagnosticsStand {
             viewModel = null
             fixed = null
             backRequested = false
+            fixedSetup = false
+            restartSetupRequested = false
             announcement = null
+            reportOutcome = DeveloperReportOutcome.SENT
+            sentComments.clear()
+            reportSenderOverride = null
             Dispatchers.setMain(UnconfinedTestDispatcher())
         }
     }
@@ -87,16 +110,6 @@ internal object DiagnosticsStand {
     }
 
     fun state(world: AcceptanceWorld): DiagnosticsUiState = model(world).state.value
-
-    /** Системный выбор места вернул ссылку — выгрузка идёт настоящим сценарием (НФТ-51). */
-    fun exportJournal(world: AcceptanceWorld, handle: String = JOURNAL_HANDLE) {
-        model(world).onExportTo(handle)
-    }
-
-    /** Раскрыть технический блок «Для поддержки», если он свёрнут (SKL-79). */
-    fun expandSupport(world: AcceptanceWorld) {
-        if (!state(world).supportExpanded) model(world).onToggleSupport()
-    }
 
     /** Перечитать снимок: человек вернулся из системных настроек (НФТ-52). */
     fun refresh(world: AcceptanceWorld) {
@@ -158,29 +171,24 @@ internal object DiagnosticsStand {
                 }
                 DiagnosticsScreen(
                     state = state(world),
-                    onCheckNow = { onAction { model(world).onCheckNow() } },
-                    onExportJournal = { onAction { exportJournal(world) } },
-                    // «Пройти настройку заново» подключает `app`; сценарии его не трогают.
-                    onRestartSetup = null,
-                    onToggleSupport = { onAction { model(world).onToggleSupport() } },
+                    // «Пройти настройку заново» подключает `app`; стенд фиксирует нажатие.
+                    onRestartSetup = { onAction { restartSetupRequested = true } },
                     onFixPermission = { permission -> onAction { fixed = permission } },
-                    onAlarmKindChange = { kind -> onAction { model(world).onAlarmKindChange(kind) } },
                     onCheckDelivery = { onAction { model(world).onCheckDelivery() } },
                     onDismissCheckSheet = { onAction { model(world).onDismissCheckSheet() } },
                     onStartDeliveryCheck = { onAction { model(world).onStartDeliveryCheck() } },
                     onCancelDeliveryCheck = { onAction { model(world).onCancelDeliveryCheck() } },
-                    onRepeatDeliveryCheck = {
-                        onAction {
-                            model(world).onAcknowledgeDeliveryCheck()
-                            model(world).onCheckDelivery()
-                        }
-                    },
+                    onAcknowledgeDeliveryCheck = { onAction { model(world).onAcknowledgeDeliveryCheck() } },
                     onFixDeliveryCheck = {
                         onAction {
                             model(world).onAcknowledgeDeliveryCheck()
                             fixedSetup = true
                         }
                     },
+                    onReportOpen = { onAction { model(world).onReportOpen() } },
+                    onReportCommentChange = { text -> onAction { model(world).onReportCommentChange(text) } },
+                    onReportSend = { onAction { model(world).onReportSend() } },
+                    onReportDismiss = { onAction { model(world).onReportDismiss() } },
                     onBack = { onAction { backRequested = true } },
                     toLocal = { instant: Instant -> instant.atZone(world.clock.zone).toLocalDateTime() },
                 )
@@ -188,24 +196,18 @@ internal object DiagnosticsStand {
         }
     }
 
-    /** «Исправить» у блока проверки: результат прочитан, человек ушёл на «Настроить надёжность». */
-    var fixedSetup: Boolean = false
-        private set
-
     /**
-     * Вопрос к собранной композиции с раскрытым техблоком.
+     * Вопрос к собранной композиции.
      *
-     * Сценарии SKL-13/SKL-20 говорят о технических деталях (журнал, счётчики, секунды
-     * отклонения), и блок «Для поддержки» раскрывается перед вопросом: иначе их проверки
-     * видели бы только первый уровень. Свёрнутость блока проверяют сценарии SKL-79
-     * через [askRaw].
+     * Технического блока «Для поддержки» на первом уровне больше нет (ОВ-126), поэтому
+     * `ask`/`act` совпадают с `askRaw`/`actRaw`; имена оставлены, чтобы смежные шаги
+     * не переписывать.
      */
     fun ask(world: AcceptanceWorld, question: ComposeUiTest.() -> Unit) {
-        expandSupport(world)
         askRaw(world, question)
     }
 
-    /** Вопрос к композиции без раскрытия техблока (SKL-79: «содержимое свёрнуто»). */
+    /** Вопрос к композиции без раскрытия техблока. */
     fun askRaw(world: AcceptanceWorld, question: ComposeUiTest.() -> Unit) {
         reset(world)
         runComposeUiTest {
@@ -215,13 +217,12 @@ internal object DiagnosticsStand {
         }
     }
 
-    /** Действие человека с раскрытым техблоком: нажатия копятся и применяются после композиции. */
+    /** Действие человека: нажатия копятся и применяются после композиции. */
     fun act(world: AcceptanceWorld, action: ComposeUiTest.() -> Unit) {
-        expandSupport(world)
         actRaw(world, action)
     }
 
-    /** Действие человека без раскрытия техблока (SKL-79: нажатие «Для поддержки»). */
+    /** Действие человека без раскрытия техблока. */
     fun actRaw(world: AcceptanceWorld, action: ComposeUiTest.() -> Unit) {
         reset(world)
         val performed = mutableListOf<() -> Unit>()
@@ -233,35 +234,48 @@ internal object DiagnosticsStand {
         performed.forEach { it() }
     }
 
-    private fun build(world: AcceptanceWorld): DiagnosticsViewModel = DiagnosticsViewModel(
-        diagnostics = BuildReminderDiagnosticsUseCase(
-            journal = world.reminders.journal,
-            alarms = world.reminders.alarms,
-            permissions = world.system,
-            plan = world.reminders.planSource(),
-            reliability = ReadReminderReliabilityUseCase(world.system),
-            medications = world.repositories.medicationStore,
-            measurement = world.reminders.measurement,
+    /** Технического блока больше нет: вызов оставлен ради смежных шагов. */
+    @Suppress("UNUSED_PARAMETER")
+    fun expandSupport(world: AcceptanceWorld) = Unit
+
+    private fun build(world: AcceptanceWorld): DiagnosticsViewModel {
+        // Перерыв, названный Предысторией, стенд превращает в ожидавшееся срабатывание,
+        // которого не было: экран считает перерыв тем же `OutageDetector`, что и продукт.
+        val outage = world.outageSince
+        return DiagnosticsViewModel(
+            diagnostics = BuildReminderDiagnosticsUseCase(
+                journal = world.reminders.journal,
+                alarms = world.reminders.alarms,
+                permissions = world.system,
+                plan = outage?.let { OutagePlanSource(world.reminders.planSource(), it, world.clock.zone) }
+                    ?: world.reminders.planSource(),
+                reliability = ReadReminderReliabilityUseCase(world.system),
+                medications = world.repositories.medicationStore,
+                measurement = world.reminders.measurement,
+                acknowledgements = world.reminders.acknowledgements,
+                time = outage?.let { OutageTimeSource(world.clock.time, it) } ?: world.clock.time,
+            ),
+            deliveryCheck = object : DeliveryCheckController {
+                override suspend fun start() = world.reminders.startDeliveryCheck()
+
+                override suspend fun finish() = world.reminders.finishDeliveryCheck()
+
+                override suspend fun cancel() = world.reminders.cancelDeliveryCheck()
+
+                override suspend fun acknowledge(dueAt: Instant) = world.reminders.acknowledgeDeliveryCheck(dueAt)
+            },
+            reportSender = DeveloperReportSender { comment ->
+                val override = reportSenderOverride
+                if (override != null) {
+                    override.send(comment)
+                } else {
+                    sentComments += comment
+                    reportOutcome
+                }
+            },
             time = world.clock.time,
-        ),
-        check = ReminderCheckNow { reason ->
-            // Сценарий отказа: проверка не может завершиться (SKL-79, НФТ-8).
-            check(!world.failReminderCheck) { "the manual check could not finish" }
-            // Тот же порядок, что у `ReminderPlanningTrigger.planAll`: просроченные,
-            // генерация окна, пересборка будильников (НАП-11, НАП-34).
-            world.sweep(SweepReason.REPLAN)
-            world.plan(PlanScope.AllProfiles, PlanReason.MANUAL_CHECK)
-            world.reminders.reschedule(reason)
-        },
-        exportJournal = ExportReminderJournalUseCase(
-            journal = world.reminders.journal,
-            files = world.transfer.files,
-            time = world.clock.time,
-        ),
-        settings = world.reminders.settingsStore,
-        deliveryCheck = StandDeliveryCheckController(world),
-        time = world.clock.time,
-    )
+        )
+    }
 
     /** Забыть подменённый главный диспетчер: стенд не должен влиять на соседние тесты. */
     fun dropMainDispatcher() {
@@ -270,18 +284,60 @@ internal object DiagnosticsStand {
 }
 
 /**
- * Самопроверка доставки для стенда (SKL-86).
- *
- * Настоящие доменные сценарии на портах мира сценария: копии правила нет, а порядок
- * вызовов тот же, что собирает `app` в `DeliveryCheckScenarios`.
+ * Время для сборки снимка, когда Предыстория назвала перерыв: момент сдвинут за начало
+ * перерыва, чтобы `OutageDetector` увидел несостоявшееся срабатывание. Остальной мир живёт
+ * по своим часам — сдвиг нужен только правилу перерыва.
  */
-private class StandDeliveryCheckController(private val world: AcceptanceWorld) : DeliveryCheckController {
+private class OutageTimeSource(private val base: TimeSource, outage: Instant) : TimeSource {
 
-    override suspend fun start(): DeliveryCheckState = world.reminders.startDeliveryCheck()
+    private val now: Instant = maxOf(base.now(), outage.plus(OUTAGE_GRACE))
 
-    override suspend fun finish(): DeliveryCheckState = world.reminders.finishDeliveryCheck()
+    override fun now(): Instant = now
 
-    override suspend fun cancel() = world.reminders.cancelDeliveryCheck()
+    override fun zone(): ZoneId = base.zone()
 
-    override suspend fun acknowledge(dueAt: Instant) = world.reminders.acknowledgeDeliveryCheck(dueAt)
+    private companion object {
+        val OUTAGE_GRACE: Duration = Duration.ofMinutes(5)
+    }
+}
+
+/**
+ * План для сборки снимка при названном перерыве: добавляет к настоящим приёмам один
+ * ожидавшийся, но не сработавший — на момент начала перерыва. Названий и доз он не несёт:
+ * диагностика разрешает имя только для последнего и следующего напоминания (НФТ-19).
+ */
+private class OutagePlanSource(
+    private val delegate: ReminderPlanSource,
+    private val since: Instant,
+    private val zone: ZoneId,
+) : ReminderPlanSource {
+
+    override suspend fun candidates(from: LocalDateTime, toInclusive: LocalDateTime): List<ReminderIntake> {
+        val at = since.atZone(zone).toLocalDateTime()
+        val missed = if (!at.isBefore(from) && !at.isAfter(toInclusive)) listOf(missedFiring(at)) else emptyList()
+        return delegate.candidates(from, toInclusive) + missed
+    }
+
+    override suspend fun intake(intakeId: String): ReminderIntake? = delegate.intake(intakeId)
+
+    override suspend fun pendingInSlot(slot: ReminderSlot): List<ReminderIntake> = delegate.pendingInSlot(slot)
+
+    private fun missedFiring(at: LocalDateTime): ReminderIntake = ReminderIntake(
+        intakeId = OUTAGE_INTAKE_ID,
+        medicationId = OUTAGE_MEDICATION_ID,
+        profileId = OUTAGE_PROFILE_ID,
+        scheduledAt = at,
+        status = IntakeStatus.PENDING,
+        scheduleMode = ScheduleMode.SCHEDULED,
+        medicationArchived = false,
+        medicationDeleted = false,
+        profileIsSelf = true,
+        profileMirrorsReminders = false,
+    )
+
+    private companion object {
+        const val OUTAGE_INTAKE_ID = "outage-expected"
+        const val OUTAGE_MEDICATION_ID = "outage-medication"
+        const val OUTAGE_PROFILE_ID = "outage-profile"
+    }
 }

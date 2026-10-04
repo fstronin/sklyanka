@@ -22,10 +22,9 @@ import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
 import ru.stohastika.sklyanka.domain.reminder.ReminderEvent
 import ru.stohastika.sklyanka.feature.reminder.DiagnosticsUiState
 import ru.stohastika.sklyanka.feature.reminder.R
-import ru.stohastika.sklyanka.feature.reminder.TAG_CHECK_NOW
+import ru.stohastika.sklyanka.feature.reminder.TAG_CHECK_DELIVERY
 import ru.stohastika.sklyanka.feature.reminder.TAG_DIAGNOSTICS
-import ru.stohastika.sklyanka.feature.reminder.TAG_EXPORT_JOURNAL
-import ru.stohastika.sklyanka.feature.reminder.TAG_JOURNAL_ROW
+import ru.stohastika.sklyanka.feature.reminder.TAG_WEEK_SUMMARY
 
 /**
  * Экранные шаги приёмки удаления пробного напоминания в диагностике (SKL-32, группа `@diagnostics`).
@@ -41,12 +40,13 @@ class TestReminderRemovalDiagnosticsSteps(private val world: AcceptanceWorld) {
 
     private val context: Context = ApplicationProvider.getApplicationContext()
 
-    @Тогда("^среди действий диагностики есть «Проверить сейчас» и «Выгрузить журнал»$")
-    fun theActionsStay() {
-        DiagnosticsStand.ask(world) {
-            onNodeWithTag(TAG_CHECK_NOW).assertIsDisplayed()
-            onNodeWithTag(TAG_EXPORT_JOURNAL).assertIsDisplayed()
-        }
+    @Тогда("^на «Проверке напоминаний» есть «Проверить доставку» и «Сообщить о проблеме»$")
+    fun theFirstLevelActionsAreThere() {
+        assertTrue(hasTag(TAG_CHECK_DELIVERY), "the delivery check action must be there")
+        assertTrue(
+            visibleTexts().any { it.contains(context.getString(R.string.diagnostics_report_open)) },
+            "the report action must be there",
+        )
     }
 
     @Но("^нет ни кнопки, ни строки о пробном напоминании$")
@@ -88,8 +88,15 @@ class TestReminderRemovalDiagnosticsSteps(private val world: AcceptanceWorld) {
         val shown = journal.count { it.event == ReminderEvent.SHOWN }
         val summary = requireNotNull(state.snapshot?.onTime)
         assertEquals(shown, summary.fired, "the summary must count presentations and nothing else")
-        assertTrue(hasText(state, context.getString(R.string.diagnostics_section_on_time)), "the summary must be shown")
-        assertTrue(hasTag(state, TAG_JOURNAL_ROW), "the journal rows must be on the screen")
+        assertTrue(hasTag(TAG_WEEK_SUMMARY), "the week summary must be shown on the first level")
+    }
+
+    private fun hasTag(tag: String): Boolean {
+        var found = false
+        DiagnosticsStand.ask(world) {
+            found = onAllNodesWithTag(tag, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
+        }
+        return found
     }
 
     private fun visibleTexts(): List<String> {
@@ -110,14 +117,6 @@ class TestReminderRemovalDiagnosticsSteps(private val world: AcceptanceWorld) {
         var found = false
         DiagnosticsStand.ask(world) {
             found = onAllNodesWithText(text, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
-        }
-        return found
-    }
-
-    private fun hasTag(state: DiagnosticsUiState, tag: String): Boolean {
-        var found = false
-        DiagnosticsStand.ask(world) {
-            found = onAllNodesWithTag(tag, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
         }
         return found
     }

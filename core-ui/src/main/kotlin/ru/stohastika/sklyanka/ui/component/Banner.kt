@@ -69,7 +69,17 @@ fun Banner(
         },
         action = {
             if (actionLabel != null && onAction != null) {
-                QuietButton(text = actionLabel, onClick = onAction)
+                // Действие-предупреждение красится цветом `warning`, а не акцентом:
+                // так нарисован `.banner .b-act` и так требует §4.6.
+                QuietButton(
+                    text = actionLabel,
+                    onClick = onAction,
+                    kind = if (kind == BannerKind.Warning) {
+                        QuietButtonKind.Warning
+                    } else {
+                        QuietButtonKind.Accent
+                    },
+                )
             }
         },
         gap = SklyankaSpacing.Default,

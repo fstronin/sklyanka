@@ -10,49 +10,29 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import ru.stohastika.sklyanka.domain.reminder.AlarmKind
 import ru.stohastika.sklyanka.domain.reminder.BuildReminderDiagnosticsUseCase
 import ru.stohastika.sklyanka.domain.reminder.DeliveryCheckState
-import ru.stohastika.sklyanka.domain.reminder.ExportReminderJournalUseCase
 import ru.stohastika.sklyanka.domain.reminder.ReminderDiagnostics
-import ru.stohastika.sklyanka.domain.reminder.ReminderJournalExportOutcome
-import ru.stohastika.sklyanka.domain.reminder.RescheduleReason
 import ru.stohastika.sklyanka.domain.reminder.port.PermissionState
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPermission
-import ru.stohastika.sklyanka.domain.reminder.port.ReminderSettings
 import ru.stohastika.sklyanka.domain.time.TimeSource
-import ru.stohastika.sklyanka.domain.transfer.ExportTarget
 import java.time.Instant
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
 import javax.inject.Inject
 
-/** Исход нажатия «Проверить сейчас»: экран не отвечает молчанием ни в одном исходе (НФТ-8). */
-enum class ReminderCheckOutcome { SUCCESS, FAILED }
-
-/** Что показывает экран проверки напоминаний (НАП-37, ОВ-49). */
+/** Что показывает экран проверки напоминаний (НАП-37, ОВ-126). */
 data class DiagnosticsUiState(
     val snapshot: ReminderDiagnostics? = null,
     val zone: ZoneId,
     /**
-     * Имя предлагаемого файла выгрузки журнала (НФТ-51).
+     * Сегодняшняя дата в поясе человека (AC-26/AC-27).
      *
-     * Нужно **до** системного выбора места: имя предлагается системе, а решение о месте
-     * остаётся за человеком, и приложение выбранный путь не запоминает (НФТ-17).
+     * Нужна, чтобы назвать следующее напоминание «завтра» словами. Обновляется при
+     * перечитывании снимка: открытый через полночь экран не считает «завтра» вчерашним.
      */
-    val exportFileName: String = "",
-    /** Исход последней выгрузки журнала: человеку нельзя отвечать молчанием ни в одном исходе. */
-    val exportOutcome: ReminderJournalExportOutcome? = null,
-    val busy: Boolean = false,
-    /**
-     * Раскрыт ли технический блок «Для поддержки» (ОВ-49).
-     *
-     * Живёт в состоянии экрана, а не в `remember` композиции: стенд приёмки пересобирает
-     * композицию на каждый шаг, и `remember` терял бы раскрытие между «нажал» и «проверил».
-     */
-    val supportExpanded: Boolean = false,
-    /** Исход последней ручной проверки; null — ещё не проверяли. */
-    val checkOutcome: ReminderCheckOutcome? = null,
+    val today: LocalDate,
     /**
      * Разрешение, для которого системный экран не открылся (НФТ-8, ОВ-106).
      *
@@ -62,27 +42,25 @@ data class DiagnosticsUiState(
     val fixFallback: ReminderPermission? = null,
     /** Открыта ли шторка запуска самопроверки доставки (SKL-86, ОВ-108). */
     val checkSheetOpen: Boolean = false,
+    /** Открыта шторка отчёта разработчику (AC-30). */
+    val reportOpen: Boolean = false,
+    /** Текст комментария; живёт в состоянии, чтобы пережить пересборку композиции. */
+    val reportComment: String = "",
+    /** Исход последней попытки отправки; null — ещё не отправляли (AC-32/AC-33). */
+    val reportOutcome: DeveloperReportOutcome? = null,
 )
 
 /**
  * Диагностика напоминаний (НАП-37, НАП-39).
  *
- * Пересборку плана экран не делает сам: он зовёт ту же операцию, что зовут приёмники,
- * с причиной «ручное действие человека» (НАП-11). Наружу экран не отправляет ничего —
- * порта сети в проекте нет вовсе (ПЛ-3, НФТ-14).
+ * Первый уровень не выполняет технических операций: он читает снимок, ведёт самопроверку
+ * доставки и отчёт разработчику. Пересборка плана идёт автоматически, а не по кнопке
+ * (ОВ-128); наружу экран ничего не отправляет без явного нажатия «Отправить отчёт»
+ * (НАП-39).
  */
 @HiltViewModel
 class DiagnosticsViewModel @Inject constructor(
     private val diagnostics: BuildReminderDiagnosticsUseCase,
-    private val check: ReminderCheckNow,
-    private val exportJournal: ExportReminderJournalUseCase,
-    /**
-     * Вариант измерения пилота (SKL-85).
-     *
-     * Нужен только измерительной сборке: в обычной значение не читается, а переключателя
-     * в блоке «Для поддержки» нет вовсе (ПМ-20).
-     */
-    private val settings: ReminderSettings,
     /**
      * Самопроверка доставки (SKL-86).
      *
@@ -91,12 +69,17 @@ class DiagnosticsViewModel @Inject constructor(
      * `app`: `feature-reminder` не знает ни будильников, ни их адресов (`ADR-0007`).
      */
     private val deliveryCheck: DeliveryCheckController,
-    time: TimeSource,
+    /**
+     * Отправка отчёта разработчику (ОВ-127, ПМ-32).
+     *
+     * Шов без сети: реализацию подставляет `app`. В первой версии — заглушка, всегда
+     * возвращающая [DeveloperReportOutcome.SENT]; сетевая — отдельная задача.
+     */
+    private val reportSender: DeveloperReportSender,
+    private val time: TimeSource,
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(
-        DiagnosticsUiState(zone = time.zone(), exportFileName = exportJournal.fileName()),
-    )
+    private val _state = MutableStateFlow(DiagnosticsUiState(zone = time.zone(), today = today()))
     val state: StateFlow<DiagnosticsUiState> = _state.asStateFlow()
 
     init {
@@ -112,7 +95,7 @@ class DiagnosticsViewModel @Inject constructor(
             val snapshot = diagnostics()
             _state.value = _state.value.copy(
                 snapshot = snapshot,
-                busy = false,
+                today = today(),
                 // Инструкция снимается только тогда, когда разрешение действительно выдано:
                 // возврат без исправления оставляет её на месте (критерий приёмки 6).
                 fixFallback = _state.value.fixFallback?.takeIf {
@@ -121,6 +104,9 @@ class DiagnosticsViewModel @Inject constructor(
             )
         }
     }
+
+    /** Сегодняшняя дата в поясе человека из подменяемых часов (НФТ-48). */
+    private fun today(): LocalDate = time.now().atZone(time.zone()).toLocalDate()
 
     /** «Проверить доставку»: открыть шторку с инструкцией, ничего не ставя (ОВ-108). */
     fun onCheckDelivery() {
@@ -172,77 +158,58 @@ class DiagnosticsViewModel @Inject constructor(
         )
     }
 
-    /** Раскрыть или свернуть технический блок «Для поддержки» (ОВ-49). */
-    fun onToggleSupport() {
-        _state.value = _state.value.copy(supportExpanded = !_state.value.supportExpanded)
+    /** «Сообщить о проблеме»: открыть шторку с пустым полем и без исхода (AC-30, AC-40). */
+    fun onReportOpen() {
+        _state.value = _state.value.copy(reportOpen = true, reportComment = "", reportOutcome = null)
+    }
+
+    /** Правка комментария: поле необязательное, ошибок у него нет (AC-31). */
+    fun onReportCommentChange(text: String) {
+        _state.value = _state.value.copy(reportComment = text)
     }
 
     /**
-     * «Проверить сейчас»: пересобрать окно и обновить показанное состояние (НАП-37).
+     * «Отправить отчёт»: вызвать шов отправки и назвать исход (AC-32/AC-33).
      *
-     * Отказ перепланирования не молчит: экран называет исход словами (НФТ-8). Побочный
-     * факт отказа остаётся в журнале силами планировщика, а `CancellationException`
-     * перебрасывается — отмена корутины не является отказом проверки.
+     * Отказ не глотается: комментарий сохраняется, а состояние ошибки покажет «Повторить».
+     * `CancellationException` перебрасывается — отмена корутины не является отказом отправки.
      */
     @Suppress("TooGenericExceptionCaught")
-    fun onCheckNow() {
+    fun onReportSend() {
+        val comment = _state.value.reportComment
         viewModelScope.launch {
-            _state.value = _state.value.copy(busy = true, checkOutcome = null)
             val outcome = try {
-                check(RescheduleReason.MANUAL)
-                ReminderCheckOutcome.SUCCESS
+                reportSender.send(comment)
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: Exception) {
-                ReminderCheckOutcome.FAILED
+                DeveloperReportOutcome.FAILED
             }
-            _state.value = _state.value.copy(checkOutcome = outcome)
-            refresh()
+            _state.value = _state.value.copy(reportOutcome = outcome)
         }
     }
 
-    /**
-     * Смена варианта измерения пилота (SKL-85, `TDD.md §9.4`).
-     *
-     * Порядок обязателен: сначала настройка, потом пересборка. `AlarmManagerGateway` читает
-     * настройку в момент постановки будильника, и пересборка до записи поставила бы
-     * будильники прежним механизмом. Пересборка идёт существующим путём «Проверить сейчас»,
-     * поэтому след причины, счётчики и обновление снимка — те же.
-     */
-    fun onAlarmKindChange(kind: AlarmKind) {
-        viewModelScope.launch {
-            settings.setAlarmStrategy(kind)
-            onCheckNow()
-        }
-    }
-
-    /**
-     * «Выгрузить журнал»: запись в документ, выбранный человеком (НФТ-51).
-     *
-     * Ссылка на документ приходит строкой: о `Uri` домен не знает (НФТ-46), а само
-     * место выгрузки нигде не сохраняется — приложение не ведёт учёта того, куда ушёл файл.
-     */
-    fun onExportTo(handle: String) {
-        viewModelScope.launch {
-            _state.value = _state.value.copy(busy = true, exportOutcome = null)
-            val outcome = exportJournal(ExportTarget(handle))
-            _state.value = _state.value.copy(busy = false, exportOutcome = outcome)
-        }
+    /** Закрыть шторку отчёта и очистить состояние: повтор открывается с пустым полем (AC-40). */
+    fun onReportDismiss() {
+        _state.value = _state.value.copy(reportOpen = false, reportComment = "", reportOutcome = null)
     }
 
     /** Местное время момента: журнал хранит моменты в UTC, человек читает их в своём поясе. */
     fun local(instant: Instant): LocalDateTime = instant.atZone(_state.value.zone).toLocalDateTime()
 }
 
+/** Исход отправки отчёта; `FAILED` показывает «Повторить» (AC-32/AC-33). */
+enum class DeveloperReportOutcome { SENT, FAILED }
+
 /**
- * «Проверить сейчас» как зависимость экрана.
+ * Отправка отчёта разработчику как зависимость экрана (ОВ-127, ПМ-32).
  *
- * Функциональный интерфейс, а не прямая зависимость на планировщик: полная пересборка
- * состоит из генерации приёмов и постановки будильников в строгом порядке, и знать этот
- * порядок обязан один класс в `app`, а не каждый экран (SKL-06, НАП-11).
+ * Функциональный интерфейс, а не сетевой порт: в первой версии `app` подставляет заглушку,
+ * ничего не собирающую и никуда не отправляющую (сети нет). Сетевой адаптер встанет в тот же
+ * шов отдельной задачей; тогда же появится автосборка состава без медицинских данных.
  */
-fun interface ReminderCheckNow {
-    suspend operator fun invoke(reason: RescheduleReason)
+fun interface DeveloperReportSender {
+    suspend fun send(comment: String): DeveloperReportOutcome
 }
 
 /**

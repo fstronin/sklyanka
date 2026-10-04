@@ -43,20 +43,15 @@
     <string name="diagnostics_reliable">Всё в порядке</string>
     <string name="diagnostics_all_granted">Разрешения выданы</string>
     <string name="diagnostics_fix">Исправить</string>
-    <string name="diagnostics_check_done">Проверка выполнена — напоминания поставлены</string>
-    <string name="diagnostics_check_failed">Проверить не удалось: напоминания не перепланированы</string>
-    <string name="diagnostics_support">Для поддержки</string>
 
     <!-- Сводка 7 дней фразой (ОВ-49). Формулировка ждёт дизайн, см. открытый вопрос. -->
-    <string name="diagnostics_week_summary">За 7 дней: сработало %1$d, пропущено %2$d</string>
-    <string name="diagnostics_week_summary_none">За 7 дней напоминаний не было</string>
 
     <!-- Последнее и следующее — простыми словами, без секунд и идентификаторов (ОВ-49). -->
     <string name="diagnostics_last_none">Напоминаний ещё не было</string>
     <string name="diagnostics_last_line">%1$s — %2$s</string>
-    <string name="diagnostics_last_actual">показано в %1$s</string>
+    <string name="diagnostics_last_actual">Показано в %1$s</string>
     <string name="diagnostics_on_time_word">вовремя</string>
-    <string name="diagnostics_next_none">Следующего напоминания нет</string>
+    <string name="diagnostics_next_none">Пока не запланировано</string>
     <string name="diagnostics_next_line">%1$s — %2$s · %3$s</string>
     <string name="diagnostics_next_plan">план</string>
 
@@ -68,23 +63,14 @@
     </plurals>
 
     <!-- Подавленное опоздавшее срабатывание: «сработало … — не показано» (ОВ-109, НАП-33). -->
-    <string name="diagnostics_journal_too_late">сработало %1$s — не показано</string>
 
     <string name="diagnostics_section_last">Последнее напоминание</string>
     <string name="diagnostics_section_next">Следующее напоминание</string>
-    <string name="diagnostics_section_reschedule">Последняя сборка плана</string>
     <string name="diagnostics_section_permissions">Разрешения</string>
-    <string name="diagnostics_section_journal">Журнал срабатываний</string>
-    <string name="diagnostics_section_on_time">Вовремя за 7 дней</string>
 
     <string name="diagnostics_none">нет данных</string>
-    <string name="diagnostics_datetime_pattern">d MMMM, HH:mm:ss</string>
 
     <!-- «План 14:00 · факт 14:00:37 · отклонение 37 с». -->
-    <string name="diagnostics_deviation">Отклонение %1$d с</string>
-    <string name="diagnostics_planned">План %1$s</string>
-    <string name="diagnostics_actual">Факт %1$s</string>
-    <string name="diagnostics_scheduled_total">Всего поставлено будильников: %1$d</string>
 
     <string name="diagnostics_permission_notifications">Уведомления</string>
     <string name="diagnostics_permission_channel">Каналы уведомлений</string>
@@ -99,7 +85,6 @@
     <string name="diagnostics_state_unknown">проверьте вручную</string>
 
     <!-- Пояснение к невыданному доступу к политике «Не беспокоить» (НАП-17). -->
-    <string name="diagnostics_dnd_hint">В режиме «Не беспокоить» повторные напоминания будут беззвучными.</string>
 
     <!-- Предупреждение о ненадёжности напоминаний (НАП-18). -->
     <string name="diagnostics_warning_notifications">Напоминания сейчас не приходят: уведомления отключены. Приёмы можно отмечать вручную.</string>
@@ -111,15 +96,10 @@
     <string name="diagnostics_fallback_app_startup">Системный раздел на этом устройстве не открылся. Откройте его вручную: Настройки → Батарея → Запуск приложений → Склянка → Управлять вручную. Включите «Автозапуск», «Косвенный запуск» и «Работу в фоне».</string>
 
     <!-- Сообщение о перерыве в напоминаниях (НАП-38). -->
-    <string name="diagnostics_outage">Напоминания не приходили с %1$s. Проверьте разрешения и автозапуск, затем нажмите «Проверить сейчас».</string>
+    <string name="diagnostics_outage">Напоминания не приходили с %1$s. Приёмы за это время можно отметить вручную.</string>
 
     <!-- Сводка «вовремя за 7 дней» (НФТ-51): «12 из 13 · 92 %». Вовремя — по НАП-2. -->
-    <string name="diagnostics_on_time">%1$d из %2$d · %3$d %%</string>
-    <string name="diagnostics_on_time_none">Срабатываний за это время не было</string>
-    <string name="diagnostics_on_time_rule">Вовремя — отклонение не больше 120 секунд</string>
 
-    <string name="diagnostics_action_check">Проверить сейчас</string>
-    <string name="diagnostics_action_export">Выгрузить журнал</string>
     <string name="diagnostics_action_setup">Пройти настройку заново</string>
 
     <!-- ===== Самопроверка доставки (SKL-86, ПМ-21, ОВ-108) ===== -->
@@ -137,10 +117,10 @@
 
     <!-- Исходы. Опоздание подставляется формами plurals/diagnostics_late (НФТ-44). -->
     <string name="diagnostics_check_on_time">Проверка доставки пройдена: тестовое напоминание пришло вовремя.</string>
+    <string name="diagnostics_check_delivered">Последняя проверка пройдена: тестовое напоминание дошло вовремя.</string>
     <string name="diagnostics_check_late">Проверка доставки: тестовое напоминание пришло %1$s. Телефон задержал его — проверьте настройки запуска и энергосбережения.</string>
     <string name="diagnostics_check_not_delivered">Проверка доставки не прошла: тестовое напоминание не пришло. Проверьте настройки запуска и энергосбережения.</string>
     <string name="diagnostics_check_not_completed">Проверка не состоялась: приложение было открыто. Закройте его и попробуйте снова.</string>
-    <string name="diagnostics_check_repeat">Повторить проверку</string>
     <string name="diagnostics_check_acknowledge">Понятно</string>
 
     <!-- ===== Карточка проверки (ОВ-108): не притворяется приёмом ===== -->
@@ -149,59 +129,61 @@
     <string name="reminder_check_text">Тестовое напоминание. Отмечать ничего не нужно.</string>
 
     <!-- Исход выгрузки журнала файлом (НФТ-51). -->
-    <string name="diagnostics_export_saved">Журнал выгружен · %1$s</string>
-    <string name="diagnostics_export_failed">Журнал не выгружен: запись не удалась</string>
-    <string name="diagnostics_export_no_space">Журнал не выгружен: на устройстве не хватает места</string>
 
     <!-- Вариант измерения пилота: строка существует только в измерительной сборке (SKL-85). -->
-    <string name="diagnostics_measurement_row">Вариант измерения</string>
-    <string name="diagnostics_measurement_alarm_clock">Системный будильник</string>
-    <string name="diagnostics_measurement_exact_idle">Точный будильник</string>
     <!-- Пояснение системного индикатора будильника под следующим напоминанием (ОВ-110). -->
     <string name="diagnostics_next_alarm_indicator">Это время телефон показывает в статус-баре как будильник — так и должно быть.</string>
 
     <!-- Причины пересборки плана (таблица НАП-11). -->
-    <string name="diagnostics_reason_boot">перезагрузка</string>
-    <string name="diagnostics_reason_locked_boot">восстановление до разблокировки</string>
-    <string name="diagnostics_reason_user_unlocked">разблокировка</string>
-    <string name="diagnostics_reason_package_replaced">обновление приложения</string>
-    <string name="diagnostics_reason_timezone_changed">смена часового пояса</string>
-    <string name="diagnostics_reason_time_changed">перевод часов</string>
-    <string name="diagnostics_reason_schedule_edited">изменение расписания лекарства</string>
-    <string name="diagnostics_reason_medication_added">добавление лекарства</string>
-    <string name="diagnostics_reason_medication_archived">архивация лекарства</string>
-    <string name="diagnostics_reason_medication_deleted">удаление лекарства</string>
-    <string name="diagnostics_reason_medication_undeleted">возврат удаления</string>
-    <string name="diagnostics_reason_medication_unarchived">возврат лекарства из архива</string>
-    <string name="diagnostics_reason_alarm_fired">сработавшее напоминание</string>
-    <string name="diagnostics_reason_profile_set_changed">изменение состава профилей</string>
-    <string name="diagnostics_reason_anchor">ночная проверка</string>
-    <string name="diagnostics_reason_manual">ручное действие человека</string>
-    <string name="diagnostics_reason_data_imported">загрузка данных</string>
-    <string name="diagnostics_reason_app_start">запуск приложения</string>
-    <string name="diagnostics_reason_exact_alarm_granted">право на точные будильники выдано</string>
 
     <!-- Виды записей журнала (TDD §11.1). -->
-    <string name="diagnostics_event_fired">будильник сработал</string>
-    <string name="diagnostics_event_shown">напоминание показано</string>
-    <string name="diagnostics_event_suppressed">показ подавлен</string>
-    <string name="diagnostics_event_repeated">повтор напоминания</string>
-    <string name="diagnostics_event_snoozed">отложено</string>
-    <string name="diagnostics_event_deferred">отложенное срабатывание</string>
-    <string name="diagnostics_event_rescheduled">план пересобран</string>
-    <string name="diagnostics_event_rotated">подрезка журнала</string>
-    <string name="diagnostics_event_missed_sweep">переведено в пропущенные</string>
-    <string name="diagnostics_event_outage">перерыв в напоминаниях</string>
-    <string name="diagnostics_event_settings_changed">изменена настройка</string>
-    <string name="diagnostics_event_environment">среда устройства</string>
-    <string name="diagnostics_event_delivery_check">проверка доставки</string>
 
     <!-- «снято 1, поставлено 2» — счётчики записи о пересборке. -->
-    <string name="diagnostics_alarm_counters">снято %1$d, поставлено %2$d</string>
 
     <!-- ===== Сообщение о перерыве при входе в приложение (НАП-38) ===== -->
 
     <string name="reminder_outage_notice">Напоминания не приходили с %1$s. Приёмы за это время можно отметить вручную.</string>
     <string name="reminder_outage_notice_action">Исправить</string>
     <string name="reminder_outage_notice_moment_pattern">d MMMM, HH:mm</string>
+
+    <!-- SKL-102: проверка напоминаний, отчёт разработчику. -->
+    <string name="diagnostics_verdict_ok_sub">Напоминания приходят вовремя.</string>
+    <string name="diagnostics_verdict_ok_no_next">Новых пока не запланировано.</string>
+    <string name="diagnostics_check_failed_verdict">Последняя проверка доставки не прошла.</string>
+    <string name="diagnostics_section_delivery">Проверка доставки</string>
+    <string name="diagnostics_section_reminders">Напоминания</string>
+    <string name="diagnostics_permission_group_fix_first">Исправьте сначала — иначе напоминания не придут или опоздают</string>
+    <string name="diagnostics_permission_group_can_defer">Можно отложить — напоминания придут, но не полностью</string>
+    <string name="diagnostics_permission_rest_granted">Остальные разрешения выданы</string>
+    <string name="diagnostics_consequence_notifications">Напоминания не придут: телефон их не покажет.</string>
+    <string name="diagnostics_consequence_channel">Напоминания не придут: канал уведомлений выключен.</string>
+    <string name="diagnostics_consequence_exact_alarms">Телефон может сдвинуть приём — до получаса.</string>
+    <string name="diagnostics_consequence_autostart">Приложение не видит настройки EMUI — проверьте сами.</string>
+    <string name="diagnostics_consequence_full_screen">Карточка не появится на заблокированном экране.</string>
+    <string name="diagnostics_consequence_dnd">Повторные напоминания будут беззвучны.</string>
+    <string name="diagnostics_delivery_explanation">Поставит тестовое напоминание через 1–2 минуты и проверит, что оно дошло при закрытом приложении.</string>
+    <string name="diagnostics_next_none_explanation">Активных лекарств с расписанием нет — напоминать пока не о чем.</string>
+    <string name="diagnostics_week_prefix">"За 7 дней "</string>
+    <string name="diagnostics_week_separator">", "</string>
+    <string name="diagnostics_week_fired_none">напоминаний не показывалось</string>
+    <string name="diagnostics_week_missed_none">пропусков нет</string>
+    <string name="diagnostics_week_none">За 7 дней напоминаний не было</string>
+    <string name="diagnostics_next_tomorrow">завтра, %1$s</string>
+    <string name="diagnostics_next_day_pattern">d MMMM, H:mm</string>
+    <string name="diagnostics_last_actual_with_deviation">Показано в %1$s · %2$s</string>
+    <string name="diagnostics_report_open">Сообщить о проблеме</string>
+    <string name="diagnostics_report_footer_note">Технический отчёт для разработчика. Без названий лекарств и истории приёмов.</string>
+    <string name="diagnostics_report_title">Отчёт разработчику</string>
+    <string name="diagnostics_report_explanation">Технический отчёт для разработчика — по вашему нажатию. Он собирается автоматически и не содержит названий лекарств, доз и истории приёмов.</string>
+    <string name="diagnostics_report_comment_label">Что не работает?</string>
+    <string name="diagnostics_report_comment_optional">необязательно</string>
+    <string name="diagnostics_report_comment_hint">Например: напоминание не приходит утром</string>
+    <string name="diagnostics_report_send">Отправить отчёт</string>
+    <string name="diagnostics_report_sent_title">Отчёт отправлен</string>
+    <string name="diagnostics_report_sent_sub">Спасибо! Это помогает сделать напоминания надёжнее.</string>
+    <string name="diagnostics_report_failed">Не удалось отправить отчёт. Проверьте подключение к интернету и попробуйте снова. Введённый текст сохранён.</string>
+    <string name="diagnostics_report_retry">Повторить</string>
+
+    <!-- SKL-102: проверка напоминаний, отчёт разработчику. -->
+    <string name="diagnostics_clock_pattern" translatable="false">H:mm</string>
 </resources>

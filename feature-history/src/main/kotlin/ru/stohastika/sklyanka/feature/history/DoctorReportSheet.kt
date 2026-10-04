@@ -52,6 +52,7 @@ import ru.stohastika.sklyanka.ui.component.ChipState
 import ru.stohastika.sklyanka.ui.component.DateTimePickerDialog
 import ru.stohastika.sklyanka.ui.component.PrimaryButton
 import ru.stohastika.sklyanka.ui.component.QuietButton
+import ru.stohastika.sklyanka.ui.component.QuietButtonForm
 import ru.stohastika.sklyanka.ui.component.QuietButtonKind
 import ru.stohastika.sklyanka.ui.component.SecondaryButton
 import ru.stohastika.sklyanka.ui.component.SklyankaBottomSheet
@@ -112,6 +113,10 @@ internal fun DoctorReportSheet(report: ReportUi, outcome: ReportOutcome?, onInte
 private fun SheetHeader(success: Boolean, onIntent: (HistoryIntent) -> Unit) {
     val colors = SklyankaTheme.colors
     val quietLabel = stringResource(if (success) UiR2.string.action_done else UiR2.string.action_cancel)
+    // Выход из успеха — подтверждающее действие шапки: «Готово» набрано `BodyDefaultStrong`
+    // 15/600 `Accent`; «Отмена» остаётся ведущим приглушённым действием `BodyDefault`
+    // 15/400 `TextMuted` (§4.9, ОВ-146). Иначе выход успеха читается как отмена.
+    val quietKind = if (success) QuietButtonKind.Accent else QuietButtonKind.Muted
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier
@@ -123,7 +128,8 @@ private fun SheetHeader(success: Boolean, onIntent: (HistoryIntent) -> Unit) {
             QuietButton(
                 text = quietLabel,
                 onClick = { onIntent(HistoryIntent.ReportDismissed) },
-                kind = QuietButtonKind.Muted,
+                kind = quietKind,
+                form = QuietButtonForm.Header,
             )
             Text(
                 text = stringResource(R.string.history_report_title),
@@ -134,12 +140,13 @@ private fun SheetHeader(success: Boolean, onIntent: (HistoryIntent) -> Unit) {
                     .weight(1f)
                     .padding(horizontal = SklyankaSpacing.Small),
             )
-            // Симметричный невидимый слот той же ширины, что «Отмена»: название остаётся
-            // по центру и при 200 % не наезжает на неё, а переносится внутри своей доли.
+            // Симметричный невидимый слот той же ширины, что видимая кнопка: название
+            // остаётся по центру и при 200 % не наезжает на неё, а переносится внутри своей доли.
             QuietButton(
                 text = quietLabel,
                 onClick = {},
-                kind = QuietButtonKind.Muted,
+                kind = quietKind,
+                form = QuietButtonForm.Header,
                 state = ButtonState.Disabled,
                 modifier = Modifier
                     .alpha(0f)

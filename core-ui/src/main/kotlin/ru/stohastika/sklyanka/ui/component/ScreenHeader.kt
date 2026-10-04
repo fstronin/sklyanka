@@ -177,7 +177,11 @@ private fun RowScope.HeaderTitleColumn(
         }
         Text(
             text = labels.title,
-            style = if (kind == ScreenHeaderKind.Modal) SklyankaType.BodyStrong else SklyankaType.TitleScreen,
+            style = if (kind == ScreenHeaderKind.Modal) {
+                SklyankaType.BodyDefaultStrong
+            } else {
+                SklyankaType.TitleScreen
+            },
             color = colors.text,
         )
     }
@@ -256,14 +260,14 @@ private fun ProfileBanner(profileName: String) {
 
 @Composable
 private fun BackAction(kind: ScreenHeaderKind, onBack: () -> Unit) {
-    val label = when (kind) {
-        ScreenHeaderKind.Modal -> stringResource(R.string.action_cancel)
-        else -> stringResource(R.string.action_back)
-    }
+    val modal = kind == ScreenHeaderKind.Modal
+    val label = if (modal) stringResource(R.string.action_cancel) else stringResource(R.string.action_back)
     QuietButton(
         text = label,
         onClick = onBack,
-        kind = if (kind == ScreenHeaderKind.Modal) QuietButtonKind.Muted else QuietButtonKind.Accent,
+        kind = if (modal) QuietButtonKind.Muted else QuietButtonKind.Accent,
+        // Действие модальной шапки — форма шапки, а не строки: 15 sp против 14 (§4.9, ОВ-146).
+        form = if (modal) QuietButtonForm.Header else QuietButtonForm.Row,
     )
 }
 

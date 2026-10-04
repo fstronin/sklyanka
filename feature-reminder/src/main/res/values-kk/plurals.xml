@@ -21,13 +21,19 @@
         <item quantity="other">%1$s доза</item>
     </plurals>
 
-    <plurals name="diagnostics_export_records">
-        <item quantity="one">%1$d жазба</item>
-        <item quantity="other">%1$d жазба</item>
-    </plurals>
 
     <plurals name="diagnostics_late">
         <item quantity="one">%1$d минут кешігумен</item>
         <item quantity="other">%1$d минут кешігумен</item>
+    </plurals>
+
+    <!-- SKL-102: сводка за 7 дней. -->
+    <plurals name="diagnostics_week_fired">
+        <item quantity="one">%1$d хабарлама көрсетілді</item>
+        <item quantity="other">%1$d хабарлама көрсетілді</item>
+    </plurals>
+    <plurals name="diagnostics_week_missed">
+        <item quantity="one">%1$d қабылдау өткізілді</item>
+        <item quantity="other">%1$d қабылдау өткізілді</item>
     </plurals>
 </resources>

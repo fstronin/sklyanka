@@ -19,37 +19,23 @@
     <string name="diagnostics_reliable">Todo está bien</string>
     <string name="diagnostics_all_granted">Permisos concedidos</string>
     <string name="diagnostics_fix">Corregir</string>
-    <string name="diagnostics_check_done">Comprobación realizada — recordatorios programados</string>
-    <string name="diagnostics_check_failed">No se pudo comprobar: los recordatorios no se reprogramaron</string>
-    <string name="diagnostics_support">Para soporte</string>
 
-    <string name="diagnostics_week_summary">En 7 días: %1$d disparados, %2$d omitidos</string>
-    <string name="diagnostics_week_summary_none">No hubo recordatorios en 7 días</string>
 
     <string name="diagnostics_last_none">Aún no hubo recordatorios</string>
     <string name="diagnostics_last_line">%1$s — %2$s</string>
-    <string name="diagnostics_last_actual">mostrado a las %1$s</string>
+    <string name="diagnostics_last_actual">Mostrado a las %1$s</string>
     <string name="diagnostics_on_time_word">a tiempo</string>
-    <string name="diagnostics_next_none">No hay próximo recordatorio</string>
+    <string name="diagnostics_next_none">Aún no hay nada programado</string>
     <string name="diagnostics_next_line">%1$s — %2$s · %3$s</string>
     <string name="diagnostics_next_plan">plan</string>
 
-    <string name="diagnostics_journal_too_late">disparado %1$s — no mostrado</string>
 
     <string name="diagnostics_section_last">Último recordatorio</string>
     <string name="diagnostics_section_next">Próximo recordatorio</string>
-    <string name="diagnostics_section_reschedule">Última reconstrucción del plan</string>
     <string name="diagnostics_section_permissions">Permisos</string>
-    <string name="diagnostics_section_journal">Registro de disparos</string>
-    <string name="diagnostics_section_on_time">A tiempo en 7 días</string>
 
     <string name="diagnostics_none">sin datos</string>
-    <string name="diagnostics_datetime_pattern">"d 'de' MMMM, HH:mm:ss"</string>
 
-    <string name="diagnostics_deviation">Desviación %1$d s</string>
-    <string name="diagnostics_planned">Plan %1$s</string>
-    <string name="diagnostics_actual">Real %1$s</string>
-    <string name="diagnostics_scheduled_total">Alarmas programadas en total: %1$d</string>
 
     <string name="diagnostics_permission_notifications">Notificaciones</string>
     <string name="diagnostics_permission_channel">Canales de notificaciones</string>
@@ -63,7 +49,6 @@
     <string name="diagnostics_state_denied">Permiso no concedido</string>
     <string name="diagnostics_state_unknown">comprobar manualmente</string>
 
-    <string name="diagnostics_dnd_hint">En el modo «No molestar», los recordatorios repetidos serán silenciosos.</string>
 
     <string name="diagnostics_warning_notifications">Los recordatorios no llegan ahora mismo: las notificaciones están desactivadas. Las tomas se pueden marcar manualmente.</string>
     <string name="diagnostics_warning_channel">Los recordatorios no llegan ahora mismo: el canal de notificaciones está desactivado.</string>
@@ -72,14 +57,9 @@
     <string name="diagnostics_warning_both">Los recordatorios no llegan ahora mismo: las notificaciones están desactivadas y no se ha concedido el permiso de alarmas exactas.</string>
     <string name="diagnostics_fallback_app_startup">La sección del sistema no se abrió en este dispositivo. Ábrela manualmente: Ajustes → Batería → Inicio de aplicaciones → Sklyanka → Gestionar manualmente. Activa «Inicio automático», «Inicio secundario» y «Ejecutar en segundo plano».</string>
 
-    <string name="diagnostics_outage">Los recordatorios no llegan desde %1$s. Comprueba los permisos y el inicio automático, y pulsa «Comprobar ahora».</string>
+    <string name="diagnostics_outage">Los recordatorios no llegan desde el %1$s. Las tomas de ese tiempo se pueden marcar a mano.</string>
 
-    <string name="diagnostics_on_time">%1$d de %2$d · %3$d %%</string>
-    <string name="diagnostics_on_time_none">No hubo disparos durante este tiempo</string>
-    <string name="diagnostics_on_time_rule">A tiempo — desviación no mayor de 120 segundos</string>
 
-    <string name="diagnostics_action_check">Comprobar ahora</string>
-    <string name="diagnostics_action_export">Exportar el registro</string>
     <string name="diagnostics_action_setup">Repetir la configuración</string>
 
     <string name="diagnostics_action_check_delivery">Comprobar la entrega</string>
@@ -92,61 +72,60 @@
     <string name="diagnostics_check_cancel">Cancelar la comprobación</string>
 
     <string name="diagnostics_check_on_time">Comprobación de entrega superada: el recordatorio de prueba llegó a tiempo.</string>
+    <string name="diagnostics_check_delivered">La última comprobación se superó: el recordatorio de prueba llegó a tiempo.</string>
     <string name="diagnostics_check_late">Comprobación de entrega: el recordatorio de prueba llegó %1$s. El teléfono lo retrasó — revisa los ajustes de inicio y de ahorro de energía.</string>
     <string name="diagnostics_check_not_delivered">La comprobación de entrega no se superó: el recordatorio de prueba no llegó. Revisa los ajustes de inicio y de ahorro de energía.</string>
     <string name="diagnostics_check_not_completed">La comprobación no se realizó: la aplicación estaba abierta. Ciérrala e inténtalo de nuevo.</string>
-    <string name="diagnostics_check_repeat">Repetir la comprobación</string>
     <string name="diagnostics_check_acknowledge">Entendido</string>
 
     <string name="reminder_check_overline">Comprobación de entrega</string>
     <string name="reminder_check_text">Recordatorio de prueba. No hay que marcar nada.</string>
 
-    <string name="diagnostics_export_saved">Registro exportado · %1$s</string>
-    <string name="diagnostics_export_failed">Registro no exportado: falló la escritura</string>
-    <string name="diagnostics_export_no_space">Registro no exportado: no hay espacio suficiente en el dispositivo</string>
 
-    <string name="diagnostics_measurement_row">Variante de medición</string>
-    <string name="diagnostics_measurement_alarm_clock">Alarma del sistema</string>
-    <string name="diagnostics_measurement_exact_idle">Alarma exacta</string>
     <string name="diagnostics_next_alarm_indicator">El teléfono muestra esta hora en la barra de estado como una alarma — así debe ser.</string>
 
-    <string name="diagnostics_reason_boot">reinicio</string>
-    <string name="diagnostics_reason_locked_boot">restauración antes del desbloqueo</string>
-    <string name="diagnostics_reason_user_unlocked">desbloqueo</string>
-    <string name="diagnostics_reason_package_replaced">actualización de la aplicación</string>
-    <string name="diagnostics_reason_timezone_changed">cambio de zona horaria</string>
-    <string name="diagnostics_reason_time_changed">cambio de hora</string>
-    <string name="diagnostics_reason_schedule_edited">horario del medicamento modificado</string>
-    <string name="diagnostics_reason_medication_added">medicamento añadido</string>
-    <string name="diagnostics_reason_medication_archived">medicamento archivado</string>
-    <string name="diagnostics_reason_medication_deleted">medicamento eliminado</string>
-    <string name="diagnostics_reason_medication_undeleted">medicamento restaurado</string>
-    <string name="diagnostics_reason_medication_unarchived">medicamento restaurado del archivo</string>
-    <string name="diagnostics_reason_alarm_fired">recordatorio disparado</string>
-    <string name="diagnostics_reason_profile_set_changed">cambio del conjunto de perfiles</string>
-    <string name="diagnostics_reason_anchor">comprobación nocturna</string>
-    <string name="diagnostics_reason_manual">acción manual de la persona</string>
-    <string name="diagnostics_reason_data_imported">carga de datos</string>
-    <string name="diagnostics_reason_app_start">inicio de la aplicación</string>
-    <string name="diagnostics_reason_exact_alarm_granted">permiso de alarmas exactas concedido</string>
 
-    <string name="diagnostics_event_fired">alarma disparada</string>
-    <string name="diagnostics_event_shown">recordatorio mostrado</string>
-    <string name="diagnostics_event_suppressed">visualización suprimida</string>
-    <string name="diagnostics_event_repeated">recordatorio repetido</string>
-    <string name="diagnostics_event_snoozed">pospuesto</string>
-    <string name="diagnostics_event_deferred">disparo diferido</string>
-    <string name="diagnostics_event_rescheduled">plan reconstruido</string>
-    <string name="diagnostics_event_rotated">recorte del registro</string>
-    <string name="diagnostics_event_missed_sweep">pasado a omitidas</string>
-    <string name="diagnostics_event_outage">interrupción de recordatorios</string>
-    <string name="diagnostics_event_settings_changed">ajuste modificado</string>
-    <string name="diagnostics_event_environment">entorno del dispositivo</string>
-    <string name="diagnostics_event_delivery_check">comprobación de entrega</string>
 
-    <string name="diagnostics_alarm_counters">retiradas %1$d, programadas %2$d</string>
 
     <string name="reminder_outage_notice">Los recordatorios no llegan desde %1$s. Las tomas de este tiempo se pueden marcar manualmente.</string>
     <string name="reminder_outage_notice_action">Corregir</string>
     <string name="reminder_outage_notice_moment_pattern">"d 'de' MMMM, HH:mm"</string>
+
+    <!-- SKL-102: проверка напоминаний, отчёт разработчику. -->
+    <string name="diagnostics_verdict_ok_sub">Los recordatorios llegan a tiempo.</string>
+    <string name="diagnostics_verdict_ok_no_next">Todavía no hay nuevos programados.</string>
+    <string name="diagnostics_check_failed_verdict">La última comprobación de entrega falló.</string>
+    <string name="diagnostics_section_delivery">Comprobación de entrega</string>
+    <string name="diagnostics_section_reminders">Recordatorios</string>
+    <string name="diagnostics_permission_group_fix_first">Corrige esto primero — si no, los recordatorios no llegarán o llegarán tarde</string>
+    <string name="diagnostics_permission_group_can_defer">Puede esperar — los recordatorios llegarán, pero no del todo</string>
+    <string name="diagnostics_permission_rest_granted">Los demás permisos están concedidos</string>
+    <string name="diagnostics_consequence_notifications">Los recordatorios no llegarán: el teléfono no los mostrará.</string>
+    <string name="diagnostics_consequence_channel">Los recordatorios no llegarán: el canal de notificaciones está desactivado.</string>
+    <string name="diagnostics_consequence_exact_alarms">El teléfono puede retrasar la toma — hasta media hora.</string>
+    <string name="diagnostics_consequence_autostart">La app no ve los ajustes de EMUI — compruébalos tú.</string>
+    <string name="diagnostics_consequence_full_screen">La tarjeta no aparecerá en la pantalla bloqueada.</string>
+    <string name="diagnostics_consequence_dnd">Los recordatorios repetidos serán silenciosos.</string>
+    <string name="diagnostics_delivery_explanation">Programará un recordatorio de prueba en 1–2 minutos y comprobará que llega con la app cerrada.</string>
+    <string name="diagnostics_next_none_explanation">No hay medicamentos activos con horario — todavía no hay nada que recordar.</string>
+    <string name="diagnostics_week_prefix">"En 7 días "</string>
+    <string name="diagnostics_week_separator">", "</string>
+    <string name="diagnostics_week_fired_none">no se mostró ningún recordatorio</string>
+    <string name="diagnostics_week_missed_none">sin tomas perdidas</string>
+    <string name="diagnostics_week_none">Sin recordatorios en 7 días</string>
+    <string name="diagnostics_next_tomorrow">mañana, %1$s</string>
+    <string name="diagnostics_next_day_pattern">"d 'de' MMMM, H:mm"</string>
+    <string name="diagnostics_last_actual_with_deviation">Mostrado a las %1$s · %2$s</string>
+    <string name="diagnostics_report_open">Informar de un problema</string>
+    <string name="diagnostics_report_footer_note">Informe técnico para el desarrollador. Sin nombres de medicamentos ni historial de tomas.</string>
+    <string name="diagnostics_report_title">Informe al desarrollador</string>
+    <string name="diagnostics_report_explanation">Un informe técnico para el desarrollador — solo al pulsar. Se compone automáticamente y no contiene nombres de medicamentos, dosis ni historial de tomas.</string>
+    <string name="diagnostics_report_comment_label">¿Qué no funciona?</string>
+    <string name="diagnostics_report_comment_optional">opcional</string>
+    <string name="diagnostics_report_comment_hint">Por ejemplo: el recordatorio no llega por la mañana</string>
+    <string name="diagnostics_report_send">Enviar informe</string>
+    <string name="diagnostics_report_sent_title">Informe enviado</string>
+    <string name="diagnostics_report_sent_sub">¡Gracias! Esto ayuda a que los recordatorios sean más fiables.</string>
+    <string name="diagnostics_report_failed">No se pudo enviar el informe. Comprueba la conexión a internet e inténtalo de nuevo. El texto introducido se conserva.</string>
+    <string name="diagnostics_report_retry">Reintentar</string>
 </resources>

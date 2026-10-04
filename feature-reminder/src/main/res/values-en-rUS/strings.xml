@@ -19,37 +19,23 @@
     <string name="diagnostics_reliable">Everything is fine</string>
     <string name="diagnostics_all_granted">Permissions granted</string>
     <string name="diagnostics_fix">Fix</string>
-    <string name="diagnostics_check_done">Check completed — reminders are scheduled</string>
-    <string name="diagnostics_check_failed">Check failed: reminders were not rescheduled</string>
-    <string name="diagnostics_support">For support</string>
 
-    <string name="diagnostics_week_summary">Over 7 days: %1$d fired, %2$d missed</string>
-    <string name="diagnostics_week_summary_none">No reminders over 7 days</string>
 
     <string name="diagnostics_last_none">No reminders yet</string>
     <string name="diagnostics_last_line">%1$s — %2$s</string>
-    <string name="diagnostics_last_actual">shown at %1$s</string>
+    <string name="diagnostics_last_actual">Shown at %1$s</string>
     <string name="diagnostics_on_time_word">on time</string>
-    <string name="diagnostics_next_none">No next reminder</string>
+    <string name="diagnostics_next_none">Not scheduled yet</string>
     <string name="diagnostics_next_line">%1$s — %2$s · %3$s</string>
     <string name="diagnostics_next_plan">plan</string>
 
-    <string name="diagnostics_journal_too_late">fired %1$s — not shown</string>
 
     <string name="diagnostics_section_last">Last reminder</string>
     <string name="diagnostics_section_next">Next reminder</string>
-    <string name="diagnostics_section_reschedule">Last plan rebuild</string>
     <string name="diagnostics_section_permissions">Permissions</string>
-    <string name="diagnostics_section_journal">Firing journal</string>
-    <string name="diagnostics_section_on_time">On time over 7 days</string>
 
     <string name="diagnostics_none">no data</string>
-    <string name="diagnostics_datetime_pattern">MMMM d, HH:mm:ss</string>
 
-    <string name="diagnostics_deviation">Deviation %1$d s</string>
-    <string name="diagnostics_planned">Planned %1$s</string>
-    <string name="diagnostics_actual">Actual %1$s</string>
-    <string name="diagnostics_scheduled_total">Alarms scheduled in total: %1$d</string>
 
     <string name="diagnostics_permission_notifications">Notifications</string>
     <string name="diagnostics_permission_channel">Notification channels</string>
@@ -63,7 +49,6 @@
     <string name="diagnostics_state_denied">not granted</string>
     <string name="diagnostics_state_unknown">check manually</string>
 
-    <string name="diagnostics_dnd_hint">In “Do not disturb” mode, repeated reminders will be silent.</string>
 
     <string name="diagnostics_warning_notifications">Reminders are not arriving right now: notifications are off. Intakes can be marked manually.</string>
     <string name="diagnostics_warning_channel">Reminders are not arriving right now: the notification channel is off.</string>
@@ -72,14 +57,9 @@
     <string name="diagnostics_warning_both">Reminders are not arriving right now: notifications are off and exact alarm permission is not granted.</string>
     <string name="diagnostics_fallback_app_startup">The system section did not open on this device. Open it manually: Settings → Battery → App launch → Sklyanka → Manage manually. Turn on “Auto-launch”, “Secondary launch” and “Run in background”.</string>
 
-    <string name="diagnostics_outage">Reminders have not arrived since %1$s. Check the permissions and auto-launch, then tap “Check now”.</string>
+    <string name="diagnostics_outage">Reminders have not arrived since %1$s. Intakes from this time can be marked manually.</string>
 
-    <string name="diagnostics_on_time">%1$d of %2$d · %3$d %%</string>
-    <string name="diagnostics_on_time_none">No firings during this time</string>
-    <string name="diagnostics_on_time_rule">On time — deviation no more than 120 seconds</string>
 
-    <string name="diagnostics_action_check">Check now</string>
-    <string name="diagnostics_action_export">Export journal</string>
     <string name="diagnostics_action_setup">Run setup again</string>
 
     <string name="diagnostics_action_check_delivery">Check delivery</string>
@@ -92,61 +72,60 @@
     <string name="diagnostics_check_cancel">Cancel check</string>
 
     <string name="diagnostics_check_on_time">Delivery check passed: the test reminder arrived on time.</string>
+    <string name="diagnostics_check_delivered">The last check passed: the test reminder arrived on time.</string>
     <string name="diagnostics_check_late">Delivery check: the test reminder arrived %1$s. The phone delayed it — check the launch and power saving settings.</string>
     <string name="diagnostics_check_not_delivered">Delivery check failed: the test reminder did not arrive. Check the launch and power saving settings.</string>
     <string name="diagnostics_check_not_completed">The check did not happen: the app was open. Close it and try again.</string>
-    <string name="diagnostics_check_repeat">Repeat check</string>
     <string name="diagnostics_check_acknowledge">Got it</string>
 
     <string name="reminder_check_overline">Delivery check</string>
     <string name="reminder_check_text">Test reminder. Nothing needs to be marked.</string>
 
-    <string name="diagnostics_export_saved">Journal exported · %1$s</string>
-    <string name="diagnostics_export_failed">Journal not exported: the write failed</string>
-    <string name="diagnostics_export_no_space">Journal not exported: not enough space on the device</string>
 
-    <string name="diagnostics_measurement_row">Measurement arm</string>
-    <string name="diagnostics_measurement_alarm_clock">System alarm</string>
-    <string name="diagnostics_measurement_exact_idle">Exact alarm</string>
     <string name="diagnostics_next_alarm_indicator">The phone shows this time in the status bar as an alarm — this is expected.</string>
 
-    <string name="diagnostics_reason_boot">reboot</string>
-    <string name="diagnostics_reason_locked_boot">restore before unlock</string>
-    <string name="diagnostics_reason_user_unlocked">unlock</string>
-    <string name="diagnostics_reason_package_replaced">app update</string>
-    <string name="diagnostics_reason_timezone_changed">time zone change</string>
-    <string name="diagnostics_reason_time_changed">clock change</string>
-    <string name="diagnostics_reason_schedule_edited">medication schedule changed</string>
-    <string name="diagnostics_reason_medication_added">medication added</string>
-    <string name="diagnostics_reason_medication_archived">medication archived</string>
-    <string name="diagnostics_reason_medication_deleted">medication deleted</string>
-    <string name="diagnostics_reason_medication_undeleted">medication restored</string>
-    <string name="diagnostics_reason_medication_unarchived">medication restored from the archive</string>
-    <string name="diagnostics_reason_alarm_fired">reminder fired</string>
-    <string name="diagnostics_reason_profile_set_changed">profile set changed</string>
-    <string name="diagnostics_reason_anchor">night check</string>
-    <string name="diagnostics_reason_manual">manual action by the person</string>
-    <string name="diagnostics_reason_data_imported">data import</string>
-    <string name="diagnostics_reason_app_start">app start</string>
-    <string name="diagnostics_reason_exact_alarm_granted">exact alarm permission granted</string>
 
-    <string name="diagnostics_event_fired">alarm fired</string>
-    <string name="diagnostics_event_shown">reminder shown</string>
-    <string name="diagnostics_event_suppressed">show suppressed</string>
-    <string name="diagnostics_event_repeated">reminder repeated</string>
-    <string name="diagnostics_event_snoozed">snoozed</string>
-    <string name="diagnostics_event_deferred">deferred firing</string>
-    <string name="diagnostics_event_rescheduled">plan rebuilt</string>
-    <string name="diagnostics_event_rotated">journal trim</string>
-    <string name="diagnostics_event_missed_sweep">moved to missed</string>
-    <string name="diagnostics_event_outage">reminder outage</string>
-    <string name="diagnostics_event_settings_changed">setting changed</string>
-    <string name="diagnostics_event_environment">device environment</string>
-    <string name="diagnostics_event_delivery_check">delivery check</string>
 
-    <string name="diagnostics_alarm_counters">removed %1$d, scheduled %2$d</string>
 
     <string name="reminder_outage_notice">Reminders have not arrived since %1$s. Intakes from this time can be marked manually.</string>
     <string name="reminder_outage_notice_action">Fix</string>
     <string name="reminder_outage_notice_moment_pattern">MMMM d, HH:mm</string>
+
+    <!-- SKL-102: проверка напоминаний, отчёт разработчику. -->
+    <string name="diagnostics_verdict_ok_sub">Reminders arrive on time.</string>
+    <string name="diagnostics_verdict_ok_no_next">Nothing new is scheduled yet.</string>
+    <string name="diagnostics_check_failed_verdict">The last delivery check failed.</string>
+    <string name="diagnostics_section_delivery">Delivery check</string>
+    <string name="diagnostics_section_reminders">Reminders</string>
+    <string name="diagnostics_permission_group_fix_first">Fix these first — otherwise reminders will not arrive or will be late</string>
+    <string name="diagnostics_permission_group_can_defer">Can wait — reminders will arrive, but not fully</string>
+    <string name="diagnostics_permission_rest_granted">The other permissions are granted</string>
+    <string name="diagnostics_consequence_notifications">Reminders will not arrive: the phone will not show them.</string>
+    <string name="diagnostics_consequence_channel">Reminders will not arrive: the notification channel is off.</string>
+    <string name="diagnostics_consequence_exact_alarms">The phone may shift the intake — up to half an hour.</string>
+    <string name="diagnostics_consequence_autostart">The app cannot see EMUI settings — check them yourself.</string>
+    <string name="diagnostics_consequence_full_screen">The card will not appear on the lock screen.</string>
+    <string name="diagnostics_consequence_dnd">Repeated reminders will be silent.</string>
+    <string name="diagnostics_delivery_explanation">It will schedule a test reminder in 1–2 minutes and check that it arrives while the app is closed.</string>
+    <string name="diagnostics_next_none_explanation">There are no active medications with a schedule — nothing to remind about yet.</string>
+    <string name="diagnostics_week_prefix">"Over 7 days "</string>
+    <string name="diagnostics_week_separator">", "</string>
+    <string name="diagnostics_week_fired_none">no reminders were shown</string>
+    <string name="diagnostics_week_missed_none">no missed intakes</string>
+    <string name="diagnostics_week_none">No reminders over 7 days</string>
+    <string name="diagnostics_next_tomorrow">tomorrow, %1$s</string>
+    <string name="diagnostics_next_day_pattern">MMMM d, H:mm</string>
+    <string name="diagnostics_last_actual_with_deviation">Shown at %1$s · %2$s</string>
+    <string name="diagnostics_report_open">Report a problem</string>
+    <string name="diagnostics_report_footer_note">Technical report for the developer. No medication names or intake history.</string>
+    <string name="diagnostics_report_title">Report to the developer</string>
+    <string name="diagnostics_report_explanation">A technical report for the developer — sent at your tap. It is assembled automatically and contains no medication names, doses or intake history.</string>
+    <string name="diagnostics_report_comment_label">What is not working?</string>
+    <string name="diagnostics_report_comment_optional">optional</string>
+    <string name="diagnostics_report_comment_hint">For example: the reminder does not arrive in the morning</string>
+    <string name="diagnostics_report_send">Send report</string>
+    <string name="diagnostics_report_sent_title">Report sent</string>
+    <string name="diagnostics_report_sent_sub">Thank you! This helps make reminders more reliable.</string>
+    <string name="diagnostics_report_failed">Could not send the report. Check your internet connection and try again. The entered text is saved.</string>
+    <string name="diagnostics_report_retry">Retry</string>
 </resources>

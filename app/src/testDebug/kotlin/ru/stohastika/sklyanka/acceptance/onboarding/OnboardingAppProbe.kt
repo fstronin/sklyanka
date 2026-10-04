@@ -15,7 +15,6 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import ru.stohastika.sklyanka.acceptance.profile.TodayFromWorld
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
-import ru.stohastika.sklyanka.domain.intake.SweepReason
 import ru.stohastika.sklyanka.domain.onboarding.ConfirmReliabilityStepUseCase
 import ru.stohastika.sklyanka.domain.onboarding.LeaveOnboardingUseCase
 import ru.stohastika.sklyanka.domain.onboarding.OnboardingSource
@@ -23,11 +22,8 @@ import ru.stohastika.sklyanka.domain.onboarding.PermissionStep
 import ru.stohastika.sklyanka.domain.onboarding.ReadPermissionChecklistUseCase
 import ru.stohastika.sklyanka.domain.onboarding.StepOpenResult
 import ru.stohastika.sklyanka.domain.reminder.BuildReminderDiagnosticsUseCase
-import ru.stohastika.sklyanka.domain.reminder.ExportReminderJournalUseCase
 import ru.stohastika.sklyanka.domain.reminder.ReadReminderReliabilityUseCase
 import ru.stohastika.sklyanka.domain.reminder.ReminderOutage
-import ru.stohastika.sklyanka.domain.schedule.PlanReason
-import ru.stohastika.sklyanka.domain.schedule.PlanScope
 import ru.stohastika.sklyanka.feature.onboarding.OnboardingExit
 import ru.stohastika.sklyanka.feature.onboarding.OnboardingUiState
 import ru.stohastika.sklyanka.feature.onboarding.OnboardingViewModel
@@ -36,10 +32,11 @@ import ru.stohastika.sklyanka.feature.onboarding.PermissionsScreen
 import ru.stohastika.sklyanka.feature.onboarding.SystemSettingsNavigator
 import ru.stohastika.sklyanka.feature.onboarding.TAG_CHECK_DELIVERY
 import ru.stohastika.sklyanka.feature.reminder.DeliveryCheckController
+import ru.stohastika.sklyanka.feature.reminder.DeveloperReportOutcome
+import ru.stohastika.sklyanka.feature.reminder.DeveloperReportSender
 import ru.stohastika.sklyanka.feature.reminder.DiagnosticsScreen
 import ru.stohastika.sklyanka.feature.reminder.DiagnosticsUiState
 import ru.stohastika.sklyanka.feature.reminder.DiagnosticsViewModel
-import ru.stohastika.sklyanka.feature.reminder.ReminderCheckNow
 import ru.stohastika.sklyanka.feature.reminder.ReminderOutageNotice
 import ru.stohastika.sklyanka.feature.reminder.TAG_CHECK_START
 import ru.stohastika.sklyanka.feature.today.TodayScreen
@@ -231,18 +228,18 @@ internal object OnboardingAppProbe {
                 SklyankaTheme {
                     DiagnosticsScreen(
                         state = snapshot,
-                        onCheckNow = {},
-                        onExportJournal = {},
                         onRestartSetup = null,
-                        onToggleSupport = {},
                         onFixPermission = {},
-                        onAlarmKindChange = {},
                         onCheckDelivery = {},
                         onDismissCheckSheet = {},
                         onStartDeliveryCheck = { model.onStartDeliveryCheck() },
                         onCancelDeliveryCheck = {},
-                        onRepeatDeliveryCheck = {},
+                        onAcknowledgeDeliveryCheck = {},
                         onFixDeliveryCheck = {},
+                        onReportOpen = {},
+                        onReportCommentChange = {},
+                        onReportSend = {},
+                        onReportDismiss = {},
                         onBack = {},
                         toLocal = { instant: Instant -> instant.atZone(world.clock.zone).toLocalDateTime() },
                     )
@@ -263,18 +260,18 @@ internal object OnboardingAppProbe {
                 SklyankaTheme {
                     DiagnosticsScreen(
                         state = snapshot,
-                        onCheckNow = {},
-                        onExportJournal = {},
                         onRestartSetup = null,
-                        onToggleSupport = {},
                         onFixPermission = {},
-                        onAlarmKindChange = {},
                         onCheckDelivery = {},
                         onDismissCheckSheet = {},
                         onStartDeliveryCheck = { model.onStartDeliveryCheck() },
                         onCancelDeliveryCheck = {},
-                        onRepeatDeliveryCheck = {},
+                        onAcknowledgeDeliveryCheck = {},
                         onFixDeliveryCheck = {},
+                        onReportOpen = {},
+                        onReportCommentChange = {},
+                        onReportSend = {},
+                        onReportDismiss = {},
                         onBack = {},
                         toLocal = { instant: Instant -> instant.atZone(world.clock.zone).toLocalDateTime() },
                     )
@@ -295,18 +292,18 @@ internal object OnboardingAppProbe {
                 SklyankaTheme {
                     DiagnosticsScreen(
                         state = snapshot,
-                        onCheckNow = {},
-                        onExportJournal = {},
                         onRestartSetup = null,
-                        onToggleSupport = {},
                         onFixPermission = {},
-                        onAlarmKindChange = {},
                         onCheckDelivery = {},
                         onDismissCheckSheet = {},
                         onStartDeliveryCheck = {},
                         onCancelDeliveryCheck = {},
-                        onRepeatDeliveryCheck = {},
+                        onAcknowledgeDeliveryCheck = {},
                         onFixDeliveryCheck = {},
+                        onReportOpen = {},
+                        onReportCommentChange = {},
+                        onReportSend = {},
+                        onReportDismiss = {},
                         onBack = {},
                         toLocal = { instant: Instant -> instant.atZone(world.clock.zone).toLocalDateTime() },
                     )
@@ -342,19 +339,9 @@ internal object OnboardingAppProbe {
             reliability = ReadReminderReliabilityUseCase(world.system),
             medications = world.repositories.medicationStore,
             measurement = world.reminders.measurement,
+            acknowledgements = world.reminders.acknowledgements,
             time = world.clock.time,
         ),
-        check = ReminderCheckNow { reason ->
-            world.sweep(SweepReason.REPLAN)
-            world.plan(PlanScope.AllProfiles, PlanReason.MANUAL_CHECK)
-            world.reminders.reschedule(reason)
-        },
-        exportJournal = ExportReminderJournalUseCase(
-            journal = world.reminders.journal,
-            files = world.transfer.files,
-            time = world.clock.time,
-        ),
-        settings = world.reminders.settingsStore,
         deliveryCheck = object : DeliveryCheckController {
             override suspend fun start() = world.reminders.startDeliveryCheck()
 
@@ -364,6 +351,7 @@ internal object OnboardingAppProbe {
 
             override suspend fun acknowledge(dueAt: Instant) = world.reminders.acknowledgeDeliveryCheck(dueAt)
         },
+        reportSender = DeveloperReportSender { DeveloperReportOutcome.SENT },
         time = world.clock.time,
     )
 

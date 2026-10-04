@@ -34,11 +34,18 @@
         <item quantity="other">%1$s дозы</item>
     </plurals>
 
-    <!-- Размер выгруженного журнала: «1 запись», «12 записей» (НФТ-44). -->
-    <plurals name="diagnostics_export_records">
-        <item quantity="one">%1$d запись</item>
-        <item quantity="few">%1$d записи</item>
-        <item quantity="many">%1$d записей</item>
-        <item quantity="other">%1$d записи</item>
+
+    <!-- SKL-102: сводка за 7 дней. -->
+    <plurals name="diagnostics_week_fired">
+        <item quantity="one">сработало %1$d напоминание</item>
+        <item quantity="few">сработало %1$d напоминания</item>
+        <item quantity="many">сработало %1$d напоминаний</item>
+        <item quantity="other">сработало %1$d напоминания</item>
+    </plurals>
+    <plurals name="diagnostics_week_missed">
+        <item quantity="one">пропущено %1$d приём</item>
+        <item quantity="few">пропущено %1$d приёма</item>
+        <item quantity="many">пропущено %1$d приёмов</item>
+        <item quantity="other">пропущено %1$d приёма</item>
     </plurals>
 </resources>

@@ -77,9 +77,15 @@ class ComponentStatesTest {
 
     @Test
     fun theDangerQuietButtonBelongsToTheDesignSystem() {
-        // ОВ-124, §4.3: удаление — вид тихой кнопки, а не новый компонент.
+        // ОВ-124, §4.3: удаление — вид тихой кнопки, а не новый компонент. Там же —
+        // предупреждающий вид `Warning` для действия баннера-предупреждения (§4.6).
         org.junit.Assert.assertEquals(
-            setOf(QuietButtonKind.Accent, QuietButtonKind.Muted, QuietButtonKind.Danger),
+            setOf(
+                QuietButtonKind.Accent,
+                QuietButtonKind.Muted,
+                QuietButtonKind.Danger,
+                QuietButtonKind.Warning,
+            ),
             QuietButtonKind.entries.toSet(),
         )
         composeTestRule.setContent {

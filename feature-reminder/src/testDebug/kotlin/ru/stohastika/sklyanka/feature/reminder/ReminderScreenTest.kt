@@ -1,8 +1,10 @@
 package ru.stohastika.sklyanka.feature.reminder
 
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
@@ -21,6 +23,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import ru.stohastika.sklyanka.domain.model.MedicationForm
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
+import ru.stohastika.sklyanka.ui.token.SklyankaSpacing
 import java.math.BigDecimal
 import java.time.LocalDateTime
 
@@ -124,6 +127,26 @@ class ReminderScreenTest {
         compose.onNodeWithText("Пропустить").assertIsDisplayed()
     }
 
+    /**
+     * Тёмная форма действий (ОВ-146, §5.1): «Принято» — 58 dp, второстепенные — 54 dp.
+     * Габарит — свойство формы, а не места вызова; на 100 % кнопки ровно этой высоты.
+     */
+    @Test
+    fun theActionsCarryTheDarkFormHeightsOfTheMockup() {
+        show(state())
+
+        assertTrue(
+            "«Принято» must be 58 dp tall",
+            heightOf(TAG_ACTION_TAKEN) >= PRIMARY_HEIGHT_DP - HEIGHT_TOLERANCE,
+        )
+        listOf(TAG_ACTION_SNOOZE, TAG_ACTION_SKIP).forEach { tag ->
+            assertTrue(
+                "$tag must be 54 dp tall",
+                heightOf(tag) >= SECONDARY_HEIGHT_DP - HEIGHT_TOLERANCE,
+            )
+        }
+    }
+
     @Test
     fun theSnoozeLabelFollowsTheSetting() {
         show(state(snoozeMinutes = 30))
@@ -145,8 +168,8 @@ class ReminderScreenTest {
      * Подписи действий не переносятся и не перекрываются независимо от раскладки:
      * помещаются рядом — стоят рядом, не помещаются — встают друг под друга.
      *
-     * На ширине 390 dp «Отложить 15 мин» не помещается в половину строки и до задачи
-     * переносилась на две строки — это и был дефект пилота.
+     * На ширине 390 dp «Отложить 15 мин» не помещалась в половину ряда и переносилась
+     * на две строки до стоп-крана — это и был дефект пилота.
      */
     @Test
     fun theActionsNeverWrapTheirLabelsAtTheNormalFont() {
@@ -163,14 +186,34 @@ class ReminderScreenTest {
     }
 
     /**
-     * При крупном шрифте кнопки встают друг под друга во всю ширину, и подпись
-     * не переносится (SKL-61, §6.3). Ряд, сжатый до половин, разрывал «Отложить 15 мин».
+     * При 130 % длинная русская подпись уходит в столбик: «Отложить 15 мин» занимает
+     * 161 dp — больше порога 157 dp, за которым ряд перестаёт гарантировать боковой
+     * зазор 4 dp до рамки (§5.1, ОВ-146). Подпись при этом не переносится.
      */
     @Test
-    fun atOneHundredThirtyPercentTheActionsStackInsteadOfWrapping() {
-        show(state(), fontScale = SCALE_130)
+    fun atOneHundredThirtyPercentTheLongLabelsStack() {
+        show(state(snoozeMinutes = 15), fontScale = SCALE_130)
 
         assertStackedWithoutWrappedLabels()
+    }
+
+    /**
+     * «Отложить 5 мин» на 130 % — короткая подпись у самого порога: измеренная ширина
+     * 152 dp при пороге 157 dp, ряд сохраняется, и воздух до рамки (≈6 dp) не меньше
+     * 4 dp (§5.1, ОВ-146). Порог решает фактическая ширина, а не масштаб.
+     */
+    @Test
+    fun atOneHundredThirtyPercentTheShortSnoozeLabelKeepsTheRow() {
+        show(state(snoozeMinutes = 5), fontScale = SCALE_130)
+
+        val snooze = compose.onNodeWithTag(TAG_ACTION_SNOOZE).fetchSemanticsNode().boundsInRoot
+        val skip = compose.onNodeWithTag(TAG_ACTION_SKIP).fetchSemanticsNode().boundsInRoot
+        assertTrue(
+            "кнопки не в ряду: $snooze, $skip",
+            snooze.top < skip.bottom && skip.top < snooze.bottom,
+        )
+        assertLabelsFitOneLine(snooze, skip)
+        assertActionsKeepTheSideGap()
     }
 
     @Test
@@ -206,10 +249,45 @@ class ReminderScreenTest {
         return requireNotNull(results.firstOrNull()) { "the time has no text layout" }
     }
 
+    /** Высота кнопки в dp: снимок габарита, а не пиксельное число. */
+    private fun heightOf(tag: String): Float {
+        val node = compose.onNodeWithTag(tag).fetchSemanticsNode()
+        return with(node.layoutInfo.density) { node.size.height.toDp().value }
+    }
+
     private fun assertStackedWithoutWrappedLabels() {
         val snooze = compose.onNodeWithTag(TAG_ACTION_SNOOZE).fetchSemanticsNode().boundsInRoot
         val skip = compose.onNodeWithTag(TAG_ACTION_SKIP).fetchSemanticsNode().boundsInRoot
         assertTrue("кнопка пропуска не под откладыванием: $snooze, $skip", skip.top >= snooze.bottom)
+        assertLabelsFitOneLine(snooze, skip)
+    }
+
+    /**
+     * Ряд тёмной пары не прижимает подпись к рамке: воздух до каждой границы кнопки —
+     * не меньше 4 dp (`SklyankaSpacing.Micro`), как требует §5.1 и ОВ-146.
+     */
+    private fun assertActionsKeepTheSideGap() {
+        listOf(TAG_ACTION_SNOOZE, TAG_ACTION_SKIP).forEach { tag ->
+            val node = compose.onNodeWithTag(tag, useUnmergedTree = true).fetchSemanticsNode()
+            val gapPx = with(node.layoutInfo.density) { SklyankaSpacing.Micro.roundToPx() }
+            val layouts = mutableListOf<TextLayoutResult>()
+            collectTextLayouts(node, layouts)
+            val labelWidthPx = requireNotNull(layouts.firstOrNull()) {
+                "у кнопки $tag нет разметки подписи"
+            }.size.width
+            assertTrue(
+                "подпись $tag прижата к рамке: label=$labelWidthPx, button=${node.size}",
+                labelWidthPx + 2 * gapPx <= node.size.width,
+            )
+        }
+    }
+
+    private fun collectTextLayouts(node: SemanticsNode, into: MutableList<TextLayoutResult>) {
+        node.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(into)
+        node.children.forEach { child -> collectTextLayouts(child, into) }
+    }
+
+    private fun assertLabelsFitOneLine(snooze: Rect, skip: Rect) {
         assertTrue("подпись откладывания переносится: $snooze", snooze.height <= MAX_ONE_LINE_HEIGHT)
         assertTrue("подпись пропуска переносится: $skip", skip.height <= MAX_ONE_LINE_HEIGHT)
     }
@@ -230,6 +308,11 @@ class ReminderScreenTest {
 
         const val SCALE_130 = 1.3f
         const val SCALE_200 = 2.0f
+
+        /** Габариты тёмной формы (ОВ-146): основная 58 dp, второстепенная 54 dp. */
+        const val PRIMARY_HEIGHT_DP = 58f
+        const val SECONDARY_HEIGHT_DP = 54f
+        const val HEIGHT_TOLERANCE = 0.5f
 
         /** 64 sp · 1,3 / 2 — кегль под потолком 130 % при системном масштабе 200 %. */
         const val CAPPED_FONT_SIZE = 41.6f

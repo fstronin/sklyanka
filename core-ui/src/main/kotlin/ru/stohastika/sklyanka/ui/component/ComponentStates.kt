@@ -1,10 +1,12 @@
 package ru.stohastika.sklyanka.ui.component
 
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.unit.Dp
 import ru.stohastika.sklyanka.ui.token.SklyankaShapes
 import ru.stohastika.sklyanka.ui.token.SklyankaSizes
+import ru.stohastika.sklyanka.ui.token.SklyankaSpacing
 
 /**
  * Состояния компонентов каталога (`docs/spec/08-design-system.md` §4).
@@ -69,6 +71,16 @@ data class ProgressAction(val label: String, val onClick: () -> Unit)
 data class ScreenHeaderLabels(val title: String, val overline: String? = null)
 
 /**
+ * Подпись кнопки: слово и необязательный ведущий глиф.
+ *
+ * Готовое значение одним объектом, как у [IntakeCardLabels]: глиф декоративный — смысл
+ * несёт слово, поэтому чтению с экрана он не объявляется, — и отдельным параметром он
+ * разрастал бы сигнатуру кнопки при каждом новом украшении. Цвет глифа выбирает место.
+ */
+@Immutable
+data class ButtonLabel(val text: String, val leadingGlyph: (@Composable () -> Unit)? = null)
+
+/**
  * Состояния кнопки (§4.3).
  *
  * [Pressed] задаётся снаружи только каталогом и превью — в приложении оно приходит
@@ -111,22 +123,72 @@ enum class PrimaryButtonKind { Primary, Danger }
  *
  * [Accent] — обычное действие в шапке и внутри строк; [Muted] — «Отмена» рядом
  * с главным действием; [Danger] — удаление: текст цветом опасности, который в чужом
- * профиле не подменяется цветом профиля (ОВ-67). Вид перечислением, а не двумя флагами,
- * по той же причине, что у [PrimaryButtonKind]: «приглушённая и опасная» — сочетание,
- * которого в дизайн-системе нет.
+ * профиле не подменяется цветом профиля (ОВ-67); [Warning] — действие строки-предупреждения:
+ * текст цветом `warning` (`ProfileForeign`), как того требует §4.6. Вид перечислением,
+ * а не двумя флагами, по той же причине, что у [PrimaryButtonKind]: «приглушённая
+ * и опасная» — сочетание, которого в дизайн-системе нет.
  */
-enum class QuietButtonKind { Accent, Muted, Danger }
+enum class QuietButtonKind { Accent, Muted, Danger, Warning }
 
 /**
- * Форма кнопки: карточная (внутри карточек) и экранная (§4.3, ОВ-90).
+ * Форма тихой кнопки: строка/карточка и шапка модального слоя (§4.3, §4.9, ОВ-146).
  *
- * Габариты берут существующие токены `SklyankaSizes`/`SklyankaShapes` — новых
- * размеров и радиусов не вводится (НФТ-47). Одну форму делят оба вида кнопок в ряду:
- * иначе «Принято» и «Пропустить» разной высоты читаются как кривая вёрстка.
+ * [Row] — тихая кнопка внутри строки и карточки: `LabelStrong` 14 sp/600. [Header] —
+ * действие шапки шторки, модального экрана и диалога, где кегль крупнее: отмена — `BodyDefault`
+ * 15 sp/400, подтверждение — `BodyDefaultStrong` 15 sp/600. Форма перечислением, а не булевым
+ * флагом, по образцу [ButtonForm]: кегль — свойство роли действия, а не места вызова.
  */
-enum class ButtonForm(val height: Dp, val shape: RoundedCornerShape) {
-    Card(SklyankaSizes.SecondaryButtonHeight, SklyankaShapes.Button),
-    Screen(SklyankaSizes.PrimaryButtonHeight, SklyankaShapes.Large),
+enum class QuietButtonForm { Row, Header }
+
+/**
+ * Форма кнопки: карточная (внутри карточек), экранная и тёмная (§4.3, §5.1, ОВ-90, ОВ-146).
+ *
+ * Габариты и радиусы берутся токенами `SklyankaSizes`/`SklyankaShapes`, а не
+ * подбираются по месту (НФТ-47). Основная и второстепенная кнопки одной
+ * формы несут **разные высоты**: у светлых форм они совпадают, у тёмной — 58 и 54 dp,
+ * как задаёт макет напоминания. Одну форму делят оба вида кнопок в ряду: иначе
+ * «Принято» и «Пропустить» разной высоты читаются как кривая вёрстка.
+ *
+ * [labelPadding] — боковое поле подписи, которое кнопка добавляет к её ширине.
+ * У светлых форм это 28 dp, у тёмной — 0: макет напоминания держит ряд равных
+ * половин именно потому, что полю подписи в нём места нет (§5.1). Поле объявлено
+ * свойством формы, чтобы критерий ряда ([StackingEqualButtons]) считал его тем же
+ * значением, что и сама кнопка.
+ *
+ * [minLabelSideGap] — минимальный воздух между подписью и рамкой, который стоп-кран
+ * ряда требует **для каждой половины** (§5.1, ОВ-146). У тёмной формы это
+ * `SklyankaSpacing.Micro` 4 dp: на 390 dp порог подписи — 157 dp вместо прежних 165,
+ * и текст не прилипает к границе кнопки. У светлых форм зазора нет — 0: воздух там
+ * даёт само поле подписи 28 dp.
+ */
+enum class ButtonForm(
+    val primaryHeight: Dp,
+    val secondaryHeight: Dp,
+    val shape: RoundedCornerShape,
+    val labelPadding: Dp,
+    val minLabelSideGap: Dp,
+) {
+    Card(
+        SklyankaSizes.SecondaryButtonHeight,
+        SklyankaSizes.SecondaryButtonHeight,
+        SklyankaShapes.Button,
+        SklyankaSizes.ButtonPadding,
+        SklyankaSpacing.None,
+    ),
+    Screen(
+        SklyankaSizes.PrimaryButtonHeight,
+        SklyankaSizes.PrimaryButtonHeight,
+        SklyankaShapes.Large,
+        SklyankaSizes.ButtonPadding,
+        SklyankaSpacing.None,
+    ),
+    Dark(
+        SklyankaSizes.DarkPrimaryButtonHeight,
+        SklyankaSizes.DarkSecondaryButtonHeight,
+        SklyankaShapes.Card,
+        SklyankaSpacing.None,
+        SklyankaSpacing.Micro,
+    ),
 }
 
 /**
@@ -189,6 +251,9 @@ enum class ScreenHeaderKind {
     /** Вложенная: стрелка «Назад» слева, тихое действие справа. */
     Nested,
 
-    /** Модальная: «Отмена» слева, название по центру, «Готово» справа. */
+    /**
+     * Модальная: «Отмена» слева, название по центру, «Готово» справа. Действие набирается
+     * формой шапки ([QuietButtonForm.Header], 15 sp), а не строки (§4.9, ОВ-146).
+     */
     Modal,
 }

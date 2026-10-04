@@ -24,24 +24,17 @@ import ru.stohastika.sklyanka.acceptance.steps.localMoment
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
 import ru.stohastika.sklyanka.domain.reminder.ReminderChannel
 import ru.stohastika.sklyanka.domain.reminder.ReminderEvent
-import ru.stohastika.sklyanka.domain.reminder.ReminderJournalExportOutcome
 import ru.stohastika.sklyanka.domain.reminder.ReminderLogEntry
 import ru.stohastika.sklyanka.domain.reminder.RescheduleReason
 import ru.stohastika.sklyanka.domain.reminder.port.PermissionState
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPermission
 import ru.stohastika.sklyanka.feature.reminder.R
-import ru.stohastika.sklyanka.feature.reminder.ReminderCheckOutcome
 import ru.stohastika.sklyanka.feature.reminder.TAG_ALL_GRANTED
 import ru.stohastika.sklyanka.feature.reminder.TAG_DIAGNOSTICS
-import ru.stohastika.sklyanka.feature.reminder.TAG_EXPORT_JOURNAL
 import ru.stohastika.sklyanka.feature.reminder.TAG_FIX
-import ru.stohastika.sklyanka.feature.reminder.TAG_JOURNAL_ROW
 import ru.stohastika.sklyanka.feature.reminder.TAG_LAST_SHORT
-import ru.stohastika.sklyanka.feature.reminder.TAG_LAST_SHOWN
 import ru.stohastika.sklyanka.feature.reminder.TAG_NEXT_SHORT
-import ru.stohastika.sklyanka.feature.reminder.TAG_RELIABLE
-import ru.stohastika.sklyanka.feature.reminder.TAG_RESCHEDULE
-import ru.stohastika.sklyanka.feature.reminder.TAG_SUPPORT_TOGGLE
+import ru.stohastika.sklyanka.feature.reminder.TAG_VERDICT
 import ru.stohastika.sklyanka.feature.reminder.TAG_WEEK_SUMMARY
 import java.time.LocalTime
 
@@ -143,11 +136,6 @@ class DiagnosticsCheckSteps(private val world: AcceptanceWorld) {
         world.failReminderCheck = true
     }
 
-    @Допустим("^блок «Для поддержки» свёрнут$")
-    fun theSupportBlockIsCollapsed() {
-        assertFalse(DiagnosticsStand.state(world).supportExpanded, "the support block must start collapsed")
-    }
-
     @Допустим("^человек раскрыл «Для поддержки»$")
     fun thePersonExpandedTheSupport() {
         DiagnosticsStand.expandSupport(world)
@@ -160,11 +148,6 @@ class DiagnosticsCheckSteps(private val world: AcceptanceWorld) {
         DiagnosticsStand.askRaw(world) { onNodeWithTag(TAG_DIAGNOSTICS).assertExists() }
     }
 
-    @Когда("^человек нажимает «Для поддержки»$")
-    fun thePersonTapsTheSupport() {
-        DiagnosticsStand.actRaw(world) { onNodeWithTag(TAG_SUPPORT_TOGGLE).performScrollTo().performClick() }
-    }
-
     @Когда("^человек выдаёт уведомления в системных настройках и возвращается$")
     fun thePersonGrantsNotificationsAndReturns() {
         world.system.grant(ReminderPermission.NOTIFICATIONS)
@@ -173,19 +156,7 @@ class DiagnosticsCheckSteps(private val world: AcceptanceWorld) {
 
     @Когда("^человек нажимает «Исправить» у строки «(.+?)»$")
     fun thePersonFixesTheRow(label: String) {
-        val permission = permissionOf(label)
-        val index = ReminderPermission.entries
-            .filter { it != ReminderPermission.BOOT_RECEIVER }
-            .indexOf(permission)
-        assertTrue(index >= 0, "the row «$label» must have a fix action")
-        DiagnosticsStand.actRaw(world) {
-            onAllNodesWithTag(TAG_FIX)[index].performScrollTo().performClick()
-        }
-    }
-
-    @Когда("^человек нажимает «Выгрузить журнал»$")
-    fun thePersonExportsTheJournal() {
-        DiagnosticsStand.actRaw(world) { onNodeWithTag(TAG_EXPORT_JOURNAL).performScrollTo().performClick() }
+        clickFixFor(permissionOf(label))
     }
 
     @Когда("^человек смотрит на строки журнала$")
@@ -211,7 +182,7 @@ class DiagnosticsCheckSteps(private val world: AcceptanceWorld) {
 
     @Тогда("^показано «Всё в порядке»$")
     fun everythingIsFine() {
-        assertTrue(hasTag(TAG_RELIABLE), "the short answer must be shown when everything is fine")
+        assertTrue(hasTag(TAG_VERDICT), "the short answer must be shown when everything is fine")
         assertTrue(hasText(string(R.string.diagnostics_reliable)), "the answer must be in words")
     }
 
@@ -227,28 +198,13 @@ class DiagnosticsCheckSteps(private val world: AcceptanceWorld) {
         assertTrue(hasText(line), "the line must say «$line»")
     }
 
-    @Но("^журнала срабатываний и служебных счётчиков на первом уровне не видно$")
-    fun theTechnicalDetailsAreHidden() {
-        assertFalse(hasTag(TAG_JOURNAL_ROW), "journal rows must not be on the first level")
-        assertFalse(hasTag(TAG_RESCHEDULE), "the rebuild counters must not be on the first level")
-    }
-
-    @Тогда("^внизу экрана есть строка «Для поддержки»$")
-    fun theSupportRowIsThere() {
-        assertTrue(hasTag(TAG_SUPPORT_TOGGLE), "the support row must be at the bottom")
-        assertTrue(hasText(string(R.string.diagnostics_support)), "the row must be named «Для поддержки»")
-    }
-
-    @И("^содержимое блока свёрнуто$")
-    fun theSupportContentIsCollapsed() {
-        assertFalse(hasTag(TAG_LAST_SHOWN), "the technical report must be collapsed")
-        assertFalse(hasTag(TAG_JOURNAL_ROW), "the journal must be collapsed")
-    }
-
     @Тогда("^у строки «(.+)» сказано, что именно не так$")
     fun theRowSaysWhatIsWrong(label: String) {
         assertTrue(hasText(label), "the row «$label» must be shown")
-        assertTrue(hasText(string(R.string.diagnostics_state_denied)), "the row must say what is wrong")
+        val consequence = requireNotNull(consequenceLabel(permissionOf(label))) {
+            "the row «$label» must name a consequence"
+        }
+        assertTrue(hasText(string(consequence)), "the row must say what is wrong, in words")
     }
 
     @И("^у строки есть действие «(.+?)»$")
@@ -275,17 +231,17 @@ class DiagnosticsCheckSteps(private val world: AcceptanceWorld) {
     @И("^действие «(.+?)» ведёт в системные настройки запуска приложений$")
     fun theFixLeadsToAutostart(action: String) {
         assertTrue(hasText(action), "the action must be named «$action»")
-        val index = ReminderPermission.entries
-            .filter { it != ReminderPermission.BOOT_RECEIVER }
-            .indexOf(ReminderPermission.AUTOSTART)
-        DiagnosticsStand.actRaw(world) {
-            onAllNodesWithTag(TAG_FIX)[index].performScrollTo().performClick()
-        }
+        clickFixFor(ReminderPermission.AUTOSTART)
         assertEquals(
             ReminderPermission.AUTOSTART,
             DiagnosticsStand.fixed,
             "«Исправить» у автозапуска must lead to the system autostart screen",
         )
+    }
+
+    @Тогда("^строка «(.+?)» больше не показана$")
+    fun theRowIsGone(label: String) {
+        assertFalse(hasText(label), "the granted row «$label» must be gone")
     }
 
     @Когда("^программа чтения с экрана читает строку «(.+?)»$")
@@ -302,25 +258,6 @@ class DiagnosticsCheckSteps(private val world: AcceptanceWorld) {
     fun theRowShowsGranted(label: String) {
         assertTrue(hasText(label), "the row «$label» must be shown")
         assertTrue(hasText(string(R.string.diagnostics_state_granted)), "the row must say the permission is granted")
-    }
-
-    @Тогда("^напоминания поставлены заново$")
-    fun theRemindersWereRescheduled() {
-        assertEquals(
-            ReminderCheckOutcome.SUCCESS,
-            DiagnosticsStand.state(world).checkOutcome,
-            "the manual check must finish successfully",
-        )
-    }
-
-    @И("^показано «Проверка выполнена — напоминания поставлены»$")
-    fun theCheckSucceeded() {
-        assertTrue(hasText(string(R.string.diagnostics_check_done)), "the screen must name the successful outcome")
-    }
-
-    @Тогда("^показано «Проверить не удалось» с причиной$")
-    fun theCheckFailed() {
-        assertTrue(hasText(string(R.string.diagnostics_check_failed)), "the screen must name the failed outcome")
     }
 
     @И("^показана фраза о сработавших и пропущенных напоминаниях$")
@@ -372,39 +309,7 @@ class DiagnosticsCheckSteps(private val world: AcceptanceWorld) {
         assertTrue(hasText(string(R.string.diagnostics_state_denied)), "the state must be pronounced")
     }
 
-    // --- Проверки второго уровня ---------------------------------------------------------------
-
-    @Тогда("^показаны журнал срабатываний, причина и счётчики пересборки и список будильников$")
-    fun theSupportShowsTheReport() {
-        seedAnonymousEntry()
-        DiagnosticsStand.refresh(world)
-        assertTrue(expandedHasTag(TAG_JOURNAL_ROW), "the journal must be shown")
-        assertTrue(expandedHasTag(TAG_RESCHEDULE), "the rebuild counters must be shown")
-        assertTrue(expandedHasTag(TAG_LAST_SHOWN), "the technical report must be shown")
-    }
-
-    @Тогда("^журнал сохраняется файлом выбранным человеком способом$")
-    fun theJournalIsSavedToAFile() {
-        val outcome = DiagnosticsStand.state(world).exportOutcome
-        assertTrue(outcome is ReminderJournalExportOutcome.Saved, "the export must succeed: $outcome")
-        assertTrue(exportedCsv().isNotEmpty(), "the journal file must be written")
-    }
-
-    @Тогда("^в строках стоят идентификаторы приёмов$")
-    fun theRowsCarryIntakeIds() {
-        val rows = journalTexts()
-        assertTrue(rows.isNotEmpty(), "the journal rows must be on the screen")
-        assertTrue(rows.any { it.contains("intake") }, "the rows must carry intake identifiers: $rows")
-    }
-
-    @Но("^названий лекарств, дозировок и имён профилей в них нет$")
-    fun theRowsCarryNoMedicalData() {
-        val rows = journalTexts()
-        val names = world.medications.all().map { it.name }
-        rows.forEach { row ->
-            names.forEach { name -> assertFalse(row.contains(name), "the journal must carry no names: $row") }
-        }
-    }
+    // --- Проверки второго уровня (технический блок убран, см. SKL-102) ------------------------
 
     // --- Название и навигация ------------------------------------------------------------------
 
@@ -430,6 +335,8 @@ class DiagnosticsCheckSteps(private val world: AcceptanceWorld) {
 
     @Тогда("^она произносит, что разрешение не выдано$")
     fun theReaderPronouncesTheState() {
+        // Состояние названо видимым словом в строке: чтение с экрана произносит его
+        // вместе с именем и последствием (НФТ-30, ОВ-134).
         assertTrue(hasText(string(R.string.diagnostics_state_denied)), "the state must be pronounced")
     }
 
@@ -473,13 +380,35 @@ class DiagnosticsCheckSteps(private val world: AcceptanceWorld) {
         runBlocking { world.reminders.journal.record(entry) }
     }
 
-    private fun exportedCsv(): String =
-        requireNotNull(world.transfer.files.documents[DiagnosticsStand.JOURNAL_HANDLE]) {
-            "the journal file must be written to the chosen place"
-        }
-
     private fun permissionOf(label: String): ReminderPermission =
         REMINDER_PERMISSION_LABELS.entries.first { (_, id) -> string(id) == label }.key
+
+    /** Нажать «Исправить» у строки разрешения по порядку карточки, а не по порядку перечисления. */
+    private fun clickFixFor(permission: ReminderPermission) {
+        val state = DiagnosticsStand.state(world)
+        val actionable = ReminderPermission.entries.filter {
+            ru.stohastika.sklyanka.domain.reminder.ReminderPermissionGroups.requiresAction(
+                it,
+                state.snapshot?.permissions?.get(it)
+                    ?: ru.stohastika.sklyanka.domain.reminder.port.PermissionState.UNKNOWN,
+            )
+        }
+        val index = actionable.indexOf(permission)
+        assertTrue(index >= 0, "the row of $permission must have a fix action")
+        DiagnosticsStand.actRaw(world) {
+            onAllNodesWithTag(TAG_FIX)[index].performScrollTo().performClick()
+        }
+    }
+
+    private fun consequenceLabel(permission: ReminderPermission): Int? = when (permission) {
+        ReminderPermission.NOTIFICATIONS -> R.string.diagnostics_consequence_notifications
+        ReminderPermission.NOTIFICATION_CHANNEL -> R.string.diagnostics_consequence_channel
+        ReminderPermission.EXACT_ALARMS -> R.string.diagnostics_consequence_exact_alarms
+        ReminderPermission.AUTOSTART -> R.string.diagnostics_consequence_autostart
+        ReminderPermission.FULL_SCREEN_INTENT -> R.string.diagnostics_consequence_full_screen
+        ReminderPermission.DND_POLICY_ACCESS -> R.string.diagnostics_consequence_dnd
+        ReminderPermission.BOOT_RECEIVER -> null
+    }
 
     /** Поиск подстроки: строки первого уровня — целые фразы («Магний B6 — 25 сентября, 20:00 · план»). */
     private fun hasText(text: String): Boolean {
@@ -501,11 +430,6 @@ class DiagnosticsCheckSteps(private val world: AcceptanceWorld) {
 
     private fun hasTextIgnoringCase(text: String): Boolean = visibleTexts().any { it.contains(text, ignoreCase = true) }
 
-    private fun expandedHasTag(tag: String): Boolean {
-        DiagnosticsStand.expandSupport(world)
-        return hasTag(tag)
-    }
-
     private fun nodeText(tag: String): String {
         var text = ""
         DiagnosticsStand.askRaw(world) {
@@ -521,16 +445,6 @@ class DiagnosticsCheckSteps(private val world: AcceptanceWorld) {
         var texts: List<String> = emptyList()
         DiagnosticsStand.askRaw(world) {
             texts = onAllNodesWithTag(TAG_DIAGNOSTICS, useUnmergedTree = true)
-                .fetchSemanticsNodes()
-                .flatMap(::textsOf)
-        }
-        return texts
-    }
-
-    private fun journalTexts(): List<String> {
-        var texts: List<String> = emptyList()
-        DiagnosticsStand.ask(world) {
-            texts = onAllNodesWithTag(TAG_JOURNAL_ROW, useUnmergedTree = true)
                 .fetchSemanticsNodes()
                 .flatMap(::textsOf)
         }

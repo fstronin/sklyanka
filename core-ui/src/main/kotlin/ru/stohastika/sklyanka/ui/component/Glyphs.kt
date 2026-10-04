@@ -50,6 +50,28 @@ private const val EXCLAMATION_TOP = 0.42f
 private const val EXCLAMATION_BOTTOM = 0.62f
 private const val EXCLAMATION_DOT = 0.72f
 
+/** Круг со «i» в нейтральном глифе-сведениях. */
+private const val INFO_RADIUS = 0.42f
+private const val INFO_STEM_TOP = 0.46f
+private const val INFO_STEM_BOTTOM = 0.70f
+private const val INFO_DOT = 0.30f
+
+/** Шеврон перехода: ломаная вправо. */
+private const val CHEVRON_TOP_X = 0.36f
+private const val CHEVRON_MID_X = 0.64f
+private const val CHEVRON_TOP_Y = 0.22f
+private const val CHEVRON_MID_Y = 0.5f
+private const val CHEVRON_BOTTOM_Y = 0.78f
+
+/** Облачко-сообщение: прямоугольник с хвостом влево-вниз. */
+private const val CHAT_LEFT = 0.19f
+private const val CHAT_RIGHT = 0.81f
+private const val CHAT_TOP = 0.23f
+private const val CHAT_BOTTOM = 0.67f
+private const val CHAT_TAIL_ENTER_X = 0.42f
+private const val CHAT_TAIL_X = 0.27f
+private const val CHAT_TAIL_TIP_Y = 0.79f
+
 /** Голова и плечи в значке профиля. */
 private const val HEAD_CENTER_Y = 0.33f
 private const val HEAD_RADIUS = 0.16f
@@ -147,6 +169,85 @@ fun WarningGlyph(color: Color, modifier: Modifier = Modifier, size: Dp = Sklyank
             },
             color = color,
             style = stroke,
+        )
+    }
+}
+
+/**
+ * Нейтральный глиф-сведения: круг со строчной «i».
+ *
+ * Тот же второй носитель смысла, что у предупреждения, но для нейтральных состояний
+ * строки «Разрешений» («проверьте вручную» и фирменные ограничения, AC-10): цвет и
+ * глиф вместе, а слово состояния несёт текст.
+ */
+@Composable
+fun InfoGlyph(color: Color, modifier: Modifier = Modifier, size: Dp = SklyankaSizes.BannerIcon) {
+    Canvas(modifier.size(size)) {
+        val side = this.size.minDimension
+        drawCircle(
+            color = color,
+            radius = side * INFO_RADIUS,
+            center = center,
+            style = Stroke(width = side * STROKE_RATIO),
+        )
+        drawLine(
+            color = color,
+            start = Offset(side * TRIANGLE_APEX_X, side * INFO_STEM_TOP),
+            end = Offset(side * TRIANGLE_APEX_X, side * INFO_STEM_BOTTOM),
+            strokeWidth = side * STROKE_RATIO,
+            cap = StrokeCap.Round,
+        )
+        drawLine(
+            color = color,
+            start = Offset(side * TRIANGLE_APEX_X, side * INFO_DOT),
+            end = Offset(side * TRIANGLE_APEX_X, side * INFO_DOT),
+            strokeWidth = side * STROKE_RATIO,
+            cap = StrokeCap.Round,
+        )
+    }
+}
+
+/** Шеврон перехода: тихий признак «дальше» рядом с подписью действия. */
+@Composable
+fun ChevronGlyph(color: Color, modifier: Modifier = Modifier, size: Dp = SklyankaSizes.Chevron) {
+    Canvas(modifier.size(size)) {
+        val side = this.size.minDimension
+        drawPath(
+            path = Path().apply {
+                moveTo(side * CHEVRON_TOP_X, side * CHEVRON_TOP_Y)
+                lineTo(side * CHEVRON_MID_X, side * CHEVRON_MID_Y)
+                lineTo(side * CHEVRON_TOP_X, side * CHEVRON_BOTTOM_Y)
+            },
+            color = color,
+            style = Stroke(width = side * STROKE_RATIO, cap = StrokeCap.Round, join = StrokeJoin.Round),
+        )
+    }
+}
+
+/**
+ * Облачко-сообщение: декоративный ведущий глиф тихой «Сообщить о проблеме» (ОВ-144).
+ *
+ * Смысл несёт подпись словами, поэтому глиф не объявляется чтением с экрана и
+ * `contentDescription` не имеет. Размер по умолчанию — токен глифа шапки (17 dp),
+ * новых габаритов не заводится.
+ */
+@Composable
+fun ChatGlyph(color: Color, modifier: Modifier = Modifier, size: Dp = SklyankaSizes.BannerIcon) {
+    Canvas(modifier.size(size)) {
+        val side = this.size.minDimension
+        drawPath(
+            path = Path().apply {
+                moveTo(side * CHAT_LEFT, side * CHAT_TOP)
+                lineTo(side * CHAT_RIGHT, side * CHAT_TOP)
+                lineTo(side * CHAT_RIGHT, side * CHAT_BOTTOM)
+                lineTo(side * CHAT_TAIL_ENTER_X, side * CHAT_BOTTOM)
+                lineTo(side * CHAT_TAIL_X, side * CHAT_TAIL_TIP_Y)
+                lineTo(side * CHAT_TAIL_X, side * CHAT_BOTTOM)
+                lineTo(side * CHAT_LEFT, side * CHAT_BOTTOM)
+                close()
+            },
+            color = color,
+            style = Stroke(width = side * STROKE_RATIO, cap = StrokeCap.Round, join = StrokeJoin.Round),
         )
     }
 }

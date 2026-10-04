@@ -169,8 +169,13 @@ class DeviceActivityHarnessSteps {
     @Тогда("выгрузка журнала остаётся возможностью продукта")
     fun theJournalExportStaysAProductFeature() {
         assertTrue(
-            text(File(RepositoryLayout.root, DIAGNOSTICS_SCREEN)).contains("TAG_EXPORT_JOURNAL"),
-            "the product must keep the journal export action",
+            text(File(RepositoryLayout.root, JOURNAL_EXPORT_USE_CASE))
+                .contains("class ExportReminderJournalUseCase"),
+            "the domain must keep the journal export use case",
+        )
+        assertTrue(
+            text(File(RepositoryLayout.root, REMINDER_MODULE)).contains("ExportReminderJournalUseCase"),
+            "$REMINDER_MODULE must keep providing the journal export to the product",
         )
     }
 
@@ -408,8 +413,10 @@ class DeviceActivityHarnessSteps {
             "app/src/androidTest/kotlin/ru/stohastika/sklyanka/screen/DiagnosticsDeviceTest.kt"
         const val DEVICE_TEST_STEPS =
             "acceptance/src/main/kotlin/ru/stohastika/sklyanka/acceptance/steps/task/DeviceTestHarnessSteps.kt"
-        const val DIAGNOSTICS_SCREEN =
-            "feature-reminder/src/main/kotlin/ru/stohastika/sklyanka/feature/reminder/DiagnosticsScreen.kt"
+        const val JOURNAL_EXPORT_USE_CASE =
+            "core-domain/src/main/kotlin/ru/stohastika/sklyanka/domain/reminder/ExportReminderJournalUseCase.kt"
+        const val REMINDER_MODULE =
+            "app/src/main/kotlin/ru/stohastika/sklyanka/di/ReminderModule.kt"
         const val DIAGNOSTICS_ACTIVITY =
             "feature-reminder/src/main/kotlin/ru/stohastika/sklyanka/feature/reminder/DiagnosticsActivity.kt"
         const val PERMISSIONS_ACTIVITY =

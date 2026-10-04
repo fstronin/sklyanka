@@ -19,37 +19,23 @@
     <string name="diagnostics_reliable">Барлығы дұрыс</string>
     <string name="diagnostics_all_granted">Рұқсаттар берілген</string>
     <string name="diagnostics_fix">Түзету</string>
-    <string name="diagnostics_check_done">Тексеру орындалды — еске салғыштар қойылды</string>
-    <string name="diagnostics_check_failed">Тексеру мүмкін болмады: еске салғыштар қайта жоспарланбады</string>
-    <string name="diagnostics_support">Қолдау қызметіне</string>
 
-    <string name="diagnostics_week_summary">7 күнде: %1$d іске қосылды, %2$d өткізілді</string>
-    <string name="diagnostics_week_summary_none">7 күнде еске салғыштар болмады</string>
 
     <string name="diagnostics_last_none">Әзірге еске салғыштар болмады</string>
     <string name="diagnostics_last_line">%1$s — %2$s</string>
     <string name="diagnostics_last_actual">%1$s көрсетілді</string>
     <string name="diagnostics_on_time_word">уақытында</string>
-    <string name="diagnostics_next_none">Келесі еске салғыш жоқ</string>
+    <string name="diagnostics_next_none">Әзірге жоспарланбаған</string>
     <string name="diagnostics_next_line">%1$s — %2$s · %3$s</string>
     <string name="diagnostics_next_plan">жоспар</string>
 
-    <string name="diagnostics_journal_too_late">%1$s іске қосылды — көрсетілмеді</string>
 
     <string name="diagnostics_section_last">Соңғы еске салғыш</string>
     <string name="diagnostics_section_next">Келесі еске салғыш</string>
-    <string name="diagnostics_section_reschedule">Соңғы жоспар құру</string>
     <string name="diagnostics_section_permissions">Рұқсаттар</string>
-    <string name="diagnostics_section_journal">Іске қосылу журналы</string>
-    <string name="diagnostics_section_on_time">7 күнде уақытында</string>
 
     <string name="diagnostics_none">деректер жоқ</string>
-    <string name="diagnostics_datetime_pattern">d MMMM, HH:mm:ss</string>
 
-    <string name="diagnostics_deviation">Ауытқу %1$d с</string>
-    <string name="diagnostics_planned">Жоспар %1$s</string>
-    <string name="diagnostics_actual">Нақты %1$s</string>
-    <string name="diagnostics_scheduled_total">Барлығы қойылған будильниктер: %1$d</string>
 
     <string name="diagnostics_permission_notifications">Хабарламалар</string>
     <string name="diagnostics_permission_channel">Хабарлама арналары</string>
@@ -63,7 +49,6 @@
     <string name="diagnostics_state_denied">берілмеген</string>
     <string name="diagnostics_state_unknown">қолмен тексеріңіз</string>
 
-    <string name="diagnostics_dnd_hint">«Мазаламау» режимінде қайталама еске салғыштар дыбыссыз болады.</string>
 
     <string name="diagnostics_warning_notifications">Еске салғыштар қазір келмейді: хабарламалар өшірілген. Қабылдауларды қолмен белгілеуге болады.</string>
     <string name="diagnostics_warning_channel">Еске салғыштар қазір келмейді: хабарлама арнасы өшірілген.</string>
@@ -72,14 +57,9 @@
     <string name="diagnostics_warning_both">Еске салғыштар қазір келмейді: хабарламалар өшірілген және нақты будильник рұқсаты берілмеген.</string>
     <string name="diagnostics_fallback_app_startup">Бұл құрылғыда жүйелік бөлім ашылмады. Оны қолмен ашыңыз: Параметрлер → Батарея → Қолданбаларды іске қосу → Sklyanka → Қолмен басқару. «Автожүгірту», «Жанама жүгірту» және «Фонда жұмыс істеу» опцияларын қосыңыз.</string>
 
-    <string name="diagnostics_outage">%1$s бастап еске салғыштар келмеді. Рұқсаттар мен автожүгіртуді тексеріп, «Қазір тексеру» түймесін басыңыз.</string>
+    <string name="diagnostics_outage">Хабарламалар %1$s бастап келмеді. Осы уақыттағы қабылдауларды қолмен белгілеуге болады.</string>
 
-    <string name="diagnostics_on_time">%2$d ішінен %1$d · %3$d %%</string>
-    <string name="diagnostics_on_time_none">Осы уақытта іске қосылулар болмады</string>
-    <string name="diagnostics_on_time_rule">Уақытында — ауытқу 120 секундтан аспайды</string>
 
-    <string name="diagnostics_action_check">Қазір тексеру</string>
-    <string name="diagnostics_action_export">Журналды шығару</string>
     <string name="diagnostics_action_setup">Реттеуді қайта өту</string>
 
     <string name="diagnostics_action_check_delivery">Жеткізілуін тексеру</string>
@@ -92,61 +72,60 @@
     <string name="diagnostics_check_cancel">Тексеруді тоқтату</string>
 
     <string name="diagnostics_check_on_time">Жеткізілу тексеруі өтті: сынақ еске салғышы уақытында келді.</string>
+    <string name="diagnostics_check_delivered">Соңғы тексеру сәтті өтті: сынақ хабарламасы уақытында келді.</string>
     <string name="diagnostics_check_late">Жеткізілу тексеруі: сынақ еске салғышы %1$s келді. Телефон оны кешіктірді — іске қосу және қуат үнемдеу параметрлерін тексеріңіз.</string>
     <string name="diagnostics_check_not_delivered">Жеткізілу тексеруі өтпеді: сынақ еске салғышы келмеді. Іске қосу және қуат үнемдеу параметрлерін тексеріңіз.</string>
     <string name="diagnostics_check_not_completed">Тексеру өтпеді: қолданба ашық еді. Оны жауып, қайталап көріңіз.</string>
-    <string name="diagnostics_check_repeat">Тексеруді қайталау</string>
     <string name="diagnostics_check_acknowledge">Түсінікті</string>
 
     <string name="reminder_check_overline">Жеткізілуді тексеру</string>
     <string name="reminder_check_text">Сынақ еске салғышы. Ештеңе белгілеудің қажеті жоқ.</string>
 
-    <string name="diagnostics_export_saved">Журнал шығарылды · %1$s</string>
-    <string name="diagnostics_export_failed">Журнал шығарылмады: жазу сәтсіз аяқталды</string>
-    <string name="diagnostics_export_no_space">Журнал шығарылмады: құрылғыда орын жеткіліксіз</string>
 
-    <string name="diagnostics_measurement_row">Өлшеу нұсқасы</string>
-    <string name="diagnostics_measurement_alarm_clock">Жүйелік будильник</string>
-    <string name="diagnostics_measurement_exact_idle">Нақты будильник</string>
     <string name="diagnostics_next_alarm_indicator">Телефон бұл уақытты күй жолағында будильник ретінде көрсетеді — осылай болуы керек.</string>
 
-    <string name="diagnostics_reason_boot">қайта жүктеу</string>
-    <string name="diagnostics_reason_locked_boot">құлыптан шығарғанға дейін қалпына келтіру</string>
-    <string name="diagnostics_reason_user_unlocked">құлыптан шығару</string>
-    <string name="diagnostics_reason_package_replaced">қолданба жаңартылды</string>
-    <string name="diagnostics_reason_timezone_changed">уақыт белдеуі өзгерді</string>
-    <string name="diagnostics_reason_time_changed">сағат ауыстырылды</string>
-    <string name="diagnostics_reason_schedule_edited">дәрі кестесі өзгертілді</string>
-    <string name="diagnostics_reason_medication_added">дәрі қосылды</string>
-    <string name="diagnostics_reason_medication_archived">дәрі мұрағатқа жіберілді</string>
-    <string name="diagnostics_reason_medication_deleted">дәрі жойылды</string>
-    <string name="diagnostics_reason_medication_undeleted">дәрі қайтарылды</string>
-    <string name="diagnostics_reason_medication_unarchived">дәрі мұрағаттан қайтарылды</string>
-    <string name="diagnostics_reason_alarm_fired">еске салғыш іске қосылды</string>
-    <string name="diagnostics_reason_profile_set_changed">бейіндер құрамы өзгерді</string>
-    <string name="diagnostics_reason_anchor">түнгі тексеру</string>
-    <string name="diagnostics_reason_manual">адамның қолмен әрекеті</string>
-    <string name="diagnostics_reason_data_imported">деректерді жүктеу</string>
-    <string name="diagnostics_reason_app_start">қолданба іске қосылды</string>
-    <string name="diagnostics_reason_exact_alarm_granted">нақты будильник рұқсаты берілді</string>
 
-    <string name="diagnostics_event_fired">будильник іске қосылды</string>
-    <string name="diagnostics_event_shown">еске салғыш көрсетілді</string>
-    <string name="diagnostics_event_suppressed">көрсету тоқтатылды</string>
-    <string name="diagnostics_event_repeated">еске салғыш қайталанды</string>
-    <string name="diagnostics_event_snoozed">кейінге қалдырылды</string>
-    <string name="diagnostics_event_deferred">кешіктірілген іске қосылу</string>
-    <string name="diagnostics_event_rescheduled">жоспар қайта құрылды</string>
-    <string name="diagnostics_event_rotated">журналды қысқарту</string>
-    <string name="diagnostics_event_missed_sweep">өткізілгенге ауыстырылды</string>
-    <string name="diagnostics_event_outage">еске салғыштар үзілісі</string>
-    <string name="diagnostics_event_settings_changed">параметр өзгертілді</string>
-    <string name="diagnostics_event_environment">құрылғы ортасы</string>
-    <string name="diagnostics_event_delivery_check">жеткізілуді тексеру</string>
 
-    <string name="diagnostics_alarm_counters">алынды %1$d, қойылды %2$d</string>
 
     <string name="reminder_outage_notice">%1$s бастап еске салғыштар келмеді. Осы уақыттағы қабылдауларды қолмен белгілеуге болады.</string>
     <string name="reminder_outage_notice_action">Түзету</string>
     <string name="reminder_outage_notice_moment_pattern">d MMMM, HH:mm</string>
+
+    <!-- SKL-102: проверка напоминаний, отчёт разработчику. -->
+    <string name="diagnostics_verdict_ok_sub">Хабарламалар уақытында келеді.</string>
+    <string name="diagnostics_verdict_ok_no_next">Жаңалары әзірге жоспарланбаған.</string>
+    <string name="diagnostics_check_failed_verdict">Соңғы жеткізу тексеруі сәтсіз аяқталды.</string>
+    <string name="diagnostics_section_delivery">Жеткізуді тексеру</string>
+    <string name="diagnostics_section_reminders">Хабарламалар</string>
+    <string name="diagnostics_permission_group_fix_first">Алдымен мынаны түзетіңіз — әйтпесе хабарламалар келмейді немесе кешігеді</string>
+    <string name="diagnostics_permission_group_can_defer">Кейінге қалдыруға болады — хабарламалар келеді, бірақ толық емес</string>
+    <string name="diagnostics_permission_rest_granted">Қалған рұқсаттар берілген</string>
+    <string name="diagnostics_consequence_notifications">Хабарламалар келмейді: телефон оларды көрсетпейді.</string>
+    <string name="diagnostics_consequence_channel">Хабарламалар келмейді: хабарлама арнасы өшірілген.</string>
+    <string name="diagnostics_consequence_exact_alarms">Телефон қабылдауды жылжытуы мүмкін — жарты сағатқа дейін.</string>
+    <string name="diagnostics_consequence_autostart">Қолданба EMUI параметрлерін көрмейді — өзіңіз тексеріңіз.</string>
+    <string name="diagnostics_consequence_full_screen">Карта құлыпталған экранда пайда болмайды.</string>
+    <string name="diagnostics_consequence_dnd">Қайталама хабарламалар дыбыссыз болады.</string>
+    <string name="diagnostics_delivery_explanation">1–2 минуттан кейін сынақ хабарламасын қояды және қолданба жабық кезде оның келгенін тексереді.</string>
+    <string name="diagnostics_next_none_explanation">Кестесі бар белсенді дәрілер жоқ — әзірге еске салатын ештеңе жоқ.</string>
+    <string name="diagnostics_week_prefix">"7 күнде "</string>
+    <string name="diagnostics_week_separator">", "</string>
+    <string name="diagnostics_week_fired_none">ешбір хабарлама көрсетілмеді</string>
+    <string name="diagnostics_week_missed_none">өткізіп алынғандар жоқ</string>
+    <string name="diagnostics_week_none">7 күнде хабарламалар болмады</string>
+    <string name="diagnostics_next_tomorrow">ертең, %1$s</string>
+    <string name="diagnostics_next_day_pattern">d MMMM, H:mm</string>
+    <string name="diagnostics_last_actual_with_deviation">%1$s көрсетілді · %2$s</string>
+    <string name="diagnostics_report_open">Мәселе туралы хабарлау</string>
+    <string name="diagnostics_report_footer_note">Әзірлеушіге арналған техникалық есеп. Дәрі атаулары мен қабылдау тарихы жоқ.</string>
+    <string name="diagnostics_report_title">Әзірлеушіге есеп</string>
+    <string name="diagnostics_report_explanation">Әзірлеушіге арналған техникалық есеп — сіздің басуыңызбен. Ол автоматты түрде жиналады және дәрі атаулары, дозалар мен қабылдау тарихы жоқ.</string>
+    <string name="diagnostics_report_comment_label">Не жұмыс істемейді?</string>
+    <string name="diagnostics_report_comment_optional">міндетті емес</string>
+    <string name="diagnostics_report_comment_hint">Мысалы: таңертең хабарлама келмейді</string>
+    <string name="diagnostics_report_send">Есепті жіберу</string>
+    <string name="diagnostics_report_sent_title">Есеп жіберілді</string>
+    <string name="diagnostics_report_sent_sub">Рақмет! Бұл хабарламаларды сенімдірек етуге көмектеседі.</string>
+    <string name="diagnostics_report_failed">Есепті жіберу мүмкін болмады. Интернет байланысын тексеріп, қайталап көріңіз. Енгізілген мәтін сақталды.</string>
+    <string name="diagnostics_report_retry">Қайталау</string>
 </resources>

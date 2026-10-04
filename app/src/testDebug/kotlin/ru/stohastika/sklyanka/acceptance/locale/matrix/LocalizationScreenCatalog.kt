@@ -99,18 +99,18 @@ internal object LocalizationScreenCatalog {
             MatrixScreen("diagnostics", TALL_HEIGHT_DP) {
                 DiagnosticsScreen(
                     state = diagnostics,
-                    onCheckNow = {},
-                    onExportJournal = {},
                     onRestartSetup = {},
-                    onToggleSupport = {},
                     onFixPermission = {},
-                    onAlarmKindChange = {},
                     onCheckDelivery = {},
                     onDismissCheckSheet = {},
                     onStartDeliveryCheck = {},
                     onCancelDeliveryCheck = {},
-                    onRepeatDeliveryCheck = {},
+                    onAcknowledgeDeliveryCheck = {},
                     onFixDeliveryCheck = {},
+                    onReportOpen = {},
+                    onReportCommentChange = {},
+                    onReportSend = {},
+                    onReportDismiss = {},
                     onBack = {},
                     toLocal = { instant -> instant.atZone(fixtures.ZONE).toLocalDateTime() },
                 )

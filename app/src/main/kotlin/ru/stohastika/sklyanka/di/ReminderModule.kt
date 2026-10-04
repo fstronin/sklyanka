@@ -24,6 +24,7 @@ import ru.stohastika.sklyanka.domain.reminder.SweepAtDayBoundaryUseCase
 import ru.stohastika.sklyanka.domain.reminder.port.AlarmGateway
 import ru.stohastika.sklyanka.domain.reminder.port.AppForeground
 import ru.stohastika.sklyanka.domain.reminder.port.DeferredReminders
+import ru.stohastika.sklyanka.domain.reminder.port.DeliveryCheckAcknowledgements
 import ru.stohastika.sklyanka.domain.reminder.port.DeviceEnvironmentSource
 import ru.stohastika.sklyanka.domain.reminder.port.NoWatchGateway
 import ru.stohastika.sklyanka.domain.reminder.port.NotificationGateway
@@ -39,7 +40,7 @@ import ru.stohastika.sklyanka.domain.time.TimeSource
 import ru.stohastika.sklyanka.domain.transfer.TransferFiles
 import ru.stohastika.sklyanka.feature.onboarding.PermissionsActivity
 import ru.stohastika.sklyanka.feature.reminder.DeliveryCheckController
-import ru.stohastika.sklyanka.feature.reminder.ReminderCheckNow
+import ru.stohastika.sklyanka.feature.reminder.DeveloperReportSender
 import ru.stohastika.sklyanka.feature.reminder.ReminderSettingsFixer
 import ru.stohastika.sklyanka.feature.reminder.ReminderSetupEntry
 import ru.stohastika.sklyanka.platform.AppForegroundTracker
@@ -49,10 +50,10 @@ import ru.stohastika.sklyanka.platform.permission.SystemPermissionStateReader
 import ru.stohastika.sklyanka.platform.reminder.AlarmManagerGateway
 import ru.stohastika.sklyanka.platform.reminder.AndroidReminderSettingsFixer
 import ru.stohastika.sklyanka.platform.reminder.BuildMeasurementMode
+import ru.stohastika.sklyanka.platform.reminder.StubDeveloperReportSender
 import ru.stohastika.sklyanka.reminder.DeliveryCheckScenarios
 import ru.stohastika.sklyanka.reminder.ReminderJournalRotation
 import ru.stohastika.sklyanka.reminder.ReminderOutageDetector
-import ru.stohastika.sklyanka.reminder.ReminderPlanningTrigger
 import javax.inject.Qualifier
 import javax.inject.Singleton
 
@@ -189,17 +190,6 @@ object ReminderModule {
     fun provideMarkSideEffects(dismiss: DismissReminderUseCase): MarkSideEffects =
         MarkSideEffects { intakeId -> dismiss(intakeId) }
 
-    /**
-     * «Проверить сейчас» для экрана диагностики (НАП-37).
-     *
-     * Экран получает операцию, а не планировщик: порядок «сначала приёмы, потом будильники»
-     * знает один класс в app, и знать его экрану незачем.
-     */
-    @Provides
-    @Singleton
-    fun provideCheckNow(trigger: ReminderPlanningTrigger): ReminderCheckNow =
-        ReminderCheckNow { reason -> trigger.planAll(reason) }
-
     @Provides
     @Singleton
     fun provideReliability(permissions: PermissionStateReader): ReadReminderReliabilityUseCase =
@@ -322,6 +312,7 @@ object ReminderModule {
         reliability: ReadReminderReliabilityUseCase,
         medications: MedicationRepository,
         measurement: ReminderMeasurement,
+        acknowledgements: DeliveryCheckAcknowledgements,
         time: TimeSource,
     ): BuildReminderDiagnosticsUseCase = BuildReminderDiagnosticsUseCase(
         journal = journal,
@@ -331,6 +322,7 @@ object ReminderModule {
         reliability = reliability,
         medications = medications,
         measurement = measurement,
+        acknowledgements = acknowledgements,
         time = time,
     )
 }
@@ -371,4 +363,13 @@ abstract class ReminderBindings {
     @Binds
     @Singleton
     abstract fun bindDeliveryCheckController(impl: DeliveryCheckScenarios): DeliveryCheckController
+
+    /**
+     * Отправка отчёта разработчику: заглушка первой версии без сети (ОВ-127, ПМ-32).
+     *
+     * Реальный сетевой адаптер встанет в этот же шов отдельной задачей.
+     */
+    @Binds
+    @Singleton
+    abstract fun bindDeveloperReportSender(impl: StubDeveloperReportSender): DeveloperReportSender
 }

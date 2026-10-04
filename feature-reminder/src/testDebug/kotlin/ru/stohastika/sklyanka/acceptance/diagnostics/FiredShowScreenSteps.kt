@@ -19,7 +19,6 @@ import ru.stohastika.sklyanka.domain.reminder.ReminderOnTimeRule
 import ru.stohastika.sklyanka.feature.reminder.DiagnosticsUiState
 import ru.stohastika.sklyanka.feature.reminder.R
 import ru.stohastika.sklyanka.feature.reminder.TAG_DIAGNOSTICS
-import java.time.Instant
 import java.time.format.DateTimeFormatter
 
 /**
@@ -50,27 +49,21 @@ class FiredShowScreenSteps(private val world: AcceptanceWorld) {
         val expected = world.clock.momentOf(world.localMoment(date, time))
         assertEquals(ReminderEvent.SHOWN, last.event, "the suppressed firing must not replace the show")
         assertEquals(expected, last.firedAt, "the last reminder is the early show")
+        val clock = expected.atZone(world.clock.zone).toLocalDateTime()
+            .format(DateTimeFormatter.ofPattern(string(R.string.diagnostics_clock_pattern), locale))
         assertTrue(
-            hasText(state, string(R.string.diagnostics_last_actual, momentText(expected))),
+            hasText(state, string(R.string.diagnostics_last_actual_with_deviation, clock, onTimeWord())),
             "the first level must name the moment of the show",
         )
     }
+
+    private fun onTimeWord(): String = string(R.string.diagnostics_on_time_word)
 
     @И("^подавленное срабатывание в «Последнее напоминание» не попадает$")
     fun theSuppressedFiringIsNotTheLastReminder() {
         val last = DiagnosticsStand.state(world).snapshot?.lastShown
         assertEquals(ReminderEvent.SHOWN, last?.event, "a suppression is a journal fact, not a delivery (НАП-37)")
         assertNotEquals(ReminderEvent.SUPPRESSED, last?.event)
-    }
-
-    @Тогда(
-        "^запись подавленного срабатывания подписана «сработало с опозданием на (\\d+) минут — не показано»$",
-    )
-    fun theSuppressedEntryIsSigned(minutes: Int) {
-        val state = DiagnosticsStand.state(world)
-        val late = context.resources.getQuantityString(R.plurals.diagnostics_late, minutes, minutes)
-        val label = string(R.string.diagnostics_journal_too_late, late)
-        assertTrue(hasText(state, label), "the journal must sign the suppressed firing as «$label»")
     }
 
     @Тогда("^подавленное срабатывание не входит в число сработавших за 7 дней$")
@@ -93,9 +86,6 @@ class FiredShowScreenSteps(private val world: AcceptanceWorld) {
     }
 
     private fun string(id: Int, vararg args: Any): String = context.getString(id, *args)
-
-    private fun momentText(instant: Instant): String = instant.atZone(world.clock.zone).toLocalDateTime()
-        .format(DateTimeFormatter.ofPattern(string(R.string.diagnostics_datetime_pattern), locale))
 
     private fun hasText(state: DiagnosticsUiState, text: String): Boolean {
         var found = false

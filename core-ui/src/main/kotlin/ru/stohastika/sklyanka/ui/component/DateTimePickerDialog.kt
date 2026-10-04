@@ -101,10 +101,12 @@ internal fun DateTimePickerShell(
                         text = stringResource(R.string.action_cancel),
                         onClick = onDismiss,
                         kind = QuietButtonKind.Muted,
+                        form = QuietButtonForm.Header,
                     )
                     QuietButton(
                         text = stringResource(R.string.action_done),
                         onClick = onConfirm,
+                        form = QuietButtonForm.Header,
                         state = if (confirmEnabled) ButtonState.Normal else ButtonState.Disabled,
                     )
                 }

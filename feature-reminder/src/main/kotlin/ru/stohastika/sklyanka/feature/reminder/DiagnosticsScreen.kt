@@ -3,17 +3,22 @@
 package ru.stohastika.sklyanka.feature.reminder
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -21,66 +26,66 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import ru.stohastika.sklyanka.domain.reminder.AlarmKind
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.text.style.TextAlign
 import ru.stohastika.sklyanka.domain.reminder.DeliveryCheckOutcome
 import ru.stohastika.sklyanka.domain.reminder.DeliveryCheckState
+import ru.stohastika.sklyanka.domain.reminder.PermissionGroup
+import ru.stohastika.sklyanka.domain.reminder.PermissionMarker
 import ru.stohastika.sklyanka.domain.reminder.ReminderDeviationWords
 import ru.stohastika.sklyanka.domain.reminder.ReminderDiagnostics
-import ru.stohastika.sklyanka.domain.reminder.ReminderLogEntry
-import ru.stohastika.sklyanka.domain.reminder.ReminderOnTimeSummary
+import ru.stohastika.sklyanka.domain.reminder.ReminderOutage
+import ru.stohastika.sklyanka.domain.reminder.ReminderPermissionGroups
+import ru.stohastika.sklyanka.domain.reminder.ReminderVerdict
+import ru.stohastika.sklyanka.domain.reminder.ReminderVerdictRule
 import ru.stohastika.sklyanka.domain.reminder.ReminderWarning
 import ru.stohastika.sklyanka.domain.reminder.ReminderWeekSummary
-import ru.stohastika.sklyanka.domain.reminder.RescheduleReason
 import ru.stohastika.sklyanka.domain.reminder.port.PermissionState
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPermission
 import ru.stohastika.sklyanka.ui.component.Banner
-import ru.stohastika.sklyanka.ui.component.ChipState
+import ru.stohastika.sklyanka.ui.component.BannerKind
+import ru.stohastika.sklyanka.ui.component.ButtonForm
+import ru.stohastika.sklyanka.ui.component.ButtonLabel
+import ru.stohastika.sklyanka.ui.component.ChatGlyph
+import ru.stohastika.sklyanka.ui.component.CheckGlyph
+import ru.stohastika.sklyanka.ui.component.ChevronGlyph
+import ru.stohastika.sklyanka.ui.component.InfoGlyph
 import ru.stohastika.sklyanka.ui.component.QuietButton
 import ru.stohastika.sklyanka.ui.component.QuietButtonKind
 import ru.stohastika.sklyanka.ui.component.ScreenHeader
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderKind
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderLabels
 import ru.stohastika.sklyanka.ui.component.SecondaryButton
-import ru.stohastika.sklyanka.ui.component.SklyankaChip
 import ru.stohastika.sklyanka.ui.component.StackingRow
+import ru.stohastika.sklyanka.ui.component.WarningGlyph
+import ru.stohastika.sklyanka.ui.locale.interfaceLocale
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaShapes
 import ru.stohastika.sklyanka.ui.token.SklyankaSizes
 import ru.stohastika.sklyanka.ui.token.SklyankaSpacing
 import ru.stohastika.sklyanka.ui.token.SklyankaType
 import java.time.Instant
+import java.time.LocalDate
 import java.time.LocalDateTime
 
 /**
- * Проверка напоминаний (НАП-37, ОВ-49, SKL-79).
+ * Проверка напоминаний — финальный первый уровень (НАП-37, ОВ-126).
  *
- * Двухуровневый экран. Первый уровень отвечает человеку, открывшему его в худший момент —
- * когда напоминания не приходят: что не так, что сделать, всё ли в порядке, когда было
- * последнее и когда следующее. Технические подробности — журнал, причина и счётчики
- * пересборки, общее число будильников — уходят в свёрнутый блок «Для поддержки»: знание
- * нужно поддержке, а не человеку.
- *
- * Пробного напоминания здесь нет (НАП-22/23, ОВ-50/ОВ-53): кнопка удалена целиком.
- * Наружу экран не отправляет ничего (НАП-39).
+ * Порядок секций один во всех состояниях: вердикт → «Разрешения» → «Проверка доставки» →
+ * «Напоминания» → «Сообщить о проблеме». Технические сведения (журнал, счётчики пересборки,
+ * список будильников) сюда не выходят: они уезжают в отчёт разработчику. Кнопок «Проверить
+ * сейчас» и «Повторить проверку» нет (ОВ-128); перепланирование автоматическое.
  */
 @Composable
 @Suppress("LongParameterList")
 fun DiagnosticsScreen(
     state: DiagnosticsUiState,
-    onCheckNow: () -> Unit,
-    onExportJournal: () -> Unit,
     /**
      * «Пройти настройку заново» (НАП-21). `null` означает «экрана настройки нет»: кнопки
      * тогда нет вовсе — кнопка, ведущая в никуда, обещает больше, чем продукт умеет.
      */
     onRestartSetup: (() -> Unit)?,
-    onToggleSupport: () -> Unit,
     onFixPermission: (ReminderPermission) -> Unit,
-    /**
-     * Смена варианта измерения пилота (SKL-85). В обычной сборке недостижима:
-     * переключатель показывается только при `measurementAvailable`.
-     */
-    onAlarmKindChange: (AlarmKind) -> Unit,
     /** «Проверить доставку»: открыть шторку запуска самопроверки (SKL-86, ОВ-108). */
     onCheckDelivery: () -> Unit,
     /** «Отмена» в шторке: закрыть её, ничего не ставя. */
@@ -89,10 +94,14 @@ fun DiagnosticsScreen(
     onStartDeliveryCheck: () -> Unit,
     /** «Отменить проверку»: снять тестовое срабатывание. */
     onCancelDeliveryCheck: () -> Unit,
-    /** «Повторить проверку»: результат прочитан, открыть шторку заново. */
-    onRepeatDeliveryCheck: () -> Unit,
-    /** «Исправить»: результат прочитан, вести на «Настроить надёжность». */
+    /** «Понятно»: исход прочитан и скрыт (AC-18, AC-22). */
+    onAcknowledgeDeliveryCheck: () -> Unit,
+    /** «Исправить» у неудачного исхода: прочитать и вести на «Настроить надёжность». */
     onFixDeliveryCheck: () -> Unit,
+    onReportOpen: () -> Unit,
+    onReportCommentChange: (String) -> Unit,
+    onReportSend: () -> Unit,
+    onReportDismiss: () -> Unit,
     onBack: () -> Unit,
     toLocal: (Instant) -> LocalDateTime,
     modifier: Modifier = Modifier,
@@ -107,40 +116,45 @@ fun DiagnosticsScreen(
         )
         return
     }
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(colors.background)
-            .statusBarsPadding()
-            .navigationBarsPadding()
-            .testTag(TAG_DIAGNOSTICS),
-    ) {
-        ScreenHeader(
-            labels = ScreenHeaderLabels(title = stringResource(R.string.diagnostics_title)),
-            kind = ScreenHeaderKind.Nested,
-            onBack = onBack,
-        )
-        if (snapshot == null) return@Column
-        DiagnosticsList(
+    Box(modifier = modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(colors.background)
+                .statusBarsPadding()
+                .navigationBarsPadding()
+                .testTag(TAG_DIAGNOSTICS),
+        ) {
+            ScreenHeader(
+                labels = ScreenHeaderLabels(title = stringResource(R.string.diagnostics_title)),
+                kind = ScreenHeaderKind.Nested,
+                onBack = onBack,
+            )
+            if (snapshot == null) return@Column
+            DiagnosticsList(
+                state = state,
+                snapshot = snapshot,
+                toLocal = toLocal,
+                onRestartSetup = onRestartSetup,
+                onFixPermission = onFixPermission,
+                onCheckDelivery = onCheckDelivery,
+                onCancelDeliveryCheck = onCancelDeliveryCheck,
+                onAcknowledgeDeliveryCheck = onAcknowledgeDeliveryCheck,
+                onFixDeliveryCheck = onFixDeliveryCheck,
+                onReportOpen = onReportOpen,
+            )
+        }
+        DeveloperReportSheet(
             state = state,
-            snapshot = snapshot,
-            toLocal = toLocal,
-            onCheckNow = onCheckNow,
-            onCheckDelivery = onCheckDelivery,
-            onCancelDeliveryCheck = onCancelDeliveryCheck,
-            onRepeatDeliveryCheck = onRepeatDeliveryCheck,
-            onFixDeliveryCheck = onFixDeliveryCheck,
-            onToggleSupport = onToggleSupport,
-            onExportJournal = onExportJournal,
-            onRestartSetup = onRestartSetup,
-            onFixPermission = onFixPermission,
-            onAlarmKindChange = onAlarmKindChange,
+            onCommentChange = onReportCommentChange,
+            onSend = onReportSend,
+            onDismiss = onReportDismiss,
         )
     }
 }
 
 /**
- * Содержимое экрана проверки списком (SKL-79, SKL-86).
+ * Содержимое экрана проверки списком (ОВ-126).
  *
  * Вынесено из [DiagnosticsScreen] ради обозримости: у функции-корня остаётся выбор
  * между шторкой и содержимым, а состав списка читается отдельно.
@@ -151,58 +165,44 @@ private fun DiagnosticsList(
     state: DiagnosticsUiState,
     snapshot: ReminderDiagnostics,
     toLocal: (Instant) -> LocalDateTime,
-    onCheckNow: () -> Unit,
-    onCheckDelivery: () -> Unit,
-    onCancelDeliveryCheck: () -> Unit,
-    onRepeatDeliveryCheck: () -> Unit,
-    onFixDeliveryCheck: () -> Unit,
-    onToggleSupport: () -> Unit,
-    onExportJournal: () -> Unit,
     onRestartSetup: (() -> Unit)?,
     onFixPermission: (ReminderPermission) -> Unit,
-    onAlarmKindChange: (AlarmKind) -> Unit,
+    onCheckDelivery: () -> Unit,
+    onCancelDeliveryCheck: () -> Unit,
+    onAcknowledgeDeliveryCheck: () -> Unit,
+    onFixDeliveryCheck: () -> Unit,
+    onReportOpen: () -> Unit,
 ) {
     LazyColumn(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = SklyankaSpacing.Screen),
-        verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Medium),
+            .padding(horizontal = SklyankaSpacing.Section),
+        verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Large),
     ) {
-        item { Warnings(snapshot, toLocal) }
-        item { ReliableLine(snapshot) }
-        item { Permissions(snapshot, state.fixFallback, onFixPermission) }
-        item { Actions(state, onCheckNow) }
+        item { Verdict(snapshot, toLocal, onRestartSetup) }
         item {
-            DeliveryCheckBlock(
-                state = snapshot.deliveryCheck,
-                onCheckDelivery = onCheckDelivery,
-                onCancelDeliveryCheck = onCancelDeliveryCheck,
-                onRepeatDeliveryCheck = onRepeatDeliveryCheck,
-                onFixDeliveryCheck = onFixDeliveryCheck,
-            )
+            Section(R.string.diagnostics_section_permissions) {
+                PermissionsCard(snapshot, state.fixFallback, onFixPermission, onRestartSetup)
+            }
         }
-        item { WeekSummary(snapshot.week) }
-        item { LastSimple(snapshot, toLocal) }
-        item { NextPlan(snapshot, toLocal) }
-        item { SupportToggle(onToggleSupport) }
-        if (state.supportExpanded) {
-            item { LastShown(snapshot, toLocal) }
-            item { NextPlanned(snapshot, toLocal) }
-            item { MeasurementVariant(snapshot, onAlarmKindChange) }
-            item { OnTime(snapshot.onTime) }
-            item { LastReschedule(snapshot, toLocal) }
-            item { SectionTitle(stringResource(R.string.diagnostics_section_journal)) }
-            items(snapshot.journal) { entry -> JournalRow(entry, toLocal) }
-            item {
-                SupportActions(
-                    state = state,
-                    onExportJournal = onExportJournal,
-                    onRestartSetup = onRestartSetup,
+        item {
+            Section(R.string.diagnostics_section_delivery) {
+                DeliveryCheckBlock(
+                    state = snapshot.deliveryCheck,
+                    acknowledged = snapshot.deliveryCheckAcknowledged,
+                    onCheckDelivery = onCheckDelivery,
+                    onCancelDeliveryCheck = onCancelDeliveryCheck,
+                    onAcknowledgeDeliveryCheck = onAcknowledgeDeliveryCheck,
+                    onFixDeliveryCheck = onFixDeliveryCheck,
                 )
             }
-        } else {
-            item { ExportOutcome(state) }
         }
+        item {
+            Section(R.string.diagnostics_section_reminders) {
+                RemindersSection(snapshot, toLocal, state.today)
+            }
+        }
+        item { ReportFooter(onReportOpen) }
     }
 }
 
@@ -224,63 +224,219 @@ private fun CheckSheetLayer(onStart: () -> Unit, onDismiss: () -> Unit, modifier
     }
 }
 
+/** Надстрочник секции: «Разрешения», «Проверка доставки», «Напоминания» (AC-1). */
+@Composable
+private fun Section(titleRes: Int, content: @Composable () -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Large)) {
+        Text(
+            text = stringResource(titleRes).uppercase(interfaceLocale()),
+            style = SklyankaType.Overline,
+            color = SklyankaTheme.colors.textMuted,
+            modifier = Modifier.padding(start = SklyankaSpacing.Micro),
+        )
+        content()
+    }
+}
+
 /**
- * Предупреждения о ненадёжности (НАП-18) и о перерыве (НАП-38).
+ * Вердикт — ровно один верхний элемент (ОВ-130).
  *
- * Стоят первыми: человек, открывший проверку, пришёл именно за этим ответом.
+ * Перерыв всегда рисуется отдельным баннером ниже: и под баннером старшей причины,
+ * и вместо строки «Всё в порядке». Строка «Всё в порядке» несёт галочку и слова
+ * пояснения, чтобы смысл не держался одним цветом (НФТ-30).
  */
 @Composable
-private fun Warnings(snapshot: ReminderDiagnostics, toLocal: (Instant) -> LocalDateTime) {
-    val warning = snapshot.reliability.warning
+private fun Verdict(
+    snapshot: ReminderDiagnostics,
+    toLocal: (Instant) -> LocalDateTime,
+    onRestartSetup: (() -> Unit)?,
+) {
+    val verdict = ReminderVerdictRule.of(
+        reliability = snapshot.reliability,
+        deliveryCheck = snapshot.deliveryCheck,
+        deliveryCheckAcknowledged = snapshot.deliveryCheckAcknowledged,
+        hasUpcoming = snapshot.nextAt != null,
+    )
     Column(verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Small)) {
-        if (warning != null) {
-            Banner(
-                text = stringResource(
-                    when (warning) {
-                        ReminderWarning.NOTIFICATIONS_OFF -> R.string.diagnostics_warning_notifications
-                        ReminderWarning.NOTIFICATION_CHANNEL_OFF -> R.string.diagnostics_warning_channel
-                        ReminderWarning.EXACT_ALARMS_OFF -> R.string.diagnostics_warning_exact_alarms
-                        ReminderWarning.FULL_SCREEN_INTENT_OFF -> R.string.diagnostics_warning_full_screen
-                        ReminderWarning.BOTH_OFF -> R.string.diagnostics_warning_both
-                    },
-                ),
+        when (verdict) {
+            is ReminderVerdict.Cause -> CauseBanner(verdict.warning)
+            ReminderVerdict.DeliveryFailed -> Banner(
+                text = stringResource(R.string.diagnostics_check_failed_verdict),
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag(TAG_WARNING),
             )
+
+            is ReminderVerdict.Ok -> {
+                if (snapshot.outage == null) VerdictOk(verdict.hasUpcoming)
+            }
         }
-        snapshot.outage?.let { outage ->
-            Banner(
-                text = stringResource(R.string.diagnostics_outage, toLocal(outage.since).journalMoment()),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag(TAG_OUTAGE),
-            )
-        }
+        snapshot.outage?.let { outage -> OutageBanner(outage, toLocal, onRestartSetup) }
     }
 }
 
-/** Короткий ответ при исправности: «Всё в порядке» (ОВ-49). */
+/** Баннер старшей причины ненадёжности — теми же словами, что на «Сегодня» (ОВ-82, ОВ-107). */
 @Composable
-private fun ReliableLine(snapshot: ReminderDiagnostics) {
-    if (!snapshot.reliability.isReliable) return
-    Text(
-        text = stringResource(R.string.diagnostics_reliable),
-        style = SklyankaType.BodyDefaultStrong,
-        color = SklyankaTheme.colors.taken,
-        modifier = Modifier.testTag(TAG_RELIABLE),
+private fun CauseBanner(warning: ReminderWarning) {
+    Banner(
+        text = stringResource(
+            when (warning) {
+                ReminderWarning.NOTIFICATIONS_OFF -> R.string.diagnostics_warning_notifications
+                ReminderWarning.NOTIFICATION_CHANNEL_OFF -> R.string.diagnostics_warning_channel
+                ReminderWarning.EXACT_ALARMS_OFF -> R.string.diagnostics_warning_exact_alarms
+                ReminderWarning.FULL_SCREEN_INTENT_OFF -> R.string.diagnostics_warning_full_screen
+                ReminderWarning.BOTH_OFF -> R.string.diagnostics_warning_both
+            },
+        ),
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag(TAG_WARNING),
+    )
+}
+
+/** Перерыв — отдельный баннер с датой и действием «Исправить» (AC-5, ОВ-132). */
+@Composable
+private fun OutageBanner(outage: ReminderOutage, toLocal: (Instant) -> LocalDateTime, onRestartSetup: (() -> Unit)?) {
+    Banner(
+        text = stringResource(R.string.diagnostics_outage, toLocal(outage.since).outageMoment()),
+        actionLabel = onRestartSetup?.let { stringResource(R.string.diagnostics_fix) },
+        onAction = onRestartSetup,
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag(TAG_OUTAGE),
     )
 }
 
 /**
- * Состояние разрешений (НАП-37, ОВ-49).
+ * Строка «Всё в порядке»: галочка на мягкой плашке, заголовок и пояснение словами.
  *
- * При всех выданных — одна строка «Разрешения выданы». Иначе каждое разрешение своей
- * строкой со словами состояния и действием «Исправить»; непроверяемый автозапуск EMUI
- * честно говорит «проверьте вручную» (НАП-20).
+ * При отсутствии будущих приёмов пояснение называет это (AC-28): молчание вердикта
+ * читалось бы как «неизвестно».
  */
 @Composable
-private fun Permissions(
+private fun VerdictOk(hasUpcoming: Boolean) {
+    val colors = SklyankaTheme.colors
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(colors.surface, SklyankaShapes.Card)
+            .border(SklyankaSizes.BorderThin, colors.lineOnSurface, SklyankaShapes.Card)
+            .padding(SklyankaSpacing.Block)
+            .testTag(TAG_VERDICT),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Medium),
+    ) {
+        Box(
+            modifier = Modifier
+                .size(SklyankaSizes.MarkerTile)
+                .background(colors.takenSoft, SklyankaShapes.Medium),
+            contentAlignment = Alignment.Center,
+        ) {
+            CheckGlyph(color = colors.taken, size = SklyankaSizes.IconPlateGlyph)
+        }
+        Column(verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Hair)) {
+            Text(
+                text = stringResource(R.string.diagnostics_reliable),
+                style = SklyankaType.BodyLarge,
+                color = colors.taken,
+            )
+            // Пояснение «приходят вовремя» стоит всегда; отсутствие будущих приёмов
+            // уточняется второй строкой, а не подменяет первую (AC-2, AC-28, макет 8).
+            Text(
+                text = stringResource(R.string.diagnostics_verdict_ok_sub),
+                style = SklyankaType.Caption,
+                color = colors.textMuted,
+            )
+            if (!hasUpcoming) {
+                Text(
+                    text = stringResource(R.string.diagnostics_verdict_ok_no_next),
+                    style = SklyankaType.Caption,
+                    color = colors.textMuted,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Карточка «Разрешения»: только требующие действия, двумя группами по последствию (AC-8, AC-9).
+ *
+ * Строка несёт маркер-плитку, последствие словами и единое тихое «Исправить ›» в колонке
+ * фиксированной ширины. Выданные не разворачиваются: под карточкой футер «Остальные
+ * разрешения выданы», а когда проблем нет — одна строка «Разрешения выданы».
+ */
+@Composable
+private fun PermissionsCard(
+    snapshot: ReminderDiagnostics,
+    fixFallback: ReminderPermission?,
+    onFixPermission: (ReminderPermission) -> Unit,
+    onRestartSetup: (() -> Unit)?,
+) {
+    val colors = SklyankaTheme.colors
+    val actionable = ReminderPermission.entries.filter { permission ->
+        ReminderPermissionGroups.requiresAction(permission, snapshot.permissions[permission] ?: PermissionState.UNKNOWN)
+    }
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(colors.surface, SklyankaShapes.Card)
+            .border(SklyankaSizes.BorderThin, colors.lineOnSurface, SklyankaShapes.Card)
+            // `.permgroups{padding:2px 16px}`: вертикальное поле 2 dp, боковое — в строках.
+            .padding(vertical = SklyankaSpacing.Hair)
+            .testTag(TAG_PERMISSIONS),
+    ) {
+        if (actionable.isEmpty()) {
+            GrantedLine(R.string.diagnostics_all_granted, TAG_ALL_GRANTED)
+        } else {
+            PermissionGroupsList(actionable, snapshot, fixFallback, onFixPermission)
+            GrantedLine(R.string.diagnostics_permission_rest_granted, TAG_PERMISSION_REST_GRANTED)
+        }
+        if (onRestartSetup != null) {
+            PermissionsSeparator()
+            RestartSetupRow(onRestartSetup)
+        }
+    }
+}
+
+/**
+ * Волосяная линия между элементами карточки «Разрешения» (`colors.lineOnSurface`).
+ *
+ * Внутри бокового поля карточки, как `.pitem + .pitem`, `.pgroup + .pgroup` и
+ * `.pfoot-action{border-top}` макета: линия не выходит за поля строк.
+ */
+@Composable
+private fun PermissionsSeparator() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = SklyankaSpacing.Block)
+            .height(SklyankaSizes.BorderThin)
+            .background(SklyankaTheme.colors.lineOnSurface)
+            .testTag(TAG_PERMISSION_SEPARATOR),
+    )
+}
+
+@Composable
+private fun PermissionGroupsList(
+    actionable: List<ReminderPermission>,
+    snapshot: ReminderDiagnostics,
+    fixFallback: ReminderPermission?,
+    onFixPermission: (ReminderPermission) -> Unit,
+) {
+    val groups = PermissionGroup.entries.mapNotNull { group ->
+        val rows = actionable.filter { ReminderPermissionGroups.groupOf(it) == group }
+        if (rows.isEmpty()) null else group to rows
+    }
+    groups.forEachIndexed { index, (group, rows) ->
+        if (index > 0) PermissionsSeparator()
+        PermissionGroupBlock(group, rows, snapshot, fixFallback, onFixPermission)
+    }
+}
+
+@Composable
+private fun PermissionGroupBlock(
+    group: PermissionGroup,
+    rows: List<ReminderPermission>,
     snapshot: ReminderDiagnostics,
     fixFallback: ReminderPermission?,
     onFixPermission: (ReminderPermission) -> Unit,
@@ -288,21 +444,29 @@ private fun Permissions(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(SklyankaTheme.colors.surface, SklyankaShapes.Card)
-            .padding(SklyankaSpacing.Block)
-            .testTag(TAG_PERMISSIONS),
-        verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Micro),
+            // `.pgroup{padding:13px 0 3px}`: низ группы отделяет её от следующей строки.
+            .padding(bottom = SklyankaSizes.PermissionGroupPaddingBottom)
+            .testTag(TAG_PERMISSION_GROUP),
     ) {
-        if (snapshot.permissions.values.all { it == PermissionState.GRANTED }) {
-            Text(
-                text = stringResource(R.string.diagnostics_all_granted),
-                style = SklyankaType.BodyDefault,
-                color = SklyankaTheme.colors.text,
-                modifier = Modifier.testTag(TAG_ALL_GRANTED),
-            )
-            return@Column
-        }
-        ReminderPermission.entries.forEach { permission ->
+        Text(
+            text = stringResource(
+                when (group) {
+                    PermissionGroup.FIX_FIRST -> R.string.diagnostics_permission_group_fix_first
+                    PermissionGroup.CAN_DEFER -> R.string.diagnostics_permission_group_can_defer
+                },
+            ),
+            style = SklyankaType.CaptionStrong,
+            color = SklyankaTheme.colors.textMuted,
+            modifier = Modifier.padding(
+                start = SklyankaSpacing.Block,
+                end = SklyankaSpacing.Block,
+                top = SklyankaSizes.PermissionGroupLabelPaddingTop,
+                // `.pgroup-label{padding-bottom:2px}`: зазор до первой строки — 2 + 12 строки.
+                bottom = SklyankaSpacing.Hair,
+            ),
+        )
+        rows.forEachIndexed { index, permission ->
+            if (index > 0) PermissionsSeparator()
             val state = snapshot.permissions[permission] ?: PermissionState.UNKNOWN
             PermissionRow(permission, state, fixFallback == permission, onFixPermission)
         }
@@ -317,92 +481,173 @@ private fun PermissionRow(
     onFixPermission: (ReminderPermission) -> Unit,
 ) {
     val colors = SklyankaTheme.colors
-    // Переведённая подпись разрешения длиннее русской («Auto-launch and power saving»,
-    // «Автозапуск и энергосбережение»): ряд переносит состояние и действие под текст,
-    // а текст не сжимается ниже самого длинного слова (§6.3).
-    StackingRow(
-        leading = {},
-        text = {
-            Text(
-                text = permission.label(),
-                style = SklyankaType.Body,
-                color = colors.text,
-            )
-        },
-        action = {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Medium),
-            ) {
-                Text(text = state.label(), style = SklyankaType.Caption, color = colors.textMuted)
-                // BOOT_RECEIVER человеку исправлять нечего: состояние объявлено манифестом (ПЛ-9).
-                if (permission != ReminderPermission.BOOT_RECEIVER) {
-                    QuietButton(
-                        text = stringResource(R.string.diagnostics_fix),
-                        onClick = { onFixPermission(permission) },
-                        modifier = Modifier.testTag(TAG_FIX),
+    // Переведённая подпись разрешения длиннее русской («Auto-launch and power saving»):
+    // ряд переносит действие под текст, а текст не сжимается ниже самого длинного слова (§6.3).
+    Column(
+        modifier = Modifier
+            // `.pitem{padding:12px 0}`: линия-разделитель получает 12 dp воздуха сверху и снизу.
+            .padding(horizontal = SklyankaSpacing.Block, vertical = SklyankaSpacing.Medium),
+    ) {
+        StackingRow(
+            leading = {
+                PermissionMarkerTile(ReminderPermissionGroups.markerOf(permission, state))
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Hair)) {
+                    Text(text = permission.label(), style = SklyankaType.BodyDefaultStrong, color = colors.text)
+                    Text(
+                        text = ReminderPermissionGroups.stateShown(permission, state).label(),
+                        style = SklyankaType.CaptionStrong,
+                        color = colors.textMuted,
+                        modifier = Modifier.testTag(TAG_PERMISSION_STATE),
                     )
+                    permission.consequence()?.let { consequence ->
+                        Text(
+                            text = consequence,
+                            style = SklyankaType.CaptionSmall,
+                            color = colors.textMuted,
+                            modifier = Modifier.testTag(TAG_PERMISSION_CONSEQUENCE),
+                        )
+                    }
                 }
-            }
-        },
-        gap = SklyankaSpacing.Medium,
-        minTextWidth = SklyankaSizes.MinTextColumn,
-        modifier = Modifier.testTag(TAG_PERMISSION_ROW),
-    )
-    // Отказ в доступе к политике «Не беспокоить» — ограничение, а не ошибка (НАП-17).
-    if (permission == ReminderPermission.DND_POLICY_ACCESS && state != PermissionState.GRANTED) {
-        Value(stringResource(R.string.diagnostics_dnd_hint))
-    }
-    // Системный экран не открылся — не молчим: под строкой остаётся ручной путь (НФТ-8, ОВ-106).
-    if (fixFailed) {
-        Value(
-            text = stringResource(R.string.diagnostics_fallback_app_startup),
-            modifier = Modifier.testTag(TAG_FIX_FALLBACK),
+            },
+            action = {
+                FixAction(onClick = { onFixPermission(permission) })
+            },
+            gap = SklyankaSpacing.Medium,
+            minTextWidth = SklyankaSizes.MinTextColumn,
+            modifier = Modifier.testTag(TAG_PERMISSION_ROW),
+            // При крупном шрифте действие уезжает под текст во всю ширину строки, и его
+            // фиксированная колонка снимается: иначе «Исправить» рвётся по буквам (AC-42, §6.3).
+            stackedActionFullWidth = true,
         )
-    }
-}
-
-/** «Проверить сейчас» тихой кнопкой и исход словами (НФТ-8, ОВ-49). */
-@Composable
-private fun Actions(state: DiagnosticsUiState, onCheckNow: () -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Small)) {
-        SecondaryButton(
-            text = stringResource(R.string.diagnostics_action_check),
-            onClick = onCheckNow,
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag(TAG_CHECK_NOW),
-        )
-        state.checkOutcome?.let { outcome ->
+        // Системный экран не открылся — не молчим: под строкой остаётся ручной путь (НФТ-8, ОВ-106).
+        if (fixFailed) {
             Text(
-                text = stringResource(
-                    when (outcome) {
-                        ReminderCheckOutcome.SUCCESS -> R.string.diagnostics_check_done
-                        ReminderCheckOutcome.FAILED -> R.string.diagnostics_check_failed
-                    },
-                ),
-                style = SklyankaType.Caption,
-                color = SklyankaTheme.colors.textMuted,
-                modifier = Modifier.testTag(TAG_CHECK_OUTCOME),
+                text = stringResource(R.string.diagnostics_fallback_app_startup),
+                style = SklyankaType.CaptionSmall,
+                color = colors.textMuted,
+                modifier = Modifier
+                    .padding(top = SklyankaSpacing.Small)
+                    .testTag(TAG_FIX_FALLBACK),
             )
         }
     }
 }
 
+/** Плитка-маркер строки: фон и глиф различают вид, но смысл несут видимое слово и последствие (ОВ-134). */
+@Composable
+private fun PermissionMarkerTile(marker: PermissionMarker) {
+    val colors = SklyankaTheme.colors
+    val background = when (marker) {
+        PermissionMarker.WARNING -> colors.accentSoft
+        PermissionMarker.NEUTRAL -> colors.neutralSoft
+    }
+    Box(
+        modifier = Modifier
+            .size(SklyankaSizes.MarkerTile)
+            .background(background, SklyankaShapes.Medium)
+            .testTag(TAG_PERMISSION_MARKER),
+        contentAlignment = Alignment.Center,
+    ) {
+        when (marker) {
+            PermissionMarker.WARNING -> WarningGlyph(color = colors.warning, size = SklyankaSizes.IconPlateGlyph)
+            PermissionMarker.NEUTRAL -> InfoGlyph(color = colors.textMuted, size = SklyankaSizes.IconPlateGlyph)
+        }
+    }
+}
+
+/** Тихое «Исправить ›» в колонке фиксированной ширины: подпись слева, шеврон справа (AC-11). */
+@Composable
+private fun FixAction(onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            // Минимум колонки — под «Исправить» при 100 %; в стековом режиме ряд
+            // расширяет действие до всей строки, и слово не переносится по буквам (AC-42).
+            .widthIn(min = SklyankaSizes.PermissionActionColumn)
+            .heightIn(min = SklyankaSizes.MinTouchTarget),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        QuietButton(
+            text = stringResource(R.string.diagnostics_fix),
+            onClick = onClick,
+            kind = QuietButtonKind.Accent,
+            modifier = Modifier.testTag(TAG_FIX),
+        )
+        ChevronGlyph(color = SklyankaTheme.colors.iconFaint, size = SklyankaSizes.Chevron)
+    }
+}
+
+@Composable
+private fun GrantedLine(titleRes: Int, tag: String) {
+    val colors = SklyankaTheme.colors
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            // «Остальные разрешения выданы» — та же строка `.pitem`, что и требующие действия.
+            .padding(horizontal = SklyankaSpacing.Block, vertical = SklyankaSpacing.Medium)
+            .testTag(tag),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Medium),
+    ) {
+        Box(
+            modifier = Modifier
+                .size(SklyankaSizes.MarkerTile)
+                .background(colors.takenSoft, SklyankaShapes.Medium),
+            contentAlignment = Alignment.Center,
+        ) {
+            CheckGlyph(color = colors.taken, size = SklyankaSizes.IconPlateGlyph)
+        }
+        Text(
+            text = stringResource(titleRes),
+            style = SklyankaType.LabelStrong,
+            color = colors.textMuted,
+        )
+    }
+}
+
+/** Тихая «Пройти настройку заново» под карточкой: подпись слева, шеврон справа (AC-12). */
+@Composable
+private fun RestartSetupRow(onRestartSetup: () -> Unit) {
+    val colors = SklyankaTheme.colors
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = SklyankaSizes.MinTouchTarget)
+            .clickable(onClick = onRestartSetup)
+            .testTag(TAG_RESTART_SETUP),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(
+            text = stringResource(R.string.diagnostics_action_setup),
+            style = SklyankaType.LabelStrong,
+            color = colors.accent,
+            modifier = Modifier.padding(horizontal = SklyankaSpacing.Block),
+        )
+        ChevronGlyph(
+            color = colors.iconFaint,
+            size = SklyankaSizes.Chevron,
+            modifier = Modifier.padding(end = SklyankaSpacing.Block),
+        )
+    }
+}
+
 /**
- * Блок самопроверки доставки (SKL-86, НАП-37).
+ * Блок самопроверки доставки без повтора (ОВ-126, ОВ-131).
  *
- * Стоит сразу под «Проверить сейчас» и говорит разными словами (ОВ-108): та кнопка
- * пересобирает будильники и отвечает «поставлено», этот блок отвечает «дошло или нет»,
- * но не чинит. Состояний три, и ни одно не молчит: кнопка запуска, ход проверки
- * с отменой и исход с действием.
+ * Подтверждённый исход возвращает блок к пояснению и кнопке; неподтверждённый —
+ * показывает исход один раз: успех и «не состоялась» закрываются «Понятно», опоздание
+ * и недолёт ведут «Исправить» на «Настроить надёжность».
  */
 @Composable
 private fun DeliveryCheckBlock(
     state: DeliveryCheckState,
+    acknowledged: Boolean,
     onCheckDelivery: () -> Unit,
     onCancelDeliveryCheck: () -> Unit,
-    onRepeatDeliveryCheck: () -> Unit,
+    onAcknowledgeDeliveryCheck: () -> Unit,
     onFixDeliveryCheck: () -> Unit,
 ) {
     val colors = SklyankaTheme.colors
@@ -410,35 +655,52 @@ private fun DeliveryCheckBlock(
         modifier = Modifier
             .fillMaxWidth()
             .background(colors.surface, SklyankaShapes.Card)
+            .border(SklyankaSizes.BorderThin, colors.lineOnSurface, SklyankaShapes.Card)
             .padding(SklyankaSpacing.Block)
             .testTag(TAG_CHECK_BLOCK),
         verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Medium),
     ) {
-        SectionTitle(stringResource(R.string.diagnostics_check_sheet_title))
-        when (state) {
-            DeliveryCheckState.None -> SecondaryButton(
-                text = stringResource(R.string.diagnostics_action_check_delivery),
-                onClick = onCheckDelivery,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag(TAG_CHECK_DELIVERY),
+        when {
+            state is DeliveryCheckState.Running -> RunningCheck(onCancelDeliveryCheck)
+            state is DeliveryCheckState.Finished && !acknowledged -> FinishedCheck(
+                state = state,
+                onAcknowledgeDeliveryCheck = onAcknowledgeDeliveryCheck,
+                onFixDeliveryCheck = onFixDeliveryCheck,
             )
 
-            is DeliveryCheckState.Running -> RunningCheck(onCancelDeliveryCheck)
-
-            is DeliveryCheckState.Finished -> FinishedCheck(state, onRepeatDeliveryCheck, onFixDeliveryCheck)
+            else -> CheckStart(onCheckDelivery)
         }
     }
 }
 
-/** Ход проверки: плашка «идёт» и тихая отмена (ОВ-108). */
+/** Пояснение и кнопка — обычное состояние блока до и после проверки (AC-15). */
+@Composable
+private fun CheckStart(onCheckDelivery: () -> Unit) {
+    val colors = SklyankaTheme.colors
+    Text(
+        text = stringResource(R.string.diagnostics_delivery_explanation),
+        style = SklyankaType.CaptionSmall,
+        color = colors.textMuted,
+    )
+    SecondaryButton(
+        text = stringResource(R.string.diagnostics_action_check_delivery),
+        onClick = onCheckDelivery,
+        form = ButtonForm.Screen,
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag(TAG_CHECK_DELIVERY),
+    )
+}
+
+/** Ход проверки: нейтральная плашка «идёт» и тихая отмена (ОВ-108, AC-16). */
 @Composable
 private fun RunningCheck(onCancelDeliveryCheck: () -> Unit) {
-    Text(
+    Banner(
         text = stringResource(R.string.diagnostics_check_running),
-        style = SklyankaType.Body,
-        color = SklyankaTheme.colors.text,
-        modifier = Modifier.testTag(TAG_CHECK_RUNNING),
+        kind = BannerKind.Neutral,
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag(TAG_CHECK_RUNNING),
     )
     QuietButton(
         text = stringResource(R.string.diagnostics_check_cancel),
@@ -448,31 +710,33 @@ private fun RunningCheck(onCancelDeliveryCheck: () -> Unit) {
     )
 }
 
-/** Исход проверки и действие по нему: «Повторить проверку» или «Исправить» (ОВ-108). */
+/** Исход проверки: успех и «не состоялась» — «Понятно», опоздание и недолёт — «Исправить» (AC-18…AC-21). */
 @Composable
 private fun FinishedCheck(
     state: DeliveryCheckState.Finished,
-    onRepeatDeliveryCheck: () -> Unit,
+    onAcknowledgeDeliveryCheck: () -> Unit,
     onFixDeliveryCheck: () -> Unit,
 ) {
-    Text(
+    CardValue(
         text = state.resultText(),
-        style = SklyankaType.Body,
-        color = SklyankaTheme.colors.text,
         modifier = Modifier.testTag(TAG_CHECK_RESULT),
     )
-    if (state.outcome == DeliveryCheckOutcome.ON_TIME || state.outcome == DeliveryCheckOutcome.NOT_COMPLETED) {
-        SecondaryButton(
-            text = stringResource(R.string.diagnostics_check_repeat),
-            onClick = onRepeatDeliveryCheck,
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag(TAG_CHECK_REPEAT),
+    when (state.outcome) {
+        DeliveryCheckOutcome.ON_TIME,
+        DeliveryCheckOutcome.NOT_COMPLETED,
+        -> QuietButton(
+            text = stringResource(R.string.diagnostics_check_acknowledge),
+            onClick = onAcknowledgeDeliveryCheck,
+            kind = QuietButtonKind.Accent,
+            modifier = Modifier.testTag(TAG_CHECK_RESULT_ACKNOWLEDGE),
         )
-    } else {
-        SecondaryButton(
+
+        DeliveryCheckOutcome.LATE,
+        DeliveryCheckOutcome.NOT_DELIVERED,
+        -> SecondaryButton(
             text = stringResource(R.string.diagnostics_fix),
             onClick = onFixDeliveryCheck,
+            form = ButtonForm.Screen,
             modifier = Modifier
                 .fillMaxWidth()
                 .testTag(TAG_CHECK_FIX),
@@ -480,22 +744,61 @@ private fun FinishedCheck(
     }
 }
 
-/** Сводка за 7 дней фразой: сколько сработало и сколько приёмов пропущено (ОВ-49). */
+/** «Напоминания»: сводка 7 дней, последнее и следующее напоминание (AC-25…AC-28). */
+@Composable
+private fun RemindersSection(snapshot: ReminderDiagnostics, toLocal: (Instant) -> LocalDateTime, today: LocalDate) {
+    Column(verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Large)) {
+        WeekSummary(snapshot.week)
+        LastSimple(snapshot, toLocal)
+        NextPlan(snapshot, toLocal, today)
+    }
+}
+
+/**
+ * Сводка 7 дней одной фразой (AC-25).
+ *
+ * Оба числа склоняются независимыми `plurals`, а «0 из 0» и «0 %» не показываются:
+ * домен отдаёт числа, экран выбирает одну из четырёх формулировок.
+ */
 @Composable
 private fun WeekSummary(summary: ReminderWeekSummary) {
+    val fired = summary.fired
+    val missed = summary.missed
+    val text = when {
+        fired > 0 && missed > 0 -> prefix() +
+            pluralStringResource(R.plurals.diagnostics_week_fired, fired, fired) +
+            separator() +
+            pluralStringResource(R.plurals.diagnostics_week_missed, missed, missed)
+
+        fired > 0 -> prefix() +
+            pluralStringResource(R.plurals.diagnostics_week_fired, fired, fired) +
+            separator() +
+            stringResource(R.string.diagnostics_week_missed_none)
+
+        missed > 0 -> prefix() +
+            stringResource(R.string.diagnostics_week_fired_none) +
+            separator() +
+            pluralStringResource(R.plurals.diagnostics_week_missed, missed, missed)
+
+        else -> stringResource(R.string.diagnostics_week_none)
+    }
     Text(
-        text = if (summary.hasData) {
-            stringResource(R.string.diagnostics_week_summary, summary.fired, summary.missed)
-        } else {
-            stringResource(R.string.diagnostics_week_summary_none)
-        },
-        style = SklyankaType.Body,
+        text = text,
+        style = SklyankaType.Caption,
         color = SklyankaTheme.colors.textMuted,
-        modifier = Modifier.testTag(TAG_WEEK_SUMMARY),
+        modifier = Modifier
+            .padding(start = SklyankaSpacing.Micro)
+            .testTag(TAG_WEEK_SUMMARY),
     )
 }
 
-/** Последнее напоминание простыми словами: лекарство, план, факт, отклонение словом (ОВ-49). */
+@Composable
+private fun prefix(): String = stringResource(R.string.diagnostics_week_prefix)
+
+@Composable
+private fun separator(): String = stringResource(R.string.diagnostics_week_separator)
+
+/** Последнее напоминание простыми словами: лекарство, плановое время, факт и отклонение (AC-26). */
 @Composable
 private fun LastSimple(snapshot: ReminderDiagnostics, toLocal: (Instant) -> LocalDateTime) {
     val entry = snapshot.lastShown
@@ -503,246 +806,133 @@ private fun LastSimple(snapshot: ReminderDiagnostics, toLocal: (Instant) -> Loca
         modifier = Modifier
             .fillMaxWidth()
             .background(SklyankaTheme.colors.surface, SklyankaShapes.Card)
+            .border(SklyankaSizes.BorderThin, SklyankaTheme.colors.lineOnSurface, SklyankaShapes.Card)
             .padding(SklyankaSpacing.Block)
             .testTag(TAG_LAST_SHORT),
-        verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Micro),
+        verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Default),
     ) {
-        SectionTitle(stringResource(R.string.diagnostics_section_last))
+        CardTitle(stringResource(R.string.diagnostics_section_last))
         if (entry == null) {
-            Value(stringResource(R.string.diagnostics_last_none))
+            CardValue(stringResource(R.string.diagnostics_last_none))
             return@Column
         }
         val name = snapshot.lastMedicationName ?: stringResource(R.string.diagnostics_none)
         entry.scheduledAt?.let { planned ->
-            Value(stringResource(R.string.diagnostics_last_line, name, toLocal(planned).journalMoment()))
+            CardValue(stringResource(R.string.diagnostics_last_line, name, toLocal(planned).diagnosticsClock()))
         }
-        entry.firedAt?.let { actual ->
-            Value(stringResource(R.string.diagnostics_last_actual, toLocal(actual).journalMoment()))
-        }
-        entry.deviationSeconds?.let { deviation ->
-            Value(deviationWord(deviation))
+        val firedAt = entry.firedAt
+        if (firedAt != null) {
+            val clock = toLocal(firedAt).diagnosticsClock()
+            val deviation = entry.deviationSeconds
+            CardSubtitle(
+                text = if (deviation == null) {
+                    stringResource(R.string.diagnostics_last_actual, clock)
+                } else {
+                    stringResource(R.string.diagnostics_last_actual_with_deviation, clock, deviationWord(deviation))
+                },
+            )
         }
     }
 }
 
-/** Следующее напоминание планом, а не обещанием (ОВ-49). */
+/** Следующее напоминание планом, а не обещанием (AC-27, AC-28). */
 @Composable
-private fun NextPlan(snapshot: ReminderDiagnostics, toLocal: (Instant) -> LocalDateTime) {
+private fun NextPlan(snapshot: ReminderDiagnostics, toLocal: (Instant) -> LocalDateTime, today: LocalDate) {
     val next = snapshot.nextAt
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .background(SklyankaTheme.colors.surface, SklyankaShapes.Card)
+            .border(SklyankaSizes.BorderThin, SklyankaTheme.colors.lineOnSurface, SklyankaShapes.Card)
             .padding(SklyankaSpacing.Block)
             .testTag(TAG_NEXT_SHORT),
-        verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Micro),
+        verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Default),
     ) {
-        SectionTitle(stringResource(R.string.diagnostics_section_next))
+        CardTitle(stringResource(R.string.diagnostics_section_next))
         if (next == null) {
-            Value(stringResource(R.string.diagnostics_next_none))
+            CardValue(stringResource(R.string.diagnostics_next_none))
+            CardSubtitle(stringResource(R.string.diagnostics_next_none_explanation))
             return@Column
         }
         val name = snapshot.nextMedicationName ?: stringResource(R.string.diagnostics_none)
-        Value(
+        CardValue(
             stringResource(
                 R.string.diagnostics_next_line,
                 name,
-                toLocal(next).journalMoment(),
+                toLocal(next).nextReminderMoment(today),
                 stringResource(R.string.diagnostics_next_plan),
             ),
         )
-    }
-}
-
-/** Строка-раскрытие технического блока «Для поддержки» (ОВ-49). */
-@Composable
-private fun SupportToggle(onToggle: () -> Unit) {
-    SecondaryButton(
-        text = stringResource(R.string.diagnostics_support),
-        onClick = onToggle,
-        modifier = Modifier
-            .fillMaxWidth()
-            .testTag(TAG_SUPPORT_TOGGLE),
-    )
-}
-
-@Composable
-private fun SupportActions(state: DiagnosticsUiState, onExportJournal: () -> Unit, onRestartSetup: (() -> Unit)?) {
-    Column(verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Small)) {
-        SecondaryButton(
-            text = stringResource(R.string.diagnostics_action_export),
-            onClick = onExportJournal,
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag(TAG_EXPORT_JOURNAL),
-        )
-        if (onRestartSetup != null) {
-            SecondaryButton(
-                text = stringResource(R.string.diagnostics_action_setup),
-                onClick = onRestartSetup,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag(TAG_RESTART_SETUP),
-            )
-        }
-        ExportOutcome(state)
-    }
-}
-
-/** Исход выгрузки журнала словами: отмолчаться нельзя ни при удаче, ни при отказе (НФТ-8). */
-@Composable
-private fun ExportOutcome(state: DiagnosticsUiState) {
-    state.exportOutcome?.let { outcome ->
-        Text(
-            text = outcome.label(),
-            style = SklyankaType.Caption,
-            color = SklyankaTheme.colors.textMuted,
-            modifier = Modifier.testTag(TAG_EXPORT_OUTCOME),
-        )
-    }
-}
-
-/**
- * Сводка «вовремя за 7 дней» (НФТ-51) — техническая, под раскрытием.
- *
- * Строкой, а не полосой: сводка отвечает на вопрос «работает ли оно вообще», и число
- * срабатываний рядом с долей нужно затем, чтобы «100 %» на одном срабатывании нельзя
- * было принять за доказательство надёжности.
- */
-@Composable
-private fun OnTime(summary: ReminderOnTimeSummary) {
-    Section(stringResource(R.string.diagnostics_section_on_time), TAG_ON_TIME) {
-        val percent = summary.percent
-        if (percent == null) {
-            Value(stringResource(R.string.diagnostics_on_time_none))
-        } else {
-            Value(stringResource(R.string.diagnostics_on_time, summary.onTime, summary.fired, percent))
-        }
-        Value(stringResource(R.string.diagnostics_on_time_rule))
-    }
-}
-
-/** Последнее сработавшее напоминание в техническом виде: план, факт и отклонение в секундах. */
-@Composable
-private fun LastShown(snapshot: ReminderDiagnostics, toLocal: (Instant) -> LocalDateTime) {
-    val entry = snapshot.lastShown
-    Section(stringResource(R.string.diagnostics_section_last), TAG_LAST_SHOWN) {
-        if (entry == null) {
-            Value(stringResource(R.string.diagnostics_none))
-        } else {
-            entry.scheduledAt?.let { Value(stringResource(R.string.diagnostics_planned, toLocal(it).journalMoment())) }
-            entry.firedAt?.let { Value(stringResource(R.string.diagnostics_actual, toLocal(it).journalMoment())) }
-            entry.deviationSeconds?.let { Value(stringResource(R.string.diagnostics_deviation, it)) }
-        }
-    }
-}
-
-/** Следующее запланированное напоминание и общее число поставленных будильников (НАП-37). */
-@Composable
-private fun NextPlanned(snapshot: ReminderDiagnostics, toLocal: (Instant) -> LocalDateTime) {
-    Section(stringResource(R.string.diagnostics_section_next), TAG_NEXT) {
-        val next = snapshot.nextAt
-        Value(if (next == null) stringResource(R.string.diagnostics_none) else toLocal(next).journalMoment())
-        Value(stringResource(R.string.diagnostics_scheduled_total, snapshot.totalScheduled))
         // Пояснение системного индикатора будильника стоит там, где человек смотрит
         // на следующее напоминание (НАП-42, ОВ-110): без него признак в статус-баре
         // выглядит дефектом, а не выбранным механизмом.
-        if (next != null) Value(stringResource(R.string.diagnostics_next_alarm_indicator))
+        CardSubtitle(stringResource(R.string.diagnostics_next_alarm_indicator))
     }
 }
 
-/**
- * Вариант измерения пилота (SKL-85, `TDD.md §5.12`).
- *
- * Строки нет в обычной сборке вовсе — переключатель существует только при
- * `measurementAvailable` (ПМ-20, ADR-0011). Смена варианта — событие перепланирования
- * (НАП-11), поэтому нажатие сразу пересобирает план и оставляет след в журнале.
- */
+/** Постоянный низ: «Сообщить о проблеме» с подписью, виден в каждом базовом состоянии (AC-29). */
 @Composable
-private fun MeasurementVariant(snapshot: ReminderDiagnostics, onAlarmKindChange: (AlarmKind) -> Unit) {
-    if (!snapshot.measurementAvailable) return
-    Section(stringResource(R.string.diagnostics_measurement_row), TAG_MEASUREMENT) {
-        Row(horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Small)) {
-            AlarmKind.entries.forEach { kind ->
-                SklyankaChip(
-                    text = kind.label(),
-                    state = if (kind == snapshot.alarmKind) ChipState.Selected else ChipState.Unselected,
-                    onClick = { onAlarmKindChange(kind) },
-                    modifier = Modifier.testTag(TAG_MEASUREMENT_OPTION),
-                )
-            }
-        }
-    }
-}
-
-/** Время и причина последней пересборки плана (НАП-14, НАП-37). */
-@Composable
-private fun LastReschedule(snapshot: ReminderDiagnostics, toLocal: (Instant) -> LocalDateTime) {
-    val entry = snapshot.lastReschedule
-    Section(stringResource(R.string.diagnostics_section_reschedule), TAG_RESCHEDULE) {
-        if (entry == null) {
-            Value(stringResource(R.string.diagnostics_none))
-        } else {
-            Value(toLocal(entry.occurredAt).journalMoment())
-            reasonOf(entry)?.let { Value(it.label()) }
-            Value(
-                stringResource(
-                    R.string.diagnostics_alarm_counters,
-                    entry.alarmsCancelled ?: 0,
-                    entry.alarmsScheduled ?: 0,
+private fun ReportFooter(onReportOpen: () -> Unit) {
+    val colors = SklyankaTheme.colors
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag(TAG_REPORT_FOOTER),
+    ) {
+        // Верхняя линия постоянного низа (`.report{border-top}`, ОВ-144).
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(SklyankaSizes.BorderThin)
+                .background(colors.line),
+        )
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = SklyankaSpacing.Block),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Micro),
+        ) {
+            QuietButton(
+                label = ButtonLabel(
+                    text = stringResource(R.string.diagnostics_report_open),
+                    // Декоративный ведущий глиф: смысл несёт подпись, чтением с экрана
+                    // глиф не объявляется (ОВ-144).
+                    leadingGlyph = {
+                        ChatGlyph(
+                            color = colors.accent,
+                            modifier = Modifier.clearAndSetSemantics {},
+                        )
+                    },
                 ),
+                onClick = onReportOpen,
+            )
+            Text(
+                text = stringResource(R.string.diagnostics_report_footer_note),
+                style = SklyankaType.CaptionSmall,
+                color = colors.textMuted,
+                // Подпись низа — единственная центрируемая по строкам (`.report .bs{text-align:center}`):
+                // на широком экране и при крупном шрифте перенос выравнивается по центру (ОВ-144).
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
             )
         }
     }
 }
 
 @Composable
-private fun JournalRow(entry: ReminderLogEntry, toLocal: (Instant) -> LocalDateTime) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(SklyankaTheme.colors.surface, SklyankaShapes.Compact)
-            .padding(SklyankaSpacing.Medium)
-            .testTag(TAG_JOURNAL_ROW),
-    ) {
-        Text(
-            text = toLocal(entry.occurredAt).journalMoment(),
-            style = SklyankaType.Caption,
-            color = SklyankaTheme.colors.textMuted,
-        )
-        Text(text = entry.journalLabel(), style = SklyankaType.Body, color = SklyankaTheme.colors.text)
-        entry.deviationSeconds?.let {
-            Value(stringResource(R.string.diagnostics_deviation, it))
-        }
-        // Идентификатор приёма, а не название лекарства: журнал показывается на экране
-        // и копируется текстом, поэтому медицинских данных в нём нет (НФТ-19).
-        entry.intakeId?.let { Value(it) }
-    }
+private fun CardTitle(title: String) {
+    Text(text = title, style = SklyankaType.BodyDefaultStrong, color = SklyankaTheme.colors.text)
 }
 
 @Composable
-private fun Section(title: String, tag: String, content: @Composable () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(SklyankaTheme.colors.surface, SklyankaShapes.Card)
-            .padding(SklyankaSpacing.Block)
-            .testTag(tag),
-        verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Micro),
-    ) {
-        SectionTitle(title)
-        content()
-    }
+private fun CardValue(text: String, modifier: Modifier = Modifier) {
+    Text(text = text, style = SklyankaType.BodyDefault, color = SklyankaTheme.colors.text, modifier = modifier)
 }
 
 @Composable
-private fun SectionTitle(title: String) {
-    Text(text = title, style = SklyankaType.BodyStrong, color = SklyankaTheme.colors.text)
-}
-
-@Composable
-private fun Value(text: String, modifier: Modifier = Modifier) {
-    Text(text = text, style = SklyankaType.Body, color = SklyankaTheme.colors.textMuted, modifier = modifier)
+private fun CardSubtitle(text: String) {
+    Text(text = text, style = SklyankaType.CaptionSmall, color = SklyankaTheme.colors.textMuted)
 }
 
 /** Отклонение словами: «вовремя» или «с опозданием на N мин» (ОВ-49). */
@@ -754,39 +944,37 @@ private fun deviationWord(deviationSeconds: Long): String = if (ReminderDeviatio
     pluralStringResource(R.plurals.diagnostics_late, minutes, minutes)
 }
 
-/** Причина пересборки из служебного кода записи журнала. */
-private fun reasonOf(entry: ReminderLogEntry): RescheduleReason? =
-    RescheduleReason.entries.firstOrNull { it.code == entry.reason }
-
 const val TAG_DIAGNOSTICS = "diagnostics"
+const val TAG_VERDICT = "diagnostics_verdict"
 const val TAG_WARNING = "diagnostics_warning"
 const val TAG_OUTAGE = "diagnostics_outage"
-const val TAG_RELIABLE = "diagnostics_reliable"
-const val TAG_ALL_GRANTED = "diagnostics_all_granted"
+const val TAG_PERMISSIONS = "diagnostics_permissions"
+const val TAG_PERMISSION_GROUP = "diagnostics_permission_group"
 const val TAG_PERMISSION_ROW = "diagnostics_permission_row"
+const val TAG_PERMISSION_SEPARATOR = "diagnostics_permission_separator"
+const val TAG_PERMISSION_MARKER = "diagnostics_permission_marker"
+const val TAG_PERMISSION_STATE = "diagnostics_permission_state"
+const val TAG_PERMISSION_CONSEQUENCE = "diagnostics_permission_consequence"
+const val TAG_ALL_GRANTED = "diagnostics_all_granted"
+const val TAG_PERMISSION_REST_GRANTED = "diagnostics_permission_rest_granted"
 const val TAG_FIX = "diagnostics_fix"
 const val TAG_FIX_FALLBACK = "diagnostics_fix_fallback"
-const val TAG_CHECK_NOW = "diagnostics_check_now"
-const val TAG_CHECK_OUTCOME = "diagnostics_check_outcome"
+const val TAG_RESTART_SETUP = "diagnostics_restart_setup"
 const val TAG_CHECK_BLOCK = "diagnostics_check_block"
 const val TAG_CHECK_DELIVERY = "diagnostics_check_delivery"
 const val TAG_CHECK_RUNNING = "diagnostics_check_running"
 const val TAG_CHECK_CANCEL = "diagnostics_check_cancel"
 const val TAG_CHECK_RESULT = "diagnostics_check_result"
-const val TAG_CHECK_REPEAT = "diagnostics_check_repeat"
+const val TAG_CHECK_RESULT_ACKNOWLEDGE = "diagnostics_check_acknowledge"
 const val TAG_CHECK_FIX = "diagnostics_check_fix"
 const val TAG_WEEK_SUMMARY = "diagnostics_week_summary"
 const val TAG_LAST_SHORT = "diagnostics_last_short"
 const val TAG_NEXT_SHORT = "diagnostics_next_short"
-const val TAG_SUPPORT_TOGGLE = "diagnostics_support_toggle"
-const val TAG_LAST_SHOWN = "diagnostics_last_shown"
-const val TAG_NEXT = "diagnostics_next"
-const val TAG_RESCHEDULE = "diagnostics_reschedule"
-const val TAG_ON_TIME = "diagnostics_on_time"
-const val TAG_EXPORT_JOURNAL = "diagnostics_export_journal"
-const val TAG_EXPORT_OUTCOME = "diagnostics_export_outcome"
-const val TAG_RESTART_SETUP = "diagnostics_restart_setup"
-const val TAG_PERMISSIONS = "diagnostics_permissions"
-const val TAG_JOURNAL_ROW = "diagnostics_journal_row"
-const val TAG_MEASUREMENT = "diagnostics_measurement"
-const val TAG_MEASUREMENT_OPTION = "diagnostics_measurement_option"
+const val TAG_REPORT_FOOTER = "diagnostics_report_footer"
+const val TAG_REPORT_SHEET = "diagnostics_report_sheet"
+const val TAG_REPORT_COMMENT = "diagnostics_report_comment"
+const val TAG_REPORT_SEND = "diagnostics_report_send"
+const val TAG_REPORT_SENT = "diagnostics_report_sent"
+const val TAG_REPORT_FAILED = "diagnostics_report_failed"
+const val TAG_REPORT_RETRY = "diagnostics_report_retry"
+const val TAG_REPORT_DISMISS = "diagnostics_report_dismiss"

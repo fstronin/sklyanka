@@ -6,12 +6,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Density
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -26,6 +31,7 @@ import ru.stohastika.sklyanka.ui.component.TAG_DATE_TIME_PICKER
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaSizes
 import ru.stohastika.sklyanka.ui.token.SklyankaType
+import ru.stohastika.sklyanka.ui.token.lightColors
 import ru.stohastika.sklyanka.ui.R as UiR
 
 /**
@@ -238,6 +244,32 @@ class DoctorReportSheetTest {
         composeRule.onNodeWithText(context.getString(UiR.string.action_done)).assertIsDisplayed()
     }
 
+    /**
+     * Выход из успеха — подтверждающее действие шапки, а не отмена: «Готово» набрано
+     * `BodyDefaultStrong` 15/600 `Accent` (§4.9, ОВ-146). Иначе серое «Готово» читается
+     * как «Отмена» и иерархия действий теряется (дефект визревью 04.10.2026).
+     */
+    @Test
+    fun theSuccessExitIsTheConfirmingRoleOfTheHeader() {
+        show(HistoryStates.withReport(outcome = ReportOutcome.SHARED))
+
+        val style = textStyleOf(UiR.string.action_done)
+        assertEquals(SklyankaType.BodyDefaultStrong.fontWeight, style.fontWeight)
+        assertEquals(SklyankaType.BodyDefaultStrong.fontSize.value, style.fontSize.value, 0.01f)
+        assertEquals(lightColors().accent, style.color)
+    }
+
+    /** «Отмена» — ведущее приглушённое действие шапки: 15/400 `TextMuted` (§4.9, ОВ-146). */
+    @Test
+    fun theCancelExitKeepsTheMutedRoleOfTheHeader() {
+        show(HistoryStates.withReport())
+
+        val style = textStyleOf(UiR.string.action_cancel)
+        assertEquals(SklyankaType.BodyDefault.fontWeight, style.fontWeight)
+        assertEquals(SklyankaType.BodyDefault.fontSize.value, style.fontSize.value, 0.01f)
+        assertEquals(lightColors().textMuted, style.color)
+    }
+
     @Test
     fun theSavedSuccessNamesTheSave() {
         show(HistoryStates.withReport(outcome = ReportOutcome.SAVED))
@@ -273,6 +305,18 @@ class DoctorReportSheetTest {
         val span = text.spanStyles.firstOrNull { it.item.fontFamily == SklyankaType.NumberSpan.fontFamily }
         assertNotNull("the value \"$value\" must carry a Literata number span", span)
         assertTrue("the number span must cover digits", requireNotNull(span).start < span.end)
+    }
+
+    /** Разрешённый стиль подписи: им проверяются роли действия шапки (§4.9, ОВ-146). */
+    private fun textStyleOf(text: Int): TextStyle {
+        val node = composeRule.onNodeWithText(context.getString(text)).fetchSemanticsNode()
+        val layouts = mutableListOf<TextLayoutResult>()
+        fun collect(current: SemanticsNode) {
+            current.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(layouts)
+            current.children.forEach(::collect)
+        }
+        collect(node)
+        return requireNotNull(layouts.firstOrNull()) { "no text layout under the node" }.layoutInput.style
     }
 
     @Composable

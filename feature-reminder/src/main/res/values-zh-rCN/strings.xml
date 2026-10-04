@@ -19,37 +19,23 @@
     <string name="diagnostics_reliable">一切正常</string>
     <string name="diagnostics_all_granted">权限已授予</string>
     <string name="diagnostics_fix">修复</string>
-    <string name="diagnostics_check_done">检查完成 — 提醒已设置</string>
-    <string name="diagnostics_check_failed">检查失败：提醒未重新设置</string>
-    <string name="diagnostics_support">技术支持</string>
 
-    <string name="diagnostics_week_summary">7 天内：%1$d 次触发，%2$d 次漏服</string>
-    <string name="diagnostics_week_summary_none">7 天内没有提醒</string>
 
     <string name="diagnostics_last_none">还没有提醒</string>
     <string name="diagnostics_last_line">%1$s — %2$s</string>
     <string name="diagnostics_last_actual">显示于 %1$s</string>
     <string name="diagnostics_on_time_word">按时</string>
-    <string name="diagnostics_next_none">没有下一个提醒</string>
+    <string name="diagnostics_next_none">尚未安排</string>
     <string name="diagnostics_next_line">%1$s — %2$s · %3$s</string>
     <string name="diagnostics_next_plan">计划</string>
 
-    <string name="diagnostics_journal_too_late">触发于 %1$s — 未显示</string>
 
     <string name="diagnostics_section_last">最近提醒</string>
     <string name="diagnostics_section_next">下一个提醒</string>
-    <string name="diagnostics_section_reschedule">最近一次重建计划</string>
     <string name="diagnostics_section_permissions">权限</string>
-    <string name="diagnostics_section_journal">触发日志</string>
-    <string name="diagnostics_section_on_time">7 天内按时</string>
 
     <string name="diagnostics_none">没有数据</string>
-    <string name="diagnostics_datetime_pattern">M月d日 HH:mm:ss</string>
 
-    <string name="diagnostics_deviation">偏差 %1$d 秒</string>
-    <string name="diagnostics_planned">计划 %1$s</string>
-    <string name="diagnostics_actual">实际 %1$s</string>
-    <string name="diagnostics_scheduled_total">已设置闹钟总数：%1$d</string>
 
     <string name="diagnostics_permission_notifications">通知</string>
     <string name="diagnostics_permission_channel">通知渠道</string>
@@ -63,7 +49,6 @@
     <string name="diagnostics_state_denied">未授予</string>
     <string name="diagnostics_state_unknown">请手动检查</string>
 
-    <string name="diagnostics_dnd_hint">在“勿扰”模式下，重复提醒将没有声音。</string>
 
     <string name="diagnostics_warning_notifications">提醒目前无法送达：通知已关闭。可以手动标记服药。</string>
     <string name="diagnostics_warning_channel">提醒目前无法送达：通知渠道已关闭。</string>
@@ -72,14 +57,9 @@
     <string name="diagnostics_warning_both">提醒目前无法送达：通知已关闭，且未授予精确闹钟权限。</string>
     <string name="diagnostics_fallback_app_startup">此设备上的系统页面未能打开。请手动打开：设置 → 电池 → 应用启动 → Sklyanka → 手动管理。开启“自启动”“关联启动”和“后台运行”。</string>
 
-    <string name="diagnostics_outage">自 %1$s 起没有收到提醒。请检查权限和自启动，然后点按“立即检查”。</string>
+    <string name="diagnostics_outage">自 %1$s 起提醒未送达。这段时间的服药可以手动标记。</string>
 
-    <string name="diagnostics_on_time">%1$d / %2$d · %3$d %%</string>
-    <string name="diagnostics_on_time_none">此期间没有触发</string>
-    <string name="diagnostics_on_time_rule">按时 — 偏差不超过 120 秒</string>
 
-    <string name="diagnostics_action_check">立即检查</string>
-    <string name="diagnostics_action_export">导出日志</string>
     <string name="diagnostics_action_setup">重新完成设置</string>
 
     <string name="diagnostics_action_check_delivery">检查送达</string>
@@ -92,61 +72,60 @@
     <string name="diagnostics_check_cancel">取消检查</string>
 
     <string name="diagnostics_check_on_time">送达检查通过：测试提醒按时到达。</string>
+    <string name="diagnostics_check_delivered">上次检查已通过：测试提醒准时送达。</string>
     <string name="diagnostics_check_late">送达检查：测试提醒 %1$s 到达。手机延迟了它——请检查启动和省电设置。</string>
     <string name="diagnostics_check_not_delivered">送达检查未通过：测试提醒没有到达。请检查启动和省电设置。</string>
     <string name="diagnostics_check_not_completed">检查未进行：应用处于打开状态。请关闭应用后重试。</string>
-    <string name="diagnostics_check_repeat">重复检查</string>
     <string name="diagnostics_check_acknowledge">知道了</string>
 
     <string name="reminder_check_overline">送达检查</string>
     <string name="reminder_check_text">测试提醒。无需标记任何内容。</string>
 
-    <string name="diagnostics_export_saved">日志已导出 · %1$s</string>
-    <string name="diagnostics_export_failed">日志未导出：写入失败</string>
-    <string name="diagnostics_export_no_space">日志未导出：设备空间不足</string>
 
-    <string name="diagnostics_measurement_row">测量分组</string>
-    <string name="diagnostics_measurement_alarm_clock">系统闹钟</string>
-    <string name="diagnostics_measurement_exact_idle">精确闹钟</string>
     <string name="diagnostics_next_alarm_indicator">手机将在状态栏把此时间显示为闹钟——这是正常现象。</string>
 
-    <string name="diagnostics_reason_boot">重新启动</string>
-    <string name="diagnostics_reason_locked_boot">解锁前恢复</string>
-    <string name="diagnostics_reason_user_unlocked">解锁</string>
-    <string name="diagnostics_reason_package_replaced">应用更新</string>
-    <string name="diagnostics_reason_timezone_changed">时区变更</string>
-    <string name="diagnostics_reason_time_changed">时间调整</string>
-    <string name="diagnostics_reason_schedule_edited">药物日程变更</string>
-    <string name="diagnostics_reason_medication_added">添加药物</string>
-    <string name="diagnostics_reason_medication_archived">药物归档</string>
-    <string name="diagnostics_reason_medication_deleted">药物删除</string>
-    <string name="diagnostics_reason_medication_undeleted">药物恢复</string>
-    <string name="diagnostics_reason_medication_unarchived">药物从归档恢复</string>
-    <string name="diagnostics_reason_alarm_fired">提醒触发</string>
-    <string name="diagnostics_reason_profile_set_changed">档案组成变更</string>
-    <string name="diagnostics_reason_anchor">夜间检查</string>
-    <string name="diagnostics_reason_manual">人工操作</string>
-    <string name="diagnostics_reason_data_imported">数据导入</string>
-    <string name="diagnostics_reason_app_start">应用启动</string>
-    <string name="diagnostics_reason_exact_alarm_granted">已授予精确闹钟权限</string>
 
-    <string name="diagnostics_event_fired">闹钟已触发</string>
-    <string name="diagnostics_event_shown">提醒已显示</string>
-    <string name="diagnostics_event_suppressed">显示已抑制</string>
-    <string name="diagnostics_event_repeated">提醒重复</string>
-    <string name="diagnostics_event_snoozed">已推迟</string>
-    <string name="diagnostics_event_deferred">延迟触发</string>
-    <string name="diagnostics_event_rescheduled">计划已重建</string>
-    <string name="diagnostics_event_rotated">记录精简</string>
-    <string name="diagnostics_event_missed_sweep">转为漏服</string>
-    <string name="diagnostics_event_outage">提醒中断</string>
-    <string name="diagnostics_event_settings_changed">设置已更改</string>
-    <string name="diagnostics_event_environment">设备环境</string>
-    <string name="diagnostics_event_delivery_check">送达检查</string>
 
-    <string name="diagnostics_alarm_counters">已移除 %1$d，已设置 %2$d</string>
 
     <string name="reminder_outage_notice">自 %1$s 起没有收到提醒。这段时间的服药可以手动标记。</string>
     <string name="reminder_outage_notice_action">修复</string>
     <string name="reminder_outage_notice_moment_pattern">M月d日 HH:mm</string>
+
+    <!-- SKL-102: проверка напоминаний, отчёт разработчику. -->
+    <string name="diagnostics_verdict_ok_sub">提醒按时送达。</string>
+    <string name="diagnostics_verdict_ok_no_next">暂时没有新的安排。</string>
+    <string name="diagnostics_check_failed_verdict">上次送达检查未通过。</string>
+    <string name="diagnostics_section_delivery">送达检查</string>
+    <string name="diagnostics_section_reminders">提醒</string>
+    <string name="diagnostics_permission_group_fix_first">请先修复——否则提醒不会送达或会延迟</string>
+    <string name="diagnostics_permission_group_can_defer">可以稍后处理——提醒会送达，但不完整</string>
+    <string name="diagnostics_permission_rest_granted">其余权限已授予</string>
+    <string name="diagnostics_consequence_notifications">提醒不会送达：手机不会显示它们。</string>
+    <string name="diagnostics_consequence_channel">提醒不会送达：通知渠道已关闭。</string>
+    <string name="diagnostics_consequence_exact_alarms">手机可能推迟服药——最多半小时。</string>
+    <string name="diagnostics_consequence_autostart">应用看不到 EMUI 设置——请自行检查。</string>
+    <string name="diagnostics_consequence_full_screen">锁屏时不会显示卡片。</string>
+    <string name="diagnostics_consequence_dnd">重复提醒将静音。</string>
+    <string name="diagnostics_delivery_explanation">将在 1–2 分钟后放置一条测试提醒，并检查应用关闭时它是否送达。</string>
+    <string name="diagnostics_next_none_explanation">没有带时间表的在用药物——暂时没有可提醒的内容。</string>
+    <string name="diagnostics_week_prefix">7 天内</string>
+    <string name="diagnostics_week_separator">，</string>
+    <string name="diagnostics_week_fired_none">没有显示过提醒</string>
+    <string name="diagnostics_week_missed_none">没有漏服</string>
+    <string name="diagnostics_week_none">7 天内没有提醒</string>
+    <string name="diagnostics_next_tomorrow">明天 %1$s</string>
+    <string name="diagnostics_next_day_pattern">M月d日 H:mm</string>
+    <string name="diagnostics_last_actual_with_deviation">显示于 %1$s · %2$s</string>
+    <string name="diagnostics_report_open">报告问题</string>
+    <string name="diagnostics_report_footer_note">面向开发者的技术报告。不含药物名称和服药记录。</string>
+    <string name="diagnostics_report_title">开发者报告</string>
+    <string name="diagnostics_report_explanation">面向开发者的技术报告——由你点击后发送。它会自动生成，不含药物名称、剂量和服药记录。</string>
+    <string name="diagnostics_report_comment_label">哪里不正常？</string>
+    <string name="diagnostics_report_comment_optional">可选</string>
+    <string name="diagnostics_report_comment_hint">例如：早上收不到提醒</string>
+    <string name="diagnostics_report_send">发送报告</string>
+    <string name="diagnostics_report_sent_title">报告已发送</string>
+    <string name="diagnostics_report_sent_sub">谢谢！这有助于让提醒更可靠。</string>
+    <string name="diagnostics_report_failed">无法发送报告。请检查网络连接后重试。已输入的文字会保留。</string>
+    <string name="diagnostics_report_retry">重试</string>
 </resources>

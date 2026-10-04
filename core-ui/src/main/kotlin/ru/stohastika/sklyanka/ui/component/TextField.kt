@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
@@ -50,6 +51,13 @@ import ru.stohastika.sklyanka.ui.token.SklyankaType
  * [errorText] — пояснение под полем (§4.4, состояние «Ошибка»). Именно текстом, а не
  * одной лишь красной рамкой: цвет в одиночку значения не несёт (НФТ-33), и человеку
  * нужно знать, что именно не так, а не что «что-то не так».
+ *
+ * [multiline] — многострочный режим для необязательного комментария (AC-31, §4.4):
+ * поле растёт по содержимому от 112 dp, подсказка выравнивается по верху.
+ *
+ * [surface] различает фон под полем: на светлом экране поле стоит на [SklyankaTheme] `surface`,
+ * а на белом полотне шторки — на `background`, иначе граница `Line` на белой заливке
+ * почти не видна (§4.4).
  */
 @Suppress("LongParameterList")
 @Composable
@@ -61,44 +69,35 @@ fun SklyankaTextField(
     unitLabel: String? = null,
     errorText: String? = null,
     numeric: Boolean = false,
+    multiline: Boolean = false,
     forcedState: TextFieldState? = null,
+    surface: TextFieldSurface = TextFieldSurface.Surface,
 ) {
     val colors = SklyankaTheme.colors
     val interactionSource = remember { MutableInteractionSource() }
     val focused by interactionSource.collectIsFocusedAsState()
-    val state = forcedState ?: when {
-        // Ошибка старше фокуса: поле, в котором человек стоит курсором, остаётся
-        // ошибочным, пока значение не исправлено, иначе подсказка исчезает ровно
-        // в тот момент, когда человек до неё добрался.
-        errorText != null -> TextFieldState.Error
-        focused -> TextFieldState.Focused
-        value.isEmpty() -> TextFieldState.Empty
-        else -> TextFieldState.Filled
-    }
+    val state = textFieldState(forcedState, errorText, focused, value)
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Micro),
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(SklyankaSizes.FieldHeight)
-                .background(colors.surface, SklyankaShapes.Medium)
-                .border(borderWidthOf(state), borderOf(state, colors), SklyankaShapes.Medium)
-                .padding(horizontal = SklyankaSizes.FieldPadding)
-                .testTag(TAG_TEXT_FIELD),
-            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fieldFrame(state, multiline, surface),
+            verticalAlignment = if (multiline) Alignment.Top else Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Small),
         ) {
             Box(
-                modifier = Modifier.weight(1f).fillMaxHeight(),
-                contentAlignment = Alignment.CenterStart,
+                modifier = Modifier
+                    .weight(1f)
+                    .then(if (multiline) Modifier.fillMaxWidth() else Modifier.fillMaxHeight()),
+                contentAlignment = if (multiline) Alignment.TopStart else Alignment.CenterStart,
             ) {
                 FieldInput(
                     value = value,
                     onValueChange = onValueChange,
                     state = state,
                     numeric = numeric,
+                    multiline = multiline,
                     interactionSource = interactionSource,
                 )
                 if (value.isEmpty() && hint.isNotEmpty()) {
@@ -112,14 +111,69 @@ fun SklyankaTextField(
             }
         }
         if (errorText != null) {
-            Text(
-                text = errorText,
-                style = SklyankaType.CaptionSmall,
-                color = colors.danger,
-                modifier = Modifier.testTag(TAG_TEXT_FIELD_ERROR),
-            )
+            FieldError(errorText)
         }
     }
+}
+
+/**
+ * Состояние поля по значению, фокусу и ошибке.
+ *
+ * Ошибка старше фокуса: поле, в котором человек стоит курсором, остаётся ошибочным,
+ * пока значение не исправлено, иначе подсказка исчезает ровно в тот момент, когда
+ * человек до неё добрался.
+ */
+private fun textFieldState(
+    forcedState: TextFieldState?,
+    errorText: String?,
+    focused: Boolean,
+    value: String,
+): TextFieldState = forcedState ?: when {
+    errorText != null -> TextFieldState.Error
+    focused -> TextFieldState.Focused
+    value.isEmpty() -> TextFieldState.Empty
+    else -> TextFieldState.Filled
+}
+
+/**
+ * Рамка поля: высота режима, подложка, граница и внутреннее поле (§4.4).
+ *
+ * Однострочное поле вертикального поля не несёт, многострочное растёт по содержимому
+ * от [SklyankaSizes.MultilineFieldMinHeight]; подложка [TextFieldSurface.Background]
+ * ставит поле на белое полотно шторки.
+ */
+@Composable
+private fun Modifier.fieldFrame(state: TextFieldState, multiline: Boolean, surface: TextFieldSurface): Modifier {
+    val colors = SklyankaTheme.colors
+    return fillMaxWidth()
+        .then(
+            if (multiline) {
+                Modifier.heightIn(min = SklyankaSizes.MultilineFieldMinHeight)
+            } else {
+                Modifier.height(SklyankaSizes.FieldHeight)
+            },
+        )
+        .background(
+            if (surface == TextFieldSurface.Background) colors.background else colors.surface,
+            SklyankaShapes.Medium,
+        )
+        .border(borderWidthOf(state), borderOf(state, colors), SklyankaShapes.Medium)
+        .testTag(TAG_TEXT_FIELD)
+        .padding(
+            horizontal = SklyankaSizes.FieldPadding,
+            vertical = if (multiline) SklyankaSizes.MultilineFieldPaddingVertical else SklyankaSpacing.None,
+        )
+}
+
+/** Пояснение под полем текстом, а не одной лишь красной рамкой: цвет в одиночку значения не несёт (НФТ-33). */
+@Composable
+private fun FieldError(text: String) {
+    Text(
+        text = text,
+        style = SklyankaType.CaptionSmall,
+        color = SklyankaTheme.colors.danger,
+        modifier = Modifier.testTag(TAG_TEXT_FIELD_ERROR),
+    )
 }
 
 /**
@@ -136,6 +190,7 @@ private fun FieldInput(
     onValueChange: (String) -> Unit,
     state: TextFieldState,
     numeric: Boolean,
+    multiline: Boolean,
     interactionSource: MutableInteractionSource,
 ) {
     val colors = SklyankaTheme.colors
@@ -151,10 +206,14 @@ private fun FieldInput(
             keyboardType = if (numeric) KeyboardType.Number else KeyboardType.Text,
         ),
         cursorBrush = SolidColor(colors.accent),
-        singleLine = true,
-        modifier = Modifier.fillMaxSize().testTag(TAG_TEXT_FIELD_INPUT),
+        singleLine = !multiline,
+        modifier = (if (multiline) Modifier.fillMaxWidth() else Modifier.fillMaxSize())
+            .testTag(TAG_TEXT_FIELD_INPUT),
         decorationBox = { inner ->
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.CenterStart) { inner() }
+            Box(
+                modifier = if (multiline) Modifier.fillMaxWidth() else Modifier.fillMaxSize(),
+                contentAlignment = if (multiline) Alignment.TopStart else Alignment.CenterStart,
+            ) { inner() }
         },
     )
 }
@@ -238,3 +297,12 @@ const val TAG_TEXT_FIELD = "text_field"
 const val TAG_TEXT_FIELD_INPUT = "text_field_input"
 const val TAG_TEXT_FIELD_ERROR = "text_field_error"
 const val TAG_NUMBER_FIELD = "number_field"
+
+/**
+ * Подложка поля (§4.4).
+ *
+ * [Surface] — поле на светлом фоне экрана; [Background] — поле на белом полотне шторки,
+ * где `Line` на `Surface` почти не видна. Новых цветов не вводится: берутся существующие
+ * токены `surface` и `background`.
+ */
+enum class TextFieldSurface { Surface, Background }

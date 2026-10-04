@@ -1,5 +1,6 @@
 package ru.stohastika.sklyanka.feature.reminder
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -112,5 +113,69 @@ class DiagnosticsViewModelTest {
         model.onAcknowledgeDeliveryCheck()
 
         assertNull(runBlocking { world.reminders.acknowledgements.announced() })
+    }
+
+    // --- Отчёт разработчику (ОВ-127, AC-30…AC-33) ---------------------------------------------
+
+    @Test
+    fun `a sent report is named and its comment reaches the sender`() {
+        model.onReportOpen()
+
+        model.onReportCommentChange("напоминание не приходит утром")
+        model.onReportSend()
+
+        assertEquals(DeveloperReportOutcome.SENT, model.state.value.reportOutcome)
+        assertEquals(listOf("напоминание не приходит утром"), DiagnosticsStand.sentComments)
+    }
+
+    @Test
+    fun `a refused send keeps the comment and shows retry`() {
+        model.onReportOpen()
+        model.onReportCommentChange("текст жалобы")
+        DiagnosticsStand.reportOutcome = DeveloperReportOutcome.FAILED
+
+        model.onReportSend()
+
+        assertEquals(DeveloperReportOutcome.FAILED, model.state.value.reportOutcome)
+        assertEquals("текст жалобы", model.state.value.reportComment)
+    }
+
+    @Test
+    fun `dismissing the report clears its state for the next open`() {
+        model.onReportOpen()
+        model.onReportCommentChange("черновик")
+        model.onReportSend()
+
+        model.onReportDismiss()
+
+        assertFalse(model.state.value.reportOpen)
+        assertEquals("", model.state.value.reportComment)
+        assertNull(model.state.value.reportOutcome)
+    }
+
+    @Test
+    fun `reopening the report starts with an empty field`() {
+        model.onReportOpen()
+        model.onReportCommentChange("старый текст")
+        model.onReportDismiss()
+
+        model.onReportOpen()
+
+        assertTrue(model.state.value.reportOpen)
+        assertEquals("", model.state.value.reportComment)
+        assertNull(model.state.value.reportOutcome)
+    }
+
+    @Test
+    fun `a cancelled send is not swallowed and leaves no outcome`() {
+        model
+        DiagnosticsStand.reportSenderOverride = DeveloperReportSender { throw CancellationException("cancelled") }
+        model.onReportOpen()
+        model.onReportCommentChange("текст")
+
+        model.onReportSend()
+
+        assertNull(model.state.value.reportOutcome)
+        assertEquals("текст", model.state.value.reportComment)
     }
 }

@@ -99,6 +99,7 @@ public fun <T> ListPickerDialog(
                         text = stringResource(R.string.action_cancel),
                         onClick = onDismiss,
                         kind = QuietButtonKind.Muted,
+                        form = QuietButtonForm.Header,
                     )
                 }
             }

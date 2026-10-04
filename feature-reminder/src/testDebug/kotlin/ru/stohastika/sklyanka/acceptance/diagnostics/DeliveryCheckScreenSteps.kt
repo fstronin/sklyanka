@@ -6,6 +6,7 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.core.app.ApplicationProvider
@@ -26,7 +27,6 @@ import ru.stohastika.sklyanka.feature.reminder.R
 import ru.stohastika.sklyanka.feature.reminder.TAG_CHECK_DELIVERY
 import ru.stohastika.sklyanka.feature.reminder.TAG_CHECK_FIX
 import ru.stohastika.sklyanka.feature.reminder.TAG_CHECK_NOTICE
-import ru.stohastika.sklyanka.feature.reminder.TAG_CHECK_NOW
 import ru.stohastika.sklyanka.feature.reminder.TAG_CHECK_RESULT
 import ru.stohastika.sklyanka.feature.reminder.TAG_CHECK_RUNNING
 import ru.stohastika.sklyanka.feature.reminder.TAG_CHECK_SHEET
@@ -54,17 +54,18 @@ class DeliveryCheckScreenSteps(private val world: AcceptanceWorld) {
 
     // --- Точка входа и шторка ------------------------------------------------------------------
 
-    @Тогда("^под кнопкой «Проверить сейчас» есть кнопка «Проверить доставку»$")
-    fun theDeliveryCheckIsUnderTheCheckNowButton() {
-        assertTrue(hasTag(TAG_CHECK_NOW), "the manual check must stay in place (ОВ-108)")
-        assertTrue(hasTag(TAG_CHECK_DELIVERY), "the delivery check must be under it")
-        assertTrue(hasText(string(R.string.diagnostics_action_check_delivery)))
-    }
-
     @Когда("^человек нажимает «Проверить доставку»$")
     fun thePersonPressesTheDeliveryCheck() {
         DiagnosticsStand.actRaw(world) { onNodeWithTag(TAG_CHECK_DELIVERY).performScrollTo().performClick() }
         assertTrue(DiagnosticsStand.state(world).checkSheetOpen, "the instruction sheet must open")
+    }
+
+    @Тогда("^на «Проверке напоминаний» есть кнопка «Проверить доставку»$")
+    fun theDeliveryCheckButtonIsThere() {
+        DiagnosticsStand.ask(world) {
+            onNodeWithTag(TAG_CHECK_DELIVERY).assertExists()
+            onNodeWithText(string(R.string.diagnostics_action_check_delivery)).assertExists()
+        }
     }
 
     @Тогда("^открывается шторка с заголовком «([^»]+)»$")
@@ -216,8 +217,9 @@ class DeliveryCheckScreenSteps(private val world: AcceptanceWorld) {
 
     @Когда("^человек входит в приложение$")
     fun thePersonEntersTheApp() {
+        // Вход объявляет исход, если тот объявляется: «проверка не состоялась» входного
+        // баннера не даёт вовсе (ОВ-131), и шаг не настаивает на обратном.
         DiagnosticsStand.enter(world)
-        assertNotNull(DiagnosticsStand.announcement, "the entry must announce the result")
     }
 
     @Тогда("^над содержимым баннер «([^»]+)»$")
@@ -324,7 +326,6 @@ class DeliveryCheckScreenSteps(private val world: AcceptanceWorld) {
         DiagnosticsStand.enter(world)
         assertTrue(hasTag(TAG_CHECK_RESULT), "the block must show the result")
         assertTrue(hasText(text), "the block must say «$text»")
-        assertEquals(string(R.string.diagnostics_check_not_completed), text)
     }
 
     @И("^входного баннера об этом результате нет$")

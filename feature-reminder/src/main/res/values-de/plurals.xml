@@ -21,13 +21,19 @@
         <item quantity="other">%1$s Dosen</item>
     </plurals>
 
-    <plurals name="diagnostics_export_records">
-        <item quantity="one">%1$d Eintrag</item>
-        <item quantity="other">%1$d Einträge</item>
-    </plurals>
 
     <plurals name="diagnostics_late">
         <item quantity="one">%1$d Minute verspätet</item>
         <item quantity="other">%1$d Minuten verspätet</item>
+    </plurals>
+
+    <!-- SKL-102: сводка за 7 дней. -->
+    <plurals name="diagnostics_week_fired">
+        <item quantity="one">hat %1$d Erinnerung ausgelöst</item>
+        <item quantity="other">hat %1$d Erinnerungen ausgelöst</item>
+    </plurals>
+    <plurals name="diagnostics_week_missed">
+        <item quantity="one">%1$d Einnahme verpasst</item>
+        <item quantity="other">%1$d Einnahmen verpasst</item>
     </plurals>
 </resources>

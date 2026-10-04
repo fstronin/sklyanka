@@ -19,6 +19,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import ru.stohastika.sklyanka.ui.component.ButtonForm
+import ru.stohastika.sklyanka.ui.component.ButtonLabel
+import ru.stohastika.sklyanka.ui.component.CheckGlyph
 import ru.stohastika.sklyanka.ui.component.PrimaryButton
 import ru.stohastika.sklyanka.ui.component.SecondaryButton
 import ru.stohastika.sklyanka.ui.component.SklyankaMark
@@ -205,6 +207,7 @@ private fun IntakeRow(row: ReminderRow, actions: ReminderActions) {
                 )
             },
             gap = SklyankaSpacing.Medium,
+            labelPadding = ButtonForm.Card.labelPadding,
         )
     }
 }
@@ -212,6 +215,7 @@ private fun IntakeRow(row: ReminderRow, actions: ReminderActions) {
 /** Ровно три действия в порядке макета: «Принято», кнопка откладывания, «Пропустить». */
 @Composable
 private fun Actions(state: ReminderUiState.Card, actions: ReminderActions) {
+    val colors = SklyankaTheme.colors
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -219,22 +223,36 @@ private fun Actions(state: ReminderUiState.Card, actions: ReminderActions) {
         verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Medium),
     ) {
         PrimaryButton(
-            text = stringResource(ru.stohastika.sklyanka.ui.R.string.action_taken),
+            label = ButtonLabel(
+                text = stringResource(ru.stohastika.sklyanka.ui.R.string.action_taken),
+                // Тёмная форма (ОВ-146, §5.1): 58 dp, радиус 18, подпись 17/600 и ведущая
+                // галочка 20 dp — как нарисовано в макете. Галочка декоративная: смысл несёт
+                // слово «Принято», поэтому чтению с экрана она не объявляется.
+                leadingGlyph = {
+                    CheckGlyph(
+                        color = colors.onAccent,
+                        size = SklyankaSizes.DarkButtonGlyph,
+                        strokeWidth = SklyankaSizes.DarkButtonGlyphStroke,
+                    )
+                },
+            ),
             onClick = actions.onTakenAll,
-            form = ButtonForm.Screen,
+            form = ButtonForm.Dark,
             modifier = Modifier
                 .fillMaxWidth()
                 .testTag(TAG_ACTION_TAKEN),
         )
         // При крупном шрифте кнопки встают друг под друга во всю ширину: сжатые
         // до половин, они переносили «Отложить 15 мин» на вторую строку (§6.3, SKL-61).
-        // Форма — экранная: нижний ряд вне карточки (52 dp / 16, ОВ-90).
+        // Стоп-кран меряет подпись, а не кнопку: у тёмной формы поле подписи нулевое,
+        // и ряд держится, пока подпись влезает в половину с воздухом не меньше 4 dp
+        // до рамки (§5.1, ОВ-146); иначе — столбик.
         StackingEqualButtons(
             first = {
                 SecondaryButton(
                     text = snoozeLabel(state.snoozeMinutes),
                     onClick = actions.onSnooze,
-                    form = ButtonForm.Screen,
+                    form = ButtonForm.Dark,
                     modifier = Modifier.testTag(TAG_ACTION_SNOOZE),
                 )
             },
@@ -242,11 +260,13 @@ private fun Actions(state: ReminderUiState.Card, actions: ReminderActions) {
                 SecondaryButton(
                     text = stringResource(ru.stohastika.sklyanka.ui.R.string.action_skip),
                     onClick = actions.onSkippedAll,
-                    form = ButtonForm.Screen,
+                    form = ButtonForm.Dark,
                     modifier = Modifier.testTag(TAG_ACTION_SKIP),
                 )
             },
             gap = SklyankaSpacing.Medium,
+            labelPadding = ButtonForm.Dark.labelPadding,
+            minLabelSideGap = ButtonForm.Dark.minLabelSideGap,
         )
     }
 }

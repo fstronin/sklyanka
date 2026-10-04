@@ -32,7 +32,7 @@ class SystemPermissionStateReader @Inject constructor(@ApplicationContext privat
         ReminderPermission.NOTIFICATION_CHANNEL -> channelsEnabled()
         ReminderPermission.EXACT_ALARMS -> granted(canScheduleExact())
         ReminderPermission.FULL_SCREEN_INTENT -> fullScreenIntent()
-        ReminderPermission.DND_POLICY_ACCESS -> granted(notifications().isNotificationPolicyAccessGranted)
+        ReminderPermission.DND_POLICY_ACCESS -> dndPolicyAccess()
         ReminderPermission.BOOT_RECEIVER -> granted(declared(Manifest.permission.RECEIVE_BOOT_COMPLETED))
 
         // Состояние фирменных ограничений EMUI в публичный API не выставлено (НАП-20, ПЛ-18).
@@ -44,6 +44,20 @@ class SystemPermissionStateReader @Inject constructor(@ApplicationContext privat
     /** До Android 12 разрешения на точные будильники не существует, и это не «не выдано». */
     private fun canScheduleExact(): Boolean = Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
         requireNotNull(context.getSystemService(AlarmManager::class.java)).canScheduleExactAlarms()
+
+    /**
+     * Доступ к политике «Не беспокоить».
+     *
+     * Контракт экрана относит «Не беспокоить» к ограничениям с нейтральным «проверьте
+     * вручную» (AC-10): невыданный доступ возвращается как [PermissionState.UNKNOWN],
+     * а не как «не выдано». Выданный доступ остаётся [PermissionState.GRANTED] — тогда
+     * строки на экране нет вовсе.
+     */
+    private fun dndPolicyAccess(): PermissionState = if (notifications().isNotificationPolicyAccessGranted) {
+        PermissionState.GRANTED
+    } else {
+        PermissionState.UNKNOWN
+    }
 
     /**
      * Оба канала напоминаний включены (SKL-79).

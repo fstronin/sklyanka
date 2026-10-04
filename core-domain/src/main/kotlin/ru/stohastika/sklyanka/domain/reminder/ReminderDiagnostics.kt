@@ -1,6 +1,7 @@
 package ru.stohastika.sklyanka.domain.reminder
 
 import ru.stohastika.sklyanka.domain.reminder.port.AlarmGateway
+import ru.stohastika.sklyanka.domain.reminder.port.DeliveryCheckAcknowledgements
 import ru.stohastika.sklyanka.domain.reminder.port.PermissionState
 import ru.stohastika.sklyanka.domain.reminder.port.PermissionStateReader
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderJournal
@@ -62,6 +63,13 @@ data class ReminderDiagnostics(
      * отдельный вид события, поэтому в «последнее напоминание» и сводки они не попадают.
      */
     val deliveryCheck: DeliveryCheckState,
+    /**
+     * Результат последней проверки уже назван человеку и скрыт (AC-18, AC-22).
+     *
+     * Живёт отдельным полем, а не пропадает из [deliveryCheck]: блоку нужен исход, чтобы
+     * решить, возвращаться ли к кнопке, а вердикту — чтобы не повторять неудачу баннером.
+     */
+    val deliveryCheckAcknowledged: Boolean,
 )
 
 /**
@@ -87,6 +95,13 @@ class BuildReminderDiagnosticsUseCase(
      */
     private val medications: MedicationRepository,
     private val measurement: ReminderMeasurement,
+    /**
+     * Подтверждения результата самопроверки (SKL-102, ОВ-108).
+     *
+     * Экран учитывает их, чтобы после «Понятно» вернуть блок к кнопке, а вердикт не
+     * повторял уже закрытую неудачу.
+     */
+    private val acknowledgements: DeliveryCheckAcknowledgements,
     private val time: TimeSource,
 ) {
 
@@ -113,6 +128,9 @@ class BuildReminderDiagnosticsUseCase(
 
         // Один срез журнала на обе недельные сводки: второй проход по журналу не нужен.
         val week = journal.since(now.minus(ReminderOnTimeRule.WINDOW))
+        // Состояние проверки — из журнала: и «идёт», и исход переживают смерть
+        // процесса, а экран перечитывает их при каждом показе (НФТ-52).
+        val deliveryCheck = DeliveryCheckRule.stateOf(journal.last(ReminderEvent.DELIVERY_CHECK))
         return ReminderDiagnostics(
             lastShown = last,
             lastMedicationName = last?.medicationId?.let { medications.get(it)?.name },
@@ -135,9 +153,8 @@ class BuildReminderDiagnosticsUseCase(
             journal = journal.recent(limit),
             alarmKind = alarms.alarmKind(),
             measurementAvailable = measurement.available(),
-            // Состояние проверки — из журнала: и «идёт», и исход переживают смерть
-            // процесса, а экран перечитывает их при каждом показе (НФТ-52).
-            deliveryCheck = DeliveryCheckRule.stateOf(journal.last(ReminderEvent.DELIVERY_CHECK)),
+            deliveryCheck = deliveryCheck,
+            deliveryCheckAcknowledged = isDeliveryCheckAcknowledged(deliveryCheck),
         )
     }
 
@@ -146,6 +163,17 @@ class BuildReminderDiagnosticsUseCase(
         ?.let { plan.intake(it) }
         ?.medicationId
         ?.let { medications.get(it)?.name }
+
+    /**
+     * Подтверждён ли именно показанный исход.
+     *
+     * Сверяется момент срабатывания, а не флаг: следующая проверка с другим моментом
+     * объявляется заново, и старое подтверждение её не гасит (ОВ-108).
+     */
+    private suspend fun isDeliveryCheckAcknowledged(state: DeliveryCheckState): Boolean {
+        val dueAt = (state as? DeliveryCheckState.Finished)?.dueAt ?: return false
+        return acknowledgements.announced() == dueAt
+    }
 
     /**
      * Последнее предъявление — первый показ или повтор (НАП-37, SKL-63).

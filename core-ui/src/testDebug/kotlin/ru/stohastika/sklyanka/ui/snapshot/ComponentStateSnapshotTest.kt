@@ -120,6 +120,8 @@ class ComponentStateSnapshotTest {
         capture("button-quiet-muted") { QuietButton(text = quiet, onClick = {}, kind = QuietButtonKind.Muted) }
         // Опасная тихая — вид той же кнопки (ОВ-124, §4.3): «Удалить» на карточке лекарства.
         capture("button-quiet-danger") { QuietButton(text = quiet, onClick = {}, kind = QuietButtonKind.Danger) }
+        // Предупреждающий вид — действие баннера-предупреждения (§4.6).
+        capture("button-quiet-warning") { QuietButton(text = quiet, onClick = {}, kind = QuietButtonKind.Warning) }
     }
 
     /**

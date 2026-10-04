@@ -11,6 +11,8 @@ import androidx.compose.ui.layout.MultiContentMeasurePolicy
 import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
+import ru.stohastika.sklyanka.ui.token.SklyankaSizes
+import ru.stohastika.sklyanka.ui.token.SklyankaSpacing
 
 /**
  * Две раскладки, живущие по одному правилу: **строку нельзя сжимать уже её самого
@@ -207,14 +209,29 @@ private class StackingRowMeasurePolicy(
 
 /**
  * Пара равных кнопок, встающая в столбец, когда подписи перестают помещаться
- * в равные половины (§6.3).
+ * в равные половины (§6.3, §5.1).
  *
  * Во встроенном виде доли равны — как `weight(1f)` в макете напоминания
  * (`design/screens/Reminder.dc.html`, `flex-grow: 1`). Как только полной подписи
  * кнопки перестаёт хватать половины строки, кнопки встают друг под друга во всю
  * ширину: подпись не переносится и не рвётся.
  *
- * Порог считается по полной ширине подписи, а не по самому длинному слову: подпись,
+ * Порог считается по ширине подписи, а не по кнопке целиком (ОВ-146): тёмная форма
+ * напоминания не несёт бокового поля подписи, и ряд держится, пока каждая подпись
+ * влезает в половину. [labelPadding] — боковое поле подписи формы; у светлых форм
+ * оно равно 28 dp и входит в критерий, у тёмной — нулю (`ButtonForm.labelPadding`),
+ * и критерий остаётся ровно шириной подписи. Значение приходит от формы, а не
+ * подбирается по месту: с полем 28 dp ряд ломался, потому что подпись «Отложить N мин»
+ * не помещалась в половину даже на 100 % (ОВ-146, вариант B′).
+ *
+ * [minLabelSideGap] — минимальный воздух между подписью и рамкой с каждой стороны:
+ * половина годится, только если умещает подпись **и** этот зазор (ОВ-146). У тёмной
+ * формы он равен `SklyankaSpacing.Micro` 4 dp, и на эталонной ширине ряда 342 dp
+ * порог подписи — 157 dp: прежний критерий допускал зазор 0,3–1 dp, и подпись
+ * «Отложить 60 мин» на 130 % стояла почти вплотную к рамке. У светлых форм зазор
+ * нулевой: воздух им даёт поле подписи 28 dp, и их критерий не меняется.
+ *
+ * Порог берётся по полной ширине подписи, а не по самому длинному слову: подпись,
  * разложенная на две строки, человеком читается как поломка кнопки — ровно это
  * и увидел пилот («Отложить 15 мин» на двух строках, SKL-61).
  */
@@ -224,24 +241,35 @@ fun StackingEqualButtons(
     second: @Composable () -> Unit,
     gap: Dp,
     modifier: Modifier = Modifier,
+    labelPadding: Dp = SklyankaSizes.ButtonPadding,
+    minLabelSideGap: Dp = SklyankaSpacing.None,
 ) {
     Layout(
         contents = listOf(first, second),
         modifier = modifier.fillMaxWidth(),
     ) { (firstMeasurables, secondMeasurables), constraints ->
         val gapPx = gap.roundToPx()
+        val labelInsetPx = labelPadding.roundToPx() * 2
+        // Воздух до рамки стоит с обеих сторон подписи — в критерий входит удвоенным.
+        val sideGapInsetPx = minLabelSideGap.roundToPx() * 2
         val firstMeasurable = firstMeasurables.first()
         val secondMeasurable = secondMeasurables.first()
-        // Полная ширина подписи без измерения: `measure()` у Measurable вызывается
-        // ровно один раз — при окончательной укладке ниже.
-        val firstFull = firstMeasurable.maxIntrinsicWidth(0)
-        val secondFull = secondMeasurable.maxIntrinsicWidth(0)
+        // Ширина подписи без измерения: `maxIntrinsicWidth` кнопки — это подпись плюс
+        // её боковое поле, и поле снимается здесь, чтобы критерий мерил подпись.
+        // `measure()` у Measurable вызывается ровно один раз — при окончательной укладке.
+        val firstLabel = (firstMeasurable.maxIntrinsicWidth(0) - labelInsetPx).coerceAtLeast(0)
+        val secondLabel = (secondMeasurable.maxIntrinsicWidth(0) - labelInsetPx).coerceAtLeast(0)
         val available = if (constraints.hasBoundedWidth) {
             constraints.maxWidth
         } else {
-            firstFull + gapPx + secondFull
+            firstLabel + labelInsetPx + sideGapInsetPx + gapPx +
+                secondLabel + labelInsetPx + sideGapInsetPx
         }
-        val stacked = maxOf(firstFull, secondFull) * 2 + gapPx > available
+        // Половина обязана уместить подпись, боковое поле формы и минимальный воздух
+        // до рамки: у светлых форм поле 28 dp и воздух нулевой, у тёмной — наоборот
+        // (§5.1, ОВ-146). Так критерий и габарит кнопки считают одно и то же значение.
+        val requiredHalf = maxOf(firstLabel, secondLabel) + labelInsetPx + sideGapInsetPx
+        val stacked = requiredHalf * 2 + gapPx > available
         val share = ((available - gapPx) / 2).coerceAtLeast(0)
 
         val firstPlaceable: Placeable

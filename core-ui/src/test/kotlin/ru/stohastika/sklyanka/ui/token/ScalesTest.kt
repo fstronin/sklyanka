@@ -93,6 +93,27 @@ class ScalesTest {
         assertTrue(SklyankaType.Body.fontSize >= MIN_INPUT_SIZE.sp)
     }
 
+    @Test
+    fun `the diagnostics tokens keep the sizes of the mockup`() {
+        // Габариты именные и живут токенами, а не по месту (НФТ-47): плитка-маркер 40,
+        // колонка действия 100, многострочное поле не ниже 112 (§6.6, AC-10/AC-11).
+        assertEquals(40.dp, SklyankaSizes.MarkerTile)
+        assertEquals(100.dp, SklyankaSizes.PermissionActionColumn)
+        assertEquals(112.dp, SklyankaSizes.MultilineFieldMinHeight)
+        // Ритм карточки «Разрешения»: `.pgroup{padding:13px 0 3px}` (AC-8).
+        assertEquals(13.dp, SklyankaSizes.PermissionGroupLabelPaddingTop)
+        assertEquals(3.dp, SklyankaSizes.PermissionGroupPaddingBottom)
+    }
+
+    @Test
+    fun `the dark reminder button tokens keep the sizes of the mockup`() {
+        // Тёмная форма полноэкранного напоминания: 58/54 dp (§5.1, ОВ-146). Числа макета
+        // закреплены у токенов — здесь литералы разрешены (НФТ-47), — а формы кнопок
+        // ссылаются на эти токены (ButtonFormTest).
+        assertEquals(58.dp, SklyankaSizes.DarkPrimaryButtonHeight)
+        assertEquals(54.dp, SklyankaSizes.DarkSecondaryButtonHeight)
+    }
+
     private companion object {
         val SPEC_FONT_SIZES = listOf(64f, 32f, 30f, 28f, 26f, 23f, 17f, 16f, 15f, 14f, 13f, 12f, 11f, 10f)
         val SPEC_RADII = listOf(9, 12, 13, 14, 16, 18, 999)

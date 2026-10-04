@@ -62,6 +62,15 @@ object SklyankaType {
     /** Он же в полужирном: название лекарства в карточке приёма. */
     val BodyDefaultStrong: TextStyle = ui(15.sp, FontWeight.SemiBold, lineHeightRatio = 1.45f)
 
+    /**
+     * Он же в среднем начертании (500): подпись второстепенной кнопки тёмного
+     * полноэкранного напоминания (§2.2, §5.1, ОВ-146).
+     *
+     * Среднее начертание — единственное новое сочетание шкалы; новых кеглей нет:
+     * 15 sp — существующая ступень, а начертание назначает роль.
+     */
+    val BodyDefaultMedium: TextStyle = ui(15.sp, FontWeight.Medium, lineHeightRatio = 1.45f)
+
     /** Подписи кнопок и метки времени над группой. */
     val Label: TextStyle = ui(14.sp, FontWeight.Medium, lineHeightRatio = 1.3f)
 
@@ -102,7 +111,7 @@ object SklyankaType {
     val all: List<TextStyle>
         get() = listOf(
             Display, Headline, TitleScreen, Title, Stat, Subtitle,
-            BodyLarge, Body, BodyStrong, BodyDefault, BodyDefaultStrong,
+            BodyLarge, Body, BodyStrong, BodyDefault, BodyDefaultStrong, BodyDefaultMedium,
             Label, LabelStrong, Caption, CaptionStrong, CaptionSmall,
             Overline, OverlineDate, Micro, MicroStrong, MicroOverline,
         )

@@ -131,6 +131,7 @@ internal class ReminderTestWorld(zone: ZoneId = MOSCOW) {
         reliability = ReadReminderReliabilityUseCase(permissions),
         medications = medications,
         measurement = measurement,
+        acknowledgements = acknowledgements,
         time = clock,
     )
 

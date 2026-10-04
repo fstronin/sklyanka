@@ -1,13 +1,25 @@
 package ru.stohastika.sklyanka.feature.reminder
 
 import android.content.Context
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsNode
+import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.assertContentDescriptionEquals
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Density
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Assert.assertEquals
@@ -21,29 +33,33 @@ import ru.stohastika.sklyanka.domain.reminder.DeliveryCheckOutcome
 import ru.stohastika.sklyanka.domain.reminder.DeliveryCheckState
 import ru.stohastika.sklyanka.domain.reminder.ReminderDiagnostics
 import ru.stohastika.sklyanka.domain.reminder.ReminderEvent
-import ru.stohastika.sklyanka.domain.reminder.ReminderJournalExportOutcome
 import ru.stohastika.sklyanka.domain.reminder.ReminderLogEntry
 import ru.stohastika.sklyanka.domain.reminder.ReminderOnTimeSummary
+import ru.stohastika.sklyanka.domain.reminder.ReminderOutage
 import ru.stohastika.sklyanka.domain.reminder.ReminderReliability
 import ru.stohastika.sklyanka.domain.reminder.ReminderWeekSummary
-import ru.stohastika.sklyanka.domain.reminder.SuppressReason
 import ru.stohastika.sklyanka.domain.reminder.port.PermissionState
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPermission
+import ru.stohastika.sklyanka.ui.component.TAG_BANNER
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
+import ru.stohastika.sklyanka.ui.token.SklyankaType
+import ru.stohastika.sklyanka.ui.token.lightColors
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
+import ru.stohastika.sklyanka.ui.R as UiR
 
 /**
- * Экран проверки напоминаний: два уровня и честность первого (SKL-79, ОВ-49).
+ * Экран проверки напоминаний: финальный первый уровень (SKL-102, ОВ-126).
  *
  * Идёт на JVM под Robolectric: состав экрана и подписи устройства не требуют. Чего прогон
- * не доказывает — что «Исправить» открывает нужный системный экран и что файл выгрузки
- * запишется: это чужое и проверяется на устройстве.
+ * не доказывает — что «Исправить» открывает нужный системный экран и что отчёт уходит
+ * по сети: это чужое и проверяется на устройстве.
  */
 @RunWith(AndroidJUnit4::class)
-// Экран длиннее окна телефона: техблок «Для поддержки» иначе не собирается, и проверка
-// видела бы только первый уровень. Язык — часть условий: подписи со склонениями читаются
-// по правилам русского, а не языка процесса (НФТ-44).
+// Экран длиннее окна телефона: иначе нижние секции не собираются, и проверка видела бы
+// только верх. Язык — часть условий: подписи со склонениями читаются по правилам русского
+// (НФТ-44).
 @Config(qualifiers = "ru-rRU-w390dp-h4000dp-mdpi")
 class DiagnosticsScreenTest {
 
@@ -54,21 +70,26 @@ class DiagnosticsScreenTest {
 
     private val zone: ZoneId = ZoneId.of("Europe/Moscow")
 
+    private val today: LocalDate = LocalDate.of(2026, 9, 25)
+
     private fun snapshot(
         reliable: Boolean = true,
         permissions: Map<ReminderPermission, PermissionState> = grantedAll(),
-        week: ReminderWeekSummary = ReminderWeekSummary(fired = 12, missed = 2),
-        onTime: ReminderOnTimeSummary = ReminderOnTimeSummary(fired = 13, onTime = 12, days = 7),
-        measurementAvailable: Boolean = false,
-        alarmKind: AlarmKind = AlarmKind.ALARM_CLOCK,
+        week: ReminderWeekSummary = ReminderWeekSummary(fired = 14, missed = 2),
+        onTime: ReminderOnTimeSummary = ReminderOnTimeSummary(fired = 16, onTime = 14, days = 7),
         nextAt: Instant? = null,
+        lastShown: ReminderLogEntry? = null,
+        lastMedicationName: String? = null,
+        nextMedicationName: String? = null,
+        outage: ReminderOutage? = null,
         deliveryCheck: DeliveryCheckState = DeliveryCheckState.None,
+        deliveryCheckAcknowledged: Boolean = false,
     ) = ReminderDiagnostics(
-        lastShown = null,
-        lastMedicationName = null,
+        lastShown = lastShown,
+        lastMedicationName = lastMedicationName,
         nextAt = nextAt,
         nextIntakeId = null,
-        nextMedicationName = null,
+        nextMedicationName = nextMedicationName,
         totalScheduled = 0,
         lastReschedule = null,
         permissions = permissions,
@@ -78,124 +99,130 @@ class DiagnosticsScreenTest {
             exactAlarmsAllowed = reliable,
             fullScreenIntentAllowed = reliable,
         ),
-        outage = null,
+        outage = outage,
         onTime = onTime,
         week = week,
         journal = emptyList(),
-        alarmKind = alarmKind,
-        measurementAvailable = measurementAvailable,
+        alarmKind = AlarmKind.ALARM_CLOCK,
+        measurementAvailable = false,
         deliveryCheck = deliveryCheck,
+        deliveryCheckAcknowledged = deliveryCheckAcknowledged,
     )
 
     private fun show(
         snapshot: ReminderDiagnostics = snapshot(),
-        supportExpanded: Boolean = false,
-        checkOutcome: ReminderCheckOutcome? = null,
-        outcome: ReminderJournalExportOutcome? = null,
         fixFallback: ReminderPermission? = null,
         checkSheetOpen: Boolean = false,
-        onToggleSupport: () -> Unit = {},
+        reportOpen: Boolean = false,
+        reportComment: String = "",
+        reportOutcome: DeveloperReportOutcome? = null,
+        onRestartSetup: (() -> Unit)? = null,
         onFixPermission: (ReminderPermission) -> Unit = {},
-        onExportJournal: () -> Unit = {},
-        onAlarmKindChange: (AlarmKind) -> Unit = {},
         onCheckDelivery: () -> Unit = {},
         onDismissCheckSheet: () -> Unit = {},
         onStartDeliveryCheck: () -> Unit = {},
         onCancelDeliveryCheck: () -> Unit = {},
-        onRepeatDeliveryCheck: () -> Unit = {},
+        onAcknowledgeDeliveryCheck: () -> Unit = {},
         onFixDeliveryCheck: () -> Unit = {},
+        onReportOpen: () -> Unit = {},
+        onReportCommentChange: (String) -> Unit = {},
+        onReportSend: () -> Unit = {},
+        onReportDismiss: () -> Unit = {},
+        fontScale: Float = 1f,
     ) {
         compose.setContent {
-            SklyankaTheme {
-                DiagnosticsScreen(
-                    state = DiagnosticsUiState(
-                        snapshot = snapshot,
-                        zone = zone,
-                        exportFileName = "sklyanka-reminder-journal-2026-09-25.csv",
-                        exportOutcome = outcome,
-                        supportExpanded = supportExpanded,
-                        checkOutcome = checkOutcome,
-                        fixFallback = fixFallback,
-                        checkSheetOpen = checkSheetOpen,
-                    ),
-                    onCheckNow = {},
-                    onExportJournal = onExportJournal,
-                    onRestartSetup = null,
-                    onToggleSupport = onToggleSupport,
-                    onFixPermission = onFixPermission,
-                    onAlarmKindChange = onAlarmKindChange,
-                    onCheckDelivery = onCheckDelivery,
-                    onDismissCheckSheet = onDismissCheckSheet,
-                    onStartDeliveryCheck = onStartDeliveryCheck,
-                    onCancelDeliveryCheck = onCancelDeliveryCheck,
-                    onRepeatDeliveryCheck = onRepeatDeliveryCheck,
-                    onFixDeliveryCheck = onFixDeliveryCheck,
-                    onBack = {},
-                    toLocal = { instant: Instant -> instant.atZone(zone).toLocalDateTime() },
-                )
+            val base = LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(base.density, fontScale)) {
+                SklyankaTheme {
+                    DiagnosticsScreen(
+                        state = DiagnosticsUiState(
+                            snapshot = snapshot,
+                            zone = zone,
+                            today = today,
+                            fixFallback = fixFallback,
+                            checkSheetOpen = checkSheetOpen,
+                            reportOpen = reportOpen,
+                            reportComment = reportComment,
+                            reportOutcome = reportOutcome,
+                        ),
+                        onRestartSetup = onRestartSetup,
+                        onFixPermission = onFixPermission,
+                        onCheckDelivery = onCheckDelivery,
+                        onDismissCheckSheet = onDismissCheckSheet,
+                        onStartDeliveryCheck = onStartDeliveryCheck,
+                        onCancelDeliveryCheck = onCancelDeliveryCheck,
+                        onAcknowledgeDeliveryCheck = onAcknowledgeDeliveryCheck,
+                        onFixDeliveryCheck = onFixDeliveryCheck,
+                        onReportOpen = onReportOpen,
+                        onReportCommentChange = onReportCommentChange,
+                        onReportSend = onReportSend,
+                        onReportDismiss = onReportDismiss,
+                        onBack = {},
+                        toLocal = { instant: Instant -> instant.atZone(zone).toLocalDateTime() },
+                    )
+                }
             }
         }
     }
 
-    @Test
-    fun theFirstLevelIsShortWhenEverythingIsFine() {
-        show()
-
-        compose.onNodeWithTag(TAG_RELIABLE).assertIsDisplayed()
-        compose.onNodeWithTag(TAG_ALL_GRANTED).assertIsDisplayed()
-    }
-
-    /** Технический отчёт не виден на первом уровне: журнала и счётчиков там нет (ОВ-49). */
-    @Test
-    fun theTechnicalReportIsHiddenOnTheFirstLevel() {
-        show(snapshot = snapshot().copy(lastReschedule = null, journal = emptyList()))
-
-        compose.onNodeWithTag(TAG_SUPPORT_TOGGLE).assertIsDisplayed()
-        compose.onNodeWithTag(TAG_LAST_SHOWN).assertDoesNotExist()
-        compose.onNodeWithTag(TAG_RESCHEDULE).assertDoesNotExist()
-        compose.onNodeWithTag(TAG_JOURNAL_ROW).assertDoesNotExist()
-    }
+    // --- Порядок и вердикт (AC-1…AC-7) ---------------------------------------------------------
 
     @Test
-    fun expandingSupportShowsTheJournalAndTheCounters() {
-        show(supportExpanded = true)
+    fun theSectionsKeepTheirOrderOnTheFirstLevel() {
+        show(snapshot = snapshot(nextAt = Instant.parse("2026-09-26T05:00:00Z")))
 
-        compose.onNodeWithTag(TAG_LAST_SHOWN).performScrollTo().assertIsDisplayed()
-        compose.onNodeWithTag(TAG_RESCHEDULE).performScrollTo().assertIsDisplayed()
-        compose.onNodeWithTag(TAG_ON_TIME).performScrollTo().assertIsDisplayed()
-        compose.onNodeWithTag(TAG_EXPORT_JOURNAL).performScrollTo().assertIsDisplayed()
+        val verdict = compose.onNodeWithTag(TAG_VERDICT).fetchSemanticsNode().boundsInRoot.top
+        val permissions = compose.onNodeWithTag(TAG_PERMISSIONS).fetchSemanticsNode().boundsInRoot.top
+        val delivery = compose.onNodeWithTag(TAG_CHECK_BLOCK).fetchSemanticsNode().boundsInRoot.top
+        val reminders = compose.onNodeWithTag(TAG_WEEK_SUMMARY).fetchSemanticsNode().boundsInRoot.top
+        val footer = compose.onNodeWithTag(TAG_REPORT_FOOTER).fetchSemanticsNode().boundsInRoot.top
+
+        assertTrue("verdict must be above permissions", verdict < permissions)
+        assertTrue("permissions must be above delivery", permissions < delivery)
+        assertTrue("delivery must be above reminders", delivery < reminders)
+        assertTrue("reminders must be above the footer", reminders < footer)
     }
 
     @Test
-    fun tappingTheSupportToggleAsksForAnExpansion() {
-        var toggled = 0
-        show(onToggleSupport = { toggled += 1 })
+    fun anOkVerdictIsAWordAndAnExplanation() {
+        show(snapshot = snapshot(nextAt = Instant.parse("2026-09-26T05:00:00Z")))
 
-        compose.onNodeWithTag(TAG_SUPPORT_TOGGLE).performScrollTo().performClick()
-
-        assertEquals(1, toggled)
+        compose.onNodeWithTag(TAG_VERDICT).assertIsDisplayed()
+        compose.onNodeWithText("Всё в порядке").assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.diagnostics_verdict_ok_sub)).assertIsDisplayed()
+        compose.onNodeWithTag(TAG_WARNING).assertDoesNotExist()
     }
 
     @Test
-    fun aMissingPermissionIsNamedAndOffersAFix() {
-        var fixed: ReminderPermission? = null
-        val permissions = grantedAll() + (ReminderPermission.NOTIFICATIONS to PermissionState.DENIED)
+    fun aMissingReminderNamesTheNearestScheduledOne() {
+        show(snapshot = snapshot(nextAt = null))
+
+        compose.onNodeWithText(context.getString(R.string.diagnostics_verdict_ok_no_next)).assertIsDisplayed()
+    }
+
+    @Test
+    fun aMissingReminderKeepsTheHealthyExplanationAndAddsWhatIsNotPlanned() {
+        show(snapshot = snapshot(nextAt = null))
+
+        // Макет состояния 8 и AC-28: «Напоминания приходят вовремя.» + «Новых пока не запланировано.».
+        compose.onNodeWithText(context.getString(R.string.diagnostics_verdict_ok_sub)).assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.diagnostics_verdict_ok_no_next)).assertIsDisplayed()
+    }
+
+    @Test
+    fun aDeniedDoNotDisturbAccessIsNamedAsAManualCheck() {
         show(
-            snapshot = snapshot(permissions = permissions),
-            onFixPermission = { fixed = it },
+            snapshot = snapshot(
+                permissions = grantedAll() + (ReminderPermission.DND_POLICY_ACCESS to PermissionState.DENIED),
+            ),
         )
 
-        assertTrue(
-            "a missing permission must have its own row",
-            compose.onAllNodesWithTag(TAG_PERMISSION_ROW, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty(),
-        )
-        compose.onAllNodesWithTag(TAG_FIX)[0].performScrollTo().performClick()
-
-        assertEquals(ReminderPermission.NOTIFICATIONS, fixed)
+        compose.onNodeWithText(context.getString(R.string.diagnostics_state_unknown)).assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.diagnostics_state_denied)).assertDoesNotExist()
     }
 
     @Test
-    fun aDisabledChannelIsNamedInTheWarnings() {
+    fun aDisabledChannelIsNamedByTheVerdictBanner() {
         show(
             snapshot = snapshot(
                 permissions = grantedAll() + (ReminderPermission.NOTIFICATION_CHANNEL to PermissionState.DENIED),
@@ -212,187 +239,193 @@ class DiagnosticsScreenTest {
         compose.onNodeWithTag(TAG_WARNING, useUnmergedTree = true).assertIsDisplayed()
         compose.onNodeWithText(context.getString(R.string.diagnostics_warning_channel), useUnmergedTree = true)
             .assertIsDisplayed()
+        compose.onNodeWithTag(TAG_VERDICT).assertDoesNotExist()
     }
 
     @Test
-    fun aMissingFullScreenRightIsNamedInTheWarnings() {
+    fun anOutageIsASeparateBannerThatSuppressesTheOkLine() {
+        var fixed = 0
+        show(
+            snapshot = snapshot(outage = ReminderOutage(Instant.parse("2026-10-01T19:40:00Z"), missed = 3)),
+            onRestartSetup = { fixed += 1 },
+        )
+
+        compose.onNodeWithTag(TAG_OUTAGE, useUnmergedTree = true).assertIsDisplayed()
+        compose
+            .onNodeWithText(
+                context.getString(R.string.diagnostics_outage, "1 октября, 22:40"),
+                useUnmergedTree = true,
+            )
+            .assertExists()
+        compose.onNodeWithTag(TAG_VERDICT).assertDoesNotExist()
+
+        compose.onNodeWithText(context.getString(R.string.diagnostics_fix), useUnmergedTree = true).performClick()
+        assertEquals(1, fixed)
+    }
+
+    // --- Разрешения (AC-8…AC-14) ---------------------------------------------------------------
+
+    @Test
+    fun aMissingPermissionIsARowWithMarkerAndConsequence() {
+        var fixed: ReminderPermission? = null
         show(
             snapshot = snapshot(
-                permissions = grantedAll() + (ReminderPermission.FULL_SCREEN_INTENT to PermissionState.DENIED),
-            ).copy(
-                reliability = ReminderReliability(
-                    notificationsEnabled = true,
-                    channelEnabled = true,
-                    exactAlarmsAllowed = true,
-                    fullScreenIntentAllowed = false,
-                ),
+                permissions = grantedAll() + (ReminderPermission.EXACT_ALARMS to PermissionState.DENIED),
+            ),
+            onFixPermission = { fixed = it },
+        )
+
+        compose.onNodeWithTag(TAG_PERMISSION_ROW, useUnmergedTree = true).assertIsDisplayed()
+        compose.onNodeWithTag(TAG_PERMISSION_MARKER, useUnmergedTree = true)
+            .assertIsDisplayed()
+            .assertContentDescriptionEquals()
+        compose.onNodeWithText(context.getString(R.string.diagnostics_state_denied)).assertIsDisplayed()
+        compose
+            .onNodeWithText(context.getString(R.string.diagnostics_consequence_exact_alarms))
+            .assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.diagnostics_permission_rest_granted)).assertExists()
+
+        compose.onNodeWithTag(TAG_FIX, useUnmergedTree = true).performClick()
+        assertEquals(ReminderPermission.EXACT_ALARMS, fixed)
+    }
+
+    @Test
+    fun theRowsAreSplitIntoTwoGroupsByConsequence() {
+        show(
+            snapshot = snapshot(
+                permissions = grantedAll() +
+                    (ReminderPermission.EXACT_ALARMS to PermissionState.DENIED) +
+                    (ReminderPermission.DND_POLICY_ACCESS to PermissionState.DENIED),
             ),
         )
 
-        compose.onNodeWithText(context.getString(R.string.diagnostics_warning_full_screen), useUnmergedTree = true)
-            .assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.diagnostics_permission_group_fix_first)).assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.diagnostics_permission_group_can_defer)).assertIsDisplayed()
     }
 
     @Test
-    fun aFailedFixShowsTheWrittenInstructionsUnderTheRow() {
-        val permissions = grantedAll() + (ReminderPermission.AUTOSTART to PermissionState.UNKNOWN)
+    fun thePermissionsCardSeparatesRowsAndTheFooterWithHairlines() {
         show(
-            snapshot = snapshot(permissions = permissions),
-            fixFallback = ReminderPermission.AUTOSTART,
+            snapshot = snapshot(
+                permissions = grantedAll() +
+                    (ReminderPermission.NOTIFICATIONS to PermissionState.DENIED) +
+                    (ReminderPermission.EXACT_ALARMS to PermissionState.DENIED),
+            ),
+            onRestartSetup = {},
         )
 
-        // Системный экран не открылся — экран не молчит: под строкой остаётся ручной путь (НФТ-8).
-        compose.onNodeWithTag(TAG_FIX_FALLBACK, useUnmergedTree = true).performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText(context.getString(R.string.diagnostics_fallback_app_startup), useUnmergedTree = true)
-            .assertExists()
+        // Две строки одной группы: линия между строками и линия над футером
+        // (`.pitem + .pitem`, `.pfoot-action{border-top}`).
+        compose.onAllNodesWithTag(TAG_PERMISSION_SEPARATOR, useUnmergedTree = true).assertCountEquals(2)
     }
 
-    /** Автозапуск EMUI программно не читается: зелёной галочки здесь быть не может (НАП-20). */
     @Test
-    fun theAutostartRowSaysItIsCheckedByHand() {
+    fun thePermissionRowsKeepTwelveDpOfAirAroundTheSeparator() {
+        show(
+            snapshot = snapshot(
+                permissions = grantedAll() +
+                    (ReminderPermission.NOTIFICATIONS to PermissionState.DENIED) +
+                    (ReminderPermission.EXACT_ALARMS to PermissionState.DENIED),
+            ),
+        )
+
+        // `.pitem{padding:12px 0}`: волосяная линия стоит между строками, а не прижимается
+        // к тексту. Иначе строка читается как подчёркнутая, и карточка «слипается».
+        val rows = compose.onAllNodesWithTag(TAG_PERMISSION_ROW, useUnmergedTree = true).fetchSemanticsNodes()
+        val line = compose.onAllNodesWithTag(TAG_PERMISSION_SEPARATOR, useUnmergedTree = true)
+            .fetchSemanticsNodes()
+            .first()
+            .boundsInRoot
+        assertEquals(12f, line.top - rows[0].boundsInRoot.bottom, 1f)
+        assertEquals(12f, rows[1].boundsInRoot.top - line.bottom, 1f)
+    }
+
+    @Test
+    fun theAutostartRowIsNeutralAndSaysItIsCheckedByHand() {
         show(
             snapshot = snapshot(
                 permissions = grantedAll() + (ReminderPermission.AUTOSTART to PermissionState.UNKNOWN),
             ),
         )
 
-        compose.onNodeWithText("Автозапуск и энергосбережение").assertExists()
+        compose.onNodeWithText(context.getString(R.string.diagnostics_permission_autostart)).assertExists()
+        compose.onNodeWithText(context.getString(R.string.diagnostics_state_unknown)).assertExists()
+        compose.onNodeWithText(context.getString(R.string.diagnostics_consequence_autostart)).assertExists()
     }
 
     @Test
-    fun theWeekSummaryIsAWholePhrase() {
+    fun issuedPermissionsCollapseToASingleLine() {
         show()
 
-        compose.onNodeWithTag(TAG_WEEK_SUMMARY).assertIsDisplayed()
-        compose.onNodeWithText("За 7 дней: сработало 12, пропущено 2").assertIsDisplayed()
+        compose.onNodeWithTag(TAG_ALL_GRANTED).assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.diagnostics_all_granted)).assertIsDisplayed()
+        compose.onNodeWithTag(TAG_PERMISSION_ROW, useUnmergedTree = true).assertDoesNotExist()
     }
 
     @Test
-    fun aFailedCheckIsSaidOutLoud() {
-        show(checkOutcome = ReminderCheckOutcome.FAILED)
-
-        compose.onNodeWithTag(TAG_CHECK_OUTCOME).assertIsDisplayed()
-        compose.onNodeWithText("Проверить не удалось: напоминания не перепланированы").assertIsDisplayed()
-    }
-
-    @Test
-    fun aSuccessfulCheckIsSaidOutLoud() {
-        show(checkOutcome = ReminderCheckOutcome.SUCCESS)
-
-        compose.onNodeWithText("Проверка выполнена — напоминания поставлены").assertIsDisplayed()
-    }
-
-    @Test
-    fun theJournalCanBeExportedFromTheSupportBlock() {
-        var requested = 0
-        show(supportExpanded = true, onExportJournal = { requested += 1 })
-
-        compose.onNodeWithTag(TAG_EXPORT_JOURNAL).performScrollTo().performClick()
-
-        assertEquals(1, requested)
-    }
-
-    @Test
-    fun theOutcomeOfAnExportIsNeverSilent() {
-        show(supportExpanded = true, outcome = ReminderJournalExportOutcome.Saved(records = 12, bytes = 2_048))
-
-        compose.onNodeWithTag(TAG_EXPORT_OUTCOME).performScrollTo().assertIsDisplayed()
-    }
-
-    /** Подавленное по порогу срабатывание названо словами, а не безликим «показ подавлен» (ОВ-109). */
-    @Test
-    fun aSuppressedLateFiringIsSignedInTheJournal() {
-        val entry = suppressed(SuppressReason.TOO_LATE, 3_600)
-        show(snapshot = snapshot().copy(journal = listOf(entry)), supportExpanded = true)
-
-        compose.onNodeWithText("сработало с опозданием на 60 минут — не показано").assertExists()
-        compose.onNodeWithText("Отклонение 3600 с").assertExists()
-    }
-
-    /** Обычная сборка переключателя не показывает вовсе: планирование им не затрагивается (ПМ-20). */
-    @Test
-    fun theMeasurementSwitchIsAbsentInANormalBuild() {
-        show(supportExpanded = true)
-
-        compose.onNodeWithTag(TAG_MEASUREMENT).assertDoesNotExist()
-    }
-
-    @Test
-    fun theMeasuringBuildShowsTheVariantAndSwitchesIt() {
-        var chosen: AlarmKind? = null
+    fun aFailedFixShowsTheWrittenInstructionsUnderTheRow() {
         show(
-            snapshot = snapshot(measurementAvailable = true, alarmKind = AlarmKind.ALARM_CLOCK),
-            supportExpanded = true,
-            onAlarmKindChange = { chosen = it },
+            snapshot = snapshot(
+                permissions = grantedAll() + (ReminderPermission.AUTOSTART to PermissionState.UNKNOWN),
+            ),
+            fixFallback = ReminderPermission.AUTOSTART,
         )
 
-        compose.onNodeWithTag(TAG_MEASUREMENT).performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("Системный будильник").assertExists()
-        compose.onNodeWithText("Точный будильник").performScrollTo().performClick()
-
-        assertEquals(AlarmKind.EXACT_IDLE, chosen)
+        compose.onNodeWithTag(TAG_FIX_FALLBACK, useUnmergedTree = true).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.diagnostics_fallback_app_startup)).assertExists()
     }
 
     @Test
-    fun theAlarmClockIndicatorIsExplainedUnderTheNextReminder() {
-        show(
-            snapshot = snapshot(nextAt = Instant.parse("2026-09-26T05:00:00Z")),
-            supportExpanded = true,
-        )
+    fun theRestartSetupRowReachesItsOwner() {
+        var restarted = 0
+        show(onRestartSetup = { restarted += 1 })
 
-        compose.onNodeWithTag(TAG_NEXT).performScrollTo().assertIsDisplayed()
-        compose
-            .onNodeWithText("Это время телефон показывает в статус-баре как будильник — так и должно быть.")
-            .assertExists()
+        compose.onNodeWithTag(TAG_RESTART_SETUP).performScrollTo().performClick()
+
+        assertEquals(1, restarted)
     }
 
-    @Test
-    fun otherSuppressionsKeepTheirOwnLabel() {
-        show(
-            snapshot = snapshot().copy(journal = listOf(suppressed(SuppressReason.WINDOW_EXPIRED, null))),
-            supportExpanded = true,
-        )
-
-        compose.onNodeWithText("показ подавлен").assertExists()
-    }
-
-    // --- Самопроверка доставки (SKL-86, ОВ-108) ------------------------------------------------
+    // --- Проверка доставки (AC-15…AC-24) -------------------------------------------------------
 
     @Test
-    fun theCheckBlockOffersTheDeliveryCheckUnderTheCheckNowButton() {
+    fun theCheckBlockExplainsAndOffersTheCheck() {
         show()
 
-        compose.onNodeWithTag(TAG_CHECK_NOW).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag(TAG_CHECK_BLOCK).performScrollTo().assertIsDisplayed()
         compose.onNodeWithTag(TAG_CHECK_DELIVERY).performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText(context.getString(R.string.diagnostics_action_check_delivery)).assertExists()
+        compose.onNodeWithText(context.getString(R.string.diagnostics_delivery_explanation)).assertExists()
     }
 
     @Test
     fun aRunningCheckShowsTheInstructionAndTheQuietCancel() {
-        val dueAt = Instant.parse("2026-09-25T07:01:30Z")
-        show(snapshot = snapshot(deliveryCheck = DeliveryCheckState.Running(dueAt)))
+        show(snapshot = snapshot(deliveryCheck = DeliveryCheckState.Running(Instant.parse("2026-09-25T07:01:30Z"))))
 
         compose.onNodeWithTag(TAG_CHECK_RUNNING).performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText(context.getString(R.string.diagnostics_check_running)).assertExists()
         compose.onNodeWithTag(TAG_CHECK_CANCEL).performScrollTo().assertIsDisplayed()
         compose.onNodeWithTag(TAG_CHECK_DELIVERY).assertDoesNotExist()
     }
 
     @Test
-    fun aSuccessfulCheckOffersToRepeatIt() {
-        show(snapshot = snapshot(deliveryCheck = finished(DeliveryCheckOutcome.ON_TIME)))
+    fun aSuccessfulCheckIsClosedWithGotItAndHasNoRepeat() {
+        var acknowledged = 0
+        show(
+            snapshot = snapshot(deliveryCheck = finished(DeliveryCheckOutcome.ON_TIME)),
+            onAcknowledgeDeliveryCheck = { acknowledged += 1 },
+        )
 
-        compose.onNodeWithTag(TAG_CHECK_RESULT).performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText(context.getString(R.string.diagnostics_check_on_time)).assertExists()
-        compose.onNodeWithTag(TAG_CHECK_REPEAT).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.diagnostics_check_delivered)).assertExists()
+        compose.onNodeWithTag(TAG_CHECK_RESULT_ACKNOWLEDGE).performScrollTo().performClick()
+        assertEquals(1, acknowledged)
+        // Повтора проверки нет: у исхода ровно одно действие, «Исправить» не показывается.
+        compose.onNodeWithTag(TAG_CHECK_FIX).assertDoesNotExist()
     }
 
     @Test
     fun aLateCheckNamesTheMinutesAndOffersAFix() {
+        var fixed = 0
         show(
-            snapshot = snapshot(
-                deliveryCheck = finished(DeliveryCheckOutcome.LATE, lateMinutes = 12),
-            ),
+            snapshot = snapshot(deliveryCheck = finished(DeliveryCheckOutcome.LATE, lateMinutes = 12)),
+            onFixDeliveryCheck = { fixed += 1 },
         )
 
         compose
@@ -403,38 +436,46 @@ class DiagnosticsScreenTest {
                 ),
             )
             .assertExists()
-        compose.onNodeWithTag(TAG_CHECK_FIX).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag(TAG_CHECK_FIX).performScrollTo().performClick()
+        assertEquals(1, fixed)
     }
 
     @Test
-    fun aCheckThatNeverArrivedOffersAFix() {
+    fun aFailedCheckIsNamedByTheSingleVerdictBanner() {
         show(snapshot = snapshot(deliveryCheck = finished(DeliveryCheckOutcome.NOT_DELIVERED)))
 
-        compose.onNodeWithText(context.getString(R.string.diagnostics_check_not_delivered)).assertExists()
+        compose.onNodeWithTag(TAG_WARNING, useUnmergedTree = true).assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.diagnostics_check_failed_verdict), useUnmergedTree = true)
+            .assertIsDisplayed()
         compose.onNodeWithTag(TAG_CHECK_FIX).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag(TAG_VERDICT).assertDoesNotExist()
     }
 
     @Test
-    fun aCheckWithTheAppOpenSaysSoAndOffersToRepeatIt() {
+    fun anAcknowledgedFailureReturnsToTheButtonWithoutABanner() {
+        show(
+            snapshot = snapshot(
+                deliveryCheck = finished(DeliveryCheckOutcome.NOT_DELIVERED),
+                deliveryCheckAcknowledged = true,
+            ),
+        )
+
+        compose.onNodeWithTag(TAG_CHECK_DELIVERY).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag(TAG_WARNING).assertDoesNotExist()
+        compose.onNodeWithText(context.getString(R.string.diagnostics_check_not_delivered)).assertDoesNotExist()
+    }
+
+    @Test
+    fun aCheckThatNeverHappenedIsShownInTheBlockWithoutAVerdictBanner() {
         show(snapshot = snapshot(deliveryCheck = finished(DeliveryCheckOutcome.NOT_COMPLETED)))
 
         compose.onNodeWithText(context.getString(R.string.diagnostics_check_not_completed)).assertExists()
-        compose.onNodeWithTag(TAG_CHECK_REPEAT).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag(TAG_CHECK_RESULT_ACKNOWLEDGE).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag(TAG_WARNING).assertDoesNotExist()
     }
 
     @Test
     fun theCheckSheetCarriesTheTitleInstructionAndBothActions() {
-        show(checkSheetOpen = true)
-
-        compose.onNodeWithTag(TAG_CHECK_SHEET).assertIsDisplayed()
-        compose.onNodeWithText(context.getString(R.string.diagnostics_check_sheet_title)).assertExists()
-        compose.onNodeWithText(context.getString(R.string.diagnostics_check_sheet_text)).assertExists()
-        compose.onNodeWithTag(TAG_CHECK_START).assertIsDisplayed()
-        compose.onNodeWithTag(TAG_CHECK_SHEET_CANCEL).assertIsDisplayed()
-    }
-
-    @Test
-    fun theSheetActionsReachTheirOwners() {
         var started = 0
         var dismissed = 0
         show(
@@ -443,60 +484,263 @@ class DiagnosticsScreenTest {
             onDismissCheckSheet = { dismissed += 1 },
         )
 
+        compose.onNodeWithTag(TAG_CHECK_SHEET).assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.diagnostics_check_sheet_title)).assertExists()
+        compose.onNodeWithText(context.getString(R.string.diagnostics_check_sheet_text)).assertExists()
         compose.onNodeWithTag(TAG_CHECK_START).performClick()
         compose.onNodeWithTag(TAG_CHECK_SHEET_CANCEL).performClick()
-
         assertEquals(1, started)
         assertEquals(1, dismissed)
     }
 
+    // --- «Напоминания» (AC-25…AC-28) -----------------------------------------------------------
+
     @Test
-    fun theBlockFixActionReachesItsOwner() {
-        var fixed = 0
-        show(
-            snapshot = snapshot(deliveryCheck = finished(DeliveryCheckOutcome.NOT_DELIVERED)),
-            onFixDeliveryCheck = { fixed += 1 },
-        )
+    fun theWeekSummaryIsAWholePhrase() {
+        show(snapshot = snapshot(week = ReminderWeekSummary(fired = 14, missed = 2)))
 
-        compose.onNodeWithTag(TAG_CHECK_FIX).performScrollTo().performClick()
-
-        assertEquals(1, fixed)
+        compose.onNodeWithTag(TAG_WEEK_SUMMARY).assertIsDisplayed()
+        compose.onNodeWithText("За 7 дней сработало 14 напоминаний, пропущено 2 приёма").assertIsDisplayed()
     }
 
     @Test
-    fun theBlockCancelActionReachesItsOwner() {
-        var cancelled = 0
-        show(
-            snapshot = snapshot(deliveryCheck = DeliveryCheckState.Running(Instant.parse("2026-09-25T07:01:30Z"))),
-            onCancelDeliveryCheck = { cancelled += 1 },
-        )
+    fun theWeekSummaryNeverShowsZeroOfZero() {
+        show(snapshot = snapshot(week = ReminderWeekSummary(fired = 0, missed = 0)))
 
-        compose.onNodeWithTag(TAG_CHECK_CANCEL).performScrollTo().performClick()
-
-        assertEquals(1, cancelled)
+        compose.onNodeWithText(context.getString(R.string.diagnostics_week_none)).assertIsDisplayed()
+        compose.onNodeWithText("0 из 0", substring = true).assertDoesNotExist()
     }
 
     @Test
-    fun theBlockRepeatActionReachesItsOwner() {
-        var repeated = 0
+    fun theLastReminderIsNamedWithItsTimeAndAWord() {
         show(
-            snapshot = snapshot(deliveryCheck = finished(DeliveryCheckOutcome.ON_TIME)),
-            onRepeatDeliveryCheck = { repeated += 1 },
+            snapshot = snapshot(
+                lastShown = shown(),
+                lastMedicationName = "Магний B6",
+            ),
         )
 
-        compose.onNodeWithTag(TAG_CHECK_REPEAT).performScrollTo().performClick()
-
-        assertEquals(1, repeated)
+        compose.onNodeWithText("Магний B6 — 8:00").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Показано в 8:00 · вовремя").assertIsDisplayed()
     }
 
     @Test
-    fun theBlockCheckActionReachesItsOwner() {
-        var checked = 0
-        show(onCheckDelivery = { checked += 1 })
+    fun theNextReminderIsNamedAsAPlan() {
+        show(
+            snapshot = snapshot(
+                nextAt = Instant.parse("2026-09-26T05:00:00Z"),
+                nextMedicationName = "Эутирокс",
+            ),
+        )
 
-        compose.onNodeWithTag(TAG_CHECK_DELIVERY).performScrollTo().performClick()
+        compose.onNodeWithText("Эутирокс — завтра, 8:00 · план").performScrollTo().assertIsDisplayed()
+        compose
+            .onNodeWithText(context.getString(R.string.diagnostics_next_alarm_indicator))
+            .assertExists()
+    }
 
-        assertEquals(1, checked)
+    @Test
+    fun noUpcomingReminderExplainsItself() {
+        show(snapshot = snapshot(nextAt = null))
+
+        compose.onNodeWithText(context.getString(R.string.diagnostics_next_none)).performScrollTo().assertIsDisplayed()
+        compose
+            .onNodeWithText(context.getString(R.string.diagnostics_next_none_explanation))
+            .assertIsDisplayed()
+    }
+
+    // --- Отчёт разработчику (AC-29…AC-35) ------------------------------------------------------
+
+    @Test
+    fun theReportFooterIsVisibleAndOpensTheSheet() {
+        var opened = 0
+        show(onReportOpen = { opened += 1 })
+
+        compose.onNodeWithTag(TAG_REPORT_FOOTER).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.diagnostics_report_open)).performClick()
+
+        assertEquals(1, opened)
+    }
+
+    @Test
+    fun theReportFooterNoteFillsTheWidthAndCentersItsLines() {
+        show()
+
+        val note = context.getString(R.string.diagnostics_report_footer_note)
+        compose.onNodeWithTag(TAG_REPORT_FOOTER).performScrollTo()
+        val footerWidth = compose.onNodeWithTag(TAG_REPORT_FOOTER).fetchSemanticsNode().boundsInRoot.width
+        val noteNode = compose.onNodeWithText(note, useUnmergedTree = true).fetchSemanticsNode()
+
+        assertEquals("the note must fill the footer width", footerWidth, noteNode.boundsInRoot.width, 0.5f)
+        assertEquals(
+            "each wrapped line of the note must be centered",
+            TextAlign.Center,
+            firstTextLayout(noteNode).layoutInput.style.textAlign,
+        )
+    }
+
+    @Test
+    fun theSheetCarriesTheExplanationOptionalFieldAndSend() {
+        show(reportOpen = true)
+
+        compose.onNodeWithTag(TAG_REPORT_SHEET).assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.diagnostics_report_title)).assertExists()
+        compose.onNodeWithText(context.getString(R.string.diagnostics_report_explanation)).assertExists()
+        compose
+            .onNodeWithText(context.getString(R.string.diagnostics_report_comment_label).uppercase())
+            .assertExists()
+        compose.onNodeWithText(context.getString(R.string.diagnostics_report_comment_optional)).assertExists()
+        compose.onNodeWithTag(TAG_REPORT_COMMENT).assertIsDisplayed()
+        compose.onNodeWithTag(TAG_REPORT_SEND).assertIsDisplayed()
+        // Объяснение — плашка шторки, а не баннер §4.6 (ОВ-142).
+        compose.onNodeWithTag(TAG_BANNER, useUnmergedTree = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun anEmptyCommentCanBeSent() {
+        var sent = 0
+        show(reportOpen = true, onReportSend = { sent += 1 })
+
+        compose.onNodeWithTag(TAG_REPORT_SEND).performClick()
+
+        assertEquals(1, sent)
+    }
+
+    @Test
+    fun aSentReportShowsSuccess() {
+        show(reportOpen = true, reportComment = "текст", reportOutcome = DeveloperReportOutcome.SENT)
+
+        compose.onNodeWithTag(TAG_REPORT_SENT).assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.diagnostics_report_sent_title)).assertIsDisplayed()
+        compose.onNodeWithTag(TAG_REPORT_SEND).assertDoesNotExist()
+    }
+
+    /**
+     * Выход из успеха — подтверждающее действие шапки, а не отмена: «Готово» набрано
+     * `BodyDefaultStrong` 15/600 `Accent`, тогда как «Отмена» — `BodyDefault` 15/400
+     * `TextMuted` (§4.9, ОВ-146). Иначе серое «Готово» читается как отмена и иерархия
+     * действий теряется (дефект визревью 04.10.2026).
+     */
+    @Test
+    fun theDoneExitOfWorkCarriesTheConfirmingRoleOfTheHeader() {
+        show(reportOpen = true, reportOutcome = DeveloperReportOutcome.SENT)
+
+        val style = textStyleOf(UiR.string.action_done)
+        assertEquals(SklyankaType.BodyDefaultStrong.fontWeight, style.fontWeight)
+        assertEquals(SklyankaType.BodyDefaultStrong.fontSize.value, style.fontSize.value, 0.01f)
+        assertEquals(lightColors().accent, style.color)
+    }
+
+    /** «Отмена» при вводе и ошибке остаётся приглушённой: 15/400 `TextMuted` (§4.9, ОВ-146). */
+    @Test
+    fun theCancelExitOfWorkKeepsTheMutedRoleOfTheHeader() {
+        show(reportOpen = true)
+
+        val style = textStyleOf(UiR.string.action_cancel)
+        assertEquals(SklyankaType.BodyDefault.fontWeight, style.fontWeight)
+        assertEquals(SklyankaType.BodyDefault.fontSize.value, style.fontSize.value, 0.01f)
+        assertEquals(lightColors().textMuted, style.color)
+    }
+
+    @Test
+    fun aFailedReportOffersRetryAndKeepsTheText() {
+        var sent = 0
+        show(
+            reportOpen = true,
+            reportComment = "введённый текст",
+            reportOutcome = DeveloperReportOutcome.FAILED,
+            onReportSend = { sent += 1 },
+        )
+
+        compose.onNodeWithTag(TAG_REPORT_FAILED).assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.diagnostics_report_failed)).assertExists()
+        compose.onNodeWithTag(TAG_REPORT_RETRY).performClick()
+        assertEquals(1, sent)
+        compose.onNodeWithText("введённый текст").assertExists()
+    }
+
+    @Test
+    fun theSheetDismissActionReachesItsOwner() {
+        var dismissed = 0
+        show(reportOpen = true, onReportDismiss = { dismissed += 1 })
+
+        compose.onNodeWithTag(TAG_REPORT_DISMISS).performClick()
+
+        assertEquals(1, dismissed)
+    }
+
+    // --- Крупный шрифт (AC-42, НФТ-31) ---------------------------------------------------------
+
+    @Test
+    fun atOneHundredThirtyPercentTheFixActionStaysOnOneLine() {
+        show(
+            snapshot = snapshot(
+                permissions = grantedAll() + (ReminderPermission.EXACT_ALARMS to PermissionState.DENIED),
+            ),
+            fontScale = 1.3f,
+        )
+
+        assertEquals("«Исправить» must not break by letters at 130%", 1, lineCountOfTag(TAG_FIX))
+    }
+
+    @Test
+    fun atTwoHundredPercentTheFixActionStaysOnOneLine() {
+        show(
+            snapshot = snapshot(
+                permissions = grantedAll() + (ReminderPermission.EXACT_ALARMS to PermissionState.DENIED),
+            ),
+            fontScale = 2f,
+        )
+
+        assertEquals("«Исправить» must not break by letters at 200%", 1, lineCountOfTag(TAG_FIX))
+    }
+
+    @Test
+    fun atTwoHundredPercentTheSheetTitleStaysOnOneLine() {
+        show(reportOpen = true, fontScale = 2f)
+
+        assertEquals(
+            "«Отчёт разработчику» must not break by letters at 200%",
+            1,
+            lineCountOfText(context.getString(R.string.diagnostics_report_title)),
+        )
+    }
+
+    /**
+     * При крупном шрифте шапка шторки двухстрочная: действие остаётся в своей строке,
+     * название уходит под него. «Готово» — по-прежнему одно достижимое действие с тегом,
+     * без невидимого дубля, который перехватывал бы нажатие (§6.3, AC-42).
+     */
+    @Test
+    fun atTwoHundredPercentTheSuccessExitStaysTheOnlyAction() {
+        show(reportOpen = true, reportOutcome = DeveloperReportOutcome.SENT, fontScale = 2f)
+
+        compose.onAllNodesWithTag(TAG_REPORT_DISMISS).assertCountEquals(1)
+        compose.onAllNodesWithText(context.getString(UiR.string.action_done)).assertCountEquals(1)
+    }
+
+    private fun textStyleOf(text: Int): TextStyle = firstTextLayout(
+        compose.onNodeWithText(context.getString(text)).fetchSemanticsNode(),
+    ).layoutInput.style
+
+    private fun lineCountOfTag(tag: String): Int = firstTextLayout(
+        compose.onNodeWithTag(tag, useUnmergedTree = true).fetchSemanticsNode(),
+    ).lineCount
+
+    private fun lineCountOfText(text: String): Int = firstTextLayout(
+        compose.onNodeWithText(text, useUnmergedTree = true).fetchSemanticsNode(),
+    ).lineCount
+
+    private fun firstTextLayout(node: SemanticsNode): TextLayoutResult {
+        val found = mutableListOf<TextLayoutResult>()
+        fun walk(current: SemanticsNode) {
+            val results = mutableListOf<TextLayoutResult>()
+            current.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(results)
+            found += results
+            current.children.forEach(::walk)
+        }
+        walk(node)
+        return requireNotNull(found.firstOrNull()) { "no text layout under the node" }
     }
 
     private fun finished(outcome: DeliveryCheckOutcome, lateMinutes: Long? = null) = DeliveryCheckState.Finished(
@@ -506,15 +750,14 @@ class DiagnosticsScreenTest {
         lateMinutes = lateMinutes,
     )
 
-    private fun suppressed(reason: SuppressReason, deviation: Long?) = ReminderLogEntry(
-        occurredAt = Instant.parse("2026-09-25T12:00:00Z"),
-        event = ReminderEvent.SUPPRESSED,
+    private fun shown() = ReminderLogEntry(
+        occurredAt = Instant.parse("2026-09-25T05:00:37Z"),
+        event = ReminderEvent.SHOWN,
         intakeId = "intake-1",
-        scheduledAt = Instant.parse("2026-09-25T11:00:00Z"),
-        firedAt = Instant.parse("2026-09-25T12:00:00Z"),
-        deviationSeconds = deviation,
-        delivered = false,
-        reason = reason.code,
+        scheduledAt = Instant.parse("2026-09-25T05:00:00Z"),
+        firedAt = Instant.parse("2026-09-25T05:00:37Z"),
+        deviationSeconds = 37,
+        delivered = true,
     )
 
     private companion object {

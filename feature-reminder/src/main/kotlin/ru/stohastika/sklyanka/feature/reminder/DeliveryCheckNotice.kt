@@ -33,7 +33,7 @@ fun DeliveryCheckNotice(
     if (state.outcome == DeliveryCheckOutcome.NOT_COMPLETED) return
     val failed = state.outcome != DeliveryCheckOutcome.ON_TIME
     Banner(
-        text = state.resultText(),
+        text = state.noticeText(),
         kind = if (failed) BannerKind.Warning else BannerKind.Neutral,
         actionLabel = stringResource(
             if (failed) R.string.diagnostics_fix else R.string.diagnostics_check_acknowledge,
