@@ -274,15 +274,19 @@ class ReportScreenSteps(private val world: AcceptanceWorld) {
         val lines = HistoryScreenProbe.ask(world) { test -> sheetTexts(test) }.joinToString("\n")
         assertTrue(
             "the sheet must name the profile: $lines",
-            lines.contains(context.getString(R.string.report_document_composition_profile, report.profileName)),
+            lines.contains(report.profileName),
         )
         assertTrue(
-            "the sheet must name the period: $lines",
-            lines.contains(periodLabel()),
+            "the sheet must label the profile: $lines",
+            lines.contains(context.getString(R.string.history_report_label_profile)),
         )
         assertTrue(
-            "the sheet must name the taken count: $lines",
-            lines.contains(context.getString(R.string.report_document_taken_label)),
+            "the sheet must label the period: $lines",
+            lines.contains(context.getString(R.string.history_report_label_period)),
+        )
+        assertTrue(
+            "the sheet must label the taken count: $lines",
+            lines.contains(context.getString(R.string.history_report_label_taken)),
         )
     }
 
@@ -304,7 +308,7 @@ class ReportScreenSteps(private val world: AcceptanceWorld) {
         assertTrue("the sheet must carry the phrase: $lines", lines.contains(phrase))
         assertFalse(
             "no count may be promised in an empty month: $lines",
-            lines.contains(context.getString(R.string.report_document_taken_label)),
+            lines.contains(context.getString(R.string.history_report_label_taken)),
         )
     }
 
@@ -334,9 +338,6 @@ class ReportScreenSteps(private val world: AcceptanceWorld) {
             node.children.flatMap { textsOf(it) }
 
     private fun locale() = context.resources.configuration.locales[0]
-
-    private fun periodLabel(): String =
-        context.getString(R.string.report_document_period).substringBefore("%1\$s").trim()
 
     private companion object {
         const val MANY_MEDICATIONS = 40

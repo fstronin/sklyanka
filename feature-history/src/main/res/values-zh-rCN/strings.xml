@@ -41,20 +41,41 @@
     <string name="history_insight_night">最常漏服的是 %1$s 的夜间服药。</string>
 
     <string name="history_report_title">医生报告</string>
-    <string name="history_report_warning">报告以明文包含医疗数据。</string>
     <string name="history_report_share">分享</string>
     <string name="history_report_save">保存</string>
-    <string name="history_report_shared">报告已分享</string>
-    <string name="history_report_saved">报告已保存</string>
     <string name="history_report_cancelled">已取消分享报告</string>
-    <string name="history_report_failed">报告未保存</string>
-    <string name="history_notice_dismiss">知道了</string>
+    <string name="history_report_share_failed">无法分享报告</string>
+    <string name="history_report_save_failed">报告未保存</string>
 
-    <string name="report_document_composition_profile">档案：%1$s</string>
+    <string name="history_report_period_this_month">本月</string>
+    <string name="history_report_period_previous_month">上个月</string>
+    <string name="history_report_period_last_three_months">最近 3 个月</string>
+    <string name="history_report_period_custom">其他时段</string>
+
+    <string name="history_report_label_profile">档案</string>
+    <string name="history_report_label_period">期间</string>
+    <string name="history_report_label_start">从</string>
+    <string name="history_report_label_end">至</string>
+    <string name="history_report_label_taken">已服用</string>
+    <string name="history_report_label_format">格式</string>
+    <string name="history_report_format_value" translatable="false">PDF</string>
+
+    <string name="history_report_date_start_title">期间开始</string>
+    <string name="history_report_date_end_title">期间结束</string>
+
+    <string name="history_report_success_title">报告已生成</string>
+    <string name="history_report_success_shared">已分享</string>
+    <string name="history_report_success_saved">已保存</string>
+
+    <string name="history_report_data_note">报告以明文包含医疗数据并会被分享。</string>
 
     <string name="report_document_title">服药报告</string>
     <string name="report_document_profile">Sklyanka · 档案“%1$s”</string>
     <string name="report_document_period">期间：%1$s — %2$s</string>
+    <string name="report_document_period_range">%1$s — %2$s</string>
+    <string name="report_document_period_single">期间：%1$s</string>
+    <!-- Начало периода внутри месяца: «9月1日», а не голое «1» (решение 02.10.2026). -->
+    <string name="report_document_period_start">M月d日</string>
     <string name="report_document_generated">生成时间：%1$s</string>
     <string name="report_document_summary_title">概要</string>
     <string name="report_document_taken_label">已服用：</string>
@@ -73,7 +94,6 @@
     <string name="report_document_missed_single">%1$s；%2$s</string>
     <string name="report_document_missed_without_mark">%1$d — 未标记</string>
     <string name="report_document_empty">该期间没有任何服药记录</string>
-    <string name="report_document_format">格式：PDF</string>
     <string name="report_document_disclaimer">非医疗文件</string>
     <string name="report_document_page">Sklyanka · 第 %1$d 页</string>
 

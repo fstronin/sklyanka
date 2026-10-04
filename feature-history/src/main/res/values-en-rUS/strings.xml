@@ -41,20 +41,40 @@
     <string name="history_insight_night">The night intake at %1$s is missed most often.</string>
 
     <string name="history_report_title">Doctor report</string>
-    <string name="history_report_warning">The report contains medical data in the clear.</string>
     <string name="history_report_share">Share</string>
     <string name="history_report_save">Save</string>
-    <string name="history_report_shared">Report shared</string>
-    <string name="history_report_saved">Report saved</string>
     <string name="history_report_cancelled">Report sharing cancelled</string>
-    <string name="history_report_failed">Report not saved</string>
-    <string name="history_notice_dismiss">Got it</string>
+    <string name="history_report_share_failed">Could not share the report</string>
+    <string name="history_report_save_failed">Report not saved</string>
 
-    <string name="report_document_composition_profile">Profile: %1$s</string>
+    <string name="history_report_period_this_month">This month</string>
+    <string name="history_report_period_previous_month">Last month</string>
+    <string name="history_report_period_last_three_months">Last 3 months</string>
+    <string name="history_report_period_custom">Custom period</string>
+
+    <string name="history_report_label_profile">Profile</string>
+    <string name="history_report_label_period">Period</string>
+    <string name="history_report_label_start">From</string>
+    <string name="history_report_label_end">To</string>
+    <string name="history_report_label_taken">Taken</string>
+    <string name="history_report_label_format">Format</string>
+    <string name="history_report_format_value" translatable="false">PDF</string>
+
+    <string name="history_report_date_start_title">Period start</string>
+    <string name="history_report_date_end_title">Period end</string>
+
+    <string name="history_report_success_title">Report generated</string>
+    <string name="history_report_success_shared">Shared</string>
+    <string name="history_report_success_saved">Saved</string>
+
+    <string name="history_report_data_note">The report contains medical data and is shared in the clear.</string>
 
     <string name="report_document_title">Medication intake report</string>
     <string name="report_document_profile">Sklyanka · profile “%1$s”</string>
     <string name="report_document_period">Period: %1$s — %2$s</string>
+    <string name="report_document_period_range">%1$s — %2$s</string>
+    <string name="report_document_period_single">Period: %1$s</string>
+    <string name="report_document_period_start">d</string>
     <string name="report_document_generated">Generated: %1$s</string>
     <string name="report_document_summary_title">SUMMARY</string>
     <string name="report_document_taken_label">Taken:</string>
@@ -73,7 +93,6 @@
     <string name="report_document_missed_single">%1$s; %2$s</string>
     <string name="report_document_missed_without_mark">%1$d — without a mark</string>
     <string name="report_document_empty">No intake records in this period</string>
-    <string name="report_document_format">Format: PDF</string>
     <string name="report_document_disclaimer">Not a medical document</string>
     <string name="report_document_page">Sklyanka · page %1$d</string>
 

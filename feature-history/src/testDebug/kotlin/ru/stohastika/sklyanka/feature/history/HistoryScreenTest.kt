@@ -351,7 +351,7 @@ class HistoryScreenTest {
         composeRule.onNodeWithTag(TAG_REPORT_ACTION).performClick()
 
         composeRule.onNodeWithTag(TAG_REPORT_SHEET).assertIsDisplayed()
-        composeRule.onNodeWithTag(TAG_REPORT_WARNING).assertIsDisplayed()
+        composeRule.onNodeWithTag(TAG_REPORT_DATA_NOTE).assertIsDisplayed()
         composeRule.onNodeWithTag(TAG_REPORT_SHARE).assertIsDisplayed()
         composeRule.onNodeWithTag(TAG_REPORT_SAVE).assertIsDisplayed()
     }

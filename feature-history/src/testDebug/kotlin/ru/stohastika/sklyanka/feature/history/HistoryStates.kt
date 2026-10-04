@@ -1,15 +1,23 @@
 package ru.stohastika.sklyanka.feature.history
 
 import android.content.Context
+import androidx.test.core.app.ApplicationProvider
 import ru.stohastika.sklyanka.domain.history.AdherencePeriod
 import ru.stohastika.sklyanka.domain.history.DayOutcome
 import ru.stohastika.sklyanka.domain.history.DayState
+import ru.stohastika.sklyanka.domain.history.DoctorReport
 import ru.stohastika.sklyanka.domain.history.MedicationAdherence
 import ru.stohastika.sklyanka.domain.history.OnTimeShare
 import ru.stohastika.sklyanka.domain.history.ReportDocument
+import ru.stohastika.sklyanka.domain.history.ReportMedicationRow
+import ru.stohastika.sklyanka.domain.history.ReportPreset
+import ru.stohastika.sklyanka.domain.model.FoodRelation
+import ru.stohastika.sklyanka.domain.model.MedicationForm
+import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.YearMonth
+import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
 /**
@@ -118,16 +126,77 @@ internal object HistoryStates {
         )
     }
 
-    /** Открытый отчёт врачу: предупреждение, строка состава и два действия. */
-    fun withReport(summary: String = REPORT_SUMMARY): HistoryUiState = september().copy(
+    /** Отчёт врачу: реальный состав шторки, собранный тем же композером, что и PDF. */
+    fun withReport(
+        composition: ReportComposition = realComposition(),
+        preset: ReportPreset = ReportPreset.THIS_MONTH,
+        outcome: ReportOutcome? = null,
+    ): HistoryUiState = september().copy(
         report = ReportUi(
             document = ReportDocument(
                 fileName = "sklyanka-report-2026-09.pdf",
                 mediaType = "application/pdf",
                 bytes = ByteArray(0),
             ),
-            summary = summary,
+            composition = composition,
+            preset = preset,
+            customFrom = SEPTEMBER.atDay(1),
+            customTo = SEPTEMBER.atEndOfMonth(),
+            today = SEPTEMBER.atEndOfMonth(),
         ),
+        reportOutcome = outcome,
+    )
+
+    /**
+     * Состав собирает настоящий композер, а не строка-заглушка: снимок и проверки видят
+     * те же строки, что шторка получит в продукте (ОВ-125).
+     */
+    private fun realComposition(): ReportComposition {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        return PdfDoctorReportRenderer(context).composition(doctorReport())
+    }
+
+    /** Состав пустого периода: строки «Принято» нет, фраза печатает документ. */
+    fun compositionOfEmptyPeriod(): ReportComposition = ReportComposition(
+        profile = "profile-a",
+        period = "1 — 30 сентября 2026",
+        from = "1 сентября 2026",
+        to = "30 сентября 2026",
+        taken = null,
+        format = "PDF",
+    )
+
+    private fun doctorReport(): DoctorReport {
+        val period = september().period
+        return DoctorReport(
+            period = period,
+            profileName = "profile-a",
+            generatedAt = TODAY.atTime(10, 0).atZone(ZoneOffset.UTC).toInstant(),
+            medications = listOf(
+                reportMedication("medication-a", taken = 29, planned = 30),
+                reportMedication("medication-b", taken = 43, planned = 60),
+            ),
+        )
+    }
+
+    private fun reportMedication(id: String, taken: Int, planned: Int): ReportMedicationRow = ReportMedicationRow(
+        medicationId = id,
+        name = id,
+        form = MedicationForm.TABLET,
+        doseAmount = BigDecimal.ONE,
+        doseUnit = "tablet",
+        strength = null,
+        strengthUnit = null,
+        foodRelation = FoodRelation.ANY,
+        times = listOf(LocalTime.of(8, 0)),
+        courseStart = SEPTEMBER.atDay(1),
+        courseEnd = null,
+        taken = taken,
+        planned = planned,
+        skippedByPerson = 0,
+        missedWithoutMark = planned - taken,
+        archived = false,
+        missedDates = emptyList(),
     )
 
     /** Подпись дня для чтения с экрана — той же сборкой, какой её собирает экран. */
@@ -171,7 +240,4 @@ internal object HistoryStates {
     const val NO_INTAKES_DAY = 17
 
     private const val PROFILE_ID = "11111111-1111-4111-8111-111111111111"
-
-    /** Заглушка состава: сам документ проверяется композером, а не этим текстом. */
-    private const val REPORT_SUMMARY = "Профиль: Я\nПериод: 1 — 30 сентября 2026\nПринято: 2 из 3 приёмов\nФормат: PDF"
 }

@@ -83,25 +83,43 @@ private const val SPOKE_OUTER = 0.44f
 private const val SPOKE_COUNT = 6
 private const val FULL_TURN = 360f
 
-/** Галочка: обязательный спутник цвета в статусе «принято» (НФТ-33). */
+/**
+ * Галочка: обязательный спутник цвета в статусе «принято» (НФТ-33).
+ *
+ * Толщина штриха — доля стороны ([STROKE_RATIO]) по умолчанию: на мелких глифах
+ * отметки «Есть» и в списках она читается, а на 72 dp успеха шторки задана отдельно
+ * ([SklyankaSizes.BottomSheetSuccessMarkStroke]): ОВ-125 требует там штрих 6 dp,
+ * и общая доля 0,13 дала бы вдвое толще.
+ */
 @Composable
-fun CheckGlyph(color: Color, modifier: Modifier = Modifier, size: Dp = SklyankaSizes.MarkButtonGlyph) {
-    Canvas(modifier.size(size)) {
-        val side = this.size.minDimension
-        drawPath(
-            path = Path().apply {
-                moveTo(side * CHECK_START_X, side * CHECK_START_Y)
-                lineTo(side * CHECK_MID_X, side * CHECK_MID_Y)
-                lineTo(side * CHECK_END_X, side * CHECK_END_Y)
-            },
-            color = color,
-            style = Stroke(
-                width = side * STROKE_RATIO,
-                cap = StrokeCap.Round,
-                join = StrokeJoin.Round,
-            ),
-        )
-    }
+fun CheckGlyph(
+    color: Color,
+    modifier: Modifier = Modifier,
+    size: Dp = SklyankaSizes.MarkButtonGlyph,
+    strokeWidth: Dp = defaultCheckStroke(size),
+) {
+    Canvas(modifier.size(size)) { drawCheckGlyph(color, strokeWidth) }
+}
+
+/** Толщина штриха галочки по умолчанию: доля стороны, как у остальных глифов файла. */
+internal fun defaultCheckStroke(size: Dp): Dp = size * STROKE_RATIO
+
+/** Отрисовка галочки вне композиции: пропорции заданы стороной поля, штрих — параметром. */
+internal fun DrawScope.drawCheckGlyph(color: Color, strokeWidth: Dp) {
+    val side = this.size.minDimension
+    drawPath(
+        path = Path().apply {
+            moveTo(side * CHECK_START_X, side * CHECK_START_Y)
+            lineTo(side * CHECK_MID_X, side * CHECK_MID_Y)
+            lineTo(side * CHECK_END_X, side * CHECK_END_Y)
+        },
+        color = color,
+        style = Stroke(
+            width = strokeWidth.toPx(),
+            cap = StrokeCap.Round,
+            join = StrokeJoin.Round,
+        ),
+    )
 }
 
 /** Предупреждение: треугольник с восклицательным знаком. */

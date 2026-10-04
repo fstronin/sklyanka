@@ -11,6 +11,7 @@ import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TimeInput
@@ -214,6 +215,7 @@ private fun timePickerTypography(): Typography {
  * только при выбранной дате.
  */
 @OptIn(ExperimentalMaterial3Api::class)
+@Suppress("LongParameterList")
 @Composable
 fun DateTimePickerDialog(
     title: String,
@@ -221,9 +223,23 @@ fun DateTimePickerDialog(
     onDismiss: () -> Unit,
     onConfirm: (LocalDate) -> Unit,
     modifier: Modifier = Modifier,
+    /**
+     * Границы выбора (ОВ-125): недоступные дни приглушены и не нажимаются
+     * (механизм M3). Режима «диапазон» у диалога нет — даты выбираются по одной.
+     *
+     * Границы приходят парой дат, а не M3-типом `SelectableDates`: тот объявлен
+     * экспериментальным, и его тип в сигнатуре заставлял бы каждый экран писать
+     * `@OptIn` — платформенное требование протекло бы в `feature-*`. Домен и экраны
+     * говорят на языке «раньше этой даты нельзя, позже этой нельзя».
+     */
+    notBefore: LocalDate? = null,
+    notAfter: LocalDate? = null,
 ) {
     val colors = SklyankaTheme.colors
-    val state = rememberDatePickerState(initialSelectedDateMillis = initial.toUtcMillis())
+    val state = rememberDatePickerState(
+        initialSelectedDateMillis = initial.toUtcMillis(),
+        selectableDates = remember(notBefore, notAfter) { BoundedDates(notBefore, notAfter) },
+    )
     val selected = state.selectedDateMillis
     DateTimePickerShell(
         title = title,
@@ -262,5 +278,22 @@ const val TAG_DATE_TIME_PICKER = "date_time_picker"
 const val TAG_TIME_PICKER = "date_time_picker_time"
 const val TAG_TIME_INPUT = "date_time_picker_time_input"
 const val TAG_DATE_PICKER = "date_time_picker_date"
+
+/**
+ * Границы выбора дня: недоступные дни приглушены и не нажимаются (§4.14, ОВ-125).
+ *
+ * Адаптер из пары дат в экспериментальный M3-интерфейс — единственное место, где
+ * платформенный тип касается выбора даты. Сравнение идёт в UTC: `DatePickerState`
+ * хранит миллисекунды полуночи UTC, и локальный пояс к ним не применяется.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+private class BoundedDates(private val notBefore: LocalDate?, private val notAfter: LocalDate?) : SelectableDates {
+
+    override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+        val date = utcTimeMillis.toLocalDateUtc()
+        return (notBefore == null || !date.isBefore(notBefore)) &&
+            (notAfter == null || !date.isAfter(notAfter))
+    }
+}
 
 private const val PICKER_FONT_SCALE = 1f

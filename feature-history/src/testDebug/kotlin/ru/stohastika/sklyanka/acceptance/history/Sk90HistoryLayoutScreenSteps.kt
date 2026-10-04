@@ -26,9 +26,9 @@ import ru.stohastika.sklyanka.feature.history.HistoryUiState
 import ru.stohastika.sklyanka.feature.history.R
 import ru.stohastika.sklyanka.feature.history.TAG_REPORT_ACTION
 import ru.stohastika.sklyanka.feature.history.TAG_REPORT_CONTENT
+import ru.stohastika.sklyanka.feature.history.TAG_REPORT_DATA_NOTE
 import ru.stohastika.sklyanka.feature.history.TAG_REPORT_SAVE
 import ru.stohastika.sklyanka.feature.history.TAG_REPORT_SHARE
-import ru.stohastika.sklyanka.feature.history.TAG_REPORT_WARNING
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaSizes
 
@@ -99,21 +99,22 @@ class Sk90HistoryLayoutScreenSteps {
         assertTrue("the buttons must split the row equally: $shareWidth vs $saveWidth", shareWidth == saveWidth)
     }
 
-    @Тогда("^предупреждение о медицинских данных стоит выше карточки состава$")
-    fun theWarningStandsAboveTheCard() = probe(HistoryStates.withReport()) {
-        val warning = onNodeWithTag(TAG_REPORT_WARNING).fetchSemanticsNode()
+    @Тогда("^пояснение о медицинских данных стоит ниже карточки состава$")
+    fun theNoteStandsBelowTheCard() = probe(HistoryStates.withReport()) {
+        val note = onNodeWithTag(TAG_REPORT_DATA_NOTE).fetchSemanticsNode()
         val card = onNodeWithTag(TAG_REPORT_CONTENT).fetchSemanticsNode()
-        assertTrue("the warning must stand above the card", warning.boundsInRoot.top < card.boundsInRoot.top)
+        assertTrue("the note must stand below the card", note.boundsInRoot.top >= card.boundsInRoot.bottom)
     }
 
     @И("^состав отчёта назван карточкой: профиль, период, число приёмов и формат «PDF»$")
     fun theCompositionIsACard() = probe(HistoryStates.withReport()) {
-        val card = onNodeWithTag(TAG_REPORT_CONTENT).fetchSemanticsNode()
-        val lines = textsOf(card)
-        assertTrue("the card must name the profile: $lines", lines.any { it.startsWith("Профиль:") })
-        assertTrue("the card must name the period: $lines", lines.any { it.startsWith("Период:") })
-        assertTrue("the card must name the count: $lines", lines.any { it.startsWith("Принято:") })
-        assertTrue("the card must name the format: $lines", lines.contains("Формат: PDF"))
+        val lines = textsOf(onNodeWithTag(TAG_REPORT_CONTENT).fetchSemanticsNode())
+        assertTrue("the card must label the profile: $lines", lines.contains("Профиль"))
+        assertTrue("the card must name the profile: $lines", lines.contains("profile-a"))
+        assertTrue("the card must label the period: $lines", lines.contains("Период"))
+        assertTrue("the card must label the count: $lines", lines.contains("Принято"))
+        assertTrue("the card must name the format: $lines", lines.contains("Формат"))
+        assertTrue("the card must say the format is PDF: $lines", lines.contains("PDF"))
     }
 
     @И("^системный шрифт отчёта увеличен до (\\d+) %$")

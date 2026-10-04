@@ -74,10 +74,17 @@ class ReportForeignLocaleTest {
         val composition = composer.composition(report())
 
         assertTrue(
-            "the sheet must name the period in Russian: $composition",
-            composition.startsWith("Профиль: profile-a\nПериод: 1 — 30 сентября 2026\nПринято:"),
+            "the sheet must name the period in Russian: ${composition.period}",
+            composition.period.startsWith("1 — 30 сентября 2026"),
         )
-        assertFalse("no English month may reach the sheet: $composition", composition.contains("September"))
+        assertTrue(
+            "the sheet must name the period ends in Russian: ${composition.from}",
+            composition.from.startsWith("1 сентября 2026"),
+        )
+        assertFalse(
+            "no English month may reach the sheet: ${composition.period}",
+            composition.period.contains("September"),
+        )
     }
 
     private fun report(): DoctorReport {

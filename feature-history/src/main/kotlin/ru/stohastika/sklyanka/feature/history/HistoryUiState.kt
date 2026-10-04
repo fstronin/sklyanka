@@ -3,6 +3,8 @@ package ru.stohastika.sklyanka.feature.history
 import androidx.compose.runtime.Immutable
 import ru.stohastika.sklyanka.domain.history.AdherencePeriod
 import ru.stohastika.sklyanka.domain.history.ReportDocument
+import ru.stohastika.sklyanka.domain.history.ReportPreset
+import java.time.LocalDate
 import java.time.LocalTime
 import java.time.YearMonth
 
@@ -31,8 +33,13 @@ data class HistoryUiState(
     val insightTime: LocalTime? = null,
     /** Открытый отчёт врачу; `null` — кнопка «Отчёт врачу» ещё не нажата. */
     val report: ReportUi? = null,
-    /** Исход передачи отчёта: то, что человеку нельзя проглотить молча. */
-    val notice: HistoryNotice? = null,
+    /**
+     * Исход последней передачи отчёта в открытой шторке; `null` — действия ещё не было.
+     *
+     * Сообщается **в шторке**, а не баннером на «Истории» (ОВ-125, ревизия 04.10.2026):
+     * успех заменяет содержимое шторки, отмена и ошибка остаются её первым элементом.
+     */
+    val reportOutcome: ReportOutcome? = null,
 ) {
 
     /** Данных за месяц нет: плитки показывают прочерки, блок «По лекарствам» скрыт. */
@@ -43,21 +50,63 @@ data class HistoryUiState(
  * Готовый отчёт врачу, открытый шторкой.
  *
  * Документ приходит собранным ([document]): экран его передаёт и сохраняет, но не
- * собирает. [summary] — короткий состав (профиль, период, число принятых приёмов и формат):
- * PDF с экрана не показывается, но человек обязан видеть, что именно отдаёт.
+ * собирает. [composition] — структура «подпись — значение»: строка — представление,
+ * а не данные, поэтому значения приходят отдельными полями, а подписи берёт разметка
+ * из ресурсов (ОВ-125).
  */
 @Immutable
-data class ReportUi(val document: ReportDocument, val summary: String)
+data class ReportUi(
+    val document: ReportDocument,
+    val composition: ReportComposition,
+    /** Выбранный пресет периода: подсвечивает чип и решает, показывать ли «С»/«По». */
+    val preset: ReportPreset,
+    /** Границы «Другого периода»: сохраняются в пределах открытой шторки. */
+    val customFrom: LocalDate,
+    val customTo: LocalDate,
+    /** Сегодняшний день: верхняя граница выбора дат «С»/«По» (ОВ-125). */
+    val today: LocalDate,
+)
 
 /**
- * Что сказано человеку после попытки передать отчёт.
+ * Состав отчёта словами: профиль, период, число принятых приёмов и формат.
+ *
+ * Значения, а не готовая многострочная строка: карточка собирает строки «подпись —
+ * значение» сама, и один и тот же состав годится и для шторки, и для PDF (`ReportPdfComposer`).
+ */
+@Immutable
+data class ReportComposition(
+    val profile: String,
+    /** Диапазон словами: «1 — 30 сентября 2026». */
+    val period: String,
+    /** Начало периода одной датой: значение строки «С» в «Другом периоде». */
+    val from: String,
+    /** Окончание периода одной датой: значение строки «По». */
+    val to: String,
+    /** «86 из 100 приёмов (86 %)»; `null` — за период нет ни одной записи. */
+    val taken: String?,
+    /** «PDF». */
+    val format: String,
+)
+
+/**
+ * Исход передачи отчёта врачу.
  *
  * Отмена системного диалога — не ошибка и не молчание: для человека она выглядит точно
- * так же, как отказ записи, и различить их обязано приложение, а не человек.
+ * так же, как отказ записи, и различить их обязано приложение, а не человек. Успех —
+ * отдельное состояние содержимого шторки; отмена и ошибка — сообщение над составом.
  */
-enum class HistoryNotice {
-    REPORT_SHARED,
-    REPORT_SAVED,
-    REPORT_CANCELLED,
-    REPORT_FAILED,
+enum class ReportOutcome {
+    CANCELLED,
+
+    /** Отказ передачи: текст называет действие — «Отчёт не удалось передать». */
+    FAILED_SHARE,
+
+    /** Отказ сохранения: «Отчёт не сохранён» — отмена выбора места сюда же (SKL-46). */
+    FAILED_SAVE,
+
+    SHARED,
+    SAVED,
+    ;
+
+    val isSuccess: Boolean get() = this == SHARED || this == SAVED
 }

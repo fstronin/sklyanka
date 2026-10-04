@@ -97,23 +97,39 @@
 
     <!-- Отчёт врачу: шторка, передача и сохранение -->
     <string name="history_report_title">Отчёт врачу</string>
-    <string name="history_report_warning">Отчёт содержит медицинские данные в открытом виде.</string>
     <string name="history_report_share">Передать</string>
     <string name="history_report_save">Сохранить</string>
-    <string name="history_report_shared">Отчёт передан</string>
-    <string name="history_report_saved">Отчёт сохранён</string>
     <string name="history_report_cancelled">Передача отчёта отменена</string>
-    <string name="history_report_failed">Отчёт не сохранён</string>
-    <string name="history_notice_dismiss">Понятно</string>
+    <!-- Текст ошибки называет действие: передача и сохранение различаются словами (ОВ-125). -->
+    <string name="history_report_share_failed">Отчёт не удалось передать</string>
+    <string name="history_report_save_failed">Отчёт не сохранён</string>
 
-    <!--
-      Короткий состав отчёта в шторке.
+    <!-- Пресеты периода отчёта (ОВ-125): «Этот месяц» — по умолчанию. -->
+    <string name="history_report_period_this_month">Этот месяц</string>
+    <string name="history_report_period_previous_month">Прошлый месяц</string>
+    <string name="history_report_period_last_three_months">Последние 3 месяца</string>
+    <string name="history_report_period_custom">Другой период</string>
 
-      Текстовой сводки в шторке больше нет: документ один (PDF), и двух версий одного
-      содержания не остаётся. Строка называет, что именно человек отдаёт: профиль,
-      период и число принятых приёмов.
-    -->
-    <string name="report_document_composition_profile">Профиль: %1$s</string>
+    <!-- Карточка состава: строки «подпись — значение» (ОВ-125). -->
+    <string name="history_report_label_profile">Профиль</string>
+    <string name="history_report_label_period">Период</string>
+    <string name="history_report_label_start">С</string>
+    <string name="history_report_label_end">По</string>
+    <string name="history_report_label_taken">Принято</string>
+    <string name="history_report_label_format">Формат</string>
+    <string name="history_report_format_value" translatable="false">PDF</string>
+
+    <!-- Заголовки диалога даты «Другого периода» (§4.14). -->
+    <string name="history_report_date_start_title">Начало периода</string>
+    <string name="history_report_date_end_title">Окончание периода</string>
+
+    <!-- Состояние успеха: содержимое шторки заменяется целиком (ОВ-125). -->
+    <string name="history_report_success_title">Отчёт сформирован</string>
+    <string name="history_report_success_shared">Передан</string>
+    <string name="history_report_success_saved">Сохранён</string>
+
+    <!-- Пояснение о данных: тихая подпись под карточкой, не предупреждение (НФТ-18, ОВ-125). -->
+    <string name="history_report_data_note">Отчёт содержит медицинские данные и передаётся в открытом виде.</string>
 
     <!--
       Документ отчёта — PDF A4 (ОВ-15, решение дизайна 29.09.2026).
@@ -126,6 +142,14 @@
     <string name="report_document_title">Отчёт о приёме лекарств</string>
     <string name="report_document_profile">Склянка · профиль «%1$s»</string>
     <string name="report_document_period">Период: %1$s — %2$s</string>
+    <string name="report_document_period_range">%1$s — %2$s</string>
+    <!-- Один день: «Период: 4 октября 2026». -->
+    <string name="report_document_period_single">Период: %1$s</string>
+    <!--
+      Начало периода внутри месяца. В русском — день числом, в китайском —
+      «9月1日»: голое «1» рядом с «2026年9月30日» не читается (решение 02.10.2026).
+    -->
+    <string name="report_document_period_start">d</string>
     <string name="report_document_generated">Сформирован: %1$s</string>
     <string name="report_document_summary_title">СВОДКА</string>
     <string name="report_document_taken_label">Принято:</string>
@@ -144,7 +168,6 @@
     <string name="report_document_missed_single">%1$s; %2$s</string>
     <string name="report_document_missed_without_mark">%1$d — без отметки</string>
     <string name="report_document_empty">За период нет ни одной записи о приёме</string>
-    <string name="report_document_format">Формат: PDF</string>
     <string name="report_document_disclaimer">Не является медицинским документом</string>
     <string name="report_document_page">Склянка · стр. %1$d</string>
     <!-- Разделители: « · » разделяет части строки лекарства, «, » — перечисление. -->

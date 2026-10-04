@@ -7,7 +7,6 @@ import ru.stohastika.sklyanka.domain.repository.ActiveProfileRepository
 import ru.stohastika.sklyanka.domain.repository.HistoryRepository
 import ru.stohastika.sklyanka.domain.repository.ProfileRepository
 import ru.stohastika.sklyanka.domain.time.TimeSource
-import java.time.YearMonth
 
 /**
  * Состав отчёта врачу за выбранный период (`TDD.md §9.3`).
@@ -33,10 +32,9 @@ class BuildDoctorReportUseCase(
      *   состояния не бывает при работающем приложении (ИНВ-1), но собирать отчёт
      *   без профиля нельзя: имя профиля — часть документа.
      */
-    suspend operator fun invoke(month: YearMonth): DoctorReport? {
+    suspend operator fun invoke(window: HistoryWindow): DoctorReport? {
         val profileId = activeProfile.current()
         val profile = profiles.get(profileId) ?: return null
-        val window = HistoryWindow.of(month)
         val slice = history.observe(profileId, window).first()
         val period = calculator.of(slice, window, time.today(), time.zone())
         val report = DoctorReportBuilder.build(

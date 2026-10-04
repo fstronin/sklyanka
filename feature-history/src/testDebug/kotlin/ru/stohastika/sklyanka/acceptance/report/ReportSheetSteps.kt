@@ -10,10 +10,10 @@ import io.cucumber.java.en.Then
 import ru.stohastika.sklyanka.acceptance.history.HistoryScreenProbe
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
 import ru.stohastika.sklyanka.feature.history.R
+import ru.stohastika.sklyanka.feature.history.TAG_REPORT_DATA_NOTE
 import ru.stohastika.sklyanka.feature.history.TAG_REPORT_SAVE
 import ru.stohastika.sklyanka.feature.history.TAG_REPORT_SHARE
 import ru.stohastika.sklyanka.feature.history.TAG_REPORT_SHEET
-import ru.stohastika.sklyanka.feature.history.TAG_REPORT_WARNING
 
 /**
  * Экранные шаги предъявления шторки отчёта врачу (SKL-44, группа `@screen`).
@@ -37,11 +37,11 @@ class ReportSheetSteps(private val world: AcceptanceWorld) {
         }
     }
 
-    @Then("^в шторке отчёта видно предупреждение о медицинских данных$")
-    fun theWarningIsVisibleInTheSheet() {
+    @Then("^в шторке отчёта видно пояснение о медицинских данных$")
+    fun theNoteIsVisibleInTheSheet() {
         HistoryScreenProbe.ask(world, chrome = HistoryScreenProbe.chrome(world)) { test ->
-            test.onNodeWithTag(TAG_REPORT_WARNING).assertIsDisplayed()
-            test.onNodeWithText(context.getString(R.string.history_report_warning), useUnmergedTree = true)
+            test.onNodeWithTag(TAG_REPORT_DATA_NOTE).assertIsDisplayed()
+            test.onNodeWithText(context.getString(R.string.history_report_data_note), useUnmergedTree = true)
                 .assertIsDisplayed()
         }
     }

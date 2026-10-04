@@ -34,6 +34,9 @@ internal class AndroidPdfTextMetrics(
     override fun lineHeight(role: ReportPdfRole): Float =
         if (role.isRule) RULE_HEIGHT else paint(role).fontSpacing * LEADING
 
+    override fun measure(text: String, role: ReportPdfRole): Float =
+        if (text.isEmpty()) 0f else paint(role).measureText(text)
+
     override fun wrap(text: String, role: ReportPdfRole, width: Float): List<String> {
         if (text.isEmpty()) return emptyList()
         val paint = paint(role)

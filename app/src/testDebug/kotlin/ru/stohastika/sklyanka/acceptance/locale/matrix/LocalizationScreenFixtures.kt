@@ -265,7 +265,11 @@ internal object LocalizationScreenFixtures {
                     mediaType = "application/pdf",
                     bytes = ByteArray(0),
                 ),
-                summary = renderer.composition(report),
+                composition = renderer.composition(report),
+                preset = ru.stohastika.sklyanka.domain.history.ReportPreset.THIS_MONTH,
+                customFrom = report.period.from,
+                customTo = report.period.to,
+                today = report.period.to,
             ),
         )
     }

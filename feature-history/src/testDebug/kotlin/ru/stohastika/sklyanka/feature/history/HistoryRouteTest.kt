@@ -28,7 +28,7 @@ class HistoryRouteTest {
 
         stand.pressSave()
 
-        assertEquals(HistoryNotice.REPORT_FAILED, stand.notice)
+        assertEquals(ReportOutcome.FAILED_SAVE, stand.outcome)
         assertTrue("the chooser must not be launched", stand.lastPress?.launched?.isEmpty() == true)
         assertTrue("the report must stay open for a retry", stand.isReportOpen)
     }
@@ -43,6 +43,6 @@ class HistoryRouteTest {
 
         assertEquals(listOf("report.pdf"), stand.lastPress?.launched)
         assertFalse("no refusal may be shown", stand.lastPress?.refused == true)
-        assertNull(stand.notice)
+        assertNull(stand.outcome)
     }
 }

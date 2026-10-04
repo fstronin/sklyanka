@@ -21,6 +21,7 @@ import ru.stohastika.sklyanka.domain.history.DayState
 import ru.stohastika.sklyanka.domain.history.MissedPatternRule
 import ru.stohastika.sklyanka.domain.history.ObserveAdherenceUseCase
 import ru.stohastika.sklyanka.domain.history.OnTimeShare
+import ru.stohastika.sklyanka.domain.history.ReportPreset
 import ru.stohastika.sklyanka.domain.history.ReportTransferOutcome
 import ru.stohastika.sklyanka.domain.history.TransferDoctorReportUseCase
 import ru.stohastika.sklyanka.domain.log.OpEvent
@@ -209,7 +210,7 @@ class HistoryViewModelTest {
     }
 
     @Test
-    fun `the report is built for the shown month and opens on the screen`() = runTest(dispatcher) {
+    fun `the report opens on the current month by default`() = runTest(dispatcher) {
         fillSeptember()
         val viewModel = viewModel()
         advanceUntilIdle()
@@ -220,11 +221,18 @@ class HistoryViewModelTest {
         assertNotNull(viewModel.state.value.report)
         val report = renderer.rendered.single()
         assertEquals(LocalDate.of(2026, 9, 1), report.period.from)
+        assertEquals(LocalDate.of(2026, 9, 30), report.period.to)
         assertEquals("profile-a", report.profileName)
+        assertEquals(ReportPreset.THIS_MONTH, viewModel.state.value.report?.preset)
     }
 
+    /**
+     * Период отчёта отвязан от месяца «Истории» (ОВ-125): стрелки листают экран,
+     * а не период выгрузки. Отчёт открывается на «Этом месяце» независимо от того,
+     * каким был показанный месяц.
+     */
     @Test
-    fun `the report of another month is built for that month`() = runTest(dispatcher) {
+    fun `the report period does not follow the shown month`() = runTest(dispatcher) {
         fillSeptember()
         val viewModel = viewModel()
         advanceUntilIdle()
@@ -234,11 +242,105 @@ class HistoryViewModelTest {
         viewModel.onIntent(HistoryIntent.ReportRequested)
         advanceUntilIdle()
 
-        assertEquals(LocalDate.of(2026, 8, 1), renderer.rendered.single().period.from)
+        assertEquals(LocalDate.of(2026, 9, 1), renderer.rendered.last().period.from)
+    }
+
+    /** Смена пресета пересобирает состав тем же расчётом, что экран. */
+    @Test
+    fun `choosing the previous month preset rebuilds the report`() = runTest(dispatcher) {
+        fillSeptember()
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        viewModel.onIntent(HistoryIntent.ReportRequested)
+        advanceUntilIdle()
+
+        viewModel.onIntent(HistoryIntent.ReportPresetChosen(ReportPreset.PREVIOUS_MONTH))
+        advanceUntilIdle()
+
+        assertEquals(LocalDate.of(2026, 8, 1), renderer.rendered.last().period.from)
+        assertEquals(LocalDate.of(2026, 8, 31), renderer.rendered.last().period.to)
+        assertEquals(ReportPreset.PREVIOUS_MONTH, viewModel.state.value.report?.preset)
     }
 
     @Test
-    fun `sharing the report closes it and says so`() = runTest(dispatcher) {
+    fun `the last three months preset spans three calendar months`() = runTest(dispatcher) {
+        fillSeptember()
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        viewModel.onIntent(HistoryIntent.ReportRequested)
+        advanceUntilIdle()
+
+        viewModel.onIntent(HistoryIntent.ReportPresetChosen(ReportPreset.LAST_THREE_MONTHS))
+        advanceUntilIdle()
+
+        assertEquals(LocalDate.of(2026, 7, 1), renderer.rendered.last().period.from)
+        assertEquals(LocalDate.of(2026, 9, 30), renderer.rendered.last().period.to)
+    }
+
+    /**
+     * «Другой период»: выбранная дата пересобирает состав, «С» позже «По» подтягивает
+     * «По» (ОВ-125). Дата не может быть в будущем — это гарантирует диалог, а домен
+     * отказывает предусловием.
+     */
+    @Test
+    fun `a custom start later than the end pulls the end along`() = runTest(dispatcher) {
+        fillSeptember()
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        viewModel.onIntent(HistoryIntent.ReportRequested)
+        advanceUntilIdle()
+        viewModel.onIntent(HistoryIntent.ReportPresetChosen(ReportPreset.CUSTOM))
+        advanceUntilIdle()
+        // «По» уводится назад, чтобы «С», выбранная позже, действительно обогнала её.
+        viewModel.onIntent(HistoryIntent.ReportEndPicked(LocalDate.of(2026, 9, 5)))
+        advanceUntilIdle()
+
+        viewModel.onIntent(HistoryIntent.ReportStartPicked(LocalDate.of(2026, 9, 20)))
+        advanceUntilIdle()
+
+        assertEquals(LocalDate.of(2026, 9, 20), renderer.rendered.last().period.from)
+        assertEquals(LocalDate.of(2026, 9, 20), renderer.rendered.last().period.to)
+        assertEquals(LocalDate.of(2026, 9, 20), viewModel.state.value.report?.customFrom)
+    }
+
+    @Test
+    fun `a custom end rebuilds the report and keeps the start`() = runTest(dispatcher) {
+        fillSeptember()
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        viewModel.onIntent(HistoryIntent.ReportRequested)
+        advanceUntilIdle()
+        viewModel.onIntent(HistoryIntent.ReportPresetChosen(ReportPreset.CUSTOM))
+        advanceUntilIdle()
+
+        viewModel.onIntent(HistoryIntent.ReportEndPicked(LocalDate.of(2026, 9, 10)))
+        advanceUntilIdle()
+
+        assertEquals(LocalDate.of(2026, 9, 1), renderer.rendered.last().period.from)
+        assertEquals(LocalDate.of(2026, 9, 10), renderer.rendered.last().period.to)
+    }
+
+    /** Смена периода сбрасывает сообщение исхода: оно относилось к прошлому составу. */
+    @Test
+    fun `changing the period clears the outcome`() = runTest(dispatcher) {
+        fillSeptember()
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        viewModel.onIntent(HistoryIntent.ReportRequested)
+        advanceUntilIdle()
+        viewModel.onIntent(HistoryIntent.ShareReport)
+        advanceUntilIdle()
+        assertEquals(ReportOutcome.SHARED, viewModel.state.value.reportOutcome)
+
+        viewModel.onIntent(HistoryIntent.ReportPresetChosen(ReportPreset.PREVIOUS_MONTH))
+        advanceUntilIdle()
+
+        assertNull(viewModel.state.value.reportOutcome)
+    }
+
+    /** Успех — отдельное состояние содержимого шторки; шторка не закрывается (ОВ-125). */
+    @Test
+    fun `sharing the report keeps it open and reports success`() = runTest(dispatcher) {
         fillSeptember()
         val viewModel = viewModel()
         advanceUntilIdle()
@@ -249,8 +351,8 @@ class HistoryViewModelTest {
         advanceUntilIdle()
 
         assertEquals(1, transfer.shared.size)
-        assertNull(viewModel.state.value.report)
-        assertEquals(HistoryNotice.REPORT_SHARED, viewModel.state.value.notice)
+        assertNotNull(viewModel.state.value.report)
+        assertEquals(ReportOutcome.SHARED, viewModel.state.value.reportOutcome)
     }
 
     @Test
@@ -266,7 +368,7 @@ class HistoryViewModelTest {
         advanceUntilIdle()
 
         assertEquals("content://place", transfer.saved.single().second.handle)
-        assertEquals(HistoryNotice.REPORT_SAVED, viewModel.state.value.notice)
+        assertEquals(ReportOutcome.SAVED, viewModel.state.value.reportOutcome)
     }
 
     /**
@@ -287,12 +389,13 @@ class HistoryViewModelTest {
         advanceUntilIdle()
 
         assertNotNull(viewModel.state.value.report)
-        assertEquals(HistoryNotice.REPORT_CANCELLED, viewModel.state.value.notice)
+        assertEquals(ReportOutcome.CANCELLED, viewModel.state.value.reportOutcome)
         assertTrue(transfer.saved.isEmpty())
     }
 
+    /** Отказ сохранения и отказа передачи различаются словом: текст называет действие. */
     @Test
-    fun `a failed write is reported to the person`() = runTest(dispatcher) {
+    fun `a failed write is reported as a failed save`() = runTest(dispatcher) {
         fillSeptember()
         transfer.next = ReportTransferOutcome.Failed("write_failed")
         val viewModel = viewModel()
@@ -303,7 +406,23 @@ class HistoryViewModelTest {
         viewModel.onIntent(HistoryIntent.SaveTo("content://place"))
         advanceUntilIdle()
 
-        assertEquals(HistoryNotice.REPORT_FAILED, viewModel.state.value.notice)
+        assertEquals(ReportOutcome.FAILED_SAVE, viewModel.state.value.reportOutcome)
+        assertNotNull(viewModel.state.value.report)
+    }
+
+    @Test
+    fun `a failed share is reported as a failed share`() = runTest(dispatcher) {
+        fillSeptember()
+        transfer.next = ReportTransferOutcome.Failed("share_failed")
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        viewModel.onIntent(HistoryIntent.ReportRequested)
+        advanceUntilIdle()
+
+        viewModel.onIntent(HistoryIntent.ShareReport)
+        advanceUntilIdle()
+
+        assertEquals(ReportOutcome.FAILED_SHARE, viewModel.state.value.reportOutcome)
         assertNotNull(viewModel.state.value.report)
     }
 
@@ -325,7 +444,7 @@ class HistoryViewModelTest {
         viewModel.onIntent(HistoryIntent.SaveUnavailable)
         advanceUntilIdle()
 
-        assertEquals(HistoryNotice.REPORT_FAILED, viewModel.state.value.notice)
+        assertEquals(ReportOutcome.FAILED_SAVE, viewModel.state.value.reportOutcome)
         assertNotNull(viewModel.state.value.report)
         assertTrue(transfer.saved.isEmpty())
         val transferRecord = log.records.last { it.event == OpEvent.DOCTOR_REPORT_TRANSFERRED }

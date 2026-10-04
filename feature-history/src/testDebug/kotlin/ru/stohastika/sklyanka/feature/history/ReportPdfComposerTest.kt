@@ -218,10 +218,14 @@ class ReportPdfComposerTest {
     /** Состав шторки: профиль, период, число принятых приёмов и формат — без текста документа. */
     @Test
     fun `the composition names the profile the period the taken count and the format`() {
-        assertEquals(
-            "Профиль: profile-a\nПериод: 1 — 30 сентября 2026\nПринято: " + percent(2, 5, 40) + "\nФормат: PDF",
-            composer.composition(report()),
-        )
+        val composition = composer.composition(report())
+
+        assertEquals("profile-a", composition.profile)
+        assertEquals("1 — 30 сентября 2026", composition.period)
+        assertEquals("1 сентября 2026", composition.from)
+        assertEquals("30 сентября 2026", composition.to)
+        assertEquals(percent(2, 5, 40), composition.taken)
+        assertEquals("PDF", composition.format)
     }
 
     /** Человек перед отправкой видит то же, что получит врач: при пустом периоде — фразу. */
@@ -229,16 +233,10 @@ class ReportPdfComposerTest {
     fun `the composition of an empty month keeps the phrase instead of a count`() {
         val composition = composer.composition(emptyReport())
 
-        assertTrue(
-            "the phrase must replace the count: $composition",
-            composition.contains("За период нет ни одной записи о приёме"),
-        )
-        assertTrue(
-            "the format must stay in the composition: $composition",
-            composition.endsWith("Формат: PDF"),
-        )
-        assertFalse("no degenerate share may be promised: $composition", composition.contains("Принято:"))
-        assertTrue("the sheet must still name the profile", composition.contains("Профиль: profile-a"))
+        assertNull("the phrase replaces the count", composition.taken)
+        assertEquals("PDF", composition.format)
+        assertEquals("profile-a", composition.profile)
+        assertEquals("1 — 30 сентября 2026", composition.period)
     }
 
     /**

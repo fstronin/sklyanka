@@ -23,8 +23,8 @@ import java.io.File
  * Эталонные снимки экрана истории (SKL-24, критерий 5).
  *
  * По снимку на состояние: обычный месяц, пустой месяц, чужой профиль, открытый отчёт
- * и увеличенный системный шрифт. Числа те же, что в проверках состава экрана, чтобы
- * снимок и проверка говорили об одном экране, а не о двух похожих.
+ * (обычный, крупный шрифт, отмена, ошибка, успех) и увеличенный системный шрифт.
+ * Состав шторки собирает настоящий композер — снимок ловит и разметку, и формулировки.
  *
  * Снимок ловит **изменение**, а не правильность: как экран выглядит на настоящем EMUI,
  * по-прежнему смотрят глазами на устройстве (`docs/tasks/SKL-24/TDD.md §2.2`).
@@ -58,7 +58,24 @@ class HistoryScreenSnapshotTest {
 
     @Test
     fun theDoctorReportOnTheScreen() = capture("history-report") {
-        HistoryScreen(state = HistoryStates.withReport(summary = REPORT_SAMPLE), onIntent = {})
+        HistoryScreen(state = HistoryStates.withReport(), onIntent = {})
+    }
+
+    /** Отмена системного диалога: сообщение первым элементом, состав и действия на месте. */
+    @Test
+    fun theCancelledReportOnTheScreen() = capture("history-report-cancelled") {
+        HistoryScreen(state = HistoryStates.withReport(outcome = ReportOutcome.CANCELLED), onIntent = {})
+    }
+
+    @Test
+    fun theFailedReportOnTheScreen() = capture("history-report-failed") {
+        HistoryScreen(state = HistoryStates.withReport(outcome = ReportOutcome.FAILED_SAVE), onIntent = {})
+    }
+
+    /** Успех — отдельное содержимое: чипы, карточка, пояснение и действия убраны. */
+    @Test
+    fun theSuccessfulReportOnTheScreen() = capture("history-report-success") {
+        HistoryScreen(state = HistoryStates.withReport(outcome = ReportOutcome.SHARED), onIntent = {})
     }
 
     /**
@@ -71,6 +88,12 @@ class HistoryScreenSnapshotTest {
     @Test
     fun theHistoryAtDoubleFontScale() = capture("history-font-scale-200", heightDp = TALLER, fontScale = SCALE_200) {
         HistoryScreen(state = HistoryStates.september(), onIntent = {})
+    }
+
+    /** Шторка отчёта при 200 %: полотно растёт, средняя часть прокручивается (§6.3). */
+    @Test
+    fun theReportAtDoubleFontScale() = capture("history-report-200", heightDp = TALLER, fontScale = SCALE_200) {
+        HistoryScreen(state = HistoryStates.withReport(), onIntent = {})
     }
 
     @OptIn(ExperimentalRoborazziApi::class)
@@ -117,8 +140,5 @@ class HistoryScreenSnapshotTest {
         const val SCALE_200 = 2.0f
 
         const val PROFILE_NAME = "profile-b"
-
-        /** Заглушка состава: сам документ проверяет `ReportPdfComposerTest`. */
-        const val REPORT_SAMPLE = "report-line-1\nreport-line-2\nreport-line-3"
     }
 }

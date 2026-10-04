@@ -68,18 +68,18 @@ internal class ReportPdfComposer(applicationContext: Context) {
      * Пустой период называет себя той же фразой, что стоит в документе, — человек
      * перед отправкой видит то же, что получит врач (решение дизайна, ревизия 33-B).
      */
-    fun composition(report: DoctorReport): String {
+    fun composition(report: DoctorReport): ReportComposition {
         val locale = context.resources.configuration.locales[0]
-        return listOf(
-            context.getString(R.string.report_document_composition_profile, report.profileName),
-            text.period(report.period.from, report.period.to, locale),
-            if (report.period.isEmpty) {
-                context.getString(R.string.report_document_empty)
-            } else {
-                context.getString(R.string.report_document_taken_label) + " " + text.takenValue(report)
-            },
-            context.getString(R.string.report_document_format),
-        ).joinToString("\n")
+        return ReportComposition(
+            profile = report.profileName,
+            period = text.periodRange(report.period.from, report.period.to, locale),
+            from = text.fullDate(report.period.from, locale),
+            to = text.fullDate(report.period.to, locale),
+            // Пустой период называет себя той же фразой, что стоит в документе: человек
+            // перед отправкой видит то же, что получит врач (решение дизайна, ревизия 33-B).
+            taken = if (report.period.isEmpty) null else text.takenValue(report),
+            format = context.getString(R.string.history_report_format_value),
+        )
     }
 
     private fun header(report: DoctorReport, zone: ZoneId, locale: Locale): List<ReportPdfLine> = listOf(

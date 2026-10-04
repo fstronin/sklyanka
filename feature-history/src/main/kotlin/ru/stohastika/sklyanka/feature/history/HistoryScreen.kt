@@ -1,9 +1,5 @@
 package ru.stohastika.sklyanka.feature.history
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -18,24 +14,15 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
-import ru.stohastika.sklyanka.ui.component.Banner
-import ru.stohastika.sklyanka.ui.component.BannerKind
 import ru.stohastika.sklyanka.ui.component.ScreenHeader
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderKind
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderLabels
 import ru.stohastika.sklyanka.ui.component.SecondaryButton
-import ru.stohastika.sklyanka.ui.motion.MotionPhase
-import ru.stohastika.sklyanka.ui.motion.motionTiming
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaShapes
 import ru.stohastika.sklyanka.ui.token.SklyankaSizes
@@ -110,7 +97,6 @@ fun HistoryScreen(state: HistoryUiState, onIntent: (HistoryIntent) -> Unit, modi
                     .padding(bottom = SklyankaSpacing.Screen),
                 verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Large),
             ) {
-                state.notice?.let { notice -> NoticeBanner(notice, onIntent) }
                 SummaryTiles(state)
                 CalendarMonth(month = state.month, days = state.period.days, onIntent = onIntent)
                 // Блок «По лекарствам» скрыт, когда за месяц нет ни одной записи: пустая
@@ -120,50 +106,8 @@ fun HistoryScreen(state: HistoryUiState, onIntent: (HistoryIntent) -> Unit, modi
                 }
             }
         }
-        ReportSheetHost(report = state.report, onIntent = onIntent)
+        ReportSheetHost(report = state.report, outcome = state.reportOutcome, onIntent = onIntent)
     }
-}
-
-@Composable
-private fun ReportSheetHost(report: ReportUi?, onIntent: (HistoryIntent) -> Unit) {
-    var lastReport by remember { mutableStateOf<ReportUi?>(null) }
-    LaunchedEffect(report) { report?.let { lastReport = it } }
-    val enterTiming = motionTiming(MotionPhase.SheetEnter)
-    val exitTiming = motionTiming(MotionPhase.SheetExit)
-    AnimatedVisibility(
-        visible = report != null,
-        enter = slideInVertically(
-            animationSpec = tween(enterTiming.durationMillis, easing = enterTiming.easing),
-            initialOffsetY = { height -> height },
-        ),
-        exit = slideOutVertically(
-            animationSpec = tween(exitTiming.durationMillis, easing = exitTiming.easing),
-            targetOffsetY = { height -> height },
-        ),
-        modifier = Modifier.fillMaxSize(),
-    ) {
-        lastReport?.let { shown -> DoctorReportSheet(shown, onIntent) }
-    }
-}
-
-/** Исход передачи отчёта: отмена системного диалога не должна выглядеть молчанием. */
-@Composable
-private fun NoticeBanner(notice: HistoryNotice, onIntent: (HistoryIntent) -> Unit) {
-    val text = stringResource(
-        when (notice) {
-            HistoryNotice.REPORT_SHARED -> R.string.history_report_shared
-            HistoryNotice.REPORT_SAVED -> R.string.history_report_saved
-            HistoryNotice.REPORT_CANCELLED -> R.string.history_report_cancelled
-            HistoryNotice.REPORT_FAILED -> R.string.history_report_failed
-        },
-    )
-    Banner(
-        text = text,
-        kind = if (notice == HistoryNotice.REPORT_FAILED) BannerKind.Warning else BannerKind.Neutral,
-        actionLabel = stringResource(R.string.history_notice_dismiss),
-        onAction = { onIntent(HistoryIntent.NoticeDismissed) },
-        modifier = Modifier.testTag(TAG_NOTICE),
-    )
 }
 
 /**
@@ -232,4 +176,3 @@ const val TAG_SUMMARY = "history_summary"
 const val TAG_TILE_ON_TIME = "history_tile_on_time"
 const val TAG_TILE_DAYS_WITHOUT_MISSES = "history_tile_days_without_misses"
 const val TAG_TILE_MISSES = "history_tile_misses"
-const val TAG_NOTICE = "history_notice"

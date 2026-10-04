@@ -38,5 +38,5 @@ class PdfDoctorReportRenderer @Inject constructor(@ApplicationContext private va
         return ReportDocument(fileName = content.fileName, mediaType = content.mediaType, bytes = bytes)
     }
 
-    override fun composition(report: DoctorReport): String = composer.composition(report)
+    override fun composition(report: DoctorReport): ReportComposition = composer.composition(report)
 }

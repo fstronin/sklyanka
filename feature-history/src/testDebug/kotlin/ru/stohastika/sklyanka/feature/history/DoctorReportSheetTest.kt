@@ -3,6 +3,7 @@ package ru.stohastika.sklyanka.feature.history
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -12,23 +13,26 @@ import androidx.compose.ui.unit.Density
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import ru.stohastika.sklyanka.domain.history.ReportPreset
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaSizes
+import ru.stohastika.sklyanka.ui.token.SklyankaType
 import ru.stohastika.sklyanka.ui.R as UiR
 
 /**
- * Отчёт врачу в шторке: предупреждение, короткий состав и способы передать.
+ * Шторка отчёта врачу: выбор периода, состав, пояснение, исход и два действия (ОВ-125).
  *
- * Главное здесь — предупреждение (НФТ-18). Файл содержит медицинские данные в открытом
- * виде, и человек обязан прочитать об этом **до** того, как отдаст его: проверка стоит
- * на том, что предупреждение показано вместе с действиями, а не после них.
+ * Здесь проверяется разметка шторки: чипы-пресеты, карточка «подпись — значение»,
+ * тихое пояснение о медицинских данных и сообщение исхода. Состав документа проверяет
+ * `ReportPdfComposerTest`; тексты шторки собирает та же разметка, что и в продукте.
  *
- * Полного текста документа в шторке нет: документ один — PDF (решение дизайна по ОВ-15),
- * и двух версий одного содержания не остаётся. Человек видит состав.
+ * Успех — отдельное состояние содержимого: чипы, карточка, пояснение и действия
+ * убираются, остаются фраза, исход словом и декоративная галочка.
  */
 @RunWith(AndroidJUnit4::class)
 class DoctorReportSheetTest {
@@ -39,45 +43,70 @@ class DoctorReportSheetTest {
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
 
     @Test
-    fun theReportOpensWithTheWarningAboutMedicalData() {
+    fun theReportOpensOnTheCurrentMonthWithThePeriodChips() {
         show(HistoryStates.withReport())
 
         composeRule.onNodeWithTag(TAG_REPORT_SHEET).assertIsDisplayed()
-        composeRule.onNodeWithTag(TAG_REPORT_WARNING).assertIsDisplayed()
-        composeRule
-            .onNodeWithText(context.getString(R.string.history_report_warning), useUnmergedTree = true)
-            .assertIsDisplayed()
+        composeRule.onNodeWithTag(TAG_REPORT_CONTENT).assertIsDisplayed()
+        REPORT_PRESETS.forEach { label ->
+            composeRule.onNodeWithText(context.getString(label), useUnmergedTree = true).assertIsDisplayed()
+        }
     }
 
     /** Состав, а не текст документа: человек видит, что отдаёт, до нажатия «Передать». */
     @Test
     fun theReportShowsTheCompositionOfTheDocument() {
-        show(HistoryStates.withReport(summary = SUMMARY))
-
-        composeRule.onNodeWithText(SUMMARY, useUnmergedTree = true).assertIsDisplayed()
-    }
-
-    @Test
-    fun theCompositionIsACardWithTheProfilePeriodCountAndFormat() {
         show(HistoryStates.withReport())
 
-        composeRule.onNodeWithTag(TAG_REPORT_CONTENT).assertIsDisplayed()
-        composeRule.onNodeWithText("Профиль: Я", useUnmergedTree = true).assertIsDisplayed()
-        composeRule.onNodeWithText("Период: 1 — 30 сентября 2026", useUnmergedTree = true).assertIsDisplayed()
-        composeRule.onNodeWithText("Принято: 2 из 3 приёмов", useUnmergedTree = true).assertIsDisplayed()
-        composeRule.onNodeWithText("Формат: PDF", useUnmergedTree = true).assertIsDisplayed()
+        composeRule.onNodeWithTag(TAG_REPORT_PROFILE, useUnmergedTree = true).assertIsDisplayed()
+        composeRule.onNodeWithTag(TAG_REPORT_PERIOD, useUnmergedTree = true).assertIsDisplayed()
+        composeRule.onNodeWithTag(TAG_REPORT_TAKEN, useUnmergedTree = true).assertIsDisplayed()
+        composeRule.onNodeWithTag(TAG_REPORT_FORMAT, useUnmergedTree = true).assertIsDisplayed()
+        composeRule.onNodeWithText(context.getString(R.string.history_report_label_profile), useUnmergedTree = true)
+            .assertIsDisplayed()
+        composeRule.onNodeWithText(context.getString(R.string.history_report_label_period), useUnmergedTree = true)
+            .assertIsDisplayed()
+        composeRule.onNodeWithText(context.getString(R.string.history_report_label_taken), useUnmergedTree = true)
+            .assertIsDisplayed()
+        composeRule.onNodeWithText(context.getString(R.string.history_report_label_format), useUnmergedTree = true)
+            .assertIsDisplayed()
+        composeRule.onNodeWithText("PDF", useUnmergedTree = true).assertIsDisplayed()
     }
 
+    /** Пустой период: вместо строки «Принято» — та же фраза, что печатает документ. */
     @Test
-    fun theWarningStandsAboveTheCompositionCard() {
-        show(HistoryStates.withReport())
-
-        val warning = composeRule.onNodeWithTag(TAG_REPORT_WARNING).fetchSemanticsNode()
-        val card = composeRule.onNodeWithTag(TAG_REPORT_CONTENT).fetchSemanticsNode()
-        assertTrue(
-            "the warning must stand above the composition card",
-            warning.boundsInRoot.top < card.boundsInRoot.top,
+    fun theEmptyPeriodSaysThePhraseInsteadOfTheCount() {
+        show(
+            HistoryStates.withReport(
+                composition = HistoryStates.compositionOfEmptyPeriod(),
+            ),
         )
+
+        composeRule.onNodeWithTag(TAG_REPORT_EMPTY, useUnmergedTree = true).assertIsDisplayed()
+        composeRule.onNodeWithText(context.getString(R.string.report_document_empty), useUnmergedTree = true)
+            .assertIsDisplayed()
+    }
+
+    /** Пояснение о данных — тихая подпись под карточкой, а не тревожная плашка. */
+    @Test
+    fun theDataNoteIsAQuietCaptionBelowTheCard() {
+        show(HistoryStates.withReport())
+
+        val note = composeRule.onNodeWithTag(TAG_REPORT_DATA_NOTE, useUnmergedTree = true).fetchSemanticsNode()
+        val card = composeRule.onNodeWithTag(TAG_REPORT_CONTENT, useUnmergedTree = true).fetchSemanticsNode()
+        assertTrue("the note must stand below the card", note.boundsInRoot.top >= card.boundsInRoot.bottom)
+        composeRule.onNodeWithText(context.getString(R.string.history_report_data_note), useUnmergedTree = true)
+            .assertIsDisplayed()
+    }
+
+    /** «Другой период» заменяет строку «Период» строками «С» и «По» с шевронами. */
+    @Test
+    fun theCustomPeriodShowsTheStartAndEndRows() {
+        show(HistoryStates.withReport(preset = ReportPreset.CUSTOM))
+
+        composeRule.onNodeWithTag(TAG_REPORT_START, useUnmergedTree = true).assertIsDisplayed()
+        composeRule.onNodeWithTag(TAG_REPORT_END, useUnmergedTree = true).assertIsDisplayed()
+        composeRule.onNodeWithTag(TAG_REPORT_PERIOD, useUnmergedTree = true).assertDoesNotExist()
     }
 
     @Test
@@ -116,11 +145,8 @@ class DoctorReportSheetTest {
         val save = composeRule.onNodeWithTag(TAG_REPORT_SAVE).fetchSemanticsNode()
         val shareHeight = with(composeRule.density) { share.size.height.toDp() }
         val saveHeight = with(composeRule.density) { save.size.height.toDp() }
-        val shareWidth = with(composeRule.density) { share.size.width.toDp() }
-        val saveWidth = with(composeRule.density) { save.size.width.toDp() }
         assertTrue("the buttons must stay one form: $shareHeight vs $saveHeight", shareHeight == saveHeight)
         assertTrue("the buttons must not shrink: $shareHeight", shareHeight >= SklyankaSizes.PrimaryButtonHeight)
-        assertTrue("the buttons must stay equal: $shareWidth vs $saveWidth", shareWidth == saveWidth)
     }
 
     @Test
@@ -144,15 +170,75 @@ class DoctorReportSheetTest {
         assertEquals(listOf(HistoryIntent.ReportDismissed), intents)
     }
 
-    /** Исход передачи сказан человеку: отмена системного диалога — не молчание. */
+    /** Отмена — нейтральный вид, в самой шторке, а не баннером на «Истории» (ОВ-125). */
     @Test
-    fun theOutcomeOfTheTransferIsSaidOutLoud() {
-        show(HistoryStates.september().copy(notice = HistoryNotice.REPORT_CANCELLED))
+    fun theCancelledOutcomeIsSaidInline() {
+        show(HistoryStates.withReport(outcome = ReportOutcome.CANCELLED))
 
-        composeRule.onNodeWithTag(TAG_NOTICE).assertIsDisplayed()
-        composeRule
-            .onNodeWithText(context.getString(R.string.history_report_cancelled), useUnmergedTree = true)
+        composeRule.onNodeWithText(context.getString(R.string.history_report_cancelled), useUnmergedTree = true)
             .assertIsDisplayed()
+        composeRule.onNodeWithTag(TAG_REPORT_CONTENT).assertIsDisplayed()
+    }
+
+    @Test
+    fun theFailedShareIsSaidInline() {
+        show(HistoryStates.withReport(outcome = ReportOutcome.FAILED_SHARE))
+
+        composeRule.onNodeWithText(context.getString(R.string.history_report_share_failed), useUnmergedTree = true)
+            .assertIsDisplayed()
+        composeRule.onNodeWithTag(TAG_REPORT_CONTENT).assertIsDisplayed()
+    }
+
+    /** Успех: содержимое убирается целиком, остаются фраза, исход словом и галочка. */
+    @Test
+    fun theSuccessReplacesTheContentWithAPhraseAndACheck() {
+        show(HistoryStates.withReport(outcome = ReportOutcome.SHARED))
+
+        composeRule.onNodeWithTag(TAG_REPORT_SUCCESS).assertIsDisplayed()
+        composeRule.onNodeWithText(context.getString(R.string.history_report_success_shared), useUnmergedTree = true)
+            .assertIsDisplayed()
+        composeRule.onNodeWithTag(TAG_REPORT_SUCCESS_MARK, useUnmergedTree = true).assertIsDisplayed()
+        composeRule.onNodeWithTag(TAG_REPORT_CONTENT).assertDoesNotExist()
+        composeRule.onNodeWithTag(TAG_REPORT_SHARE).assertDoesNotExist()
+        // После успеха «отменять» нечего: тихая кнопка шапки называется «Готово».
+        composeRule.onNodeWithText(context.getString(UiR.string.action_done)).assertIsDisplayed()
+    }
+
+    @Test
+    fun theSavedSuccessNamesTheSave() {
+        show(HistoryStates.withReport(outcome = ReportOutcome.SAVED))
+
+        composeRule.onNodeWithText(context.getString(R.string.history_report_success_saved), useUnmergedTree = true)
+            .assertIsDisplayed()
+    }
+
+    /** «Период» — тоже показатель: его числа набраны Literata, как в строке «Принято» (ОВ-125). */
+    @Test
+    fun thePeriodValueSetsItsNumbersInLiterata() {
+        val period = requireNotNull(HistoryStates.withReport().report).composition.period
+        show(HistoryStates.withReport())
+
+        assertNumbersUseLiterata(period)
+    }
+
+    /** «Другой период»: числа дат «С» и «По» — тем же приёмом, что и «Период». */
+    @Test
+    fun theCustomPeriodDatesSetTheirNumbersInLiterata() {
+        val state = HistoryStates.withReport(preset = ReportPreset.CUSTOM)
+        show(state)
+
+        assertNumbersUseLiterata(requireNotNull(state.report).composition.from)
+        assertNumbersUseLiterata(requireNotNull(state.report).composition.to)
+    }
+
+    private fun assertNumbersUseLiterata(value: String) {
+        val text = composeRule.onNodeWithText(value, useUnmergedTree = true)
+            .fetchSemanticsNode()
+            .config[SemanticsProperties.Text]
+            .single()
+        val span = text.spanStyles.firstOrNull { it.item.fontFamily == SklyankaType.NumberSpan.fontFamily }
+        assertNotNull("the value \"$value\" must carry a Literata number span", span)
+        assertTrue("the number span must cover digits", requireNotNull(span).start < span.end)
     }
 
     @Composable
@@ -171,7 +257,13 @@ class DoctorReportSheetTest {
     }
 
     private companion object {
-        const val SUMMARY = "report-composition"
         const val SCALE_200 = 2f
+
+        val REPORT_PRESETS = listOf(
+            R.string.history_report_period_this_month,
+            R.string.history_report_period_previous_month,
+            R.string.history_report_period_last_three_months,
+            R.string.history_report_period_custom,
+        )
     }
 }

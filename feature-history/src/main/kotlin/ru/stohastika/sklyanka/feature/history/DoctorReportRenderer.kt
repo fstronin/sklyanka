@@ -17,11 +17,11 @@ interface DoctorReportRenderer {
     fun render(report: DoctorReport, zone: ZoneId): ReportDocument
 
     /**
-     * Короткий состав документа для шторки: профиль, период, число принятых приёмов и формат.
+     * Состав документа для шторки: профиль, период, число принятых приёмов и формат.
      *
      * Тем же композером, что и PDF: двух версий одного содержания в продукте не остаётся,
      * а человек видит, что именно отдаёт, до нажатия «Передать». Часовой пояс составу
      * не нужен: в нём нет момента формирования.
      */
-    fun composition(report: DoctorReport): String
+    fun composition(report: DoctorReport): ReportComposition
 }

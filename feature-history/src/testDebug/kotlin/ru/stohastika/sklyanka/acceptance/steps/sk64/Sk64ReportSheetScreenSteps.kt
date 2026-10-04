@@ -17,6 +17,7 @@ import io.cucumber.java.ru.Допустим
 import io.cucumber.java.ru.Когда
 import io.cucumber.java.ru.Тогда
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import ru.stohastika.sklyanka.feature.history.HistoryIntent
 import ru.stohastika.sklyanka.feature.history.HistoryScreen
 import ru.stohastika.sklyanka.feature.history.HistoryStates
@@ -60,7 +61,7 @@ class Sk64ReportSheetScreenSteps {
         onAllNodesWithTag(TAG_REPORT_SHEET).assertCountEquals(1)
     }
 
-    @Тогда("^через (\\d+) ms остаётся только шторка$")
+    @Тогда("^через (\\d+) ms шторка встала на место, а история осталась под затемнением$")
     fun onlyTheSheetStays(ms: Int) = runComposeUiTest {
         var state: HistoryUiState by mutableStateOf(HistoryStates.september())
         setContent {
@@ -74,8 +75,11 @@ class Sk64ReportSheetScreenSteps {
 
         val root = onRoot().fetchSemanticsNode()
         val sheet = onNodeWithTag(TAG_REPORT_SHEET).fetchSemanticsNode()
+        // Настоящая нижняя шторка: во всю ширину, но высотой по содержимому — экран
+        // под затемнением не исчезает (ОВ-125).
         assertEquals(root.size.width, sheet.size.width)
-        assertEquals(root.size.height, sheet.size.height)
+        assertTrue("the sheet must not fill the screen", sheet.size.height < root.size.height)
+        onNodeWithTag(TAG_HISTORY_SCREEN).assertIsDisplayed()
         assertEquals(motionTiming(MotionPhase.SheetEnter).durationMillis, ms)
     }
 

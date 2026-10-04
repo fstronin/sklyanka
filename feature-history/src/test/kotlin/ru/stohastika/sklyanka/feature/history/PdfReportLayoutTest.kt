@@ -98,6 +98,21 @@ class PdfReportLayoutTest {
         }
     }
 
+    /**
+     * Правый столбец «N из M (P %)» резервируется единой колонкой (33-I): первая строка
+     * блока переносится в остатке ширины, вторая занимает документ целиком. Без этого
+     * текст первой строки наезжал бы на долю.
+     */
+    @Test
+    fun `the first line of a block reserves the right column`() {
+        val recording = RecordingMetrics()
+        PdfReportLayout(recording, Page).paginate(content(blocks = 1, blockLines = 2))
+
+        val firstWidth = recording.widthOf("med-1 line-1")
+        val secondWidth = recording.widthOf("med-1 line-2")
+        assertTrue("the first line must reserve the right column: $firstWidth", firstWidth < secondWidth)
+    }
+
     private fun content(blocks: Int, blockLines: Int = 2): ReportPdfContent = ReportPdfContent(
         fileName = "sklyanka-report-2026-09.pdf",
         mediaType = "application/pdf",
@@ -124,8 +139,27 @@ class PdfReportLayoutTest {
 
         override fun lineHeight(role: ReportPdfRole): Float = if (role.isRule) RULE else LINE
 
+        override fun measure(text: String, role: ReportPdfRole): Float = text.length * CHAR_WIDTH
+
         override fun wrap(text: String, role: ReportPdfRole, width: Float): List<String> =
             if (text.isEmpty()) emptyList() else listOf(text)
+    }
+
+    /** Запоминает ширину, с которой переносилась каждая строка: по ней видно резерв 33-I. */
+    private class RecordingMetrics : PdfTextMetrics {
+
+        private val widths = mutableMapOf<String, Float>()
+
+        override fun lineHeight(role: ReportPdfRole): Float = if (role.isRule) RULE else LINE
+
+        override fun measure(text: String, role: ReportPdfRole): Float = text.length * CHAR_WIDTH
+
+        override fun wrap(text: String, role: ReportPdfRole, width: Float): List<String> {
+            widths[text] = width
+            return if (text.isEmpty()) emptyList() else listOf(text)
+        }
+
+        fun widthOf(text: String): Float = requireNotNull(widths[text]) { "no wrap recorded for $text" }
     }
 
     private companion object {
@@ -140,6 +174,7 @@ class PdfReportLayoutTest {
         )
         const val LINE = 20f
         const val RULE = 1f
+        const val CHAR_WIDTH = 10f
         const val DISCLAIMER = "Not a medical document"
         const val EMPTY_NOTE = "No records in the period"
         const val SUMMARY_TITLE = "SUMMARY"

@@ -68,7 +68,9 @@ class ScenarioHistory(
      * Журнал ведёт сам сценарий домена: «след без медицинских данных» проверяется
      * на том же следе, который оставил бы продукт, а не на его пересказе в шаге.
      */
-    fun buildReport(month: YearMonth): DoctorReport? {
+    fun buildReport(month: YearMonth): DoctorReport? = buildReport(HistoryWindow.of(month))
+
+    fun buildReport(window: HistoryWindow): DoctorReport? {
         val useCase = BuildDoctorReportUseCase(
             activeProfile = activeProfile,
             profiles = profiles,
@@ -77,7 +79,7 @@ class ScenarioHistory(
             time = clock.time,
             log = log,
         )
-        val built = runBlocking { useCase(month) }
+        val built = runBlocking { useCase(window) }
         report = built
         return built
     }

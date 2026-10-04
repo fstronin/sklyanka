@@ -115,14 +115,14 @@ internal class SavePlaceStand {
             waitForIdle()
             facts = SavePress(
                 launched = launched.toList(),
-                refused = onAllNodesWithText(context.getString(R.string.history_report_failed))
+                refused = onAllNodesWithText(context.getString(R.string.history_report_save_failed))
                     .fetchSemanticsNodes().isNotEmpty(),
             )
         }
         lastPress = requireNotNull(facts)
     }
 
-    val notice: HistoryNotice? get() = viewModel.state.value.notice
+    val outcome: ReportOutcome? get() = viewModel.state.value.reportOutcome
 
     val isReportOpen: Boolean get() = viewModel.state.value.report != null
 

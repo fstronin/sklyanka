@@ -1,5 +1,8 @@
 package ru.stohastika.sklyanka.feature.history
 
+import ru.stohastika.sklyanka.domain.history.ReportPreset
+import java.time.LocalDate
+
 /**
  * Намерения экрана истории.
  *
@@ -15,10 +18,19 @@ sealed interface HistoryIntent {
 
     data object NextMonth : HistoryIntent
 
-    /** «Отчёт врачу»: собрать состав и показать его с экрана вместе с предупреждением. */
+    /** «Отчёт врачу»: собрать состав и показать его шторкой. */
     data object ReportRequested : HistoryIntent
 
     data object ReportDismissed : HistoryIntent
+
+    /** Выбран пресет периода в шторке: состав пересобирается, сообщение исхода сбрасывается. */
+    data class ReportPresetChosen(val preset: ReportPreset) : HistoryIntent
+
+    /** Подтверждено начало «Другого периода»: «По» подтягивается, если начало позже него. */
+    data class ReportStartPicked(val date: LocalDate) : HistoryIntent
+
+    /** Подтверждено окончание «Другого периода»: не раньше начала и не позже сегодня. */
+    data class ReportEndPicked(val date: LocalDate) : HistoryIntent
 
     /** Передать отчёт системным способом обмена. */
     data object ShareReport : HistoryIntent
@@ -44,6 +56,4 @@ sealed interface HistoryIntent {
      * чужая активность, и получить отказ можно только у системы (SKL-46).
      */
     data object SaveUnavailable : HistoryIntent
-
-    data object NoticeDismissed : HistoryIntent
 }

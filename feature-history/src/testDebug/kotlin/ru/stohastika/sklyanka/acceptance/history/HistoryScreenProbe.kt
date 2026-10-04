@@ -11,6 +11,7 @@ import androidx.test.core.app.ApplicationProvider
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
 import ru.stohastika.sklyanka.domain.history.MissedPatternRule
 import ru.stohastika.sklyanka.domain.history.ReportDocument
+import ru.stohastika.sklyanka.domain.history.ReportPreset
 import ru.stohastika.sklyanka.feature.history.HistoryIntent
 import ru.stohastika.sklyanka.feature.history.HistoryScreen
 import ru.stohastika.sklyanka.feature.history.HistoryUiState
@@ -84,7 +85,11 @@ internal object HistoryScreenProbe {
                 val content = ReportPdfComposer(context).compose(report, world.clock.zone)
                 ReportUi(
                     document = ReportDocument(content.fileName, content.mediaType, ByteArray(0)),
-                    summary = PdfDoctorReportRenderer(context).composition(report),
+                    composition = PdfDoctorReportRenderer(context).composition(report),
+                    preset = ReportPreset.THIS_MONTH,
+                    customFrom = report.period.from,
+                    customTo = report.period.to,
+                    today = world.clock.today(),
                 )
             },
         )

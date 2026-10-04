@@ -53,6 +53,12 @@ object SklyankaShapes {
     /** Форма плитки превью выбора; вне ступеней `allRadii` (§3.1). */
     val Preview: RoundedCornerShape = RoundedCornerShape(PreviewRadius)
 
+    /**
+     * Полотно шторки (§4.18, ОВ-125): скруглены только верхние углы, нижние уходят
+     * за край экрана. Ступень та же, что у основной кнопки, — 16.
+     */
+    val TopLarge: RoundedCornerShape = RoundedCornerShape(topStart = LargeRadius, topEnd = LargeRadius)
+
     /** Все ступени — опора теста шкалы. */
     val allRadii: List<Dp>
         get() = listOf(

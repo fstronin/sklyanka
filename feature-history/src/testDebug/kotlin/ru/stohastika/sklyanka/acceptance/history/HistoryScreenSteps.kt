@@ -63,9 +63,9 @@ import ru.stohastika.sklyanka.feature.history.TAG_MARKED_BY_YOU
 import ru.stohastika.sklyanka.feature.history.TAG_MONTH_LABEL
 import ru.stohastika.sklyanka.feature.history.TAG_PREVIOUS_MONTH
 import ru.stohastika.sklyanka.feature.history.TAG_REPORT_ACTION
+import ru.stohastika.sklyanka.feature.history.TAG_REPORT_DATA_NOTE
 import ru.stohastika.sklyanka.feature.history.TAG_REPORT_SHARE
 import ru.stohastika.sklyanka.feature.history.TAG_REPORT_SHEET
-import ru.stohastika.sklyanka.feature.history.TAG_REPORT_WARNING
 import ru.stohastika.sklyanka.feature.history.TAG_TILE_DAYS_WITHOUT_MISSES
 import ru.stohastika.sklyanka.feature.history.TAG_TILE_MISSES
 import ru.stohastika.sklyanka.feature.history.documentText
@@ -571,10 +571,10 @@ class HistoryScreenSteps(private val world: AcceptanceWorld) {
     @Then("^приложение предупреждает, что отчёт содержит медицинские данные в открытом виде$")
     fun theWarningIsShown() {
         HistoryScreenProbe.ask(world) { test ->
-            test.onNodeWithTag(TAG_REPORT_WARNING).assertIsDisplayed()
+            test.onNodeWithTag(TAG_REPORT_DATA_NOTE).assertIsDisplayed()
             assertTrue(
-                "the warning must name the open medical data (НФТ-18)",
-                texts(test, TAG_REPORT_WARNING).contains(context.getString(R.string.history_report_warning)),
+                "the note must name the open medical data (НФТ-18)",
+                texts(test, TAG_REPORT_DATA_NOTE).contains(context.getString(R.string.history_report_data_note)),
             )
         }
     }

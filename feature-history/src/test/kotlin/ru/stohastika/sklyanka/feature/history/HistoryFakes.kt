@@ -192,8 +192,15 @@ internal class FakeRenderer : DoctorReportRenderer {
 
     val rendered: MutableList<DoctorReport> = mutableListOf()
 
-    /** Короткий состав шторки: подставляется проверкой, а не собирается из ресурсов. */
-    var summary: String = "report-summary"
+    /** Состав шторки: подставляется проверкой, а не собирается из ресурсов. */
+    var composition: ReportComposition = ReportComposition(
+        profile = "profile-a",
+        period = "period",
+        from = "from",
+        to = "to",
+        taken = "taken",
+        format = "PDF",
+    )
 
     override fun render(report: DoctorReport, zone: ZoneId): ReportDocument {
         rendered += report
@@ -204,7 +211,7 @@ internal class FakeRenderer : DoctorReportRenderer {
         )
     }
 
-    override fun composition(report: DoctorReport): String = summary
+    override fun composition(report: DoctorReport): ReportComposition = composition
 }
 
 /** Передача отчёта, которой можно назначить исход: настоящая живёт в `app`. */

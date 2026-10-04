@@ -12,6 +12,9 @@ internal interface PdfTextMetrics {
 
     fun lineHeight(role: ReportPdfRole): Float
 
+    /** Ширина текста в одну строку: ею резервируется правый столбец документа (33-I). */
+    fun measure(text: String, role: ReportPdfRole): Float
+
     /** Разбивает текст на строки, помещающиеся в [width]; пустой текст — пустой список. */
     fun wrap(text: String, role: ReportPdfRole, width: Float): List<String>
 }
@@ -67,6 +70,16 @@ internal class PdfReportLayout(
     private inner class Pager(private val content: ReportPdfContent) {
 
         private val width: Float = geometry.width - geometry.marginSide * 2
+
+        // Правый столбец «N из M (P %)» резервируется единой колонкой на весь документ:
+        // ширина по самому длинному значению плюс зазор. Текст первой строки блока
+        // переносится только в остатке — наложение исключено (33-I).
+        private val rightColumn: Float = content.medicationBlocks
+            .mapNotNull { it.right }
+            .maxOfOrNull { metrics.measure(it, ReportPdfRole.BODY) }
+            ?: 0f
+        private val firstLineWidth: Float =
+            if (rightColumn == 0f) width else (width - rightColumn - RIGHT_GAP).coerceAtLeast(0f)
         private val bottom: Float = geometry.height - geometry.marginBottom - geometry.footerGap -
             metrics.lineHeight(ReportPdfRole.FOOTER)
         private val sheets = mutableListOf<Sheet>()
@@ -122,14 +135,17 @@ internal class PdfReportLayout(
 
         private fun physical(block: ReportPdfBlock): List<PdfPhysicalLine> = block.lines.flatMapIndexed { index, line ->
             val right = block.right.takeIf { index == 0 }
-            metrics.wrap(line.text, line.role, width).mapIndexed { wrapped, text ->
+            // Первая строка блока несёт правый столбец: место под него вычтено из её
+            // ширины. Остальные строки блока занимают документ целиком.
+            val lineWidth = if (index == 0) firstLineWidth else width
+            metrics.wrap(line.text, line.role, lineWidth).mapIndexed { wrapped, text ->
                 PdfPhysicalLine(text = text, role = line.role, right = right.takeIf { wrapped == 0 })
             }
         }
 
         private fun physicalLine(line: ReportPdfLine, wrapWidth: Float): List<PdfPhysicalLine> =
             metrics.wrap(line.text, line.role, wrapWidth).map { text ->
-                PdfPhysicalLine(text = text, role = line.role, value = line.value)
+                PdfPhysicalLine(text = text, role = line.role)
             }
 
         private fun summaryLine(line: ReportPdfSummaryLine): PdfPhysicalLine =
@@ -158,5 +174,8 @@ internal class PdfReportLayout(
         const val RULE_GAP = 12f
         const val BLOCK_GAP = 10f
         const val SUMMARY_GAP = 3f
+
+        /** Зазор между текстом первой строки блока и зарезервированным правым столбцом. */
+        const val RIGHT_GAP = 8f
     }
 }

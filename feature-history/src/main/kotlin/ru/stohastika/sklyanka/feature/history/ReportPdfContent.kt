@@ -36,15 +36,11 @@ internal data class ReportPdfContent(
 /**
  * Логическая строка документа.
  *
- * [value] — число сводки, набираемое Literata 600 сразу за подписью [text]; [right] —
- * правый столбец строки лекарства («18 из 20 (90 %)»), прижатый к правому полю.
+ * [right] — правый столбец строки лекарства («18 из 20 (90 %)»), прижатый к правому полю;
+ * числа сводки живут не здесь, а в [ReportPdfSummaryLine] и набираются Literata 600
+ * сразу за подписью.
  */
-internal data class ReportPdfLine(
-    val text: String,
-    val role: ReportPdfRole,
-    val right: String? = null,
-    val value: String? = null,
-)
+internal data class ReportPdfLine(val text: String, val role: ReportPdfRole, val right: String? = null)
 
 /** Строка сводки: подпись Golos Text и число Literata 600 (правило пары шрифтов §2.3). */
 internal data class ReportPdfSummaryLine(val label: String, val value: String)
@@ -129,7 +125,6 @@ internal fun ReportPdfContent.documentText(): String = buildList {
         block.lines.forEachIndexed { index, line ->
             val parts = listOfNotNull(
                 line.text.takeIf { it.isNotEmpty() },
-                line.value,
                 block.right.takeIf { index == 0 },
             )
             add(parts.joinToString(" "))

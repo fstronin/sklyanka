@@ -20,10 +20,13 @@ import ru.stohastika.sklyanka.domain.history.BuildDoctorReportUseCase
 import ru.stohastika.sklyanka.domain.history.HistoryWindow
 import ru.stohastika.sklyanka.domain.history.MissedPatternRule
 import ru.stohastika.sklyanka.domain.history.ObserveAdherenceUseCase
+import ru.stohastika.sklyanka.domain.history.ReportPeriodRules
+import ru.stohastika.sklyanka.domain.history.ReportPreset
 import ru.stohastika.sklyanka.domain.history.ReportTarget
 import ru.stohastika.sklyanka.domain.history.ReportTransferOutcome
 import ru.stohastika.sklyanka.domain.history.TransferDoctorReportUseCase
 import ru.stohastika.sklyanka.domain.time.TimeSource
+import java.time.LocalDate
 import java.time.YearMonth
 import javax.inject.Inject
 
@@ -42,6 +45,9 @@ import javax.inject.Inject
  * Переключение месяца пересчитывает всё целиком (`TDD.md §9.2`). Частичное обновление
  * здесь дало бы сводку одного месяца рядом с календарём другого — то есть число,
  * которого не было ни в одном месяце.
+ *
+ * **Период отчёта врачу отвязан от месяца «Истории»** (ОВ-125): чипы шторки задают
+ * диапазон сами, и отчёт собирается тем же расчётом, что экран.
  */
 @HiltViewModel
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -69,13 +75,15 @@ class HistoryViewModel @Inject constructor(
         when (intent) {
             HistoryIntent.PreviousMonth -> month.value = month.value.minusMonths(1)
             HistoryIntent.NextMonth -> month.value = month.value.plusMonths(1)
-            HistoryIntent.ReportRequested -> prepareReport()
-            HistoryIntent.ReportDismissed -> local.value = local.value.copy(report = null)
+            HistoryIntent.ReportRequested -> openReport()
+            HistoryIntent.ReportDismissed -> local.value = LocalState()
+            is HistoryIntent.ReportPresetChosen -> choosePreset(intent.preset)
+            is HistoryIntent.ReportStartPicked -> pickStart(intent.date)
+            is HistoryIntent.ReportEndPicked -> pickEnd(intent.date)
             HistoryIntent.ShareReport -> share()
             is HistoryIntent.SaveTo -> save(ReportTarget(intent.target))
             HistoryIntent.SaveCancelled -> cancelSave()
             HistoryIntent.SaveUnavailable -> saveUnavailable()
-            HistoryIntent.NoticeDismissed -> local.value = local.value.copy(notice = null)
             // Переход наружу и системный выбор места экран не исполняет: первое решает
             // маршрут, второе — системный диалог, чей результат приходит обратно как SaveTo.
             HistoryIntent.Back, HistoryIntent.SaveRequested -> Unit
@@ -94,7 +102,7 @@ class HistoryViewModel @Inject constructor(
         period = period,
         insightTime = missedPattern.dominantMissedTime(period),
         report = overlay.report,
-        notice = overlay.notice,
+        reportOutcome = overlay.outcome,
     )
 
     /** Первый кадр до первого значения потока: месяц уже виден, чисел ещё нет. */
@@ -106,34 +114,84 @@ class HistoryViewModel @Inject constructor(
         )
     }
 
-    private fun prepareReport() {
+    /** «Отчёт врачу»: чистое открытие — пресет по умолчанию, значения «Другого периода» свежие. */
+    private fun openReport() {
+        val defaults = ReportPeriodRules.customDefaults(time.today())
+        rebuild(Selection(preset = ReportPreset.THIS_MONTH, from = defaults.from, to = defaults.to))
+    }
+
+    /**
+     * Смена пресета: «Другой период» возвращается к прежним датам в пределах открытой
+     * шторки, а при первом выборе — к значениям по умолчанию (ОВ-125).
+     */
+    private fun choosePreset(preset: ReportPreset) {
+        val current = local.value.selection ?: return
+        val next = if (preset == ReportPreset.CUSTOM && current.preset != ReportPreset.CUSTOM) {
+            val defaults = ReportPeriodRules.customDefaults(time.today())
+            current.copy(preset = preset, from = defaults.from, to = defaults.to)
+        } else {
+            current.copy(preset = preset)
+        }
+        rebuild(next)
+    }
+
+    private fun pickStart(date: LocalDate) {
+        val current = local.value.selection ?: return
+        val window = ReportPeriodRules.withStart(date, HistoryWindow(current.from, current.to), time.today())
+        rebuild(current.copy(preset = ReportPreset.CUSTOM, from = window.from, to = window.to))
+    }
+
+    private fun pickEnd(date: LocalDate) {
+        val current = local.value.selection ?: return
+        val window = ReportPeriodRules.withEnd(date, HistoryWindow(current.from, current.to), time.today())
+        rebuild(current.copy(preset = ReportPreset.CUSTOM, from = window.from, to = window.to))
+    }
+
+    /**
+     * Сборка отчёта за период — тем же расчётом, что экран истории.
+     *
+     * Сообщение исхода сбрасывается: оно относилось к прошлому составу, и оставить его
+     * рядом с новым числом значит сказать человеку неправду (ОВ-125).
+     */
+    private fun rebuild(selection: Selection) {
+        local.value = local.value.copy(report = null, outcome = null, selection = selection)
         viewModelScope.launch {
-            val report = buildReport(month.value) ?: return@launch
+            val report = buildReport(windowOf(selection)) ?: return@launch
             val zone = time.zone()
             local.value = local.value.copy(
                 report = ReportUi(
                     document = renderer.render(report, zone),
                     // Состав собирается тем же композером, что и PDF: двух версий одного
                     // содержания в продукте не остаётся.
-                    summary = renderer.composition(report),
+                    composition = renderer.composition(report),
+                    preset = selection.preset,
+                    customFrom = selection.from,
+                    customTo = selection.to,
+                    today = time.today(),
                 ),
             )
         }
     }
 
+    private fun windowOf(selection: Selection): HistoryWindow = if (selection.preset == ReportPreset.CUSTOM) {
+        HistoryWindow(selection.from, selection.to)
+    } else {
+        ReportPeriodRules.window(selection.preset, time.today())
+    }
+
     private fun share() {
-        val document = local.value.report?.document ?: return
-        viewModelScope.launch { notice(transferReport.share(document)) }
+        val report = local.value.report ?: return
+        viewModelScope.launch { outcome(transferReport.share(report.document), onFailure = ReportOutcome.FAILED_SHARE) }
     }
 
     private fun save(target: ReportTarget) {
-        val document = local.value.report?.document ?: return
-        viewModelScope.launch { notice(transferReport.save(document, target)) }
+        val report = local.value.report ?: return
+        viewModelScope.launch { outcome(transferReport.save(report.document, target), ReportOutcome.FAILED_SAVE) }
     }
 
     private fun cancelSave() {
-        val document = local.value.report?.document ?: return
-        viewModelScope.launch { notice(transferReport.cancelled(document)) }
+        val report = local.value.report ?: return
+        viewModelScope.launch { outcome(transferReport.cancelled(report.document), ReportOutcome.FAILED_SAVE) }
     }
 
     /**
@@ -144,26 +202,21 @@ class HistoryViewModel @Inject constructor(
      * попробовать снова (SKL-46).
      */
     private fun saveUnavailable() {
-        val document = local.value.report?.document ?: return
-        viewModelScope.launch { notice(transferReport.saveUnavailable(document)) }
+        val report = local.value.report ?: return
+        viewModelScope.launch { outcome(transferReport.saveUnavailable(report.document), ReportOutcome.FAILED_SAVE) }
     }
 
     /**
      * Исход передачи — человеку, а не только в журнал.
      *
      * Отмена системного диалога выглядит для человека точно так же, как ошибка записи,
-     * и промолчать здесь значит оставить жалобу «нажал, и ничего не произошло». Отчёт
-     * при успехе закрывается, при отмене остаётся открытым: человек хотел передать его
-     * и, скорее всего, попробует снова.
+     * и промолчать здесь значит оставить жалобу «нажал, и ничего не произошло». Успех
+     * показывается отдельным состоянием шторки, отмена и ошибка — сообщением над составом:
+     * шторка не закрывается ни в одном из исходов (ОВ-125).
      */
-    private fun notice(outcome: ReportTransferOutcome) {
+    private fun outcome(outcome: ReportTransferOutcome, onFailure: ReportOutcome) {
         analytics.track(AnalyticsEvent.ReportExported(result = resultOf(outcome)))
-        local.value = when (outcome) {
-            ReportTransferOutcome.Shared -> local.value.copy(report = null, notice = HistoryNotice.REPORT_SHARED)
-            ReportTransferOutcome.Saved -> local.value.copy(report = null, notice = HistoryNotice.REPORT_SAVED)
-            ReportTransferOutcome.Cancelled -> local.value.copy(notice = HistoryNotice.REPORT_CANCELLED)
-            is ReportTransferOutcome.Failed -> local.value.copy(notice = HistoryNotice.REPORT_FAILED)
-        }
+        local.value = local.value.copy(outcome = outcomeOf(outcome, onFailure))
     }
 
     /** Исход передачи отчёта — закрытым значением каталога (ПМ-26). */
@@ -173,11 +226,25 @@ class HistoryViewModel @Inject constructor(
         is ReportTransferOutcome.Failed -> OperationResult.ERROR
     }
 
+    private fun outcomeOf(outcome: ReportTransferOutcome, onFailure: ReportOutcome): ReportOutcome = when (outcome) {
+        ReportTransferOutcome.Shared -> ReportOutcome.SHARED
+        ReportTransferOutcome.Saved -> ReportOutcome.SAVED
+        ReportTransferOutcome.Cancelled -> ReportOutcome.CANCELLED
+        is ReportTransferOutcome.Failed -> onFailure
+    }
+
+    /** Выбранный период шторки: пресет и границы «Другого периода». */
+    private data class Selection(val preset: ReportPreset, val from: LocalDate, val to: LocalDate)
+
     /**
-     * Состояние, которого нет в базе: открытый отчёт и исход его передачи.
+     * Состояние, которого нет в базе: открытый отчёт, выбранный период и исход передачи.
      *
      * Отдельно от потока сводки намеренно: иначе любое обновление базы — например,
      * отметка приёма с часов — закрывало бы открытый отчёт под рукой человека.
      */
-    private data class LocalState(val report: ReportUi? = null, val notice: HistoryNotice? = null)
+    private data class LocalState(
+        val report: ReportUi? = null,
+        val outcome: ReportOutcome? = null,
+        val selection: Selection? = null,
+    )
 }

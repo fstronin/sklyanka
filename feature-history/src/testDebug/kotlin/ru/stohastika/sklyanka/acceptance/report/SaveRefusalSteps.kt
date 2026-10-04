@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
-import ru.stohastika.sklyanka.feature.history.HistoryNotice
+import ru.stohastika.sklyanka.feature.history.ReportOutcome
 import ru.stohastika.sklyanka.feature.history.SavePlaceStand
 
 /**
@@ -53,7 +53,7 @@ class SaveRefusalSteps(private val world: AcceptanceWorld) {
     @Тогда("^показано «Отчёт не сохранён»$")
     fun theRefusalIsShown() {
         assertTrue(stand.lastPress?.refused == true, "the refusal banner must be shown")
-        assertEquals(HistoryNotice.REPORT_FAILED, stand.notice)
+        assertEquals(ReportOutcome.FAILED_SAVE, stand.outcome)
     }
 
     @И("^системный выбор места не открывался$")

@@ -41,20 +41,40 @@
     <string name="history_insight_night">Ең жиі өткізілетін — %1$s кезіндегі түнгі қабылдау.</string>
 
     <string name="history_report_title">Дәрігерге есеп</string>
-    <string name="history_report_warning">Есепте медициналық деректер ашық түрде бар.</string>
     <string name="history_report_share">Жіберу</string>
     <string name="history_report_save">Сақтау</string>
-    <string name="history_report_shared">Есеп жіберілді</string>
-    <string name="history_report_saved">Есеп сақталды</string>
     <string name="history_report_cancelled">Есепті жіберу тоқтатылды</string>
-    <string name="history_report_failed">Есеп сақталмады</string>
-    <string name="history_notice_dismiss">Түсінікті</string>
+    <string name="history_report_share_failed">Есепті жіберу мүмкін болмады</string>
+    <string name="history_report_save_failed">Есеп сақталмады</string>
 
-    <string name="report_document_composition_profile">Бейін: %1$s</string>
+    <string name="history_report_period_this_month">Осы ай</string>
+    <string name="history_report_period_previous_month">Өткен ай</string>
+    <string name="history_report_period_last_three_months">Соңғы 3 ай</string>
+    <string name="history_report_period_custom">Басқа кезең</string>
+
+    <string name="history_report_label_profile">Бейін</string>
+    <string name="history_report_label_period">Кезең</string>
+    <string name="history_report_label_start">Бастап</string>
+    <string name="history_report_label_end">Дейін</string>
+    <string name="history_report_label_taken">Қабылданды</string>
+    <string name="history_report_label_format">Формат</string>
+    <string name="history_report_format_value" translatable="false">PDF</string>
+
+    <string name="history_report_date_start_title">Кезеңнің басы</string>
+    <string name="history_report_date_end_title">Кезеңнің соңы</string>
+
+    <string name="history_report_success_title">Есеп құрылды</string>
+    <string name="history_report_success_shared">Жіберілді</string>
+    <string name="history_report_success_saved">Сақталды</string>
+
+    <string name="history_report_data_note">Есепте медициналық деректер ашық түрде беріледі.</string>
 
     <string name="report_document_title">Дәрі қабылдау туралы есеп</string>
     <string name="report_document_profile">Sklyanka · «%1$s» бейіні</string>
     <string name="report_document_period">Кезең: %1$s — %2$s</string>
+    <string name="report_document_period_range">%1$s — %2$s</string>
+    <string name="report_document_period_single">Кезең: %1$s</string>
+    <string name="report_document_period_start">d</string>
     <string name="report_document_generated">Құрылған күні: %1$s</string>
     <string name="report_document_summary_title">ҚОРЫТЫНДЫ</string>
     <string name="report_document_taken_label">Қабылданды:</string>
@@ -73,7 +93,6 @@
     <string name="report_document_missed_single">%1$s; %2$s</string>
     <string name="report_document_missed_without_mark">%1$d — белгісіз</string>
     <string name="report_document_empty">Кезеңде бірде-бір қабылдау жазбасы жоқ</string>
-    <string name="report_document_format">Формат: PDF</string>
     <string name="report_document_disclaimer">Медициналық құжат емес</string>
     <string name="report_document_page">Sklyanka · %1$d-бет</string>
 

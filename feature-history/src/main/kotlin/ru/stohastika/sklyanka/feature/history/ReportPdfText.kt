@@ -69,18 +69,43 @@ internal class ReportPdfText(private val context: Context) {
     }
 
     /**
-     * Период: «1 — 30 сентября 2026» внутри месяца и «1 сентября 2026 — 3 октября 2026»
-     * на его границе. Год печатается у конца периода; у начала он опускается только
-     * тогда, когда месяц совпадает с концом.
+     * Период с подписью для документа: «Период: 1 — 30 сентября 2026».
+     *
+     * Год печатается у конца периода; у начала он опускается только тогда, когда месяц
+     * совпадает с концом.
      */
-    fun period(from: LocalDate, to: LocalDate, locale: Locale): String {
-        val fromText = if (YearMonth.from(from) == YearMonth.from(to)) {
-            from.dayOfMonth.toString()
-        } else {
-            fullDate(from, locale)
-        }
-        return context.getString(R.string.report_document_period, fromText, fullDate(to, locale))
+    fun period(from: LocalDate, to: LocalDate, locale: Locale): String = if (from == to) {
+        context.getString(R.string.report_document_period_single, fullDate(from, locale))
+    } else {
+        val (start, end) = periodEnds(from, to, locale)
+        context.getString(R.string.report_document_period, start, end)
     }
+
+    /**
+     * Период без подписи: «1 — 30 сентября 2026», «4 октября 2026» для одного дня.
+     *
+     * Подпись «Период» в шторке — отдельная строка карточки, и значение не должно
+     * нести её второй раз (ОВ-125). Начало внутри месяца — ресурс языка (решение
+     * 02.10.2026): в zh-CN голое «1» рядом с датой «2026年9月30日» не читается,
+     * и там печатается «9月1日».
+     */
+    fun periodRange(from: LocalDate, to: LocalDate, locale: Locale): String = when {
+        from == to -> fullDate(from, locale)
+        else -> {
+            val (start, end) = periodEnds(from, to, locale)
+            context.getString(R.string.report_document_period_range, start, end)
+        }
+    }
+
+    private fun periodEnds(from: LocalDate, to: LocalDate, locale: Locale): Pair<String, String> =
+        if (YearMonth.from(from) == YearMonth.from(to)) {
+            startOfMonth(from, locale) to fullDate(to, locale)
+        } else {
+            fullDate(from, locale) to fullDate(to, locale)
+        }
+
+    private fun startOfMonth(date: LocalDate, locale: Locale): String =
+        date.format(pattern(R.string.report_document_period_start, locale))
 
     fun pattern(string: Int, locale: Locale): DateTimeFormatter =
         DateTimeFormatter.ofPattern(context.getString(string), locale)

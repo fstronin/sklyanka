@@ -1,6 +1,7 @@
 package ru.stohastika.sklyanka.ui.token
 
 import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -114,6 +115,13 @@ object SklyankaType {
      * запрещён НФТ-47.
      */
     val TimePickerLineHeight: TextUnit = 72.sp
+
+    /**
+     * Число-показатель внутри строки карточки (§2.3, ОВ-125): Literata 600 поверх
+     * интерфейсного стиля. Не ступень шкалы, а начертание фрагмента `AnnotatedString`:
+     * «86 из 100 приёмов (86 %)» набирается одним текстом, но цифры читаются показателем.
+     */
+    val NumberSpan: SpanStyle = SpanStyle(fontFamily = Literata, fontWeight = FontWeight.SemiBold)
 
     /** Стили, набираемые заголовочным шрифтом. Опора теста правила пары шрифтов (§2.3). */
     val headings: List<TextStyle>

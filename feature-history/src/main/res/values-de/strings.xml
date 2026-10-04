@@ -41,20 +41,40 @@
     <string name="history_insight_night">Am häufigsten wird die Nacht-Einnahme um %1$s ausgelassen.</string>
 
     <string name="history_report_title">Arztbericht</string>
-    <string name="history_report_warning">Der Bericht enthält medizinische Daten im Klartext.</string>
     <string name="history_report_share">Teilen</string>
     <string name="history_report_save">Speichern</string>
-    <string name="history_report_shared">Bericht geteilt</string>
-    <string name="history_report_saved">Bericht gespeichert</string>
     <string name="history_report_cancelled">Teilen des Berichts abgebrochen</string>
-    <string name="history_report_failed">Bericht nicht gespeichert</string>
-    <string name="history_notice_dismiss">Verstanden</string>
+    <string name="history_report_share_failed">Bericht konnte nicht geteilt werden</string>
+    <string name="history_report_save_failed">Bericht nicht gespeichert</string>
 
-    <string name="report_document_composition_profile">Profil: %1$s</string>
+    <string name="history_report_period_this_month">Dieser Monat</string>
+    <string name="history_report_period_previous_month">Letzter Monat</string>
+    <string name="history_report_period_last_three_months">Letzte 3 Monate</string>
+    <string name="history_report_period_custom">Anderer Zeitraum</string>
+
+    <string name="history_report_label_profile">Profil</string>
+    <string name="history_report_label_period">Zeitraum</string>
+    <string name="history_report_label_start">Von</string>
+    <string name="history_report_label_end">Bis</string>
+    <string name="history_report_label_taken">Eingenommen</string>
+    <string name="history_report_label_format">Format</string>
+    <string name="history_report_format_value" translatable="false">PDF</string>
+
+    <string name="history_report_date_start_title">Zeitraumbeginn</string>
+    <string name="history_report_date_end_title">Zeitraumende</string>
+
+    <string name="history_report_success_title">Bericht erstellt</string>
+    <string name="history_report_success_shared">Geteilt</string>
+    <string name="history_report_success_saved">Gespeichert</string>
+
+    <string name="history_report_data_note">Der Bericht enthält medizinische Daten und wird im Klartext geteilt.</string>
 
     <string name="report_document_title">Bericht zur Medikamenteneinnahme</string>
     <string name="report_document_profile">Sklyanka · Profil „%1$s“</string>
     <string name="report_document_period">Zeitraum: %1$s — %2$s</string>
+    <string name="report_document_period_range">%1$s — %2$s</string>
+    <string name="report_document_period_single">Zeitraum: %1$s</string>
+    <string name="report_document_period_start">d</string>
     <string name="report_document_generated">Erstellt: %1$s</string>
     <string name="report_document_summary_title">ÜBERSICHT</string>
     <string name="report_document_taken_label">Eingenommen:</string>
@@ -73,7 +93,6 @@
     <string name="report_document_missed_single">%1$s; %2$s</string>
     <string name="report_document_missed_without_mark">%1$d — ohne Markierung</string>
     <string name="report_document_empty">Im Zeitraum gibt es keinen einzigen Einnahmeeintrag</string>
-    <string name="report_document_format">Format: PDF</string>
     <string name="report_document_disclaimer">Kein medizinisches Dokument</string>
     <string name="report_document_page">Sklyanka · S. %1$d</string>
 

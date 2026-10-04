@@ -116,7 +116,7 @@ class HistoryUseCasesTest {
     fun `the report is built for the active profile and names it`() = runTest {
         history.put(Months.PROFILE_ID, ownMonth())
 
-        val report = buildReport().invoke(Months.SEPTEMBER)
+        val report = buildReport().invoke(HistoryWindow.of(Months.SEPTEMBER))
 
         assertEquals("profile-a", report?.profileName)
         assertEquals(Months.instant(Months.TODAY.atTime(10, 0)), report?.generatedAt)
@@ -126,7 +126,7 @@ class HistoryUseCasesTest {
     fun `building the report leaves a trace with the period and the counts`() = runTest {
         history.put(Months.PROFILE_ID, ownMonth())
 
-        buildReport().invoke(Months.SEPTEMBER)
+        buildReport().invoke(HistoryWindow.of(Months.SEPTEMBER))
 
         val record = log.records.single { it.event == OpEvent.DOCTOR_REPORT_BUILT }
         assertEquals(Months.PROFILE_ID, record.profileId)
@@ -138,7 +138,7 @@ class HistoryUseCasesTest {
     fun `a report of a profile that is not in the database is not built`() = runTest {
         activeProfile.switchTo("profile-that-does-not-exist")
 
-        assertNull(buildReport().invoke(Months.SEPTEMBER))
+        assertNull(buildReport().invoke(HistoryWindow.of(Months.SEPTEMBER)))
     }
 
     /** Передача отчёта: каждый исход оставляет свой след, включая отмену (`TDD.md §11`). */
