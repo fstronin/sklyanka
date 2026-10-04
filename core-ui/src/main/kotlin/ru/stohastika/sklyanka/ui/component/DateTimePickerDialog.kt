@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import ru.stohastika.sklyanka.ui.R
+import ru.stohastika.sklyanka.ui.modifier.withCappedFontScale
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.LiterataTime
 import ru.stohastika.sklyanka.ui.token.SklyankaShapes
@@ -248,29 +249,54 @@ fun DateTimePickerDialog(
         onConfirm = { if (selected != null) onConfirm(selected.toLocalDateUtc()) },
         modifier = modifier,
     ) {
-        DatePicker(
-            state = state,
-            modifier = Modifier.testTag(TAG_DATE_PICKER),
-            colors = DatePickerDefaults.colors(
-                containerColor = colors.surface,
-                titleContentColor = colors.text,
-                headlineContentColor = colors.accent,
-                weekdayContentColor = colors.textMuted,
-                subheadContentColor = colors.text,
-                navigationContentColor = colors.text,
-                yearContentColor = colors.text,
-                currentYearContentColor = colors.accent,
-                selectedYearContentColor = colors.surface,
-                selectedYearContainerColor = colors.accent,
-                dayContentColor = colors.text,
-                selectedDayContentColor = colors.surface,
-                selectedDayContainerColor = colors.accent,
-                todayContentColor = colors.accent,
-                todayDateBorderColor = colors.accent,
-                dividerColor = colors.lineOnSurface,
-            ),
-        )
+        // Заголовок выбранной даты M3 набирает ролью `headlineLarge`, а мост темы
+        // отдаёт её `Display` (64 sp): дата не помещалась и год обрезался
+        // (SKL-101, дефект заказчика). Локальная типографика берёт `Headline`
+        // с потолком масштаба — как цифры тайм-пикера (ОВ-119).
+        MaterialTheme(typography = datePickerTypography()) {
+            DatePicker(
+                state = state,
+                modifier = Modifier.testTag(TAG_DATE_PICKER),
+                colors = DatePickerDefaults.colors(
+                    containerColor = colors.surface,
+                    titleContentColor = colors.text,
+                    headlineContentColor = colors.accent,
+                    weekdayContentColor = colors.textMuted,
+                    subheadContentColor = colors.text,
+                    navigationContentColor = colors.text,
+                    yearContentColor = colors.text,
+                    currentYearContentColor = colors.accent,
+                    selectedYearContentColor = colors.surface,
+                    selectedYearContainerColor = colors.accent,
+                    dayContentColor = colors.text,
+                    selectedDayContentColor = colors.surface,
+                    selectedDayContainerColor = colors.accent,
+                    todayContentColor = colors.accent,
+                    todayDateBorderColor = colors.accent,
+                    dividerColor = colors.lineOnSurface,
+                ),
+            )
+        }
     }
+}
+
+/**
+ * Типографика механизма даты (SKL-101).
+ *
+ * Выбранную дату M3 набирает ролью `headlineLarge`, а мост темы отдаёт её `Display`
+ * (64 sp) — двухстрочная дата не помещалась в заголовок и год обрезался. Здесь та же
+ * роль получает `Headline` с потолком масштаба: дата читается заголовком, но влезает
+ * целиком и не раздувается при системном шрифте 200 % (как цифры тайм-пикера, ОВ-119).
+ */
+@Composable
+private fun datePickerTypography(): Typography {
+    val headline = SklyankaType.Headline.withCappedFontScale()
+    return MaterialTheme.typography.copy(
+        displayLarge = headline,
+        displayMedium = headline,
+        displaySmall = headline,
+        headlineLarge = headline,
+    )
 }
 
 /** Тег оболочки: экранная проверка отличает диалог приложения от системного (SKL-69). */

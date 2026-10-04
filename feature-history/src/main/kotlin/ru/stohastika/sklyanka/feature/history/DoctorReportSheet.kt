@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
@@ -56,7 +57,6 @@ import ru.stohastika.sklyanka.ui.component.SecondaryButton
 import ru.stohastika.sklyanka.ui.component.SklyankaBottomSheet
 import ru.stohastika.sklyanka.ui.component.SklyankaChip
 import ru.stohastika.sklyanka.ui.component.StackingEqualButtons
-import ru.stohastika.sklyanka.ui.component.StackingRow
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaMotion
 import ru.stohastika.sklyanka.ui.token.SklyankaShapes
@@ -297,31 +297,32 @@ private fun CompositionRow(
     numbersInLiterata: Boolean = false,
 ) {
     val colors = SklyankaTheme.colors
-    StackingRow(
-        leading = {},
-        text = {
-            Text(text = label, style = SklyankaType.Caption, color = colors.textMuted)
-        },
-        action = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = if (numbersInLiterata) numberedValue(value) else AnnotatedString(value),
-                    style = SklyankaType.BodyDefaultStrong,
-                    color = colors.text,
-                    textAlign = TextAlign.End,
-                )
-                if (onValueClick != null) {
-                    ChevronGlyph(color = colors.textTertiary, pointsLeft = false, size = SklyankaSizes.Chevron)
-                }
-            }
-        },
-        gap = SklyankaSpacing.Medium,
-        minTextWidth = SklyankaSizes.MinTextColumn,
+    Row(
         modifier = Modifier
+            .fillMaxWidth()
             .then(if (onValueClick == null) Modifier else Modifier.clickable(onClick = onValueClick))
             .padding(vertical = SklyankaSpacing.Large)
             .testTag(testTag),
-    )
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(text = label, style = SklyankaType.Caption, color = colors.textMuted)
+        Spacer(modifier = Modifier.width(SklyankaSpacing.Medium))
+        // Значение занимает остаток строки и переносится внутри своей колонки.
+        // `StackingRow` здесь не годится: при нехватке ширины он уносил значение
+        // под подпись, и смена длины периода (пресеты) скачком меняла высоту
+        // карточки и всей шторки (SKL-101, дефект «скачет форма»).
+        Text(
+            text = if (numbersInLiterata) numberedValue(value) else AnnotatedString(value),
+            style = SklyankaType.BodyDefaultStrong,
+            color = colors.text,
+            textAlign = TextAlign.End,
+            modifier = Modifier.weight(1f),
+        )
+        if (onValueClick != null) {
+            Spacer(modifier = Modifier.width(SklyankaSpacing.Small))
+            ChevronGlyph(color = colors.textTertiary, pointsLeft = false, size = SklyankaSizes.Chevron)
+        }
+    }
 }
 
 /**
