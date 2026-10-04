@@ -21,6 +21,36 @@ import java.io.File
  */
 internal const val GOLDEN_LIMIT = 110
 
+/** Словарь состояний каталога дизайн-системы — вход проверки «у каждого состояния есть эталон». */
+private const val COMPONENT_STATES =
+    "core-ui/src/main/kotlin/ru/stohastika/sklyanka/ui/component/ComponentStates.kt"
+
+/** Состояния, объявленные каталогом: прочитаны из исходника, а не перечислены в шаге. */
+internal fun componentStates(): List<String> =
+    componentStatesOf(File(RepositoryLayout.root, COMPONENT_STATES).readText())
+
+/**
+ * Состояния из текста исходника каталога.
+ *
+ * Комментарии вырезаются до разбора перечислений: запятая в прозе KDoc иначе делит
+ * её как значение, и хвост комментария притворяется состоянием без эталона — так
+ * KDoc `ScreenHeaderKind.Modal` давал фальшивое состояние со ссылкой «ОВ-146».
+ */
+internal fun componentStatesOf(source: String): List<String> = ENUM_DECLARATION.findAll(withoutComments(source))
+    .flatMap { match -> match.groupValues[1].split(",").asSequence() }
+    .map { it.trim().removeSuffix(";").trim() }
+    .filter { it.isNotEmpty() && it.first().isUpperCase() }
+    .map { it.lowercase() }
+    .distinct()
+    .toList()
+
+/** Блочные комментарии — многострочные, строчный — до конца строки. */
+private fun withoutComments(source: String): String = COMMENT.replace(source, " ")
+
+private val COMMENT = Regex("""/\*.*?\*/|//[^\n]*""", RegexOption.DOT_MATCHES_ALL)
+
+private val ENUM_DECLARATION = Regex("""enum class \w+\s*\{([^}]*)}""")
+
 /**
  * Шаги приёмки SKL-24 — структурная часть.
  *
@@ -479,17 +509,6 @@ class ScreenStandSteps {
         .filter { it.extension == FEATURE }
         .toList()
 
-    private fun componentStates(): List<String> {
-        val text = File(RepositoryLayout.root, COMPONENT_STATES).readText()
-        return ENUM_DECLARATION.findAll(text)
-            .flatMap { match -> match.groupValues[1].split(",").asSequence() }
-            .map { it.trim().removeSuffix(";").trim() }
-            .filter { it.isNotEmpty() && it.first().isUpperCase() }
-            .map { it.lowercase() }
-            .distinct()
-            .toList()
-    }
-
     private fun versionCatalog(): String = File(RepositoryLayout.root, VERSION_CATALOG).readText()
 
     private fun projectChecks(): String = File(RepositoryLayout.root, PROJECT_CHECKS).readText()
@@ -571,8 +590,6 @@ class ScreenStandSteps {
         const val MOVED_CHECKS = 104
 
         const val VERSION_CATALOG = "gradle/libs.versions.toml"
-        const val COMPONENT_STATES =
-            "core-ui/src/main/kotlin/ru/stohastika/sklyanka/ui/component/ComponentStates.kt"
         const val CONVENTION = "build-logic/convention/src/main/kotlin/ru/stohastika/sklyanka/gradle"
         const val CONTOUR_RULES = "$CONVENTION/AnalyticsContourRules.kt"
         const val PROJECT_CHECKS = "$CONVENTION/ProjectChecksConventionPlugin.kt"
@@ -609,7 +626,6 @@ class ScreenStandSteps {
         const val FAIL_ON_ISSUE = "ignoreFailures = false"
 
         val TEST_ANNOTATION = Regex("""(?m)^\s*@Test\b""")
-        val ENUM_DECLARATION = Regex("""enum class \w+\s*\{([^}]*)}""")
 
         /**
          * Модули, в которых работает стенд.
