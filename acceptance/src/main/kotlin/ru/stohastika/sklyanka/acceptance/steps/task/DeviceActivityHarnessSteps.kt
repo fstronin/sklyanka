@@ -425,11 +425,11 @@ class DeviceActivityHarnessSteps {
             "feature-reminder/src/main/kotlin/ru/stohastika/sklyanka/feature/reminder/ReminderActivity.kt"
         const val DELIVERY_CHECK_ACTIVITY =
             "feature-reminder/src/main/kotlin/ru/stohastika/sklyanka/feature/reminder/DeliveryCheckActivity.kt"
-        const val SKL24_DESIGN = "docs/tasks/SKL-24/TDD.md"
-        const val SKL97_DESIGN = "docs/tasks/SKL-97/TDD.md"
-        const val SKL98_DESIGN = "docs/tasks/SKL-98/TDD.md"
-        const val SKL98_TODO = "docs/tasks/SKL-98/TODO.md"
-        const val SKL98_TECH_OPTIONS = "docs/tasks/SKL-98/tech-options.md"
+        const val SKL24_DESIGN = "docs/archive/tasks/SKL-24/TDD.md"
+        const val SKL97_DESIGN = "docs/archive/tasks/SKL-97/TDD.md"
+        const val SKL98_DESIGN = "docs/archive/tasks/SKL-98/TDD.md"
+        const val SKL98_TODO = "docs/archive/tasks/SKL-98/TODO.md"
+        const val SKL98_TECH_OPTIONS = "docs/archive/tasks/SKL-98/tech-options.md"
         const val VERSION_CATALOG = "gradle/libs.versions.toml"
 
         const val HARNESS = "tools/emulator"

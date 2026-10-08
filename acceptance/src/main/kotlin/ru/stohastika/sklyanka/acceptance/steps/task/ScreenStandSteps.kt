@@ -601,7 +601,7 @@ class ScreenStandSteps {
         const val DETEKT_CONFIG = "config/detekt/detekt.yml"
         const val SCHEMA_DIRECTORY = "core-data/schemas"
         const val SCHEMA_SUFFIX = ".json"
-        const val TECH_DESIGN = "docs/tasks/SKL-24/TDD.md"
+        const val TECH_DESIGN = "docs/archive/tasks/SKL-24/TDD.md"
         const val STAND_TEST =
             "core-ui/src/testDebug/kotlin/ru/stohastika/sklyanka/ui/snapshot/SnapshotStandTest.kt"
 

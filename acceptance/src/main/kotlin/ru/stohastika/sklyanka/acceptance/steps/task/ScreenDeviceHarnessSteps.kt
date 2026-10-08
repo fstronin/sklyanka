@@ -323,7 +323,7 @@ class ScreenDeviceHarnessSteps {
         deviceChecks = deviceCheckFiles()
     }
 
-    @Тогда("^каждый файл экранных проверок назван в docs/tasks/SKL-24/TDD.md$")
+    @Тогда("^каждый файл экранных проверок назван в docs/archive/tasks/SKL-24/TDD.md$")
     fun everyScreenCheckFileIsNamedInTheDesign() {
         assertEquals(emptyList<String>(), appChecks.map { it.name }.filterNot { design.contains(it) })
     }
@@ -512,8 +512,8 @@ class ScreenDeviceHarnessSteps {
         const val ANDROID_TEST = "androidTest"
         const val TEST_DEBUG = "testDebug"
         const val PNG = "png"
-        const val SKL24_DESIGN = "docs/tasks/SKL-24/TDD.md"
-        const val SKL96_DESIGN = "docs/tasks/SKL-96/TDD.md"
+        const val SKL24_DESIGN = "docs/archive/tasks/SKL-24/TDD.md"
+        const val SKL96_DESIGN = "docs/archive/tasks/SKL-96/TDD.md"
         const val GITIGNORE = ".gitignore"
 
         const val RUN_UI_SCRIPT = "run-ui.sh"

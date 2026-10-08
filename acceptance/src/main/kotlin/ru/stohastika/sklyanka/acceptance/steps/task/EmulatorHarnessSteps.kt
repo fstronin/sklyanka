@@ -434,7 +434,7 @@ class EmulatorHarnessSteps {
     private companion object {
         const val HARNESS_DIRECTORY = "tools/emulator"
         const val RUNBOOK = "$HARNESS_DIRECTORY/README.md"
-        const val TECH_DESIGN = "docs/tasks/SKL-27/TDD.md"
+        const val TECH_DESIGN = "docs/archive/tasks/SKL-27/TDD.md"
         const val REMINDER_WORK = "app/src/main/kotlin/ru/stohastika/sklyanka/reminder/ReminderWork.kt"
 
         const val CONFIG_SCRIPT = "config.sh"

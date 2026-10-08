@@ -762,7 +762,7 @@ class AnalyticsContourSteps {
         const val TRANSFER_DTO = "core-data/src/main/kotlin/ru/stohastika/sklyanka/data/transfer/TransferFileDto.kt"
         const val TRANSFER_VALUES = "core-data/src/main/kotlin/ru/stohastika/sklyanka/data/transfer/TransferValues.kt"
         const val TRANSFER_MAPPING = "core-data/src/main/kotlin/ru/stohastika/sklyanka/data/transfer/TransferMapping.kt"
-        const val PRODUCT_DECISIONS = "docs/spec/product-decisions.md"
+        const val PRODUCT_DECISIONS = "docs/archive/product-decisions.md"
 
         val PRODUCTION_MODULES = listOf(
             "app",

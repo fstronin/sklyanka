@@ -705,9 +705,9 @@ class DeviceTestHarnessSteps {
             "feature-onboarding/src/main/kotlin/ru/stohastika/sklyanka/feature/onboarding/consent/ConsentScreen.kt"
         const val TEST_STRINGS = "app/src/androidTest/res/values/strings.xml"
         const val GUARD_TEST = "core-data/src/test/kotlin/ru/stohastika/sklyanka/data/GuardTest.kt"
-        const val SKL24_DESIGN = "docs/tasks/SKL-24/TDD.md"
-        const val SKL96_DESIGN = "docs/tasks/SKL-96/TDD.md"
-        const val SKL100_DESIGN = "docs/tasks/SKL-100/TDD.md"
+        const val SKL24_DESIGN = "docs/archive/tasks/SKL-24/TDD.md"
+        const val SKL96_DESIGN = "docs/archive/tasks/SKL-96/TDD.md"
+        const val SKL100_DESIGN = "docs/archive/tasks/SKL-100/TDD.md"
         const val VERSION_CATALOG = "gradle/libs.versions.toml"
         const val HILT_CONVENTION =
             "build-logic/convention/src/main/kotlin/ru/stohastika/sklyanka/gradle/HiltConventionPlugin.kt"
