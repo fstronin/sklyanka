@@ -1,9 +1,7 @@
 package ru.stohastika.sklyanka.feature.reminder
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Test
 import ru.stohastika.sklyanka.domain.model.MedicationForm
 import ru.stohastika.sklyanka.domain.reminder.ReminderCard
@@ -36,14 +34,12 @@ class ReminderUiStateTest {
 
     private fun card(
         items: List<ReminderCardItem> = listOf(item()),
-        mirrored: Boolean = false,
         isSelf: Boolean = true,
         profileName: String = "self",
     ) = ReminderCard(
         slot = slot,
         scheduledAt = at,
         items = items,
-        mirroredToWatch = mirrored,
         profileIsSelf = isSelf,
         profileName = profileName,
     )
@@ -72,12 +68,6 @@ class ReminderUiStateTest {
         val state = card(items = listOf(item(), item(id = "intake-2", name = "vitamin"))).toUiState(15)
 
         assertEquals(listOf("magnesium", "vitamin"), state.items.map { it.name })
-    }
-
-    @Test
-    fun `the watch chip appears only when the card really went to the watch`() {
-        assertFalse(card().toUiState(15).mirroredToWatch)
-        assertTrue(card(mirrored = true).toUiState(15).mirroredToWatch)
     }
 
     @Test

@@ -20,7 +20,7 @@ import java.time.LocalDateTime
 import java.time.LocalTime
 
 /**
- * Шаги SKL-15: чей профиль получает отметку (`ПРФ-10`, `ПРФ-14`, `ПРФ-22`).
+ * Шаги SKL-15: чей профиль получает отметку (`ПРФ-10`, `ПРФ-14`).
  *
  * Это вопрос предметной области, а не экрана: отметка идёт настоящим доменным сценарием
  * (`MarkIntakeUseCase`) поверх мира приёмки, и подпись исполнителя ставит то же правило
@@ -73,15 +73,6 @@ class ProfileMarkingSteps(private val world: AcceptanceWorld) {
         mark(medication, world.localMoment(date, time), resultOf(result), IntakeSource.PHONE)
     }
 
-    @When("^в (\\d{2}:\\d{2}) этот приём отмечается (принятым|пропущенным) с часов$")
-    fun thatIntakeIsMarkedFromTheWatch(time: String, result: String) {
-        val intake = world.intakes.current()
-        val moment = world.clock.today().atTime(LocalTime.parse(time))
-        world.rememberState()
-        world.clock.moveTo(moment)
-        world.mark(intake.id, resultOf(result), IntakeSource.WATCH, world.clock.momentOf(moment))
-    }
-
     // --- Проверки: чей профиль получил отметку ---------------------------------
 
     @Then("^приём «([^»]+)» профиля «([^»]+)» считается (принятым|пропущенным вручную|пропущенным без отметки)$")
@@ -114,12 +105,6 @@ class ProfileMarkingSteps(private val world: AcceptanceWorld) {
         world.intakes.ofProfile(world.profiles, profile).forEach { intake ->
             assertEquals(world.before[intake.id], intake, "intake of «$profile» at ${intake.scheduledAt}")
         }
-    }
-
-    @Then("^активным профилем на телефоне остаётся «([^»]+)»$")
-    fun theActiveProfileStays(profile: String) {
-        // Отметка с часов контекст телефона не меняет: на часах экрана профиля нет (ПРФ-22).
-        assertEquals(profile, world.profiles.active, "the active profile must not follow a watch press")
     }
 
     // --- Проверки: подпись исполнителя ----------------------------------------

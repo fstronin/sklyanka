@@ -3,13 +3,12 @@ package ru.stohastika.sklyanka.feature.settings
 import ru.stohastika.sklyanka.domain.reminder.port.PermissionState
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPermission
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderSettingsValues
-import ru.stohastika.sklyanka.domain.watch.WatchLinkState
 
 /**
  * Что показывает экран «Настройки» (`design/screens/Settings.dc.html`).
  *
  * Половина экрана — утверждения о состоянии, которое приложению не принадлежит: выданы ли
- * разрешения, на связи ли часы. Поэтому в состоянии нет ни одного поля, которое можно было
+ * разрешения. Поэтому в состоянии нет ни одного поля, которое можно было
  * бы «запомнить с онбординга»: всё, что не поток, читается заново при каждом показе
  * (НФТ-52). Ложная подпись «всё в порядке» здесь стоит пропущенного приёма.
  *
@@ -36,15 +35,7 @@ data class SettingsUiState(
      * и «выбрал» (`TDD.md §5.2`).
      */
     val snoozePickerVisible: Boolean = false,
-    val watch: WatchLinkState = WatchLinkState.NotConfigured,
     val permissions: PermissionsSummary = PermissionsSummary(),
-    /**
-     * Переключатель «Аналитика» (SKL-82, ОВ-123).
-     *
-     * Показывает решение [ru.stohastika.sklyanka.domain.analytics.AnalyticsConsent.sendingAllowed]:
-     * «не спрошено», отказ и устаревшая версия текста читаются как выключено.
-     */
-    val analyticsEnabled: Boolean = false,
     /** Версия приложения — та, что собрана, а не та, что нарисована в макете. */
     val version: String = "",
 )

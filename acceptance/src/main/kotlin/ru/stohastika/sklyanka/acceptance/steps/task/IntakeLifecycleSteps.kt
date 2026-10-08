@@ -26,7 +26,7 @@ import java.time.LocalDateTime
 import java.time.LocalTime
 
 /**
- * Шаги приёмки SKL-07 — окно приёма, проход по просроченным приёмам, часы и лимит
+ * Шаги приёмки SKL-07 — окно приёма, проход по просроченным приёмам и лимит
  * приёмов по потребности.
  *
  * Здесь остался предмет самой задачи. Допущения предметной области — лекарство с дозой,
@@ -140,22 +140,11 @@ class IntakeLifecycleSteps(private val world: AcceptanceWorld) {
         world.intakes.pending(medication, moment(date, time))
     }
 
-    @Given("^часы не подключены$")
-    fun theWatchIsNotConnected() {
-        // Недоступность часов — не ошибка сценария: приём отмечается на телефоне,
-        // и доменный слой о часах вообще не знает (docs/adr/0009-wear-engine-post-mvp.md).
-    }
-
     @Given("^в (\\d{2}:\\d{2}) человек отложил напоминание на (\\d+) минут$")
     fun thePersonSnoozedTheReminder(time: String, minutes: Int) {
         // Откладывание — поведение будильника (SKL-13). Здесь важно одно: назначенное
         // время приёма при этом не переписывается (НАП-31), и именно это проверяет шаг «Тогда».
         world.clock.moveTo(world.clock.today().atTime(LocalTime.parse(time)).plusMinutes(minutes.toLong()))
-    }
-
-    @Given("^это нажатие доходит до телефона в (\\d{2}:\\d{2})$")
-    fun thatPressReachesThePhoneAt(time: String) {
-        world.delayLastPress(world.clock.today().atTime(LocalTime.parse(time)))
     }
 
     // --- Действия ---------------------------------------------------------------------------
@@ -173,27 +162,6 @@ class IntakeLifecycleSteps(private val world: AcceptanceWorld) {
     @When("^(.+?) в (\\d{2}:\\d{2}) тот же приём отмечают (принятым|пропущенным)(?: в телефоне| ещё раз)?$")
     fun theSameIntakeIsMarkedAgain(date: String, time: String, result: String) {
         world.markFromPhone(moment(date, time), resultOf(result))
-    }
-
-    @When("^в (\\d{2}:\\d{2}) этот приём отмечают (принятым|пропущенным) на часах$")
-    fun thatIntakeIsMarkedOnTheWatch(time: String, result: String) {
-        world.rememberState()
-        val at = world.clock.today().atTime(LocalTime.parse(time))
-        val intake = world.intakes.currentOrScheduled()
-        world.clock.moveTo(at)
-        world.mark(intake.id, resultOf(result), IntakeSource.WATCH, world.clock.momentOf(at))
-    }
-
-    @When("^отметка с часов и отметка с телефона приходят одновременно в (\\d{2}:\\d{2})$")
-    fun bothMarksArriveAtTheSameMoment(time: String) {
-        world.rememberState()
-        val at = world.clock.today().atTime(LocalTime.parse(time))
-        val intake = world.intakes.currentOrScheduled()
-        world.clock.moveTo(at)
-        // Один и тот же момент действия: правило первенства обязано оставить первую
-        // запись и отбросить вторую, а не сложить оба списания (ЧАС-23).
-        world.mark(intake.id, MarkResult.TAKEN, IntakeSource.WATCH, world.clock.momentOf(at))
-        world.mark(intake.id, MarkResult.TAKEN, IntakeSource.PHONE, world.clock.momentOf(at))
     }
 
     @When("^(.+?) в (\\d{2}:\\d{2}) человек пытается отметить его (принятым|пропущенным)$")
@@ -325,7 +293,7 @@ class IntakeLifecycleSteps(private val world: AcceptanceWorld) {
 
     // --- Проверки: поля отметки --------------------------------------------------------------------
 
-    @Then("^источником отметки запис\\S+ (телефон|часы|автоматическое действие приложения)$")
+    @Then("^источником отметки запис\\S+ (телефон|автоматическое действие приложения)$")
     fun theSourceOfTheMarkIs(source: String) {
         assertEquals(sourceOf(source), world.intakes.current().source, describe())
     }
@@ -404,11 +372,6 @@ class IntakeLifecycleSteps(private val world: AcceptanceWorld) {
             world.intakes.outcomes.any { it is MarkOutcome.Ignored || it is MarkOutcome.Superseded },
             "the scenario never produced a losing mark",
         )
-    }
-
-    @Then("^человек не видит сообщения об ошибке связи с часами$")
-    fun thePersonSeesNoWatchError() {
-        assertTrue(world.intakes.messagesToHuman.isEmpty(), "messages shown: ${world.intakes.messagesToHuman}")
     }
 
     @Then("^человеку понятно, что отметка уже сделана$")

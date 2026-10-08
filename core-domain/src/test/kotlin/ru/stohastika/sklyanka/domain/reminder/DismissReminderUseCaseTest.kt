@@ -17,7 +17,7 @@ class DismissReminderUseCaseTest {
     private val world = ReminderTestWorld()
 
     @Test
-    fun `taking the intake removes the card and revokes the watch card`() = runTest {
+    fun `taking the intake removes the card`() = runTest {
         world.pending()
         world.moveTo(LocalDateTime.of(2026, 9, 25, 14, 0))
         world.fired(Fixtures.INTAKE_ID)
@@ -26,7 +26,6 @@ class DismissReminderUseCaseTest {
         world.take()
 
         assertEquals(IntakeStatus.TAKEN, world.stored().status)
-        assertEquals(listOf(Fixtures.INTAKE_ID), world.watch.revoked)
         assertEquals(1, world.notifications.cancelled.size)
         // Остаток списан один раз на дозу приёма (ПР-5).
         assertEquals(BigDecimal("29"), world.medication().stockLeft)
@@ -77,13 +76,13 @@ class DismissReminderUseCaseTest {
     }
 
     @Test
-    fun `a mark from the watch closes the card on the phone and does not decrement twice`() = runTest {
+    fun `a repeated mark closes the card once and does not decrement twice`() = runTest {
         world.pending()
         world.moveTo(LocalDateTime.of(2026, 9, 25, 14, 0))
         world.fired(Fixtures.INTAKE_ID)
 
         world.moveTo(LocalDateTime.of(2026, 9, 25, 14, 1))
-        world.takeOnWatch(at = world.momentOf(LocalDateTime.of(2026, 9, 25, 14, 1)))
+        world.take()
         // Повторное нажатие на самой карточке: отметка идемпотентна по intake_id (НАП-32).
         world.take()
 
@@ -130,15 +129,15 @@ class DismissReminderUseCaseTest {
     }
 
     @Test
-    fun `a losing mark from the watch still closes the deferred reminder`() = runTest {
+    fun `a late mark still closes the deferred reminder`() = runTest {
         world.pending()
         world.moveTo(LocalDateTime.of(2026, 9, 25, 14, 1))
         world.snooze(Fixtures.INTAKE_ID, minutes = 15)
         // Телефон отметил приём раньше, но последствий отметки в этом тесте не было:
-        // проверяется именно опоздавшая отметка с часов (гонка ПР-3, ЧАС-22).
+        // проверяется именно опоздавшая доставка той же отметки (гонка ПР-3).
         world.intakes.put(world.stored().copy(status = IntakeStatus.TAKEN, actedAt = world.clock.now()))
 
-        world.takeOnWatch(at = world.momentOf(LocalDateTime.of(2026, 9, 25, 14, 2)))
+        world.take()
 
         assertTrue(world.deferred.stored.isEmpty(), "a late mark must still close the deferred reminder")
         assertNull(world.alarms.alarms[Fixtures.INTAKE_ID])
@@ -167,6 +166,5 @@ class DismissWithoutCardTest {
 
         assertTrue(world.notifications.shown.isEmpty(), "no notification may appear out of nowhere")
         assertTrue(world.notifications.cancelled.isEmpty())
-        assertEquals(listOf(Fixtures.INTAKE_ID), world.watch.revoked)
     }
 }

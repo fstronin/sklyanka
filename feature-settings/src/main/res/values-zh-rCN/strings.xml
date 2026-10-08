@@ -170,9 +170,5 @@
     <string name="profile_delete_no_space">空间不足。文件未保存，档案未删除。</string>
     <string name="profile_delete_no_picker">此设备上没有用于选择文件的应用。没有它无法保存传输文件。</string>
 
-    <!-- 数据部分中的分析（SKL-82、PM-25、OV-123） -->
-
-    <string name="settings_analytics">分析</string>
-    <string name="settings_analytics_caption">匿名统计：应用中的操作；不会发送医疗数据</string>
     <string name="settings_policy">隐私政策</string>
 </resources>

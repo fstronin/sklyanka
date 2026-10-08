@@ -5,22 +5,25 @@ import android.content.Intent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import ru.stohastika.sklyanka.domain.reminder.BuildReminderDiagnosticsUseCase
 import ru.stohastika.sklyanka.domain.reminder.DeliveryCheckState
+import ru.stohastika.sklyanka.domain.reminder.ExportReminderJournalUseCase
 import ru.stohastika.sklyanka.domain.reminder.ReminderDiagnostics
+import ru.stohastika.sklyanka.domain.reminder.ReminderJournalExportOutcome
 import ru.stohastika.sklyanka.domain.reminder.port.PermissionState
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPermission
 import ru.stohastika.sklyanka.domain.time.TimeSource
+import ru.stohastika.sklyanka.domain.transfer.ExportTarget
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
 import javax.inject.Inject
+import kotlin.coroutines.cancellation.CancellationException
 
 /** Что показывает экран проверки напоминаний (НАП-37, ОВ-126). */
 data class DiagnosticsUiState(
@@ -42,21 +45,21 @@ data class DiagnosticsUiState(
     val fixFallback: ReminderPermission? = null,
     /** Открыта ли шторка запуска самопроверки доставки (SKL-86, ОВ-108). */
     val checkSheetOpen: Boolean = false,
-    /** Открыта шторка отчёта разработчику (AC-30). */
-    val reportOpen: Boolean = false,
-    /** Текст комментария; живёт в состоянии, чтобы пережить пересборку композиции. */
-    val reportComment: String = "",
-    /** Исход последней попытки отправки; null — ещё не отправляли (AC-32/AC-33). */
-    val reportOutcome: DeveloperReportOutcome? = null,
+    /**
+     * Исход последней служебной выгрузки журнала; `null` — выгрузки не было или она
+     * отменена (отмена не исход, SKL-106).
+     */
+    val journalExport: JournalExportUi? = null,
 )
 
 /**
  * Диагностика напоминаний (НАП-37, НАП-39).
  *
- * Первый уровень не выполняет технических операций: он читает снимок, ведёт самопроверку
- * доставки и отчёт разработчику. Пересборка плана идёт автоматически, а не по кнопке
- * (ОВ-128); наружу экран ничего не отправляет без явного нажатия «Отправить отчёт»
- * (НАП-39).
+ * Первый уровень не выполняет технических операций: он читает снимок и ведёт
+ * самопроверку доставки. Пересборка плана идёт автоматически, а не по кнопке (ОВ-128);
+ * наружу экран ничего не отправляет (сети у ядра нет, НАП-39, ПЛ-3). Единственный
+ * служебный вход — выгрузка журнала файлом через системный выбор места (НФТ-51):
+ * файл остаётся на устройстве человека и в сеть не уходит.
  */
 @HiltViewModel
 class DiagnosticsViewModel @Inject constructor(
@@ -70,12 +73,13 @@ class DiagnosticsViewModel @Inject constructor(
      */
     private val deliveryCheck: DeliveryCheckController,
     /**
-     * Отправка отчёта разработчику (ОВ-127, ПМ-32).
+     * Служебная выгрузка журнала срабатываний (НФТ-51, SKL-106).
      *
-     * Шов без сети: реализацию подставляет `app`. В первой версии — заглушка, всегда
-     * возвращающая [DeveloperReportOutcome.SENT]; сетевая — отдельная задача.
+     * Тот же доменный сценарий, что проверяется тестом `ExportReminderJournalUseCaseTest`:
+     * имя файла экран знает **до** выбора места, запись идёт настоящим файловым портом
+     * `app`, отмена системного диалога в исход не попадает.
      */
-    private val reportSender: DeveloperReportSender,
+    private val exportJournal: ExportReminderJournalUseCase,
     private val time: TimeSource,
 ) : ViewModel() {
 
@@ -158,58 +162,62 @@ class DiagnosticsViewModel @Inject constructor(
         )
     }
 
-    /** «Сообщить о проблеме»: открыть шторку с пустым полем и без исхода (AC-30, AC-40). */
-    fun onReportOpen() {
-        _state.value = _state.value.copy(reportOpen = true, reportComment = "", reportOutcome = null)
-    }
+    /**
+     * Имя файла для системного выбора места: экран знает его **до** диалога, и система
+     * предлагает именно его (НФТ-51). Окончательное решение, куда попадёт файл, — за
+     * человеком; приложение путь не запоминает (НФТ-17).
+     */
+    fun journalExportFileName(): String = exportJournal.fileName()
 
-    /** Правка комментария: поле необязательное, ошибок у него нет (AC-31). */
-    fun onReportCommentChange(text: String) {
-        _state.value = _state.value.copy(reportComment = text)
+    /** Системного выбора места нет (обработчик исчез или не объявлен): отказ, а не молчание. */
+    fun onJournalExportUnavailable() {
+        _state.value = _state.value.copy(journalExport = JournalExportUi.Failed)
     }
 
     /**
-     * «Отправить отчёт»: вызвать шов отправки и назвать исход (AC-32/AC-33).
+     * Место выбрано (или выбор отменён): выгрузить журнал и назвать исход числом записей.
      *
-     * Отказ не глотается: комментарий сохраняется, а состояние ошибки покажет «Повторить».
-     * `CancellationException` перебрасывается — отмена корутины не является отказом отправки.
+     * `handle == null` — отмена системного диалога: она не исход, состояние плашки
+     * очищается, никакого «не сохранено» человек не видит (тот же порядок, что ПЕР-31).
+     * `CancellationException` перебрасывается — отмена корутины не является отказом.
      */
     @Suppress("TooGenericExceptionCaught")
-    fun onReportSend() {
-        val comment = _state.value.reportComment
+    fun onJournalExportResult(handle: String?) {
+        if (handle == null) {
+            _state.value = _state.value.copy(journalExport = null)
+            return
+        }
+        val target = ExportTarget(handle)
         viewModelScope.launch {
             val outcome = try {
-                reportSender.send(comment)
+                exportJournal(target)
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: Exception) {
-                DeveloperReportOutcome.FAILED
+                ReminderJournalExportOutcome.Failed
             }
-            _state.value = _state.value.copy(reportOutcome = outcome)
+            _state.value = _state.value.copy(
+                journalExport = when (outcome) {
+                    is ReminderJournalExportOutcome.Saved -> JournalExportUi.Saved(outcome.records)
+                    ReminderJournalExportOutcome.NotEnoughSpace -> JournalExportUi.NoSpace
+                    ReminderJournalExportOutcome.Failed -> JournalExportUi.Failed
+                },
+            )
         }
-    }
-
-    /** Закрыть шторку отчёта и очистить состояние: повтор открывается с пустым полем (AC-40). */
-    fun onReportDismiss() {
-        _state.value = _state.value.copy(reportOpen = false, reportComment = "", reportOutcome = null)
     }
 
     /** Местное время момента: журнал хранит моменты в UTC, человек читает их в своём поясе. */
     fun local(instant: Instant): LocalDateTime = instant.atZone(_state.value.zone).toLocalDateTime()
 }
 
-/** Исход отправки отчёта; `FAILED` показывает «Повторить» (AC-32/AC-33). */
-enum class DeveloperReportOutcome { SENT, FAILED }
+/** Чем закончилась служебная выгрузка журнала; отмены здесь нет по определению. */
+sealed interface JournalExportUi {
 
-/**
- * Отправка отчёта разработчику как зависимость экрана (ОВ-127, ПМ-32).
- *
- * Функциональный интерфейс, а не сетевой порт: в первой версии `app` подставляет заглушку,
- * ничего не собирающую и никуда не отправляющую (сети нет). Сетевой адаптер встанет в тот же
- * шов отдельной задачей; тогда же появится автосборка состава без медицинских данных.
- */
-fun interface DeveloperReportSender {
-    suspend fun send(comment: String): DeveloperReportOutcome
+    data class Saved(val records: Int) : JournalExportUi
+
+    data object NoSpace : JournalExportUi
+
+    data object Failed : JournalExportUi
 }
 
 /**

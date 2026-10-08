@@ -1,8 +1,5 @@
 package ru.stohastika.sklyanka.feature.onboarding
 
-import ru.stohastika.sklyanka.domain.analytics.Analytics
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsConsent
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsEvent
 import ru.stohastika.sklyanka.domain.onboarding.ConfirmReliabilityStepUseCase
 import ru.stohastika.sklyanka.domain.onboarding.LeaveOnboardingUseCase
 import ru.stohastika.sklyanka.domain.onboarding.OnboardingOutcome
@@ -41,9 +38,6 @@ internal class OnboardingTestWorld(now: Instant = NOW, zone: ZoneId = ZoneId.of(
     val navigator = FakeNavigator()
     val log = RecordingLog()
 
-    /** Канал событий аналитики: записывает, что ушло; проверяется в `OnboardingAnalyticsTest`. */
-    val analytics = RecordingAnalytics()
-
     private val readChecklist = ReadPermissionChecklistUseCase(
         permissions = permissions,
         store = store,
@@ -60,7 +54,6 @@ internal class OnboardingTestWorld(now: Instant = NOW, zone: ZoneId = ZoneId.of(
         navigator = navigator,
         log = log,
         time = time,
-        analytics = analytics,
     )
 
     companion object {
@@ -212,15 +205,4 @@ internal class RecordingLog : OnboardingLog {
     override fun revocationDetected(steps: List<PermissionStep>) {
         records += "revoked:${steps.joinToString(",")}"
     }
-}
-
-/** Канал событий аналитики в памяти: события решения и воронки онбординга (SKL-82). */
-internal class RecordingAnalytics : Analytics {
-    val events = mutableListOf<AnalyticsEvent>()
-
-    override fun track(event: AnalyticsEvent) {
-        events += event
-    }
-
-    override suspend fun applyConsent(consent: AnalyticsConsent) = Unit
 }

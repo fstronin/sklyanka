@@ -20,7 +20,6 @@ import ru.stohastika.sklyanka.acceptance.profile.TodayFromWorld
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
 import ru.stohastika.sklyanka.data.room.SklyankaConverters
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderSettingsValues
-import ru.stohastika.sklyanka.domain.watch.WatchLinkState
 import ru.stohastika.sklyanka.feature.settings.PermissionsSummary
 import ru.stohastika.sklyanka.feature.settings.ProfileRowState
 import ru.stohastika.sklyanka.feature.settings.SettingsScreen
@@ -232,7 +231,6 @@ class InterfaceLanguageSteps(private val world: AcceptanceWorld) {
             persistentEnabled = true,
             snoozeMinutes = world.reminders.settings().snoozeMinutes,
         ),
-        watch = WatchLinkState.NotConnected,
         permissions = PermissionsSummary(denied = 0, manual = 1),
         version = "0.1.0",
     )

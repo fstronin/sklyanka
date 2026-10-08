@@ -16,17 +16,11 @@ import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import ru.stohastika.sklyanka.domain.analytics.ActionSource
-import ru.stohastika.sklyanka.domain.analytics.Analytics
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsEvent
-import ru.stohastika.sklyanka.domain.analytics.IntakeActionType
-import ru.stohastika.sklyanka.domain.analytics.NoOpAnalytics
 import ru.stohastika.sklyanka.domain.intake.CreatePrnIntakeUseCase
 import ru.stohastika.sklyanka.domain.intake.MarkIntakeUseCase
 import ru.stohastika.sklyanka.domain.intake.MarkRequest
 import ru.stohastika.sklyanka.domain.intake.MarkResult
 import ru.stohastika.sklyanka.domain.intake.UndoMarkUseCase
-import ru.stohastika.sklyanka.domain.intake.UndoOutcome
 import ru.stohastika.sklyanka.domain.intake.UndoRequest
 import ru.stohastika.sklyanka.domain.medication.UndoDeleteMedicationUseCase
 import ru.stohastika.sklyanka.domain.model.IntakeSource
@@ -80,11 +74,6 @@ class TodayViewModel @Inject constructor(
      * где продукт спрашивает систему о разрешениях, не появляется.
      */
     private val readReliability: ReadReminderReliabilityUseCase,
-    /**
-     * Канал событий аналитики (SKL-82). Нулевое умолчание — для ручной сборки в тестах;
-     * гейт согласия решает, дойдёт ли событие до вендора.
-     */
-    private val analytics: Analytics = NoOpAnalytics,
 ) : ViewModel() {
 
     private val view = MutableStateFlow(ViewState())
@@ -277,7 +266,6 @@ class TodayViewModel @Inject constructor(
             // и срок снэкбара идёт от единственной состоявшейся (приёмка, строка 203).
             if (outcome.isCompleted) {
                 val recorded = outcome.intake?.status?.let(MarkResult::of) ?: result
-                analytics.track(AnalyticsEvent.IntakeAction(action = actionFor(recorded), source = ActionSource.PHONE))
                 undoActions.publishMark(
                     intakeIds = listOf(intakeId),
                     // Текст говорит о записанном исходе, а не о нажатой кнопке: при
@@ -294,11 +282,6 @@ class TodayViewModel @Inject constructor(
             // Отменяются ровно изменившиеся приёмы: отмеченный часами в действие
             // не входит, и снять чужое решение отмена не имеет права (ПР-3).
             is GroupMarkOutcome.Applied -> if (outcome.changedIntakeIds.isNotEmpty()) {
-                outcome.changedIntakeIds.forEach {
-                    analytics.track(
-                        AnalyticsEvent.IntakeAction(action = IntakeActionType.TAKEN, source = ActionSource.PHONE),
-                    )
-                }
                 undoActions.publishMark(
                     intakeIds = outcome.changedIntakeIds,
                     result = MarkResult.TAKEN,
@@ -323,14 +306,7 @@ class TodayViewModel @Inject constructor(
         undoActions.clear()
         view.update { it.copy(undo = null) }
         viewModelScope.launch {
-            val outcome = undoMark(UndoRequest(intakeIds = intakeIds, source = IntakeSource.PHONE))
-            // Отмена без отменённых отметок — не действие: приёмы уже ожидались, и событие
-            // «отменил» на пустом месте исказило бы вовлечённость.
-            if (outcome is UndoOutcome.Applied && outcome.undone > 0) {
-                analytics.track(
-                    AnalyticsEvent.IntakeAction(action = IntakeActionType.UNDO, source = ActionSource.PHONE),
-                )
-            }
+            undoMark(UndoRequest(intakeIds = intakeIds, source = IntakeSource.PHONE))
         }
     }
 
@@ -450,12 +426,6 @@ class TodayViewModel @Inject constructor(
                 toggledSections + partOfDay
             },
         )
-    }
-
-    /** Записанный исход отметки — закрытым значением каталога (ПМ-26). */
-    private fun actionFor(result: MarkResult): IntakeActionType = when (result) {
-        MarkResult.TAKEN -> IntakeActionType.TAKEN
-        MarkResult.SKIPPED -> IntakeActionType.SKIPPED
     }
 
     private companion object {

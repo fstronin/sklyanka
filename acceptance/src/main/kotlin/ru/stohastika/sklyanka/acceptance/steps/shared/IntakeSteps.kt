@@ -7,7 +7,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import ru.stohastika.sklyanka.acceptance.RussianDates
-import ru.stohastika.sklyanka.acceptance.steps.TAKE_BUTTON
 import ru.stohastika.sklyanka.acceptance.steps.localMoment
 import ru.stohastika.sklyanka.acceptance.steps.medicationNamed
 import ru.stohastika.sklyanka.acceptance.steps.resultOf
@@ -69,12 +68,6 @@ class IntakeSteps(private val world: AcceptanceWorld) {
         RussianDates.range(from, to, world.clock.today()).forEach { date ->
             times.forEach { time -> world.intakes.markTaken(name, date.atTime(time)) }
         }
-    }
-
-    @Given("^в (\\d{2}:\\d{2}) человек нажал «(Принято|Пропустить)» на часах$")
-    fun thePersonPressedOnTheWatch(time: String, button: String) {
-        val result = if (button == TAKE_BUTTON) MarkResult.TAKEN else MarkResult.SKIPPED
-        world.pressOnWatch(result, world.clock.today().atTime(LocalTime.parse(time)))
     }
 
     // --- Действия: отметка приёма --------------------------------------------------------------

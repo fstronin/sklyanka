@@ -116,16 +116,8 @@
     <string name="diagnostics_next_tomorrow">ертең, %1$s</string>
     <string name="diagnostics_next_day_pattern">d MMMM, H:mm</string>
     <string name="diagnostics_last_actual_with_deviation">%1$s көрсетілді · %2$s</string>
-    <string name="diagnostics_report_open">Мәселе туралы хабарлау</string>
-    <string name="diagnostics_report_footer_note">Әзірлеушіге арналған техникалық есеп. Дәрі атаулары мен қабылдау тарихы жоқ.</string>
-    <string name="diagnostics_report_title">Әзірлеушіге есеп</string>
-    <string name="diagnostics_report_explanation">Әзірлеушіге арналған техникалық есеп — сіздің басуыңызбен. Ол автоматты түрде жиналады және дәрі атаулары, дозалар мен қабылдау тарихы жоқ.</string>
-    <string name="diagnostics_report_comment_label">Не жұмыс істемейді?</string>
-    <string name="diagnostics_report_comment_optional">міндетті емес</string>
-    <string name="diagnostics_report_comment_hint">Мысалы: таңертең хабарлама келмейді</string>
-    <string name="diagnostics_report_send">Есепті жіберу</string>
-    <string name="diagnostics_report_sent_title">Есеп жіберілді</string>
-    <string name="diagnostics_report_sent_sub">Рақмет! Бұл хабарламаларды сенімдірек етуге көмектеседі.</string>
-    <string name="diagnostics_report_failed">Есепті жіберу мүмкін болмады. Интернет байланысын тексеріп, қайталап көріңіз. Енгізілген мәтін сақталды.</string>
-    <string name="diagnostics_report_retry">Қайталау</string>
+    <string name="diagnostics_journal_export">Журналды файлға шығару</string>
+    <string name="diagnostics_journal_export_note">Іске қосу журналы файл түрінде. Дәрі атаулары, дозалары мен бейін аттары жоқ.</string>
+    <string name="diagnostics_journal_export_no_space">Орын жеткіліксіз. Файл сақталмады.</string>
+    <string name="diagnostics_journal_export_failed">Файлды сақтау мүмкін болмады. Қайталап көріңіз.</string>
 </resources>

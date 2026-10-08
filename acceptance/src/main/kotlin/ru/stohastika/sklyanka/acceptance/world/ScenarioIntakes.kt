@@ -3,13 +3,11 @@ package ru.stohastika.sklyanka.acceptance.world
 import ru.stohastika.sklyanka.domain.intake.EndOfDayIntakeWindow
 import ru.stohastika.sklyanka.domain.intake.IntakeWindow
 import ru.stohastika.sklyanka.domain.intake.MarkOutcome
-import ru.stohastika.sklyanka.domain.intake.MarkResult
 import ru.stohastika.sklyanka.domain.intake.PrnOutcome
 import ru.stohastika.sklyanka.domain.model.Intake
 import ru.stohastika.sklyanka.domain.model.IntakeSource
 import ru.stohastika.sklyanka.domain.model.IntakeStatus
 import ru.stohastika.sklyanka.domain.today.GroupMarkOutcome
-import java.time.Instant
 import java.time.LocalDateTime
 
 /**
@@ -78,9 +76,6 @@ class ScenarioIntakes(private val clock: ScenarioClock, private val medications:
      * отказывать — иначе эту ветку нечем завести.
      */
     var failingMedicationId: String? = null
-
-    /** Нажатия на часах, ещё не дошедшие до телефона. */
-    val presses: MutableList<WatchPress> = mutableListOf()
 
     // --- Хранилище -----------------------------------------------------------------------
 
@@ -217,6 +212,3 @@ class ScenarioIntakes(private val clock: ScenarioClock, private val medications:
         remembered = true
     }
 }
-
-/** Нажатие на часах: момент действия и момент доставки — разные вещи (ПР-3, ЧАС-23). */
-data class WatchPress(val intakeId: String, val result: MarkResult, val actedAt: Instant, var deliverAt: Instant)

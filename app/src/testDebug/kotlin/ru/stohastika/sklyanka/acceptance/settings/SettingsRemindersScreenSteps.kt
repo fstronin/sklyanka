@@ -287,7 +287,6 @@ class SettingsRemindersScreenSteps(private val world: AcceptanceWorld) {
             ),
         ),
         snoozeMinutes = minutes,
-        mirroredToWatch = false,
         foreignProfileName = null,
     )
 

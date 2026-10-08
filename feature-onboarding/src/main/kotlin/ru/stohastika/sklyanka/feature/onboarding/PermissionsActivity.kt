@@ -9,9 +9,6 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import dagger.hilt.android.AndroidEntryPoint
-import ru.stohastika.sklyanka.domain.analytics.Analytics
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsEvent
-import ru.stohastika.sklyanka.domain.analytics.ScreenName
 import ru.stohastika.sklyanka.domain.onboarding.OnboardingSource
 import ru.stohastika.sklyanka.ui.locale.withInterfaceLocale
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
@@ -56,13 +53,8 @@ class PermissionsActivity : ComponentActivity() {
     @Inject
     lateinit var deliveryCheckEntry: DeliveryCheckEntry
 
-    /** Канал событий: экран — отдельная Activity, и корень приложения его не видит (SKL-82). */
-    @Inject
-    lateinit var analytics: Analytics
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        analytics.track(AnalyticsEvent.ScreenView(ScreenName.ONBOARDING))
         // Светлый экран — тёмные значки системных панелей (SKL-72 §4).
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.light(AndroidColor.TRANSPARENT, AndroidColor.TRANSPARENT),

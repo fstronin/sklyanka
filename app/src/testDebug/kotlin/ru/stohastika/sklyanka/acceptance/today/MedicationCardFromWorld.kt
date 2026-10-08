@@ -11,7 +11,6 @@ import ru.stohastika.sklyanka.domain.model.ScheduleMode
 import ru.stohastika.sklyanka.domain.stock.StockPanel
 import ru.stohastika.sklyanka.feature.meds.card.MedCardUiState
 import ru.stohastika.sklyanka.feature.meds.card.ScheduleBlockUi
-import ru.stohastika.sklyanka.feature.meds.card.WatchMirrorUi
 
 /**
  * Состояние карточки лекарства из мира сценария приёмки.
@@ -34,7 +33,6 @@ internal object MedicationCardFromWorld {
             stock = StockPanel.of(medication),
             stockUnit = doseUnitOf(medication),
             week = WeekAdherenceStrip(days = emptyList(), taken = 0, planned = 0),
-            watchMirror = WatchMirrorUi(checked = medication.mirrorToWatch, enabled = !medication.isArchived),
             isArchived = medication.isArchived,
             courseFinishedOffer = false,
             canDelete = !kotlinx.coroutines.runBlocking {

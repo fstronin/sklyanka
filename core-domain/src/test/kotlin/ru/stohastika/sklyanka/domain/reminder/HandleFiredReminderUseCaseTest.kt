@@ -2,13 +2,11 @@ package ru.stohastika.sklyanka.domain.reminder
 
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import ru.stohastika.sklyanka.domain.model.Fixtures
 import ru.stohastika.sklyanka.domain.reminder.port.DeferredReminder
-import ru.stohastika.sklyanka.domain.reminder.port.WatchSendResult
 import java.time.LocalDateTime
 
 @DisplayName("A fired alarm shows the card, writes the journal and plans the repeat")
@@ -128,32 +126,6 @@ class HandleFiredReminderUseCaseTest {
         val outcome = world.fired("nobody")
 
         assertEquals(FiredOutcome.Suppressed(SuppressReason.NOT_FOUND), outcome)
-    }
-
-    @Test
-    fun `a connected watch gets the card and the chip appears`() = runTest {
-        world.pending()
-        world.watch.connect()
-
-        val outcome = fireAtFourteen() as FiredOutcome.Shown
-
-        assertEquals(WatchSendResult.SENT, outcome.watch)
-        assertTrue(outcome.card.mirroredToWatch)
-        assertEquals(1, world.watch.sent.size)
-    }
-
-    @Test
-    fun `without a watch the chip is absent and the show is not an error`() = runTest {
-        world.pending()
-
-        val outcome = fireAtFourteen() as FiredOutcome.Shown
-
-        assertEquals(WatchSendResult.NOT_CONFIGURED, outcome.watch)
-        assertFalse(outcome.card.mirroredToWatch)
-        assertEquals(
-            WatchSendResult.NOT_CONFIGURED.code,
-            world.journal.of(ReminderEvent.SHOWN).single().watchResult,
-        )
     }
 
     @Test

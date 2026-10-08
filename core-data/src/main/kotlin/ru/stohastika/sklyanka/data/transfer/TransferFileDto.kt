@@ -124,7 +124,7 @@ internal data class IntakeDto(
 )
 
 @Serializable
-internal data class SettingsDto(val reminders: RemindersDto = RemindersDto(), val watch: WatchDto = WatchDto())
+internal data class SettingsDto(val reminders: RemindersDto = RemindersDto())
 
 @Serializable
 internal data class RemindersDto(
@@ -137,10 +137,3 @@ internal data class RemindersDto(
 
 @Serializable
 internal data class QuietHoursDto(val enabled: Boolean = false, val from: String? = null, val to: String? = null)
-
-@Serializable
-internal data class WatchDto(
-    /** Желание человека пользоваться часами; выданные права Wear Engine не переносятся (ПЕР-26). */
-    val enabled: Boolean = false,
-    @SerialName("snooze_button") val snoozeButton: Boolean = false,
-)

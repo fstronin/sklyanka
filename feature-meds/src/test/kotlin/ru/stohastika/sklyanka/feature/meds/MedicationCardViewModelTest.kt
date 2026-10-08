@@ -20,7 +20,6 @@ import ru.stohastika.sklyanka.domain.medication.ArchiveMedicationUseCase
 import ru.stohastika.sklyanka.domain.medication.CourseProgress
 import ru.stohastika.sklyanka.domain.medication.DeleteMedicationUseCase
 import ru.stohastika.sklyanka.domain.medication.RestoreMedicationUseCase
-import ru.stohastika.sklyanka.domain.medication.ToggleWatchMirrorUseCase
 import ru.stohastika.sklyanka.domain.model.ArchiveReason
 import ru.stohastika.sklyanka.domain.model.IntakeStatus
 import ru.stohastika.sklyanka.domain.model.ScheduleMode
@@ -63,7 +62,6 @@ class MedicationCardViewModelTest {
         operations = MedCardOperations(
             archive = ArchiveMedicationUseCase(medications, planner),
             restore = RestoreMedicationUseCase(medications, planner, transactor, clock, log),
-            watchMirror = ToggleWatchMirrorUseCase(medications, log),
             refillStock = RefillStockUseCase(medications, log),
             delete = DeleteMedicationUseCase(medications, intakes, planner),
         ),
@@ -110,7 +108,7 @@ class MedicationCardViewModelTest {
     }
 
     @Test
-    fun `a medication taken as needed shows a limit, no course and no watch row`() = runTest(dispatcher) {
+    fun `a medication taken as needed shows a limit and no course`() = runTest(dispatcher) {
         medications.put(
             MedsTestData.medication(id = MEDICATION_ID, mode = ScheduleMode.PRN, maxPerDay = 3, stockLeft = "9"),
         )
@@ -119,7 +117,6 @@ class MedicationCardViewModelTest {
 
         assertEquals(ScheduleBlockUi.AsNeeded(maxPerDay = 3), state.schedule)
         assertNull("an as needed medication has no course (DR-8)", state.course)
-        assertNull("an as needed intake never goes to the watch (WATCH-17)", state.watchMirror)
     }
 
     @Test
@@ -149,35 +146,6 @@ class MedicationCardViewModelTest {
         medications.put(scheduled(profileId = MedsTestData.OTHER_PROFILE_ID))
 
         assertNull("the card of a foreign profile must not open (DR-10)", open())
-    }
-
-    // --- Часы -----------------------------------------------------------------------------
-
-    @Test
-    fun `the watch switch reflects what is written`() = runTest(dispatcher) {
-        medications.put(scheduled(mirrorToWatch = false))
-        val model = viewModel()
-        advanceUntilIdle()
-        model.open(MEDICATION_ID)
-        advanceUntilIdle()
-
-        assertEquals(false, model.state.value?.watchMirror?.checked)
-
-        model.onIntent(MedCardIntent.WatchMirrorToggled(enabled = true))
-        advanceUntilIdle()
-
-        assertEquals(true, model.state.value?.watchMirror?.checked)
-        assertEquals(true, medications.snapshot().single().mirrorToWatch)
-    }
-
-    @Test
-    fun `the watch switch of an archived course is unavailable`() = runTest(dispatcher) {
-        medications.put(scheduled(archivedAt = clock.now()))
-
-        val state = requireNotNull(open())
-
-        assertEquals(false, state.watchMirror?.enabled)
-        assertTrue(state.isArchived)
     }
 
     // --- Архивация ------------------------------------------------------------------------
@@ -326,7 +294,6 @@ class MedicationCardViewModelTest {
         stockLeft: String? = "9",
         packageSize: String? = null,
         archivedAt: java.time.Instant? = null,
-        mirrorToWatch: Boolean = true,
     ) = MedsTestData.medication(
         id = MEDICATION_ID,
         profileId = profileId,
@@ -337,7 +304,6 @@ class MedicationCardViewModelTest {
         startDate = START_DATE,
         endDate = endDate,
         archivedAt = archivedAt,
-        mirrorToWatch = mirrorToWatch,
     )
 
     // --- Мягкое удаление (SKL-99, ОВ-124) ---------------------------------------------------

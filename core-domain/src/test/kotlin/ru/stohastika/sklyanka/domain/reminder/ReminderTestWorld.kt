@@ -42,7 +42,6 @@ internal class ReminderTestWorld(zone: ZoneId = MOSCOW) {
 
     val alarms = FakeAlarmGateway()
     val notifications = FakeNotificationGateway()
-    val watch = FakeWatchGateway()
     val journal = RecordingReminderJournal()
     val settings = FakeReminderSettings()
     val permissions = FakePermissionStateReader()
@@ -96,7 +95,6 @@ internal class ReminderTestWorld(zone: ZoneId = MOSCOW) {
         plan = plan,
         cards = plan,
         notifications = notifications,
-        watch = watch,
         alarms = alarms,
         journal = journal,
         deferred = deferred,
@@ -118,7 +116,6 @@ internal class ReminderTestWorld(zone: ZoneId = MOSCOW) {
         plan = plan,
         cards = plan,
         notifications = notifications,
-        watch = watch,
         deferred = deferred,
         alarms = alarms,
     )
@@ -243,9 +240,6 @@ internal class ReminderTestWorld(zone: ZoneId = MOSCOW) {
 
     suspend fun take(id: String = Fixtures.INTAKE_ID) =
         mark(MarkRequest(intakeId = id, result = MarkResult.TAKEN, source = IntakeSource.PHONE))
-
-    suspend fun takeOnWatch(id: String = Fixtures.INTAKE_ID, at: Instant) =
-        mark(MarkRequest(intakeId = id, result = MarkResult.TAKEN, source = IntakeSource.WATCH, actedAt = at))
 
     suspend fun skip(id: String = Fixtures.INTAKE_ID) =
         mark(MarkRequest(intakeId = id, result = MarkResult.SKIPPED, source = IntakeSource.PHONE))

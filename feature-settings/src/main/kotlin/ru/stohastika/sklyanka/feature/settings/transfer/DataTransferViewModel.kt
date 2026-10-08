@@ -8,11 +8,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import ru.stohastika.sklyanka.domain.analytics.Analytics
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsEvent
-import ru.stohastika.sklyanka.domain.analytics.NoOpAnalytics
-import ru.stohastika.sklyanka.domain.analytics.OperationResult
-import ru.stohastika.sklyanka.domain.analytics.TransferDirection
 import ru.stohastika.sklyanka.domain.time.TimeSource
 import ru.stohastika.sklyanka.domain.transfer.ApplyTransferUseCase
 import ru.stohastika.sklyanka.domain.transfer.ExportDataUseCase
@@ -59,11 +54,6 @@ class DataTransferViewModel @Inject constructor(
     private val files: TransferFiles,
     private val ids: TransferIdSource,
     private val time: TimeSource,
-    /**
-     * Канал событий аналитики (SKL-82). Нулевое умолчание — для ручной сборки в тестах;
-     * гейт согласия решает, дойдёт ли событие до вендора.
-     */
-    private val analytics: Analytics = NoOpAnalytics,
 ) : ViewModel() {
 
     private val mutable = MutableStateFlow(TransferUiState())
@@ -130,12 +120,6 @@ class DataTransferViewModel @Inject constructor(
         viewModelScope.launch {
             mutable.update { it.copy(busy = true, failure = null) }
             val outcome = exportData(target)
-            analytics.track(
-                AnalyticsEvent.TransferResult(
-                    direction = TransferDirection.EXPORT,
-                    result = if (outcome is ExportOutcome.Saved) OperationResult.SUCCESS else OperationResult.ERROR,
-                ),
-            )
             mutable.update { current ->
                 when (outcome) {
                     is ExportOutcome.Saved -> current.copy(
@@ -236,12 +220,6 @@ class DataTransferViewModel @Inject constructor(
             } else {
                 applyTransfer.merge(snapshot, pendingNotices, mutable.value.decisions)
             }
-            analytics.track(
-                AnalyticsEvent.TransferResult(
-                    direction = TransferDirection.IMPORT,
-                    result = if (outcome is TransferOutcome.Applied) OperationResult.SUCCESS else OperationResult.ERROR,
-                ),
-            )
             when (outcome) {
                 is TransferOutcome.Applied -> {
                     pending = null

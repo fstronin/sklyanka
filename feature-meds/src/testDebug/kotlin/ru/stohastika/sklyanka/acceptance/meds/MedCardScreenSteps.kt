@@ -11,7 +11,6 @@ import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onAllNodesWithTag
-import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
@@ -70,8 +69,8 @@ import ru.stohastika.sklyanka.ui.R as UiR
  * даты — форматтером локали стенда; ключи сценария переводятся в имена модели
  * [MedsListStand.displayName] (НФТ-19).
  *
- * Строка «Напоминать на часах» на карточке не рисуется: интеграция с Wear Engine отложена
- * (`ADR-0009`), и шаги часов проверяют отсутствие строки, а не её состояние.
+ * Строка «Напоминать на часах» на карточке не рисуется: шов часов вырезан из сборки
+ * (Р-3, SKL-106), и шагов для неё нет.
  *
  * Русский текст в аннотациях — ключевые слова Gherkin, а не текст интерфейса.
  */
@@ -552,20 +551,6 @@ class MedCardScreenSteps(private val world: AcceptanceWorld) {
         )
     }
 
-    // --- Часы (ADR-0009: строки на карточке нет) -----------------------------------------
-
-    @Тогда("^строки «Напоминать на часах» на карточке нет$")
-    fun thereIsNoWatchRow() {
-        val medication = focusedMedication()
-        // Правило ЧАС-17 в состоянии: у «по потребности» части часов нет вовсе.
-        assertNull("an on-demand medication has no watch part (ЧАС-17)", state().watchMirror)
-        // И на экране строки нет: интеграция с Wear Engine отложена (`ADR-0009`), строка
-        // вернётся вместе с ней. Проверка адресует формулировку из сценария.
-        MedCardStand.ask(world, medication) { test ->
-            test.onAllNodesWithText(WATCH_ROW).assertCountEquals(0)
-        }
-    }
-
     // --- Правка ---------------------------------------------------------------------------
 
     @Когда("^человек нажимает «Изменить» в карточке «([^»]+)»$")
@@ -728,9 +713,6 @@ class MedCardScreenSteps(private val world: AcceptanceWorld) {
 
     private companion object {
         val SHAPES = listOf("Круглая", "Овальная", "Продолговатая", "Треугольная")
-
-        /** Формулировка строки часов из сценария; на карточке её нет (`ADR-0009`). */
-        const val WATCH_ROW = "Напоминать на часах"
 
         /** Как карточка назвала бы недостающий размер упаковки, если бы о нём сообщала. */
         const val PACKAGE_SIZE_WORD = "размер упаковки"

@@ -116,7 +116,6 @@ class Sk64ReminderScreenSteps {
                 ),
             ),
             snoozeMinutes = 15,
-            mirroredToWatch = false,
             foreignProfileName = null,
         )
     }

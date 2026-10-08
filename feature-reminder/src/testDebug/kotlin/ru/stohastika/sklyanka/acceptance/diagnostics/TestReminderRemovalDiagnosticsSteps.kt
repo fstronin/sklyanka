@@ -40,12 +40,12 @@ class TestReminderRemovalDiagnosticsSteps(private val world: AcceptanceWorld) {
 
     private val context: Context = ApplicationProvider.getApplicationContext()
 
-    @Тогда("^на «Проверке напоминаний» есть «Проверить доставку» и «Сообщить о проблеме»$")
+    @Тогда("^на «Проверке напоминаний» есть «Проверить доставку» и «Выгрузить журнал»$")
     fun theFirstLevelActionsAreThere() {
         assertTrue(hasTag(TAG_CHECK_DELIVERY), "the delivery check action must be there")
         assertTrue(
-            visibleTexts().any { it.contains(context.getString(R.string.diagnostics_report_open)) },
-            "the report action must be there",
+            visibleTexts().any { it.contains(context.getString(R.string.diagnostics_journal_export)) },
+            "the journal export action must be there",
         )
     }
 

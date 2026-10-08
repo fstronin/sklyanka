@@ -19,11 +19,8 @@ object ProjectDefaults {
     const val COMPILE_SDK = 35
     const val TARGET_SDK = 35
 
-    /** ПЛ-2: имя пакета неизменяемо — к нему привязана заявка Wear Engine. */
+    /** ПЛ-2: имя пакета неизменяемо — к нему привязаны записи магазинов. */
     const val APPLICATION_ID = "ru.stohastika.sklyanka"
-
-    /** НФТ-41, ЧАС-7: шаблонные уведомления Wear Engine не принимают пакет длиннее. */
-    const val PACKAGE_NAME_LIMIT = 28
 
     const val JVM_TARGET = "17"
 

@@ -8,7 +8,7 @@ import java.time.LocalDateTime
 /**
  * Что показывает полноэкранное напоминание.
  *
- * [Closed] — не «пусто», а «отмечать больше нечего»: приём отмечен с часов или с экрана
+ * [Closed] — не «пусто», а «отмечать больше нечего»: приём отмечен с экрана
  * «Сегодня», пока карточка была открыта, и она обязана закрыться сама (НАП-32).
  */
 sealed interface ReminderUiState {
@@ -19,7 +19,6 @@ sealed interface ReminderUiState {
         val scheduledAt: LocalDateTime,
         val items: List<ReminderRow>,
         val snoozeMinutes: Int,
-        val mirroredToWatch: Boolean,
         /** Имя чужого профиля; у владельца пусто — индикации нет, потому что нечего (ПРФ-16). */
         val foreignProfileName: String?,
     ) : ReminderUiState
@@ -76,6 +75,5 @@ internal fun ReminderCard.toUiState(snoozeMinutes: Int): ReminderUiState.Card = 
         )
     },
     snoozeMinutes = snoozeMinutes,
-    mirroredToWatch = mirroredToWatch,
     foreignProfileName = profileName.takeIf { !profileIsSelf },
 )

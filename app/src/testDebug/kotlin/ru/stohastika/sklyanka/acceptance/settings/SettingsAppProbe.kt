@@ -11,8 +11,6 @@ import kotlinx.coroutines.test.setMain
 import ru.stohastika.sklyanka.acceptance.profile.TodayFromWorld
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
 import ru.stohastika.sklyanka.domain.transfer.AppStamp
-import ru.stohastika.sklyanka.domain.watch.WatchLinkState
-import ru.stohastika.sklyanka.domain.watch.WatchLinkStateReader
 import ru.stohastika.sklyanka.feature.settings.SettingsNavigation
 import ru.stohastika.sklyanka.feature.settings.SettingsRoute
 import ru.stohastika.sklyanka.feature.settings.SettingsSystemStateReader
@@ -107,8 +105,8 @@ internal object SettingsAppProbe {
             SettingsRoute(
                 viewModel = viewModel,
                 navigation = SettingsNavigation(
-                    // Экран добавления профиля — `ОВ-3`, подключение часов — SKL-17:
-                    // ни того, ни другого в продукте нет, и сценарии их не трогают.
+                    // Экран добавления профиля — `ОВ-3`: в продукте его нет, и сценарии
+                    // его не трогают.
                     openDiagnostics = { navigation.diagnostics += 1 },
                     openHistory = { navigation.history += 1 },
                     openDataTransfer = { navigation.transfer += 1 },
@@ -125,14 +123,9 @@ internal object SettingsAppProbe {
         system = SettingsSystemStateReader(
             reminders = world.reminders.settingsStore,
             permissions = world.system,
-            watch = WatchReader(world),
         ),
         stamp = AppStamp(versionName = "1.0", versionCode = 1),
     )
-
-    private class WatchReader(private val world: AcceptanceWorld) : WatchLinkStateReader {
-        override suspend fun read(): WatchLinkState = world.system.watch
-    }
 
     /** Забыть подменённый главный диспетчер: стенд не должен влиять на соседние тесты. */
     fun dropMainDispatcher() {

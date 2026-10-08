@@ -5,15 +5,14 @@ import ru.stohastika.sklyanka.domain.reminder.port.DeferredReminders
 import ru.stohastika.sklyanka.domain.reminder.port.NotificationGateway
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderCardSource
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPlanSource
-import ru.stohastika.sklyanka.domain.reminder.port.WatchGateway
 
 /**
- * Снятие напоминания вслед за состоявшейся отметкой (НАП-30, ЧАС-16).
+ * Снятие напоминания вслед за состоявшейся отметкой (НАП-30).
  *
  * Вызывается из единственной точки отметки (`MarkIntakeUseCase`) — и поэтому работает
- * одинаково для телефона, часов и общей карточки. Отдельной «отметки из напоминания»
- * в проекте нет: второй путь записи означал бы второй способ обойти проверку статуса
- * и двойное списание остатка в гонке (ЧАС-24).
+ * одинаково для отметки с «Сегодня», с карточки и по потребности. Отдельной «отметки из
+ * напоминания» в проекте нет: второй путь записи означал бы второй способ обойти
+ * проверку статуса и двойное списание остатка в гонке.
  *
  * Отметка одной строки общей карточки её не закрывает (НАП-36): карточка показывается
  * заново без отмеченной строки, а снимается только когда в слоте не осталось ожидающихся
@@ -28,16 +27,12 @@ class DismissReminderUseCase(
     private val plan: ReminderPlanSource,
     private val cards: ReminderCardSource,
     private val notifications: NotificationGateway,
-    private val watch: WatchGateway,
     private val deferred: DeferredReminders,
     private val alarms: AlarmGateway,
 ) {
 
     suspend operator fun invoke(intakeId: String) {
         val intake = plan.intake(intakeId) ?: return
-        // Парная карточка на часах отзывается всегда: отметили её на телефоне или
-        // на часах, второй раз спрашивать не о чем (ЧАС-16).
-        watch.revoke(intakeId)
 
         // Запись отвечает, было ли откладывание: у обычного будильника будущего приёма
         // её нет, и снимать его нельзя — отмена отметки вернула бы приём без напоминания.
@@ -56,7 +51,7 @@ class DismissReminderUseCase(
      * слота не звучит второй раз — уведомление обновляется.
      */
     private suspend fun refresh(slot: ReminderSlot) {
-        val card = cards.card(slot, mirroredToWatch = false)
+        val card = cards.card(slot)
         if (card == null || card.isEmpty) {
             notifications.cancel(slot)
         } else {

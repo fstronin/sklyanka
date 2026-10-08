@@ -33,7 +33,6 @@ import ru.stohastika.sklyanka.feature.meds.archive.ArchiveUiState
 import ru.stohastika.sklyanka.feature.meds.card.MedCardUiState
 import ru.stohastika.sklyanka.feature.meds.card.MedicationCardScreen
 import ru.stohastika.sklyanka.feature.meds.card.ScheduleBlockUi
-import ru.stohastika.sklyanka.feature.meds.card.WatchMirrorUi
 import ru.stohastika.sklyanka.feature.meds.form.FormInputs
 import ru.stohastika.sklyanka.feature.meds.form.FormMode
 import ru.stohastika.sklyanka.feature.meds.form.MedFormUiState
@@ -196,9 +195,6 @@ class MedsScreenSnapshotTest {
         stock = StockPanel.Visible(unitsLeft = BigDecimal("9"), daysLeft = STOCK_DAYS, warning = true),
         stockUnit = DoseUnit.TABLET,
         week = week(),
-        // Состояние часов непустое, а строки на снимке нет: состав экрана определён
-        // решением `ADR-0009`, и снимок обязан это показывать.
-        watchMirror = WatchMirrorUi(checked = true, enabled = true),
         isArchived = false,
         courseFinishedOffer = false,
         refill = null,

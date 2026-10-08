@@ -8,17 +8,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import ru.stohastika.sklyanka.domain.analytics.Analytics
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsEvent
-import ru.stohastika.sklyanka.domain.analytics.NoOpAnalytics
-import ru.stohastika.sklyanka.domain.analytics.OnboardingEntry
-import ru.stohastika.sklyanka.domain.analytics.OnboardingStep
-import ru.stohastika.sklyanka.domain.analytics.StepResult
 import ru.stohastika.sklyanka.domain.onboarding.ConfirmReliabilityStepUseCase
 import ru.stohastika.sklyanka.domain.onboarding.LeaveOnboardingUseCase
 import ru.stohastika.sklyanka.domain.onboarding.OnboardingOutcome
 import ru.stohastika.sklyanka.domain.onboarding.OnboardingSource
-import ru.stohastika.sklyanka.domain.onboarding.PermissionChecklist
 import ru.stohastika.sklyanka.domain.onboarding.PermissionStep
 import ru.stohastika.sklyanka.domain.onboarding.ReadPermissionChecklistUseCase
 import ru.stohastika.sklyanka.domain.onboarding.RevokedPermissions
@@ -30,7 +23,6 @@ import ru.stohastika.sklyanka.domain.time.TimeSource
 import java.time.Instant
 import java.time.LocalDateTime
 import javax.inject.Inject
-import ru.stohastika.sklyanka.domain.analytics.OnboardingOutcome as AnalyticsOnboardingOutcome
 
 /**
  * Экран «Настроить надёжность» (НАП-19 … НАП-21, ОВ-106, ОВ-107).
@@ -50,12 +42,6 @@ class OnboardingViewModel @Inject constructor(
     private val navigator: SystemSettingsNavigator,
     private val log: OnboardingLog,
     time: TimeSource,
-    /**
-     * Канал событий аналитики (SKL-82). Нулевое умолчание — для ручной сборки в тестах;
-     * продукт подставляет адаптер вендора через Hilt, и гейт согласия решает, дойдут ли
-     * события до SDK.
-     */
-    private val analytics: Analytics = NoOpAnalytics,
 ) : ViewModel() {
 
     private val zone = time.zone()
@@ -64,8 +50,8 @@ class OnboardingViewModel @Inject constructor(
     val state: StateFlow<OnboardingUiState> = _state.asStateFlow()
 
     /** Куда уходить с экрана; `null` — человек всё ещё на нём. */
-    private val _exit = MutableStateFlow<OnboardingExit?>(null)
-    val exit: StateFlow<OnboardingExit?> = _exit.asStateFlow()
+    private val _exit = MutableStateFlow<Unit?>(null)
+    val exit: StateFlow<Unit?> = _exit.asStateFlow()
 
     private var opened = false
 
@@ -82,7 +68,6 @@ class OnboardingViewModel @Inject constructor(
         // значение, и LaunchedEffect(exit) не перезапускается (ОВ-86).
         _exit.value = null
         _state.update { it.copy(source = source, outageSince = outageSince, focusStep = null) }
-        analytics.track(AnalyticsEvent.OnboardingStarted(entryFor(source)))
         refresh(logOpening = true, focus = source.focusesFirstUnresolved)
     }
 
@@ -169,12 +154,6 @@ class OnboardingViewModel @Inject constructor(
     /** Результат системного диалога разрешения: состояние перечитывается у системы, а не берётся из ответа. */
     fun onPermissionResult(step: PermissionStep, granted: Boolean) {
         log.permissionResult(step, granted)
-        analytics.track(
-            AnalyticsEvent.OnboardingStepResult(
-                step = stepFor(step),
-                result = if (granted) StepResult.GRANTED else StepResult.SKIPPED,
-            ),
-        )
         // Отказ не закрывает экран и не мешает пройти остальные шаги (НАП-18).
         refresh()
     }
@@ -183,17 +162,11 @@ class OnboardingViewModel @Inject constructor(
     fun onManualConfirmed(step: PermissionStep, confirmed: Boolean) {
         viewModelScope.launch {
             confirmStep(step, confirmed)
-            analytics.track(
-                AnalyticsEvent.OnboardingStepResult(
-                    step = stepFor(step),
-                    result = if (confirmed) StepResult.CONFIRMED else StepResult.SKIPPED,
-                ),
-            )
             refresh()
         }
     }
 
-    /** «Дальше»: при пройденной цепочке — подключение часов, иначе — «Сегодня». */
+    /** «Дальше» при пройденной цепочке: онбординг закончен, следующий экран — «Сегодня». */
     fun onNext() {
         leave(OnboardingOutcome.NEXT)
     }
@@ -212,17 +185,7 @@ class OnboardingViewModel @Inject constructor(
         viewModelScope.launch {
             val checklist = _state.value.checklist ?: readChecklist()
             leaveOnboarding(outcome, checklist)
-            analytics.track(
-                AnalyticsEvent.OnboardingFinished(
-                    entry = entryFor(_state.value.source),
-                    outcome = if (outcome == OnboardingOutcome.NEXT) {
-                        AnalyticsOnboardingOutcome.COMPLETED
-                    } else {
-                        AnalyticsOnboardingOutcome.SKIPPED
-                    },
-                ),
-            )
-            _exit.value = destinationOf(outcome, checklist)
+            _exit.value = Unit
         }
     }
 
@@ -235,38 +198,6 @@ class OnboardingViewModel @Inject constructor(
         log.vendorStepOpened(step, result)
         if (result == StepOpenResult.FALLBACK_TO_INSTRUCTIONS) {
             _state.update { it.copy(instructions = it.instructions + step) }
-        }
-    }
-
-    /** Продуктовое имя входа — только закрытые значения каталога (ПМ-26). */
-    private fun entryFor(source: OnboardingSource): OnboardingEntry = when (source) {
-        OnboardingSource.FIRST_LAUNCH -> OnboardingEntry.FIRST_LAUNCH
-        OnboardingSource.SETTINGS -> OnboardingEntry.SETTINGS
-        OnboardingSource.TODAY_WARNING -> OnboardingEntry.TODAY_BANNER
-        OnboardingSource.OUTAGE_BANNER -> OnboardingEntry.BREAK_BANNER
-    }
-
-    /** Продуктовое имя шага цепочки — только закрытые значения каталога (ПМ-26). */
-    private fun stepFor(step: PermissionStep): OnboardingStep = when (step) {
-        PermissionStep.NOTIFICATIONS -> OnboardingStep.NOTIFICATIONS
-        PermissionStep.EXACT_ALARMS -> OnboardingStep.EXACT_ALARMS
-        PermissionStep.APP_STARTUP -> OnboardingStep.APP_LAUNCH
-        PermissionStep.BATTERY_SAVING -> OnboardingStep.BATTERY
-        PermissionStep.RECENTS_PIN -> OnboardingStep.RECENTS
-    }
-
-    private companion object {
-
-        /**
-         * Куда ведёт уход с экрана.
-         *
-         * «Дальше» при непройденной цепочке ведёт туда же, куда «Пропустить»: обещать
-         * подключение часов тому, у кого напоминание ещё не дойдёт до телефона, значит
-         * увести его от единственной причины, по которой он на этом экране.
-         */
-        fun destinationOf(outcome: OnboardingOutcome, checklist: PermissionChecklist): OnboardingExit = when {
-            outcome == OnboardingOutcome.NEXT && checklist.allResolved -> OnboardingExit.WATCH_SETUP
-            else -> OnboardingExit.TODAY
         }
     }
 }

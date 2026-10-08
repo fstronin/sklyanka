@@ -7,9 +7,9 @@ import org.junit.jupiter.api.Test
 import ru.stohastika.sklyanka.domain.model.IntakeSource
 
 /**
- * Подпись «отметили вы» появляется ровно в одном случае из четырёх (ПР-12, ПРФ-14).
+ * Подпись «отметили вы» появляется ровно в одном случае из трёх (ПР-12, ПРФ-14).
  *
- * Проверяются все четыре ветви, потому что цена ошибки в каждой своя и все они про ложь
+ * Проверяются все три ветви, потому что цена ошибки в каждой своя и все они про ложь
  * в истории: лишняя подпись приписывает владельцу действие, которого он не делал,
  * пропущенная — снимает с него авторство отметки, которую он поставил.
  */
@@ -31,19 +31,6 @@ class ActorResolverTest {
     fun `an intake of the own profile carries no actor`() {
         assertNull(
             ActorResolver.actorFor(intakeProfileId = SELF, source = IntakeSource.PHONE, selfProfileId = SELF),
-        )
-    }
-
-    /**
-     * ПРФ-22: на часах экрана профиля нет, и нажавший мог быть самим подопечным.
-     *
-     * Самая дорогая из четырёх ветвей: подпись «отметили вы» у отметки с часов — это
-     * прямая неправда в истории, по которой человек принимает решения о лечении.
-     */
-    @Test
-    fun `a mark from the watch is never attributed to the owner`() {
-        assertNull(
-            ActorResolver.actorFor(intakeProfileId = FOREIGN, source = IntakeSource.WATCH, selfProfileId = SELF),
         )
     }
 

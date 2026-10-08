@@ -171,19 +171,11 @@
     <string name="diagnostics_next_tomorrow">завтра, %1$s</string>
     <string name="diagnostics_next_day_pattern">d MMMM, H:mm</string>
     <string name="diagnostics_last_actual_with_deviation">Показано в %1$s · %2$s</string>
-    <string name="diagnostics_report_open">Сообщить о проблеме</string>
-    <string name="diagnostics_report_footer_note">Технический отчёт для разработчика. Без названий лекарств и истории приёмов.</string>
-    <string name="diagnostics_report_title">Отчёт разработчику</string>
-    <string name="diagnostics_report_explanation">Технический отчёт для разработчика — по вашему нажатию. Он собирается автоматически и не содержит названий лекарств, доз и истории приёмов.</string>
-    <string name="diagnostics_report_comment_label">Что не работает?</string>
-    <string name="diagnostics_report_comment_optional">необязательно</string>
-    <string name="diagnostics_report_comment_hint">Например: напоминание не приходит утром</string>
-    <string name="diagnostics_report_send">Отправить отчёт</string>
-    <string name="diagnostics_report_sent_title">Отчёт отправлен</string>
-    <string name="diagnostics_report_sent_sub">Спасибо! Это помогает сделать напоминания надёжнее.</string>
-    <string name="diagnostics_report_failed">Не удалось отправить отчёт. Проверьте подключение к интернету и попробуйте снова. Введённый текст сохранён.</string>
-    <string name="diagnostics_report_retry">Повторить</string>
+    <string name="diagnostics_journal_export">Выгрузить журнал</string>
+    <string name="diagnostics_journal_export_note">Журнал срабатываний файлом. Без названий лекарств, доз и имён профилей.</string>
+    <string name="diagnostics_journal_export_no_space">Места недостаточно. Файл не сохранён.</string>
+    <string name="diagnostics_journal_export_failed">Не удалось сохранить файл. Попробуйте ещё раз.</string>
 
-    <!-- SKL-102: проверка напоминаний, отчёт разработчику. -->
+    <!-- SKL-102: проверка напоминаний; SKL-106: служебная выгрузка журнала вместо отчёта-заглушки. -->
     <string name="diagnostics_clock_pattern" translatable="false">H:mm</string>
 </resources>

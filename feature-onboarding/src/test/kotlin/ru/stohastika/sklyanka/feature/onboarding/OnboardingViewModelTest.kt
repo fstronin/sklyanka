@@ -358,20 +358,20 @@ class OnboardingViewModelTest {
         model.onSkip()
         model.settle()
 
-        assertEquals(OnboardingExit.TODAY, model.exit.value)
+        assertEquals(Unit, model.exit.value)
         assertTrue(world.store.seen())
         assertTrue(world.log.records.contains("left:SKIPPED:5"))
     }
 
     @Test
-    fun `a passed chain leads on to the next onboarding step`() = runTest(dispatcher) {
+    fun `a passed chain leaves the onboarding for Today`() = runTest(dispatcher) {
         allVendorConfirmed()
         val model = started()
 
         model.onNext()
         model.settle()
 
-        assertEquals(OnboardingExit.WATCH_SETUP, model.exit.value)
+        assertEquals(Unit, model.exit.value)
         assertTrue(world.log.records.contains("left:NEXT:0"))
     }
 
@@ -382,9 +382,7 @@ class OnboardingViewModelTest {
         model.onNext()
         model.settle()
 
-        // Обещать подключение часов тому, у кого напоминание ещё не дойдёт до телефона,
-        // значит увести его от единственной причины, по которой он на этом экране.
-        assertEquals(OnboardingExit.TODAY, model.exit.value)
+        assertEquals(Unit, model.exit.value)
     }
 
     @Test
@@ -406,7 +404,7 @@ class OnboardingViewModelTest {
         model.onDone()
         model.settle()
 
-        assertEquals(OnboardingExit.TODAY, model.exit.value)
+        assertEquals(Unit, model.exit.value)
         assertTrue(world.store.seen())
     }
 
@@ -440,7 +438,7 @@ class OnboardingViewModelTest {
 
         model.onSkip()
         model.settle()
-        assertEquals(OnboardingExit.TODAY, model.exit.value)
+        assertEquals(Unit, model.exit.value)
 
         model.start(OnboardingSource.TODAY_WARNING)
         model.settle()
@@ -452,7 +450,7 @@ class OnboardingViewModelTest {
 
     @Test
     fun `every entry emits the same exit again after the start reset`() = runTest(dispatcher) {
-        val exits = mutableListOf<OnboardingExit?>()
+        val exits = mutableListOf<Unit?>()
         val model = started()
         val observer = launch { model.exit.collect { exits += it } }
         model.settle()
@@ -466,7 +464,7 @@ class OnboardingViewModelTest {
 
         // StateFlow не эмитит равное значение: без сброса второй onSkip не породил бы
         // эмиссии, и LaunchedEffect(exit) в маршруте не перезапустился бы (ОВ-86).
-        assertEquals(listOf(null, OnboardingExit.TODAY, null, OnboardingExit.TODAY), exits)
+        assertEquals(listOf(null, Unit, null, Unit), exits)
         observer.cancel()
     }
 }

@@ -128,13 +128,13 @@ class IntakePlanningTest {
 
     /**
      * Отметка неприкосновенна (ПР-11): условие `status = 'PENDING'` стоит внутри DELETE,
-     * поэтому отметка, пришедшая с часов между чтением окна и записью, переживает
+     * поэтому отметка, пришедшая с телефона между чтением окна и записью, переживает
      * перепланирование.
      */
     @Test
     fun aMarkedIntakeIsNotDeletedEvenWhenThePlanAsksForIt() = runTest {
         db.intakes.insertAll(listOf(TestData.scheduledIntake(id = STRAY_ID, scheduledAt = STRAY_MOMENT)))
-        intakes.markIfPending(STRAY_ID, IntakeStatus.TAKEN, IntakeSource.WATCH)
+        intakes.markIfPending(STRAY_ID, IntakeStatus.TAKEN, IntakeSource.PHONE)
 
         val applied = intakes.applyPlan(
             profileId = TestData.OWNER_ID,

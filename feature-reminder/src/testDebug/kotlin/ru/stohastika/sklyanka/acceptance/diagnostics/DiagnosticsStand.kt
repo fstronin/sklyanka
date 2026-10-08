@@ -16,6 +16,7 @@ import ru.stohastika.sklyanka.domain.model.ScheduleMode
 import ru.stohastika.sklyanka.domain.reminder.BuildReminderDiagnosticsUseCase
 import ru.stohastika.sklyanka.domain.reminder.DeliveryCheckRule
 import ru.stohastika.sklyanka.domain.reminder.DeliveryCheckState
+import ru.stohastika.sklyanka.domain.reminder.ExportReminderJournalUseCase
 import ru.stohastika.sklyanka.domain.reminder.ReadReminderReliabilityUseCase
 import ru.stohastika.sklyanka.domain.reminder.ReminderIntake
 import ru.stohastika.sklyanka.domain.reminder.ReminderSlot
@@ -25,8 +26,6 @@ import ru.stohastika.sklyanka.domain.time.TimeSource
 import ru.stohastika.sklyanka.feature.reminder.DeliveryCheckController
 import ru.stohastika.sklyanka.feature.reminder.DeliveryCheckNotice
 import ru.stohastika.sklyanka.feature.reminder.DeliveryCheckScreen
-import ru.stohastika.sklyanka.feature.reminder.DeveloperReportOutcome
-import ru.stohastika.sklyanka.feature.reminder.DeveloperReportSender
 import ru.stohastika.sklyanka.feature.reminder.DiagnosticsScreen
 import ru.stohastika.sklyanka.feature.reminder.DiagnosticsUiState
 import ru.stohastika.sklyanka.feature.reminder.DiagnosticsViewModel
@@ -42,8 +41,9 @@ import java.time.ZoneId
  *
  * Диагностика — часть продукта, а не отладочный экран, и её снимок собирает настоящий
  * `BuildReminderDiagnosticsUseCase` из тех же портов, что в `app`: журнала, будильников,
- * разрешений, плана и подтверждений самопроверки. Отправка отчёта идёт через подставной
- * шов без сети: исход задаётся сценарием, а реальная заглушка `app` всегда отвечает «отправлено».
+ * разрешений, плана и подтверждений самопроверки. Выгрузка журнала собирается настоящим
+ * `ExportReminderJournalUseCase` на файловом порте мира: системный выбор места на стенде
+ * играют шаги (`chooseJournalPlace`/`cancelJournalPick`), а не платформа.
  *
  * Подменённый главный диспетчер обязан сниматься прогоном (`dropMainDispatcher`).
  */
@@ -69,14 +69,9 @@ internal object DiagnosticsStand {
     var restartSetupRequested: Boolean = false
         private set
 
-    /** Исход отправки отчёта, который вернёт шов; сценарии переключают его на отказ (AC-33). */
-    var reportOutcome: DeveloperReportOutcome = DeveloperReportOutcome.SENT
-
-    /** Комментарии, дошедшие до шва отправки: проверяется, что текст не потерян (AC-33). */
-    val sentComments: MutableList<String> = mutableListOf()
-
-    /** Подмена шва отправки для проверки отмены; `null` — обычный исход сценария. */
-    var reportSenderOverride: DeveloperReportSender? = null
+    /** Имя файла, которое экран назвал системе при нажатии; null — выбор ещё не запрошен. */
+    var exportRequested: String? = null
+        private set
 
     /**
      * Что объявляется баннером при входе (SKL-86): результат проверки или ничего.
@@ -97,9 +92,7 @@ internal object DiagnosticsStand {
             fixedSetup = false
             restartSetupRequested = false
             announcement = null
-            reportOutcome = DeveloperReportOutcome.SENT
-            sentComments.clear()
-            reportSenderOverride = null
+            exportRequested = null
             Dispatchers.setMain(UnconfinedTestDispatcher())
         }
     }
@@ -185,10 +178,9 @@ internal object DiagnosticsStand {
                             fixedSetup = true
                         }
                     },
-                    onReportOpen = { onAction { model(world).onReportOpen() } },
-                    onReportCommentChange = { text -> onAction { model(world).onReportCommentChange(text) } },
-                    onReportSend = { onAction { model(world).onReportSend() } },
-                    onReportDismiss = { onAction { model(world).onReportDismiss() } },
+                    onJournalExport = {
+                        onAction { exportRequested = model(world).journalExportFileName() }
+                    },
                     onBack = { onAction { backRequested = true } },
                     toLocal = { instant: Instant -> instant.atZone(world.clock.zone).toLocalDateTime() },
                 )
@@ -264,17 +256,23 @@ internal object DiagnosticsStand {
 
                 override suspend fun acknowledge(dueAt: Instant) = world.reminders.acknowledgeDeliveryCheck(dueAt)
             },
-            reportSender = DeveloperReportSender { comment ->
-                val override = reportSenderOverride
-                if (override != null) {
-                    override.send(comment)
-                } else {
-                    sentComments += comment
-                    reportOutcome
-                }
-            },
+            exportJournal = ExportReminderJournalUseCase(
+                journal = world.reminders.journal,
+                files = world.transfer.files,
+                time = world.clock.time,
+            ),
             time = world.clock.time,
         )
+    }
+
+    /** Человек выбрал место в системном диалоге: экран получает handle и пишет журнал. */
+    fun chooseJournalPlace(world: AcceptanceWorld, handle: String = "memory://document") {
+        model(world).onJournalExportResult(handle)
+    }
+
+    /** Человек отменил выбор: исход — молчание, не «не сохранено» (ПЕР-31). */
+    fun cancelJournalPick(world: AcceptanceWorld) {
+        model(world).onJournalExportResult(null)
     }
 
     /** Забыть подменённый главный диспетчер: стенд не должен влиять на соседние тесты. */

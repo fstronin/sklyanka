@@ -116,16 +116,8 @@
     <string name="diagnostics_next_tomorrow">mañana, %1$s</string>
     <string name="diagnostics_next_day_pattern">"d 'de' MMMM, H:mm"</string>
     <string name="diagnostics_last_actual_with_deviation">Mostrado a las %1$s · %2$s</string>
-    <string name="diagnostics_report_open">Informar de un problema</string>
-    <string name="diagnostics_report_footer_note">Informe técnico para el desarrollador. Sin nombres de medicamentos ni historial de tomas.</string>
-    <string name="diagnostics_report_title">Informe al desarrollador</string>
-    <string name="diagnostics_report_explanation">Un informe técnico para el desarrollador — solo al pulsar. Se compone automáticamente y no contiene nombres de medicamentos, dosis ni historial de tomas.</string>
-    <string name="diagnostics_report_comment_label">¿Qué no funciona?</string>
-    <string name="diagnostics_report_comment_optional">opcional</string>
-    <string name="diagnostics_report_comment_hint">Por ejemplo: el recordatorio no llega por la mañana</string>
-    <string name="diagnostics_report_send">Enviar informe</string>
-    <string name="diagnostics_report_sent_title">Informe enviado</string>
-    <string name="diagnostics_report_sent_sub">¡Gracias! Esto ayuda a que los recordatorios sean más fiables.</string>
-    <string name="diagnostics_report_failed">No se pudo enviar el informe. Comprueba la conexión a internet e inténtalo de nuevo. El texto introducido se conserva.</string>
-    <string name="diagnostics_report_retry">Reintentar</string>
+    <string name="diagnostics_journal_export">Exportar el registro</string>
+    <string name="diagnostics_journal_export_note">Registro de activaciones en un archivo. Sin nombres de medicamentos, dosis ni nombres de perfiles.</string>
+    <string name="diagnostics_journal_export_no_space">No hay espacio suficiente. El archivo no se guardó.</string>
+    <string name="diagnostics_journal_export_failed">No se pudo guardar el archivo. Inténtalo de nuevo.</string>
 </resources>

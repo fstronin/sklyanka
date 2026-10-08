@@ -11,7 +11,6 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import ru.stohastika.sklyanka.data.analytics.AnalyticsConsentPreferences
 import ru.stohastika.sklyanka.data.room.SklyankaDatabase
 import ru.stohastika.sklyanka.data.room.SklyankaMigrations
 import ru.stohastika.sklyanka.data.room.dao.IntakeDao
@@ -58,23 +57,6 @@ object DataModule {
             context.preferencesDataStoreFile(SETTINGS_NAME)
         }
 
-    /**
-     * Файл согласия на аналитику — отдельно от настроек (SKL-82, ПЕР-37).
-     *
-     * Согласие принадлежит установке и не участвует в переносе данных; отдельный файл
-     * делает это свойством хранилища, а не обещанием.
-     */
-    @Provides
-    @Singleton
-    @AnalyticsConsentPreferences
-    fun provideAnalyticsConsentPreferences(@ApplicationContext context: Context): DataStore<Preferences> =
-        PreferenceDataStoreFactory.create {
-            context.preferencesDataStoreFile(ANALYTICS_CONSENT_NAME)
-        }
-
     /** Имя файла постоянных настроек. Активный профиль живёт здесь, а не в памяти процесса (ПРФ-17). */
     private const val SETTINGS_NAME = "sklyanka_settings"
-
-    /** Имя файла согласия на аналитику. */
-    private const val ANALYTICS_CONSENT_NAME = "sklyanka_analytics_consent"
 }

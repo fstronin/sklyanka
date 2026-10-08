@@ -59,7 +59,6 @@ class RoomReminderJournal @Inject constructor(private val dao: ReminderLogDao) :
         alarmsScheduled = alarmsScheduled,
         attempt = attempt,
         snoozeMinutes = minutes,
-        watchResult = watchResult,
     )
 
     override suspend fun recent(limit: Int): List<ReminderLogEntry> = dao.recent(limit).mapNotNull(::toDomain)
@@ -103,7 +102,6 @@ class RoomReminderJournal @Inject constructor(private val dao: ReminderLogDao) :
             alarmsScheduled = entity.alarmsScheduled,
             attempt = entity.attempt,
             minutes = entity.snoozeMinutes,
-            watchResult = entity.watchResult,
         )
     }
 }

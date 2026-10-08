@@ -5,10 +5,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import ru.stohastika.sklyanka.domain.analytics.Analytics
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsConsent
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsEvent
-import ru.stohastika.sklyanka.domain.analytics.MedicationActionType
 import ru.stohastika.sklyanka.domain.intake.CreatePrnIntakeUseCase
 import ru.stohastika.sklyanka.domain.intake.PrnOutcome
 import ru.stohastika.sklyanka.domain.model.ArchiveReason
@@ -44,7 +40,6 @@ class DeleteMedicationUseCaseTest {
     private val clock = FixedTimeSource(start)
     private val medications = FakeMedicationRepository(clock)
     private val intakes = FakeIntakeRepository(clock, medications)
-    private val analytics = RecordingAnalytics()
     private val planned = mutableListOf<Pair<String, PlanReason>>()
     private var revoked = 0
 
@@ -69,7 +64,6 @@ class DeleteMedicationUseCaseTest {
         medications = overrides ?: medications,
         intakes = intakes,
         planner = planner,
-        analytics = analytics,
     )
 
     private fun seedMedication(archived: Boolean = false, deleted: Boolean = false, taken: Boolean = false) {
@@ -109,10 +103,6 @@ class DeleteMedicationUseCaseTest {
             planned,
             "the deletion must be a rescheduling event",
         )
-        assertEquals(
-            listOf(AnalyticsEvent.MedicationAction(MedicationActionType.DELETED, mode = null)),
-            analytics.events,
-        )
     }
 
     @Test
@@ -125,7 +115,6 @@ class DeleteMedicationUseCaseTest {
         val stored = requireNotNull(medications.get(Fixtures.MEDICATION_ID))
         assertTrue(!stored.isDeleted, "the fact of intake must stay visible")
         assertTrue(planned.isEmpty(), "a refused deletion must not reschedule anything")
-        assertTrue(analytics.events.isEmpty(), "a refused deletion is not an event")
     }
 
     @Test
@@ -135,7 +124,6 @@ class DeleteMedicationUseCaseTest {
         val outcome = useCase()(Fixtures.MEDICATION_ID)
 
         assertEquals(DeleteOutcome.AlreadyDeleted, outcome)
-        assertTrue(analytics.events.isEmpty())
     }
 
     @Test
@@ -179,16 +167,6 @@ class DeleteMedicationUseCaseTest {
 
         assertEquals(DeleteOutcome.AlreadyDeleted, useCase(overrides = racing)(Fixtures.MEDICATION_ID))
     }
-
-    private class RecordingAnalytics : Analytics {
-        val events = mutableListOf<AnalyticsEvent>()
-
-        override fun track(event: AnalyticsEvent) {
-            events += event
-        }
-
-        override suspend fun applyConsent(consent: AnalyticsConsent) = Unit
-    }
 }
 
 /** Проверки, что удалённое лекарство не участвует в соседних сценариях. */
@@ -228,18 +206,6 @@ class DeletedMedicationBoundariesTest {
         )(Fixtures.MEDICATION_ID)
 
         assertEquals(RestoreOutcome.Deleted, outcome)
-    }
-
-    @Test
-    fun `a deleted medication is not mirrored to the watch`() = runTest {
-        medications.put(deletedMedication())
-
-        val outcome = ToggleWatchMirrorUseCase(medications, RecordingOperationLog())(
-            Fixtures.MEDICATION_ID,
-            enabled = false,
-        )
-
-        assertEquals(WatchMirrorOutcome.Deleted, outcome)
     }
 
     @Test

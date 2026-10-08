@@ -76,7 +76,7 @@ class IntakeLifecycleTest {
     fun aLaterMarkOfTheSameIntakeIsIgnoredAndDecrementsNothing() = runTest {
         intakes.markAtomically(command(MarkResult.TAKEN, at("08:05")))
 
-        val outcome = intakes.markAtomically(command(MarkResult.SKIPPED, at("08:10"), IntakeSource.WATCH))
+        val outcome = intakes.markAtomically(command(MarkResult.SKIPPED, at("08:10"), IntakeSource.PHONE))
 
         assertTrue(outcome is MarkOutcome.Ignored)
         assertEquals(IntakeStatus.TAKEN.name, db.intakes.getById(INTAKE_ID)?.status)
@@ -85,23 +85,10 @@ class IntakeLifecycleTest {
     }
 
     @Test
-    fun aWatchPressDeliveredLateReplacesTheRecordWithoutASecondDecrement() = runTest {
-        intakes.markAtomically(command(MarkResult.TAKEN, at("08:05")))
-
-        val outcome = intakes.markAtomically(command(MarkResult.TAKEN, at("08:03"), IntakeSource.WATCH))
-
-        assertTrue(outcome is MarkOutcome.Superseded)
-        val stored = db.intakes.getById(INTAKE_ID)
-        assertEquals(IntakeSource.WATCH.name, stored?.source)
-        assertEquals(at("08:03").toEpochMilli(), stored?.actedAt)
-        assertEquals("29", db.medications.getById(TestData.OWNER_MEDICATION_ID)?.stockLeft)
-    }
-
-    @Test
     fun anEarlierSkipTakesTheDoseBackExactlyOnce() = runTest {
         intakes.markAtomically(command(MarkResult.TAKEN, at("08:05")))
 
-        intakes.markAtomically(command(MarkResult.SKIPPED, at("08:02"), IntakeSource.WATCH))
+        intakes.markAtomically(command(MarkResult.SKIPPED, at("08:02"), IntakeSource.PHONE))
 
         assertEquals(IntakeStatus.SKIPPED.name, db.intakes.getById(INTAKE_ID)?.status)
         assertEquals("30", db.medications.getById(TestData.OWNER_MEDICATION_ID)?.stockLeft)
@@ -110,7 +97,7 @@ class IntakeLifecycleTest {
     @Test
     fun simultaneousMarksFromTwoSourcesLeaveOneRecordAndOneDecrement() = runTest {
         val outcomes = withContext(Dispatchers.IO) {
-            listOf(IntakeSource.PHONE, IntakeSource.WATCH)
+            listOf(IntakeSource.PHONE, IntakeSource.AUTO)
                 .map { source -> async { intakes.markAtomically(command(MarkResult.TAKEN, at("08:05"), source)) } }
                 .awaitAll()
         }

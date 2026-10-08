@@ -44,5 +44,5 @@ interface ReminderPlanSource {
  */
 interface ReminderCardSource {
 
-    suspend fun card(slot: ReminderSlot, mirroredToWatch: Boolean): ReminderCard?
+    suspend fun card(slot: ReminderSlot): ReminderCard?
 }

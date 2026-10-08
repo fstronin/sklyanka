@@ -53,7 +53,6 @@ fun MedicationEntity.decode(): Decoded<Medication> {
             archivedAt = SklyankaConverters.millisToInstant(archivedAt),
             archiveReason = decodedReason,
             deletedAt = SklyankaConverters.millisToInstant(deletedAt),
-            mirrorToWatch = mirrorToWatch,
         ),
     )
 }
@@ -80,5 +79,4 @@ fun Medication.toEntity(): MedicationEntity = MedicationEntity(
     archivedAt = SklyankaConverters.instantToMillis(archivedAt),
     archiveReason = archiveReason?.name,
     deletedAt = SklyankaConverters.instantToMillis(deletedAt),
-    mirrorToWatch = mirrorToWatch,
 )

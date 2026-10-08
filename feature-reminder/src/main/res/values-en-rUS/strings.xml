@@ -116,16 +116,8 @@
     <string name="diagnostics_next_tomorrow">tomorrow, %1$s</string>
     <string name="diagnostics_next_day_pattern">MMMM d, H:mm</string>
     <string name="diagnostics_last_actual_with_deviation">Shown at %1$s · %2$s</string>
-    <string name="diagnostics_report_open">Report a problem</string>
-    <string name="diagnostics_report_footer_note">Technical report for the developer. No medication names or intake history.</string>
-    <string name="diagnostics_report_title">Report to the developer</string>
-    <string name="diagnostics_report_explanation">A technical report for the developer — sent at your tap. It is assembled automatically and contains no medication names, doses or intake history.</string>
-    <string name="diagnostics_report_comment_label">What is not working?</string>
-    <string name="diagnostics_report_comment_optional">optional</string>
-    <string name="diagnostics_report_comment_hint">For example: the reminder does not arrive in the morning</string>
-    <string name="diagnostics_report_send">Send report</string>
-    <string name="diagnostics_report_sent_title">Report sent</string>
-    <string name="diagnostics_report_sent_sub">Thank you! This helps make reminders more reliable.</string>
-    <string name="diagnostics_report_failed">Could not send the report. Check your internet connection and try again. The entered text is saved.</string>
-    <string name="diagnostics_report_retry">Retry</string>
+    <string name="diagnostics_journal_export">Export the log</string>
+    <string name="diagnostics_journal_export_note">Firing log as a file. No medication names, doses or profile names.</string>
+    <string name="diagnostics_journal_export_no_space">Not enough space. The file was not saved.</string>
+    <string name="diagnostics_journal_export_failed">Could not save the file. Please try again.</string>
 </resources>

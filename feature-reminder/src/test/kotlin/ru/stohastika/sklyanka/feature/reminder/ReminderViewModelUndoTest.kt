@@ -126,8 +126,8 @@ class ReminderViewModelUndoTest {
         val world = ReminderTestWorld(withSecondRow = true)
         val viewModel = world.viewModel()
         viewModel.open(world.profileId, world.scheduledAt)
-        // Второй приём отмечен часами, пока карточка открыта: в действие он не входит.
-        world.markOnWatch("i-2")
+        // Второй приём отмечен вне карточки, пока она открыта: в действие он не входит.
+        world.markExternally("i-2")
 
         viewModel.onTakenAll()
 
@@ -154,7 +154,7 @@ class ReminderViewModelUndoTest {
         val world = ReminderTestWorld()
         val viewModel = world.viewModel()
         viewModel.open(world.profileId, world.scheduledAt)
-        world.markOnWatch("i-1")
+        world.markExternally("i-1")
 
         viewModel.onTaken("i-1")
 
@@ -191,12 +191,12 @@ private class ReminderTestWorld(withSecondRow: Boolean = false) {
         mirrorReminders = false,
     )
 
-    fun markOnWatch(intakeId: String) {
+    fun markExternally(intakeId: String) {
         val current = requireNotNull(intakes[intakeId])
         intakes[intakeId] = current.copy(
             status = IntakeStatus.TAKEN,
             actedAt = clock.now(),
-            source = IntakeSource.WATCH,
+            source = IntakeSource.PHONE,
         )
     }
 
@@ -242,7 +242,7 @@ private class ReminderTestWorld(withSecondRow: Boolean = false) {
 
     private inner class FakeCards : ReminderCardSource {
 
-        override suspend fun card(slot: ReminderSlot, mirroredToWatch: Boolean): ReminderCard? = ReminderCard(
+        override suspend fun card(slot: ReminderSlot): ReminderCard? = ReminderCard(
             slot = slot,
             scheduledAt = slot.scheduledAt,
             items = intakes.values.filter { it.isPending }.map { intake ->
@@ -258,7 +258,6 @@ private class ReminderTestWorld(withSecondRow: Boolean = false) {
                     strengthUnit = medication.strengthUnit,
                 )
             },
-            mirroredToWatch = false,
             profileIsSelf = true,
             profileName = profile.name,
         )

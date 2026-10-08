@@ -11,10 +11,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import ru.stohastika.sklyanka.domain.analytics.Analytics
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsEvent
-import ru.stohastika.sklyanka.domain.analytics.NoOpAnalytics
-import ru.stohastika.sklyanka.domain.analytics.OperationResult
 import ru.stohastika.sklyanka.domain.history.AdherencePeriod
 import ru.stohastika.sklyanka.domain.history.BuildDoctorReportUseCase
 import ru.stohastika.sklyanka.domain.history.HistoryWindow
@@ -59,8 +55,6 @@ class HistoryViewModel @Inject constructor(
     private val renderer: DoctorReportRenderer,
     private val missedPattern: MissedPatternRule,
     private val time: TimeSource,
-    /** Канал событий аналитики (SKL-82): нулевое умолчание — для ручной сборки в тестах. */
-    private val analytics: Analytics = NoOpAnalytics,
 ) : ViewModel() {
 
     private val month = MutableStateFlow(YearMonth.from(time.today()))
@@ -252,15 +246,7 @@ class HistoryViewModel @Inject constructor(
      * шторка не закрывается ни в одном из исходов (ОВ-125).
      */
     private fun outcome(outcome: ReportTransferOutcome, onFailure: ReportOutcome) {
-        analytics.track(AnalyticsEvent.ReportExported(result = resultOf(outcome)))
         local.value = local.value.copy(outcome = outcomeOf(outcome, onFailure))
-    }
-
-    /** Исход передачи отчёта — закрытым значением каталога (ПМ-26). */
-    private fun resultOf(outcome: ReportTransferOutcome): OperationResult = when (outcome) {
-        ReportTransferOutcome.Shared, ReportTransferOutcome.Saved -> OperationResult.SUCCESS
-        ReportTransferOutcome.Cancelled -> OperationResult.CANCELLED
-        is ReportTransferOutcome.Failed -> OperationResult.ERROR
     }
 
     private fun outcomeOf(outcome: ReportTransferOutcome, onFailure: ReportOutcome): ReportOutcome = when (outcome) {

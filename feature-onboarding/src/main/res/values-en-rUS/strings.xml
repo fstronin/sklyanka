@@ -67,20 +67,4 @@
     <string name="cd_setup_confirmed">Step confirmed by you</string>
     <string name="cd_onboarding_hint">Indirect sign</string>
     <string name="cd_onboarding_steps">Step %1$d of %2$d</string>
-
-    <!-- Analytics consent (SKL-82, PM-25, OV-123) -->
-
-    <string name="consent_title">Analytics in Sklyanka</string>
-    <string name="consent_lead">Anonymous statistics help us notice what is inconvenient and improve the app.</string>
-    <string name="consent_sent_title">What is sent</string>
-    <string name="consent_sent_body">Actions in the app: which screens you open, what you tap, how you go through the first launch.</string>
-    <string name="consent_not_sent_title">What is never sent</string>
-    <string name="consent_not_sent_body">Medication names, doses, schedules and intake times, marks, stock, profile names and everything you enter yourself. This data stays on your device.</string>
-    <string name="consent_variants_title">Screen variants</string>
-    <string name="consent_variants_body">Different people may see different variants of layouts and texts. Reminders and your data are not affected.</string>
-    <string name="consent_banner">Until you allow it, the app sends no events. Refusing blocks nothing, and you can change your decision in Settings.</string>
-    <string name="consent_allow">Allow analytics</string>
-    <string name="consent_decline">Continue without analytics</string>
-    <string name="consent_decline_settings">Keep it off</string>
-    <string name="consent_policy">Privacy policy</string>
 </resources>

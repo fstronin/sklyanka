@@ -116,16 +116,8 @@
     <string name="diagnostics_next_tomorrow">morgen, %1$s</string>
     <string name="diagnostics_next_day_pattern">d. MMMM, H:mm</string>
     <string name="diagnostics_last_actual_with_deviation">Angezeigt um %1$s · %2$s</string>
-    <string name="diagnostics_report_open">Problem melden</string>
-    <string name="diagnostics_report_footer_note">Technischer Bericht für den Entwickler. Ohne Medikamentennamen und Einnahmenverlauf.</string>
-    <string name="diagnostics_report_title">Bericht an den Entwickler</string>
-    <string name="diagnostics_report_explanation">Ein technischer Bericht für den Entwickler — auf Ihren Tipp. Er wird automatisch zusammengestellt und enthält keine Medikamentennamen, Dosen oder Einnahmenverläufe.</string>
-    <string name="diagnostics_report_comment_label">Was funktioniert nicht?</string>
-    <string name="diagnostics_report_comment_optional">optional</string>
-    <string name="diagnostics_report_comment_hint">Zum Beispiel: die Erinnerung kommt morgens nicht an</string>
-    <string name="diagnostics_report_send">Bericht senden</string>
-    <string name="diagnostics_report_sent_title">Bericht gesendet</string>
-    <string name="diagnostics_report_sent_sub">Danke! Das hilft, Erinnerungen zuverlässiger zu machen.</string>
-    <string name="diagnostics_report_failed">Der Bericht konnte nicht gesendet werden. Prüfen Sie die Internetverbindung und versuchen Sie es erneut. Der eingegebene Text bleibt erhalten.</string>
-    <string name="diagnostics_report_retry">Wiederholen</string>
+    <string name="diagnostics_journal_export">Protokoll exportieren</string>
+    <string name="diagnostics_journal_export_note">Ereignisprotokoll als Datei. Ohne Medikamentennamen, Dosierungen oder Profilnamen.</string>
+    <string name="diagnostics_journal_export_no_space">Zu wenig Speicherplatz. Die Datei wurde nicht gespeichert.</string>
+    <string name="diagnostics_journal_export_failed">Die Datei konnte nicht gespeichert werden. Bitte erneut versuchen.</string>
 </resources>

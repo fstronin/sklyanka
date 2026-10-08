@@ -1,6 +1,5 @@
 package ru.stohastika.sklyanka.feature.reminder
 
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -12,6 +11,8 @@ import ru.stohastika.sklyanka.acceptance.diagnostics.DiagnosticsStand
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
 import ru.stohastika.sklyanka.domain.reminder.DeliveryCheckOutcome
 import ru.stohastika.sklyanka.domain.reminder.DeliveryCheckState
+import ru.stohastika.sklyanka.domain.reminder.ReminderEvent
+import ru.stohastika.sklyanka.domain.reminder.ReminderLogEntry
 import java.time.LocalDateTime
 
 /**
@@ -115,67 +116,70 @@ class DiagnosticsViewModelTest {
         assertNull(runBlocking { world.reminders.acknowledgements.announced() })
     }
 
-    // --- Отчёт разработчику (ОВ-127, AC-30…AC-33) ---------------------------------------------
+    // --- Служебная выгрузка журнала (НФТ-51, SKL-106) ------------------------------------------
 
     @Test
-    fun `a sent report is named and its comment reaches the sender`() {
-        model.onReportOpen()
-
-        model.onReportCommentChange("напоминание не приходит утром")
-        model.onReportSend()
-
-        assertEquals(DeveloperReportOutcome.SENT, model.state.value.reportOutcome)
-        assertEquals(listOf("напоминание не приходит утром"), DiagnosticsStand.sentComments)
+    fun `the file is named before the place is chosen and nothing is written yet`() {
+        assertEquals("sklyanka-reminder-journal-2026-09-25.csv", model.journalExportFileName())
+        assertTrue(world.transfer.files.documents.isEmpty())
     }
 
     @Test
-    fun `a refused send keeps the comment and shows retry`() {
-        model.onReportOpen()
-        model.onReportCommentChange("текст жалобы")
-        DiagnosticsStand.reportOutcome = DeveloperReportOutcome.FAILED
+    fun `the chosen place receives the journal and the state names the record count`() {
+        world.reminders.seedJournal(listOf(firedEntry()))
 
-        model.onReportSend()
+        model.onJournalExportResult("memory://document")
 
-        assertEquals(DeveloperReportOutcome.FAILED, model.state.value.reportOutcome)
-        assertEquals("текст жалобы", model.state.value.reportComment)
+        assertEquals(JournalExportUi.Saved(records = 1), model.state.value.journalExport)
+        assertTrue(world.transfer.files.documents.containsKey("memory://document"))
     }
 
     @Test
-    fun `dismissing the report clears its state for the next open`() {
-        model.onReportOpen()
-        model.onReportCommentChange("черновик")
-        model.onReportSend()
+    fun `cancelling the system choice leaves no outcome and no file`() {
+        world.reminders.seedJournal(listOf(firedEntry()))
 
-        model.onReportDismiss()
+        model.onJournalExportResult(null)
 
-        assertFalse(model.state.value.reportOpen)
-        assertEquals("", model.state.value.reportComment)
-        assertNull(model.state.value.reportOutcome)
+        assertNull(model.state.value.journalExport)
+        assertTrue(world.transfer.files.documents.isEmpty())
     }
 
     @Test
-    fun `reopening the report starts with an empty field`() {
-        model.onReportOpen()
-        model.onReportCommentChange("старый текст")
-        model.onReportDismiss()
+    fun `not enough space is named and no half-file remains`() {
+        world.reminders.seedJournal(listOf(firedEntry()))
+        world.transfer.files.freeSpace = 1L
 
-        model.onReportOpen()
+        model.onJournalExportResult("memory://document")
 
-        assertTrue(model.state.value.reportOpen)
-        assertEquals("", model.state.value.reportComment)
-        assertNull(model.state.value.reportOutcome)
+        assertEquals(JournalExportUi.NoSpace, model.state.value.journalExport)
+        assertTrue(world.transfer.files.documents.isEmpty())
     }
 
     @Test
-    fun `a cancelled send is not swallowed and leaves no outcome`() {
-        model
-        DiagnosticsStand.reportSenderOverride = DeveloperReportSender { throw CancellationException("cancelled") }
-        model.onReportOpen()
-        model.onReportCommentChange("текст")
+    fun `an interrupted write is named and the target is withdrawn`() {
+        world.reminders.seedJournal(listOf(firedEntry()))
+        world.transfer.files.failOnWrite = true
 
-        model.onReportSend()
+        model.onJournalExportResult("memory://document")
 
-        assertNull(model.state.value.reportOutcome)
-        assertEquals("текст", model.state.value.reportComment)
+        assertEquals(JournalExportUi.Failed, model.state.value.journalExport)
+        assertTrue(world.transfer.files.documents.isEmpty())
     }
+
+    @Test
+    fun `a vanished system handler is an honest failure, not silence`() {
+        model.onJournalExportUnavailable()
+
+        assertEquals(JournalExportUi.Failed, model.state.value.journalExport)
+    }
+
+    private fun firedEntry(): ReminderLogEntry = ReminderLogEntry(
+        occurredAt = java.time.Instant.parse("2026-09-25T04:00:37Z"),
+        event = ReminderEvent.SHOWN,
+        intakeId = "intake-1",
+        scheduledAt = java.time.Instant.parse("2026-09-25T04:00:00Z"),
+        firedAt = java.time.Instant.parse("2026-09-25T04:00:37Z"),
+        deviationSeconds = 37,
+        delivered = true,
+    )
 }

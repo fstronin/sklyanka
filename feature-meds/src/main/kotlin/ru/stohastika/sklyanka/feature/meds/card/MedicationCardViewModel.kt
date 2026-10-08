@@ -13,11 +13,6 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import ru.stohastika.sklyanka.domain.analytics.Analytics
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsEvent
-import ru.stohastika.sklyanka.domain.analytics.MedicationActionType
-import ru.stohastika.sklyanka.domain.analytics.NoOpAnalytics
-import ru.stohastika.sklyanka.domain.medication.ArchiveOutcome
 import ru.stohastika.sklyanka.domain.medication.CourseCompletion
 import ru.stohastika.sklyanka.domain.medication.CourseProgress
 import ru.stohastika.sklyanka.domain.medication.DayCell
@@ -60,8 +55,6 @@ class MedicationCardViewModel @Inject constructor(
     private val intakes: IntakeRepository,
     private val operations: MedCardOperations,
     private val time: TimeSource,
-    /** Канал событий аналитики (SKL-82): нулевое умолчание — для ручной сборки в тестах. */
-    private val analytics: Analytics = NoOpAnalytics,
     /**
      * Одна ячейка «последнее действие» (SKL-30/99): удаление кладёт в неё окно «Отменить»,
      * которое показывает экран-источник.
@@ -92,7 +85,6 @@ class MedicationCardViewModel @Inject constructor(
 
             MedCardIntent.RefillCancelled -> local.value = local.value.copy(refill = null)
             MedCardIntent.RefillConfirmed -> refill()
-            is MedCardIntent.WatchMirrorToggled -> mirror(intent.enabled)
             MedCardIntent.Archive -> archive(ArchiveReason.MANUAL)
             MedCardIntent.ArchiveFinishedCourse -> archive(ArchiveReason.COURSE_FINISHED)
             MedCardIntent.Restore -> restore()
@@ -128,7 +120,6 @@ class MedicationCardViewModel @Inject constructor(
 
     private fun screen(medication: Medication, history: List<Intake>, hasTaken: Boolean): MedCardUiState {
         val today = time.today()
-        val scheduled = medication.scheduleMode == ScheduleMode.SCHEDULED
         return MedCardUiState(
             medicationId = medication.id,
             title = medication.name,
@@ -141,11 +132,6 @@ class MedicationCardViewModel @Inject constructor(
             stock = StockPanel.of(medication),
             stockUnit = DoseUnit.ofCode(medication.doseUnit) ?: medication.form.doseUnit(),
             week = WeekAdherence.of(medication, history, today),
-            watchMirror = if (scheduled) {
-                WatchMirrorUi(checked = medication.mirrorToWatch, enabled = !medication.isArchived)
-            } else {
-                null
-            },
             isArchived = medication.isArchived,
             courseFinishedOffer = CourseCompletion.isFinished(medication, today),
             canDelete = !hasTaken,
@@ -177,11 +163,7 @@ class MedicationCardViewModel @Inject constructor(
     private fun archive(reason: ArchiveReason) {
         val id = medicationId.value ?: return
         viewModelScope.launch {
-            val outcome = operations.archive(id, reason)
-            // Повторная архивация ничего не пишет (ИНВ-9) — и событием не отмечается.
-            if (outcome is ArchiveOutcome.Archived) {
-                analytics.track(AnalyticsEvent.MedicationAction(MedicationActionType.ARCHIVED, mode = null))
-            }
+            operations.archive(id, reason)
             // Человек возвращается в список лекарств; карточку закрывает маршрут.
             local.value = local.value.copy(closed = true)
         }
@@ -224,11 +206,6 @@ class MedicationCardViewModel @Inject constructor(
                 -> Unit
             }
         }
-    }
-
-    private fun mirror(enabled: Boolean) {
-        val id = medicationId.value ?: return
-        viewModelScope.launch { operations.watchMirror(id, enabled) }
     }
 
     /**

@@ -256,10 +256,6 @@
     <string name="profile_delete_no_space">Места недостаточно. Файл не сохранён, профиль не удалён.</string>
     <string name="profile_delete_no_picker">На устройстве нет приложения для выбора файлов. Сохранить файл переноса без него невозможно.</string>
 
-    <!-- ===== Аналитика в разделе данных (SKL-82, ПМ-25, ОВ-123) ===== -->
-
-    <string name="settings_analytics">Аналитика</string>
-    <string name="settings_analytics_caption">Обезличенная статистика: действия в приложении; медицинские данные не отправляются</string>
     <string name="settings_policy">Политика конфиденциальности</string>
     <!-- Плейсхолдер: адрес страницы политики — внешний вход заказчика (ОВ-2). -->
     <string name="settings_policy_url" translatable="false">https://example.invalid/sklyanka/privacy</string>

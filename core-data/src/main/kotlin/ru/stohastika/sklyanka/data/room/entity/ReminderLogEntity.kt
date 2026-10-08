@@ -55,5 +55,4 @@ data class ReminderLogEntity(
     @ColumnInfo(name = "attempt") val attempt: Int?,
     /** Интервал откладывания в минутах — только у записи об откладывании. */
     @ColumnInfo(name = "snooze_minutes") val snoozeMinutes: Int?,
-    @ColumnInfo(name = "watch_result") val watchResult: String?,
 )

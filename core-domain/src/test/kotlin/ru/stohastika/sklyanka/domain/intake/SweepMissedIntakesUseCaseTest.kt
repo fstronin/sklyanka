@@ -124,7 +124,7 @@ class SweepMissedIntakesUseCaseTest {
             MarkRequest(
                 intakeId = Fixtures.INTAKE_ID,
                 result = MarkResult.TAKEN,
-                source = IntakeSource.WATCH,
+                source = IntakeSource.PHONE,
                 actedAt = world.momentOf(LocalDateTime.of(2026, 9, 25, 23, 50)),
             ),
         )

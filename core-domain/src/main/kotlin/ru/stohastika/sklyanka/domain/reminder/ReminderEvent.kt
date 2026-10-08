@@ -160,5 +160,4 @@ data class ReminderLogEntry(
     val attempt: Int? = null,
     /** Интервал откладывания в минутах — только у записи [ReminderEvent.SNOOZED]. */
     val minutes: Int? = null,
-    val watchResult: String? = null,
 )

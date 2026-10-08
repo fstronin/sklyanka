@@ -7,11 +7,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import ru.stohastika.sklyanka.domain.analytics.ActionSource
-import ru.stohastika.sklyanka.domain.analytics.Analytics
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsEvent
-import ru.stohastika.sklyanka.domain.analytics.IntakeActionType
-import ru.stohastika.sklyanka.domain.analytics.NoOpAnalytics
 import ru.stohastika.sklyanka.domain.intake.MarkIntakeUseCase
 import ru.stohastika.sklyanka.domain.intake.MarkRequest
 import ru.stohastika.sklyanka.domain.intake.MarkResult
@@ -45,11 +40,6 @@ class ReminderViewModel @Inject constructor(
     private val settings: ReminderSettings,
     /** Носитель последнего действия: снэкбар покажет «Сегодня» (ОВ-81, SKL-30). */
     private val undoActions: UndoableActionStore,
-    /**
-     * Канал событий аналитики (SKL-82). Нулевое умолчание — для ручной сборки в тестах;
-     * гейт согласия решает, дойдёт ли событие до вендора.
-     */
-    private val analytics: Analytics = NoOpAnalytics,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<ReminderUiState>(ReminderUiState.Loading)
@@ -86,9 +76,6 @@ class ReminderViewModel @Inject constructor(
         val current = _state.value as? ReminderUiState.Card ?: return
         viewModelScope.launch {
             current.items.forEach { snooze(it.intakeId, current.snoozeMinutes) }
-            // Одно событие на действие человека: «Отложить» нажимается один раз, даже
-            // если карточка несёт несколько приёмов.
-            analytics.track(AnalyticsEvent.ReminderSnoozed(source = ActionSource.PHONE))
             _state.value = ReminderUiState.Closed
         }
     }
@@ -106,7 +93,6 @@ class ReminderViewModel @Inject constructor(
             val outcome = mark(MarkRequest(intakeId = intakeId, result = result, source = IntakeSource.PHONE))
             val closed = reload()
             if (!closed || !outcome.isCompleted) return@launch
-            analytics.track(AnalyticsEvent.IntakeAction(action = actionFor(result), source = ActionSource.PHONE))
             undoActions.publishMark(
                 intakeIds = listOf(intakeId),
                 result = outcome.intake?.status?.let(MarkResult::of) ?: result,
@@ -133,9 +119,6 @@ class ReminderViewModel @Inject constructor(
             if (!closed) return@launch
             val completed = outcomes.filter { (_, outcome) -> outcome.isCompleted }
             if (completed.isEmpty()) return@launch
-            completed.forEach {
-                analytics.track(AnalyticsEvent.IntakeAction(action = actionFor(result), source = ActionSource.PHONE))
-            }
             undoActions.publishMark(
                 intakeIds = completed.map { it.first },
                 result = result,
@@ -152,16 +135,10 @@ class ReminderViewModel @Inject constructor(
      *
      * @return закрылась ли карточка — этим решается, открывать ли окно отмены (SKL-30)
      */
-    /** Записанный исход отметки — закрытым значением каталога (ПМ-26). */
-    private fun actionFor(result: MarkResult): IntakeActionType = when (result) {
-        MarkResult.TAKEN -> IntakeActionType.TAKEN
-        MarkResult.SKIPPED -> IntakeActionType.SKIPPED
-    }
-
     private suspend fun reload(): Boolean {
         val current = slot ?: return false
         val values = settings.read()
-        val card = cards.card(current, mirroredToWatch = false)
+        val card = cards.card(current)
         return if (card == null || card.isEmpty) {
             _state.value = ReminderUiState.Closed
             true

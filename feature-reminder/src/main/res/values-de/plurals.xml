@@ -36,4 +36,9 @@
         <item quantity="one">%1$d Einnahme verpasst</item>
         <item quantity="other">%1$d Einnahmen verpasst</item>
     </plurals>
+    <!-- SKL-106: исход служебной выгрузки журнала. -->
+    <plurals name="diagnostics_journal_export_saved">
+        <item quantity="one">Protokoll exportiert: %1$d Eintrag.</item>
+        <item quantity="other">Protokoll exportiert: %1$d Einträge.</item>
+    </plurals>
 </resources>

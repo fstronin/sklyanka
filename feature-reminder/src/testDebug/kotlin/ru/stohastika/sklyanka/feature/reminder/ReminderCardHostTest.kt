@@ -80,7 +80,6 @@ class ReminderCardHostTest {
             ),
         ),
         snoozeMinutes = 15,
-        mirroredToWatch = false,
         foreignProfileName = null,
     )
 

@@ -48,7 +48,6 @@ class ReminderScreenSnapshotTest {
         scheduledAt = LocalDateTime.of(2026, 9, 25, 14, 0),
         items = rows,
         snoozeMinutes = SNOOZE_MINUTES,
-        mirroredToWatch = false,
         foreignProfileName = null,
     )
 

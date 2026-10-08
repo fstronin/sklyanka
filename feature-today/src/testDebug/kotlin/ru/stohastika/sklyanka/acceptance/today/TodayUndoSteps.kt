@@ -145,15 +145,15 @@ class TodayUndoSteps(private val world: AcceptanceWorld) {
         assertEquals("intake of $medication", IntakeStatus.SKIPPED, world.intakes.get(intake.id)?.status)
     }
 
-    @Когда("^(.+?) в (\\d{2}:\\d{2}:\\d{2}) тот же приём отметили принятым ещё раз с часов$")
-    fun theSameIntakeIsMarkedFromTheWatch(date: String, time: String) {
+    @Когда("^(.+?) в (\\d{2}:\\d{2}:\\d{2}) тот же приём отметили принятым ещё раз$")
+    fun theSameIntakeIsMarkedAgain(date: String, time: String) {
         world.rememberState()
         val moment = world.localMoment(date, time)
         val intake = world.intakes.currentOrScheduled()
         world.clock.moveTo(moment)
-        // Нажатие с часов идёт доменным путём, без стенда «Сегодня»: повторная отметка
+        // Повторная отметка идёт доменным путём, без стенда «Сегодня»: повторная отметка
         // отброшена, и окно отмены не перезапускается.
-        world.mark(intake.id, MarkResult.TAKEN, IntakeSource.WATCH, world.clock.momentOf(moment))
+        world.mark(intake.id, MarkResult.TAKEN, IntakeSource.PHONE, world.clock.momentOf(moment))
     }
 
     // «человек нажимает «Принять» в карточке «Л»» объявлен в TodayPrnScreenSteps:

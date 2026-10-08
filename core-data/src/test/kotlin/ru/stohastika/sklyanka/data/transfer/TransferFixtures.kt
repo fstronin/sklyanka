@@ -135,7 +135,7 @@ internal object TransferFixtures {
         scheduledAt = SCHEDULED_AT.plusDays(1),
         status = IntakeStatus.SKIPPED,
         actedAt = ACTED_AT,
-        source = IntakeSource.WATCH,
+        source = IntakeSource.PHONE,
         actorProfileId = SELF_ID,
     )
 
@@ -144,8 +144,6 @@ internal object TransferFixtures {
         persistentReminder = true,
         snoozeMinutes = SNOOZE_MINUTES,
         quietHours = QuietHours(from = LocalTime.of(23, 30), to = LocalTime.of(7, 0)),
-        watchEnabled = true,
-        watchSnoozeButton = false,
     )
 
     fun snapshot(): TransferSnapshot = TransferSnapshot.of(

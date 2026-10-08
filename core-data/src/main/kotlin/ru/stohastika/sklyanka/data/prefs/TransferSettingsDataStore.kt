@@ -56,8 +56,6 @@ class TransferSettingsDataStore @Inject constructor(
             // Тихие часы существуют только парой границ: одна граница без второй —
             // это не «половина режима», а его отсутствие.
             quietHours = if (from != null && to != null) QuietHours(from, to) else null,
-            watchEnabled = stored[WATCH] ?: false,
-            watchSnoozeButton = stored[WATCH_SNOOZE] ?: false,
         )
     }
 
@@ -67,8 +65,6 @@ class TransferSettingsDataStore @Inject constructor(
         reminderSettings.setSnoozeMinutes(settings.snoozeMinutes)
         preferences.edit { mutable ->
             mutable[SOUND] = settings.reminderSound.code
-            mutable[WATCH] = settings.watchEnabled
-            mutable[WATCH_SNOOZE] = settings.watchSnoozeButton
             val quiet = settings.quietHours
             if (quiet == null) {
                 mutable.remove(QUIET_FROM)
@@ -100,8 +96,6 @@ class TransferSettingsDataStore @Inject constructor(
         val SOUND = stringPreferencesKey("reminder_sound")
         val QUIET_FROM = stringPreferencesKey("quiet_hours_from")
         val QUIET_TO = stringPreferencesKey("quiet_hours_to")
-        val WATCH = booleanPreferencesKey("watch_enabled")
-        val WATCH_SNOOZE = booleanPreferencesKey("watch_snooze_button")
         val LAST_EXPORT = stringPreferencesKey("transfer_last_export_date")
 
         /**

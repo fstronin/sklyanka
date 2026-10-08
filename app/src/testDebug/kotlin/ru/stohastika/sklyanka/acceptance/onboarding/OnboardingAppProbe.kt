@@ -22,9 +22,9 @@ import ru.stohastika.sklyanka.domain.onboarding.PermissionStep
 import ru.stohastika.sklyanka.domain.onboarding.ReadPermissionChecklistUseCase
 import ru.stohastika.sklyanka.domain.onboarding.StepOpenResult
 import ru.stohastika.sklyanka.domain.reminder.BuildReminderDiagnosticsUseCase
+import ru.stohastika.sklyanka.domain.reminder.ExportReminderJournalUseCase
 import ru.stohastika.sklyanka.domain.reminder.ReadReminderReliabilityUseCase
 import ru.stohastika.sklyanka.domain.reminder.ReminderOutage
-import ru.stohastika.sklyanka.feature.onboarding.OnboardingExit
 import ru.stohastika.sklyanka.feature.onboarding.OnboardingUiState
 import ru.stohastika.sklyanka.feature.onboarding.OnboardingViewModel
 import ru.stohastika.sklyanka.feature.onboarding.PermissionsActions
@@ -32,8 +32,6 @@ import ru.stohastika.sklyanka.feature.onboarding.PermissionsScreen
 import ru.stohastika.sklyanka.feature.onboarding.SystemSettingsNavigator
 import ru.stohastika.sklyanka.feature.onboarding.TAG_CHECK_DELIVERY
 import ru.stohastika.sklyanka.feature.reminder.DeliveryCheckController
-import ru.stohastika.sklyanka.feature.reminder.DeveloperReportOutcome
-import ru.stohastika.sklyanka.feature.reminder.DeveloperReportSender
 import ru.stohastika.sklyanka.feature.reminder.DiagnosticsScreen
 import ru.stohastika.sklyanka.feature.reminder.DiagnosticsUiState
 import ru.stohastika.sklyanka.feature.reminder.DiagnosticsViewModel
@@ -90,7 +88,7 @@ internal object OnboardingAppProbe {
 
     fun state(world: AcceptanceWorld): OnboardingUiState = model(world).state.value
 
-    fun exit(world: AcceptanceWorld): OnboardingExit? = model(world).exit.value
+    fun exit(world: AcceptanceWorld): Unit? = model(world).exit.value
 
     fun open(world: AcceptanceWorld, source: OnboardingSource, outageSince: Instant? = null) {
         model(world).start(source, outageSince)
@@ -236,10 +234,7 @@ internal object OnboardingAppProbe {
                         onCancelDeliveryCheck = {},
                         onAcknowledgeDeliveryCheck = {},
                         onFixDeliveryCheck = {},
-                        onReportOpen = {},
-                        onReportCommentChange = {},
-                        onReportSend = {},
-                        onReportDismiss = {},
+                        onJournalExport = {},
                         onBack = {},
                         toLocal = { instant: Instant -> instant.atZone(world.clock.zone).toLocalDateTime() },
                     )
@@ -268,10 +263,7 @@ internal object OnboardingAppProbe {
                         onCancelDeliveryCheck = {},
                         onAcknowledgeDeliveryCheck = {},
                         onFixDeliveryCheck = {},
-                        onReportOpen = {},
-                        onReportCommentChange = {},
-                        onReportSend = {},
-                        onReportDismiss = {},
+                        onJournalExport = {},
                         onBack = {},
                         toLocal = { instant: Instant -> instant.atZone(world.clock.zone).toLocalDateTime() },
                     )
@@ -300,10 +292,7 @@ internal object OnboardingAppProbe {
                         onCancelDeliveryCheck = {},
                         onAcknowledgeDeliveryCheck = {},
                         onFixDeliveryCheck = {},
-                        onReportOpen = {},
-                        onReportCommentChange = {},
-                        onReportSend = {},
-                        onReportDismiss = {},
+                        onJournalExport = {},
                         onBack = {},
                         toLocal = { instant: Instant -> instant.atZone(world.clock.zone).toLocalDateTime() },
                     )
@@ -351,7 +340,11 @@ internal object OnboardingAppProbe {
 
             override suspend fun acknowledge(dueAt: Instant) = world.reminders.acknowledgeDeliveryCheck(dueAt)
         },
-        reportSender = DeveloperReportSender { DeveloperReportOutcome.SENT },
+        exportJournal = ExportReminderJournalUseCase(
+            journal = world.reminders.journal,
+            files = world.transfer.files,
+            time = world.clock.time,
+        ),
         time = world.clock.time,
     )
 

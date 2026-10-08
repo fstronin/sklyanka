@@ -14,7 +14,7 @@ import java.math.BigDecimal
 import java.time.LocalDateTime
 import java.time.ZoneId
 
-@DisplayName("Marking an intake is one entry point for the phone, the reminder card and the watch")
+@DisplayName("Marking an intake is one entry point for the phone and the reminder card")
 class MarkIntakeUseCaseTest {
 
     private val world = IntakeTestWorld()
@@ -58,7 +58,7 @@ class MarkIntakeUseCaseTest {
     }
 
     @Test
-    fun `a watch press delivered late wins by its moment of action and leaves one decrement`() = runTest {
+    fun `a mark delivered late wins by its moment of action and leaves one decrement`() = runTest {
         world.pending()
         world.moveTo(LocalDateTime.of(2026, 9, 25, 8, 5))
         world.mark(MarkRequest(Fixtures.INTAKE_ID, MarkResult.TAKEN, IntakeSource.PHONE))
@@ -68,13 +68,13 @@ class MarkIntakeUseCaseTest {
             MarkRequest(
                 intakeId = Fixtures.INTAKE_ID,
                 result = MarkResult.TAKEN,
-                source = IntakeSource.WATCH,
+                source = IntakeSource.PHONE,
                 actedAt = world.momentOf(LocalDateTime.of(2026, 9, 25, 8, 3)),
             ),
         )
 
         assertTrue(outcome is MarkOutcome.Superseded)
-        assertEquals(IntakeSource.WATCH, world.stored().source)
+        assertEquals(IntakeSource.PHONE, world.stored().source)
         assertEquals(world.momentOf(LocalDateTime.of(2026, 9, 25, 8, 3)), world.stored().actedAt)
         assertEquals(BigDecimal("29"), world.stock())
     }

@@ -11,13 +11,11 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
-import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.text.TextLayoutResult
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Density
 import androidx.test.core.app.ApplicationProvider
@@ -40,14 +38,10 @@ import ru.stohastika.sklyanka.domain.reminder.ReminderReliability
 import ru.stohastika.sklyanka.domain.reminder.ReminderWeekSummary
 import ru.stohastika.sklyanka.domain.reminder.port.PermissionState
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPermission
-import ru.stohastika.sklyanka.ui.component.TAG_BANNER
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
-import ru.stohastika.sklyanka.ui.token.SklyankaType
-import ru.stohastika.sklyanka.ui.token.lightColors
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
-import ru.stohastika.sklyanka.ui.R as UiR
 
 /**
  * Экран проверки напоминаний: финальный первый уровень (SKL-102, ОВ-126).
@@ -113,9 +107,7 @@ class DiagnosticsScreenTest {
         snapshot: ReminderDiagnostics = snapshot(),
         fixFallback: ReminderPermission? = null,
         checkSheetOpen: Boolean = false,
-        reportOpen: Boolean = false,
-        reportComment: String = "",
-        reportOutcome: DeveloperReportOutcome? = null,
+        journalExport: JournalExportUi? = null,
         onRestartSetup: (() -> Unit)? = null,
         onFixPermission: (ReminderPermission) -> Unit = {},
         onCheckDelivery: () -> Unit = {},
@@ -124,10 +116,7 @@ class DiagnosticsScreenTest {
         onCancelDeliveryCheck: () -> Unit = {},
         onAcknowledgeDeliveryCheck: () -> Unit = {},
         onFixDeliveryCheck: () -> Unit = {},
-        onReportOpen: () -> Unit = {},
-        onReportCommentChange: (String) -> Unit = {},
-        onReportSend: () -> Unit = {},
-        onReportDismiss: () -> Unit = {},
+        onJournalExport: () -> Unit = {},
         fontScale: Float = 1f,
     ) {
         compose.setContent {
@@ -141,9 +130,7 @@ class DiagnosticsScreenTest {
                             today = today,
                             fixFallback = fixFallback,
                             checkSheetOpen = checkSheetOpen,
-                            reportOpen = reportOpen,
-                            reportComment = reportComment,
-                            reportOutcome = reportOutcome,
+                            journalExport = journalExport,
                         ),
                         onRestartSetup = onRestartSetup,
                         onFixPermission = onFixPermission,
@@ -153,10 +140,7 @@ class DiagnosticsScreenTest {
                         onCancelDeliveryCheck = onCancelDeliveryCheck,
                         onAcknowledgeDeliveryCheck = onAcknowledgeDeliveryCheck,
                         onFixDeliveryCheck = onFixDeliveryCheck,
-                        onReportOpen = onReportOpen,
-                        onReportCommentChange = onReportCommentChange,
-                        onReportSend = onReportSend,
-                        onReportDismiss = onReportDismiss,
+                        onJournalExport = onJournalExport,
                         onBack = {},
                         toLocal = { instant: Instant -> instant.atZone(zone).toLocalDateTime() },
                     )
@@ -175,7 +159,7 @@ class DiagnosticsScreenTest {
         val permissions = compose.onNodeWithTag(TAG_PERMISSIONS).fetchSemanticsNode().boundsInRoot.top
         val delivery = compose.onNodeWithTag(TAG_CHECK_BLOCK).fetchSemanticsNode().boundsInRoot.top
         val reminders = compose.onNodeWithTag(TAG_WEEK_SUMMARY).fetchSemanticsNode().boundsInRoot.top
-        val footer = compose.onNodeWithTag(TAG_REPORT_FOOTER).fetchSemanticsNode().boundsInRoot.top
+        val footer = compose.onNodeWithTag(TAG_JOURNAL_EXPORT).fetchSemanticsNode().boundsInRoot.top
 
         assertTrue("verdict must be above permissions", verdict < permissions)
         assertTrue("permissions must be above delivery", permissions < delivery)
@@ -549,26 +533,26 @@ class DiagnosticsScreenTest {
             .assertIsDisplayed()
     }
 
-    // --- Отчёт разработчику (AC-29…AC-35) ------------------------------------------------------
+    // --- Служебная выгрузка журнала (НФТ-51, SKL-106) ------------------------------------------
 
     @Test
-    fun theReportFooterIsVisibleAndOpensTheSheet() {
-        var opened = 0
-        show(onReportOpen = { opened += 1 })
+    fun theJournalFooterIsVisibleAndAsksForAPlace() {
+        var exported = 0
+        show(onJournalExport = { exported += 1 })
 
-        compose.onNodeWithTag(TAG_REPORT_FOOTER).performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText(context.getString(R.string.diagnostics_report_open)).performClick()
+        compose.onNodeWithTag(TAG_JOURNAL_EXPORT).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.diagnostics_journal_export)).performClick()
 
-        assertEquals(1, opened)
+        assertEquals(1, exported)
     }
 
     @Test
-    fun theReportFooterNoteFillsTheWidthAndCentersItsLines() {
+    fun theJournalFooterNoteFillsTheWidthAndCentersItsLines() {
         show()
 
-        val note = context.getString(R.string.diagnostics_report_footer_note)
-        compose.onNodeWithTag(TAG_REPORT_FOOTER).performScrollTo()
-        val footerWidth = compose.onNodeWithTag(TAG_REPORT_FOOTER).fetchSemanticsNode().boundsInRoot.width
+        val note = context.getString(R.string.diagnostics_journal_export_note)
+        compose.onNodeWithTag(TAG_JOURNAL_EXPORT).performScrollTo()
+        val footerWidth = compose.onNodeWithTag(TAG_JOURNAL_EXPORT).fetchSemanticsNode().boundsInRoot.width
         val noteNode = compose.onNodeWithText(note, useUnmergedTree = true).fetchSemanticsNode()
 
         assertEquals("the note must fill the footer width", footerWidth, noteNode.boundsInRoot.width, 0.5f)
@@ -580,93 +564,28 @@ class DiagnosticsScreenTest {
     }
 
     @Test
-    fun theSheetCarriesTheExplanationOptionalFieldAndSend() {
-        show(reportOpen = true)
+    fun aSavedExportNamesTheRecordCount() {
+        show(journalExport = JournalExportUi.Saved(records = 3))
 
-        compose.onNodeWithTag(TAG_REPORT_SHEET).assertIsDisplayed()
-        compose.onNodeWithText(context.getString(R.string.diagnostics_report_title)).assertExists()
-        compose.onNodeWithText(context.getString(R.string.diagnostics_report_explanation)).assertExists()
-        compose
-            .onNodeWithText(context.getString(R.string.diagnostics_report_comment_label).uppercase())
-            .assertExists()
-        compose.onNodeWithText(context.getString(R.string.diagnostics_report_comment_optional)).assertExists()
-        compose.onNodeWithTag(TAG_REPORT_COMMENT).assertIsDisplayed()
-        compose.onNodeWithTag(TAG_REPORT_SEND).assertIsDisplayed()
-        // Объяснение — плашка шторки, а не баннер §4.6 (ОВ-142).
-        compose.onNodeWithTag(TAG_BANNER, useUnmergedTree = true).assertDoesNotExist()
+        val expected = context.resources.getQuantityString(R.plurals.diagnostics_journal_export_saved, 3, 3)
+        compose.onNodeWithTag(TAG_JOURNAL_EXPORT_PLATE).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText(expected).assertExists()
     }
 
     @Test
-    fun anEmptyCommentCanBeSent() {
-        var sent = 0
-        show(reportOpen = true, onReportSend = { sent += 1 })
+    fun aNoSpaceExportSaysItPlainly() {
+        show(journalExport = JournalExportUi.NoSpace)
 
-        compose.onNodeWithTag(TAG_REPORT_SEND).performClick()
-
-        assertEquals(1, sent)
+        compose.onNodeWithTag(TAG_JOURNAL_EXPORT_PLATE).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.diagnostics_journal_export_no_space)).assertExists()
     }
 
     @Test
-    fun aSentReportShowsSuccess() {
-        show(reportOpen = true, reportComment = "текст", reportOutcome = DeveloperReportOutcome.SENT)
+    fun aFailedExportNamesTheFailure() {
+        show(journalExport = JournalExportUi.Failed)
 
-        compose.onNodeWithTag(TAG_REPORT_SENT).assertIsDisplayed()
-        compose.onNodeWithText(context.getString(R.string.diagnostics_report_sent_title)).assertIsDisplayed()
-        compose.onNodeWithTag(TAG_REPORT_SEND).assertDoesNotExist()
-    }
-
-    /**
-     * Выход из успеха — подтверждающее действие шапки, а не отмена: «Готово» набрано
-     * `BodyDefaultStrong` 15/600 `Accent`, тогда как «Отмена» — `BodyDefault` 15/400
-     * `TextMuted` (§4.9, ОВ-146). Иначе серое «Готово» читается как отмена и иерархия
-     * действий теряется (дефект визревью 04.10.2026).
-     */
-    @Test
-    fun theDoneExitOfWorkCarriesTheConfirmingRoleOfTheHeader() {
-        show(reportOpen = true, reportOutcome = DeveloperReportOutcome.SENT)
-
-        val style = textStyleOf(UiR.string.action_done)
-        assertEquals(SklyankaType.BodyDefaultStrong.fontWeight, style.fontWeight)
-        assertEquals(SklyankaType.BodyDefaultStrong.fontSize.value, style.fontSize.value, 0.01f)
-        assertEquals(lightColors().accent, style.color)
-    }
-
-    /** «Отмена» при вводе и ошибке остаётся приглушённой: 15/400 `TextMuted` (§4.9, ОВ-146). */
-    @Test
-    fun theCancelExitOfWorkKeepsTheMutedRoleOfTheHeader() {
-        show(reportOpen = true)
-
-        val style = textStyleOf(UiR.string.action_cancel)
-        assertEquals(SklyankaType.BodyDefault.fontWeight, style.fontWeight)
-        assertEquals(SklyankaType.BodyDefault.fontSize.value, style.fontSize.value, 0.01f)
-        assertEquals(lightColors().textMuted, style.color)
-    }
-
-    @Test
-    fun aFailedReportOffersRetryAndKeepsTheText() {
-        var sent = 0
-        show(
-            reportOpen = true,
-            reportComment = "введённый текст",
-            reportOutcome = DeveloperReportOutcome.FAILED,
-            onReportSend = { sent += 1 },
-        )
-
-        compose.onNodeWithTag(TAG_REPORT_FAILED).assertIsDisplayed()
-        compose.onNodeWithText(context.getString(R.string.diagnostics_report_failed)).assertExists()
-        compose.onNodeWithTag(TAG_REPORT_RETRY).performClick()
-        assertEquals(1, sent)
-        compose.onNodeWithText("введённый текст").assertExists()
-    }
-
-    @Test
-    fun theSheetDismissActionReachesItsOwner() {
-        var dismissed = 0
-        show(reportOpen = true, onReportDismiss = { dismissed += 1 })
-
-        compose.onNodeWithTag(TAG_REPORT_DISMISS).performClick()
-
-        assertEquals(1, dismissed)
+        compose.onNodeWithTag(TAG_JOURNAL_EXPORT_PLATE).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.diagnostics_journal_export_failed)).assertExists()
     }
 
     // --- Крупный шрифт (AC-42, НФТ-31) ---------------------------------------------------------
@@ -695,40 +614,8 @@ class DiagnosticsScreenTest {
         assertEquals("«Исправить» must not break by letters at 200%", 1, lineCountOfTag(TAG_FIX))
     }
 
-    @Test
-    fun atTwoHundredPercentTheSheetTitleStaysOnOneLine() {
-        show(reportOpen = true, fontScale = 2f)
-
-        assertEquals(
-            "«Отчёт разработчику» must not break by letters at 200%",
-            1,
-            lineCountOfText(context.getString(R.string.diagnostics_report_title)),
-        )
-    }
-
-    /**
-     * При крупном шрифте шапка шторки двухстрочная: действие остаётся в своей строке,
-     * название уходит под него. «Готово» — по-прежнему одно достижимое действие с тегом,
-     * без невидимого дубля, который перехватывал бы нажатие (§6.3, AC-42).
-     */
-    @Test
-    fun atTwoHundredPercentTheSuccessExitStaysTheOnlyAction() {
-        show(reportOpen = true, reportOutcome = DeveloperReportOutcome.SENT, fontScale = 2f)
-
-        compose.onAllNodesWithTag(TAG_REPORT_DISMISS).assertCountEquals(1)
-        compose.onAllNodesWithText(context.getString(UiR.string.action_done)).assertCountEquals(1)
-    }
-
-    private fun textStyleOf(text: Int): TextStyle = firstTextLayout(
-        compose.onNodeWithText(context.getString(text)).fetchSemanticsNode(),
-    ).layoutInput.style
-
     private fun lineCountOfTag(tag: String): Int = firstTextLayout(
         compose.onNodeWithTag(tag, useUnmergedTree = true).fetchSemanticsNode(),
-    ).lineCount
-
-    private fun lineCountOfText(text: String): Int = firstTextLayout(
-        compose.onNodeWithText(text, useUnmergedTree = true).fetchSemanticsNode(),
     ).lineCount
 
     private fun firstTextLayout(node: SemanticsNode): TextLayoutResult {

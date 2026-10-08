@@ -138,7 +138,6 @@ internal sealed interface ProfileScreen {
             stock = StockPanel.Hidden,
             stockUnit = DoseUnit.TABLET,
             week = WeekAdherenceStrip(days = emptyList(), taken = 0, planned = 0),
-            watchMirror = null,
             isArchived = false,
             courseFinishedOffer = false,
             refill = null,

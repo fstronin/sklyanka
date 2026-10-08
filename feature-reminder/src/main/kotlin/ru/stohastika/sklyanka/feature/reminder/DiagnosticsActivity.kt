@@ -1,19 +1,20 @@
 package ru.stohastika.sklyanka.feature.reminder
 
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import dagger.hilt.android.AndroidEntryPoint
-import ru.stohastika.sklyanka.domain.analytics.Analytics
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsEvent
-import ru.stohastika.sklyanka.domain.analytics.ScreenName
+import ru.stohastika.sklyanka.domain.reminder.ReminderJournalDocument
 import ru.stohastika.sklyanka.ui.locale.withInterfaceLocale
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import javax.inject.Inject
@@ -26,6 +27,12 @@ import android.graphics.Color as AndroidColor
  * «Разрешения и автозапуск» (SKL-20), и она же вход в онбординг разрешений (SKL-14).
  * Один это экран с двумя частями или два разных — открытый вопрос (ОВ-48), и до ответа
  * диагностика не встраивается в чужой граф навигации, чтобы потом не выковыривать её оттуда.
+ *
+ * **Системный выбор места для файла журнала живёт здесь** (НФТ-17, SKL-106): результат
+ * чужой активности умеет получить только composable, а домен про `Uri` не знает. Отмена
+ * диалога приходит в модель как `null` — и исходом не является. Запуск — только при
+ * наличии обработчика (тот же приём, что у отчёта врачу, SKL-46): отсутствие `DocumentsUI`
+ * обязано стать честной плашкой, а не падением.
  */
 @AndroidEntryPoint
 class DiagnosticsActivity : ComponentActivity() {
@@ -60,13 +67,8 @@ class DiagnosticsActivity : ComponentActivity() {
     @Inject
     lateinit var settingsFixer: ReminderSettingsFixer
 
-    /** Канал событий: экран — отдельная Activity, и корень приложения его не видит (SKL-82). */
-    @Inject
-    lateinit var analytics: Analytics
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        analytics.track(AnalyticsEvent.ScreenView(ScreenName.REMINDERS_CHECK))
         // Светлый экран — тёмные значки системных панелей (SKL-72 §4).
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.light(AndroidColor.TRANSPARENT, AndroidColor.TRANSPARENT),
@@ -75,6 +77,11 @@ class DiagnosticsActivity : ComponentActivity() {
         setContent {
             SklyankaTheme {
                 val state by viewModel.state.collectAsState()
+                val journalExportLauncher = rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.CreateDocument(ReminderJournalDocument.MEDIA_TYPE),
+                ) { uri ->
+                    viewModel.onJournalExportResult(uri?.toString())
+                }
                 DiagnosticsScreen(
                     state = state,
                     onRestartSetup = {
@@ -96,10 +103,20 @@ class DiagnosticsActivity : ComponentActivity() {
                         viewModel.onAcknowledgeDeliveryCheck()
                         startActivity(setupEntry.intentFor(this@DiagnosticsActivity))
                     },
-                    onReportOpen = viewModel::onReportOpen,
-                    onReportCommentChange = viewModel::onReportCommentChange,
-                    onReportSend = viewModel::onReportSend,
-                    onReportDismiss = viewModel::onReportDismiss,
+                    onJournalExport = {
+                        val name = viewModel.journalExportFileName()
+                        if (canCreateJournalDocument(name)) {
+                            try {
+                                journalExportLauncher.launch(name)
+                            } catch (_: ActivityNotFoundException) {
+                                // Обработчик исчез между проверкой и запуском: исход тот
+                                // же — честная плашка, а не падение.
+                                viewModel.onJournalExportUnavailable()
+                            }
+                        } else {
+                            viewModel.onJournalExportUnavailable()
+                        }
+                    },
                     onBack = ::finish,
                     toLocal = viewModel::local,
                 )
@@ -119,15 +136,27 @@ class DiagnosticsActivity : ComponentActivity() {
         viewModel.refresh()
     }
 
+    /**
+     * Есть ли обработчик системного выбора места для файла журнала.
+     *
+     * Намерение-проба собирается тем же контрактом и с тем же именем файла, что и запуск:
+     * проверяемое и запускаемое намерения обязаны совпадать, иначе проверка отвечала бы
+     * про другое намерение (тот же приём, что `DocumentSaveSupport`, SKL-46). С Android 11
+     * запросы видимости фильтруются, поэтому действие с mime объявлено в `<queries>`
+     * манифеста.
+     */
+    private fun canCreateJournalDocument(fileName: String): Boolean {
+        val probe = ActivityResultContracts.CreateDocument(ReminderJournalDocument.MEDIA_TYPE)
+            .createIntent(this, fileName)
+        return probe.resolveActivity(packageManager) != null
+    }
+
     companion object {
         private const val EXTRA_OPEN_DELIVERY_CHECK = "ru.stohastika.sklyanka.diagnostics.open_delivery_check"
 
         /**
-         * Намерение экрана «Проверка напоминаний».
-         *
          * [openDeliveryCheck] — вход из плашки «Всё настроено» (SKL-86): шторка проверки
-         * доставки уже открыта, и запуск остаётся одним нажатием. Второй копии шторки
-         * и второго дома результата не заводится (ОВ-108).
+         * поднимается сразу, запуск остаётся одним нажатием.
          */
         fun intentFor(context: Context, openDeliveryCheck: Boolean = false): Intent =
             Intent(context, DiagnosticsActivity::class.java)

@@ -69,14 +69,6 @@ class AcceptanceWorld {
 
     val log = ScenarioLog(clock)
 
-    /**
-     * Канал аналитики сценария (SKL-82, SKL-99): события остаются в памяти.
-     *
-     * Событие удаления/отмены отправляет use case — тот же путь, что в продукте;
-     * шаг приёмки читает записанное, а не эмулирует точку вызова.
-     */
-    val analytics = ScenarioAnalytics()
-
     /** Репозитории поверх состояния: под ними гоняются настоящие доменные сценарии. */
     val repositories = ScenarioRepositories(profiles, medications, intakes, log)
 
@@ -316,9 +308,8 @@ class AcceptanceWorld {
     /**
      * Отметка с последствиями подсистемы напоминаний (SKL-13, НАП-30).
      *
-     * Отличается от [mark] ровно точкой композиции: снятие уведомления и отзыв карточки
-     * часов приходят теми же последствиями, что у продукта (`ReminderModule`), а не
-     * повторяются шагом. Нужна сценарию «отметка с часов закрывает напоминание».
+     * Отличается от [mark] ровно точкой композиции: снятие уведомления приходит теми же
+     * последствиями, что у продукта (`ReminderModule`), а не повторяется шагом.
      */
     fun markWithSideEffects(intakeId: String, result: MarkResult, source: IntakeSource, actedAt: Instant): MarkOutcome =
         applyMark(intakeId, result, source, actedAt, reminders.markSideEffects())
@@ -363,31 +354,22 @@ class AcceptanceWorld {
 
     /**
      * Отметка с телефона.
-     *
-     * Перед действием доходят нажатия с часов, чей срок доставки уже наступил, после —
-     * все остальные: сообщение с часов приходит позже нажатия, и именно на этом стоит
-     * правило первенства по времени действия (ПР-3).
      */
     fun markFromPhone(at: LocalDateTime, result: MarkResult) {
         rememberState()
-        deliverPressesUntil(clock.momentOf(at))
         markCurrent(result, IntakeSource.PHONE, at)
-        deliverRemainingPresses()
     }
 
     /**
      * Отметка, пришедшая с экрана: намерение кнопки называет приём, а не «текущий».
      *
-     * От [markFromPhone] отличается только адресатом — два прохода по нажатиям часов
-     * и правило первенства по времени действия те же (ПР-3). Копии этого правила
-     * у экранных шагов нет: кнопка говорит о своём приёме, а решает домен.
+     * От [markFromPhone] отличается только адресатом: кнопка говорит о своём приёме,
+     * а решает домен.
      */
     fun markFromScreen(intakeId: String, at: LocalDateTime, result: MarkResult) {
         rememberState()
         val moment = clock.momentOf(at)
-        deliverPressesUntil(moment)
         mark(intakeId, result, IntakeSource.PHONE, moment)
-        deliverRemainingPresses()
         intakes.focusOn(requireNotNull(intakes.get(intakeId)) { "unknown intake: $intakeId" })
     }
 
@@ -473,7 +455,6 @@ class AcceptanceWorld {
             medications = repositories.medicationStore,
             intakes = repositories.intakeStore,
             planner = planner(),
-            analytics = analytics,
         )
         return runBlocking { useCase(medicationId) }
     }
@@ -495,7 +476,6 @@ class AcceptanceWorld {
         val useCase = UndoDeleteMedicationUseCase(
             medications = repositories.medicationStore,
             planner = planner(),
-            analytics = analytics,
         )
         return runBlocking { useCase(medications.get(medication).id) }
     }
@@ -525,32 +505,6 @@ class AcceptanceWorld {
         clock.moveTo(moment)
         mark(intake.id, result, IntakeSource.PHONE, clock.momentOf(moment))
         intakes.focusOn(intake)
-    }
-
-    // --- Действия: часы ------------------------------------------------------------------------
-
-    /** Нажатие на часах: действие произошло сейчас, а дойдёт до телефона когда дойдёт (ЧАС-23). */
-    fun pressOnWatch(result: MarkResult, at: LocalDateTime) {
-        val intake = intakes.currentOrScheduled()
-        intakes.presses += WatchPress(intake.id, result, clock.momentOf(at), clock.momentOf(at))
-    }
-
-    fun delayLastPress(to: LocalDateTime) {
-        intakes.presses.lastOrNull()?.deliverAt = clock.momentOf(to)
-    }
-
-    /** Доставка нажатий, дошедших до телефона к указанному моменту, в порядке доставки. */
-    fun deliverPressesUntil(moment: Instant) {
-        val due = intakes.presses.filter { !it.deliverAt.isAfter(moment) }.sortedBy { it.deliverAt }
-        intakes.presses.removeAll(due)
-        due.forEach { press -> mark(press.intakeId, press.result, IntakeSource.WATCH, press.actedAt) }
-    }
-
-    /** Остальные нажатия доходят позже действия на телефоне — и решают гонку по времени действия. */
-    fun deliverRemainingPresses() {
-        val rest = intakes.presses.sortedBy { it.deliverAt }
-        intakes.presses.clear()
-        rest.forEach { press -> mark(press.intakeId, press.result, IntakeSource.WATCH, press.actedAt) }
     }
 
     // --- Действия: приём по потребности и просроченные приёмы ------------------------------------

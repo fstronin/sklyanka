@@ -423,15 +423,19 @@ class ScreenStandSteps {
     @Когда("разработчик сверяет снимки схемы базы после задачи")
     fun theDeveloperComparesTheSchemas() = Unit
 
-    @Тогда("они совпадают с состоянием до задачи")
+    @Тогда("новый снимок закрыт миграцией, а остальное совпадает с состоянием до задачи")
     fun theSchemasAreUnchanged() {
         val schemas = File(RepositoryLayout.root, SCHEMA_DIRECTORY)
         assertTrue(schemas.isDirectory, "the exported Room schemas are missing")
-        val changed = schemaSnapshotChanges()
+        // Снимок новой версии допустим, только если это объявленная версия базы и из
+        // предыдущей ведёт миграция (SKL-106: `mirror_to_watch` уехал с часами, 7→8).
+        // Удалённый или изменённый снимок не закрывается ничем: схема не имеет права
+        // уезжать молча.
+        val unbacked = schemaSnapshotChanges().filterNot { it.isClosedByMigration() }
         assertEquals(
             emptyList<String>(),
-            changed,
-            "the task must not touch the database schema or its snapshots: $changed",
+            unbacked,
+            "a schema snapshot may move only with its declared migration: $unbacked",
         )
     }
 
@@ -550,6 +554,19 @@ class ScreenStandSteps {
         }
     }
 
+    /**
+     * Закрыт ли снимок миграцией: добавлен ровно `ДобавленныйСнимок<N.json>`, где N —
+     * объявленная версия базы, и в `SklyankaMigrations` стоит `Migration(N-1, N)`.
+     */
+    private fun String.isClosedByMigration(): Boolean {
+        val version = ADDED_SNAPSHOT.matchEntire(this)?.groupValues?.get(1)?.toIntOrNull() ?: return false
+        val database = File(RepositoryLayout.root, DATABASE_SOURCE).readText()
+        val migrations = File(RepositoryLayout.root, MIGRATIONS_SOURCE).readText()
+        val declared = DECLARED_VERSION.find(database)?.groupValues?.get(1)?.toIntOrNull()
+        return declared == version &&
+            Regex("""Migration\(\s*${version - 1}\s*,\s*$version\s*\)""").containsMatchIn(migrations)
+    }
+
     private fun schemaSnapshotsAtHead(): Map<String, String> =
         gitOutput("ls-tree", "-r", "--name-only", "HEAD", "--", SCHEMA_DIRECTORY)
             .lines()
@@ -577,6 +594,10 @@ class ScreenStandSteps {
         const val PNG_EXTENSION = "png"
         const val PNG = ".png"
         const val FEATURE = "feature"
+        const val DATABASE_SOURCE = "core-data/src/main/kotlin/ru/stohastika/sklyanka/data/room/SklyankaDatabase.kt"
+        const val MIGRATIONS_SOURCE = "core-data/src/main/kotlin/ru/stohastika/sklyanka/data/room/SklyankaMigrations.kt"
+        val ADDED_SNAPSHOT = Regex("""added: (\d+)\.json""")
+        val DECLARED_VERSION = Regex("""const val VERSION = (\d+)""")
         const val ANDROID_TEST = "androidTest"
         const val TEST_DEBUG = "testDebug"
         const val SNAPSHOT_DIRECTORY = "screenshots"

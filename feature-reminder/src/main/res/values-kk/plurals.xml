@@ -36,4 +36,9 @@
         <item quantity="one">%1$d қабылдау өткізілді</item>
         <item quantity="other">%1$d қабылдау өткізілді</item>
     </plurals>
+    <!-- SKL-106: исход служебной выгрузки журнала. -->
+    <plurals name="diagnostics_journal_export_saved">
+        <item quantity="one">Журнал экспортталды: %1$d жазба.</item>
+        <item quantity="other">Журнал экспортталды: %1$d жазба.</item>
+    </plurals>
 </resources>

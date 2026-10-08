@@ -14,7 +14,7 @@ import ru.stohastika.sklyanka.feature.settings.R as SettingsR
  * H — настройки: «Отложить на» (SKL-97, TDD §8.2; ревизия SKL-100).
  *
  * Строка откладывания меняет интервал через диалог и показывает выбранное значение.
- * Строки «Аналитика» в релизе нет (ПМ-31), поэтому сценарий analytics из проверки убран.
+ * Строки «Аналитика» в сборке нет (Р-4, SKL-106).
  */
 @HiltAndroidTest
 class SettingsDeviceTest : DeviceScreenTest() {

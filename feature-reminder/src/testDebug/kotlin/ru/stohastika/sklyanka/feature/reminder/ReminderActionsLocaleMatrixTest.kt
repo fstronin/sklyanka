@@ -100,7 +100,6 @@ class ReminderActionsLocaleMatrixTest {
             ),
         ),
         snoozeMinutes = snoozeMinutes,
-        mirroredToWatch = false,
         foreignProfileName = null,
     )
 

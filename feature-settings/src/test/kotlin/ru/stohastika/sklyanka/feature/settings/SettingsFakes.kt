@@ -22,8 +22,6 @@ import ru.stohastika.sklyanka.domain.reminder.port.ReminderSettingsValues
 import ru.stohastika.sklyanka.domain.repository.ActiveProfileRepository
 import ru.stohastika.sklyanka.domain.repository.MedicationRepository
 import ru.stohastika.sklyanka.domain.repository.ProfileRepository
-import ru.stohastika.sklyanka.domain.watch.WatchLinkState
-import ru.stohastika.sklyanka.domain.watch.WatchLinkStateReader
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalTime
@@ -32,8 +30,8 @@ import java.time.LocalTime
  * Подставные границы экрана настроек.
  *
  * Простые намеренно: проверяется сборка состояния экрана, а не хранилища. Единственное,
- * что здесь устроено «как в жизни», — изменяемость: состояние разрешений и связи с часами
- * меняется мимо приложения, и проверка НФТ-52 без этого невозможна.
+ * что здесь устроено «как в жизни», — изменяемость: состояние разрешений меняется мимо
+ * приложения, и проверка НФТ-52 без этого невозможна.
  */
 internal class FakeProfiles(profiles: List<Profile> = emptyList()) : ProfileRepository {
 
@@ -174,11 +172,6 @@ internal class FakePermissions(
 ) : PermissionStateReader {
 
     override fun state(permission: ReminderPermission): PermissionState = states[permission] ?: PermissionState.UNKNOWN
-}
-
-internal class FakeWatchLink(var link: WatchLinkState = WatchLinkState.NotConfigured) : WatchLinkStateReader {
-
-    override suspend fun read(): WatchLinkState = link
 }
 
 internal object SettingsFixtures {

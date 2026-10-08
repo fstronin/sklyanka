@@ -167,7 +167,7 @@ class TransferScreenSteps(private val world: AcceptanceWorld) {
         assertEquals(ReminderSound.DEFAULT, snapshot.settings.reminderSound, "the settings must be in the file")
     }
 
-    @Тогда("^файл не содержит сведений о выданных разрешениях, автозапуске и подключении часов$")
+    @Тогда("^файл не содержит сведений о выданных разрешениях и автозапуске$")
     fun theFileCarriesNoSystemState() {
         val raw = rawExport()
         val root = JSONObject(raw)
@@ -177,11 +177,11 @@ class TransferScreenSteps(private val world: AcceptanceWorld) {
             "the file must carry exactly the required sections (ПЕР-5)",
         )
         val settings = root.getJSONObject("settings")
-        assertEquals(setOf("reminders", "watch"), settings.keys().asSequence().toSet())
         assertEquals(
-            setOf("enabled", "snooze_button"),
-            settings.getJSONObject("watch").keys().asSequence().toSet(),
-            "Wear Engine grants and connection state are not transferable (ПЕР-26)",
+            setOf("reminders"),
+            settings.keys().asSequence().toSet(),
+            "settings carry the reminder block only: permissions, autostart and the watch seam " +
+                "are system state or excised from the build (ПЕР-26, Р-3, SKL-106)",
         )
         FORBIDDEN_KEYS.forEach { key ->
             assertFalse(raw.contains(key, ignoreCase = true), "the file must not carry «$key»")

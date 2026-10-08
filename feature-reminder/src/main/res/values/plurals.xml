@@ -48,4 +48,11 @@
         <item quantity="many">пропущено %1$d приёмов</item>
         <item quantity="other">пропущено %1$d приёма</item>
     </plurals>
+    <!-- SKL-106: исход служебной выгрузки журнала. -->
+    <plurals name="diagnostics_journal_export_saved">
+        <item quantity="one">Журнал выгружен: %1$d запись.</item>
+        <item quantity="few">Журнал выгружен: %1$d записи.</item>
+        <item quantity="many">Журнал выгружен: %1$d записей.</item>
+        <item quantity="other">Журнал выгружен: %1$d записи.</item>
+    </plurals>
 </resources>

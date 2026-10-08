@@ -59,8 +59,8 @@ class WindowIntakeSelectorTest {
     }
 
     @Test
-    fun `a deleted medication produces no alarm and no watch card`() {
-        // ПР-14: удалённое лекарство уходит из плана — будильники и карточка часов питаются им же.
+    fun `a deleted medication produces no alarm`() {
+        // ПР-14: удалённое лекарство уходит из плана — будильники питаются им же.
         assertTrue(select(candidate().copy(medicationDeleted = true)).isEmpty())
         assertTrue(WindowIntakeSelector.expected(listOf(candidate().copy(medicationDeleted = true))).isEmpty())
     }

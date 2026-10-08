@@ -26,7 +26,6 @@ import ru.stohastika.sklyanka.domain.reminder.port.AppForeground
 import ru.stohastika.sklyanka.domain.reminder.port.DeferredReminders
 import ru.stohastika.sklyanka.domain.reminder.port.DeliveryCheckAcknowledgements
 import ru.stohastika.sklyanka.domain.reminder.port.DeviceEnvironmentSource
-import ru.stohastika.sklyanka.domain.reminder.port.NoWatchGateway
 import ru.stohastika.sklyanka.domain.reminder.port.NotificationGateway
 import ru.stohastika.sklyanka.domain.reminder.port.PermissionStateReader
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderCardSource
@@ -34,13 +33,11 @@ import ru.stohastika.sklyanka.domain.reminder.port.ReminderJournal
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderMeasurement
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPlanSource
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderSettings
-import ru.stohastika.sklyanka.domain.reminder.port.WatchGateway
 import ru.stohastika.sklyanka.domain.repository.MedicationRepository
 import ru.stohastika.sklyanka.domain.time.TimeSource
 import ru.stohastika.sklyanka.domain.transfer.TransferFiles
 import ru.stohastika.sklyanka.feature.onboarding.PermissionsActivity
 import ru.stohastika.sklyanka.feature.reminder.DeliveryCheckController
-import ru.stohastika.sklyanka.feature.reminder.DeveloperReportSender
 import ru.stohastika.sklyanka.feature.reminder.ReminderSettingsFixer
 import ru.stohastika.sklyanka.feature.reminder.ReminderSetupEntry
 import ru.stohastika.sklyanka.platform.AppForegroundTracker
@@ -50,7 +47,6 @@ import ru.stohastika.sklyanka.platform.permission.SystemPermissionStateReader
 import ru.stohastika.sklyanka.platform.reminder.AlarmManagerGateway
 import ru.stohastika.sklyanka.platform.reminder.AndroidReminderSettingsFixer
 import ru.stohastika.sklyanka.platform.reminder.BuildMeasurementMode
-import ru.stohastika.sklyanka.platform.reminder.StubDeveloperReportSender
 import ru.stohastika.sklyanka.reminder.DeliveryCheckScenarios
 import ru.stohastika.sklyanka.reminder.ReminderJournalRotation
 import ru.stohastika.sklyanka.reminder.ReminderOutageDetector
@@ -82,16 +78,6 @@ object ReminderModule {
     @Singleton
     @ReminderScope
     fun provideReminderScope(): CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-
-    /**
-     * Часы — SKL-16.
-     *
-     * До неё порт отвечает «часы не настроены»: недоступность часов не является ошибкой
-     * сценария, приём отмечается на телефоне (ЧАС-14).
-     */
-    @Provides
-    @Singleton
-    fun provideWatchGateway(): WatchGateway = NoWatchGateway
 
     @Provides
     @Singleton
@@ -141,7 +127,6 @@ object ReminderModule {
         plan: ReminderPlanSource,
         cards: ReminderCardSource,
         notifications: NotificationGateway,
-        watch: WatchGateway,
         alarms: AlarmGateway,
         journal: ReminderJournal,
         deferred: DeferredReminders,
@@ -152,7 +137,6 @@ object ReminderModule {
         plan = plan,
         cards = cards,
         notifications = notifications,
-        watch = watch,
         alarms = alarms,
         journal = journal,
         deferred = deferred,
@@ -167,23 +151,21 @@ object ReminderModule {
         plan: ReminderPlanSource,
         cards: ReminderCardSource,
         notifications: NotificationGateway,
-        watch: WatchGateway,
         deferred: DeferredReminders,
         alarms: AlarmGateway,
     ): DismissReminderUseCase = DismissReminderUseCase(
         plan = plan,
         cards = cards,
         notifications = notifications,
-        watch = watch,
         deferred = deferred,
         alarms = alarms,
     )
 
     /**
-     * Последствия отметки приёма (НАП-30, ЧАС-16).
+     * Последствия отметки приёма (НАП-30).
      *
      * Подставляются в единственную точку отметки, поэтому карточка закрывается одинаково
-     * при отметке с экрана «Сегодня», с карточки напоминания и с часов.
+     * при отметке с экрана «Сегодня» и с карточки напоминания.
      */
     @Provides
     @Singleton
@@ -363,13 +345,4 @@ abstract class ReminderBindings {
     @Binds
     @Singleton
     abstract fun bindDeliveryCheckController(impl: DeliveryCheckScenarios): DeliveryCheckController
-
-    /**
-     * Отправка отчёта разработчику: заглушка первой версии без сети (ОВ-127, ПМ-32).
-     *
-     * Реальный сетевой адаптер встанет в этот же шов отдельной задачей.
-     */
-    @Binds
-    @Singleton
-    abstract fun bindDeveloperReportSender(impl: StubDeveloperReportSender): DeveloperReportSender
 }

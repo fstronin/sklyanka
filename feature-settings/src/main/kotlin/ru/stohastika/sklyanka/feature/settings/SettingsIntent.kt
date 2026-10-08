@@ -36,23 +36,12 @@ sealed interface SettingsIntent {
     /** Выбран интервал откладывания в минутах (ОВ-98). */
     data class SetSnooze(val minutes: Int) : SettingsIntent
 
-    data object OpenWatchSetup : SettingsIntent
-
     /** Строка «Разрешения и автозапуск» — вход в диагностику напоминаний (решение по `ОВ-48`). */
     data object OpenPermissions : SettingsIntent
 
     data object OpenHistory : SettingsIntent
 
     data object OpenDataTransfer : SettingsIntent
-
-    /**
-     * Переключатель «Аналитика» (ПМ-25 п. 4).
-     *
-     * Включение не срабатывает «в лоб»: маршрут открывает экран согласия, и аналитика
-     * включается только явным «Разрешить аналитику» на нём. Выключение — немедленное,
-     * сценарий исполняет модель.
-     */
-    data class SetAnalytics(val enabled: Boolean) : SettingsIntent
 
     /** «Политика конфиденциальности» — системный переход в браузер (ОВ-123). */
     data object OpenPolicy : SettingsIntent

@@ -27,7 +27,6 @@ import ru.stohastika.sklyanka.feature.meds.card.MedCardUiState
 import ru.stohastika.sklyanka.feature.meds.card.MedicationCardScreen
 import ru.stohastika.sklyanka.feature.meds.card.RefillUi
 import ru.stohastika.sklyanka.feature.meds.card.ScheduleBlockUi
-import ru.stohastika.sklyanka.feature.meds.card.WatchMirrorUi
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 
 /**
@@ -127,7 +126,6 @@ internal object MedCardStand {
         val history: List<Intake> = runBlocking {
             world.repositories.intakeStore.observeByMedication(profileId, card.id, from, today).first()
         }
-        val scheduled = card.scheduleMode == ScheduleMode.SCHEDULED
         return MedCardUiState(
             medicationId = card.id,
             title = card.name,
@@ -139,15 +137,6 @@ internal object MedCardStand {
             stock = StockPanel.of(card),
             stockUnit = DoseUnit.ofCode(card.doseUnit) ?: card.form.doseUnit(),
             week = WeekAdherence.of(card, history, today),
-            // Поле состояния остаётся швом пост-MVP (ADR-0009); экран строку часов не рисует.
-            watchMirror = if (scheduled) {
-                WatchMirrorUi(
-                    checked = card.mirrorToWatch,
-                    enabled = !card.isArchived,
-                )
-            } else {
-                null
-            },
             isArchived = card.isArchived,
             courseFinishedOffer = CourseCompletion.isFinished(card, today),
             canDelete = runBlocking { world.repositories.intakeStore.hasTaken(profileId, card.id) }.not(),
@@ -184,7 +173,6 @@ internal object MedCardStand {
                     medications = world.repositories.medicationStore,
                     intakes = world.repositories.intakeStore,
                     planner = world.planner(),
-                    analytics = world.analytics,
                 )
                 val outcome = runBlocking { useCase(card.id) }
                 if (outcome is DeleteOutcome.Deleted) {

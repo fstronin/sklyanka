@@ -46,7 +46,6 @@ import ru.stohastika.sklyanka.ui.component.Banner
 import ru.stohastika.sklyanka.ui.component.BannerKind
 import ru.stohastika.sklyanka.ui.component.ButtonForm
 import ru.stohastika.sklyanka.ui.component.ButtonLabel
-import ru.stohastika.sklyanka.ui.component.ChatGlyph
 import ru.stohastika.sklyanka.ui.component.CheckGlyph
 import ru.stohastika.sklyanka.ui.component.ChevronGlyph
 import ru.stohastika.sklyanka.ui.component.InfoGlyph
@@ -72,9 +71,9 @@ import java.time.LocalDateTime
  * Проверка напоминаний — финальный первый уровень (НАП-37, ОВ-126).
  *
  * Порядок секций один во всех состояниях: вердикт → «Разрешения» → «Проверка доставки» →
- * «Напоминания» → «Сообщить о проблеме». Технические сведения (журнал, счётчики пересборки,
- * список будильников) сюда не выходят: они уезжают в отчёт разработчику. Кнопок «Проверить
- * сейчас» и «Повторить проверку» нет (ОВ-128); перепланирование автоматическое.
+ * «Напоминания» → служебная строка выгрузки журнала. Технические сведения (журнал, счётчики
+ * пересборки, список будильников) на экран не выходят: они уходят в файл выгрузки.
+ * Кнопок «Проверить сейчас» и «Повторить проверку» нет (ОВ-128); перепланирование автоматическое.
  */
 @Composable
 @Suppress("LongParameterList")
@@ -98,10 +97,8 @@ fun DiagnosticsScreen(
     onAcknowledgeDeliveryCheck: () -> Unit,
     /** «Исправить» у неудачного исхода: прочитать и вести на «Настроить надёжность». */
     onFixDeliveryCheck: () -> Unit,
-    onReportOpen: () -> Unit,
-    onReportCommentChange: (String) -> Unit,
-    onReportSend: () -> Unit,
-    onReportDismiss: () -> Unit,
+    /** «Выгрузить журнал»: попросить систему выбрать место для файла журнала (НФТ-51, SKL-106). */
+    onJournalExport: () -> Unit,
     onBack: () -> Unit,
     toLocal: (Instant) -> LocalDateTime,
     modifier: Modifier = Modifier,
@@ -116,39 +113,31 @@ fun DiagnosticsScreen(
         )
         return
     }
-    Box(modifier = modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(colors.background)
-                .statusBarsPadding()
-                .navigationBarsPadding()
-                .testTag(TAG_DIAGNOSTICS),
-        ) {
-            ScreenHeader(
-                labels = ScreenHeaderLabels(title = stringResource(R.string.diagnostics_title)),
-                kind = ScreenHeaderKind.Nested,
-                onBack = onBack,
-            )
-            if (snapshot == null) return@Column
-            DiagnosticsList(
-                state = state,
-                snapshot = snapshot,
-                toLocal = toLocal,
-                onRestartSetup = onRestartSetup,
-                onFixPermission = onFixPermission,
-                onCheckDelivery = onCheckDelivery,
-                onCancelDeliveryCheck = onCancelDeliveryCheck,
-                onAcknowledgeDeliveryCheck = onAcknowledgeDeliveryCheck,
-                onFixDeliveryCheck = onFixDeliveryCheck,
-                onReportOpen = onReportOpen,
-            )
-        }
-        DeveloperReportSheet(
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .background(colors.background)
+            .statusBarsPadding()
+            .navigationBarsPadding()
+            .testTag(TAG_DIAGNOSTICS),
+    ) {
+        ScreenHeader(
+            labels = ScreenHeaderLabels(title = stringResource(R.string.diagnostics_title)),
+            kind = ScreenHeaderKind.Nested,
+            onBack = onBack,
+        )
+        if (snapshot == null) return@Column
+        DiagnosticsList(
             state = state,
-            onCommentChange = onReportCommentChange,
-            onSend = onReportSend,
-            onDismiss = onReportDismiss,
+            snapshot = snapshot,
+            toLocal = toLocal,
+            onRestartSetup = onRestartSetup,
+            onFixPermission = onFixPermission,
+            onCheckDelivery = onCheckDelivery,
+            onCancelDeliveryCheck = onCancelDeliveryCheck,
+            onAcknowledgeDeliveryCheck = onAcknowledgeDeliveryCheck,
+            onFixDeliveryCheck = onFixDeliveryCheck,
+            onJournalExport = onJournalExport,
         )
     }
 }
@@ -171,7 +160,7 @@ private fun DiagnosticsList(
     onCancelDeliveryCheck: () -> Unit,
     onAcknowledgeDeliveryCheck: () -> Unit,
     onFixDeliveryCheck: () -> Unit,
-    onReportOpen: () -> Unit,
+    onJournalExport: () -> Unit,
 ) {
     LazyColumn(
         modifier = Modifier
@@ -202,7 +191,7 @@ private fun DiagnosticsList(
                 RemindersSection(snapshot, toLocal, state.today)
             }
         }
-        item { ReportFooter(onReportOpen) }
+        item { JournalExportFooter(state, onJournalExport) }
     }
 }
 
@@ -870,14 +859,20 @@ private fun NextPlan(snapshot: ReminderDiagnostics, toLocal: (Instant) -> LocalD
     }
 }
 
-/** Постоянный низ: «Сообщить о проблеме» с подписью, виден в каждом базовом состоянии (AC-29). */
+/**
+ * Постоянный низ: служебная строка выгрузки журнала (НФТ-51, SKL-106).
+ *
+ * Заменила «Сообщить о проблеме»: та обещала отправку, которой в сборке нет (П-7), а эта
+ * делает ровно то, что подписано — просит систему выбрать место и пишет файл. Исход
+ * называется плашкой под строкой; отмена диалога плашку не рисует.
+ */
 @Composable
-private fun ReportFooter(onReportOpen: () -> Unit) {
+private fun JournalExportFooter(state: DiagnosticsUiState, onJournalExport: () -> Unit) {
     val colors = SklyankaTheme.colors
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .testTag(TAG_REPORT_FOOTER),
+            .testTag(TAG_JOURNAL_EXPORT),
     ) {
         // Верхняя линия постоянного низа (`.report{border-top}`, ОВ-144).
         Box(
@@ -895,20 +890,20 @@ private fun ReportFooter(onReportOpen: () -> Unit) {
         ) {
             QuietButton(
                 label = ButtonLabel(
-                    text = stringResource(R.string.diagnostics_report_open),
+                    text = stringResource(R.string.diagnostics_journal_export),
                     // Декоративный ведущий глиф: смысл несёт подпись, чтением с экрана
                     // глиф не объявляется (ОВ-144).
                     leadingGlyph = {
-                        ChatGlyph(
+                        InfoGlyph(
                             color = colors.accent,
                             modifier = Modifier.clearAndSetSemantics {},
                         )
                     },
                 ),
-                onClick = onReportOpen,
+                onClick = onJournalExport,
             )
             Text(
-                text = stringResource(R.string.diagnostics_report_footer_note),
+                text = stringResource(R.string.diagnostics_journal_export_note),
                 style = SklyankaType.CaptionSmall,
                 color = colors.textMuted,
                 // Подпись низа — единственная центрируемая по строкам (`.report .bs{text-align:center}`):
@@ -916,7 +911,45 @@ private fun ReportFooter(onReportOpen: () -> Unit) {
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth(),
             )
+            JournalExportPlate(state.journalExport)
         }
+    }
+}
+
+/** Плашка исхода выгрузки: число записей, нехватка места или сорванная запись. */
+@Composable
+private fun JournalExportPlate(journalExport: JournalExportUi?) {
+    when (journalExport) {
+        null -> Unit
+        is JournalExportUi.Saved -> Text(
+            text = pluralStringResource(
+                R.plurals.diagnostics_journal_export_saved,
+                journalExport.records,
+                journalExport.records,
+            ),
+            style = SklyankaType.CaptionSmall,
+            color = SklyankaTheme.colors.textMuted,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag(TAG_JOURNAL_EXPORT_PLATE),
+        )
+
+        JournalExportUi.NoSpace -> Banner(
+            text = stringResource(R.string.diagnostics_journal_export_no_space),
+            kind = BannerKind.Neutral,
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag(TAG_JOURNAL_EXPORT_PLATE),
+        )
+
+        JournalExportUi.Failed -> Banner(
+            text = stringResource(R.string.diagnostics_journal_export_failed),
+            kind = BannerKind.Neutral,
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag(TAG_JOURNAL_EXPORT_PLATE),
+        )
     }
 }
 
@@ -970,11 +1003,5 @@ const val TAG_CHECK_FIX = "diagnostics_check_fix"
 const val TAG_WEEK_SUMMARY = "diagnostics_week_summary"
 const val TAG_LAST_SHORT = "diagnostics_last_short"
 const val TAG_NEXT_SHORT = "diagnostics_next_short"
-const val TAG_REPORT_FOOTER = "diagnostics_report_footer"
-const val TAG_REPORT_SHEET = "diagnostics_report_sheet"
-const val TAG_REPORT_COMMENT = "diagnostics_report_comment"
-const val TAG_REPORT_SEND = "diagnostics_report_send"
-const val TAG_REPORT_SENT = "diagnostics_report_sent"
-const val TAG_REPORT_FAILED = "diagnostics_report_failed"
-const val TAG_REPORT_RETRY = "diagnostics_report_retry"
-const val TAG_REPORT_DISMISS = "diagnostics_report_dismiss"
+const val TAG_JOURNAL_EXPORT = "diagnostics_journal_export"
+const val TAG_JOURNAL_EXPORT_PLATE = "diagnostics_journal_export_plate"

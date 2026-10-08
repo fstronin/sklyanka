@@ -20,14 +20,12 @@ import ru.stohastika.sklyanka.domain.reminder.port.PermissionState
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPermission
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderSettingsValues
 import ru.stohastika.sklyanka.domain.transfer.AppStamp
-import ru.stohastika.sklyanka.domain.watch.WatchLinkState
 
 /**
  * Сборка состояния экрана «Настройки» (`TDD.md §4`).
  *
  * Проверяется не вёрстка, а то, откуда берётся каждая подпись: список профилей с числом
- * лекарств, сводка разрешений и её пересчёт без перезапуска, состояние связи с часами,
- * значения настроек напоминания.
+ * лекарств, сводка разрешений и её пересчёт без перезапуска, значения настроек напоминания.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class SettingsViewModelTest {
@@ -41,7 +39,6 @@ class SettingsViewModelTest {
     )
     private val reminders = FakeReminderSettings()
     private val permissions = FakePermissions()
-    private val watch = FakeWatchLink()
 
     @Before
     fun setUp() {
@@ -174,19 +171,6 @@ class SettingsViewModelTest {
     }
 
     @Test
-    fun theWatchLinkIsReadFromTheSystemOnEveryRefresh() = runTest(dispatcher) {
-        val model = viewModel()
-        dispatcher.scheduler.advanceUntilIdle()
-        assertEquals(WatchLinkState.NotConfigured, model.state.value.watch)
-
-        watch.link = WatchLinkState.Connected(WATCH_MODEL)
-        model.refresh()
-        dispatcher.scheduler.advanceUntilIdle()
-
-        assertEquals(WatchLinkState.Connected(WATCH_MODEL), model.state.value.watch)
-    }
-
-    @Test
     fun theReminderSettingsAreShownAsStored() = runTest(dispatcher) {
         reminders.values = ReminderSettingsValues(persistentEnabled = true, snoozeMinutes = SNOOZE)
         val model = viewModel()
@@ -275,7 +259,6 @@ class SettingsViewModelTest {
         system = SettingsSystemStateReader(
             reminders = reminders,
             permissions = permissions,
-            watch = watch,
         ),
         stamp = AppStamp(versionName = VERSION, versionCode = VERSION_CODE),
     )
@@ -287,6 +270,5 @@ class SettingsViewModelTest {
         const val SNOOZE_OUTSIDE_THE_SET = 17
         const val VERSION = "0.1.0"
         const val VERSION_CODE = 1
-        const val WATCH_MODEL = "GT 6 Pro"
     }
 }

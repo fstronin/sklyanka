@@ -34,12 +34,8 @@ import ru.stohastika.sklyanka.feature.reminder.ReminderUiState
 import ru.stohastika.sklyanka.feature.reminder.TAG_ACTION_SKIP
 import ru.stohastika.sklyanka.feature.reminder.TAG_ACTION_SNOOZE
 import ru.stohastika.sklyanka.feature.reminder.TAG_ACTION_TAKEN
-import ru.stohastika.sklyanka.feature.reminder.TAG_DOSE
-import ru.stohastika.sklyanka.feature.reminder.TAG_NAME
-import ru.stohastika.sklyanka.feature.reminder.TAG_OVERLINE
 import ru.stohastika.sklyanka.feature.reminder.TAG_REMINDER
 import ru.stohastika.sklyanka.feature.reminder.TAG_ROW
-import ru.stohastika.sklyanka.feature.reminder.TAG_TIME
 import java.time.LocalDateTime
 import java.time.LocalTime
 
@@ -58,29 +54,6 @@ import java.time.LocalTime
 class ReminderCardSteps(private val world: AcceptanceWorld) {
 
     private val context: Context = ApplicationProvider.getApplicationContext()
-
-    // --- Дублирование на часы ------------------------------------------------------------------
-
-    @Допустим("^дублирование приёма «([^»]+)» на часы выключено$")
-    fun theWatchMirroringIsOff(name: String) {
-        world.medications.get(name)
-        world.profiles.setMirrorReminders(world.profiles.active, false)
-    }
-
-    @Тогда("^на напоминании нет плашки «Продублировано на часы»$")
-    fun theWatchChipIsAbsent() {
-        ReminderStand.open(world)
-        assertTrue(showsTag(TAG_REMINDER), "the reminder screen must be on the stand")
-        val offenders = texts().filter { it.contains(WATCH_CHIP_WORD, ignoreCase = true) }
-        assertEquals(emptyList<String>(), offenders, "the watch chip must not be on the screen (ADR-0009)")
-    }
-
-    @Но("^остальной состав напоминания не меняется$")
-    fun theRestOfTheCardIsUnchanged() {
-        listOf(TAG_OVERLINE, TAG_TIME, TAG_NAME, TAG_DOSE, TAG_ACTION_TAKEN, TAG_ACTION_SNOOZE, TAG_ACTION_SKIP)
-            .forEach { tag -> assertTrue(showsTag(tag), "the card is missing $tag") }
-        assertTrue(showsText("14:00"), "the card must keep the time of the intake")
-    }
 
     // --- Действия карточки ---------------------------------------------------------------------
 
@@ -109,15 +82,6 @@ class ReminderCardSteps(private val world: AcceptanceWorld) {
         val intake = world.intakes.current()
         assertTrue(ReminderStand.state(world) is ReminderUiState.Closed, "the card must close")
         assertFalse(world.reminders.isNotificationShown(intake.id), "the shade card must be dismissed")
-    }
-
-    @И("^парная карточка на часах отзывается$")
-    fun theWatchCardIsRevoked() {
-        val intake = world.intakes.current()
-        assertTrue(
-            world.reminders.revokedWatchIntakeIds.contains(intake.id),
-            "the watch card of the intake must be revoked (ЧАС-16)",
-        )
     }
 
     @И("^напоминание исчезает с экрана$")
@@ -318,8 +282,5 @@ class ReminderCardSteps(private val world: AcceptanceWorld) {
     private companion object {
         const val DAILY_TIME = "14:00"
         const val NO_DOSE = "1"
-
-        /** Как называется плашка в макете: её на экране быть не должно (`ADR-0009`). */
-        const val WATCH_CHIP_WORD = "Продублирован"
     }
 }

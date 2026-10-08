@@ -49,6 +49,7 @@ import ru.stohastika.sklyanka.feature.reminder.TAG_CHECK_SHEET_CANCEL
 import ru.stohastika.sklyanka.feature.reminder.TAG_CHECK_START
 import ru.stohastika.sklyanka.feature.reminder.TAG_DIAGNOSTICS
 import ru.stohastika.sklyanka.feature.reminder.TAG_FIX
+import ru.stohastika.sklyanka.feature.reminder.TAG_JOURNAL_EXPORT
 import ru.stohastika.sklyanka.feature.reminder.TAG_LAST_SHORT
 import ru.stohastika.sklyanka.feature.reminder.TAG_NEXT_SHORT
 import ru.stohastika.sklyanka.feature.reminder.TAG_OUTAGE
@@ -59,19 +60,10 @@ import ru.stohastika.sklyanka.feature.reminder.TAG_PERMISSION_MARKER
 import ru.stohastika.sklyanka.feature.reminder.TAG_PERMISSION_REST_GRANTED
 import ru.stohastika.sklyanka.feature.reminder.TAG_PERMISSION_ROW
 import ru.stohastika.sklyanka.feature.reminder.TAG_PERMISSION_STATE
-import ru.stohastika.sklyanka.feature.reminder.TAG_REPORT_COMMENT
-import ru.stohastika.sklyanka.feature.reminder.TAG_REPORT_DISMISS
-import ru.stohastika.sklyanka.feature.reminder.TAG_REPORT_FAILED
-import ru.stohastika.sklyanka.feature.reminder.TAG_REPORT_FOOTER
-import ru.stohastika.sklyanka.feature.reminder.TAG_REPORT_RETRY
-import ru.stohastika.sklyanka.feature.reminder.TAG_REPORT_SEND
-import ru.stohastika.sklyanka.feature.reminder.TAG_REPORT_SENT
-import ru.stohastika.sklyanka.feature.reminder.TAG_REPORT_SHEET
 import ru.stohastika.sklyanka.feature.reminder.TAG_RESTART_SETUP
 import ru.stohastika.sklyanka.feature.reminder.TAG_VERDICT
 import ru.stohastika.sklyanka.feature.reminder.TAG_WARNING
 import ru.stohastika.sklyanka.feature.reminder.TAG_WEEK_SUMMARY
-import ru.stohastika.sklyanka.ui.component.TAG_BOTTOM_SHEET_SCRIM
 import ru.stohastika.sklyanka.ui.token.SklyankaSizes
 import ru.stohastika.sklyanka.ui.token.SklyankaType
 import java.time.LocalDateTime
@@ -319,39 +311,6 @@ class Sk102DiagnosticsSteps(private val world: AcceptanceWorld) {
     @Допустим("^активных лекарств с расписанием нет$")
     fun thereAreNoActiveMedications() = Unit
 
-    // --- Предыстория: отчёт ---------------------------------------------------------------------
-
-    @Допустим("^любое базовое состояние экрана$")
-    fun anyBaseState() {
-        world.system.grant(*ReminderPermission.entries.toTypedArray())
-        upcomingIntakesArePlanned()
-    }
-
-    @Допустим("^открыта шторка «Отчёт разработчику»$")
-    fun theReportSheetIsOpen() {
-        DiagnosticsStand.model(world).onReportOpen()
-        assertTrue(DiagnosticsStand.state(world).reportOpen, "the report sheet must be open")
-    }
-
-    @Допустим("^открыта шторка «Отчёт разработчику» с введённым комментарием$")
-    fun theReportSheetIsOpenWithComment() {
-        DiagnosticsStand.model(world).onReportOpen()
-        DiagnosticsStand.model(world).onReportCommentChange(COMMENT)
-    }
-
-    @Допустим("^отправка не удалась$")
-    fun theSendFailed() {
-        DiagnosticsStand.reportOutcome = ru.stohastika.sklyanka.feature.reminder.DeveloperReportOutcome.FAILED
-        DiagnosticsStand.model(world).onReportSend()
-    }
-
-    @Допустим("^человек отправил отчёт или увидел ошибку$")
-    fun theReportWasSentOrFailed() {
-        DiagnosticsStand.model(world).onReportOpen()
-        DiagnosticsStand.model(world).onReportCommentChange(COMMENT)
-        DiagnosticsStand.model(world).onReportSend()
-    }
-
     // --- Действия -------------------------------------------------------------------------------
 
     @Когда("^человек нажимает «Пройти настройку заново» под карточкой «Разрешения»$")
@@ -413,44 +372,9 @@ class Sk102DiagnosticsSteps(private val world: AcceptanceWorld) {
     @Когда("^человек уходит с экрана$")
     fun thePersonLeavesTheScreen() = Unit
 
-    @Когда("^человек нажимает «Сообщить о проблеме»$")
-    fun thePersonOpensTheReport() {
-        // Если шторка ещё открыта (состояние успеха или ошибки), её сначала закрывают:
-        // повторное открытие — новое нажатие на постоянный низ.
-        if (DiagnosticsStand.state(world).reportOpen) DiagnosticsStand.model(world).onReportDismiss()
-        DiagnosticsStand.actRaw(world) {
-            onNodeWithText(string(R.string.diagnostics_report_open)).performScrollTo().performClick()
-        }
-    }
-
-    @Когда("^человек снова нажимает «Сообщить о проблеме»$")
-    fun thePersonOpensTheReportAgain() {
-        thePersonOpensTheReport()
-    }
-
     @Когда("^человек смотрит вниз экрана$")
     fun thePersonLooksAtTheBottom() {
-        assertTrue(hasTag(TAG_REPORT_FOOTER), "the report footer must be at the bottom")
-    }
-
-    @Когда("^человек смотрит на поле комментария$")
-    fun thePersonLooksAtTheCommentField() {
-        assertTrue(hasTag(TAG_REPORT_COMMENT), "the comment field must be on the sheet")
-    }
-
-    @Когда("^человек смотрит на шторку$")
-    fun thePersonLooksAtTheSheet() {
-        assertTrue(hasTag(TAG_REPORT_SHEET), "the report sheet must be open")
-    }
-
-    @Когда("^человек нажимает «Отправить отчёт»$")
-    fun thePersonSendsTheReport() {
-        DiagnosticsStand.actRaw(world) { onNodeWithTag(TAG_REPORT_SEND).performClick() }
-    }
-
-    @Когда("^человек нажимает «Отмена», системную «Назад» или тапает по затемнению$")
-    fun thePersonDismissesTheSheet() {
-        DiagnosticsStand.actRaw(world) { onNodeWithTag(TAG_REPORT_DISMISS).performClick() }
+        assertTrue(hasTag(TAG_JOURNAL_EXPORT), "the journal export row must be at the bottom")
     }
 
     @Когда("^человек смотрит на карточку проверки$")
@@ -476,12 +400,12 @@ class Sk102DiagnosticsSteps(private val world: AcceptanceWorld) {
         assertTrue(checkTop < remindersTop, "the check must be above the reminders")
     }
 
-    @Тогда("^внизу экрана стоит «Сообщить о проблеме»$")
+    @Тогда("^внизу экрана стоит «Выгрузить журнал»$")
     fun theFooterIsAtTheBottom() {
-        val footerTop = topOfFirst(TAG_REPORT_FOOTER)
+        val footerTop = topOfFirst(TAG_JOURNAL_EXPORT)
         val remindersTop = topOfFirst(TAG_WEEK_SUMMARY)
-        assertTrue(footerTop > remindersTop, "the report footer must be below the reminders")
-        assertTrue(hasText(string(R.string.diagnostics_report_open)), "the footer must name the action")
+        assertTrue(footerTop > remindersTop, "the journal export row must be below the reminders")
+        assertTrue(hasText(string(R.string.diagnostics_journal_export)), "the footer must name the action")
     }
 
     @Тогда("^первым элементом идёт строка «Всё в порядке»$")
@@ -951,123 +875,6 @@ class Sk102DiagnosticsSteps(private val world: AcceptanceWorld) {
         assertTrue(hasText(text), "the verdict must explain «$text»")
     }
 
-    // --- Проверки: отчёт -----------------------------------------------------------------------
-
-    @Тогда("^там стоит «Сообщить о проблеме»$")
-    fun theBottomCarriesTheReportAction() {
-        assertTrue(hasText(string(R.string.diagnostics_report_open)), "the bottom must carry the report action")
-    }
-
-    @Тогда("^снизу открывается шторка «Отчёт разработчику»$")
-    fun theReportSheetOpens() {
-        assertTrue(hasTag(TAG_REPORT_SHEET), "the report sheet must be open")
-        assertTrue(hasText(string(R.string.diagnostics_report_title)), "the sheet must be titled")
-    }
-
-    @И("^в шапке есть «Отмена»$")
-    fun theHeaderCarriesCancel() {
-        assertTrue(
-            hasText(context.getString(ru.stohastika.sklyanka.ui.R.string.action_cancel)),
-            "the header must carry «Отмена»",
-        )
-    }
-
-    @И("^есть объяснение «(.+)»$")
-    fun thereIsAnExplanation(text: String) {
-        assertTrue(hasText(text), "the sheet must carry the explanation")
-    }
-
-    @И("^есть поле «Что не работает\\?» и действие «Отправить отчёт»$")
-    fun thereIsAFieldAndSendAction() {
-        assertTrue(hasTag(TAG_REPORT_COMMENT), "the comment field must be there")
-        // Подпись поля набрана Overline ВЕРХНИМ РЕГИСТРОМ (§4.4): сверяем без учёта регистра.
-        assertTrue(
-            hasTextIgnoringCase(string(R.string.diagnostics_report_comment_label)),
-            "the field must be labelled",
-        )
-        assertTrue(hasTag(TAG_REPORT_SEND), "the send action must be there")
-        assertTrue(hasText(string(R.string.diagnostics_report_send)), "the send action must be named")
-    }
-
-    @И("^у подписи стоит «необязательно»$")
-    fun theLabelSaysOptional() {
-        assertTrue(hasText(string(R.string.diagnostics_report_comment_optional)), "the label must say «необязательно»")
-    }
-
-    @И("^плейсхолдер — «(.+)»$")
-    fun thePlaceholderIs(text: String) {
-        assertTrue(hasText(text), "the placeholder must be «$text»")
-    }
-
-    @И("^«Отправить отчёт» доступна при пустом поле$")
-    fun theSendIsAvailableWhenEmpty() {
-        assertTrue(hasTag(TAG_REPORT_SEND), "the send action must be available on an empty field")
-    }
-
-    @Но("^ошибок у поля нет$")
-    fun theFieldHasNoErrors() {
-        assertFalse(
-            countTag(ru.stohastika.sklyanka.ui.component.TAG_TEXT_FIELD_ERROR) > 0,
-            "the comment field must have no errors",
-        )
-    }
-
-    @Тогда("^содержимое шторки заменяется состоянием успеха$")
-    fun theSheetShowsSuccess() {
-        assertTrue(hasTag(TAG_REPORT_SENT), "the sheet must show the success state")
-    }
-
-    @И("^выход — «Готово», системная «Назад» или тап по затемнению$")
-    fun theExitIsDone() {
-        assertTrue(hasTag(TAG_REPORT_DISMISS), "the exit must be there")
-        assertTrue(
-            hasText(context.getString(ru.stohastika.sklyanka.ui.R.string.action_done)),
-            "the exit must say «Готово»",
-        )
-    }
-
-    @Тогда("^показано предупреждение «(.+)»$")
-    fun aWarningIsShown(text: String) {
-        assertTrue(hasTag(TAG_REPORT_FAILED), "the failure banner must be shown")
-        assertTrue(hasText(text), "the warning must say «$text»")
-    }
-
-    @И("^есть одно действие «Повторить»$")
-    fun thereIsOneRetry() {
-        assertEquals(1, countTag(TAG_REPORT_RETRY), "there must be exactly one «Повторить»")
-        assertTrue(hasText(string(R.string.diagnostics_report_retry)), "the action must be named")
-    }
-
-    @Но("^введённый комментарий на месте$")
-    fun theCommentIsKept() {
-        assertEquals(COMMENT, DiagnosticsStand.state(world).reportComment, "the comment must be kept")
-    }
-
-    @И("^экран возвращается без изменений$")
-    fun theScreenReturnsUnchanged() {
-        assertFalse(DiagnosticsStand.state(world).reportOpen, "the report must be closed")
-        assertNull(DiagnosticsStand.state(world).reportOutcome, "closing must leave no outcome")
-    }
-
-    @Но("^нажатия по содержимому под затемнением не проходят$")
-    fun tapsUnderTheScrimDoNotPass() {
-        // Затемнение перехватывает нажатия, пока шторка открыта: проверяем на открытой шторке,
-        // а не после закрытия, когда затемнения уже нет.
-        DiagnosticsStand.model(world).onReportOpen()
-        assertTrue(hasTag(TAG_BOTTOM_SHEET_SCRIM), "the scrim must intercept taps")
-        DiagnosticsStand.model(world).onReportDismiss()
-    }
-
-    @Тогда("^шторка открывается заново$")
-    fun theSheetReopens() {
-        assertTrue(DiagnosticsStand.state(world).reportOpen, "the sheet must be open again")
-    }
-
-    @И("^поле комментария пустое$")
-    fun theCommentFieldIsEmpty() {
-        assertTrue(DiagnosticsStand.state(world).reportComment.isEmpty(), "the comment must be empty")
-    }
-
     // --- Проверки: переходы --------------------------------------------------------------------
 
     @И("^состояние «Проверки напоминаний» при возврате не теряется$")
@@ -1110,7 +917,7 @@ class Sk102DiagnosticsSteps(private val world: AcceptanceWorld) {
         DiagnosticsStand.refresh(world)
     }
 
-    @Допустим("^на экране есть строки «Исправить», «Пройти настройку заново», кнопки и «Сообщить о проблеме»$")
+    @Допустим("^на экране есть строки «Исправить», «Пройти настройку заново», кнопки и «Выгрузить журнал»$")
     fun theInteractiveElementsArePresent() {
         world.system.grant(*ReminderPermission.entries.toTypedArray())
         upcomingIntakesArePlanned()
@@ -1119,20 +926,16 @@ class Sk102DiagnosticsSteps(private val world: AcceptanceWorld) {
         assertTrue(hasTag(TAG_FIX), "the fix action must be present")
         assertTrue(hasTag(TAG_RESTART_SETUP), "«Пройти настройку заново» must be present")
         assertTrue(hasTag(TAG_CHECK_DELIVERY), "a button must be present")
-        assertTrue(hasText(string(R.string.diagnostics_report_open)), "the report action must be present")
+        assertTrue(hasTag(TAG_JOURNAL_EXPORT), "the journal export action must be present")
     }
 
     @Тогда("^его цель нажатия — не меньше 44 dp$")
     fun theTouchTargetsAreLargeEnough() {
         val minimum = dp(SklyankaSizes.MinTouchTarget)
-        listOf(TAG_FIX, TAG_RESTART_SETUP, TAG_CHECK_DELIVERY).forEach { tag ->
+        listOf(TAG_FIX, TAG_RESTART_SETUP, TAG_CHECK_DELIVERY, TAG_JOURNAL_EXPORT).forEach { tag ->
             val height = minHeightOf(tag)
             assertTrue(height >= minimum, "$tag must be at least 44 dp, was $height px")
         }
-        val reportHeight = query {
-            onNodeWithText(string(R.string.diagnostics_report_open)).fetchSemanticsNode().boundsInRoot.height
-        }
-        assertTrue(reportHeight >= minimum, "the report action must be at least 44 dp, was $reportHeight px")
     }
 
     @Тогда("^состояние разрешения названо словами «не выдано» или «проверьте вручную»$")
@@ -1240,15 +1043,6 @@ class Sk102DiagnosticsSteps(private val world: AcceptanceWorld) {
         var found = false
         DiagnosticsStand.ask(world) {
             found = onAllNodesWithText(text, substring = true, useUnmergedTree = true)
-                .fetchSemanticsNodes().isNotEmpty()
-        }
-        return found
-    }
-
-    private fun hasTextIgnoringCase(text: String): Boolean {
-        var found = false
-        DiagnosticsStand.ask(world) {
-            found = onAllNodesWithText(text, substring = true, ignoreCase = true, useUnmergedTree = true)
                 .fetchSemanticsNodes().isNotEmpty()
         }
         return found
@@ -1414,8 +1208,6 @@ class Sk102DiagnosticsSteps(private val world: AcceptanceWorld) {
     private companion object {
         const val SECONDS_IN_MINUTE = 60
 
-        /** Комментарий-пример для сценария ошибки: содержимое не проверяется, важна сохранность. */
-        const val COMMENT = "the reminder does not come in the morning"
         const val LAST_INTAKE = "intake-last"
         const val DAILY_TIME = "08:00"
         const val MIN_TEXT_SIZE_SP = 12f

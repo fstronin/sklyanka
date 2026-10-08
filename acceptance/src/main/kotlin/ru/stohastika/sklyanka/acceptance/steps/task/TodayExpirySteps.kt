@@ -9,14 +9,13 @@ import ru.stohastika.sklyanka.acceptance.steps.dateOf
 import ru.stohastika.sklyanka.acceptance.steps.localMoment
 import ru.stohastika.sklyanka.acceptance.steps.medicationNamed
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
-import ru.stohastika.sklyanka.domain.intake.MarkResult
 import ru.stohastika.sklyanka.domain.intake.SweepReason
 import ru.stohastika.sklyanka.domain.model.IntakeSource
 import ru.stohastika.sklyanka.domain.model.IntakeStatus
 import java.time.LocalTime
 
 /**
- * Шаги SKL-08 о просроченных приёмах и отметке с часов (SKL-26, группа «Отметка приёма
+ * Шаги SKL-08 о просроченных приёмах (SKL-26, группа «Отметка приёма
  * с экрана»).
  *
  * Это предметная область, а не экран: «приём остался без отметки» и «окно истекло» —
@@ -51,17 +50,6 @@ class TodayExpirySteps(private val world: AcceptanceWorld) {
         // Выключенный телефон ничего не делает: ни один проход по просроченным приёмам
         // в это время не выполняется, и приёмы остаются неотмеченными.
         world.clock.moveTo(world.localMoment(date, time))
-    }
-
-    @Given("^приём «([^»]+)» на (.+?), (\\d{2}:\\d{2}) отмечен принятым с часов в (\\d{2}:\\d{2})$")
-    fun thatIntakeWasTakenFromTheWatch(medication: String, date: String, time: String, markedAt: String) {
-        val name = world.medicationNamed(medication)
-        val moment = world.localMoment(date, time)
-        world.intakes.pending(name, moment)
-        // Нажатие на часах старше нажатия на экране, но доходит до телефона позже
-        // (ЧАС-23): до доставки экран ещё предлагает кнопки, и именно поэтому сценарий
-        // проверяет правило первенства по времени действия (ПР-3), а не отсутствие кнопок.
-        world.pressOnWatch(MarkResult.TAKEN, moment.toLocalDate().atTime(LocalTime.parse(markedAt)))
     }
 
     // --- Действия: окно приёма истекло ------------------------------------------

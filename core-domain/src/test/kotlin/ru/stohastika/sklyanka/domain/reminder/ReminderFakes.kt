@@ -18,8 +18,6 @@ import ru.stohastika.sklyanka.domain.reminder.port.ReminderPermission
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPlanSource
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderSettings
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderSettingsValues
-import ru.stohastika.sklyanka.domain.reminder.port.WatchGateway
-import ru.stohastika.sklyanka.domain.reminder.port.WatchSendResult
 import ru.stohastika.sklyanka.domain.repository.MedicationRepository
 import ru.stohastika.sklyanka.domain.repository.ProfileRepository
 import ru.stohastika.sklyanka.domain.schedule.FakeIntakeRepository
@@ -236,26 +234,6 @@ internal class FakeNotificationGateway : NotificationGateway {
     }
 }
 
-/** Часы: по умолчанию не настроены, как и в первой версии до SKL-16. */
-internal class FakeWatchGateway(private var result: WatchSendResult = WatchSendResult.NOT_CONFIGURED) : WatchGateway {
-
-    val sent: MutableList<ReminderCard> = mutableListOf()
-    val revoked: MutableList<String> = mutableListOf()
-
-    fun connect() {
-        result = WatchSendResult.SENT
-    }
-
-    override suspend fun send(card: ReminderCard): WatchSendResult {
-        sent += card
-        return result
-    }
-
-    override suspend fun revoke(intakeId: String) {
-        revoked += intakeId
-    }
-}
-
 /** Журнал срабатываний в памяти: по нему проверяется и след, и отсутствие медицинских данных. */
 internal class RecordingReminderJournal : ReminderJournal {
 
@@ -402,7 +380,7 @@ internal class FakeReminderPlanSource(
         .mapNotNull { projection(it.id) }
         .filter { it.slot == slot && it.status == IntakeStatus.PENDING }
 
-    override suspend fun card(slot: ReminderSlot, mirroredToWatch: Boolean): ReminderCard? {
+    override suspend fun card(slot: ReminderSlot): ReminderCard? {
         val rows = pendingInSlot(slot)
         val profile = profiles.get(slot.profileId) ?: return null
         val items = rows.mapNotNull { row ->
@@ -423,7 +401,6 @@ internal class FakeReminderPlanSource(
             slot = slot,
             scheduledAt = slot.scheduledAt,
             items = items,
-            mirroredToWatch = mirroredToWatch,
             profileIsSelf = profile.isSelf,
             profileName = profile.name,
         )

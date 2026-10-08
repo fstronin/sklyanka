@@ -14,7 +14,6 @@ import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
 import ru.stohastika.sklyanka.domain.profile.SwitchOutcome
 import ru.stohastika.sklyanka.domain.profile.SwitchReason
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPermission
-import ru.stohastika.sklyanka.domain.watch.WatchLinkState
 import java.io.File
 import java.time.LocalTime
 
@@ -66,18 +65,6 @@ class SettingsContextSteps(private val world: AcceptanceWorld) {
         }
         world.profiles.setMirrorReminders(name, true)
         assertTrue(world.profiles.get(name).mirrorReminders, "the premise says the reminders are mirrored")
-    }
-
-    /**
-     * Часы подключены как данность Предыстории.
-     *
-     * Строка часов из продукта снята решением `ADR-0009`, и ни один исполнимый сценарий
-     * этой задачи её не проверяет: структура `@watch` остаётся `UNDEFINED`. Предпосылка
-     * сохраняется в мире, чтобы сценарий читался человеком и не превращался в неправду.
-     */
-    @Допустим("^часы HUAWEI Watch GT 6 Pro подключены$")
-    fun theWatchIsConnected() {
-        world.system.setWatch(WatchLinkState.Connected("GT 6 Pro"))
     }
 
     @Допустим("^разрешение на уведомления выдано, а точные будильники не разрешены$")

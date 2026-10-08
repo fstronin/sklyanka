@@ -118,6 +118,13 @@
             <category android:name="android.intent.category.OPENABLE" />
             <data android:mimeType="application/pdf" />
         </intent>
+
+        <!-- Тот же обработчик нужен для файла журнала срабатываний (НФТ-51, SKL-106). -->
+        <intent>
+            <action android:name="android.intent.action.CREATE_DOCUMENT" />
+            <category android:name="android.intent.category.OPENABLE" />
+            <data android:mimeType="text/csv" />
+        </intent>
     </queries>
 
     <application

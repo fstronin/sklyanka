@@ -25,8 +25,6 @@ internal object DeviceTestStores {
 
     fun settings(context: Context): DataStore<Preferences> = store(context, SETTINGS_NAME)
 
-    fun analyticsConsent(context: Context): DataStore<Preferences> = store(context, CONSENT_NAME)
-
     fun directBoot(context: Context): DataStore<Preferences> =
         store(context.createDeviceProtectedStorageContext(), DIRECT_BOOT_NAME)
 
@@ -50,7 +48,6 @@ internal object DeviceTestStores {
     }
 
     private const val SETTINGS_NAME = "sklyanka_settings"
-    private const val CONSENT_NAME = "sklyanka_analytics_consent"
     private const val DIRECT_BOOT_NAME = "sklyanka_direct_boot"
     private const val DATASTORE_DIR = "datastore"
     private const val DATASTORE_SUFFIX = ".preferences_pb"

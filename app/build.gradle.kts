@@ -26,12 +26,12 @@ val reminderMeasurement: Boolean =
     (project.findProperty("sklyanka.reminderMeasurement") as String?)?.toBoolean() ?: false
 
 /**
- * Конфигурация вендора для будущих сетевых контуров (SKL-100, ПМ-31).
+ * Конфигурация вендора для биллингового контура (Р-37, Р-38, SKL-122).
  *
  * `agconnect-services.json` — идентификаторы проекта AppGallery Connect; файл лежит вне git
  * и подкладывается извне. Путь задаётся Gradle-свойством
  * `sklyanka.agconnect.servicesDir` или ключом `agconnect.servicesDir` в `local.properties`.
- * В первой публикации аналитики нет: файл сохранён для будущих контуров (SKL-50, H2),
+ * В первой публикации сетевого контура нет: файл сохранён для биллинга,
  * его отсутствие — не отказ сборки.
  */
 val agconnectServicesDir: File? = resolveAgconnectServicesDir()
@@ -51,8 +51,8 @@ fun resolveAgconnectServicesDir(): File? {
 
 if (agconnectServicesFile?.isFile != true) {
     logger.lifecycle(
-        "vendor config is absent: kept for future network contours only " +
-            "(provide sklyanka.agconnect.servicesDir when a contour needs it; see SKL-100 TDD 8)",
+        "vendor config is absent: kept for the billing contour only " +
+            "(provide sklyanka.agconnect.servicesDir when billing ships; see SKL-122)",
     )
 }
 
@@ -80,9 +80,6 @@ dependencies {
     implementation(project(":core-domain"))
     implementation(project(":core-ui"))
     implementation(project(":core-data"))
-    // Аналитический контур (SKL-82): порт объявлен доменом, адаптер вендора живёт здесь,
-    // чтобы граф Hilt приложения поднял его и гейты проверяли один и тот же состав.
-    implementation(project(":core-analytics"))
     implementation(project(":feature-today"))
     // Список, форма, карточка лекарства и архив курсов (SKL-09, SKL-10, SKL-11).
     implementation(project(":feature-meds"))

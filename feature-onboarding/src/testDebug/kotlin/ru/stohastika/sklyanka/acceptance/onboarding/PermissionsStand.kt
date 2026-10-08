@@ -25,7 +25,6 @@ import ru.stohastika.sklyanka.domain.onboarding.OnboardingSource
 import ru.stohastika.sklyanka.domain.onboarding.PermissionStep
 import ru.stohastika.sklyanka.domain.onboarding.ReadPermissionChecklistUseCase
 import ru.stohastika.sklyanka.domain.onboarding.StepOpenResult
-import ru.stohastika.sklyanka.feature.onboarding.OnboardingExit
 import ru.stohastika.sklyanka.feature.onboarding.OnboardingUiState
 import ru.stohastika.sklyanka.feature.onboarding.OnboardingViewModel
 import ru.stohastika.sklyanka.feature.onboarding.PermissionsActions
@@ -79,7 +78,7 @@ internal object PermissionsStand {
 
     fun state(world: AcceptanceWorld): OnboardingUiState = model(world).state.value
 
-    fun exit(world: AcceptanceWorld): OnboardingExit? = model(world).exit.value
+    fun exit(world: AcceptanceWorld): Unit? = model(world).exit.value
 
     /** Открыть экран из названного источника — как это делает хозяин экрана. */
     fun open(world: AcceptanceWorld, source: OnboardingSource, outageSince: Instant? = null) {
@@ -92,7 +91,7 @@ internal object PermissionsStand {
      * Отдельно от `OnboardingViewModel.exit`: наблюдаемое «экран закрылся» — это вызов
      * хозяина, а не значение в модели (ОВ-86). Именно его и проверяет приёмка.
      */
-    var exitedTo: OnboardingExit? = null
+    var exitedTo: Unit? = null
         private set
 
     /**
@@ -146,7 +145,7 @@ internal object PermissionsStand {
                     viewModel = model(world),
                     source = state(world).source,
                     outageSince = state(world).outageSince,
-                    onExit = { exitedTo = it },
+                    onExit = { exitedTo = Unit },
                 )
             }
         }

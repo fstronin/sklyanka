@@ -3,7 +3,7 @@ package ru.stohastika.sklyanka.feature.meds.card
 /**
  * Намерения карточки лекарства.
  *
- * Разметка состояние не меняет: переключатель часов, ввод остатка и действие архивации
+ * Разметка состояние не меняет: ввод остатка и действие архивации
  * связаны правилами домена, и хранение части состояния в компонентах означало бы, что
  * экран показывает одно, а база хранит другое.
  */
@@ -23,9 +23,6 @@ sealed interface MedCardIntent {
     data object RefillConfirmed : MedCardIntent
 
     data object RefillCancelled : MedCardIntent
-
-    /** Переключатель «Напоминать на часах» (ЧАС-15). */
-    data class WatchMirrorToggled(val enabled: Boolean) : MedCardIntent
 
     /** «В архив»: причина — «убрано вручную» (ИНВ-9). */
     data object Archive : MedCardIntent

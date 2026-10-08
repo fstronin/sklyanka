@@ -39,18 +39,15 @@ data class QuietHours(val from: LocalTime, val to: LocalTime)
 /**
  * Настройки приложения, переносимые файлом (ПЕР-3, ПЕР-12).
  *
- * Разрешения, автозапуск, подключение часов и идентификаторы каналов уведомлений здесь
- * отсутствуют намеренно: они принадлежат системе, а не файлу (ПЕР-24, ПЕР-26). Значение
- * «часы включены» — это желание человека, а не выданное право Wear Engine, и оно
- * переносимо.
+ * Разрешения, автозапуск и идентификаторы каналов уведомлений здесь отсутствуют
+ * намеренно: они принадлежат системе, а не файлу (ПЕР-24, ПЕР-26). Часовой шов
+ * вырезан из сборки (Р-3, SKL-106), поэтому переносимых настроек часов больше нет.
  */
 data class TransferSettings(
     val reminderSound: ReminderSound = ReminderSound.DEFAULT,
     val persistentReminder: Boolean = false,
     val snoozeMinutes: Int = DEFAULT_SNOOZE_MINUTES,
     val quietHours: QuietHours? = null,
-    val watchEnabled: Boolean = false,
-    val watchSnoozeButton: Boolean = false,
 ) {
     companion object {
         /** Значение по умолчанию у отложенного напоминания — те же 15 минут, что в макете. */

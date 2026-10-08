@@ -111,8 +111,6 @@ internal class TransferMapping(private val zone: ZoneId) {
             } else {
                 null
             },
-            watchEnabled = dto.watch.enabled,
-            watchSnoozeButton = dto.watch.snoozeButton,
         )
     }
 
@@ -173,7 +171,6 @@ internal class TransferMapping(private val zone: ZoneId) {
                 to = settings.quietHours?.to?.format(TransferValues.TIME),
             ),
         ),
-        watch = WatchDto(enabled = settings.watchEnabled, snoozeButton = settings.watchSnoozeButton),
     )
 
     fun momentText(value: Instant): String = OffsetDateTime.ofInstant(value, zone).format(TransferValues.OFFSET)

@@ -15,7 +15,7 @@ import ru.stohastika.sklyanka.domain.model.IntakeSource
 import ru.stohastika.sklyanka.domain.model.IntakeStatus
 
 /**
- * Гонка «часы против телефона» (НФТ-10, критерий 11).
+ * Гонка двух источников отметки (НФТ-10, критерий 11).
  *
  * Разрешается не блокировкой, а условием внутри самого UPDATE: первый выигрывает,
  * второй видит ноль изменённых строк. Тысяча повторов на двух потоках — чтобы
@@ -49,7 +49,7 @@ class ConcurrencyTest {
             )
 
             val results = withContext(Dispatchers.IO) {
-                listOf(IntakeSource.PHONE, IntakeSource.WATCH)
+                listOf(IntakeSource.PHONE, IntakeSource.AUTO)
                     .map { source ->
                         async {
                             db.intakes.markIfPending(

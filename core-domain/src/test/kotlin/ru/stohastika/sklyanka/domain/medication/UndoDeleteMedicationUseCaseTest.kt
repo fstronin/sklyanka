@@ -5,10 +5,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import ru.stohastika.sklyanka.domain.analytics.Analytics
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsConsent
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsEvent
-import ru.stohastika.sklyanka.domain.analytics.MedicationActionType
 import ru.stohastika.sklyanka.domain.model.ArchiveReason
 import ru.stohastika.sklyanka.domain.model.Fixtures
 import ru.stohastika.sklyanka.domain.schedule.FakeMedicationRepository
@@ -30,7 +26,6 @@ class UndoDeleteMedicationUseCaseTest {
 
     private val clock = FixedTimeSource(Instant.parse("2026-09-25T09:00:00Z"))
     private val medications = FakeMedicationRepository(clock)
-    private val analytics = RecordingAnalytics()
     private val planned = mutableListOf<Pair<String, PlanReason>>()
     private var created = 0
 
@@ -51,7 +46,7 @@ class UndoDeleteMedicationUseCaseTest {
         )
     }
 
-    private val useCase = UndoDeleteMedicationUseCase(medications, planner, analytics)
+    private val useCase = UndoDeleteMedicationUseCase(medications, planner)
 
     private fun seed(deleted: Boolean) {
         medications.put(
@@ -77,10 +72,6 @@ class UndoDeleteMedicationUseCaseTest {
             planned,
             "the undo must return the intakes and the alarms",
         )
-        assertEquals(
-            listOf(AnalyticsEvent.MedicationAction(MedicationActionType.UNDO, mode = null)),
-            analytics.events,
-        )
     }
 
     @Test
@@ -89,21 +80,10 @@ class UndoDeleteMedicationUseCaseTest {
 
         assertEquals(UndoDeleteOutcome.NotDeleted, useCase(Fixtures.MEDICATION_ID))
         assertTrue(planned.isEmpty())
-        assertTrue(analytics.events.isEmpty())
     }
 
     @Test
     fun `an unknown medication is refused`() = runTest {
         assertEquals(UndoDeleteOutcome.UnknownMedication, useCase(Fixtures.MEDICATION_ID))
-    }
-
-    private class RecordingAnalytics : Analytics {
-        val events = mutableListOf<AnalyticsEvent>()
-
-        override fun track(event: AnalyticsEvent) {
-            events += event
-        }
-
-        override suspend fun applyConsent(consent: AnalyticsConsent) = Unit
     }
 }

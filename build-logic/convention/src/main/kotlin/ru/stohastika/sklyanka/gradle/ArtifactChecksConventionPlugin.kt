@@ -24,10 +24,9 @@ class ArtifactChecksConventionPlugin : Plugin<Project> {
                     group = VERIFICATION_GROUP
                     description = "Checks the merged manifest of the $suffix artifact: " +
                         "no network permissions (INTERNET and network state are forbidden), " +
-                        "package name and minSdk (PLATFORM-1..3, NFR-15/38/41, PM-31)."
+                        "package name and minSdk (PLATFORM-1..3, NFR-15/38, PM-31)."
                     mergedManifest.set(variant.artifacts.get(SingleArtifact.MERGED_MANIFEST))
                     expectedPackageName.set(ProjectDefaults.APPLICATION_ID)
-                    packageNameLimit.set(ProjectDefaults.PACKAGE_NAME_LIMIT)
                     expectedMinSdk.set(ProjectDefaults.MIN_SDK)
                     report.set(layout.buildDirectory.file("reports/composition/manifest-${variant.name}.txt"))
                 }

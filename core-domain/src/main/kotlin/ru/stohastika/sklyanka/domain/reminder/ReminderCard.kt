@@ -19,8 +19,6 @@ data class ReminderCard(
     val slot: ReminderSlot,
     val scheduledAt: LocalDateTime,
     val items: List<ReminderCardItem>,
-    /** Карточка ушла на часы — чип «Продублировано на часы» (ЧАС-13, реализация SKL-16). */
-    val mirroredToWatch: Boolean,
     /** Профиль владельца: у чужого профиля карточка несёт индикацию (ПРФ-8, SKL-15). */
     val profileIsSelf: Boolean,
     val profileName: String,

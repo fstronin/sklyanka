@@ -49,7 +49,7 @@ class ReminderDataSource @Inject constructor(
         // нечего, а старая запись приёма могла остаться в прошлом окне.
         .filter { it.status == IntakeStatus.PENDING && !it.medicationDeleted }
 
-    override suspend fun card(slot: ReminderSlot, mirroredToWatch: Boolean): ReminderCard? {
+    override suspend fun card(slot: ReminderSlot): ReminderCard? {
         val profile = profiles.get(slot.profileId) ?: return null
         val items = pendingInSlot(slot).mapNotNull { row ->
             medications.get(row.medicationId)?.let { medication ->
@@ -69,7 +69,6 @@ class ReminderDataSource @Inject constructor(
             slot = slot,
             scheduledAt = slot.scheduledAt,
             items = items,
-            mirroredToWatch = mirroredToWatch,
             profileIsSelf = profile.isSelf,
             profileName = profile.name,
         )

@@ -36,4 +36,9 @@
         <item quantity="one">se perdió %1$d toma</item>
         <item quantity="other">se perdieron %1$d tomas</item>
     </plurals>
+    <!-- SKL-106: исход служебной выгрузки журнала. -->
+    <plurals name="diagnostics_journal_export_saved">
+        <item quantity="one">Registro exportado: %1$d entrada.</item>
+        <item quantity="other">Registro exportado: %1$d entradas.</item>
+    </plurals>
 </resources>

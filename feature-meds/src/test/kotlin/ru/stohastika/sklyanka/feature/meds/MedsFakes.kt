@@ -73,7 +73,6 @@ internal object MedsTestData {
         endDate: LocalDate? = null,
         archivedAt: Instant? = null,
         archiveReason: ArchiveReason? = archivedAt?.let { ArchiveReason.MANUAL },
-        mirrorToWatch: Boolean = true,
         shape: TabletShape? = null,
         foodRelation: FoodRelation = FoodRelation.ANY,
     ) = Medication(
@@ -97,7 +96,6 @@ internal object MedsTestData {
         stockThresholdDays = thresholdDays,
         archivedAt = archivedAt,
         archiveReason = archiveReason,
-        mirrorToWatch = mirrorToWatch,
     )
 
     fun intake(medicationId: String, at: LocalDateTime, status: IntakeStatus) = Intake(

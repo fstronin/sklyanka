@@ -41,8 +41,8 @@ class PermissionsRouteTest {
 
         PermissionsStand.pressSystemBack(world)
 
-        assertEquals(OnboardingExit.TODAY, PermissionsStand.exitedTo)
-        assertEquals(OnboardingExit.TODAY, PermissionsStand.model(world).exit.value)
+        assertEquals(Unit, PermissionsStand.exitedTo)
+        assertEquals(Unit, PermissionsStand.model(world).exit.value)
     }
 
     @Test
@@ -51,7 +51,7 @@ class PermissionsRouteTest {
 
         PermissionsStand.pressExitButton(world, TAG_SKIP)
 
-        assertEquals(OnboardingExit.TODAY, PermissionsStand.exitedTo)
+        assertEquals(Unit, PermissionsStand.exitedTo)
     }
 
     @Test
@@ -68,7 +68,7 @@ class PermissionsRouteTest {
     fun reEnteringAfterAnExitKeepsTheScreenOpenAndClosesItByBackAgain() {
         PermissionsStand.open(world, OnboardingSource.FIRST_LAUNCH)
         PermissionsStand.pressSystemBack(world)
-        assertEquals(OnboardingExit.TODAY, PermissionsStand.exitedTo)
+        assertEquals(Unit, PermissionsStand.exitedTo)
 
         PermissionsStand.open(world, OnboardingSource.TODAY_WARNING)
 
@@ -79,14 +79,14 @@ class PermissionsRouteTest {
         PermissionsStand.showRoute(world)
         assertNull("the re-entered screen must not leave by itself", PermissionsStand.exitedTo)
         PermissionsStand.pressSystemBack(world)
-        assertEquals(OnboardingExit.TODAY, PermissionsStand.exitedTo)
+        assertEquals(Unit, PermissionsStand.exitedTo)
     }
 
     @Test
     fun reEnteringWithTheStaleExitStillInTheModelStaysOpen() {
         PermissionsStand.open(world, OnboardingSource.FIRST_LAUNCH)
         PermissionsStand.pressSystemBack(world)
-        assertEquals(OnboardingExit.TODAY, PermissionsStand.exitedTo)
+        assertEquals(Unit, PermissionsStand.exitedTo)
 
         // Продукт собирает маршрут, пока модель ещё хранит исход прошлого ухода: `start()`
         // вызывается эффектом после первой композиции, а не до неё. Закрыть повторно

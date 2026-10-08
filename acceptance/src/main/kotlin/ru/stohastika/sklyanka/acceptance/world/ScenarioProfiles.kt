@@ -18,7 +18,7 @@ class ScenarioProfiles {
 
     private val declaredCounts = mutableMapOf<String, Int>()
 
-    /** Профиль, открытый на телефоне. Отметка с часов его не меняет (ПРФ-22). */
+    /** Профиль, открытый на телефоне. */
     var active: String = ""
         private set
 

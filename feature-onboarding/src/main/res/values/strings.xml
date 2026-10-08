@@ -105,24 +105,4 @@
     <string name="cd_setup_confirmed">Шаг подтверждён вами</string>
     <string name="cd_onboarding_hint">Косвенный признак</string>
     <string name="cd_onboarding_steps">Шаг %1$d из %2$d</string>
-
-    <!-- ===== Согласие на аналитику (SKL-82, ПМ-25, ОВ-123) ===== -->
-
-    <string name="consent_title">Аналитика в «Склянке»</string>
-    <string name="consent_lead">Обезличенная статистика помогает замечать неудобные места и улучшать приложение.</string>
-    <string name="consent_sent_title">Что отправляется</string>
-    <string name="consent_sent_body">Действия в приложении: какие экраны вы открываете, что нажимаете, как проходите первый запуск.</string>
-    <string name="consent_not_sent_title">Что не отправляется</string>
-    <string name="consent_not_sent_body">Названия лекарств, дозы, расписания и время приёмов, отметки, остатки, имена профилей и всё, что вы вводите сами. Эти данные остаются только на устройстве.</string>
-    <string name="consent_variants_title">Варианты экранов</string>
-    <string name="consent_variants_body">Разным людям могут показываться разные варианты оформления и текстов. Напоминания и ваши данные это не затрагивает.</string>
-    <string name="consent_banner">До вашего разрешения приложение не отправляет ни одного события. Отказ ничего не блокирует, а решение можно изменить в настройках.</string>
-    <string name="consent_allow">Разрешить аналитику</string>
-    <string name="consent_decline">Продолжить без аналитики</string>
-    <string name="consent_decline_settings">Оставить отключённой</string>
-    <string name="consent_policy">Политика конфиденциальности</string>
-    <!-- Плейсхолдер: текст правового раскрытия даёт заказчик и его юрист (ОВ-123). -->
-    <string name="consent_legal_placeholder" translatable="false">[Правовое раскрытие: вендор, состав данных, срок и место хранения, права — текст предоставляет заказчик и его юрист.]</string>
-    <!-- Плейсхолдер: адрес страницы политики — внешний вход заказчика (ОВ-2). -->
-    <string name="consent_policy_url" translatable="false">https://example.invalid/sklyanka/privacy</string>
 </resources>

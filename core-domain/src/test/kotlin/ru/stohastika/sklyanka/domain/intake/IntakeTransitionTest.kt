@@ -71,13 +71,13 @@ class IntakeTransitionTest {
 
     @Test
     fun `two marks made at the very same moment leave the first one in place`() {
-        val taken = Fixtures.takenIntake(actedAt = eightOhFive)
+        val missed = IntakeTransition.expire(Fixtures.pendingIntake(), eightOhFive)
 
-        val sameMoment = command(MarkResult.TAKEN, eightOhFive, IntakeSource.WATCH)
+        val sameMoment = command(MarkResult.TAKEN, eightOhFive)
 
-        val keep = assertKeep(IntakeTransition.decide(taken, sameMoment))
+        val keep = assertKeep(IntakeTransition.decide(missed, sameMoment))
 
-        assertEquals(IntakeSource.PHONE, keep.intake.source)
+        assertEquals(IntakeSource.AUTO, keep.intake.source)
         assertEquals(IgnoreReason.RACE_LOSER, keep.reason)
     }
 
@@ -86,21 +86,21 @@ class IntakeTransitionTest {
         val taken = Fixtures.takenIntake(actedAt = eightOhFive)
 
         val write = assertWrite(
-            IntakeTransition.decide(taken, command(MarkResult.TAKEN, eightOhThree, IntakeSource.WATCH)),
+            IntakeTransition.decide(taken, command(MarkResult.TAKEN, eightOhThree)),
         )
 
         assertTrue(write.superseded)
         assertEquals(eightOhThree, write.intake.actedAt)
-        assertEquals(IntakeSource.WATCH, write.intake.source)
+        assertEquals(IntakeSource.PHONE, write.intake.source)
         assertEquals(StockEffect.NONE, write.stock)
     }
 
     @Test
-    fun `a skip made earlier on the watch beats a later take on the phone and returns the dose`() {
+    fun `a skip made earlier beats a later take on the phone and returns the dose`() {
         val taken = Fixtures.takenIntake(actedAt = eightOhFive)
 
         val write = assertWrite(
-            IntakeTransition.decide(taken, command(MarkResult.SKIPPED, eightOhThree, IntakeSource.WATCH)),
+            IntakeTransition.decide(taken, command(MarkResult.SKIPPED, eightOhThree)),
         )
 
         assertEquals(IntakeStatus.SKIPPED, write.intake.status)
@@ -123,7 +123,7 @@ class IntakeTransitionTest {
         val missed = IntakeTransition.expire(Fixtures.pendingIntake(), Instant.parse("2026-09-25T21:00:00Z"))
 
         val write = assertWrite(
-            IntakeTransition.decide(missed, command(MarkResult.TAKEN, eightOhFive, IntakeSource.WATCH)),
+            IntakeTransition.decide(missed, command(MarkResult.TAKEN, eightOhFive)),
         )
 
         assertEquals(IntakeStatus.TAKEN, write.intake.status)

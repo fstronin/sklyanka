@@ -14,8 +14,6 @@ import ru.stohastika.sklyanka.acceptance.steps.localMoment
 import ru.stohastika.sklyanka.acceptance.steps.medicationNamed
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
 import ru.stohastika.sklyanka.acceptance.world.TransferFileBuilder
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsEvent
-import ru.stohastika.sklyanka.domain.analytics.MedicationActionType
 import ru.stohastika.sklyanka.domain.history.AdherenceCalculator
 import ru.stohastika.sklyanka.domain.history.HistoryWindow
 import ru.stohastika.sklyanka.domain.intake.MarkResult
@@ -411,7 +409,6 @@ class MedicationDeletionSteps(private val world: AcceptanceWorld) {
                         profileId = world.profiles.get(world.profiles.active).id,
                         scheduledAt = stored.scheduledAt,
                     ),
-                    mirroredToWatch = false,
                 )
             }
         }
@@ -505,29 +502,7 @@ class MedicationDeletionSteps(private val world: AcceptanceWorld) {
         assertFalse(requireNotNull(stored).isDeleted, "an old file without the field leaves the record active")
     }
 
-    // --- Проверки: аналитика и журнал -------------------------------------------------------
-
-    @Тогда("^аналитика записала событие «([^»]+)» с действием «([^»]+)»$")
-    fun theAnalyticsRecorded(eventName: String, action: String) {
-        assertEquals("medication_action", eventName)
-        val expected = when (action) {
-            "deleted" -> MedicationActionType.DELETED
-            "undo" -> MedicationActionType.UNDO
-            else -> error("unknown action: $action")
-        }
-        val event = world.analytics.events.filterIsInstance<AnalyticsEvent.MedicationAction>().lastOrNull()
-        assertEquals(expected, event?.action, "the event must follow the operation: ${world.analytics.events}")
-    }
-
-    @Тогда("^в записанных событиях нет ни названия лекарства, ни его идентификатора$")
-    fun theEventsCarryNoMedicalData() {
-        val forbidden = world.medications.all().flatMap { listOf(it.id, it.name) }
-        world.analytics.events.forEach { event ->
-            forbidden.forEach { value ->
-                assertFalse(event.toString().contains(value), "the event carries «$value»: $event")
-            }
-        }
-    }
+    // --- Проверки: журнал -----------------------------------------------------------
 
     @Тогда("^в журнале приложения есть запись об удалении лекарства$")
     fun theJournalCarriesTheDeletion() {

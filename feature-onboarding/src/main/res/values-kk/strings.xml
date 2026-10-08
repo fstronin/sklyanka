@@ -67,20 +67,4 @@
     <string name="cd_setup_confirmed">Қадам сізбен расталды</string>
     <string name="cd_onboarding_hint">Жанама белгі</string>
     <string name="cd_onboarding_steps">%1$d-қадам, барлығы %2$d</string>
-
-    <!-- Аналитика (SKL-82, PM-25, OV-123) -->
-
-    <string name="consent_title">«Склянкадағы» аналитика</string>
-    <string name="consent_lead">Анонимді статистика қолайсыз жерлерді байқауға және қосымшаны жақсартуға көмектеседі.</string>
-    <string name="consent_sent_title">Не жіберіледі</string>
-    <string name="consent_sent_body">Қосымшадағы әрекеттер: қай экрандарды ашасыз, неге басасыз, алғашқы іске қосуды қалай өтесіз.</string>
-    <string name="consent_not_sent_title">Не ешқашан жіберілмейді</string>
-    <string name="consent_not_sent_body">Дәрі атаулары, дозалар, кестелер мен қабылдау уақыттары, белгілер, қалдықтар, профиль атаулары және өзіңіз енгізгеннің бәрі. Бұл деректер тек құрылғыда қалады.</string>
-    <string name="consent_variants_title">Экран нұсқалары</string>
-    <string name="consent_variants_body">Әр адамға безендіру мен мәтіндердің әртүрлі нұсқалары көрсетілуі мүмкін. Бұл еске салғыштарға және деректеріңізге әсер етпейді.</string>
-    <string name="consent_banner">Сіз рұқсат бермейінше, қосымша бірде-бір оқиға жібермейді. Бас тарту ештеңені бөгемейді, шешімді параметрлерден өзгертуге болады.</string>
-    <string name="consent_allow">Аналитикаға рұқсат беру</string>
-    <string name="consent_decline">Аналитикасыз жалғастыру</string>
-    <string name="consent_decline_settings">Өшірулі қалдыру</string>
-    <string name="consent_policy">Құпиялылық саясаты</string>
 </resources>

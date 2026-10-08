@@ -23,8 +23,8 @@ import java.time.Instant
  *
  * @param outageSince момент перерыва, если человек пришёл из баннера «Исправить» (ОВ-107):
  * экран называет его в плашке предупреждения.
- * @param onExit куда уходить с экрана. Решает хозяин навигации: `feature-*` друг о друге
- * не знают, и «Дальше» не может сам открыть экран подключения часов (SKL-17).
+ * @param onExit уход с экрана. Решает хозяин навигации: `feature-*` друг о друге
+ * не знают, и экран не открывает «Сегодня» сам.
  * @param onCheckDelivery «Проверить доставку» в плашке «Всё настроено» (SKL-86): запуск
  * самопроверки живёт на «Проверке напоминаний», и решение о переходе принимает `app`
  * (`ADR-0007`). `null` — действия нет.
@@ -33,7 +33,7 @@ import java.time.Instant
 fun PermissionsRoute(
     viewModel: OnboardingViewModel,
     source: OnboardingSource,
-    onExit: (OnboardingExit) -> Unit,
+    onExit: () -> Unit,
     modifier: Modifier = Modifier,
     outageSince: Instant? = null,
     onCheckDelivery: (() -> Unit)? = null,
@@ -57,7 +57,7 @@ fun PermissionsRoute(
     BackHandler { viewModel.onSkip() }
 
     LaunchedEffect(source, outageSince) { viewModel.start(source, outageSince) }
-    LaunchedEffect(exit) { exit?.let(onExit) }
+    LaunchedEffect(exit) { if (exit != null) onExit() }
 
     PermissionsScreen(
         state = state,

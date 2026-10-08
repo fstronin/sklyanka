@@ -807,7 +807,7 @@ class TodayViewModelTest {
             viewModel.onIntent(TodayIntent.ArmGroupMark(LocalTime.of(14, 0)))
             awaitContentWhere { it.confirmingGroup == LocalTime.of(14, 0) }
 
-            // Чужая отметка с часов: ожидающий в группе остаётся один, батч теряет
+            // Чужая повторная отметка: ожидающий в группе остаётся один, батч теряет
             // предмет, и подтверждение гаснет реконсиляцией `screen()` (TDD §16.4).
             listOf("i-a", "i-b").forEach { id ->
                 world.intakes.put(

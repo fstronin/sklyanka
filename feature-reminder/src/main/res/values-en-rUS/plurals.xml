@@ -36,4 +36,9 @@
         <item quantity="one">missed %1$d intake</item>
         <item quantity="other">missed %1$d intakes</item>
     </plurals>
+    <!-- SKL-106: исход служебной выгрузки журнала. -->
+    <plurals name="diagnostics_journal_export_saved">
+        <item quantity="one">Log exported: %1$d record.</item>
+        <item quantity="other">Log exported: %1$d records.</item>
+    </plurals>
 </resources>

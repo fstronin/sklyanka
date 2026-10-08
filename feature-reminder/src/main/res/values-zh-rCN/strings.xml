@@ -116,16 +116,8 @@
     <string name="diagnostics_next_tomorrow">明天 %1$s</string>
     <string name="diagnostics_next_day_pattern">M月d日 H:mm</string>
     <string name="diagnostics_last_actual_with_deviation">显示于 %1$s · %2$s</string>
-    <string name="diagnostics_report_open">报告问题</string>
-    <string name="diagnostics_report_footer_note">面向开发者的技术报告。不含药物名称和服药记录。</string>
-    <string name="diagnostics_report_title">开发者报告</string>
-    <string name="diagnostics_report_explanation">面向开发者的技术报告——由你点击后发送。它会自动生成，不含药物名称、剂量和服药记录。</string>
-    <string name="diagnostics_report_comment_label">哪里不正常？</string>
-    <string name="diagnostics_report_comment_optional">可选</string>
-    <string name="diagnostics_report_comment_hint">例如：早上收不到提醒</string>
-    <string name="diagnostics_report_send">发送报告</string>
-    <string name="diagnostics_report_sent_title">报告已发送</string>
-    <string name="diagnostics_report_sent_sub">谢谢！这有助于让提醒更可靠。</string>
-    <string name="diagnostics_report_failed">无法发送报告。请检查网络连接后重试。已输入的文字会保留。</string>
-    <string name="diagnostics_report_retry">重试</string>
+    <string name="diagnostics_journal_export">导出触发日志</string>
+    <string name="diagnostics_journal_export_note">触发事件日志文件。不含药品名称、剂量和档案名称。</string>
+    <string name="diagnostics_journal_export_no_space">空间不足。文件未保存。</string>
+    <string name="diagnostics_journal_export_failed">无法保存文件。请重试。</string>
 </resources>

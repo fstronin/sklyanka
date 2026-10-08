@@ -105,7 +105,6 @@ abstract class ReminderLogDao {
             + COALESCE(LENGTH(CAST(alarms_scheduled AS BLOB)), 0)
             + COALESCE(LENGTH(CAST(attempt AS BLOB)), 0)
             + COALESCE(LENGTH(CAST(snooze_minutes AS BLOB)), 0)
-            + COALESCE(LENGTH(CAST(watch_result AS BLOB)), 0)
         ), 0) AS INTEGER) FROM reminder_log
         """,
     )

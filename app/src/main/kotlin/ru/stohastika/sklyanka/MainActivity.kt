@@ -10,7 +10,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -21,8 +20,6 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
-import ru.stohastika.sklyanka.domain.analytics.Analytics
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsEvent
 import ru.stohastika.sklyanka.domain.onboarding.OnboardingSource
 import ru.stohastika.sklyanka.domain.onboarding.ShouldShowOnboardingUseCase
 import ru.stohastika.sklyanka.domain.profile.ProfileContextProvider
@@ -34,7 +31,6 @@ import ru.stohastika.sklyanka.feature.meds.card.MedicationCardViewModel
 import ru.stohastika.sklyanka.feature.meds.form.MedicationFormViewModel
 import ru.stohastika.sklyanka.feature.meds.list.MedicationListViewModel
 import ru.stohastika.sklyanka.feature.onboarding.DeliveryCheckEntry
-import ru.stohastika.sklyanka.feature.onboarding.OnboardingExit
 import ru.stohastika.sklyanka.feature.onboarding.OnboardingViewModel
 import ru.stohastika.sklyanka.feature.onboarding.PermissionsActivity
 import ru.stohastika.sklyanka.feature.onboarding.PermissionsRoute
@@ -58,7 +54,6 @@ import ru.stohastika.sklyanka.navigation.MedsViewModels
 import ru.stohastika.sklyanka.navigation.RootLayer
 import ru.stohastika.sklyanka.navigation.RootNavigation
 import ru.stohastika.sklyanka.navigation.RootTab
-import ru.stohastika.sklyanka.navigation.ScreenViews
 import ru.stohastika.sklyanka.navigation.SettingsDestination
 import ru.stohastika.sklyanka.navigation.SettingsSection
 import ru.stohastika.sklyanka.navigation.SettingsViewModels
@@ -185,15 +180,6 @@ class MainActivity : ComponentActivity() {
     private val rootNavigation = RootNavigation()
 
     /**
-     * Канал событий аналитики (SKL-82).
-     *
-     * `screen_view` отправляется из одной точки — корня приложения: состояние навигации
-     * видно только здесь, а гейт согласия решает, дойдёт ли событие до вендора.
-     */
-    @Inject
-    lateinit var analytics: Analytics
-
-    /**
      * Экран разрешений поверх «Сегодня» (НАП-21, SKL-29).
      *
      * Поле активности, а не `remember` композиции: возврат под живым окном отмены обязан
@@ -289,7 +275,7 @@ class MainActivity : ComponentActivity() {
         onboardingUnseen: Boolean,
         onboardingDone: Boolean,
         addMedicationRequested: Boolean,
-        onOnboardingDone: (OnboardingExit) -> Unit,
+        onOnboardingDone: () -> Unit,
     ) {
         when {
             // Экран разрешений EMUI (SKL-14): запуск, на котором с разрешениями
@@ -304,11 +290,6 @@ class MainActivity : ComponentActivity() {
                 PermissionsRoute(
                     viewModel = onboarding,
                     source = OnboardingSource.FIRST_LAUNCH,
-                    // Экран подключения часов — SKL-17, и его ещё нет. Исход
-                    // OnboardingExit.WATCH_SETUP вычисляется и попадает в журнал, но
-                    // ведёт туда же, куда пропуск: на «Сегодня». Обещать экран, которого
-                    // нет, хуже, чем не обещать ничего, — критерий приёмки 20 закрывается
-                    // вместе с SKL-17 одной строкой здесь.
                     onExit = onOnboardingDone,
                     onCheckDelivery = { startActivity(deliveryCheckEntry.intentFor(this)) },
                 )
@@ -488,11 +469,6 @@ class MainActivity : ComponentActivity() {
             motion = rootNavigation.rootMotion,
             modifier = Modifier.fillMaxSize(),
         ) { layer ->
-            // Открытие экрана — одно событие на смену слоя, а не на рекомпозицию (SKL-82):
-            // значения берутся из закрытого каталога, до согласия гейт события не пускает.
-            LaunchedEffect(layer) {
-                analytics.track(AnalyticsEvent.ScreenView(ScreenViews.of(layer)))
-            }
             when (layer) {
                 // История, открытая с «Сегодня» (ОВ-84, SKL-31): тот же второй уровень, что
                 // из настроек, но место входа — строка прогресса дня. Ветка стоит рядом
@@ -527,9 +503,6 @@ class MainActivity : ComponentActivity() {
                         rootNavigation.openTab(RootTab.SETTINGS)
                     },
                     initial = layer.entry,
-                    onScreenShown = { destination ->
-                        analytics.track(AnalyticsEvent.ScreenView(ScreenViews.of(destination)))
-                    },
                 )
 
                 RootLayer.Settings -> SettingsRoute(
@@ -549,11 +522,8 @@ class MainActivity : ComponentActivity() {
         // Строка «Добавить профиль» выключена до мастера (`ОВ-3`, SKL-58):
         // экран создания профиля не зафиксирован, а нажимаемая строка без
         // перехода обещала бы больше, чем продукт умеет. Намерение и переход —
-        // шов пост-MVP, как у строки часов: мастер вернётся без правки навигации.
+        // шов пост-MVP: мастер вернётся без правки навигации.
         addProfile = {},
-        // Экран подключения часов — SKL-17. `null` означает «экрана нет»,
-        // и строка часов остаётся состоянием связи, а не мнимым переходом.
-        openWatchSetup = null,
         // «Звук» — системный экран уведомлений приложения (ОВ-98): там оба
         // канала и выбор звука с важностью для каждого.
         openSound = { systemSettings.openNotificationSettings() },

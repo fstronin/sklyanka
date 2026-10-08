@@ -11,8 +11,6 @@ import ru.stohastika.sklyanka.domain.reminder.port.ReminderCardSource
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderJournal
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPlanSource
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderSettings
-import ru.stohastika.sklyanka.domain.reminder.port.WatchGateway
-import ru.stohastika.sklyanka.domain.reminder.port.WatchSendResult
 import ru.stohastika.sklyanka.domain.time.TimeSource
 import java.time.Duration
 import java.time.Instant
@@ -54,12 +52,7 @@ enum class SuppressReason(val code: String) {
 /** Чем закончилось срабатывание будильника. */
 sealed interface FiredOutcome {
 
-    data class Shown(
-        val card: ReminderCard,
-        val channel: ReminderChannel,
-        val watch: WatchSendResult,
-        val repeat: RepeatDecision,
-    ) : FiredOutcome
+    data class Shown(val card: ReminderCard, val channel: ReminderChannel, val repeat: RepeatDecision) : FiredOutcome
 
     data class Suppressed(val reason: SuppressReason) : FiredOutcome
 }
@@ -83,7 +76,6 @@ class HandleFiredReminderUseCase(
     private val plan: ReminderPlanSource,
     private val cards: ReminderCardSource,
     private val notifications: NotificationGateway,
-    private val watch: WatchGateway,
     private val alarms: AlarmGateway,
     private val journal: ReminderJournal,
     private val deferred: DeferredReminders,
@@ -167,7 +159,7 @@ class HandleFiredReminderUseCase(
         scheduledAt: Instant,
         deviation: Long,
     ): FiredOutcome {
-        val slotCard = cards.card(intake.slot, mirroredToWatch = false)
+        val slotCard = cards.card(intake.slot)
         return if (slotCard == null || slotCard.isEmpty) {
             // Показывать нечего — запись снимается: следующий будильник о пустом слоте
             // ничего бы не изменил.
@@ -187,10 +179,6 @@ class HandleFiredReminderUseCase(
         scheduledAt: Instant,
         deviation: Long,
     ): FiredOutcome {
-        // Часы получают карточку одновременно с телефоном (ЧАС-13). Недоступность часов —
-        // не ошибка сценария: чип «Продублировано на часы» просто не появляется (ЧАС-14).
-        val watchResult = watch.send(slotCard)
-        val card = slotCard.copy(mirroredToWatch = watchResult == WatchSendResult.SENT)
         val channel = PersistentRepeatPolicy.channelFor(attempt)
 
         journal.record(
@@ -206,7 +194,7 @@ class HandleFiredReminderUseCase(
                 attempt = attempt,
             ),
         )
-        notifications.show(card, channel)
+        notifications.show(slotCard, channel)
         val presentedAt = awaitPresentation(intake.slot)
         if (presentedAt == null) {
             // Повтор ставится и здесь: напоминание, которого человек не увидел, — как раз
@@ -230,10 +218,9 @@ class HandleFiredReminderUseCase(
                 channel = channel,
                 delivered = true,
                 attempt = attempt,
-                watchResult = watchResult.code,
             ),
         )
-        return FiredOutcome.Shown(card, channel, watchResult, planRepeat(intake, attempt, now))
+        return FiredOutcome.Shown(slotCard, channel, planRepeat(intake, attempt, now))
     }
 
     /**

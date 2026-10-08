@@ -45,8 +45,8 @@ import ru.stohastika.sklyanka.ui.token.SklyankaType
  *
  * Третья вкладка и единственное место, где человек видит систему целиком: чей приём он
  * ведёт, как приложение будет напоминать, выданы ли разрешения, где лежат данные и чем
- * приложение не является. Строки часов на экране нет: интеграция отложена до пост-MVP
- * (`ADR-0009`), а подпись о связи, которая не может измениться, была бы ложью.
+ * приложение не является. Строки часов на экране нет: шов вырезан из сборки
+ * (Р-3, SKL-106).
  *
  * Своего состояния экран не держит: всё приходит в [state], наружу уходят намерения.
  * Каждая подпись под строкой — утверждение о состоянии системы, и ложное утверждение
@@ -232,7 +232,7 @@ private fun ProfileRowState.initial(): String {
  * (§6.1 дизайн-системы, НФТ-30): один `TextDisabled` смысла не удержал бы.
  *
  * Намерение [SettingsIntent.AddProfile] и переход [SettingsNavigation.addProfile] сохранены
- * швом пост-MVP, как строка часов: возвращение мастера не потребует правки навигации.
+ * швом пост-MVP: возвращение мастера не потребует правки навигации.
  */
 @Composable
 private fun AddProfileRow() {
@@ -307,8 +307,8 @@ private fun LazyListScope.remindersBlock(state: SettingsUiState, onIntent: (Sett
 /**
  * Раздел «Система» (НФТ-8, НАП-20).
  *
- * Строки «Часы Huawei» из макета в первой версии нет: интеграция отложена до пост-MVP
- * (`ADR-0009`), а строка состояния связи, которая не может измениться, — ложь.
+ * Строки «Часы Huawei» в сборке нет: шов часов вырезан (Р-3, SKL-106), и строка
+ * состояния связи, которая не может измениться, была бы ложью.
  */
 private fun LazyListScope.systemBlock(state: SettingsUiState, onIntent: (SettingsIntent) -> Unit) {
     item {
@@ -359,9 +359,6 @@ private fun LazyListScope.dataBlock(onIntent: (SettingsIntent) -> Unit) {
                 modifier = Modifier.testTag(TAG_TRANSFER_ROW),
             )
             RowDivider()
-            // Строки «Аналитика» здесь нет (ПМ-31): UX согласия скрыт до подключения
-            // провайдера. Интент, маршрут и `AnalyticsConsentControl` остаются на полке —
-            // возврат строки идёт вместе с провайдером новым решением.
             SettingsRow(
                 title = stringResource(R.string.settings_policy),
                 onClick = { onIntent(SettingsIntent.OpenPolicy) },
@@ -440,7 +437,4 @@ internal const val TAG_DELETE_DIVIDER = "settings_delete_divider"
 internal const val TAG_HISTORY_ROW = "settings_history_row"
 internal const val TAG_TRANSFER_ROW = "settings_transfer_row"
 
-// Публичная метка (SKL-97): переключатель адресуется экранной проверкой устройства
-// в модуле app, который не видит `internal` чужих модулей.
-const val TAG_ANALYTICS_ROW = "settings_analytics_row"
 internal const val TAG_POLICY_ROW = "settings_policy_row"

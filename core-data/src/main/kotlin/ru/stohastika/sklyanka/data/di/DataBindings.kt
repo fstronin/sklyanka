@@ -4,7 +4,6 @@ import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import ru.stohastika.sklyanka.data.analytics.AnalyticsConsentDataStore
 import ru.stohastika.sklyanka.data.log.RoomOperationLog
 import ru.stohastika.sklyanka.data.prefs.DeviceProtectedDirectBootStore
 import ru.stohastika.sklyanka.data.repository.ActiveProfileContext
@@ -16,7 +15,6 @@ import ru.stohastika.sklyanka.data.repository.RoomProfileEraser
 import ru.stohastika.sklyanka.data.repository.RoomProfileLossesSource
 import ru.stohastika.sklyanka.data.room.SklyankaTransactor
 import ru.stohastika.sklyanka.domain.Transactor
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsConsentStore
 import ru.stohastika.sklyanka.domain.log.OperationLog
 import ru.stohastika.sklyanka.domain.profile.ProfileContextProvider
 import ru.stohastika.sklyanka.domain.profile.ProfileEraser
@@ -88,9 +86,4 @@ abstract class DataBindings {
     @Binds
     @Singleton
     abstract fun bindDirectBootTraceStore(impl: DeviceProtectedDirectBootStore): DirectBootTraceStore
-
-    /** Решение по аналитике живёт отдельным файлом и не участвует в переносе (SKL-82, ПЕР-37). */
-    @Binds
-    @Singleton
-    abstract fun bindAnalyticsConsentStore(impl: AnalyticsConsentDataStore): AnalyticsConsentStore
 }

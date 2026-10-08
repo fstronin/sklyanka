@@ -27,7 +27,6 @@ import ru.stohastika.sklyanka.domain.onboarding.OnboardingSource
 import ru.stohastika.sklyanka.domain.onboarding.PermissionStep
 import ru.stohastika.sklyanka.domain.reminder.port.PermissionState
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPermission
-import ru.stohastika.sklyanka.feature.onboarding.OnboardingExit
 import ru.stohastika.sklyanka.feature.onboarding.TAG_ALL_CONFIGURED
 import ru.stohastika.sklyanka.feature.onboarding.TAG_CARD_APP_STARTUP
 import ru.stohastika.sklyanka.feature.onboarding.TAG_CARD_BATTERY_SAVING
@@ -128,7 +127,7 @@ class OnboardingCompositionSteps(private val world: AcceptanceWorld) {
         OnboardingAppProbe.open(world, OnboardingSource.FIRST_LAUNCH)
         // Пропуск — в нижнем блоке, вне прокрутки: прокручивать до него нечего.
         OnboardingAppProbe.actPermissions(world) { onNodeWithTag(TAG_SKIP).performClick() }
-        assertEquals(OnboardingExit.TODAY, OnboardingAppProbe.exit(world), "skip leads to Today, not further (НАП-21)")
+        assertEquals(Unit, OnboardingAppProbe.exit(world), "skip leads to Today, not further (НАП-21)")
         assertTrue(runBlocking { world.onboarding.seen() }, "the skip must be remembered (НАП-21)")
     }
 

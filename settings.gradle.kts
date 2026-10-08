@@ -26,9 +26,9 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        // Репозиторий вендора сохранён для будущих сетевых контуров (SKL-50, H2, ПМ-31);
-        // в первой публикации сетевого контура нет. Репозиторий ограничен его группами,
-        // чтобы «случайная» библиотека не приехала отсюда молча.
+        // Репозиторий вендора сохранён для биллингового контура «Склянки Про» (Р-37, Р-38,
+        // SKL-122); в первой публикации сетевого контура нет (Р-4). Репозиторий ограничен
+        // его группами, чтобы «случайная» библиотека не приехала отсюда молча.
         maven {
             url = uri("https://developer.huawei.com/repo/")
             content {
@@ -52,6 +52,5 @@ include(":feature-history")
 include(":feature-settings")
 include(":core-ui")
 include(":core-data")
-include(":core-analytics")
 include(":core-domain")
 include(":acceptance")

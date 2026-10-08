@@ -44,8 +44,6 @@ import ru.stohastika.sklyanka.domain.reminder.port.ReminderPlanSource
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderSettingKey
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderSettings
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderSettingsValues
-import ru.stohastika.sklyanka.domain.reminder.port.WatchGateway
-import ru.stohastika.sklyanka.domain.reminder.port.WatchSendResult
 import java.time.Instant
 import java.time.LocalDateTime
 
@@ -56,8 +54,7 @@ import java.time.LocalDateTime
  * [ru.stohastika.sklyanka.domain.reminder.WindowIntakeSelector], срабатывание — настоящий
  * [HandleFiredReminderUseCase], перевод в «пропущено» — настоящий
  * [SweepMissedIntakesUseCase]. В памяти живут только те порты, которые в продукте
- * прячут платформу: будильники, уведомления и журнал. Часы — на портах `NoWatchGateway`
- * и настройках по умолчанию: часы в первой версии не настроены, и это не ошибка сценария.
+ * прячут платформу: будильники, уведомления и журнал.
  *
  * Набор будильников наблюдаем ([scheduled]) — сценарии профилей сравнивают его до и после
  * переключения активного профиля и проверяют, что флаг дублирования добавляет и снимает
@@ -120,17 +117,6 @@ class ScenarioReminders(
      * будильники очищаются, записи остаются (SKL-35, ОВ-75).
      */
     private val deferredStore = InMemoryDeferredReminders()
-
-    /**
-     * Часы: порт записывает отзыв карточки, отправка отвечает «не настроены» (SKL-16).
-     *
-     * Заглушка не молчит о действии: сценарий «отметка закрывает карточку на часах»
-     * проверяет, что продукт позвал отзыв, а не что Wear Engine его исполнил.
-     */
-    private val watch = RecordingWatchGateway()
-
-    /** Идентификаторы приёмов, чьи карточки на часах продукт отозвал. */
-    val revokedWatchIntakeIds: List<String> get() = watch.revoked
 
     private val notifications = InMemoryNotifications(notificationsAllowed)
 
@@ -327,13 +313,13 @@ class ScenarioReminders(
     fun cardSource(): ReminderCardSource = PlanSource()
 
     /**
-     * Последствия отметки: снятие уведомления и отзыв карточки часов.
+     * Последствия отметки: снятие уведомления.
      *
      * Тем же `DismissReminderUseCase`, что у продукта (`ReminderModule`): экран напоминания
      * отметку выполняет, а закрывает карточку она сама.
      */
     fun markSideEffects(): MarkSideEffects = MarkSideEffects { intakeId ->
-        DismissReminderUseCase(PlanSource(), PlanSource(), notifications, watch, deferredStore, alarms)(intakeId)
+        DismissReminderUseCase(PlanSource(), PlanSource(), notifications, deferredStore, alarms)(intakeId)
     }
 
     /** Откладывание — тем же сценарием домена, что у экрана напоминания (НАП-30). */
@@ -394,7 +380,6 @@ class ScenarioReminders(
             plan = PlanSource(),
             cards = PlanSource(),
             notifications = notifications,
-            watch = watch,
             alarms = alarms,
             journal = journal,
             deferred = deferredStore,
@@ -433,7 +418,7 @@ class ScenarioReminders(
             // что у настоящего `ReminderDataSource`.
             .filter { it.slot == slot && it.status == IntakeStatus.PENDING && !it.medicationDeleted }
 
-        override suspend fun card(slot: ReminderSlot, mirroredToWatch: Boolean): ReminderCard? {
+        override suspend fun card(slot: ReminderSlot): ReminderCard? {
             val profile = profiles.byId(slot.profileId) ?: return null
             val items = pendingInSlot(slot).mapNotNull { row ->
                 medications.byId(row.medicationId)?.let { medication ->
@@ -453,7 +438,6 @@ class ScenarioReminders(
                 slot = slot,
                 scheduledAt = slot.scheduledAt,
                 items = items,
-                mirroredToWatch = mirroredToWatch,
                 profileIsSelf = profile.isSelf,
                 profileName = profile.name,
             )
@@ -554,26 +538,6 @@ private class InMemoryDeferredReminders : DeferredReminders {
     }
 
     override suspend fun remove(intakeId: String): Boolean = stored.remove(intakeId) != null
-}
-
-/**
- * Часы как порт: отправка отвечает «не настроены», отзыв запоминается.
- *
- * Отдельная реализация рядом с доменной [ru.stohastika.sklyanka.domain.reminder.port.NoWatchGateway]:
- * той безразличен отзыв, а сценарию — нет. Поведение доставки то же: чип «Продублировано
- * на часы» не появляется (ЧАС-14), пока интеграция отложена (SKL-16).
- */
-private class RecordingWatchGateway : WatchGateway {
-
-    private val revokedIds = mutableListOf<String>()
-
-    val revoked: List<String> get() = revokedIds.toList()
-
-    override suspend fun send(card: ReminderCard): WatchSendResult = WatchSendResult.NOT_CONFIGURED
-
-    override suspend fun revoke(intakeId: String) {
-        revokedIds += intakeId
-    }
 }
 
 /** Шторка в памяти: один слот — одна карточка, показ и снятие меняют видимое (НАП-36). */
@@ -698,7 +662,7 @@ private class InMemoryReminderJournal : ReminderJournal {
     private fun ReminderLogEntry.estimatedBytes(): Long {
         var bytes = ROW_OVERHEAD_BYTES.toLong()
         bytes += (intakeId?.length ?: 0) + (medicationId?.length ?: 0) + (profileId?.length ?: 0)
-        bytes += (reason?.length ?: 0) + (watchResult?.length ?: 0) + (channel?.id?.length ?: 0)
+        bytes += (reason?.length ?: 0) + (channel?.id?.length ?: 0)
         return bytes
     }
 

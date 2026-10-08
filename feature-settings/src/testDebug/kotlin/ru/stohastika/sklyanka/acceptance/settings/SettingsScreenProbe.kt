@@ -11,8 +11,6 @@ import kotlinx.coroutines.test.setMain
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderSettings
 import ru.stohastika.sklyanka.domain.transfer.AppStamp
-import ru.stohastika.sklyanka.domain.watch.WatchLinkState
-import ru.stohastika.sklyanka.domain.watch.WatchLinkStateReader
 import ru.stohastika.sklyanka.feature.settings.SettingsIntent
 import ru.stohastika.sklyanka.feature.settings.SettingsScreen
 import ru.stohastika.sklyanka.feature.settings.SettingsSystemStateReader
@@ -120,15 +118,9 @@ internal object SettingsScreenProbe {
         system = SettingsSystemStateReader(
             reminders = world.reminders.settingsStore,
             permissions = world.system,
-            watch = WatchReader(world),
         ),
         stamp = APP_STAMP,
     )
-
-    /** Часы как порт: строка снята из продукта (`ADR-0009`), но чтение нужно сборке. */
-    private class WatchReader(private val world: AcceptanceWorld) : WatchLinkStateReader {
-        override suspend fun read(): WatchLinkState = world.system.watch
-    }
 
     /** Забыть подменённый главный диспетчер: стенд не должен влиять на соседние тесты. */
     fun dropMainDispatcher() {

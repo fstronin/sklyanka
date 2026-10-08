@@ -14,10 +14,12 @@ import org.junit.runner.RunWith
  * Миграции на реальной базе предыдущей версии (МГ-3).
  *
  * Версия 1 — скелет SKL-02 с единственной технической таблицей-маркером; версия 2 —
- * схема данных «Склянки»; версия 3 — признак дублирования напоминаний на часы у лекарства
- * (SKL-10, ЧАС-15); версия 4 — журнал напоминаний (SKL-13); версия 5 — размер упаковки
- * у лекарства (SKL-34, ОВ-45); версия 6 — таблица отложенных срабатываний (SKL-35, ОВ-75);
- * версия 7 — момент мягкого удаления лекарства (SKL-99, ПМ-24).
+ * схема данных «Склянки»; версия 3 добавила лекарству признак дублирования напоминаний
+ * на часы (SKL-10, ЧАС-15); версия 4 — журнал напоминаний (SKL-13); версия 5 — размер
+ * упаковки у лекарства (SKL-34, ОВ-45); версия 6 — таблица отложенных срабатываний
+ * (SKL-35, ОВ-75); версия 7 — момент мягкого удаления лекарства (SKL-99, ПМ-24);
+ * версия 8 вырезала часовой шов обратно (Р-3, SKL-106): обе колонки часового шва уходят,
+ * таблицы перестраиваются.
  * Тест доказывает заодно, что экспорт схемы действительно работает: без файлов
  * в `core-data/schemas` помощник не смог бы создать базу предыдущей версии.
  *
@@ -99,11 +101,12 @@ class MigrationTest {
             old.execSQL(INSERT_INTAKE)
         }
 
+        // Проверяется ровно шаг 2 → 3: arrival колонки на своей версии, сверка со схемой 3.
         val migrated = helper.runMigrationsAndValidate(
             TEST_DB,
-            SklyankaDatabase.VERSION,
+            3,
             true,
-            *SklyankaMigrations.ALL,
+            SklyankaMigrations.MIGRATION_2_3,
         )
 
         migrated.use { db ->
@@ -235,9 +238,72 @@ class MigrationTest {
         }
     }
 
+    /**
+     * Версия 7 → 8 на реальной базе с данными (МГ-3, Р-3, SKL-106).
+     *
+     * Часовой шов вырезан: `mirror_to_watch` у лекарства и `watch_result` у журнала
+     * уходят через перестроение таблиц. Строки не имеют права потерять ни там, ни там:
+     * лекарство возвращается со своим остатком и нетронутыми полями архива, журнал —
+     * со своей записью показа, колонок шва в схеме уже нет.
+     */
+    @Test
+    fun theWatchColumnsLeaveWithoutTouchingAnyRow() {
+        helper.createDatabase(TEST_DB, 7).use { old ->
+            old.execSQL(INSERT_PROFILE)
+            old.execSQL(INSERT_MEDICATION)
+            old.execSQL(INSERT_INTAKE)
+            old.execSQL(INSERT_REMINDER_LOG)
+        }
+
+        val migrated = helper.runMigrationsAndValidate(
+            TEST_DB,
+            SklyankaDatabase.VERSION,
+            true,
+            *SklyankaMigrations.ALL,
+        )
+
+        migrated.use { db ->
+            db.query(
+                "SELECT `stock_left`, `archived_at`, `archive_reason` FROM `medication` WHERE `id` = 'medication-1'",
+            )
+                .use { cursor ->
+                    assertTrue("the medication row must survive the rebuild", cursor.moveToFirst())
+                    assertEquals("the stored values must come through untouched", "9", cursor.getString(0))
+                    assertTrue("the archive fields must stay untouched", cursor.isNull(1) && cursor.isNull(2))
+                }
+            db.query("SELECT `event`, `attempt` FROM `reminder_log` WHERE `intake_id` = 'intake-1'")
+                .use { cursor ->
+                    assertTrue("the journal row must survive the rebuild", cursor.moveToFirst())
+                    assertEquals("SHOWN", cursor.getString(0))
+                    assertEquals(0, cursor.getInt(1))
+                }
+            assertTrue(
+                "the watch column must be gone from medication",
+                !columnExists(db, "medication", "mirror_to_watch"),
+            )
+            assertTrue(
+                "the watch column must be gone from reminder_log",
+                !columnExists(db, "reminder_log", "watch_result"),
+            )
+            db.query("SELECT COUNT(*) FROM `intake`").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals("no intake record may be lost (MG-2)", 1, cursor.getInt(0))
+            }
+        }
+    }
+
     private fun tableExists(db: SupportSQLiteDatabase, table: String): Boolean =
         db.query("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?", arrayOf(table))
             .use { it.count > 0 }
+
+    private fun columnExists(db: SupportSQLiteDatabase, table: String, column: String): Boolean {
+        db.query("SELECT name FROM pragma_table_info('$table')").use { cursor ->
+            while (cursor.moveToNext()) {
+                if (cursor.getString(0) == column) return true
+            }
+        }
+        return false
+    }
 
     private companion object {
         const val TEST_DB = "migration-test.db"
@@ -263,5 +329,12 @@ class MigrationTest {
             "(`id`, `medication_id`, `scheduled_at`, `schedule_slot`, `status`, `acted_at`, `source`, " +
             "`actor_profile_id`) " +
             "VALUES ('intake-1', 'medication-1', '2026-09-12T08:00', '08:00', 'PENDING', NULL, NULL, NULL)"
+
+        /** Запись показа в журнал версии 7: с колонкой часового шва, которую миграция снимает. */
+        const val INSERT_REMINDER_LOG = "INSERT INTO `reminder_log` " +
+            "(`occurred_at`, `event`, `intake_id`, `medication_id`, `profile_id`, `scheduled_at`, " +
+            "`fired_at`, `deviation_seconds`, `channel`, `delivered`, `attempt`, `watch_result`) " +
+            "VALUES (1759125600000, 'SHOWN', 'intake-1', 'medication-1', 'profile-1', " +
+            "1759125560000, 1759125600000, 40, 'reminders_regular', 1, 0, 'sent')"
     }
 }

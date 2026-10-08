@@ -19,8 +19,6 @@ import ru.stohastika.sklyanka.domain.medication.ArchiveMedicationUseCase
 import ru.stohastika.sklyanka.domain.medication.ArchiveOutcome
 import ru.stohastika.sklyanka.domain.medication.RestoreMedicationUseCase
 import ru.stohastika.sklyanka.domain.medication.RestoreOutcome
-import ru.stohastika.sklyanka.domain.medication.ToggleWatchMirrorUseCase
-import ru.stohastika.sklyanka.domain.medication.WatchMirrorOutcome
 import ru.stohastika.sklyanka.domain.model.ArchiveReason
 import ru.stohastika.sklyanka.domain.model.IntakeStatus
 import ru.stohastika.sklyanka.domain.schedule.GenerationWindow
@@ -33,11 +31,10 @@ import java.time.Instant
 import java.time.ZoneId
 
 /**
- * Архивация, возврат и тумблер часов на настоящей базе (SKL-10, SKL-11).
+ * Архивация и возврат на настоящей базе (SKL-10, SKL-11).
  *
  * Правила проверены модульными тестами домена; здесь проверяется то, чего в домене не
- * видно: что пара полей архивации записывается и очищается вместе (ИНВ-9), что новая
- * колонка дублирования на часы действительно долетает до строки лекарства, что архивное
+ * видно: что пара полей архивации записывается и очищается вместе (ИНВ-9), что архивное
  * лекарство уходит из выборки активных и что история приёмов при этом цела (ПР-11).
  *
  * Прогон требует устройства или эмулятора; в контейнере сборки тест компилируется,
@@ -59,7 +56,6 @@ class MedicationArchiveTest {
     private val restore by lazy {
         RestoreMedicationUseCase(medications, planner, transactor, clock, log)
     }
-    private val watchMirror by lazy { ToggleWatchMirrorUseCase(medications, log) }
 
     @Before
     fun fillProfilesAndMedications() = runTest {
@@ -122,14 +118,6 @@ class MedicationArchiveTest {
 
         assertTrue(medications.observeArchived(TestData.OWNER_ID).first().isEmpty())
         assertEquals(1, medications.observeArchived(TestData.RELATIVE_ID).first().size)
-    }
-
-    @Test
-    fun theWatchMirrorValueReachesTheRow() = runTest {
-        val outcome = watchMirror(TestData.OWNER_MEDICATION_ID, enabled = false)
-
-        assertEquals(WatchMirrorOutcome.Applied(before = true, after = false), outcome)
-        assertEquals(false, db.medications.getById(TestData.OWNER_MEDICATION_ID)?.mirrorToWatch)
     }
 
     @Test

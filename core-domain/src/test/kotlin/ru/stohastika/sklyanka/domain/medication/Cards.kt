@@ -63,7 +63,6 @@ internal object Cards {
         thresholdDays: Int? = 5,
         archivedAt: Instant? = null,
         archiveReason: ArchiveReason? = null,
-        mirrorToWatch: Boolean = true,
     ) = Medication(
         id = id,
         profileId = PROFILE_ID,
@@ -84,7 +83,6 @@ internal object Cards {
         stockThresholdDays = thresholdDays,
         archivedAt = archivedAt,
         archiveReason = archiveReason,
-        mirrorToWatch = mirrorToWatch,
     )
 
     fun asNeeded(id: String = MEDICATION_ID, maxPerDay: Int = 3) = scheduled(id = id).copy(

@@ -10,8 +10,6 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
 import ru.stohastika.sklyanka.domain.transfer.AppStamp
-import ru.stohastika.sklyanka.domain.watch.WatchLinkState
-import ru.stohastika.sklyanka.domain.watch.WatchLinkStateReader
 import ru.stohastika.sklyanka.feature.settings.SettingsNavigation
 import ru.stohastika.sklyanka.feature.settings.SettingsRoute
 import ru.stohastika.sklyanka.feature.settings.SettingsSystemStateReader
@@ -88,14 +86,9 @@ internal object SettingsRemindersStand {
         system = SettingsSystemStateReader(
             reminders = world.reminders.settingsStore,
             permissions = world.system,
-            watch = WatchReader(world),
         ),
         stamp = AppStamp(versionName = "1.0", versionCode = 1),
     )
-
-    private class WatchReader(private val world: AcceptanceWorld) : WatchLinkStateReader {
-        override suspend fun read(): WatchLinkState = world.system.watch
-    }
 
     /** Забыть подменённый главный диспетчер: стенд не должен влиять на соседние тесты. */
     fun dropMainDispatcher() {

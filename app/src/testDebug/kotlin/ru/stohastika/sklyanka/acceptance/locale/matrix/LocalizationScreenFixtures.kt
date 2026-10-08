@@ -56,7 +56,6 @@ import ru.stohastika.sklyanka.feature.meds.archive.ArchiveNotice
 import ru.stohastika.sklyanka.feature.meds.archive.ArchiveUiState
 import ru.stohastika.sklyanka.feature.meds.card.MedCardUiState
 import ru.stohastika.sklyanka.feature.meds.card.ScheduleBlockUi
-import ru.stohastika.sklyanka.feature.meds.card.WatchMirrorUi
 import ru.stohastika.sklyanka.feature.meds.form.FormInputs
 import ru.stohastika.sklyanka.feature.meds.form.FormMode
 import ru.stohastika.sklyanka.feature.meds.form.MedFormUiState
@@ -197,7 +196,6 @@ internal object LocalizationScreenFixtures {
         stock = StockPanel.Visible(unitsLeft = BigDecimal("9"), daysLeft = 4, warning = true),
         stockUnit = DoseUnit.TABLET,
         week = week(),
-        watchMirror = WatchMirrorUi(checked = true, enabled = true),
         isArchived = false,
         courseFinishedOffer = false,
         refill = null,
@@ -327,7 +325,6 @@ internal object LocalizationScreenFixtures {
             ),
         ),
         snoozeMinutes = 15,
-        mirroredToWatch = true,
         foreignProfileName = null,
     )
 
@@ -372,7 +369,6 @@ internal object LocalizationScreenFixtures {
         return SettingsUiState(
             profiles = listOf(own, mother),
             reminders = ReminderSettingsValues(persistentEnabled = true),
-            watch = ru.stohastika.sklyanka.domain.watch.WatchLinkState.NotConfigured,
             permissions = PermissionsSummary(denied = 1, manual = 1),
             version = "0.1.0",
         )

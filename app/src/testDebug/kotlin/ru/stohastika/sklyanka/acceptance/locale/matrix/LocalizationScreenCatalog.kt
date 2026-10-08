@@ -107,10 +107,7 @@ internal object LocalizationScreenCatalog {
                     onCancelDeliveryCheck = {},
                     onAcknowledgeDeliveryCheck = {},
                     onFixDeliveryCheck = {},
-                    onReportOpen = {},
-                    onReportCommentChange = {},
-                    onReportSend = {},
-                    onReportDismiss = {},
+                    onJournalExport = {},
                     onBack = {},
                     toLocal = { instant -> instant.atZone(fixtures.ZONE).toLocalDateTime() },
                 )

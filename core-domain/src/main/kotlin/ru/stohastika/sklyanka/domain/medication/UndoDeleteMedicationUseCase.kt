@@ -1,9 +1,5 @@
 package ru.stohastika.sklyanka.domain.medication
 
-import ru.stohastika.sklyanka.domain.analytics.Analytics
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsEvent
-import ru.stohastika.sklyanka.domain.analytics.MedicationActionType
-import ru.stohastika.sklyanka.domain.analytics.NoOpAnalytics
 import ru.stohastika.sklyanka.domain.model.Medication
 import ru.stohastika.sklyanka.domain.repository.MedicationRepository
 import ru.stohastika.sklyanka.domain.schedule.MedicationPlanner
@@ -29,14 +25,10 @@ sealed interface UndoDeleteOutcome {
  * то, что обещает человеку: очищает `deleted_at`, возвращает приёмы ближайшего окна
  * и пересобирает будильники. История не пересоздаётся: приёмы порождаются от текущей
  * даты, уже записанные отметки не трогаются.
- *
- * Событие `medication_action{undo}` уходит по факту возврата (ПМ-26).
  */
 class UndoDeleteMedicationUseCase(
     private val medications: MedicationRepository,
     private val planner: MedicationPlanner,
-    /** Канал событий аналитики (SKL-82): нулевое умолчание — для ручной сборки в тестах. */
-    private val analytics: Analytics = NoOpAnalytics,
 ) {
 
     suspend operator fun invoke(medicationId: String): UndoDeleteOutcome =
@@ -55,7 +47,6 @@ class UndoDeleteMedicationUseCase(
 
     private suspend fun applied(medication: Medication): UndoDeleteOutcome {
         val plan = planner.plan(medication.id, PlanReason.MEDICATION_UNDELETED)
-        analytics.track(AnalyticsEvent.MedicationAction(action = MedicationActionType.UNDO, mode = null))
         return UndoDeleteOutcome.Undone(createdIntakes = plan.created)
     }
 }

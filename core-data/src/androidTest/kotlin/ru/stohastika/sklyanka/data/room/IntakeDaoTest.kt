@@ -106,7 +106,7 @@ class IntakeDaoTest {
             intakeId = OWN_INTAKE,
             status = IntakeStatus.SKIPPED.name,
             actedAt = SECOND_MARK_AT,
-            source = IntakeSource.WATCH.name,
+            source = IntakeSource.PHONE.name,
             actorProfileId = null,
         )
 

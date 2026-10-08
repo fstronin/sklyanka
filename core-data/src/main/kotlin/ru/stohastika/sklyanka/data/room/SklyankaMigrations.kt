@@ -115,6 +115,31 @@ object SklyankaMigrations {
         }
     }
 
+    /**
+     * Версия 7 → 8: шов часов вырезан (Р-3, SKL-106).
+     *
+     * У лекарства уходит `mirror_to_watch` (тумблер дублирования на часы), у журнала
+     * срабатываний — `watch_result` (исход отправки карточки на часы). `ALTER TABLE
+     * DROP COLUMN` не подходит: позволяет её не каждая сборка SQLite на матрице
+     * образов, а Room сверяет сущности со схемой — остаются перестроенные таблицы.
+     *
+     * Перестроение по штатному рецепту: новая таблица с той же схемой без вычёркиваемых
+     * колонок, явный список в `INSERT … SELECT`, затем `DROP` старой и переименование;
+     * индексы пересоздаются вручную, `DROP TABLE` уносит их с собой (МГ-2).
+     * `PRAGMA defer_foreign_keys` откладывает проверку связей до конца транзакции:
+     * на мгновение между снятием и созданием таблицы ссылки `intake` висят в воздухе,
+     * к фиксации транзакции родитель снова на месте.
+     *
+     * Строки ни одной таблицы не теряются: история приёмов, журнал, отложенные
+     * срабатывания — всё переписывается целиком.
+     */
+    val MIGRATION_7_8 = object : Migration(7, 8) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("PRAGMA defer_foreign_keys = ON")
+            SCHEMA_8.forEach(db::execSQL)
+        }
+    }
+
     /** Все миграции по порядку. Room выбирает путь сам; пропусков в цепочке быть не должно. */
     val ALL: Array<Migration> = arrayOf(
         MIGRATION_1_2,
@@ -123,6 +148,7 @@ object SklyankaMigrations {
         MIGRATION_4_5,
         MIGRATION_5_6,
         MIGRATION_6_7,
+        MIGRATION_7_8,
     )
 
     /**
@@ -205,6 +231,72 @@ object SklyankaMigrations {
             `watch_result` TEXT
         )
         """,
+        "CREATE INDEX IF NOT EXISTS `index_reminder_log_occurred_at` ON `reminder_log` (`occurred_at`)",
+        "CREATE INDEX IF NOT EXISTS `index_reminder_log_intake_id` ON `reminder_log` (`intake_id`)",
+    ).map { it.trimIndent() }
+
+    /**
+     * DDL версии 8 — перестроение `medication` и `reminder_log` без колонок часового шва.
+     *
+     * Порядок колонок — по сущностям Room; сверка схемы порядка не требует, а
+     * `INSERT … SELECT` с явным списком переносит строки позиционно. Типы, `NOT NULL`
+     * и внешние ключи дословно те, что ожидает Room: расхождение остановит
+     * инструментальный тест миграции, а не человек на ревью (МГ-3).
+     */
+    private val SCHEMA_8 = listOf(
+        """
+        CREATE TABLE `medication_new` (
+            `id` TEXT NOT NULL, `profile_id` TEXT NOT NULL, `name` TEXT NOT NULL,
+            `form` TEXT NOT NULL, `shape` TEXT, `dose_amount` TEXT NOT NULL,
+            `dose_unit` TEXT NOT NULL, `strength` TEXT, `strength_unit` TEXT,
+            `food_relation` TEXT NOT NULL, `schedule_mode` TEXT NOT NULL, `max_per_day` INTEGER,
+            `times` TEXT NOT NULL, `start_date` TEXT NOT NULL, `end_date` TEXT,
+            `stock_left` TEXT, `package_size` TEXT, `stock_threshold_days` INTEGER,
+            `archived_at` INTEGER, `archive_reason` TEXT, `deleted_at` INTEGER,
+            PRIMARY KEY(`id`),
+            FOREIGN KEY(`profile_id`) REFERENCES `profile`(`id`)
+                ON UPDATE NO ACTION ON DELETE RESTRICT
+        )
+        """,
+        """
+        INSERT INTO `medication_new` (`id`, `profile_id`, `name`, `form`, `shape`, `dose_amount`,
+            `dose_unit`, `strength`, `strength_unit`, `food_relation`, `schedule_mode`,
+            `max_per_day`, `times`, `start_date`, `end_date`, `stock_left`, `package_size`,
+            `stock_threshold_days`, `archived_at`, `archive_reason`, `deleted_at`)
+        SELECT `id`, `profile_id`, `name`, `form`, `shape`, `dose_amount`,
+            `dose_unit`, `strength`, `strength_unit`, `food_relation`, `schedule_mode`,
+            `max_per_day`, `times`, `start_date`, `end_date`, `stock_left`, `package_size`,
+            `stock_threshold_days`, `archived_at`, `archive_reason`, `deleted_at`
+        FROM `medication`
+        """,
+        "DROP TABLE `medication`",
+        "ALTER TABLE `medication_new` RENAME TO `medication`",
+        """
+        CREATE INDEX IF NOT EXISTS `index_medication_profile_id_archived_at`
+            ON `medication` (`profile_id`, `archived_at`)
+        """,
+        """
+        CREATE TABLE `reminder_log_new` (
+            `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `occurred_at` INTEGER NOT NULL,
+            `event` TEXT NOT NULL, `intake_id` TEXT, `medication_id` TEXT, `profile_id` TEXT,
+            `scheduled_at` INTEGER, `fired_at` INTEGER, `deviation_seconds` INTEGER,
+            `channel` TEXT, `delivered` INTEGER, `reason` TEXT, `alarms_cancelled` INTEGER,
+            `alarms_scheduled` INTEGER, `attempt` INTEGER, `snooze_minutes` INTEGER
+        )
+        """,
+        """
+        INSERT INTO `reminder_log_new` (`id`, `occurred_at`, `event`, `intake_id`,
+            `medication_id`, `profile_id`, `scheduled_at`, `fired_at`, `deviation_seconds`,
+            `channel`, `delivered`, `reason`, `alarms_cancelled`, `alarms_scheduled`,
+            `attempt`, `snooze_minutes`)
+        SELECT `id`, `occurred_at`, `event`, `intake_id`,
+            `medication_id`, `profile_id`, `scheduled_at`, `fired_at`, `deviation_seconds`,
+            `channel`, `delivered`, `reason`, `alarms_cancelled`, `alarms_scheduled`,
+            `attempt`, `snooze_minutes`
+        FROM `reminder_log`
+        """,
+        "DROP TABLE `reminder_log`",
+        "ALTER TABLE `reminder_log_new` RENAME TO `reminder_log`",
         "CREATE INDEX IF NOT EXISTS `index_reminder_log_occurred_at` ON `reminder_log` (`occurred_at`)",
         "CREATE INDEX IF NOT EXISTS `index_reminder_log_intake_id` ON `reminder_log` (`intake_id`)",
     ).map { it.trimIndent() }

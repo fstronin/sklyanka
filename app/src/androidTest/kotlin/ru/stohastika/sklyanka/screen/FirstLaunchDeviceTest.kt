@@ -12,7 +12,7 @@ import ru.stohastika.sklyanka.feature.today.TAG_TODAY_SCREEN
  *
  * Состояние пусто: онбординг не отмечен, отметка запуска снята. Цепочка проходится
  * продуктом целиком — экран разрешений, «Сегодня»; каждый шаг оставляет кадр.
- * Экрана согласия в релизе нет (ПМ-31).
+ * Экрана согласия в сборке нет (Р-4, SKL-106).
  */
 @HiltAndroidTest
 class FirstLaunchDeviceTest : DeviceScreenTest() {

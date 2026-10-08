@@ -417,8 +417,8 @@ class PermissionsScreenTest {
             text(R.string.setup_intro),
         )
         assertEquals("Уведомления", text(R.string.setup_step_notifications))
-        // Единственное отступление от спецификации дословно: «и на часах» снято решением
-        // ADR-0009 — интеграция с Wear Engine отложена до пост-MVP, и обещать её нельзя.
+        // Единственное отступление от спецификации дословно: «и на часах» снято вместе
+        // с часовым швом (Р-3, SKL-106), и обещать его нельзя.
         assertEquals("Карточка приёма на экране", text(R.string.setup_step_notifications_caption))
         assertEquals("Уведомления отключены", text(R.string.setup_issue_notifications))
         assertEquals("Канал уведомлений отключён", text(R.string.setup_issue_channel))

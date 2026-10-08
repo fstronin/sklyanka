@@ -63,7 +63,7 @@ class IntakeMarkingTest {
     fun theSecondMarkingChangesNothingAndDecrementsNothing() = runTest {
         intakes.markIfPending(INTAKE_ID, IntakeStatus.TAKEN, IntakeSource.PHONE)
 
-        val second = intakes.markIfPending(INTAKE_ID, IntakeStatus.SKIPPED, IntakeSource.WATCH)
+        val second = intakes.markIfPending(INTAKE_ID, IntakeStatus.SKIPPED, IntakeSource.PHONE)
 
         assertFalse(second)
         assertEquals("29", db.medications.getById(TestData.OWNER_MEDICATION_ID)?.stockLeft)
@@ -73,7 +73,7 @@ class IntakeMarkingTest {
     @Test
     fun anIgnoredMarkingLeavesItsOwnTraceInTheLog() = runTest {
         intakes.markIfPending(INTAKE_ID, IntakeStatus.TAKEN, IntakeSource.PHONE)
-        intakes.markIfPending(INTAKE_ID, IntakeStatus.TAKEN, IntakeSource.WATCH)
+        intakes.markIfPending(INTAKE_ID, IntakeStatus.TAKEN, IntakeSource.PHONE)
 
         val events = log.recent(RECENT_LIMIT).map { it.event }
 

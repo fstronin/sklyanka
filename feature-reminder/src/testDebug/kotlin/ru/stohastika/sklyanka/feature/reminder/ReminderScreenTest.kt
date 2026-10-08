@@ -51,14 +51,12 @@ class ReminderScreenTest {
         strengthUnit = strengthUnit,
     )
 
-    private fun state(rows: List<ReminderRow> = listOf(row()), snoozeMinutes: Int = 15, mirrored: Boolean = false) =
-        ReminderUiState.Card(
-            scheduledAt = at,
-            items = rows,
-            snoozeMinutes = snoozeMinutes,
-            mirroredToWatch = mirrored,
-            foreignProfileName = null,
-        )
+    private fun state(rows: List<ReminderRow> = listOf(row()), snoozeMinutes: Int = 15) = ReminderUiState.Card(
+        scheduledAt = at,
+        items = rows,
+        snoozeMinutes = snoozeMinutes,
+        foreignProfileName = null,
+    )
 
     private fun show(state: ReminderUiState.Card, fontScale: Float = 1f, onSnooze: () -> Unit = {}) {
         compose.setContent {
@@ -101,21 +99,6 @@ class ReminderScreenTest {
         show(state(rows = listOf(row(strengthUnit = "mg"))))
 
         compose.onNodeWithText("2 таблетки · 48 мг").assertIsDisplayed()
-    }
-
-    /**
-     * Плашки «Продублировано на часы» на экране нет — отдельной проверкой.
-     *
-     * Это решение `ADR-0009` (интеграция с Wear Engine отложена до пост-MVP), а не
-     * упущение: состояние намеренно говорит «карточка ушла на часы», и всё равно
-     * плашки быть не должно. Без теста она однажды вернётся сама.
-     */
-    @Test
-    fun theWatchChipIsNotPartOfTheScreen() {
-        show(state(mirrored = true))
-
-        compose.onAllNodesWithTag(TAG_WATCH_CHIP).assertCountEquals(0)
-        compose.onNodeWithText("Магний B6").assertIsDisplayed()
     }
 
     @Test
@@ -302,10 +285,6 @@ class ReminderScreenTest {
     }
 
     private companion object {
-
-        /** Плашки часов на экране нет: тега тоже нет ни в одном компоненте (`ADR-0009`). */
-        const val TAG_WATCH_CHIP = "reminder_watch_chip"
-
         const val SCALE_130 = 1.3f
         const val SCALE_200 = 2.0f
 

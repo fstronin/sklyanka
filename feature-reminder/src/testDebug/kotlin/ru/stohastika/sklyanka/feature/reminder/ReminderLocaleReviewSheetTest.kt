@@ -115,7 +115,6 @@ class ReminderLocaleReviewSheetTest {
             ),
         ),
         snoozeMinutes = SNOOZE_MINUTES,
-        mirroredToWatch = false,
         foreignProfileName = null,
     )
 

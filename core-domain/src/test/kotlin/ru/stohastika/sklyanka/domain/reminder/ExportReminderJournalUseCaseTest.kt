@@ -81,7 +81,7 @@ class ExportReminderJournalUseCaseTest {
         val row = content.trim().lines()[1]
         assertEquals(
             "2026-09-25T09:00:00Z,shown,intake-1,med-1,profile-1," +
-                "2026-09-25T08:59:23Z,2026-09-25T09:00:00Z,37,reminders_regular,true,,,,,,,true,,,,,,",
+                "2026-09-25T08:59:23Z,2026-09-25T09:00:00Z,37,reminders_regular,true,,,,,,true,,,,,,",
             row,
         )
         // Медицинские данные продукта — текст, введённый человеком по-русски: название
@@ -223,12 +223,12 @@ class ExportReminderJournalUseCaseTest {
         /** Граница ASCII: русский текст продукта за ней, служебные коды журнала — до неё. */
         const val ASCII_LIMIT = 127
 
-        const val COLUMN_ALARM_KIND = 17
-        const val COLUMN_MANUFACTURER = 18
-        const val COLUMN_BRAND = 19
-        const val COLUMN_OS_RELEASE = 20
-        const val COLUMN_BUILD_DISPLAY = 21
-        const val COLUMN_BATTERY_UNRESTRICTED = 22
+        const val COLUMN_ALARM_KIND = 16
+        const val COLUMN_MANUFACTURER = 17
+        const val COLUMN_BRAND = 18
+        const val COLUMN_OS_RELEASE = 19
+        const val COLUMN_BUILD_DISPLAY = 20
+        const val COLUMN_BATTERY_UNRESTRICTED = 21
     }
 }
 

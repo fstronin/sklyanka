@@ -8,6 +8,5 @@ package ru.stohastika.sklyanka.domain.model
  */
 enum class IntakeSource {
     PHONE,
-    WATCH,
     AUTO,
 }

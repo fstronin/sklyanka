@@ -122,7 +122,6 @@ class ReminderLogTest {
                 alarmsScheduled = null,
                 attempt = null,
                 snoozeMinutes = null,
-                watchResult = null,
             ),
         )
         journal.record(

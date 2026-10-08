@@ -50,7 +50,6 @@ import ru.stohastika.sklyanka.feature.meds.card.TAG_STOCK_VALUE
 import ru.stohastika.sklyanka.feature.meds.card.TAG_SUBTITLE
 import ru.stohastika.sklyanka.feature.meds.card.TAG_TIME_CHIP
 import ru.stohastika.sklyanka.feature.meds.card.TAG_WEEK_BLOCK
-import ru.stohastika.sklyanka.feature.meds.card.WatchMirrorUi
 import ru.stohastika.sklyanka.ui.component.TAG_ADHERENCE_DAY
 import ru.stohastika.sklyanka.ui.component.TAG_ADHERENCE_LEGEND
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
@@ -61,7 +60,7 @@ import java.time.format.DateTimeFormatter
 import ru.stohastika.sklyanka.ui.R as UiR
 
 /**
- * Карточка лекарства: блоки, бессрочный курс, скрытый остаток, архивный вид, часы.
+ * Карточка лекарства: блоки, бессрочный курс, скрытый остаток, архивный вид.
  *
  * ПРОГОН НЕ ВЫПОЛНЯЛСЯ: эмулятора и устройства в среде задачи нет. Тест обязан
  * компилироваться (`assembleDebugAndroidTest`), прогон — на эталонном устройстве.
@@ -362,19 +361,6 @@ class MedicationCardScreenTest {
         composeRule.onAllNodesWithTag(TAG_COURSE_BLOCK).assertCountEquals(0)
     }
 
-    /**
-     * Строки «Напоминать на часах» на карточке нет — отдельной проверкой.
-     *
-     * Это решение `ADR-0009` (интеграция с Wear Engine отложена до пост-MVP), а не
-     * упущение: без теста строка однажды вернётся сама, вместе с состоянием `watchMirror`.
-     */
-    @Test
-    fun thereIsNoWatchRowOnTheCard() {
-        show(state())
-
-        composeRule.onAllNodesWithTag(TAG_WATCH_ROW).assertCountEquals(0)
-    }
-
     @Test
     fun theBackArrowIsLabelledForAScreenReader() {
         show(state())
@@ -383,12 +369,11 @@ class MedicationCardScreenTest {
     }
 
     @Test
-    fun anArchivedCardOffersRestoreAndCarriesNoWatchSwitch() {
+    fun anArchivedCardOffersRestore() {
         show(state(isArchived = true))
 
         composeRule.onNodeWithTag(TAG_RESTORE).assertIsDisplayed()
         composeRule.onAllNodesWithTag(TAG_ARCHIVE).assertCountEquals(0)
-        composeRule.onAllNodesWithTag(TAG_WATCH_ROW).assertCountEquals(0)
     }
 
     /**
@@ -475,9 +460,6 @@ class MedicationCardScreenTest {
         stock = stock,
         stockUnit = stockUnit,
         week = week,
-        // Состояние часов намеренно непустое: строки на экране нет именно потому,
-        // что её вывел из состава MVP `ADR-0009`, а не потому, что состояние пусто.
-        watchMirror = WatchMirrorUi(checked = true, enabled = true),
         isArchived = isArchived,
         courseFinishedOffer = false,
         refill = refill,
@@ -538,9 +520,6 @@ class MedicationCardScreenTest {
 
         /** Строки выбора звука на карточке нет: тега тоже нет ни в одном компоненте. */
         const val TAG_SOUND_ROW = "med_card_sound_row"
-
-        /** Строки часов на карточке нет: тега тоже нет ни в одном компоненте (`ADR-0009`). */
-        const val TAG_WATCH_ROW = "med_card_watch_row"
 
         val TODAY: LocalDate = LocalDate.of(2026, 9, 25)
         val START_DATE: LocalDate = LocalDate.of(2026, 9, 12)

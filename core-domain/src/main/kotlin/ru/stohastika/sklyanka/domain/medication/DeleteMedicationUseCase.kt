@@ -1,9 +1,5 @@
 package ru.stohastika.sklyanka.domain.medication
 
-import ru.stohastika.sklyanka.domain.analytics.Analytics
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsEvent
-import ru.stohastika.sklyanka.domain.analytics.MedicationActionType
-import ru.stohastika.sklyanka.domain.analytics.NoOpAnalytics
 import ru.stohastika.sklyanka.domain.model.Medication
 import ru.stohastika.sklyanka.domain.repository.IntakeRepository
 import ru.stohastika.sklyanka.domain.repository.MedicationRepository
@@ -46,16 +42,11 @@ sealed interface DeleteOutcome {
  * Порядок жёсткий, как у архивации: сначала запись состояния, потом перепланирование.
  * Обратный порядок увидел бы курс ещё активным и породил бы снятые приёмы заново.
  * Число снятых приёмов возвращается наружу для журнала.
- *
- * Событие аналитики уходит по факту состоявшегося удаления, а не по нажатию (ПМ-26):
- * каталог `medication_action{deleted}` живёт в SKL-82, решает о нём результат операции.
  */
 class DeleteMedicationUseCase(
     private val medications: MedicationRepository,
     private val intakes: IntakeRepository,
     private val planner: MedicationPlanner,
-    /** Канал событий аналитики (SKL-82): нулевое умолчание — для ручной сборки в тестах. */
-    private val analytics: Analytics = NoOpAnalytics,
 ) {
 
     suspend operator fun invoke(medicationId: String): DeleteOutcome =
@@ -75,7 +66,6 @@ class DeleteMedicationUseCase(
 
     private suspend fun applied(medication: Medication): DeleteOutcome {
         val revoked = planner.plan(medication.id, PlanReason.MEDICATION_DELETED).deleted
-        analytics.track(AnalyticsEvent.MedicationAction(action = MedicationActionType.DELETED, mode = null))
         return DeleteOutcome.Deleted(revokedIntakes = revoked)
     }
 

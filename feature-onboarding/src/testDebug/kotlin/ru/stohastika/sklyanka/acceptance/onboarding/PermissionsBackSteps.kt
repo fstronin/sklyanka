@@ -13,7 +13,6 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
 import ru.stohastika.sklyanka.domain.onboarding.OnboardingSource
 import ru.stohastika.sklyanka.domain.onboarding.ShouldShowOnboardingUseCase
-import ru.stohastika.sklyanka.feature.onboarding.OnboardingExit
 import ru.stohastika.sklyanka.feature.onboarding.TAG_NEXT
 import ru.stohastika.sklyanka.feature.onboarding.TAG_SKIP
 
@@ -26,8 +25,8 @@ import ru.stohastika.sklyanka.feature.onboarding.TAG_SKIP
  * сверять «ведёт туда же, что кнопка» на одном и том же исходе.
  *
  * Возврат «в «Настройки»» и «на «Сегодня»» решается хозяином экрана, а не экраном: стенд
- * проверяет исход, который экран отдаёт хозяину (`OnboardingExit.TODAY` — тот же, что
- * у «Пропустить, настрою позже»). Адреса возврата решает хозяин навигации, и этой задачей
+ * проверяет сам факт ухода, который экран отдаёт хозяину (тот же, что у
+ * «Пропустить, настрою позже»). Адреса возврата решает хозяин навигации, и этой задачей
  * он не тронут: из настроек `PermissionsActivity` закрывает экран по любому исходу,
  * из баннера возврат на «Сегодня» задаёт `MainActivity`; сам `Root` приёмкой не покрыт —
  * унаследованный предел SKL-18/SKL-31.
@@ -80,16 +79,16 @@ class PermissionsBackSteps(private val world: AcceptanceWorld) {
     @И("^человек попадает на «Сегодня» с предупреждением о ненадёжности напоминаний$")
     fun thePersonLandsOnTodayWithTheWarning() {
         assertEquals(
-            OnboardingExit.TODAY,
+            Unit,
             PermissionsStand.exitedTo,
-            "the exit must be the one Today is opened by, not the watch setup",
+            "the exit must be the one Today is opened by",
         )
         assertTrue(warningStays(), "the chain is unfinished, so Today shows the warning")
     }
 
     @И("^человек возвращается на «Сегодня»$")
     fun thePersonReturnsToToday() {
-        assertEquals(OnboardingExit.TODAY, PermissionsStand.exitedTo, "the banner entry returns to Today")
+        assertEquals(Unit, PermissionsStand.exitedTo, "the banner entry returns to Today")
     }
 
     @И("^предупреждение о ненадёжности напоминаний остаётся$")
@@ -103,7 +102,7 @@ class PermissionsBackSteps(private val world: AcceptanceWorld) {
         // экран по любому исходу (`onExit = finish`), и человек оказывается в настройках.
         // Стенд проверяет то, что решает сам экран: «Назад» не завела себе второго исхода
         // и ведёт тем же путём, что видимые выходы.
-        assertEquals(OnboardingExit.TODAY, PermissionsStand.exitedTo, "the settings entry closes the screen")
+        assertEquals(Unit, PermissionsStand.exitedTo, "the settings entry closes the screen")
     }
 
     @И("^при следующем запуске приложение само онбординг не открывает$")

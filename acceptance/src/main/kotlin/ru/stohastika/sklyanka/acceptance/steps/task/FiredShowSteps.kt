@@ -196,7 +196,7 @@ class FiredShowSteps(private val world: AcceptanceWorld) {
     fun theRecordCarriesNoMedicationName() {
         val names = world.medications.names()
         val fields = runBlocking { world.reminders.journal.recent(RECENT_LIMIT) }.flatMap { entry ->
-            listOfNotNull(entry.intakeId, entry.medicationId, entry.profileId, entry.reason, entry.watchResult)
+            listOfNotNull(entry.intakeId, entry.medicationId, entry.profileId, entry.reason)
         }
         assertTrue(fields.isNotEmpty(), "the journal must carry identifiers")
         assertTrue(

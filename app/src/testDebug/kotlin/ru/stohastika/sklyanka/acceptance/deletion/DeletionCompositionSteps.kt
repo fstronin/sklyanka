@@ -214,7 +214,6 @@ class DeletionCompositionSteps(private val world: AcceptanceWorld) {
                         medications = world.repositories.medicationStore,
                         intakes = world.repositories.intakeStore,
                         planner = world.planner(),
-                        analytics = world.analytics,
                     )(medicationId)
                 }
                 assertTrue("the deletion must take effect: $outcome", outcome is DeleteOutcome.Deleted)

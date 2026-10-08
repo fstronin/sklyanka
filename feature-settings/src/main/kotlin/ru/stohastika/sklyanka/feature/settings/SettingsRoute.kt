@@ -25,19 +25,12 @@ fun SettingsRoute(viewModel: SettingsViewModel, navigation: SettingsNavigation, 
             when (intent) {
                 SettingsIntent.AddProfile -> navigation.addProfile()
                 SettingsIntent.DeleteProfile -> navigation.deleteProfile()
-                // Строка часов из состава первой версии снята (`ADR-0009`), но намерение
-                // и переход сохранены швом пост-MVP: экран их сейчас не порождает.
-                SettingsIntent.OpenWatchSetup -> navigation.openWatchSetup?.invoke()
                 // «Звук» ведёт в системные настройки уведомлений приложения (ОВ-98):
                 // платформенный `Intent` собирает `app`, экран о нём не знает.
                 SettingsIntent.OpenSound -> navigation.openSound()
                 SettingsIntent.OpenPermissions -> navigation.openDiagnostics()
                 SettingsIntent.OpenHistory -> navigation.openHistory()
                 SettingsIntent.OpenDataTransfer -> navigation.openDataTransfer()
-                // Включение аналитики — информированное действие: тот же экран согласия,
-                // что при первом запуске (ПМ-25 п. 4). Выключение исполняет модель.
-                is SettingsIntent.SetAnalytics ->
-                    if (intent.enabled) navigation.openAnalyticsConsent() else viewModel.onIntent(intent)
                 // Политику открывает браузер системным действием: своего просмотрщика
                 // в приложении нет (ОВ-123).
                 SettingsIntent.OpenPolicy -> uriHandler.openUri(policyUrl)
@@ -68,13 +61,6 @@ data class SettingsNavigation(
      */
     val deleteProfile: () -> Unit = {},
     /**
-     * «Часы Huawei» → подключение часов (SKL-17, пост-MVP).
-     *
-     * Шов сохранён решением `ADR-0009` вместе с доменным швом часов: экран первой версии
-     * намерения не порождает, но возвращение строки не потребует правки навигации.
-     */
-    val openWatchSetup: (() -> Unit)? = null,
-    /**
      * «Звук» → системные настройки уведомлений приложения (ОВ-98).
      *
      * Звук и важность — свойство неизменяемого канала уведомлений (`ADR-0004`), и выбрать
@@ -92,13 +78,6 @@ data class SettingsNavigation(
     val openDiagnostics: () -> Unit = {},
     val openHistory: () -> Unit = {},
     val openDataTransfer: () -> Unit = {},
-    /**
-     * Включение «Аналитики»: открыть экран согласия (ПМ-25 п. 4).
-     *
-     * Экран один и тот же на первый запуск и на настройки; хозяин навигации решает,
-     * что это за вход и куда вернуться после решения.
-     */
-    val openAnalyticsConsent: () -> Unit = {},
     val openToday: () -> Unit = {},
     val openMedications: () -> Unit = {},
 )

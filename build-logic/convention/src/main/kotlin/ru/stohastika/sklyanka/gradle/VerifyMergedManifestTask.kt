@@ -32,9 +32,6 @@ abstract class VerifyMergedManifestTask : DefaultTask() {
     abstract val expectedPackageName: Property<String>
 
     @get:Input
-    abstract val packageNameLimit: Property<Int>
-
-    @get:Input
     abstract val expectedMinSdk: Property<Int>
 
     @get:OutputFile
@@ -59,24 +56,13 @@ abstract class VerifyMergedManifestTask : DefaultTask() {
             }
         }
 
-        // ПЛ-2: имя пакета неизменяемо — к нему привязана заявка Wear Engine.
+        // ПЛ-2: имя пакета неизменяемо — к нему привязаны записи магазинов.
         val packageName = PACKAGE.find(manifest)?.groupValues?.get(1)
         when {
             packageName == null -> problems += "merged manifest declares no package name"
             packageName != expectedPackageName.get() ->
                 problems += "package name is '$packageName', expected '${expectedPackageName.get()}' (PLATFORM-2)"
             else -> notes += "package name $packageName"
-        }
-
-        // НФТ-41, ЧАС-7: шаблонные уведомления Wear Engine не принимают пакет длиннее лимита.
-        val limit = packageNameLimit.get()
-        if (packageName != null) {
-            if (packageName.length > limit) {
-                problems += "package name '$packageName' is ${packageName.length} characters long, " +
-                    "the Wear Engine template limit is $limit (NFR-41, WATCH-7)"
-            } else {
-                notes += "package name length ${packageName.length} of $limit"
-            }
         }
 
         // ПЛ-1, НФТ-38: нижняя граница — Android 8.0.

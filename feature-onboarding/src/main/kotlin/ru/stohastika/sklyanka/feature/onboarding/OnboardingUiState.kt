@@ -56,12 +56,3 @@ data class OnboardingUiState(
      */
     val allConfigured: Boolean get() = checklist?.allResolved == true
 }
-
-/** Исход перехода с экрана — решает его хозяин навигации, а не сам экран. */
-enum class OnboardingExit {
-    /** Цепочка пройдена: следующий шаг онбординга — подключение часов (SKL-17). */
-    WATCH_SETUP,
-
-    /** «Пропустить, настрою позже» или «Дальше» при непройденной цепочке: «Сегодня». */
-    TODAY,
-}

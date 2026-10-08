@@ -2,7 +2,6 @@ package ru.stohastika.sklyanka.navigation
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -40,15 +39,12 @@ fun MedsSection(
     onOpenToday: () -> Unit = {},
     onOpenSettings: () -> Unit = {},
     initial: MedsDestination = MedsDestination.List,
-    /** Сообщить хозяину, какой экран раздела показан: `screen_view` считает `app` (SKL-82). */
-    onScreenShown: (MedsDestination) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val stack = rememberMedsStack(initial)
     // Системная кнопка «Назад» обязана вести туда же, куда стрелка на экране: иначе
     // человек, закрывший карточку кнопкой телефона, оказывается вне раздела.
     BackHandler(enabled = true) { if (!stack.pop()) onLeaveSection() }
-    LaunchedEffect(stack.current) { onScreenShown(stack.current) }
 
     AnimatedLayer(layer = stack.current, motion = stack.motion) { destination ->
         when (destination) {

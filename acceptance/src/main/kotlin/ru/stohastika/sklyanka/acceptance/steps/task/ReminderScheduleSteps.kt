@@ -582,19 +582,6 @@ class ReminderScheduleSteps(private val world: AcceptanceWorld) {
         assertTrue(world.reminders.isNotificationShown(intake.id), "the card must be in the shade")
     }
 
-    @Когда("^в (\\d{2}:\\d{2}) человек отмечает этот приём принятым на часах$")
-    fun thePersonMarksTheIntakeOnTheWatch(time: String) {
-        world.rememberState()
-        val intake = currentIntake()
-        val at = world.clock.today().atTime(LocalTime.parse(time))
-        world.markWithSideEffects(intake.id, MarkResult.TAKEN, IntakeSource.WATCH, world.clock.momentOf(at))
-    }
-
-    @Тогда("^напоминание на телефоне закрывается само$")
-    fun thePhoneReminderClosesItself() {
-        assertFalse(world.reminders.isNotificationShown(currentIntake().id), "the mark must dismiss the card")
-    }
-
     // --- Диагностика, настройки системы и приватность ------------------------------------------
 
     @Тогда("^плановым временем приёма остаётся (.+?), (\\d{2}:\\d{2})$")

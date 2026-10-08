@@ -67,20 +67,4 @@
     <string name="cd_setup_confirmed">Paso confirmado por ti</string>
     <string name="cd_onboarding_hint">Indicio indirecto</string>
     <string name="cd_onboarding_steps">Paso %1$d de %2$d</string>
-
-    <!-- Analítica (SKL-82, PM-25, OV-123) -->
-
-    <string name="consent_title">Analítica en «Sklyanka»</string>
-    <string name="consent_lead">Las estadísticas anónimas ayudan a detectar lo incómodo y a mejorar la aplicación.</string>
-    <string name="consent_sent_title">Qué se envía</string>
-    <string name="consent_sent_body">Acciones en la aplicación: qué pantallas abres, qué pulsas, cómo pasas el primer inicio.</string>
-    <string name="consent_not_sent_title">Qué no se envía nunca</string>
-    <string name="consent_not_sent_body">Nombres de medicamentos, dosis, horarios y horas de toma, marcas, existencias, nombres de perfiles y todo lo que introduces tú. Estos datos se quedan solo en tu dispositivo.</string>
-    <string name="consent_variants_title">Variantes de pantallas</string>
-    <string name="consent_variants_body">Distintas personas pueden ver distintas variantes de diseño y textos. Los recordatorios y tus datos no se ven afectados.</string>
-    <string name="consent_banner">Hasta que lo permitas, la aplicación no envía ningún evento. Rechazar no bloquea nada y puedes cambiar tu decisión en Ajustes.</string>
-    <string name="consent_allow">Permitir la analítica</string>
-    <string name="consent_decline">Continuar sin analítica</string>
-    <string name="consent_decline_settings">Dejarla desactivada</string>
-    <string name="consent_policy">Política de privacidad</string>
 </resources>

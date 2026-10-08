@@ -6,7 +6,6 @@ import ru.stohastika.sklyanka.domain.transfer.ExportTarget
 import ru.stohastika.sklyanka.domain.transfer.TransferFiles
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 /**
  * Готовый файл журнала срабатываний (НФТ-51).
@@ -40,7 +39,7 @@ data class ReminderJournalDocument(val fileName: String, val content: String, va
          * он его сохранял. Имён профилей и названий лекарств в имени нет (НФТ-19).
          */
         fun fileName(date: LocalDate): String =
-            NAME_PREFIX + date.format(DateTimeFormatter.ISO_LOCAL_DATE.withLocale(Locale.ROOT)) + NAME_SUFFIX
+            NAME_PREFIX + date.format(DateTimeFormatter.ISO_LOCAL_DATE) + NAME_SUFFIX
     }
 }
 
@@ -151,7 +150,6 @@ internal object ReminderJournalCsv {
         "alarms_scheduled",
         "attempt",
         "snooze_minutes",
-        "watch_result",
         "on_time",
         // Колонки среды измерения (SKL-85, НФТ-51): заполняются только у строк
         // `environment` и разделяют окна A/B-прогона пилота.
@@ -198,7 +196,6 @@ internal object ReminderJournalCsv {
             entry.alarmsScheduled?.toString().orEmpty(),
             entry.attempt?.toString().orEmpty(),
             entry.minutes?.toString().orEmpty(),
-            entry.watchResult.orEmpty(),
             // Признак НАП-2 рядом с отклонением: иначе доля «вовремя» в файле считается
             // заново и каждый раз по своему порогу.
             if (entry.event == ReminderEvent.SHOWN) {

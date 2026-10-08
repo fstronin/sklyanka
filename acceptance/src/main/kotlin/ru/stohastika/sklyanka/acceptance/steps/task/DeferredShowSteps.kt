@@ -150,7 +150,7 @@ class DeferredShowSteps(private val world: AcceptanceWorld) {
     fun theJournalHasNoMedicationName() {
         val name = world.medications.names().last()
         val fields = runBlocking { world.reminders.journal.recent(RECENT_LIMIT) }.flatMap { entry ->
-            listOfNotNull(entry.intakeId, entry.medicationId, entry.profileId, entry.reason, entry.watchResult)
+            listOfNotNull(entry.intakeId, entry.medicationId, entry.profileId, entry.reason)
         }
         assertTrue(fields.isNotEmpty(), "the journal must carry identifiers")
         assertTrue(fields.none { it.contains(name) }, "the journal must not carry the medication name")

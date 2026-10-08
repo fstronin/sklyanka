@@ -42,11 +42,7 @@ fun statusOf(text: String): IntakeStatus = when {
     else -> IntakeStatus.SKIPPED
 }
 
-fun sourceOf(text: String): IntakeSource = when (text) {
-    PHONE_WORD -> IntakeSource.PHONE
-    WATCH_WORD -> IntakeSource.WATCH
-    else -> IntakeSource.AUTO
-}
+fun sourceOf(text: String): IntakeSource = if (text == PHONE_WORD) IntakeSource.PHONE else IntakeSource.AUTO
 
 const val TAKEN_WORD = "принят"
 const val TAKEN_NEUTER = "принято"
@@ -54,5 +50,4 @@ const val PENDING_WORD = "ожидающ"
 const val NOT_MARKED_WORD = "неотмечен"
 const val WITHOUT_A_MARK = "без отметки"
 const val PHONE_WORD = "телефон"
-const val WATCH_WORD = "часы"
 const val TAKE_BUTTON = "Принято"
