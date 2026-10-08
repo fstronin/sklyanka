@@ -17,7 +17,7 @@
       SklyankaColors (НФТ-47). Значения с прозрачностью записаны в #AARRGGBB — иначе
       остановку градиента не задать: android:fillAlpha к отдельному <item> не относится.
 
-      Источник — docs/spec/08-design-system.md §5, §7 и макеты SklyankaMark.dc.html
+      Источник — docs/v2/12-design.md §5, §7 и макеты SklyankaMark.dc.html
       и SklyankaIcon.dc.html.
     -->
 

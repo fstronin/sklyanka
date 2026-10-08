@@ -137,7 +137,7 @@
         <item quantity="other">%1$d приёма отмечены как пропущенные</item>
     </plurals>
 
-    <!-- Свёрнутый блок «по потребности» в плотном дне (docs/spec/03-screens.md). -->
+    <!-- Свёрнутый блок «по потребности» в плотном дне (docs/v2/10-behavior.md). -->
     <plurals name="today_prn_collapsed">
         <item quantity="one">%1$d лекарство без расписания</item>
         <item quantity="few">%1$d лекарства без расписания</item>
