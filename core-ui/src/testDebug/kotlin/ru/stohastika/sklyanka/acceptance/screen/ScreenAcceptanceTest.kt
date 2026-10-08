@@ -13,8 +13,8 @@ import java.io.File
  *
  * Cucumber-JVM запускается ИЗНУТРИ модульного теста под Robolectric: шаги при этом
  * видят ресурсы модуля, настоящую композицию Compose и снятие снимков. Файл сценариев
- * тот же, что читает сценарный прогон на JVM, — `docs/tasks/SKL-NN/acceptance.feature`,
- * копии нет.
+ * тот же, что читает сценарный прогон на JVM, —
+ * `acceptance/src/main/resources/features/SKL-NN.feature` (SKL-111), копии нет.
  *
  * Сценарный прогон на JVM (`:acceptance:acceptanceRun`) группу `@screen` исключает
  * и печатает её отдельным списком: `undefined` перестаёт означать одновременно
@@ -55,7 +55,7 @@ class ScreenAcceptanceTest {
 
     private companion object {
         const val REPO_ROOT_PROPERTY = "sklyanka.repo.root"
-        const val FEATURE_PATH = "docs/tasks/SKL-24/acceptance.feature"
+        const val FEATURE_PATH = "acceptance/src/main/resources/features/SKL-24.feature"
         const val GLUE = "ru.stohastika.sklyanka.acceptance.screen"
         const val TAG = "@screen"
     }

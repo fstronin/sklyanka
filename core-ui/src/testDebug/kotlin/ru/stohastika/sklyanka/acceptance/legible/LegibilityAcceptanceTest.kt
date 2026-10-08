@@ -14,7 +14,7 @@ import java.io.File
  * Устроен так же, как прогон SKL-24 (`ScreenAcceptanceTest`): Cucumber-JVM запускается
  * изнутри модульного теста под Robolectric, и шаги видят ресурсы модуля и настоящую
  * композицию Compose. Файл сценариев тот же, что читает сценарный прогон на JVM, —
- * `docs/tasks/SKL-25/acceptance.feature`, копии нет.
+ * `acceptance/src/main/resources/features/SKL-25.feature` (SKL-111), копии нет.
  *
  * Словарь шагов свой: пакет `ru.stohastika.sklyanka.acceptance.legible` не пересекается с
  * пакетом шагов SKL-24. Это не украшение — Cucumber загружает glue по префиксу пакета,
@@ -54,7 +54,7 @@ class LegibilityAcceptanceTest {
 
     private companion object {
         const val REPO_ROOT_PROPERTY = "sklyanka.repo.root"
-        const val FEATURE_PATH = "docs/tasks/SKL-25/acceptance.feature"
+        const val FEATURE_PATH = "acceptance/src/main/resources/features/SKL-25.feature"
         const val GLUE = "ru.stohastika.sklyanka.acceptance.legible"
         const val TAG = "@stand"
     }

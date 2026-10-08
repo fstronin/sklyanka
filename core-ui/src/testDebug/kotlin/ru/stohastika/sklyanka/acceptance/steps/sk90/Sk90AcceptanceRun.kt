@@ -6,7 +6,7 @@ import java.io.File
 internal object Sk90AcceptanceRun {
 
     private const val REPO_ROOT_PROPERTY = "sklyanka.repo.root"
-    private const val FEATURE_PATH = "docs/tasks/SKL-90/acceptance.feature"
+    private const val FEATURE_PATH = "acceptance/src/main/resources/features/SKL-90.feature"
     private const val GLUE = "ru.stohastika.sklyanka.acceptance"
 
     fun run(tags: String): String? {

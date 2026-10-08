@@ -37,9 +37,9 @@ class DistributedDictionarySteps {
 
     // --- Предыстория -----------------------------------------------------------
 
-    @Допустим("сценарии приёмки лежат в документах задач")
-    fun theScenariosLiveInTaskDocuments() {
-        assertTrue(featureFiles().isNotEmpty(), "no acceptance document found under $TASKS")
+    @Допустим("сценарии приёмки лежат в ресурсах модуля приёмки")
+    fun theScenariosLiveInModuleResources() {
+        assertTrue(featureFiles().isNotEmpty(), "no acceptance document found under $FEATURES")
     }
 
     @Допустим("словарь шагов проверяется на дубли отдельной проверкой")
@@ -144,9 +144,12 @@ class DistributedDictionarySteps {
 
     @Тогда("копий нет ни в одном модуле")
     fun thereAreNoCopies() {
+        // Канонический дом сценариев — ресурсы модуля приёмки (SKL-111); копии в build/
+        // делает processResources, и они производные, а не вторые документы приёмки.
         val copies = RepositoryLayout.root.walkTopDown()
             .filter { it.isFile && it.extension == FEATURE }
-            .filterNot { it.path.contains("${File.separator}$TASKS${File.separator}") }
+            .filterNot { it.path.contains("${File.separator}build${File.separator}") }
+            .filterNot { it.path.contains("${File.separator}$FEATURES${File.separator}") }
             .map { it.path }
             .toList()
         assertEquals(emptyList<String>(), copies, "an acceptance document must exist in exactly one place")
@@ -391,7 +394,7 @@ class DistributedDictionarySteps {
     @Допустим("цена ошибки в профилях — отметка чужого приёма как своего")
     fun theCostOfAMistakeInProfiles() {
         assertTrue(
-            File(RepositoryLayout.root, "$TASKS/SKL-15/acceptance.feature").isFile,
+            File(RepositoryLayout.root, "$FEATURES/SKL-15.feature").isFile,
             "the profiles task must have an acceptance document",
         )
     }
@@ -442,12 +445,12 @@ class DistributedDictionarySteps {
         // Проверяются шаги и заголовки сценариев: проза документа вольна называть тег
         // словами, а шаг и заголовок — это то, что задача обязалась не переписывать.
         val misplaced = featureFiles()
-            .filterNot { it.parentFile.name == THIS_TASK }
+            .filterNot { it.nameWithoutExtension == THIS_TASK }
             .flatMap { file ->
                 file.readLines().withIndex()
                     .filter { (_, line) -> SIGNIFICANT_LINE.containsMatchIn(line.trim()) }
                     .filter { (_, line) -> RUN_TAGS.any { it in line } }
-                    .map { (number, line) -> "${file.parentFile.name}:${number + 1}: $line" }
+                    .map { (number, line) -> "${file.nameWithoutExtension}:${number + 1}: $line" }
             }
         assertEquals(emptyList<String>(), misplaced, "a run tag inside a step or a scenario title")
     }
@@ -463,14 +466,14 @@ class DistributedDictionarySteps {
     private var currentTask: String = ""
         get() = field.ifEmpty { "SKL-15" }
 
-    private fun featureFiles(): List<File> = File(RepositoryLayout.root, TASKS).walkTopDown()
+    private fun featureFiles(): List<File> = File(RepositoryLayout.root, FEATURES).walkTopDown()
         .filter { it.isFile && it.extension == FEATURE }
         .sortedBy { it.path }
         .toList()
 
     private fun tasksTagged(tag: String): List<String> = featureFiles()
         .filter { file -> file.readLines().any { line -> line.trim().startsWith("@") && tag in tagsOf(line) } }
-        .map { it.parentFile.name }
+        .map { it.nameWithoutExtension }
         .distinct()
         .sorted()
 
@@ -542,14 +545,15 @@ class DistributedDictionarySteps {
             .associateWith { SourceStepScan.scan(RepositoryLayout.root, it).declarations },
     )
 
-    private fun linesOf(task: String) = StepDictionary.scenarioLines(File(RepositoryLayout.root, "$TASKS/$task"))
+    private fun linesOf(task: String) =
+        StepDictionary.scenarioLines(File(RepositoryLayout.root, "$FEATURES/$task.feature"))
 
     private fun coveredLinesOf(task: String): Int = linesOf(task)
         .count { line -> StepDictionaryRules.matching(probe, line.text).isNotEmpty() }
 
     private companion object {
         const val ACCEPTANCE = "acceptance"
-        const val TASKS = "docs/tasks"
+        const val FEATURES = "acceptance/src/main/resources/features"
         const val FEATURE = "feature"
         const val KOTLIN = "kt"
         const val MAIN_SOURCES = "/src/main/"
@@ -566,7 +570,7 @@ class DistributedDictionarySteps {
         const val DRY_RUN = "--dry-run"
         const val SCREEN_RUN =
             "$ACCEPTANCE/src/main/kotlin/ru/stohastika/sklyanka/acceptance/run/ScreenAcceptanceRun.kt"
-        const val FEATURE_PATH_TEMPLATE = "docs/tasks/\$task/acceptance.feature"
+        const val FEATURE_PATH_TEMPLATE = "acceptance/src/main/resources/features/\$task.feature"
         const val PROJECT_CHECKS =
             "build-logic/convention/src/main/kotlin/ru/stohastika/sklyanka/gradle/ProjectChecksConventionPlugin.kt"
         const val VERIFY_TASK = "verifyAcceptanceSteps"

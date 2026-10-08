@@ -14,9 +14,9 @@ import java.io.File
  *
  * Свойства прогона выбраны намеренно:
  *
- * - **файл сценариев тот же**, что читает сценарный прогон, — `docs/tasks/SKL-NN/
- *   acceptance.feature`. Копии в тестовых ресурсах нет: копия расходится с оригиналом
- *   не «если», а «когда»;
+ * - **файл сценариев тот же**, что читает сценарный прогон, —
+ *   `acceptance/src/main/resources/features/SKL-NN.feature` (SKL-111). Это ресурс модуля
+ *   приёмки, а не копия: единственный файл сценариев задачи живёт в одном месте;
  * - **нереализованный шаг валит прогон.** Cucumber 7 считает `undefined` отказом, и для
  *   экранной группы это правильно: в ней не бывает «ещё не дошли» — сценарий, помеченный
  *   [SCREEN_TAG] и не имеющий шага, не проверяется вообще ничем;
@@ -40,7 +40,7 @@ object ScreenAcceptanceRun {
         val root = requireNotNull(System.getProperty(REPO_ROOT_PROPERTY)) {
             "$REPO_ROOT_PROPERTY is not set: apply the sklyanka.screen.tests convention to this module"
         }
-        val feature = File(root, "docs/tasks/$task/acceptance.feature")
+        val feature = File(root, "acceptance/src/main/resources/features/$task.feature")
         require(feature.isFile) { "the feature file is missing: ${feature.path}" }
         return feature
     }

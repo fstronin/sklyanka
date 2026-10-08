@@ -400,7 +400,7 @@ class VendorRollbackSteps {
         const val ACCEPTANCE_BUILD = "$ACCEPTANCE/build.gradle.kts"
         const val EXPERIMENT_STEPS =
             "$ACCEPTANCE/src/main/kotlin/ru/stohastika/sklyanka/acceptance/steps/task/ExperimentContourSteps.kt"
-        const val SKL83_FEATURE = "docs/tasks/SKL-83/acceptance.feature"
+        const val SKL83_FEATURE = "acceptance/src/main/resources/features/SKL-83.feature"
 
         val PRODUCTION_MODULES = listOf(
             "app",

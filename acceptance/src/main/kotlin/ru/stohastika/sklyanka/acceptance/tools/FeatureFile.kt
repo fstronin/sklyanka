@@ -13,7 +13,13 @@ import java.io.File
  */
 internal class FeatureFile(private val file: File) {
 
-    private val task: String = file.parentFile?.name ?: file.name
+    /** Задача сценария: ресурс назван её именем (`SKL-NN.feature`); прежний `acceptance.feature` — по каталогу. */
+    private val task: String =
+        if (file.nameWithoutExtension != "acceptance") {
+            file.nameWithoutExtension
+        } else {
+            file.parentFile?.name ?: file.name
+        }
     private val path: String = "${file.parentFile?.name}/${file.name}"
 
     private val found = mutableListOf<ScenarioLine>()

@@ -3,8 +3,8 @@
 // Модуль чистый Kotlin/JVM: сценарии, которым не нужен эмулятор, не должны его тянуть.
 // Основной набор исходников — общий артефакт приёмки, видимый тестам других модулей
 // (SKL-26, TDD §4.1); тестовый набор — шаги задач самого модуля и проверки мира.
-// Файлы .feature читаются прямо из docs/tasks/SKL-NN/ — копия в тестовых ресурсах
-// неизбежно разойдётся с оригиналом (TDD §6.2).
+// Файлы .feature — ресурсы этого модуля (acceptance/src/main/resources/features/SKL-NN.feature,
+// SKL-111): сценарии принадлежат приёмке, а не слою документации; второй копии нет, расходиться нечему.
 
 import java.io.ByteArrayOutputStream
 
@@ -36,9 +36,10 @@ dependencies {
     testImplementation(libs.junit.platform.suite)
 }
 
-/** Каталог, из которого прогон берёт сценарии. По умолчанию — все задачи процесса. */
+/** Каталог, из которого прогон берёт сценарии. По умолчанию — ресурсы этого модуля. */
 val featuresPath: String =
-    (project.findProperty("sklyanka.acceptance.features") as String?) ?: "docs/tasks"
+    (project.findProperty("sklyanka.acceptance.features") as String?)
+        ?: "acceptance/src/main/resources/features"
 
 /** Строгий режим: нереализованный шаг валит прогон. По умолчанию выключен. */
 val strictUndefined: Boolean =
@@ -84,7 +85,14 @@ val distributedStepSources: List<File> = rootProject.projectDir.listFiles()
     ?.sortedBy { it.path }
     .orEmpty()
 
-/** Каталоги задач, в которых лежат .feature; если их нет — сам указанный путь. */
+/**
+ * Цели отдельных запусков Cucumber.
+ *
+ * Штатная раскладка плоская: один файл — одна задача (SKL-NN.feature), и целью бывает
+ * сам файл, чтобы неразбираемый файл одной задачи не обрывал прогон остальных. Для
+ * переопределённого пути поддерживается и прежняя раскладка каталогами задач; если ни
+ * того ни другого нет — целью становится сам указанный путь.
+ */
 fun featureTargets(): List<File> {
     val root = rootProject.file(featuresPath)
     if (!root.isDirectory) return emptyList()
@@ -92,8 +100,15 @@ fun featureTargets(): List<File> {
         ?.filter { dir -> dir.isDirectory && dir.listFiles { f -> f.name.endsWith(".feature") }?.isNotEmpty() == true }
         ?.sortedBy { it.name }
         .orEmpty()
-    return nested.ifEmpty { listOf(root) }
+    if (nested.isNotEmpty()) return nested
+    val flat = root.listFiles { f -> f.isFile && f.name.endsWith(".feature") }
+        ?.sortedBy { it.name }
+        .orEmpty()
+    return flat.ifEmpty { listOf(root) }
 }
+
+/** Метка цели в отчёте: имя каталога задачи или имя файла сценариев без расширения. */
+fun targetLabel(target: File): String = if (target.isDirectory) target.name else target.nameWithoutExtension
 
 /**
  * Один запуск Cucumber-CLI на каталог задачи.
@@ -164,13 +179,14 @@ val acceptanceRun by tasks.registering {
                     "camelcase",
                 ),
             )
-            reportDir.resolve("${target.name}.txt").writeText(output)
+            val label = targetLabel(target)
+            reportDir.resolve("$label.txt").writeText(output)
 
             val summary = cucumberSummary.find(output)?.value
             when {
-                summary == null && target.name in quarantine -> {
-                    quarantined += target.name
-                    lines += "  QUARANTINE ${target.name}: feature file does not parse, see ${target.name}.txt"
+                summary == null && label in quarantine -> {
+                    quarantined += label
+                    lines += "  QUARANTINE $label: feature file does not parse, see $label.txt"
                 }
                 // Отказ Cucumber загрузить шаги — это сломанный словарь шагов, а не
                 // сломанный документ задачи: карантин здесь не поможет, а диагноз обязан
@@ -180,20 +196,20 @@ val acceptanceRun by tasks.registering {
                 // шага не отказывается запускаться, а печатает исключение в лог и выдаёт
                 // «0 Scenarios» — то есть прогон без этой ветки становится зелёным и пустым.
                 duplicateGlue.containsMatchIn(output) -> {
-                    brokenGlue += target.name
-                    lines += "  BROKEN-GLUE ${target.name}: a step is declared twice, " +
-                        "run :acceptance:verifyAcceptanceSteps, see ${target.name}.txt"
+                    brokenGlue += label
+                    lines += "  BROKEN-GLUE $label: a step is declared twice, " +
+                        "run :acceptance:verifyAcceptanceSteps, see $label.txt"
                 }
                 // Любая другая поломка прогона: исключение вместо исполнения сценария —
                 // это не «ни одного сценария», а не состоявшийся прогон.
                 runtimeFailure.containsMatchIn(output) -> {
-                    broken += target.name
-                    lines += "  BROKEN     ${target.name}: Cucumber failed while running, " +
-                        "see ${target.name}.txt"
+                    broken += label
+                    lines += "  BROKEN     $label: Cucumber failed while running, " +
+                        "see $label.txt"
                 }
                 summary == null -> {
-                    broken += target.name
-                    lines += "  BROKEN     ${target.name}: Cucumber could not run, see ${target.name}.txt"
+                    broken += label
+                    lines += "  BROKEN     $label: Cucumber could not run, see $label.txt"
                 }
                 else -> {
                     // Число падений берётся из строки со сценариями, а не из строки с шагами:
@@ -201,13 +217,13 @@ val acceptanceRun by tasks.registering {
                     val failures = scenarioFailures.find(summary)?.groupValues?.get(1)?.toInt() ?: 0
                     val undefined = output.contains("undefined")
                     if (undefined) undefinedSeen = true
-                    if (failures > 0) failed += "${target.name} ($failures)"
+                    if (failures > 0) failed += "$label ($failures)"
                     val status = when {
                         failures > 0 -> "FAILED    "
                         undefined -> "UNDEFINED "
                         else -> "PASSED    "
                     }
-                    lines += "  $status${target.name}: $summary"
+                    lines += "  $status$label: $summary"
                 }
             }
         }
@@ -291,7 +307,7 @@ val acceptanceChecklist by tasks.registering {
             )
             val scenarios = scenarioLine.findAll(output).map { it.groupValues[1].trim() }.toList()
             if (scenarios.isNotEmpty()) {
-                checklist.appendLine("  ${target.name}:")
+                checklist.appendLine("  ${targetLabel(target)}:")
                 scenarios.forEach { checklist.appendLine("    - $it") }
             }
         }
@@ -341,7 +357,7 @@ val acceptanceScreenList by tasks.registering {
             )
             val scenarios = scenarioLine.findAll(output).map { it.groupValues[1].trim() }.toList()
             if (scenarios.isNotEmpty()) {
-                listing.appendLine("  ${target.name}:")
+                listing.appendLine("  ${targetLabel(target)}:")
                 scenarios.forEach { listing.appendLine("    - $it") }
             }
         }
@@ -387,7 +403,7 @@ val acceptanceDeviceList by tasks.registering {
             )
             val scenarios = scenarioLine.findAll(output).map { it.groupValues[1].trim() }.toList()
             if (scenarios.isNotEmpty()) {
-                listing.appendLine("  ${target.name}:")
+                listing.appendLine("  ${targetLabel(target)}:")
                 scenarios.forEach { listing.appendLine("    - $it") }
             }
         }

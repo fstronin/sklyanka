@@ -12,7 +12,7 @@ class Sk64NavigationAcceptanceTest {
         val root = requireNotNull(System.getProperty("sklyanka.repo.root")) {
             "sklyanka.repo.root is not set: the screen test convention must be applied to this module"
         }
-        val feature = File(root, "docs/tasks/SKL-64/acceptance.feature")
+        val feature = File(root, "acceptance/src/main/resources/features/SKL-64.feature")
         require(feature.isFile) { "the feature file is missing: ${feature.path}" }
         val exitCode = Main.run(
             "--glue",

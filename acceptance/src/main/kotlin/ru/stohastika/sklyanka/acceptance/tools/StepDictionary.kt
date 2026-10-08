@@ -30,7 +30,7 @@ object StepDictionary {
     private const val GLUE_PACKAGE = "ru.stohastika.sklyanka.acceptance"
     private const val SHARED_PACKAGE = "$GLUE_PACKAGE.steps.shared"
     private const val CUCUMBER_ANNOTATIONS = "io.cucumber.java."
-    private const val TASKS_DIR = "docs/tasks"
+    private const val FEATURES_DIR = "acceptance/src/main/resources/features"
 
     @JvmStatic
     fun main(args: Array<String>) {
@@ -42,7 +42,7 @@ object StepDictionary {
         val unparsed = scans.values.flatMap { it.unparsed }
         val scopes = StepScopes.of(reflected, scanned)
         val all = (reflected + scanned.values.flatten()).distinct()
-        val lines = scenarioLines(File(root, TASKS_DIR))
+        val lines = scenarioLines(File(root, FEATURES_DIR))
         if (all.isEmpty()) {
             println("Объявлений шагов не найдено — проверять нечего, и это само по себе ошибка.")
             kotlin.system.exitProcess(1)

@@ -44,7 +44,7 @@ class StepDictionaryRulesTest {
 
         val ambiguous = violations.filterIsInstance<DictionaryViolation.SameLine>().single()
         assertEquals(PROFILE_LINE, ambiguous.line.text)
-        assertTrue(ambiguous.message().contains("SKL-07/acceptance.feature:20"), ambiguous.message())
+        assertTrue(ambiguous.message().contains("features/SKL-07.feature:20"), ambiguous.message())
         assertTrue(ambiguous.message().contains("theActiveProfileIs"), ambiguous.message())
         assertTrue(ambiguous.message().contains("theOwnerIsActive"), ambiguous.message())
     }
@@ -99,13 +99,13 @@ class StepDictionaryRulesTest {
         assertTrue(!StepDictionaryRules.matches(declaration.expression, "сегодня 3 октября 2026 года"))
     }
 
-    private fun line(text: String) = ScenarioLine("SKL-07", "SKL-07/acceptance.feature", 20, text)
+    private fun line(text: String) = ScenarioLine("SKL-07", "features/SKL-07.feature", 20, text)
 
     private fun realDeclarations(): List<StepDeclaration> =
         StepDictionary.declarations(listOf(StepDictionary.ownClassesDirectory()))
 
     private fun realLines(): List<ScenarioLine> =
-        StepDictionary.scenarioLines(File(RepositoryLayout.root, "docs/tasks"))
+        StepDictionary.scenarioLines(File(RepositoryLayout.root, "acceptance/src/main/resources/features"))
 
     private companion object {
         const val PROFILE_EXPRESSION = "^активен профиль «(.+)»$"

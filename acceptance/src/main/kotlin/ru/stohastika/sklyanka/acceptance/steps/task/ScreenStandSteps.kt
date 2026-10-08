@@ -457,7 +457,7 @@ class ScreenStandSteps {
         // и в прозе документа, а проза сценария не помечает.
         val carriers = featureFiles()
             .filter { file -> file.readLines().any { it.trim().startsWith("@") && SCREEN_TAG in tagsOf(it) } }
-            .map { it.parentFile.name }
+            .map { it.nameWithoutExtension }
             .distinct()
             .sorted()
         assertTrue(carriers.isNotEmpty(), "no task carries the $SCREEN_TAG tag at all")
@@ -505,7 +505,7 @@ class ScreenStandSteps {
     /** Теги строки тегов как отдельные слова: «@screen-run» тегом «@screen» не является. */
     private fun tagsOf(line: String): List<String> = line.trim().split(WHITESPACE).filter { it.startsWith("@") }
 
-    private fun featureFiles(): List<File> = File(RepositoryLayout.root, TASKS_DIRECTORY).walkTopDown()
+    private fun featureFiles(): List<File> = File(RepositoryLayout.root, FEATURES_DIRECTORY).walkTopDown()
         .filter { it.extension == FEATURE }
         .toList()
 
@@ -582,7 +582,7 @@ class ScreenStandSteps {
         const val SNAPSHOT_DIRECTORY = "screenshots"
         const val SCREEN_GROUP = "screen"
         const val BUILD_DIRECTORY = "/build/"
-        const val TASKS_DIRECTORY = "docs/tasks"
+        const val FEATURES_DIRECTORY = "acceptance/src/main/resources/features"
         const val SCREEN_TAG = "@screen"
         val WHITESPACE = Regex("\\s+")
 
