@@ -20,11 +20,11 @@
 | `docs/spec/08-design-system.md` | заморожен как источник токенов; токены действующие — в коде `core-ui/token/` | `docs/v2/12-design.md` (пишется); палитра — Р-20 |
 | `docs/spec/09-scope.md` | заморожен | `00-product.md` §5 (состав продукта) |
 | `docs/spec/10-nfr.md` | заморожен | `docs/v2/11-quality.md` (порог → метод → статус) |
-| `docs/spec/11-glossary.md` | **действует без переезда**: словарь домена | правится на месте до переезда в v2 (SKL-111) |
+| `docs/spec/11-glossary.md` | заморожен 08.10.2026: перенесён | `CONTEXT.md` в корне (глоссарий контекста: термин, определение, избегаемые синонимы, коды значений) |
 | `docs/spec/12-open-questions.md` | закрыт как реестр: решённые ушли в Р-N и `15-visual-findings.md`; живые — `PLAN.md` §5 | `PLAN.md` §5, `02-decisions.md` |
 | `docs/spec/13-monetization.md` | заморожен | `docs/v2/03-monetization.md` |
 | `docs/spec/14-reminder-check-ux.md` | заморожен | `10-behavior.md` (диагностика и самопроверка) |
-| `docs/spec/adr/ADR-0001…0013` | заморожены | `docs/v2/13-adr/` (копии в формате «решение + строка о пересмотре»); ADR-0010 пишется под биллинг (SKL-122); ADR-0012 утверждается в SKL-94 |
+| `docs/spec/adr/ADR-0001…0013` | заморожены как источники | `docs/adr/0001…0013-*.md` (нумерация и формат domain-modeling); ADR-0010 пишется под биллинг (SKL-122); ADR-0012 утверждается в SKL-94 |
 | `docs/spec/product-decisions.md` (ПМ-1…ПМ-33) | архив истории | отмены и замены — записи Р-N в `02-decisions.md` |
 | `docs/spec/design-decisions.md`, `designer-questions.md`, `customer-questions.md`, `decisions-request.md`, `user-flows.md` | архив истории | живые вопросы дизайна/заказчика — `PLAN.md` §5 и `15-visual-findings.md` |
 | `PLAN.md` ревизий 1.0–1.1 | заменён ревизией 2.0 (08.10.2026) | `PLAN.md` — план, фазы, реестр статусов |

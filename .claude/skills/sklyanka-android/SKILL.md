@@ -33,7 +33,7 @@ Kotlin, Jetpack Compose, Room, Hilt, корутины и Flow, AlarmManager, Wea
 - Пакеты — от `ru.stohastika.sklyanka`: `ru.stohastika.sklyanka.domain.intake`, `ru.stohastika.sklyanka.data.room`, `ru.stohastika.sklyanka.ui.token`, `ru.stohastika.sklyanka.feature.today`.
 - Имя пакета приложения — ровно `ru.stohastika.sklyanka` (22 символа; лимит Wear Engine — 28).
 - Код, идентификаторы, имена тестов и сообщения коммитов — английский. Документация, Gherkin и интерфейс — русский.
-- Доменные термины совпадают с `docs/spec/11-glossary.md`: `Intake`, `Medication`, `Profile`, `pending/taken/skipped/missed`, `scheduled/prn`.
+- Доменные термины совпадают с `CONTEXT.md`: `Intake`, `Medication`, `Profile`, `pending/taken/skipped/missed`, `scheduled/prn`.
 
 ## Дизайн-система
 

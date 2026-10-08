@@ -20,7 +20,7 @@ Android/EMUI, Compose, русский интерфейс). Твоя работа
 
 - `CLAUDE.md` — соглашения проекта.
 - `docs/spec/08-design-system.md` — токены, типографика, состояния, движение;
-  `docs/spec/03-screens.md` — состав экранов; `docs/spec/11-glossary.md` — термины.
+  `docs/spec/03-screens.md` — состав экранов; `CONTEXT.md` — термины.
 - `docs/spec/design-decisions.md` — принятые решения («так и задумано»).
 - `design/screens/*.dc.html` — макеты (читать, не редактировать).
 - `docs/tasks/SKL-NN/task.md` + `acceptance.feature` — что именно проверяется и какие правки

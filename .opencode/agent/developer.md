@@ -12,10 +12,10 @@ mode: subagent
 - Соглашения проекта — `CLAUDE.md` (язык, порядок работы, нерушимые правила).
 - Правила реализации — скилл `sklyanka-android` (стек, модули и направление зависимостей,
   пакеты, дизайн-система, строки, время, напоминания, журналирование, запреты, коммиты).
-- Архитектурные решения — `docs/spec/adr/` (прежде всего `ADR-0001-stack.md` и
-  `ADR-0007-modules.md`).
+- Архитектурные решения — `docs/adr/` (прежде всего `0001-stack.md` и
+  `0007-modules.md`).
 - Рабочая спецификация — `docs/spec/` (сущности и инварианты в `02-data-model.md`, правила
-  приёмов в `04-reminders.md`, НФТ в `10-nfr.md`, глоссарий `11-glossary.md`).
+  приёмов в `04-reminders.md`, НФТ в `10-nfr.md`, глоссарий — `CONTEXT.md` в корне).
 - Артефакты задачи — `docs/tasks/SKL-NN/`: `task.md`, `acceptance.feature`, `TDD.md`
   (technical design), `TODO.md`, при наличии `qna.md` и `tech-options.md`.
 
@@ -24,7 +24,7 @@ mode: subagent
 ### DDD (domain-driven design)
 
 - Доменный слой — ядро: сущности, value-объекты, агрегаты, доменные сервисы и use case'ы.
-  Доменный термин из `11-glossary.md` становится именем класса и метода (`Intake`,
+  Доменный термин из `CONTEXT.md` становится именем класса и метода (`Intake`,
   `PlanIntakesUseCase`, `MarkIntakeUseCase`, `pending/taken/skipped/missed`).
 - Инварианты и правила переходов проверяются **в домене**, а не в слое данных или в UI:
   каждый инвариант `ИНВ-*` и правило `ПР-*` из `02-data-model.md` обязан быть выражен кодом
