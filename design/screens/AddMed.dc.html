@@ -14,7 +14,7 @@ body{margin:0;font-family:'Golos Text',system-ui,sans-serif;background:#FBF7F1;-
 a{color:#B4512F;text-decoration:none}a:hover{color:#8F3E23}
 </style>
 </helmet>
-<div style="width: 390px; height: 1560px; box-sizing: border-box; background: #FBF7F1; color: #241F1B; display: flex; flex-direction: column; overflow: hidden">
+<div style="width: 390px; height: 1660px; box-sizing: border-box; background: #FBF7F1; color: #241F1B; display: flex; flex-direction: column; overflow: hidden">
 
 <div style="padding: 26px 20px 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px">
 <a href="Meds.dc.html" style="font-size: 15px; color: #5F564D">Отмена</a>
@@ -82,16 +82,19 @@ a{color:#B4512F;text-decoration:none}a:hover{color:#8F3E23}
 
 <div style="display: flex; flex-direction: column; gap: 10px">
 <div style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #5F564D">Доза на один приём</div>
-<div style="display: flex; gap: 10px">
 <div style="width: 120px; display: flex; align-items: center; height: 50px; box-sizing: border-box; padding: 0 14px; background: #FFFFFF; border: 1px solid #E6DED2; border-radius: 14px; gap: 8px">
-<input id="dose-count" type="text" value="2" aria-label="Количество" style="width: 100%; border: none; outline: none; background: transparent; font-family: inherit; font-size: 16px; font-weight: 600; color: #241F1B">
+<input id="dose-count" type="text" value="2" aria-label="Доза на один приём" style="width: 100%; border: none; outline: none; background: transparent; font-family: inherit; font-size: 16px; font-weight: 600; color: #241F1B">
 <span style="font-size: 14px; color: #5F564D; white-space: nowrap">шт</span>
 </div>
-<div style="flex-grow: 1; display: flex; align-items: center; height: 50px; box-sizing: border-box; padding: 0 14px; background: #FFFFFF; border: 1px solid #E6DED2; border-radius: 14px; gap: 8px">
-<input id="dose-strength" type="text" value="48" aria-label="Дозировка" style="width: 100%; border: none; outline: none; background: transparent; font-family: inherit; font-size: 16px; color: #241F1B">
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #5F564D">Дозировка препарата</div>
+<div style="width: 120px; display: flex; align-items: center; height: 50px; box-sizing: border-box; padding: 0 14px; background: #FFFFFF; border: 1px solid #E6DED2; border-radius: 14px; gap: 8px">
+<input id="dose-strength" type="text" value="48" aria-label="Дозировка препарата" style="width: 100%; border: none; outline: none; background: transparent; font-family: inherit; font-size: 16px; color: #241F1B">
 <span style="font-size: 14px; color: #5F564D; white-space: nowrap">мг</span>
 </div>
-</div>
+<div style="font-size: 12px; color: #5F564D; line-height: 1.45">Необязательно. Сколько действующего вещества в одной единице — в карточке видно, в расчётах не участвует.</div>
 </div>
 
 <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px; background: #FFFFFF; border: 1px solid #E6DED2; border-radius: 16px">
@@ -204,7 +207,7 @@ a{color:#B4512F;text-decoration:none}a:hover{color:#8F3E23}
 
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#B4512F","options":["#B4512F","#1F5F6B","#7A5B2E","#6B4A6B"]},"$preview":{"width":390,"height":1560}}'>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#B4512F","options":["#B4512F","#1F5F6B","#7A5B2E","#6B4A6B"]},"$preview":{"width":390,"height":1660}}'>
 class Component extends DCLogic {
   renderVals() {
     return { accent: this.props.accent ?? '#B4512F' };

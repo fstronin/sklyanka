@@ -25,7 +25,9 @@ figcaption{max-width:390px;font-size:12px;color:#5F564D;margin-top:12px;line-hei
 .bar{display:flex;align-items:center;gap:8px;padding:6px 20px;min-height:56px;background:#FBF7F1;flex:0 0 auto}
 .bar--scrolled{border-bottom:1px solid #E6DED2}
 .bar-back{width:44px;height:44px;margin-left:-10px;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
-.bar-title{flex:1;min-width:0;font-size:17px;font-weight:600;color:#241F1B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar-title{flex:1;min-width:0;font-size:17px;font-weight:600;color:#241F1B;white-space:nowrap;overflow:hidden}
+/* Многоточия у компактного заголовка нет: не помещается в одну строку — заголовок не рисуется
+   вовсе (SKL-105, 12-design §7). Порог — по фактической ширине подписи, а не по масштабу. */
 .bar-action{flex:0 0 auto;height:36px;padding:0 14px;border:1px solid #D9CDBD;border-radius:11px;background:transparent;font-family:inherit;font-size:13px;font-weight:500;color:#3B342E;display:flex;align-items:center;justify-content:center;min-height:44px;box-sizing:border-box}
 /* --- шапка: развёрнутое состояние --- */
 .expand{flex:0 0 auto}
@@ -73,7 +75,9 @@ figcaption{max-width:390px;font-size:12px;color:#5F564D;margin-top:12px;line-hei
     (ряд «Назад + действие», дата, полоса дня, баннер, сегмент «Активные/Архив»), прокручиваются
     вместе с содержимым как обычный контент. Сверху остаётся неподвижный компактный ряд 56&nbsp;dp:
     «Назад» и функциональное действие доступны на любом уровне прокрутки; компактный заголовок
-    (Golos Text 17/600) появляется, когда крупный вышел за верхнюю грань. Крупный заголовок
+    (Golos Text 17/600) появляется, когда крупный вышел за верхнюю грань, и рисуется только если
+    целиком помещается в одну строку при текущем масштабе — многоточия у него нет, а не помещается
+    значит его нет вовсе (SKL-105, 12-design §7). Крупный заголовок
     не «морфит» и не анимируется — он уезжает прокруткой, поэтому §9.1 не нарушается.
     Ниже: три состояния на вложенном экране («История» с «Отчётом врачу») и на корневом
     («Настройки»), затем запасной (вариант 1) и отклонённые (варианты 3–4) направления.</p>
@@ -261,7 +265,7 @@ figcaption{max-width:390px;font-size:12px;color:#5F564D;margin-top:12px;line-hei
     <div class="phone">
       <div class="bar bar--scrolled">
         <span class="bar-title" style="padding-left:4px">Сегодня</span>
-        <button class="bar-action" type="button" style="border:none;padding:0 6px;color:#5F564D">Я &#9662;</button>
+        <button class="bar-action" type="button" aria-label="Профили" style="border:none;padding:0 6px;color:#5F564D">Я &#9662;</button>
       </div>
       <div class="content">
         <div style="font-size:14px;font-weight:600">14:00</div>
@@ -270,8 +274,9 @@ figcaption{max-width:390px;font-size:12px;color:#5F564D;margin-top:12px;line-hei
       </div>
     </div>
     <figcaption><b>«Сегодня».</b> Дата, полоса дня и баннер остатка не закрепляются: они —
-      контент и уезжают вместе со списком. Сверху остаётся название дня и переключатель профиля;
-      вкладка нижней панели, как и раньше, не двигается.</figcaption>
+      контент и уезжают вместе со списком. Сверху остаётся название дня и аватар-индикатор профиля
+      (ПРФ-19: аватар не переключает профиль, а ведёт в список профилей настроек); вкладка нижней
+      панели, как и раньше, не двигается.</figcaption>
   </figure>
 
   <!-- ============ ВАРИАНТ 1 ============ -->
