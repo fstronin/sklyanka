@@ -77,6 +77,22 @@ Kotlin, Jetpack Compose, Room, Hilt, AlarmManager. Минимум API 26. Час
 - **Оплата ограничивает создание и настройку, никогда — приём и напоминание уже заведённого** (Р-22).
 - Токены визуального языка не хардкодятся по месту — только через дизайн-систему (`core-ui/token/`, норматив — `docs/v2/12-design.md`; палитра — «олива на бумаге», Р-20).
 
+## Agent skills
+
+### Issue tracker
+
+GitHub Issues (`github.com/fstronin/sklyanka`, `gh` CLI); реестр SKL-NN в `PLAN.md` §4 —
+единственный источник статусов, лейблы Issues его зеркалят. См. `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Пять триаж-ролей маппятся на словарь проекта: кандидат / ждёт заказчика / не начата /
+на проверке / снята. См. `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: глоссарий `CONTEXT.md` и ADR в `docs/adr/` в корне. См. `docs/agents/domain.md`.
+
 ## Коммиты
 
 Conventional Commits на английском, с идентификатором задачи:
