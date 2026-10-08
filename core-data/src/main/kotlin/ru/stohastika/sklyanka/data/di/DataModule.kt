@@ -17,6 +17,7 @@ import ru.stohastika.sklyanka.data.room.dao.IntakeDao
 import ru.stohastika.sklyanka.data.room.dao.MedicationDao
 import ru.stohastika.sklyanka.data.room.dao.OpLogDao
 import ru.stohastika.sklyanka.data.room.dao.ProfileDao
+import ru.stohastika.sklyanka.data.room.withForeignKeysEnabled
 import javax.inject.Singleton
 
 /**
@@ -35,7 +36,7 @@ object DataModule {
     fun provideDatabase(@ApplicationContext context: Context): SklyankaDatabase {
         val builder = Room.databaseBuilder(context, SklyankaDatabase::class.java, SklyankaDatabase.NAME)
         SklyankaMigrations.ALL.forEach { builder.addMigrations(it) }
-        return builder.build()
+        return builder.build().withForeignKeysEnabled()
     }
 
     @Provides

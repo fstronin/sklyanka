@@ -17,6 +17,7 @@ import ru.stohastika.sklyanka.data.room.dao.IntakeDao
 import ru.stohastika.sklyanka.data.room.dao.MedicationDao
 import ru.stohastika.sklyanka.data.room.dao.OpLogDao
 import ru.stohastika.sklyanka.data.room.dao.ProfileDao
+import ru.stohastika.sklyanka.data.room.withForeignKeysEnabled
 import ru.stohastika.sklyanka.di.TimeModule
 import ru.stohastika.sklyanka.domain.time.TimeSource
 import ru.stohastika.sklyanka.screen.support.DeviceTestClock
@@ -36,7 +37,7 @@ internal object DeviceStorageModule {
     @Provides
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): SklyankaDatabase =
-        Room.inMemoryDatabaseBuilder(context, SklyankaDatabase::class.java).build()
+        Room.inMemoryDatabaseBuilder(context, SklyankaDatabase::class.java).build().withForeignKeysEnabled()
 
     @Provides
     fun provideProfileDao(database: SklyankaDatabase): ProfileDao = database.profileDao()

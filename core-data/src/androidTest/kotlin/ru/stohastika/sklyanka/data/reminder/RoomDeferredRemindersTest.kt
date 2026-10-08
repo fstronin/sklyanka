@@ -14,6 +14,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import ru.stohastika.sklyanka.data.room.SklyankaDatabase
 import ru.stohastika.sklyanka.data.room.TestData
+import ru.stohastika.sklyanka.data.room.withForeignKeysEnabled
 import ru.stohastika.sklyanka.domain.reminder.port.DeferredReminder
 import java.time.Instant
 
@@ -34,7 +35,7 @@ class RoomDeferredRemindersTest {
         database = Room.inMemoryDatabaseBuilder(
             ApplicationProvider.getApplicationContext(),
             SklyankaDatabase::class.java,
-        ).build()
+        ).build().withForeignKeysEnabled()
         deferred = RoomDeferredReminders(database.deferredReminderDao())
     }
 

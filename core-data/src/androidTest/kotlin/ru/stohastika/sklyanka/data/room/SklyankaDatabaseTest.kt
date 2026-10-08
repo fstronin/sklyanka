@@ -23,7 +23,7 @@ class SklyankaDatabaseTest {
         database = Room.inMemoryDatabaseBuilder(
             ApplicationProvider.getApplicationContext(),
             SklyankaDatabase::class.java,
-        ).build()
+        ).build().withForeignKeysEnabled()
     }
 
     @After

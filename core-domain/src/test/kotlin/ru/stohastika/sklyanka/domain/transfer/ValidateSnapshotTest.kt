@@ -150,6 +150,28 @@ class ValidateSnapshotTest {
     }
 
     @Test
+    @DisplayName("An intake signed by the owner of its own medication is refused (INV-18)")
+    fun actorEqualMedicationOwnerIsRejected() {
+        val snapshot = Transfers.snapshot(
+            intakes = listOf(Transfers.taken("i1").copy(actorProfileId = Transfers.SELF_ID)),
+        )
+
+        val reject = validate(snapshot)
+        assertEquals(TransferRejectReason.INVALID_RECORD, reject?.reason)
+        assertEquals("intakes:INV-18", reject?.detail)
+    }
+
+    @Test
+    @DisplayName("An intake signed by another existing profile is accepted")
+    fun actorOfAnotherProfileIsAccepted() {
+        val snapshot = Transfers.snapshot(
+            intakes = listOf(Transfers.taken("i1").copy(actorProfileId = Transfers.MOTHER_ID)),
+        )
+
+        assertNull(validate(snapshot))
+    }
+
+    @Test
     @DisplayName("The rejection detail names the section and the rule, never a medication name")
     fun rejectionDetailCarriesNoMedicalData() {
         val snapshot = Transfers.snapshot(

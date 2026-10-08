@@ -250,7 +250,7 @@ class MigrationTest {
     fun theWatchColumnsLeaveWithoutTouchingAnyRow() {
         helper.createDatabase(TEST_DB, 7).use { old ->
             old.execSQL(INSERT_PROFILE)
-            old.execSQL(INSERT_MEDICATION)
+            old.execSQL(INSERT_MEDICATION_WITH_STOCK)
             old.execSQL(INSERT_INTAKE)
             old.execSQL(INSERT_REMINDER_LOG)
         }
@@ -318,12 +318,17 @@ class MigrationTest {
             "(`id`, `name`, `color`, `is_self`, `mirror_reminders`, `self_slot`) " +
             "VALUES ('profile-1', 'owner', 0, 1, 0, 'self')"
 
-        const val INSERT_MEDICATION = "INSERT INTO `medication` " +
+        val INSERT_MEDICATION = insertMedication("NULL")
+
+        /** Тот же посев, но с ненулевым остатком: перестроение обязана донести значения. */
+        val INSERT_MEDICATION_WITH_STOCK = insertMedication("'9'")
+
+        private fun insertMedication(stockLeft: String) = "INSERT INTO `medication` " +
             "(`id`, `profile_id`, `name`, `form`, `shape`, `dose_amount`, `dose_unit`, `strength`, " +
             "`strength_unit`, `food_relation`, `schedule_mode`, `max_per_day`, `times`, `start_date`, " +
             "`end_date`, `stock_left`, `stock_threshold_days`, `archived_at`, `archive_reason`) " +
             "VALUES ('medication-1', 'profile-1', 'med-a', 'TABLET', NULL, '1', 'tablet', NULL, NULL, " +
-            "'ANY', 'SCHEDULED', NULL, '08:00', '2026-09-12', NULL, NULL, NULL, NULL, NULL)"
+            "'ANY', 'SCHEDULED', NULL, '08:00', '2026-09-12', NULL, $stockLeft, NULL, NULL, NULL)"
 
         const val INSERT_INTAKE = "INSERT INTO `intake` " +
             "(`id`, `medication_id`, `scheduled_at`, `schedule_slot`, `status`, `acted_at`, `source`, " +

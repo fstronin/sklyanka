@@ -18,6 +18,7 @@ import ru.stohastika.sklyanka.domain.model.FoodRelation
 import ru.stohastika.sklyanka.domain.model.Intake
 import ru.stohastika.sklyanka.domain.model.IntakeSource
 import ru.stohastika.sklyanka.domain.model.IntakeStatus
+import ru.stohastika.sklyanka.domain.model.InvariantViolationException
 import ru.stohastika.sklyanka.domain.model.Medication
 import ru.stohastika.sklyanka.domain.model.MedicationForm
 import ru.stohastika.sklyanka.domain.model.Profile
@@ -121,6 +122,45 @@ class RoomTransferStoreTest {
         assertEquals(1, state.profiles.size)
         assertEquals(TestData.OWNER_MEDICATION_ID, state.medications.single().id)
         assertEquals(DEVICE_INTAKE_ID, state.intakes.single().id)
+    }
+
+    @Test
+    fun aPlanRewritingTheOwnerOfAnExistingMedicationIsRefusedAndRolledBack() = runTest {
+        // Граница ИНВ-3 (SKL-107): план, обошедший routing слияния и принёсший
+        // идентификатор устройства с чужим профилем, отвергается целиком.
+        db.profiles.insert(TestData.relative())
+        val takeover = BuildTransferPlan(ids).replaceAll(fileSnapshot()).copy(
+            erase = false,
+            profilesToInsert = emptyList(),
+            medicationsToInsert = emptyList(),
+            medicationsToUpdate = listOf(
+                fileMedication(TestData.OWNER_MEDICATION_ID, "med-a", listOf(MORNING)).copy(
+                    profileId = TestData.RELATIVE_ID,
+                ),
+            ),
+        )
+
+        assertRefused<InvariantViolationException> { store.apply(takeover) }
+
+        assertEquals(
+            "the refusal must not shift the device owner",
+            TestData.OWNER_ID,
+            db.medications.getById(TestData.OWNER_MEDICATION_ID)?.profileId,
+        )
+    }
+
+    @Test
+    fun aPlanRowSignedByTheOwnerOfItsMedicationIsRefusedAndRolledBack() = runTest {
+        // Граница ИНВ-18 на строках истории: подпись «отметили вы» от профиля самого
+        // лекарства не проезжает и в хранилище, даже если проверка файла пропущена.
+        val poisoned = BuildTransferPlan(ids).replaceAll(fileSnapshot()).copy(
+            intakesToInsert = listOf(fileIntake().copy(actorProfileId = FILE_PROFILE_ID)),
+        )
+
+        assertRefused<InvariantViolationException> { store.apply(poisoned) }
+
+        assertEquals(DEVICE_INTAKE_ID, store.readAll().intakes.single().id)
+        assertEquals(1, db.profiles.count())
     }
 
     @Test

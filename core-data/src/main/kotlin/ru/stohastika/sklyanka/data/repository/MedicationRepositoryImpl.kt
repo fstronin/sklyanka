@@ -42,6 +42,9 @@ class MedicationRepositoryImpl @Inject constructor(
 
     override suspend fun save(medication: Medication) {
         Invariants.requireValid(Invariants.violations(medication))
+        dao.getById(medication.id)?.let { stored ->
+            Invariants.requireValid(Invariants.ownershipViolations(stored.profileId, medication))
+        }
         dao.upsert(medication.toEntity())
     }
 

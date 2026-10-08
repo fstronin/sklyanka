@@ -482,7 +482,21 @@ class ScenarioTransferStore(
             failAfterPartial?.let { failure -> throw failure }
             (plan.medicationsToInsert + plan.medicationsToUpdate).forEach { medication ->
                 Invariants.requireValid(Invariants.violations(medication))
+                medications.byId(medication.id)?.let { stored ->
+                    Invariants.requireValid(Invariants.ownershipViolations(stored.profileId, medication))
+                }
                 medications.put(medication)
+            }
+            // Границы строк истории те же, что у Room-хранилища: поля отметки (ИНВ-10,
+            // ИНВ-11) и подпись от чужого профиля (ИНВ-18) — SKL-107.
+            (plan.intakesToInsert + plan.intakesToUpdate).forEach { intake ->
+                val parent = requireNotNull(medications.byId(intake.medicationId)) {
+                    "The transfer plan refers to a medication that does not exist: ${intake.medicationId}"
+                }
+                Invariants.requireValid(
+                    Invariants.violations(intake) +
+                        Invariants.actorOwnershipViolations(intake.actorProfileId, parent.profileId),
+                )
             }
             plan.intakesToInsert.forEach(intakes::store)
             plan.intakesToUpdate.forEach(intakes::store)

@@ -124,8 +124,13 @@ Profile 1—N Medication 1—N Intake; профиль приёма опреде�
 | Момент | целое число миллисекунд: `acted_at`, `archived_at`, `deleted_at`, `occurred_at`, `fired_at`, `fire_at`, `op_log.at` |
 | Десятичное | текст без экспоненты; в SQL не сравнивается |
 
-Внешние ключи объявлены с RESTRICT на всех ссылках; отдельного включения `PRAGMA foreign_keys`
-в продуктовом коде нет `[расхождение: ИНВ-12 держится на умолчании Room, а не на явном коде]`.
+Внешние ключи объявлены с RESTRICT на всех ссылках и включены явно:
+`data/room/ForeignKeyEnforcement.kt` поднимает прагму `foreign_keys` на соединении
+записи сразу после сборки базы, ею пользуются боевой граф и все тестовые сборки.
+Раньше ИНВ-12 держался молчаливым умолчанием Room; продукт от него отвязан. Колбэк
+`RoomDatabase.Callback` для прагмы непригоден: `onCreate`/`onOpen` исполняются внутри
+транзакции создания, где `PRAGMA foreign_keys` — no-op. Включение и отказ закреплены
+`ForeignKeyEnforcementTest` (инструментально, на настоящей базе).
 
 ### 1.3 Хранение времени
 
@@ -149,22 +154,22 @@ Profile 1—N Medication 1—N Intake; профиль приёма опреде�
 |---|---|---|
 | ИНВ-1 | Ровно один профиль с `is_self` — не ноль и не два | схема: уникальный индекс по `self_slot` |
 | ИНВ-2 | У профиля владельца `mirror_reminders` не влияет ни на одно решение | планировщик: приёмы профиля владельца берутся всегда (НАП-12) |
-| ИНВ-3 | `Medication.profile_id` не меняется после создания | `[не реализовано]` ни схемой, ни доменной проверкой; есть только комментарий `domain/model/Medication.kt:18` |
+| ИНВ-3 | `Medication.profile_id` не меняется после создания | доменная проверка `Invariants.ownershipViolations` на целых записях: сохранение (`data/repository/MedicationRepositoryImpl.kt`) и применение плана переноса (`data/transfer/RoomTransferStore.kt`); точечные UPDATE колонку не пишут; схема не менялась — обоснование в `docs/tasks/SKL-107/task.md` |
 | ИНВ-4 | `dose_amount > 0` | `Invariants.violations(medication)` |
 | ИНВ-5 | `strength` и `strength_unit` заполнены оба или ни одного | там же |
 | ИНВ-6 | При «по расписанию» список времён непуст и без повторов; при «по потребности» пуст | там же |
 | ИНВ-7 | `end_date` не раньше `start_date` | там же |
 | ИНВ-8 | `stock_left >= 0`; списание не уводит остаток ниже нуля | там же и `StockLedger` (обрезка по нулю) |
 | ИНВ-9 | `archived_at` и `archive_reason` заполнены оба или ни одного | там же |
-| ИНВ-10 | `acted_at` и `source` заполнены тогда и только тогда, когда статус не «ожидается» | `Invariants.violations(intake)` вызывается **только** при загрузке файла переноса (`domain/transfer/ValidateSnapshot.kt:105`) `[расхождение]` |
-| ИНВ-11 | При «ожидается» поля `acted_at`, `source`, `actor_profile_id` пусты | там же `[расхождение]` |
-| ИНВ-12 | У каждого приёма существует лекарство, а у него — профиль | внешние ключи RESTRICT (§1.2) |
+| ИНВ-10 | `acted_at` и `source` заполнены тогда и только тогда, когда статус не «ожидается» | `Invariants.violations(intake)` вызывается на каждом пути записи приёма (`data/repository/IntakeRepositoryImpl.kt`: генерация, отметка, отмена, вставка, `data/transfer/RoomTransferStore.kt`) и при проверке файла переноса (`domain/transfer/ValidateSnapshot.kt`) |
+| ИНВ-11 | При «ожидается» поля `acted_at`, `source`, `actor_profile_id` пусты | там же |
+| ИНВ-12 | У каждого приёма существует лекарство, а у него — профиль | внешние ключи RESTRICT (§1.2) + явное включение прагмы |
 | ИНВ-13 | У лекарства «по расписанию» нет двух приёмов с одинаковым `scheduled_at` | схема: уникальный индекс по тройке со `schedule_slot` |
-| ИНВ-14 | У приёма «по потребности» `scheduled_at == acted_at` и статус не «ожидается» | `[расхождение]` проверка `violations(intake, medication, zone)` вызывается только из тестов; в продукте держится конструкцией — `domain/intake/CreatePrnIntakeUseCase.kt:82-84` |
-| ИНВ-15 | `scheduled_at` лежит в пределах курса | `[расхождение]` той же проверкой, продуктивно не вызывается |
+| ИНВ-14 | У приёма «по потребности» `scheduled_at == acted_at` и статус не «ожидается» | держится конструкцией (`domain/intake/CreatePrnIntakeUseCase.kt`) и проверяется на границе рождения строки — `prnBirthViolations` в `data/repository/IntakeRepositoryImpl.kt`; отметка residual-приёма прежнего расписания режимом не судится (SKL-107, TDD §2) |
+| ИНВ-15 | `scheduled_at` лежит в пределах курса | проверяется на границе генерации плана (полная тройка `violations(intake, medication, zone)` в `applyPlan`); отметка живущего приёма и файл переноса правилом не судятся — даты курса правятся после приёмов (обоснование в `domain/transfer/ValidateSnapshot.kt`) |
 | ИНВ-16 | `shape` не пусто только при форме «таблетка» | `Invariants.violations(medication)` |
 | ИНВ-17 | `max_per_day` не пусто только при «по потребности» и больше нуля | там же |
-| ИНВ-18 | `actor_profile_id` ссылается на существующий профиль и не совпадает с профилем лекарства | `[расхождение]` той же проверкой, продуктивно не вызывается; правило соблюдается по построению — `domain/profile/ActorResolver.kt:33-49` |
+| ИНВ-18 | `actor_profile_id` ссылается на существующий профиль и не совпадает с профилем лекарства | ссылка — внешний ключ; совпадение — доменная проверка `actorOwnershipViolations` на путях отметки, переноса (`markingViolations`) и при проверке файла (`ValidateSnapshot`, отказ `intakes:INV-18`) |
 | ИНВ-19 | Повторная отметка не меняет статус, `acted_at`, `source` и не повторяет списание | условный запрос `UPDATE … WHERE status = 'PENDING'` (`data/room/dao/IntakeDao.kt`) и `IntakeTransition.stockEffect` |
 | ИНВ-20 | `package_size > 0`, если задан; пусто — не ошибка | `Invariants.violations(medication)` |
 | ИНВ-21 | `deleted_at` и `archived_at` не заполнены одновременно | там же и сценарии архивации/удаления |

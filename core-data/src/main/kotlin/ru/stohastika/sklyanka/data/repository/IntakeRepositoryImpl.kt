@@ -27,6 +27,8 @@ import ru.stohastika.sklyanka.domain.log.OperationLog
 import ru.stohastika.sklyanka.domain.model.Intake
 import ru.stohastika.sklyanka.domain.model.IntakeSource
 import ru.stohastika.sklyanka.domain.model.IntakeStatus
+import ru.stohastika.sklyanka.domain.model.Invariants
+import ru.stohastika.sklyanka.domain.model.Medication
 import ru.stohastika.sklyanka.domain.model.ScheduleMode
 import ru.stohastika.sklyanka.domain.repository.IntakeRepository
 import ru.stohastika.sklyanka.domain.schedule.IntakePlanDiff
@@ -92,9 +94,16 @@ class IntakeRepositoryImpl @Inject constructor(
         val modes = intakes.map { it.medicationId }.distinct().associateWith { id ->
             val stored = medications.getById(id)
             requireNotNull(stored) { "Intake refers to a medication that does not exist: $id" }
-            SklyankaConverters.textToEnum<ScheduleMode>(stored.scheduleMode) ?: ScheduleMode.SCHEDULED
+            SklyankaConverters.textToEnum<ScheduleMode>(stored.scheduleMode)
+                ?: error("Intake refers to a medication with an unreadable enum: $id")
+        }
+        // Граница записи произвольной модели: поля отметки согласованы со статусом
+        // (ИНВ-10, ИНВ-11), «по потребности» не записывается ожидающимся (ИНВ-14).
+        intakes.forEach { intake ->
+            Invariants.requireValid(Invariants.writeViolations(intake, requireNotNull(modes[intake.medicationId])))
         }
         val rows = intakes.map { it.toEntity(requireNotNull(modes[it.medicationId])) }
+
         val inserted = dao.insertAll(rows).count { it != NOT_INSERTED }
         if (inserted > 0) {
             log.record(
@@ -135,25 +144,36 @@ class IntakeRepositoryImpl @Inject constructor(
             require(medication.profileId == profileId) {
                 "Plan refers to a medication of another profile: $medicationId"
             }
+            val course = (medication.decode() as? Decoded.Value)?.model
+                ?: error("Plan refers to a medication with an unreadable enum: $medicationId")
 
             val deleted = if (diff.toDelete.isEmpty()) 0 else dao.deletePending(diff.toDelete)
-            val rows = diff.toCreate.map { moment -> pendingRow(medicationId, moment) }
-            val created = if (rows.isEmpty()) 0 else dao.insertAll(rows).count { it != NOT_INSERTED }
+            val rows = diff.toCreate.map { moment -> pendingIntake(medicationId, moment) }
+            // Граница генерации: строка, рождённая расписанием, обязана лежать в
+            // курсе (ИНВ-15) и ссылаться на своё лекарство; отказ здесь — баг
+            // экспандера, а не данные человека (SKL-107).
+            rows.forEach { intake ->
+                Invariants.requireValid(Invariants.violations(intake, course, time.zone()))
+            }
+            val created = if (rows.isEmpty()) {
+                0
+            } else {
+                dao.insertAll(rows.map { it.toEntity(ScheduleMode.SCHEDULED) }).count { it != NOT_INSERTED }
+            }
             PlanApplyResult(created = created, deleted = deleted)
         }
 
     /**
-     * Строка нового ожидающегося приёма.
+     * Модель нового ожидающегося приёма.
      *
-     * Слот проставлен всегда: сюда попадают только приёмы, порождённые расписанием, и
-     * именно слот делает их уникальными на момент времени (INV-13).
+     * Слот проставит маппер: сюда попадают только приёмы, порождённые расписанием, и
+     * именно слот делает их уникальными на момент времени (ИНВ-13).
      */
-    private fun pendingRow(medicationId: String, moment: LocalDateTime) = IntakeEntity(
+    private fun pendingIntake(medicationId: String, moment: LocalDateTime) = Intake(
         id = UUID.randomUUID().toString(),
         medicationId = medicationId,
-        scheduledAt = SklyankaConverters.dateTimeToText(moment),
-        scheduleSlot = IntakeEntity.SCHEDULE_SLOT,
-        status = IntakeStatus.PENDING.name,
+        scheduledAt = moment,
+        status = IntakeStatus.PENDING,
         actedAt = null,
         source = null,
         actorProfileId = null,
@@ -264,6 +284,9 @@ class IntakeRepositoryImpl @Inject constructor(
             when (val decision = IntakeTransition.undo(intake)) {
                 is UndoDecision.Keep -> Unit
                 is UndoDecision.Revert -> {
+                    // Отмена обязана очистить поля отметки: возврат в «ожидается» без
+                    // очистки — отказ записи, а не испорченная история (ИНВ-11, SKL-107).
+                    Invariants.requireValid(Invariants.violations(decision.intake))
                     val changed = dao.unmark(intake.id)
                     if (changed == 0) {
                         log.record(
@@ -340,6 +363,13 @@ class IntakeRepositoryImpl @Inject constructor(
             source = command.source,
             actorProfileId = command.actorProfileId,
         )
+        val course = requireNotNull((medication.decode() as? Decoded.Value)?.model) {
+            "On-demand intake addresses a medication with an unreadable enum: ${medication.id}"
+        }
+        // Рождение приёма «по потребности»: назначенное время равно моменту отметки (ИНВ-14);
+        // курс не судится — кнопка жива, пока курс не убран в архив (SKL-107).
+        Invariants.requireValid(Invariants.prnBirthViolations(intake, course, time.zone()))
+
         // Слот не проставляется: приём по потребности расписанию не подчиняется, и два
         // таких приёма в одну минуту законны (ИНВ-14).
         dao.insertAll(listOf(intake.toEntity(ScheduleMode.PRN)))
@@ -378,6 +408,11 @@ class IntakeRepositoryImpl @Inject constructor(
      * не может, поэтому случай не игнорируется молча, а попадает в журнал (`TDD.md §9`).
      */
     private suspend fun writeMark(current: Intake, command: MarkCommand, decision: MarkDecision.Write): MarkOutcome {
+        // Граница отметки: поля отметки согласованы со статусом (ИНВ-10, ИНВ-11), отметивший
+        // — не профиль владельца лекарства (ИНВ-18). Курс и режим не судят уже живущую
+        // строку: план правится после рождения приёма (обоснование — SKL-107/TDD.md §2).
+        Invariants.requireValid(Invariants.markingViolations(decision.intake, medicationModel(current.medicationId)))
+
         val actedAt = command.actedAt.toEpochMilli()
         val status = command.result.status.name
         val changed = if (decision.superseded) {
@@ -414,6 +449,15 @@ class IntakeRepositoryImpl @Inject constructor(
         } else {
             MarkOutcome.Applied(decision.intake)
         }
+    }
+
+    /** Лекарство приёма для парных проверок; нечитаемое перечисление в продукте недостижимо. */
+    private suspend fun medicationModel(medicationId: String): Medication {
+        val stored = requireNotNull(medications.getById(medicationId)) {
+            "An intake addresses a medication that does not exist: $medicationId"
+        }
+        return (stored.decode() as? Decoded.Value)?.model
+            ?: error("An intake addresses a medication with an unreadable enum: $medicationId")
     }
 
     /**

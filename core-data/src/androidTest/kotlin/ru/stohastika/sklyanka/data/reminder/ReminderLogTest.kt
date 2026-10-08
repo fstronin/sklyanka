@@ -17,6 +17,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import ru.stohastika.sklyanka.data.room.SklyankaDatabase
 import ru.stohastika.sklyanka.data.room.entity.ReminderLogEntity
+import ru.stohastika.sklyanka.data.room.withForeignKeysEnabled
 import ru.stohastika.sklyanka.domain.reminder.AlarmKind
 import ru.stohastika.sklyanka.domain.reminder.DeferredReason
 import ru.stohastika.sklyanka.domain.reminder.DeviceEnvironment
@@ -51,7 +52,7 @@ class ReminderLogTest {
         database = Room.inMemoryDatabaseBuilder(
             ApplicationProvider.getApplicationContext(),
             SklyankaDatabase::class.java,
-        ).build()
+        ).build().withForeignKeysEnabled()
         journal = RoomReminderJournal(database.reminderLogDao())
     }
 

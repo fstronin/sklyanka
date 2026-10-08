@@ -4,6 +4,7 @@ import ru.stohastika.sklyanka.data.room.SklyankaConverters
 import ru.stohastika.sklyanka.data.room.dao.IntakeDao
 import ru.stohastika.sklyanka.data.room.dao.MedicationDao
 import ru.stohastika.sklyanka.data.room.dao.ProfileDao
+import ru.stohastika.sklyanka.data.room.entity.MedicationEntity
 import ru.stohastika.sklyanka.data.room.mapper.Decoded
 import ru.stohastika.sklyanka.data.room.mapper.decode
 import ru.stohastika.sklyanka.data.room.mapper.toDomain
@@ -59,15 +60,31 @@ class RoomTransferStore @Inject constructor(
         }
         (plan.medicationsToInsert + plan.medicationsToUpdate).forEach { medication ->
             Invariants.requireValid(Invariants.violations(medication))
+            // Граница ИНВ-3: план merged-режима переносит владельца устройства сам
+            // (`BuildTransferPlan`), перезапись чужого идентификатора с другим профилем
+            // означает обход правила — отказ откатывает всю транзакцию (SKL-107).
+            medications.getById(medication.id)?.let { stored ->
+                Invariants.requireValid(Invariants.ownershipViolations(stored.profileId, medication))
+            }
             medications.upsert(medication.toEntity())
         }
 
-        val modes = scheduleModes(plan.intakesToInsert + plan.intakesToUpdate)
+        val parents = parentsOf(plan.intakesToInsert + plan.intakesToUpdate)
+        // Строки файла проходят те же границы, что обычная запись: поля отметки (ИНВ-10,
+        // ИНВ-11) и подпись (ИНВ-18). Курс и режим историю не судят — обоснование в
+        // `ValidateSnapshot` и `TDD.md §2`.
+        (plan.intakesToInsert + plan.intakesToUpdate).forEach { intake ->
+            val owner = requireNotNull(parents[intake.medicationId])
+            Invariants.requireValid(
+                Invariants.violations(intake) +
+                    Invariants.actorOwnershipViolations(intake.actorProfileId, owner.profileId),
+            )
+        }
         if (plan.intakesToInsert.isNotEmpty()) {
-            intakes.insertAll(plan.intakesToInsert.map { it.toEntity(mode(modes, it)) })
+            intakes.insertAll(plan.intakesToInsert.map { it.toEntity(mode(parents, it)) })
         }
         if (plan.intakesToUpdate.isNotEmpty()) {
-            transfer.updateIntakes(plan.intakesToUpdate.map { it.toEntity(mode(modes, it)) })
+            transfer.updateIntakes(plan.intakesToUpdate.map { it.toEntity(mode(parents, it)) })
         }
 
         requireSelfProfile()
@@ -110,20 +127,23 @@ class RoomTransferStore @Inject constructor(
     )
 
     /**
-     * Режим приёма его лекарства.
+     * Лекарство каждого упомянутого приёма: для колонки-слота и парных проверок.
      *
-     * Нужен колонке-слоту: приём по расписанию занимает слот и потому уникален на момент
-     * времени (ИНВ-13), приём по потребности слота не занимает (ИНВ-14).
+     * Режим нужен слоту: приём по расписанию занимает слот и потому уникален на момент
+     * времени (ИНВ-13), приём по потребности слота не занимает (ИНВ-14); профиль нужен
+     * проверке подписи (ИНВ-18).
      */
-    private suspend fun scheduleModes(rows: List<Intake>): Map<String, ScheduleMode> =
-        rows.map { it.medicationId }.distinct().associateWith { id ->
+    private suspend fun parentsOf(rows: List<Intake>): Map<String, MedicationEntity> {
+        val medicationIds = rows.map { it.medicationId }.distinct()
+        return medicationIds.associateWith { id ->
             val stored = medications.getById(id)
             requireNotNull(stored) { "The transfer plan refers to a medication that does not exist: $id" }
-            SklyankaConverters.textToEnum<ScheduleMode>(stored.scheduleMode) ?: ScheduleMode.SCHEDULED
         }
+    }
 
-    private fun mode(modes: Map<String, ScheduleMode>, intake: Intake): ScheduleMode =
-        requireNotNull(modes[intake.medicationId])
+    private fun mode(parents: Map<String, MedicationEntity>, intake: Intake): ScheduleMode =
+        SklyankaConverters.textToEnum<ScheduleMode>(requireNotNull(parents[intake.medicationId]).scheduleMode)
+            ?: ScheduleMode.SCHEDULED
 
     /**
      * ИНВ-1 в конце транзакции (`TDD.md §6`).

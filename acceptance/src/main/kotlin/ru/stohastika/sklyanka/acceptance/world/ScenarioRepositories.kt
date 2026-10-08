@@ -18,6 +18,7 @@ import ru.stohastika.sklyanka.domain.model.ArchiveReason
 import ru.stohastika.sklyanka.domain.model.Intake
 import ru.stohastika.sklyanka.domain.model.IntakeSource
 import ru.stohastika.sklyanka.domain.model.IntakeStatus
+import ru.stohastika.sklyanka.domain.model.Invariants
 import ru.stohastika.sklyanka.domain.model.Medication
 import ru.stohastika.sklyanka.domain.model.Profile
 import ru.stohastika.sklyanka.domain.model.ScheduleMode
@@ -52,6 +53,7 @@ class ScenarioRepositories(
     private val profiles: ScenarioProfiles,
     private val medications: ScenarioMedications,
     private val intakes: ScenarioIntakes,
+    private val clock: ScenarioClock,
     /**
      * Журнал сценария: след отмены пишет хранилище, как в `Room`-реализации (SKL-30),
      * а не шаг приёмки — иначе проверялась бы копия правила, а не правило.
@@ -110,7 +112,13 @@ class ScenarioRepositories(
 
         override suspend fun get(medicationId: String): Medication? = medications.byId(medicationId)
 
-        override suspend fun save(medication: Medication) = medications.put(medication)
+        override suspend fun save(medication: Medication) {
+            Invariants.requireValid(Invariants.violations(medication))
+            medications.byId(medication.id)?.let { stored ->
+                Invariants.requireValid(Invariants.ownershipViolations(stored.profileId, medication))
+            }
+            medications.put(medication)
+        }
 
         override suspend fun archive(medicationId: String, reason: ArchiveReason): Boolean =
             medications.archiveById(medicationId, reason)
@@ -179,7 +187,21 @@ class ScenarioRepositories(
 
         override suspend fun get(intakeId: String): Intake? = intakes.get(intakeId)
 
-        override suspend fun insertMissing(intakes: List<Intake>): Int = 0
+        override suspend fun insertMissing(intakes: List<Intake>): Int {
+            // Граница хранилища та же, что у Room: существование лекарства, поля
+            // отметки по статусу (ИНВ-10, ИНВ-11), «по потребности» не ожидается (ИНВ-14).
+            intakes.forEach { intake ->
+                val medication = requireNotNull(medications.byId(intake.medicationId)) {
+                    "Intake refers to a medication that does not exist: ${intake.medicationId}"
+                }
+                Invariants.requireValid(Invariants.writeViolations(intake, medication.scheduleMode))
+            }
+            return intakes.count { candidate ->
+                val absent = this@ScenarioRepositories.intakes.get(candidate.id) == null
+                if (absent) this@ScenarioRepositories.intakes.store(candidate)
+                absent
+            }
+        }
 
         override suspend fun scheduledBetween(
             profileId: String,
@@ -195,23 +217,32 @@ class ScenarioRepositories(
             medicationId: String,
             diff: IntakePlanDiff,
         ): PlanApplyResult {
+            val course = requireNotNull(medications.byId(medicationId)) {
+                "Plan refers to a medication that does not exist: $medicationId"
+            }
+            require(course.profileId == profileId) {
+                "Plan refers to a medication of another profile: $medicationId"
+            }
+            // Граница генерации та же, что у Room: рождённая строка проверяется полной
+            // тройкой пары, включая курс (ИНВ-15, SKL-107).
+            val rows = diff.toCreate.map { moment ->
+                Intake(
+                    id = intakes.nextId(),
+                    medicationId = medicationId,
+                    scheduledAt = moment,
+                    status = IntakeStatus.PENDING,
+                    actedAt = null,
+                    source = null,
+                    actorProfileId = null,
+                ).also { intake -> Invariants.requireValid(Invariants.violations(intake, course, clock.zone)) }
+            }
             val deleted = diff.toDelete.count { id -> intakes.removeIfPending(id) }
-            val created = diff.toCreate.count { moment ->
-                val taken = intakes.all().any { it.medicationId == medicationId && it.scheduledAt == moment }
-                if (!taken) {
-                    intakes.store(
-                        Intake(
-                            id = intakes.nextId(),
-                            medicationId = medicationId,
-                            scheduledAt = moment,
-                            status = IntakeStatus.PENDING,
-                            actedAt = null,
-                            source = null,
-                            actorProfileId = null,
-                        ),
-                    )
+            val created = rows.count { intake ->
+                val absent = intakes.all().none {
+                    it.medicationId == medicationId && it.scheduledAt == intake.scheduledAt
                 }
-                !taken
+                if (absent) intakes.store(intake)
+                absent
             }
             return PlanApplyResult(created = created, deleted = deleted)
         }
@@ -237,6 +268,10 @@ class ScenarioRepositories(
             return when (val decision = IntakeTransition.decide(current, command)) {
                 is MarkDecision.Keep -> MarkOutcome.Ignored(decision.intake, decision.reason)
                 is MarkDecision.Write -> {
+                    val medication = requireNotNull(medications.byId(current.medicationId)) {
+                        "An intake addresses a medication that does not exist: ${current.medicationId}"
+                    }
+                    Invariants.requireValid(Invariants.markingViolations(decision.intake, medication))
                     intakes.store(decision.intake)
                     applyStock(decision.intake.medicationId, decision.stock)
                     if (decision.superseded) {
@@ -271,6 +306,7 @@ class ScenarioRepositories(
                 when (val decision = IntakeTransition.undo(intake)) {
                     is UndoDecision.Keep -> Unit
                     is UndoDecision.Revert -> {
+                        Invariants.requireValid(Invariants.violations(decision.intake))
                         intakes.store(decision.intake)
                         applyStock(intake.medicationId, decision.stock)
                         log.record(
@@ -318,6 +354,7 @@ class ScenarioRepositories(
                     source = command.source,
                     actorProfileId = command.actorProfileId,
                 )
+                Invariants.requireValid(Invariants.prnBirthViolations(intake, medication, clock.zone))
                 intakes.store(intake)
                 applyStock(medication.id, StockEffect.DECREMENT)
                 PrnOutcome.Created(intake)

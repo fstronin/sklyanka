@@ -21,11 +21,14 @@ import ru.stohastika.sklyanka.domain.model.Medication
  * [ValidateMedicationDraft], что у формы (SKL-09). Форма у загрузки отсутствует, а правила
  * те же: запись, которую форма не дала бы сохранить, не должна въезжать в базу через файл.
  *
- * Приёмы проверяются только на согласованность своих полей ([Invariants.violations] от
- * одного приёма): пара «приём и его лекарство» здесь не проверяется намеренно. ИНВ-15
- * требует, чтобы назначенное время лежало внутри курса, а курс, у которого человек сдвинул
- * даты уже после приёмов, — обычное дело, и отказ от всего файла из-за такой записи
- * потерял бы единственную резервную копию истории.
+ * Приёмы проверяются на согласованность своих полей ([Invariants.violations] от
+ * одного приёма) и на подпись пары: ИНВ-18 отвергает файл, где отметку поставил
+ * «сам владелец профиля» — продукта такого состояния не бывает ни в одной выпущенной
+ * сборке (по образцу отказа ИНВ-22). Полная пара «приём и его лекарство» здесь
+ * не проверяется намеренно. ИНВ-15 требует, чтобы назначенное время лежало внутри
+ * курса, а курс, у которого человек сдвинул даты уже после приёмов, — обычное дело,
+ * как и смена режима «по расписанию» на «по потребности» (ИНВ-14); отказ от всего
+ * файла из-за такой записи потерял бы единственную резервную копию истории.
  */
 class ValidateSnapshot(private val validateMedication: ValidateMedicationDraft = ValidateMedicationDraft()) {
 
@@ -101,8 +104,13 @@ class ValidateSnapshot(private val validateMedication: ValidateMedicationDraft =
                 return reject(TransferRejectReason.INVALID_RECORD, "medications:${violations.first()}")
             }
         }
+        val profileByMedication = snapshot.medications.associate { it.id to it.profileId }
         snapshot.intakes.forEach { intake ->
-            val violations = Invariants.violations(intake)
+            val violations = Invariants.violations(intake) +
+                Invariants.actorOwnershipViolations(
+                    actorProfileId = intake.actorProfileId,
+                    medicationProfileId = profileByMedication.getValue(intake.medicationId),
+                )
             if (violations.isNotEmpty()) {
                 return reject(TransferRejectReason.INVALID_RECORD, "intakes:${violations.first()}")
             }

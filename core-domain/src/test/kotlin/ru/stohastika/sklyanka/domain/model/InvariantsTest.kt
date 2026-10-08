@@ -221,4 +221,86 @@ class InvariantsTest {
     fun `a blank profile name is rejected`() {
         assertTrue(Invariants.violations(Fixtures.profile(name = " ")).isNotEmpty())
     }
+
+    // --- SKL-107: границы инвариантов на путях записи ------------------------------------------
+
+    @Test
+    fun `a medication cannot change its owner`() {
+        val stored = Fixtures.scheduledMedication()
+        val reassigned = stored.copy(profileId = Fixtures.OTHER_PROFILE_ID)
+
+        assertEquals(listOf("INV-3"), Invariants.ownershipViolations(stored.profileId, reassigned))
+        assertTrue(Invariants.ownershipViolations(stored.profileId, stored).isEmpty())
+    }
+
+    @Test
+    fun `an actor equal to the owner of the medication breaks INV-18`() {
+        val owner = Fixtures.PROFILE_ID
+
+        assertEquals(
+            listOf("INV-18"),
+            Invariants.actorOwnershipViolations(actorProfileId = owner, medicationProfileId = owner),
+        )
+        assertTrue(Invariants.actorOwnershipViolations(null, owner).isEmpty())
+        assertTrue(Invariants.actorOwnershipViolations(Fixtures.OTHER_PROFILE_ID, owner).isEmpty())
+    }
+
+    @Test
+    fun `the marking boundary keeps foreign and actor but not the course or the prn pairing`() {
+        val medication = Fixtures.scheduledMedication().copy(endDate = Fixtures.SHORT_COURSE_END)
+        val foreignActor = Fixtures.takenIntake().copy(actorProfileId = medication.profileId)
+
+        // Живущий приём вне курса — законная отметка: даты курса правятся после приёмов.
+        assertTrue(Invariants.markingViolations(Fixtures.pendingIntake(), medication).isEmpty())
+        assertEquals(listOf("INV-18"), Invariants.markingViolations(foreignActor, medication))
+    }
+
+    @Test
+    fun `the marking boundary still rejects fields that contradict the status`() {
+        val intake = Fixtures.takenIntake().copy(source = null)
+
+        assertEquals(listOf("INV-10"), Invariants.markingViolations(intake, Fixtures.scheduledMedication()))
+    }
+
+    @Test
+    fun `prn birth requires the marking moment and the scheduled minute to agree`() {
+        val medication = Fixtures.prnMedication()
+
+        assertEquals(listOf("INV-14"), Invariants.prnBirthViolations(Fixtures.takenIntake(), medication, moscow))
+
+        val actedAt = Instant.parse("2026-09-25T05:00:00Z")
+        val born = Fixtures.takenIntake(actedAt).copy(
+            scheduledAt = actedAt.atZone(moscow).toLocalDateTime(),
+        )
+        assertTrue(Invariants.prnBirthViolations(born, medication, moscow).isEmpty())
+    }
+
+    @Test
+    fun `the marking boundary ignores prn pairing of leftover scheduled rows`() {
+        // Режим поменяли после рождения приёма: отметка живущего приёма законна,
+        // а назначенное время она не переписывает.
+        assertTrue(Invariants.markingViolations(Fixtures.takenIntake(), Fixtures.prnMedication()).isEmpty())
+    }
+
+    @Test
+    fun `the full boundary adds the course window to the prn birth set`() {
+        val medication = Fixtures.prnMedication().copy(endDate = Fixtures.SHORT_COURSE_END)
+
+        assertEquals(
+            listOf("INV-14", "INV-15"),
+            Invariants.violations(Fixtures.takenIntake(), medication, moscow),
+        )
+    }
+
+    @Test
+    fun `the arbitrary-model boundary refuses an expected row of a prn medication`() {
+        val intake = Fixtures.pendingIntake()
+
+        assertEquals(listOf("INV-14"), Invariants.writeViolations(intake, ScheduleMode.PRN))
+        assertTrue(Invariants.writeViolations(intake, ScheduleMode.SCHEDULED).isEmpty())
+        assertEquals(
+            listOf("INV-10"),
+            Invariants.writeViolations(Fixtures.takenIntake().copy(source = null), ScheduleMode.SCHEDULED),
+        )
+    }
 }

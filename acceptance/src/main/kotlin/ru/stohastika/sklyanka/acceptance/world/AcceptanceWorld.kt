@@ -70,7 +70,7 @@ class AcceptanceWorld {
     val log = ScenarioLog(clock)
 
     /** Репозитории поверх состояния: под ними гоняются настоящие доменные сценарии. */
-    val repositories = ScenarioRepositories(profiles, medications, intakes, log)
+    val repositories = ScenarioRepositories(profiles, medications, intakes, clock, log)
 
     /** Активный профиль как состояние приложения: переключение и перезапуск (ПРФ-17, ПРФ-18). */
     val profileSession = ScenarioProfileSession(profiles, repositories.profileStore)

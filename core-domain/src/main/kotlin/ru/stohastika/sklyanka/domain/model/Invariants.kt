@@ -53,24 +53,71 @@ object Invariants {
         if (!marked && intake.actorProfileId != null) add("INV-11")
     }
 
+    /** ИНВ-14 (ветвь «не ожидается») для границ, где из пары известен только режим. */
+    fun pendingInPrnViolations(intake: Intake, scheduleMode: ScheduleMode): List<String> =
+        if (scheduleMode == ScheduleMode.PRN && intake.isPending) listOf("INV-14") else emptyList()
+
     /**
-     * Приём в паре со своим лекарством: INV-14, INV-15, INV-18.
-     *
-     * Пояс нужен для INV-14: назначенное время локальное, момент отметки — в UTC,
-     * и сравнивать их иначе, чем приведя момент к местному времени, нельзя.
+     * Приём сам по себе + режим лекарства: ИНВ-10, ИНВ-11 и ожидающаяся строка
+     * «по потребности» (ИНВ-14). Полную пару проверяют [markingViolations] и
+     * [violations] с лекарством; здесь — минимум, который виден по одному режиму.
      */
-    fun violations(intake: Intake, medication: Medication, zone: ZoneId): List<String> = buildList {
+    fun writeViolations(intake: Intake, scheduleMode: ScheduleMode): List<String> =
+        violations(intake) + pendingInPrnViolations(intake, scheduleMode)
+
+    /**
+     * ИНВ-3: у созданного лекарства владелец не меняется.
+     *
+     * Сверка с хранимым, а не с самим собой: принадлежность — факт истории, и проверка
+     * имеет смысл только там, где перезаписывают существующую строку, — при сохранении
+     * формы и при применении плана переноса.
+     */
+    fun ownershipViolations(existingProfileId: String, updated: Medication): List<String> =
+        if (existingProfileId != updated.profileId) listOf("INV-3") else emptyList()
+
+    /**
+     * ИНВ-18: отметивший — не владелец профиля лекарства.
+     *
+     * Ссылка на существующий профиль держит внешний ключ (ИНВ-12); здесь — то, чего
+     * схемой не выразить: совпадение с самим владельцем.
+     */
+    fun actorOwnershipViolations(actorProfileId: String?, medicationProfileId: String): List<String> =
+        if (actorProfileId != null && actorProfileId == medicationProfileId) listOf("INV-18") else emptyList()
+
+    /**
+     * Граница отметки живущей записи и строк файла: ИНВ-10, ИНВ-11, чужое лекарство, ИНВ-18.
+     *
+     * Курс (ИНВ-15) и режим пары (ИНВ-14) здесь не судят: даты правятся после приёмов,
+     * при смене режима остаются прежние «ожидается» — оба обычное дело, и отказ им
+     * стоил бы человеку реальной истории. Родившуюся строку проверяют [violations]
+     * и [prnBirthViolations].
+     */
+    fun markingViolations(intake: Intake, medication: Medication): List<String> = buildList {
         addAll(violations(intake))
         if (intake.medicationId != medication.id) add(INTAKE_FOREIGN_MEDICATION)
-        if (medication.scheduleMode == ScheduleMode.PRN) {
-            val actedLocal = intake.actedAt?.atZone(zone)?.toLocalDateTime()?.withSecond(0)?.withNano(0)
-            if (intake.isPending || actedLocal != intake.scheduledAt) add("INV-14")
-        }
-        if (intake.scheduledAt.toLocalDate() < medication.startDate) add("INV-15")
-        val endDate = medication.endDate
-        if (endDate != null && intake.scheduledAt.toLocalDate() > endDate) add("INV-15")
-        if (intake.actorProfileId != null && intake.actorProfileId == medication.profileId) add("INV-18")
+        addAll(actorOwnershipViolations(intake.actorProfileId, medication.profileId))
     }
+
+    /**
+     * Рождение приёма «по потребности»: граница отметки плюс ИНВ-14.
+     *
+     * Пояс нужен для ИНВ-14: назначенное время локальное, момент отметки — в UTC,
+     * и сравнивать их иначе, чем приведя момент к местному времени, нельзя. Курс не
+     * судится: «принять» фиксирует факт, а кнопка жива, пока курс не убран в архив.
+     */
+    fun prnBirthViolations(intake: Intake, medication: Medication, zone: ZoneId): List<String> =
+        markingViolations(intake, medication) + prnPairViolations(intake, medication, zone)
+
+    /**
+     * Приём в паре со своим лекарством: полный набор — ИНВ-14, ИНВ-15, ИНВ-18.
+     *
+     * Это граница генерации: приём, порождаемый расписанием, обязан родиться внутри
+     * курса, и отказ здесь означает баг экспандера, а не данные человека.
+     */
+    fun violations(intake: Intake, medication: Medication, zone: ZoneId): List<String> =
+        markingViolations(intake, medication) +
+            prnPairViolations(intake, medication, zone) +
+            courseViolations(intake, medication)
 
     /** Бросает [InvariantViolationException], если список нарушений непуст. */
     fun requireValid(violations: List<String>) {
@@ -97,6 +144,22 @@ object Invariants {
                 if (medication.maxPerDay != null && medication.maxPerDay <= 0) add("INV-17")
             }
         }
+    }
+
+    /** ИНВ-14: приём «по потребности» не ожидается и отмечен в свою назначенную минуту. */
+    private fun prnPairViolations(intake: Intake, medication: Medication, zone: ZoneId): List<String> = buildList {
+        addAll(pendingInPrnViolations(intake, medication.scheduleMode))
+        if (medication.scheduleMode == ScheduleMode.PRN && !intake.isPending) {
+            val actedLocal = intake.actedAt?.atZone(zone)?.toLocalDateTime()?.withSecond(0)?.withNano(0)
+            if (actedLocal != intake.scheduledAt) add("INV-14")
+        }
+    }
+
+    /** ИНВ-15: назначенное время лежит в пределах курса. */
+    private fun courseViolations(intake: Intake, medication: Medication): List<String> = buildList {
+        if (intake.scheduledAt.toLocalDate() < medication.startDate) add("INV-15")
+        val endDate = medication.endDate
+        if (endDate != null && intake.scheduledAt.toLocalDate() > endDate) add("INV-15")
     }
 
     private const val PROFILE_NAME_BLANK = "PROFILE-NAME-BLANK"

@@ -7,8 +7,9 @@ import org.junit.rules.ExternalResource
 /**
  * База в памяти для инструментальных тестов.
  *
- * Внешние ключи Room включает сам, и это важно: половина проверяемых здесь инвариантов
- * (INV-12, INV-18) держится именно ими, а не кодом.
+ * Внешние ключи включает `ForeignKeyEnforcement` — тот же явный код, что стоит
+ * в продуктовом графе: половина проверяемых здесь инвариантов (ИНВ-12, ИНВ-18)
+ * держится ими, а не кодом, и проверяться они должны на том же открытии базы.
  */
 class DatabaseTestRule : ExternalResource() {
 
@@ -24,7 +25,7 @@ class DatabaseTestRule : ExternalResource() {
         database = Room.inMemoryDatabaseBuilder(
             ApplicationProvider.getApplicationContext(),
             SklyankaDatabase::class.java,
-        ).build()
+        ).build().withForeignKeysEnabled()
     }
 
     override fun after() {
