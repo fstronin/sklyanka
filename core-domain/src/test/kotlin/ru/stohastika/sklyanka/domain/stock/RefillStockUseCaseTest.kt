@@ -18,7 +18,7 @@ import java.time.LocalTime
 import java.time.ZoneId
 
 /**
- * Пополнение остатка человеком — группа `@refill` из `docs/tasks/SKL-12/acceptance.feature`.
+ * Пополнение остатка человеком — группа `@refill` из `acceptance/src/main/resources/features/SKL-12.feature`.
  *
  * Поведение временное (ОВ-13): «Пополнить» заменяет значение остатка.
  */

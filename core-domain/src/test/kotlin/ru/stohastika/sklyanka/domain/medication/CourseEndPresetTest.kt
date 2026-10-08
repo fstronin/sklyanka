@@ -10,7 +10,7 @@ import java.time.LocalDate
  * Расчёт даты окончания по пресету (ПМ-12, SKL-75).
  *
  * Таблица `Примеры` структуры сценария «Расчёт даты окончания по календарю» из
- * `docs/tasks/SKL-75/acceptance.feature`, плюс проверка состава и порядка [CourseEndPreset.Options].
+ * `acceptance/src/main/resources/features/SKL-75.feature`, плюс проверка состава и порядка [CourseEndPreset.Options].
  */
 class CourseEndPresetTest {
 

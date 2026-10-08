@@ -28,7 +28,7 @@ import ru.stohastika.sklyanka.ui.snapshot.Snapshots
  *
  * Стенд — имитация Android, а не EMUI: снимок говорит, что вёрстка не изменилась, и ничего
  * не говорит о том, как экран выглядит на настоящем устройстве
- * (`docs/tasks/SKL-24/TDD.md §2`).
+ * (`docs/archive/tasks/SKL-24/TDD.md §2`).
  */
 @RunWith(AndroidJUnit4::class)
 class ProfileSignsSnapshotTest {

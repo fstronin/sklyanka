@@ -12,7 +12,7 @@ import java.time.LocalTime
 /**
  * Блок «Остаток» в карточке лекарства: что именно экран получает от домена.
  *
- * Сценарии группы `@ui` из `docs/tasks/SKL-12/acceptance.feature` в части чисел
+ * Сценарии группы `@ui` из `acceptance/src/main/resources/features/SKL-12.feature` в части чисел
  * и признаков; тексты и склонения — ресурсы SKL-08 и SKL-10.
  */
 class StockPanelTest {

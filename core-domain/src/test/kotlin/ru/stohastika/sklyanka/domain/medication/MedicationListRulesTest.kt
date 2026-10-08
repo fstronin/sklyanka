@@ -123,7 +123,7 @@ class MedicationListRulesTest {
 
     @Test
     fun `an as needed course has no defined daily consumption`() {
-        // Открытый вопрос docs/spec/02-data-model.md §3: расход по потребности не определён,
+        // Открытый вопрос docs/v2/10-behavior.md §3: расход по потребности не определён,
         // поэтому порог для такого курса не срабатывает вовсе.
         val medication = prn().copy(stockLeft = BigDecimal("1"), stockThresholdDays = 5)
 

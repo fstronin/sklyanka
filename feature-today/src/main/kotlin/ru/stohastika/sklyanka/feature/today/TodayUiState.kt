@@ -53,7 +53,7 @@ sealed interface TodayUiState {
      * У профиля нет ни одного активного лекарства — `Empty.dc.html`.
      *
      * Именно «нет лекарств», а не «нет приёмов на сегодня»: второму случаю этот
-     * экран сообщал бы неправду (`docs/spec/03-screens.md`, ОВ-34).
+     * экран сообщал бы неправду (`docs/v2/10-behavior.md`, ОВ-34).
      */
     data class Empty(
         val date: LocalDate,

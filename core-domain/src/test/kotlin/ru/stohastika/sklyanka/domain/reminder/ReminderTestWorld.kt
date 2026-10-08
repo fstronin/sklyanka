@@ -27,7 +27,7 @@ import java.time.ZoneId
  * фейковые будильники и уведомления.
  *
  * Собрана вокруг сценария приёмки: профиль «Я», лекарство с приёмом в 14:00 ежедневно,
- * «сейчас» 25 сентября 2026, 09:00 (`docs/tasks/SKL-13/acceptance.feature`, Предыстория).
+ * «сейчас» 25 сентября 2026, 09:00 (`acceptance/src/main/resources/features/SKL-13.feature`, Предыстория).
  * Часы и пояс управляемые, иначе окно, полночь и перелёт непроверяемы (НФТ-48).
  */
 internal class ReminderTestWorld(zone: ZoneId = MOSCOW) {

@@ -17,7 +17,7 @@ import java.time.LocalTime
  * Правило предупреждения о покупке (ПР-13) и выбор самого срочного из нескольких.
  *
  * Таблица `Примеры` структуры сценария «Когда появляется предупреждение о покупке»
- * из `docs/tasks/SKL-12/acceptance.feature` целиком.
+ * из `acceptance/src/main/resources/features/SKL-12.feature` целиком.
  */
 class StockWarningTest {
 

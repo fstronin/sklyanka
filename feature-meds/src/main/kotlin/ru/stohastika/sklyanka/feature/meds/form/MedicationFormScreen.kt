@@ -147,7 +147,7 @@ private fun SaveBar(state: MedFormUiState, onIntent: (MedFormIntent) -> Unit) {
 /**
  * Заголовок шапки: «Новое лекарство» либо название правящегося лекарства.
  *
- * Макета состояния правки нет; формулировка взята из `docs/spec/03-screens.md`.
+ * Макета состояния правки нет; формулировка взята из `docs/v2/10-behavior.md`.
  */
 @Composable
 private fun titleOf(state: MedFormUiState): String = when (val mode = state.mode) {

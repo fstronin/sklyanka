@@ -452,7 +452,7 @@ class MedicationFormSteps {
         const val SCHEDULED_LABEL = "По расписанию"
         const val VISIBLE_LABEL = "показан"
 
-        /** Единицы остатка из `docs/spec/03-screens.md`: четыре и ровно четыре. */
+        /** Единицы остатка из `docs/v2/10-behavior.md`: четыре и ровно четыре. */
         val STOCK_UNITS = mapOf(
             DoseUnit.TABLET to "таблеток",
             DoseUnit.CAPSULE to "капсул",

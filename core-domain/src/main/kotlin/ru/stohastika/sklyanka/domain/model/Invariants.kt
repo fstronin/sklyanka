@@ -6,7 +6,7 @@ import java.time.ZoneId
 /**
  * Отказ по нарушенному инварианту модели данных.
  *
- * Коды — из docs/spec/02-data-model.md §9 и записаны латиницей (INV-4), потому что
+ * Коды — из docs/v2/10-behavior.md §9 и записаны латиницей (INV-4), потому что
  * в код не попадает русский текст: сообщение для человека собирает интерфейс из
  * ресурсов, а этот список нужен разработчику и журналу (НФТ-42).
  */
@@ -22,7 +22,7 @@ class InvariantViolationException(val violations: List<String>) :
  */
 object Invariants {
 
-    /** Профиль: имя непустое после обрезки пробелов (docs/spec/02-data-model.md §2). */
+    /** Профиль: имя непустое после обрезки пробелов (docs/v2/10-behavior.md §2). */
     fun violations(profile: Profile): List<String> = buildList {
         if (profile.name.isBlank()) add(PROFILE_NAME_BLANK)
     }

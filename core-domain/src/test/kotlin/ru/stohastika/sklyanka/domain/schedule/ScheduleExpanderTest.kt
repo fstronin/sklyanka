@@ -16,7 +16,7 @@ import java.time.ZoneId
 /**
  * Разворачивание расписания в плановые моменты.
  *
- * Числа взяты из `docs/tasks/SKL-06/acceptance.feature`: «сейчас 25 сентября 2026, 07:00»,
+ * Числа взяты из `acceptance/src/main/resources/features/SKL-06.feature`: «сейчас 25 сентября 2026, 07:00»,
  * окно — семь суток, то есть 25 сентября … 1 октября.
  */
 @DisplayName("A schedule expands into the planned moments of the window")

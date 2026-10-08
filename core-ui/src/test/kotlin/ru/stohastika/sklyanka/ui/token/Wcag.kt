@@ -7,7 +7,7 @@ import kotlin.math.pow
  * Коэффициент контраста по WCAG 2.1: `(L1 + 0,05) / (L2 + 0,05)`.
  *
  * Считается прямо по токенам, а не по снимку экрана: расхождение с таблицей
- * `docs/spec/08-design-system.md` §6.1 должно находиться сборкой, а не глазами на
+ * `docs/v2/12-design.md` §6.1 должно находиться сборкой, а не глазами на
  * ревью (НФТ-32, критерий 7).
  */
 internal fun contrastRatio(foreground: Color, background: Color): Double {

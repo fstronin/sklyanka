@@ -21,7 +21,7 @@ import java.time.ZoneId
  * Одно предупреждение на экран «Сегодня», в контексте ровно одного профиля.
  *
  * Сценарии `@ui` про несколько сработавших порогов и `@profiles`
- * из `docs/tasks/SKL-12/acceptance.feature`.
+ * из `acceptance/src/main/resources/features/SKL-12.feature`.
  */
 class StockWarningForProfileUseCaseTest {
 

@@ -10,7 +10,7 @@ import ru.stohastika.sklyanka.domain.reminder.port.ReminderSettingsValues
  * Набор интервалов откладывания и умолчание (ПМ-15, SKL-78).
  *
  * Состав и порядок — контракт: экран раскладывает [SnoozeIntervals.OPTIONS] строками
- * диалога, и «5, 10, 15, 30, 60» из `docs/tasks/SKL-78/acceptance.feature` обязан
+ * диалога, и «5, 10, 15, 30, 60» из `acceptance/src/main/resources/features/SKL-78.feature` обязан
  * совпадать с кодом.
  */
 class SnoozeIntervalsTest {

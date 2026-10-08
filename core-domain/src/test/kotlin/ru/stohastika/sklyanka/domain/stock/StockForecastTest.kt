@@ -11,7 +11,7 @@ import java.time.LocalTime
 
 /**
  * «На сколько дней хватит остатка» — таблица `Примеры` структуры сценария из
- * `docs/tasks/SKL-12/acceptance.feature` целиком.
+ * `acceptance/src/main/resources/features/SKL-12.feature` целиком.
  *
  * Расхождение с макетом карточки лекарства зафиксировано отдельным тестом ниже:
  * числа `design/screens/MedCard.dc.html` между собой не сходятся, и за истину принята

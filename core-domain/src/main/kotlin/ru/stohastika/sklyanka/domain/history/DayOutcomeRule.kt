@@ -24,7 +24,7 @@ object DayOutcomeRule {
     fun state(intakesOfDay: List<Intake>, date: LocalDate, today: LocalDate, historyStartsAt: LocalDate?): DayState =
         when {
             // Дни до начала ведения истории рисуются нейтрально и не считаются пропусками
-            // (`docs/spec/03-screens.md`, состояние «Истории меньше месяца»). Проверка идёт
+            // (`docs/v2/10-behavior.md`, состояние «Истории меньше месяца»). Проверка идёт
             // первой: приёмов там нет по природе, а не по недосмотру, и подменять причину
             // на «день без приёмов» значило бы потерять её в сводке.
             historyStartsAt == null || date < historyStartsAt -> DayState.BEFORE_HISTORY

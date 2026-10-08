@@ -20,7 +20,7 @@ import ru.stohastika.sklyanka.ui.token.SklyankaSizes
  * Зачем проверка рядом с эталонным снимком. Снимок фиксирует ИЗМЕНЕНИЕ вёрстки, но не
  * утверждает её правильность: эталон с обрезанной подписью — такой же зелёный эталон,
  * как любой другой, и именно так дефект дожил до SKL-25
- * (`docs/tasks/SKL-24/TDD.md §2.2`). Здесь утверждается свойство, а не совпадение с
+ * (`docs/archive/tasks/SKL-24/TDD.md §2.2`). Здесь утверждается свойство, а не совпадение с
  * картинкой, и утверждается оно по разметке текста, которую Compose уже посчитал:
  * разбор — `TextLayoutFacts.kt`.
  *
@@ -31,7 +31,7 @@ import ru.stohastika.sklyanka.ui.token.SklyankaSizes
  * Чего проверка НЕ утверждает: как это выглядит на настоящем экране EMUI. Перекрытие
  * соседних блоков, читаемость и проходимость экрана до конечного действия по-прежнему
  * смотрят глазами на эталонном устройстве — группа `@manual @device` файла
- * `docs/tasks/SKL-25/acceptance.feature`.
+ * `acceptance/src/main/resources/features/SKL-25.feature`.
  */
 @RunWith(AndroidJUnit4::class)
 class LargeFontTest {

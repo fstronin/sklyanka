@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test
  * Набор порогов напоминания о покупке и умолчание (ПМ-13, SKL-74).
  *
  * Состав и порядок — контракт: форма раскладывает [StockThresholds.Options] по чипам,
- * и «3, 5, 7, 10, 14» из `docs/tasks/SKL-74/acceptance.feature` обязан совпадать с кодом.
+ * и «3, 5, 7, 10, 14» из `acceptance/src/main/resources/features/SKL-74.feature` обязан совпадать с кодом.
  */
 class StockThresholdsTest {
 

@@ -21,7 +21,7 @@ import java.time.ZoneId
  * индикатора шагов.
  *
  * Чего снимок НЕ доказывает: что на настоящем экране всё это помещается и читается —
- * это смотрят глазами на эталонном устройстве (`docs/tasks/SKL-24/TDD.md §2.2`).
+ * это смотрят глазами на эталонном устройстве (`docs/archive/tasks/SKL-24/TDD.md §2.2`).
  */
 @RunWith(AndroidJUnit4::class)
 class PermissionsScreenSnapshotTest {

@@ -13,7 +13,7 @@ import java.math.BigDecimal
  * Правило списания остатка (ПР-5, ИНВ-8, ИНВ-19).
  *
  * Сценарии группы «Списание при отметке» и «Ноль и граница» из
- * `docs/tasks/SKL-12/acceptance.feature`, снятые до уровня чистой функции.
+ * `acceptance/src/main/resources/features/SKL-12.feature`, снятые до уровня чистой функции.
  */
 class StockLedgerTest {
 

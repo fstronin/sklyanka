@@ -13,7 +13,7 @@ import java.time.ZoneId
 /**
  * Расчёт приверженности за месяц: сводные числа, разбивка, архив и границы суток.
  *
- * Числа взяты из `docs/tasks/SKL-18/acceptance.feature`, чтобы проверка и документ
+ * Числа взяты из `acceptance/src/main/resources/features/SKL-18.feature`, чтобы проверка и документ
  * приёмки говорили об одном месяце, а не о двух похожих.
  */
 class AdherenceCalculatorTest {

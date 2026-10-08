@@ -61,7 +61,7 @@ import java.time.format.DateTimeFormatter
  *
  * Развитие экрана разрешений EMUI, а не второй экран: на Huawei показываются пять шагов
  * (два разрешения Android и три настройки EMUI), на остальных телефонах — только два общих.
- * Состав и тексты — из `design/screens/Onboarding.dc.html` и `docs/spec/03-screens.md`;
+ * Состав и тексты — из `design/screens/Onboarding.dc.html` и `docs/v2/10-behavior.md`;
  * единственное объявленное отступление — подпись «Уведомлений» без слов «и на часах»
  * (`ADR-0009`, интеграция с часами отложена).
  *

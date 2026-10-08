@@ -31,7 +31,7 @@ import ru.stohastika.sklyanka.ui.token.SklyankaType
  *
  * Показывается отдельно от лент расписания и скрывается целиком, когда лекарств без
  * расписания нет: пустого места на его месте не остаётся. В плотном дне блок
- * сворачивается такой же секцией, как время суток (`docs/spec/03-screens.md`).
+ * сворачивается такой же секцией, как время суток (`docs/v2/10-behavior.md`).
  */
 internal fun LazyListScope.prnBlock(state: TodayUiState.Content, onIntent: (TodayIntent) -> Unit) {
     if (state.prn.isEmpty()) return

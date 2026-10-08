@@ -9,7 +9,7 @@ import ru.stohastika.sklyanka.ui.token.SklyankaSizes
 import ru.stohastika.sklyanka.ui.token.SklyankaSpacing
 
 /**
- * Состояния компонентов каталога (`docs/spec/08-design-system.md` §4).
+ * Состояния компонентов каталога (`docs/v2/12-design.md` §4).
  *
  * Все перечисления собраны в одном файле намеренно: это словарь состояний системы,
  * по которому строится и каталог, и превью, и проверка «компонент существует во

@@ -17,7 +17,7 @@ import javax.inject.Singleton
  * обязана удерживать, когда SKL-13 появится: **сначала генерация окна приёмов, потом
  * постановка будильников** на первые 48 часов. Обратный порядок ставит будильник на
  * `intake_id`, которого ещё нет, и оставляет осиротевшие будильники после правки
- * расписания (`docs/tasks/SKL-06/TDD.md §7`).
+ * расписания (`docs/archive/tasks/SKL-06/TDD.md §7`).
  */
 @Singleton
 class IntakePlanningTrigger @Inject constructor(

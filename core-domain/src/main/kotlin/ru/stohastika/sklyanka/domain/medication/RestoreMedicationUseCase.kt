@@ -76,7 +76,7 @@ class RestoreMedicationUseCase(
      * Отказ в возврате: приёмов такой курс не породит, и человеку об этом сказано.
      *
      * Курс остаётся в архиве. Молчаливый возврат в никуда — худший вариант из разобранных
-     * в `docs/tasks/SKL-11/task.md` (ОВ-14).
+     * в `docs/archive/tasks/SKL-11/task.md` (ОВ-14).
      */
     private suspend fun refuse(medication: Medication, endDate: LocalDate): RestoreOutcome {
         log.record(

@@ -36,7 +36,7 @@ import ru.stohastika.sklyanka.ui.R as UiR
  *
  * Идёт на JVM под Robolectric (SKL-24): настоящая композиция, настоящие ресурсы модуля,
  * настоящая семантика. Чего стенд не доказывает — вид на настоящем экране EMUI и вёрстку
- * глазами (`docs/tasks/SKL-24/TDD.md §2.2`).
+ * глазами (`docs/archive/tasks/SKL-24/TDD.md §2.2`).
  */
 @RunWith(AndroidJUnit4::class)
 class HistoryScreenTest {
@@ -267,7 +267,7 @@ class HistoryScreenTest {
      * Пустой месяц: прочерки, пустой календарь, скрытый блок «По лекарствам».
      *
      * И ни одного сообщения об ошибке: месяц без записей — это нормальное состояние,
-     * а не сбой (`docs/spec/03-screens.md`, состояние «Данных за месяц нет»).
+     * а не сбой (`docs/v2/10-behavior.md`, состояние «Данных за месяц нет»).
      */
     @Test
     fun anEmptyMonthShowsDashesAndHidesTheBreakdown() {

@@ -143,10 +143,10 @@ interface TransferReplanner {
     /**
      * @param archivedMedicationIds загруженные **архивированные** курсы.
      *
-     * Полный обход планировщика архивированные курсы не посещает (`docs/tasks/SKL-06/TDD.md §7`),
+     * Полный обход планировщика архивированные курсы не посещает (`docs/archive/tasks/SKL-06/TDD.md §7`),
      * а «заменить всё» способно загрузить архивированный курс вместе с его ожидающимися
      * приёмами. Без отдельного обхода по этим записям человек получит напоминания
-     * по курсу, который он архивировал (`docs/tasks/SKL-06/TODO.md`, пункт 21).
+     * по курсу, который он архивировал (`docs/archive/tasks/SKL-06/TODO.md`, пункт 21).
      */
     suspend fun replanAfterTransfer(archivedMedicationIds: List<String>)
 }

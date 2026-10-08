@@ -33,7 +33,7 @@ object SklyankaMarkTokens {
     /** Центр поля. */
     const val CENTER: Float = 100f
 
-    // --- Стеклянная отрисовка (docs/spec/08-design-system.md §7) ---
+    // --- Стеклянная отрисовка (docs/v2/12-design.md §7) ---
 
     /** Ободок — внешняя граница донца. */
     const val RIM_RADIUS: Float = 86f

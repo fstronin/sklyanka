@@ -10,7 +10,7 @@ import ru.stohastika.sklyanka.feature.settings.transfer.DataTransferRoute
 import ru.stohastika.sklyanka.feature.settings.transfer.DataTransferViewModel
 
 /**
- * Вкладка первого уровня: три вкладки нижней панели (`docs/spec/03-screens.md`, «Навигация»).
+ * Вкладка первого уровня: три вкладки нижней панели (`docs/v2/10-behavior.md`, «Навигация»).
  *
  * Раздел «Лекарства» вкладкой не является — он открывается поверх и возвращает туда, откуда
  * открыт, поэтому в перечислении его нет. Место, с которого он открыт, хранится значением

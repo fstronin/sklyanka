@@ -115,7 +115,7 @@ private fun CollapsedSection(section: DaySection, onIntent: (TodayIntent) -> Uni
  *
  * Одна форма на два случая не ради экономии: спецификация прямо требует сворачивать
  * блок «по потребности» «такой же группой», и две похожие, но разные строки разошлись
- * бы при первой же правке (`docs/spec/03-screens.md`).
+ * бы при первой же правке (`docs/v2/10-behavior.md`).
  */
 @Composable
 internal fun CollapsedBlock(

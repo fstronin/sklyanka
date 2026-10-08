@@ -103,7 +103,7 @@ class IntakeLifecycleSteps(private val world: AcceptanceWorld) {
     @Given("^устройство было выключено с (.+?), (\\d{2}:\\d{2})$")
     fun theDeviceWasSwitchedOffAt(date: String, time: String) {
         // Выключенное устройство ничего не делает: ни один проход по просроченным приёмам
-        // в это время не выполняется (сценарий И-10 из docs/spec/04-reminders.md).
+        // в это время не выполняется (сценарий И-10 из docs/v2/10-behavior.md).
         world.clock.moveTo(moment(date, time))
     }
 
@@ -143,7 +143,7 @@ class IntakeLifecycleSteps(private val world: AcceptanceWorld) {
     @Given("^часы не подключены$")
     fun theWatchIsNotConnected() {
         // Недоступность часов — не ошибка сценария: приём отмечается на телефоне,
-        // и доменный слой о часах вообще не знает (docs/spec/05-watch.md).
+        // и доменный слой о часах вообще не знает (docs/adr/0009-wear-engine-post-mvp.md).
     }
 
     @Given("^в (\\d{2}:\\d{2}) человек отложил напоминание на (\\d+) минут$")

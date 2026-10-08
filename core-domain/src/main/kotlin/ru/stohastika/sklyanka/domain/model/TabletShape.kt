@@ -1,7 +1,7 @@
 package ru.stohastika.sklyanka.domain.model
 
 /**
- * Вид таблетки (docs/spec/02-data-model.md §5).
+ * Вид таблетки (docs/v2/10-behavior.md §5).
  *
  * Служит узнаванию в списке: человек помнит «та круглая с риской», а не название.
  * На смысл приёма не влияет.

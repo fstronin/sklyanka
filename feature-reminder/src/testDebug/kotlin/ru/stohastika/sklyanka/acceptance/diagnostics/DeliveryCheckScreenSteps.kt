@@ -170,7 +170,7 @@ class DeliveryCheckScreenSteps(private val world: AcceptanceWorld) {
     @Тогда("^карточка показана в тёмной среде$")
     fun theCardIsDark() {
         // Тёмная среда — параметр темы, которым карточка собирается (`SklyankaTheme(dark = true)`),
-        // а не системная настройка: тёмными бывают напоминание и знак (docs/spec/08-design-system.md §5).
+        // а не системная настройка: тёмными бывают напоминание и знак (docs/v2/12-design.md §5).
         val shownAt = requireNotNull(world.reminders.deliveryCheckShows().lastOrNull())
         DiagnosticsStand.showDeliveryCheckCard(world, shownAt) {
             onNodeWithTag(TAG_DELIVERY_CHECK).assertExists()
