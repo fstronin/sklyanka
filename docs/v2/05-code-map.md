@@ -31,7 +31,7 @@
 | `docs/spec/adr/ADR-0001…0013` | заморожены как источники | `docs/adr/0001…0013-*.md` (нумерация и формат domain-modeling); ADR-0010 пишется под биллинг (SKL-122); ADR-0012 утверждается в SKL-94 |
 | `docs/spec/product-decisions.md` (ПМ-1…ПМ-33) | архив истории: `docs/archive/product-decisions.md` | отмены и замены — записи Р-N в `02-decisions.md` |
 | `docs/spec/design-decisions.md`, `designer-questions.md`, `customer-questions.md`, `decisions-request.md`, `user-flows.md` | архив истории: `docs/archive/` | живые вопросы дизайна/заказчика — `PLAN.md` §5 и `15-visual-findings.md` |
-| `docs/tasks/SKL-NN/` (task.md, TDD.md, TODO.md, run/) | архив истории: `docs/archive/tasks/SKL-NN/`; каталог удалён | действующего правила нет: артефакты закрытых задач — история процесса; сценарии — раздел 3 |
+| `docs/tasks/SKL-NN/` (task.md, TDD.md, TODO.md, run/) | архив истории: `docs/archive/tasks/SKL-NN/`; каталог воссоздаётся на время активной задачи | действующего правила нет: артефакты закрытых задач — история процесса; сценарии — раздел 3 |
 | `PLAN.md` ревизий 1.0–1.1 | заменён ревизией 2.0 (08.10.2026) | `PLAN.md` — план, фазы, реестр статусов |
 
 ## 2. Журналы и номера
