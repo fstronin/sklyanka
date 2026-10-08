@@ -41,14 +41,19 @@ skl_resolve_image() {
 }
 
 skl_install_package() {
-    local package="$1" sdkmanager
+    local package="$1" sdkmanager installed rc=0
     sdkmanager="$(skl_require_tool sdkmanager)"
-    if "$sdkmanager" --list_installed 2>/dev/null | skl_image_path_form | grep -Fq "$(skl_image_path_form "$package")"; then
+    # grep -Fq под pipefail рвёт конвейер SIGPIPE и ложно «не находит» пакет,
+    # поэтому список сначала читается целиком, ищется уже в переменной.
+    installed="$("$sdkmanager" --list_installed 2>/dev/null | skl_image_path_form || true)"
+    if grep -Fq "$(skl_image_path_form "$package")" <<<"$installed"; then
         skl_log "пакет уже установлен: $package"
         return 0
     fi
     skl_log "установка пакета SDK: $package"
-    yes | "$sdkmanager" "$package" >/dev/null || skl_die "не удалось установить $package"
+    yes | "$sdkmanager" "$package" >/dev/null || rc=$?
+    # 141 — SIGPIPE от `yes`, когда sdkmanager уже вышел; это не отказ установки.
+    if (( rc != 0 && rc != 141 )); then skl_die "не удалось установить $package"; fi
 }
 
 skl_create_one() {
