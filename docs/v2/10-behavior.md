@@ -233,6 +233,12 @@ Profile 1—N Medication 1—N Intake; профиль приёма опреде�
 | 7→8 | шов часов вырезан (Р-3, SKL-106): у лекарства уходит `mirror_to_watch`, у журнала срабатываний — `watch_result` |
 | 8→9 | колонка `revoked_at` у приёма: снятие записи «по потребности» (Р-46, SKL-127) |
 
+Копия перед миграцией, след `MIGRATION_APPLIED` и проверки целостности — `ADR-0012` пп. 3, 4
+в редакции SKL-94: до открытия схемы проверяется место и снимается копия в `noBackupFilesDir`
+с версией «от» в имени (`data/room/MigrationCopyStore.kt`), нехватка места останавливает миграцию
+(`data/room/MigrationCopyBudget.kt`, экран `startup/DatabaseNotEnoughSpaceScreen.kt`), след
+и проверки пишет `data/room/DatabaseMaintenance.kt` не чаще раза в сутки.
+
 ---
 
 ## 2. Расписание и приём
