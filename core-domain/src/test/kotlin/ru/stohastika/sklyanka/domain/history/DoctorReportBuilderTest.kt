@@ -103,7 +103,7 @@ class DoctorReportBuilderTest {
     @Test
     fun `an empty report has zero totals`() {
         val empty = DoctorReportBuilder.build(
-            period = AdherenceCalculator().of(
+            period = AdherenceCalculator(OnTimeRule.TwoHours).of(
                 HistorySlice.empty(Months.PROFILE_ID),
                 Months.WINDOW,
                 Months.TODAY,
@@ -132,7 +132,7 @@ class DoctorReportBuilderTest {
                 ),
             ),
         )
-        val period = AdherenceCalculator().of(slice, Months.WINDOW, Months.TODAY, Months.ZONE)
+        val period = AdherenceCalculator(OnTimeRule.TwoHours).of(slice, Months.WINDOW, Months.TODAY, Months.ZONE)
         return DoctorReportBuilder.build(
             period = period,
             slice = slice,

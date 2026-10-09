@@ -27,8 +27,8 @@ import ru.stohastika.sklyanka.feature.meds.R
 import ru.stohastika.sklyanka.feature.meds.archive.TAG_ARCHIVE_CAPTION
 import ru.stohastika.sklyanka.feature.meds.card.TAG_BLOCK_TRAILING
 import ru.stohastika.sklyanka.feature.meds.card.TAG_WEEK_BLOCK
-import ru.stohastika.sklyanka.ui.component.TAG_ADHERENCE_DAY
 import ru.stohastika.sklyanka.ui.component.TAG_ADHERENCE_LEGEND
+import ru.stohastika.sklyanka.ui.component.TAG_ADHERENCE_WEEK
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -148,6 +148,7 @@ class MedWeekScreenSteps(private val world: AcceptanceWorld) {
             "the week block must read «$phrase»: ${weekTexts()}",
             phrase in weekTexts(),
         )
+        theWeekStripAndLegendAreAbsent()
     }
 
     @Тогда("^в блоке «Последние 7 дней» показана фраза$")
@@ -156,6 +157,20 @@ class MedWeekScreenSteps(private val world: AcceptanceWorld) {
             "the week block must read «${context.getString(R.string.card_week_empty)}»: ${weekTexts()}",
             context.getString(R.string.card_week_empty) in weekTexts(),
         )
+        theWeekStripAndLegendAreAbsent()
+    }
+
+    /**
+     * Фраза вместо дроби — это сжатая неделя (§5.2): ни ряда столбиков, ни легенды.
+     *
+     * Компонент решает это сам: завершённых дней с исходом нет — сравнивать не с чем,
+     * и ряд с легендой не рисуются (V-1).
+     */
+    private fun theWeekStripAndLegendAreAbsent() {
+        MedCardStand.ask(world, focusedMedication()) { test ->
+            test.onAllNodesWithTag(TAG_ADHERENCE_WEEK, useUnmergedTree = true).assertCountEquals(0)
+            test.onAllNodesWithTag(TAG_ADHERENCE_LEGEND, useUnmergedTree = true).assertCountEquals(0)
+        }
     }
 
     @Тогда("^«0 из 0 приёмов» не показано$")
@@ -204,21 +219,6 @@ class MedWeekScreenSteps(private val world: AcceptanceWorld) {
     }
 
     // --- Проверки: полоса и архив ----------------------------------------------------
-
-    @Тогда("^ряд семи дней и легенда показаны как прежде$")
-    fun theSevenDaysAndTheLegendAreShownAsBefore() {
-        MedCardStand.ask(world, focusedMedication()) { test ->
-            test.onAllNodesWithTag(TAG_ADHERENCE_DAY, useUnmergedTree = true).assertCountEquals(DayCell.WEEK_LENGTH)
-            test.onNodeWithTag(TAG_ADHERENCE_LEGEND, useUnmergedTree = true).assertExists()
-        }
-    }
-
-    @Но("^пустые дни остаются пустыми кружками$")
-    fun theEmptyDaysStayEmpty() {
-        val completed = state().week.days.filterIsInstance<DayCell.Completed>()
-        assertTrue("the week must have completed days", completed.isNotEmpty())
-        assertTrue("a week without intakes has empty days: $completed", completed.all { it.planned == 0 })
-    }
 
     @Тогда("^карточка курса не показывает «0 из 0»$")
     fun theCourseCardDoesNotShowZeroOfZero() {

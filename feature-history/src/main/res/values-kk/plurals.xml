@@ -33,6 +33,11 @@
         <item quantity="other">%1$d күн өткізілусіз</item>
     </plurals>
 
+    <plurals name="cd_history_on_time">
+        <item quantity="one">уақытында қабылданды, %2$d қабылдаудың %1$d-і</item>
+        <item quantity="other">уақытында қабылданды, %2$d қабылдаудың %1$d-і</item>
+    </plurals>
+
     <plurals name="cd_history_misses">
         <item quantity="one">айда %1$d өткізілу</item>
         <item quantity="other">айда %1$d өткізілу</item>

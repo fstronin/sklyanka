@@ -8,6 +8,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -25,6 +26,7 @@ import ru.stohastika.sklyanka.domain.transfer.TransferMode
 import ru.stohastika.sklyanka.domain.transfer.TransferReject
 import ru.stohastika.sklyanka.domain.transfer.TransferRejectReason
 import ru.stohastika.sklyanka.feature.settings.R
+import ru.stohastika.sklyanka.ui.component.TAG_CONFIRM_WORD_LABEL
 import ru.stohastika.sklyanka.ui.component.TAG_TEXT_FIELD_ERROR
 import ru.stohastika.sklyanka.ui.component.TAG_TEXT_FIELD_INPUT
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
@@ -92,20 +94,20 @@ class DataTransferScreenTest {
     }
 
     /**
-     * Заголовок вложенного экрана стоит на своей строке, а не висит после «Назад» (SKL-60).
+     * Заголовок вложенного экрана стоит на своей строке, а не висит после стрелки назад (SKL-60).
      */
     @Test
     fun theTitleStandsOnItsOwnLineUnderTheBackLabel() {
         showOverview(TransferScreenFixtures.overview())
 
         val back = composeRule
-            .onNodeWithText(context.getString(UiR.string.action_back), useUnmergedTree = true)
+            .onNodeWithContentDescription(context.getString(UiR.string.cd_back), useUnmergedTree = true)
             .fetchSemanticsNode()
         val title = composeRule
             .onNodeWithText(context.getString(R.string.transfer_title), useUnmergedTree = true)
             .fetchSemanticsNode()
         assertTrue(
-            "заголовок делит строку с «Назад»: back=${back.boundsInRoot}, title=${title.boundsInRoot}",
+            "заголовок делит строку со стрелкой назад: back=${back.boundsInRoot}, title=${title.boundsInRoot}",
             title.boundsInRoot.top >= back.boundsInRoot.bottom,
         )
     }
@@ -213,9 +215,9 @@ class DataTransferScreenTest {
 
         val word = context.getString(R.string.transfer_replace_word)
         composeRule
-            .onNodeWithText(context.getString(R.string.transfer_replace_word_label, word))
+            .onNodeWithText(context.getString(UiR.string.confirm_word_label, word))
             .assertIsDisplayed()
-        composeRule.onNodeWithTag(TAG_REPLACE_WORD_LABEL).assertIsDisplayed()
+        composeRule.onNodeWithTag(TAG_CONFIRM_WORD_LABEL).assertIsDisplayed()
     }
 
     @Test

@@ -26,13 +26,13 @@
     <string name="form_save_existing">Speichern</string>
 
     <string name="form_label_name">Name</string>
+    <string name="medication_delete_word">Löschen</string>
     <string name="form_label_release_form">Darreichungsform</string>
     <string name="form_label_tablet_shape">Tablettenform</string>
 
-    <string name="form_preview_reusable">So wird das Medikament in der Liste und auf der Karte erkannt</string>
-    <string name="form_preview_dose_words">Die Dosis wird in Worten beschrieben: „%1$s“ — ohne Silhouette</string>
-    <string name="form_preview_dose_words_empty">Die Dosis wird in Worten beschrieben, ohne Silhouette</string>
     <string name="form_label_dose">Dosis pro Einnahme</string>
+    <string name="form_label_strength">Dosierung des Präparats</string>
+    <string name="form_strength_hint">Optional. Wie viel Wirkstoff in einer Einheit steckt — auf der Karte sichtbar, wird nicht berechnet.</string>
     <string name="form_label_intakes_per_day">Einnahmen pro Tag</string>
     <string name="form_caption_times_below">Die Zeit wird unten festgelegt</string>
     <string name="form_label_times">Einnahmezeit</string>

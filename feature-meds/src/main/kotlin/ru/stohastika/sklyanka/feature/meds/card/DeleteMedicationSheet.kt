@@ -1,16 +1,9 @@
 package ru.stohastika.sklyanka.feature.meds.card
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -19,82 +12,63 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import ru.stohastika.sklyanka.feature.meds.R
-import ru.stohastika.sklyanka.ui.component.PrimaryButton
-import ru.stohastika.sklyanka.ui.component.PrimaryButtonKind
+import ru.stohastika.sklyanka.ui.component.ConfirmWordField
 import ru.stohastika.sklyanka.ui.component.QuietButton
 import ru.stohastika.sklyanka.ui.component.QuietButtonKind
-import ru.stohastika.sklyanka.ui.motion.MotionPhase
-import ru.stohastika.sklyanka.ui.motion.motionTiming
+import ru.stohastika.sklyanka.ui.component.SklyankaBottomSheet
+import ru.stohastika.sklyanka.ui.component.TextFieldSurface
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
-import ru.stohastika.sklyanka.ui.token.SklyankaShapes
 import ru.stohastika.sklyanka.ui.token.SklyankaSpacing
 import ru.stohastika.sklyanka.ui.token.SklyankaType
 import ru.stohastika.sklyanka.ui.R as UiR
 
 /**
- * Шторка подтверждения удаления лекарства (ОВ-124, §9.3).
+ * Шторка подтверждения удаления лекарства (ОВ-124, ПР-14, §5.7, §9.3).
  *
- * Не экран: подтверждается одна запись, и предмет назван в заголовке. Полотно выезжает
- * снизу (`SheetEnter`/`SheetExit`), затемнение фона и закрытие по системной «Назад»
- * и тапу вне даёт диалоговое окно — своего слоя затемнения дизайн-система не заводит.
+ * Собирается из [SklyankaBottomSheet], а не из диалога по месту: тогда затемнение приходит
+ * ролью `scrim` (§2.3), а поведение с клавиатурой — из спецификации шторки. Собственной
+ * прокрутки у шторки нет: полотно поднимается IME-инсетом целиком, поле слова
+ * и подтверждающая кнопка видны целиком при поднятой клавиатуре.
  *
- * Основная кнопка — вид `Danger`: заливка опасности живёт только на подтверждении,
- * а не на постоянной кнопке карточки, иначе удаление читалось бы как главное действие.
+ * Подтверждение — **вводом слова** («Удалить»), как у удаления профиля и режима
+ * «Заменить всё»: одно разрушительное действие, требующее слова, и второе, не требующее,
+ * учат тому, что порог различает действия, а не последствия. Окно «Отменить» после
+ * удаления при этом остаётся: слово защищает от случайного нажатия, окно отмены — от уже
+ * случившегося (§5.7).
  */
 @Composable
 internal fun DeleteMedicationSheet(medicationName: String, onDismiss: () -> Unit, onConfirm: () -> Unit) {
     var visible by remember { mutableStateOf(false) }
+    var word by remember { mutableStateOf("") }
     LaunchedEffect(Unit) { visible = true }
-    val enter = motionTiming(MotionPhase.SheetEnter)
-    val exit = motionTiming(MotionPhase.SheetExit)
-
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false),
-    ) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
-            AnimatedVisibility(
-                visible = visible,
-                enter = slideInVertically(
-                    animationSpec = tween(enter.durationMillis, easing = enter.easing),
-                    initialOffsetY = { height -> height },
-                ),
-                exit = slideOutVertically(
-                    animationSpec = tween(exit.durationMillis, easing = exit.easing),
-                    targetOffsetY = { height -> height },
-                ),
-            ) {
-                DeleteMedicationPanel(
-                    medicationName = medicationName,
-                    onDismiss = onDismiss,
-                    onConfirm = onConfirm,
-                )
-            }
-        }
+    SklyankaBottomSheet(visible = visible, onDismiss = onDismiss) {
+        DeleteMedicationPanel(
+            medicationName = medicationName,
+            word = word,
+            onWordChange = { word = it },
+            onDismiss = onDismiss,
+            onConfirm = onConfirm,
+        )
     }
 }
 
-/**
- * Полотно шторки: заголовок с названием, предупреждение и два действия.
- *
- * Вынесено из [DeleteMedicationSheet] ради читаемости: слой анимации и слой содержания
- * отвечают на разные вопросы, и путать их в одной функции незачем.
- */
+/** Полотно шторки: название, предупреждение, поле слова и два действия. */
 @Composable
-private fun DeleteMedicationPanel(medicationName: String, onDismiss: () -> Unit, onConfirm: () -> Unit) {
+private fun ColumnScope.DeleteMedicationPanel(
+    medicationName: String,
+    word: String,
+    onWordChange: (String) -> Unit,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+) {
     val colors = SklyankaTheme.colors
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(colors.surface, SklyankaShapes.Card)
-            .navigationBarsPadding()
             .padding(SklyankaSpacing.Section)
             .testTag(TAG_DELETE_SHEET),
         verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Large),
@@ -111,13 +85,17 @@ private fun DeleteMedicationPanel(medicationName: String, onDismiss: () -> Unit,
             color = colors.text,
             modifier = Modifier.testTag(TAG_DELETE_SHEET_TEXT),
         )
-        PrimaryButton(
-            text = stringResource(R.string.card_delete),
-            onClick = onConfirm,
-            kind = PrimaryButtonKind.Danger,
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag(TAG_DELETE_CONFIRM),
+        ConfirmWordField(
+            word = stringResource(R.string.medication_delete_word),
+            value = word,
+            onValueChange = onWordChange,
+            confirmLabel = stringResource(R.string.card_delete),
+            onConfirm = onConfirm,
+            // Поле стоит на белом полотне шторки: подложка — фон среды, иначе граница
+            // `Line` на `surface` почти не видна (§4.4).
+            surface = TextFieldSurface.Background,
+            fieldModifier = Modifier.fillMaxWidth(),
+            confirmModifier = Modifier.fillMaxWidth().testTag(TAG_DELETE_CONFIRM),
         )
         QuietButton(
             text = stringResource(UiR.string.action_cancel),

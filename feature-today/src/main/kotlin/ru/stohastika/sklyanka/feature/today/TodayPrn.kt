@@ -36,7 +36,7 @@ import ru.stohastika.sklyanka.ui.token.SklyankaType
 internal fun LazyListScope.prnBlock(state: TodayUiState.Content, onIntent: (TodayIntent) -> Unit) {
     if (state.prn.isEmpty()) return
     if (state.isDense && state.prnCollapsed) {
-        item(key = "prn-collapsed") {
+        todayItem(key = "prn-collapsed") {
             CollapsedBlock(
                 title = stringResource(R.string.today_prn_divider),
                 summary = pluralStringResource(R.plurals.today_prn_collapsed, state.prn.size, state.prn.size),
@@ -47,7 +47,7 @@ internal fun LazyListScope.prnBlock(state: TodayUiState.Content, onIntent: (Toda
         }
         return
     }
-    item(key = "prn") {
+    todayItem(key = "prn") {
         Column(verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Default)) {
             PrnDivider(onIntent, collapsible = state.isDense)
             state.prn.forEach { entry -> PrnCard(entry, onIntent) }

@@ -67,8 +67,8 @@ class MedsPreviewScreenSteps(private val world: AcceptanceWorld, private val for
     fun thePersonChoseTheForm(label: String) {
         MedsFormStand.open(world)
         chooseForm(label)
-        // Представительная доза: подпись превью у формы, где доза описывается словами,
-        // называет введённое количество (ОВ-94).
+        // Представительная доза: подпись превью называет числа в порядке ЭКР-7,
+        // и введённое количество дозы в неё попадает (ОВ-94, §5.3).
         MedsFormStand.intent(world, MedFormIntent.DoseAmountChanged("2"))
     }
 
@@ -161,20 +161,6 @@ class MedsPreviewScreenSteps(private val world: AcceptanceWorld, private val for
     @Когда("^он смотрит на подпись превью$")
     fun thePersonLooksAtThePreviewCaption() {
         previewState()
-    }
-
-    @Тогда("^подпись сообщает, что доза описывается словами, а не силуэтом$")
-    fun theCaptionSaysTheDoseIsSpelledOut() {
-        val state = previewState()
-        MedsFormStand.showDraft(world, state.draft)
-        val expected = context.getString(R.string.form_preview_dose_words, doseText(state))
-        MedsFormStand.ask(world) { test ->
-            val texts = MedsProbe.texts(test, TAG_MEDICATION_PREVIEW)
-            assertTrue(
-                "the caption must say the dose is spelled out: $texts",
-                texts.any { it == expected },
-            )
-        }
     }
 
     @И("^в подписи названо введённое количество дозы$")
@@ -283,11 +269,21 @@ class MedsPreviewScreenSteps(private val world: AcceptanceWorld, private val for
         }
     }
 
-    /** Подпись превью по тому же правилу, что и `medicationPreviewCaption` (§4.16). */
-    private fun expectedCaption(state: MedFormUiState): String = when (state.draft.form) {
-        MedicationForm.TABLET, MedicationForm.CAPSULE -> context.getString(R.string.form_preview_reusable)
-        else -> context.getString(R.string.form_preview_dose_words, doseText(state))
-    }
+    /**
+     * Подпись превью по тому же правилу, что и `medicationPreviewNumbers` (§5.3, ЭКР-7).
+     *
+     * Числа в порядке ЭКР-7: сначала доза на один приём, затем дозировка препарата, через
+     * « · ». Пустая часть в строку не попадает; пусто и то и другое — подпись пуста, а форму
+     * и вид называет заголовок, который остаётся всегда.
+     */
+    private fun expectedCaption(state: MedFormUiState): String = listOfNotNull(
+        state.draft.doseAmount?.let { amount ->
+            "${amount.stripTrailingZeros().toPlainString()} ${doseUnitLabel(state.applicability.doseUnit)}"
+        },
+        state.draft.strength?.let { amount ->
+            "${amount.stripTrailingZeros().toPlainString()} ${context.getString(R.string.strength_unit_milligram)}"
+        },
+    ).filter { it.isNotBlank() }.joinToString(PREVIEW_NUMBER_SEPARATOR)
 
     @Но("^не произносит отдельной подписи силуэта$")
     fun itDoesNotSpeakAShapeLabel() {
@@ -378,5 +374,8 @@ class MedsPreviewScreenSteps(private val world: AcceptanceWorld, private val for
     private companion object {
         const val VALUES_SEPARATOR = ","
         const val CLICK_ACTION = "OnClick"
+
+        /** Разделитель чисел превью — точка-пауза из макета (`medicationPreviewNumbers`). */
+        const val PREVIEW_NUMBER_SEPARATOR = " · "
     }
 }

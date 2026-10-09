@@ -26,13 +26,13 @@
     <string name="form_save_existing">Save</string>
 
     <string name="form_label_name">Name</string>
+    <string name="medication_delete_word">Delete</string>
     <string name="form_label_release_form">Form</string>
     <string name="form_label_tablet_shape">Tablet shape</string>
 
-    <string name="form_preview_reusable">This is how the medication will be recognized in the list and card</string>
-    <string name="form_preview_dose_words">The dose is described in words: “%1$s” — without a shape</string>
-    <string name="form_preview_dose_words_empty">The dose is described in words, without a shape</string>
     <string name="form_label_dose">Dose per intake</string>
+    <string name="form_label_strength">Medication dosage</string>
+    <string name="form_strength_hint">Optional. How much active ingredient is in one unit — shown on the card, not used in calculations.</string>
     <string name="form_label_intakes_per_day">Intakes per day</string>
     <string name="form_caption_times_below">Time is set below</string>
     <string name="form_label_times">Intake time</string>

@@ -68,6 +68,7 @@ import ru.stohastika.sklyanka.feature.history.TAG_REPORT_SHARE
 import ru.stohastika.sklyanka.feature.history.TAG_REPORT_SHEET
 import ru.stohastika.sklyanka.feature.history.TAG_TILE_DAYS_WITHOUT_MISSES
 import ru.stohastika.sklyanka.feature.history.TAG_TILE_MISSES
+import ru.stohastika.sklyanka.feature.history.TAG_TILE_ON_TIME
 import ru.stohastika.sklyanka.feature.history.documentText
 import ru.stohastika.sklyanka.ui.component.TAG_PROFILE_LABEL
 import ru.stohastika.sklyanka.ui.component.TAG_PROFILE_STRIPE
@@ -406,14 +407,22 @@ class HistoryScreenSteps(private val world: AcceptanceWorld) {
 
     // --- Проверки: пустой месяц -------------------------------------------------------
 
-    @Then("^в плитках сводки вместо чисел показаны прочерки$")
-    fun theTilesShowDashes() {
+    @Then("^плитки «дней без пропусков» и «пропусков за месяц» показывают прочерки$")
+    fun theRemainingTilesShowDashes() {
         val dashes = HistoryScreenProbe.ask(world) { test ->
             test.onAllNodesWithText(context.getString(R.string.history_value_dash), useUnmergedTree = true)
                 .fetchSemanticsNodes()
                 .size
         }
-        assertEquals("every tile of an empty month must show a dash", 3, dashes)
+        assertEquals("the two tiles left of an empty month must show a dash", 2, dashes)
+    }
+
+    @Then("^плитки «принято вовремя» на экране нет$")
+    fun theOnTimeTileIsAbsent() {
+        val tiles = HistoryScreenProbe.ask(world) { test ->
+            test.onAllNodesWithTag(TAG_TILE_ON_TIME, useUnmergedTree = true).fetchSemanticsNodes().size
+        }
+        assertEquals("when there is nothing to measure, the on-time tile is not drawn (Р-33)", 0, tiles)
     }
 
     @Then("^календарь показан пустым$")

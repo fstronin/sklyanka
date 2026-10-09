@@ -9,6 +9,7 @@ import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.runComposeUiTest
@@ -39,6 +40,7 @@ import ru.stohastika.sklyanka.feature.settings.transfer.TransferStep
 import ru.stohastika.sklyanka.ui.component.TAG_CHIP
 import ru.stohastika.sklyanka.ui.component.TAG_SCREEN_HEADER
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
+import ru.stohastika.sklyanka.ui.token.SklyankaSpacing
 import java.time.LocalDate
 import java.time.LocalTime
 import ru.stohastika.sklyanka.ui.R as UiR
@@ -186,10 +188,10 @@ class TransferOverviewScreenSteps(private val world: AcceptanceWorld) {
 
     // --- Проверки: шапка -------------------------------------------------------------------
 
-    @Тогда("^подпись «(.+)» стоит строкой выше заголовка$")
+    @Тогда("^возврат «(.+)» стоит строкой выше заголовка$")
     fun theBackLabelStandsAboveTheTitle(label: String) {
         overview { test ->
-            val back = test.onNodeWithText(label, useUnmergedTree = true).fetchSemanticsNode()
+            val back = test.onNodeWithContentDescription(label, useUnmergedTree = true).fetchSemanticsNode()
             val title = test.onNodeWithText(context.getString(R.string.transfer_title)).fetchSemanticsNode()
             assertTrue(
                 "«$label» must stand above the title: back=${back.boundsInRoot}, title=${title.boundsInRoot}",
@@ -217,11 +219,21 @@ class TransferOverviewScreenSteps(private val world: AcceptanceWorld) {
     @И("^у него нет висячего отступа от кнопки$")
     fun theTitleHasNoHangingIndentFromTheButton() {
         overview { test ->
-            val back = test.onNodeWithText(context.getString(UiR.string.action_back)).fetchSemanticsNode()
+            val back = test.onNodeWithContentDescription(context.getString(UiR.string.cd_back)).fetchSemanticsNode()
             val title = test.onNodeWithText(context.getString(R.string.transfer_title)).fetchSemanticsNode()
+            // Заголовок начинается от края контента, а не от места после кнопки: цель
+            // возврата сдвинута на 10 dp влево от бокового поля шапки, чтобы глиф встал
+            // на вертикаль начала заголовка (§7), — «правее кнопки» он не встаёт вовсе.
+            val contentEdge = with(test.density) { SklyankaSpacing.Section.roundToPx() }
             assertTrue(
-                "the title must not hang after the button: title=${title.boundsInRoot}, back=${back.boundsInRoot}",
-                title.boundsInRoot.left <= back.boundsInRoot.left,
+                "the title must start at the content edge, not after the button: " +
+                    "title=${title.boundsInRoot}, edge=$contentEdge",
+                title.boundsInRoot.left <= contentEdge + EDGE_TOLERANCE,
+            )
+            // И стоит своей строкой, а не рядом с возвратом (SKL-60).
+            assertTrue(
+                "the title must stand on its own line: title=${title.boundsInRoot}, back=${back.boundsInRoot}",
+                title.boundsInRoot.top >= back.boundsInRoot.bottom,
             )
         }
     }

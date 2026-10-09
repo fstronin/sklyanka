@@ -56,21 +56,21 @@ class ObserveAdherenceUseCase(
             after = window.logDetail(),
             detail = "records=${slice.intakes.size};ms=$spent",
         )
-        // Прочерк на плитке «принято вовремя» — проектное решение, а не дефект (ОВ-4).
-        // Без следа первый же вопрос «почему нет процента» разбирался бы чтением кода.
-        if (period.onTimeShare is OnTimeShare.Undefined) {
+        // Доли может не быть: мерить нечего (Р-33). След называет причину прямо —
+        // «порог не согласован» было бы ложью, решение Р-21/Р-27 порог согласовало.
+        if (period.onTimeShare is OnTimeShare.Absent) {
             log.record(
-                event = OpEvent.HISTORY_ON_TIME_UNDEFINED,
+                event = OpEvent.HISTORY_ON_TIME_NOT_MEASURED,
                 profileId = slice.profileId,
                 after = window.logDetail(),
-                detail = ON_TIME_RULE_MISSING,
+                detail = ON_TIME_NOT_MEASURED,
             )
         }
         return period
     }
 
     private companion object {
-        const val ON_TIME_RULE_MISSING = "on_time_rule_missing"
+        const val ON_TIME_NOT_MEASURED = "on_time_not_measured"
     }
 }
 

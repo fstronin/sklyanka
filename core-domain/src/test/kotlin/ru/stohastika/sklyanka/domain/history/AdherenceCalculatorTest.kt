@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import ru.stohastika.sklyanka.domain.model.IntakeStatus
+import ru.stohastika.sklyanka.domain.model.ScheduleMode
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
@@ -18,7 +19,7 @@ import java.time.ZoneId
  */
 class AdherenceCalculatorTest {
 
-    private val calculator = AdherenceCalculator()
+    private val calculator = AdherenceCalculator(OnTimeRule.TwoHours)
 
     @Test
     fun `the calendar holds one outcome for every day of the month`() {
@@ -212,7 +213,7 @@ class AdherenceCalculatorTest {
         assertEquals(0, period.missesInPeriod)
         assertEquals(0, period.daysWithoutMisses)
         assertTrue(period.byMedication.isEmpty())
-        assertEquals(OnTimeShare.Undefined, period.onTimeShare)
+        assertEquals(OnTimeShare.Absent, period.onTimeShare)
     }
 
     /**
@@ -298,95 +299,181 @@ class AdherenceCalculatorTest {
     }
 
     /**
-     * ОВ-4: без согласованного порога доли «принято вовремя» не существует.
+     * Плитка «принято вовремя»: знаменатель — наступившие плановые приёмы (Р-27).
      *
-     * Плитка показывает прочерк, и это проектное решение, а не заглушка.
+     * Отметка, попавшая в окно ±2 ч (Р-21), идёт и в числитель, и в знаменатель; отметка
+     * вне окна — только в знаменатель. Сценарий приёмки: 08:05 вовремя, 23:50 — нет,
+     * осознанный пропуск стоит в знаменателе, потому что он наступил.
      */
     @Test
-    fun `without an agreed threshold the on time share is undefined`() {
-        val period = calculate(Months.slice(Months.daily(SEPTEMBER_FIRST, LocalDate.of(2026, 9, 10))))
-
-        assertEquals(OnTimeShare.Undefined, period.onTimeShare)
-    }
-
-    /**
-     * Проверка, готовая заранее: с подставленным правилом доля считается по нему.
-     *
-     * Включится вместе с ответом по ОВ-4 — расчёт при этом не переделывается, правило
-     * приходит снаружи (`TDD.md §5.2`).
-     */
-    @Test
-    fun `with an agreed threshold the share is counted by that rule`() {
-        val twoHours = OnTimeRule.Agreed { scheduledAt, actedAt ->
-            !actedAt.isAfter(scheduledAt.plusHours(2))
-        }
+    fun `the share counts the intakes that came due and were marked in the window`() {
         val date = LocalDate.of(2026, 9, 3)
         val slice = Months.slice(
             intakes = listOf(
                 Months.intake(
                     at = date.atTime(Months.MORNING),
                     status = IntakeStatus.TAKEN,
-                    actedAt = Months.instant(date.atTime(8, 20)),
+                    actedAt = Months.instant(date.atTime(8, 5)),
                 ),
                 Months.intake(
                     at = date.plusDays(1).atTime(Months.MORNING),
                     status = IntakeStatus.TAKEN,
-                    actedAt = Months.instant(date.plusDays(1).atTime(23, 40)),
+                    actedAt = Months.instant(date.plusDays(1).atTime(23, 50)),
+                ),
+                Months.intake(
+                    at = date.plusDays(2).atTime(Months.MORNING),
+                    status = IntakeStatus.SKIPPED,
+                    actedAt = Months.instant(date.plusDays(2).atTime(8, 10)),
                 ),
             ),
         )
 
-        val share = AdherenceCalculator(onTimeRule = twoHours)
-            .of(slice, Months.WINDOW, Months.TODAY, Months.ZONE)
-            .onTimeShare
+        val share = calculate(slice).onTimeShare
 
-        assertEquals(OnTimeShare.Value(0.5), share)
-        assertEquals(50, (share as OnTimeShare.Value).percent)
+        assertEquals(OnTimeShare.Value(onTime = 1, due = 3), share)
+        assertEquals(33, (share as OnTimeShare.Value).percent)
     }
 
-    /**
-     * Почему доля объявлена неопределённой при выбранном окне (ОВ-4).
-     *
-     * Граница окна `pending → missed` выбрана «до конца суток» (`EndOfDayIntakeWindow`,
-     * SKL-07). Правило «вовремя», построенное по этой границе, засчитывает **любую**
-     * отметку принятым вовремя — то есть метрика совпадает с долей принятого и перестаёт
-     * отличаться от приверженности. Это и есть довод в пользу [OnTimeShare.Undefined],
-     * и он проверяется, а не рассказывается.
-     */
+    /** Р-21: окно симметрично — отметка за полчаса до приёма ещё вовремя, за два с лишним — нет. */
     @Test
-    fun `an end of day window makes on time indistinguishable from taken`() {
-        val endOfDay = OnTimeRule.Agreed { scheduledAt, actedAt ->
-            actedAt.toLocalDate() <= scheduledAt.toLocalDate()
-        }
+    fun `an early mark inside the window counts and one outside does not`() {
         val date = LocalDate.of(2026, 9, 3)
         val slice = Months.slice(
             intakes = listOf(
                 Months.intake(
                     at = date.atTime(Months.MORNING),
                     status = IntakeStatus.TAKEN,
-                    actedAt = Months.instant(date.atTime(23, 50)),
+                    actedAt = Months.instant(date.atTime(6, 30)),
+                ),
+                Months.intake(
+                    at = date.plusDays(1).atTime(Months.MORNING),
+                    status = IntakeStatus.TAKEN,
+                    actedAt = Months.instant(date.plusDays(1).atTime(5, 59)),
                 ),
             ),
         )
 
-        val period = AdherenceCalculator(onTimeRule = endOfDay).of(slice, Months.WINDOW, Months.TODAY, Months.ZONE)
-
-        assertEquals(OnTimeShare.Value(1.0), period.onTimeShare)
-        assertEquals(period.byMedication.single().takenShare, (period.onTimeShare as OnTimeShare.Value).share)
+        assertEquals(OnTimeShare.Value(onTime = 1, due = 2), calculate(slice).onTimeShare)
     }
 
+    /** Граница окна включается с обеих сторон: ровно −2 ч и ровно +2 ч — вовремя. */
     @Test
-    fun `a period without a single decided intake has no on time share to show`() {
-        val alwaysOnTime = OnTimeRule.Agreed { _, _ -> true }
+    fun `the window bounds belong to the window`() {
+        val date = LocalDate.of(2026, 9, 3)
         val slice = Months.slice(
-            intakes = listOf(Months.intake(Months.TODAY.atTime(Months.EVENING), IntakeStatus.PENDING)),
+            intakes = listOf(
+                Months.intake(
+                    at = date.atTime(Months.MORNING),
+                    status = IntakeStatus.TAKEN,
+                    actedAt = Months.instant(date.atTime(6, 0)),
+                ),
+                Months.intake(
+                    at = date.plusDays(1).atTime(Months.MORNING),
+                    status = IntakeStatus.TAKEN,
+                    actedAt = Months.instant(date.plusDays(1).atTime(10, 0)),
+                ),
+                Months.intake(
+                    at = date.plusDays(2).atTime(Months.MORNING),
+                    status = IntakeStatus.TAKEN,
+                    actedAt = Months.instant(date.plusDays(2).atTime(10, 1)),
+                ),
+            ),
         )
 
-        val period = AdherenceCalculator(onTimeRule = alwaysOnTime)
-            .of(slice, Months.WINDOW, Months.TODAY, Months.ZONE)
+        assertEquals(OnTimeShare.Value(onTime = 2, due = 3), calculate(slice).onTimeShare)
+    }
 
-        assertEquals(OnTimeShare.Undefined, period.onTimeShare)
+    /** Р-27: приёмы «по потребности» не входят ни в числитель, ни в знаменатель. */
+    @Test
+    fun `an as needed intake is excluded from both parts of the share`() {
+        val date = LocalDate.of(2026, 9, 3)
+        val slice = Months.slice(
+            intakes = listOf(
+                Months.intake(
+                    at = date.atTime(Months.MORNING),
+                    status = IntakeStatus.TAKEN,
+                    actedAt = Months.instant(date.atTime(8, 2)),
+                ),
+                Months.intake(
+                    at = date.atTime(13, 20),
+                    status = IntakeStatus.TAKEN,
+                    medicationId = PRN_MEDICATION_ID,
+                    actedAt = Months.instant(date.atTime(23, 20)),
+                ),
+            ),
+            medications = listOf(
+                Months.medication(),
+                Months.medication(id = PRN_MEDICATION_ID).copy(scheduleMode = ScheduleMode.PRN),
+            ),
+        )
+
+        assertEquals(OnTimeShare.Value(onTime = 1, due = 1), calculate(slice).onTimeShare)
+    }
+
+    /** Р-33: мерить нечего — плановых приёмов нет вовсе, значит нет и доли. */
+    @Test
+    fun `a period without a single due scheduled intake has no share to show`() {
+        val date = LocalDate.of(2026, 9, 3)
+        val slice = Months.slice(
+            intakes = listOf(
+                Months.intake(Months.TODAY.atTime(Months.EVENING), IntakeStatus.PENDING),
+                Months.intake(
+                    at = date.atTime(13, 20),
+                    status = IntakeStatus.TAKEN,
+                    medicationId = PRN_MEDICATION_ID,
+                ),
+            ),
+            medications = listOf(Months.medication(id = PRN_MEDICATION_ID).copy(scheduleMode = ScheduleMode.PRN)),
+        )
+
+        val period = calculate(slice)
+
+        assertEquals(OnTimeShare.Absent, period.onTimeShare)
         assertNull(period.missesByTime[Months.EVENING])
+    }
+
+    /** Р-27: пустой числитель при непустом знаменателе — это «0 %», утверждение о периоде. */
+    @Test
+    fun `an empty numerator with a filled denominator is a zero share and not an absent one`() {
+        val date = LocalDate.of(2026, 9, 3)
+        val slice = Months.slice(
+            intakes = listOf(
+                Months.intake(
+                    at = date.atTime(Months.MORNING),
+                    status = IntakeStatus.TAKEN,
+                    actedAt = Months.instant(date.atTime(12, 1)),
+                ),
+            ),
+        )
+
+        val share = calculate(slice).onTimeShare as OnTimeShare.Value
+
+        assertEquals(0, share.percent)
+        assertFalse(share.lessThanOnePercent)
+    }
+
+    /** «< 1 %» вместо нуля: 1 из 250 — состоявшийся приём, и «0 %» стёрло бы его (Р-27). */
+    @Test
+    fun `a share below one percent is named instead of rounded to zero`() {
+        val slice = Months.slice(intakes = twoHundredFiftyIntakes(oneOnTime = true))
+
+        val share = calculate(slice).onTimeShare as OnTimeShare.Value
+
+        assertEquals(0, share.percent)
+        assertTrue(share.lessThanOnePercent)
+        assertTrue(share.share > 0.0)
+    }
+
+    /** Двести пятьдесят наступивших приёмов: [oneOnTime] отмечен вовремя, остальные — с опозданием. */
+    private fun twoHundredFiftyIntakes(oneOnTime: Boolean) = (0 until DUE_INTAKES).map { index ->
+        val date = LocalDate.of(2026, 9, 1).plusDays((index / INTAKES_PER_DAY).toLong())
+        val time = LocalTime.of(index % INTAKES_PER_DAY, 0)
+        val onTime = oneOnTime && index == 0
+        Months.intake(
+            at = date.atTime(time),
+            status = IntakeStatus.TAKEN,
+            actedAt = Months.instant(if (onTime) date.atTime(time) else date.atTime(time).plusHours(LATE_HOURS)),
+        )
     }
 
     private fun calculate(slice: HistorySlice) = calculator.of(slice, Months.WINDOW, Months.TODAY, Months.ZONE)
@@ -407,5 +494,13 @@ class AdherenceCalculatorTest {
         val SEPTEMBER_FIRST: LocalDate = LocalDate.of(2026, 9, 1)
         const val SEPTEMBER_DAYS = 30
         val SECOND_TIMES: List<LocalTime> = listOf(Months.MORNING, Months.EVENING)
+
+        /** Лекарство «по потребности»: приёмы «по потребности» в метрику не входят (Р-27). */
+        const val PRN_MEDICATION_ID = "66666666-6666-4666-8666-666666666666"
+
+        /** Двести пятьдесят наступивших приёмов для проверки «< 1 %» (Р-27). */
+        const val DUE_INTAKES = 250
+        const val INTAKES_PER_DAY = 10
+        const val LATE_HOURS = 5L
     }
 }

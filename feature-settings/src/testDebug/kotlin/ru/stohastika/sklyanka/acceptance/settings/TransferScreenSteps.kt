@@ -61,6 +61,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
+import ru.stohastika.sklyanka.ui.R as UiR
 
 /**
  * Экранные шаги приёмки переноса данных (SKL-19, группа `@screen`).
@@ -631,7 +632,7 @@ class TransferScreenSteps(private val world: AcceptanceWorld) {
     fun theConfirmationRequiresTheWord(word: String) {
         val state = TransferScreenProbe.state(world)
         assertTrue(
-            TransferScreenProbe.hasText(state, string(R.string.transfer_replace_word_label, word)),
+            TransferScreenProbe.hasText(state, string(UiR.string.confirm_word_label, word)),
             "the confirmation must show the word sample «$word»",
         )
         assertTrue(TransferScreenProbe.hasTag(state, TAG_REPLACE_CONFIRM_ACTION))

@@ -88,7 +88,11 @@ fun MedicationFormScreen(
                 .verticalScroll(scroll)
                 .onGloballyPositioned { anchors.putContainerTop(it.positionInWindow().y.toInt()) }
                 .imePadding()
-                .screenPadding(),
+                .screenPadding()
+                // Панель кнопки — сосед прокрутки, а не наложение, и поле прокрутки равно
+                // шагу поля экрана (24 dp): иначе последний блок («Режим приёма») упирался
+                // в панель вплотную и читался обрезанным (V-10, §4.1).
+                .padding(bottom = SklyankaSpacing.Screen),
             verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Screen),
         ) {
             // Порядок блоков — контракт формы, а не случайность разметки (Д-2).

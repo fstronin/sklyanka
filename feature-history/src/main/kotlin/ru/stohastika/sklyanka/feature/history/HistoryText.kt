@@ -43,12 +43,30 @@ internal fun LocalDate.dayLabel(): String = format(formatter(R.string.history_da
 @Composable
 internal fun LocalTime.timeLabel(): String = format(formatter(R.string.history_time_pattern))
 
-/** «86 %» либо прочерк: доля принятого вовремя не определена, пока не согласован порог (ОВ-4). */
+/**
+ * Число плитки «принято вовремя»: «86 %», а при доле меньше процента — «< 1 %» (Р-27).
+ *
+ * Нуля на плитке не бывает при непустом знаменателе: «0 %» стерло бы состоявшийся приём,
+ * и метрике перестали бы верить. Прочерка тоже нет — плитка просто не рисуется, когда
+ * мерить нечего (Р-33), поэтому и функции этой у [OnTimeShare.Absent] не существует.
+ */
 @Composable
-internal fun OnTimeShare.label(): String = when (this) {
-    is OnTimeShare.Value -> stringResource(R.string.history_percent, percent)
-    OnTimeShare.Undefined -> stringResource(R.string.history_value_dash)
+internal fun OnTimeShare.Value.shareLabel(): String = if (lessThanOnePercent) {
+    stringResource(R.string.history_percent_less_than_one)
+} else {
+    stringResource(R.string.history_percent, percent)
 }
+
+/**
+ * «принято вовремя, 12 из 14 приёмов» — подпись плитки для чтения с экрана (§5.4).
+ *
+ * Знаменатель назван словами: на глаз он виден в календаре и в разбивке по лекарствам,
+ * а читалке плитка должна сообщить его сама — «число и подпись по отдельности» не отвечают
+ * на вопрос, от чего взята доля (НФТ-30).
+ */
+@Composable
+internal fun OnTimeShare.Value.shareDescription(): String =
+    pluralStringResource(R.plurals.cd_history_on_time, due, onTime, due)
 
 /** Число в плитке либо прочерк, когда за месяц нет ни одной записи. */
 @Composable

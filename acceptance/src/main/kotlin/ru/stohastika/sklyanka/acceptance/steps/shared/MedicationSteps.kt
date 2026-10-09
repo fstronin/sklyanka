@@ -169,9 +169,26 @@ class MedicationSteps(private val world: AcceptanceWorld) {
 
             course.startsWith(BOUNDED_COURSE) -> {
                 val bounds = course.removePrefix(BOUNDED_COURSE).split(" по ")
-                val end = world.dateOf(bounds[1].trim())
+                if (bounds.size == 1) {
+                    // «курсом с 22 сентября 2026»: начало названо, окончания нет — курс открыт.
+                    world.medications.update(medication) {
+                        it.copy(startDate = world.dateOf(bounds[0].trim()), endDate = null)
+                    }
+                } else {
+                    val end = world.dateOf(bounds[1].trim())
+                    world.medications.update(medication) {
+                        it.copy(startDate = RussianDates.date(bounds[0].trim(), end), endDate = end)
+                    }
+                }
+            }
+
+            course.startsWith(COURSE_UNTIL) -> {
+                // «курсом по 24 сентября 2026»: названо только окончание. Начало не выдумывается
+                // (любой другой интервал — догадка), поэтому курс считается однодневным на
+                // названную дату: к сегодняшнему дню он завершён, а приём этой даты — просрочен.
+                val end = world.dateOf(course.removePrefix(COURSE_UNTIL).trim())
                 world.medications.update(medication) {
-                    it.copy(startDate = RussianDates.date(bounds[0].trim(), end), endDate = end)
+                    it.copy(startDate = end, endDate = end)
                 }
             }
 
@@ -182,5 +199,6 @@ class MedicationSteps(private val world: AcceptanceWorld) {
     private companion object {
         const val OPEN_ENDED_COURSE = "бессрочным курсом"
         const val BOUNDED_COURSE = "курсом с "
+        const val COURSE_UNTIL = "курсом по "
     }
 }

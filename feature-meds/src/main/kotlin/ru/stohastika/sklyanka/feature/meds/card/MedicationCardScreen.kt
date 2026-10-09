@@ -51,37 +51,41 @@ import ru.stohastika.sklyanka.ui.R as UiR
 @Composable
 fun MedicationCardScreen(state: MedCardUiState, onIntent: (MedCardIntent) -> Unit, modifier: Modifier = Modifier) {
     val colors = SklyankaTheme.colors
-    Column(
+    // Корень — `Box`: шторка удаления лежит поверх содержимого, а не рядом с ним.
+    // Соседом в столбце полноэкранное полотно шторки отняло бы высоту у содержимого
+    // карточки — тот же приём, что у истории и снэкбара «Сегодня».
+    Box(
         modifier = modifier
             .fillMaxSize()
             .background(colors.background)
-            .navigationBarsPadding()
             .testTag(TAG_MEDICATION_CARD_SCREEN),
     ) {
-        // Индикация чужого профиля: шапка карточки собрана по месту, и надпись
-        // «Профиль · Имя» с баннером выпадала из неё вместе с `ScreenHeader` —
-        // дыра в защите, найденная исполнимой приёмкой SKL-15 (ПРФ-12, SKL-26).
-        ProfileIndication()
-        CardTopBar(onIntent)
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .verticalScroll(rememberScrollState())
-                .screenPadding()
-                .padding(bottom = SklyankaSpacing.Block),
-            verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Large),
-        ) {
-            Title(state)
-            state.notice?.let { notice -> NoticeBanner(notice, onIntent) }
-            if (state.courseFinishedOffer) {
-                FinishedCourseOffer(onIntent)
+        Column(modifier = Modifier.fillMaxSize().navigationBarsPadding()) {
+            // Индикация чужого профиля: шапка карточки собрана по месту, и надпись
+            // «Профиль · Имя» с баннером выпадала из неё вместе с `ScreenHeader` —
+            // дыра в защите, найденная исполнимой приёмкой SKL-15 (ПРФ-12, SKL-26).
+            ProfileIndication()
+            CardTopBar(onIntent)
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .screenPadding()
+                    .padding(bottom = SklyankaSpacing.Block),
+                verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Large),
+            ) {
+                Title(state)
+                state.notice?.let { notice -> NoticeBanner(notice, onIntent) }
+                if (state.courseFinishedOffer) {
+                    FinishedCourseOffer(onIntent)
+                }
+                ScheduleBlock(state.schedule)
+                state.course?.let { course -> CourseBlock(course) }
+                StockBlock(state, onIntent)
+                WeekBlock(state.week)
             }
-            ScheduleBlock(state.schedule)
-            state.course?.let { course -> CourseBlock(course) }
-            StockBlock(state, onIntent)
-            WeekBlock(state.week)
+            ArchiveAction(state, onIntent)
         }
-        ArchiveAction(state, onIntent)
         if (state.deleteConfirmation) {
             DeleteMedicationSheet(
                 medicationName = state.title,

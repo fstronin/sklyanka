@@ -62,7 +62,6 @@
     <string name="transfer_replace_confirm">Borrar e importar</string>
     <string name="transfer_replace_cancel">No borrar</string>
     <string name="transfer_replace_word">Reemplazar</string>
-    <string name="transfer_replace_word_label">Escribe la palabra «%1$s» para confirmar</string>
 
     <string name="transfer_report_title">Importación completada</string>
     <string name="transfer_report_profiles">Perfiles añadidos: %1$d</string>
@@ -129,8 +128,6 @@
     <string name="settings_profile_self_initial">Y</string>
     <string name="settings_profile_mirrored">los recordatorios se me duplican</string>
     <string name="settings_profile_subtitle">%1$s · %2$s</string>
-    <string name="settings_profile_add">Añadir perfil</string>
-    <string name="settings_profile_add_unavailable">Disponible en la próxima actualización</string>
     <string name="settings_profile_delete">Eliminar el perfil «%1$s»</string>
     <string name="cd_settings_profile_active">Perfil activo</string>
 

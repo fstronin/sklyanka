@@ -7,9 +7,9 @@
     <string name="action_taken">Eingenommen</string>
     <string name="action_skip">Überspringen</string>
     <string name="action_take">Einnehmen</string>
-    <string name="action_back">Zurück</string>
     <string name="action_cancel">Abbrechen</string>
     <string name="action_done">Fertig</string>
+    <string name="confirm_word_label">Geben Sie das Wort „%1$s“ ein, um zu bestätigen</string>
     <string name="status_missed">Verpasst</string>
     <string name="status_marked_by_you">von Ihnen markiert</string>
     <string name="label_as_needed">Bei Bedarf</string>
@@ -25,6 +25,7 @@
 
     <string name="cd_mark_intake">Einnahme %1$s markieren</string>
     <string name="cd_back">Zurück</string>
+    <string name="cd_confirm_word_field">Bestätigungswort</string>
     <string name="cd_app_mark">Sklyanka-Zeichen</string>
     <string name="cd_app_mark_glass">Sklyanka-Zeichen: Boden aus dickem Glas</string>
     <string name="cd_icon_on_dark">Symbol auf dunklem Hintergrund</string>

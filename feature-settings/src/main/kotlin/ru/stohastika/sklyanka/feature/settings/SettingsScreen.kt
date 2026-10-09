@@ -3,6 +3,7 @@ package ru.stohastika.sklyanka.feature.settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -20,7 +21,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.semantics
 import ru.stohastika.sklyanka.domain.reminder.SnoozeIntervals
 import ru.stohastika.sklyanka.ui.component.BottomBar
@@ -28,9 +28,11 @@ import ru.stohastika.sklyanka.ui.component.BottomBarTab
 import ru.stohastika.sklyanka.ui.component.CheckGlyph
 import ru.stohastika.sklyanka.ui.component.FlatMark
 import ru.stohastika.sklyanka.ui.component.ListPickerDialog
+import ru.stohastika.sklyanka.ui.component.PinnedHeaderBar
 import ru.stohastika.sklyanka.ui.component.ScreenHeader
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderLabels
 import ru.stohastika.sklyanka.ui.component.SklyankaSwitchRow
+import ru.stohastika.sklyanka.ui.component.rememberScreenHeaderState
 import ru.stohastika.sklyanka.ui.locale.interfaceLocale
 import ru.stohastika.sklyanka.ui.modifier.minTouchTarget
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
@@ -60,41 +62,51 @@ import ru.stohastika.sklyanka.ui.token.SklyankaType
 @Composable
 fun SettingsScreen(state: SettingsUiState, onIntent: (SettingsIntent) -> Unit, modifier: Modifier = Modifier) {
     val colors = SklyankaTheme.colors
-    Column(
+    val header = rememberScreenHeaderState()
+    val labels = ScreenHeaderLabels(title = stringResource(R.string.settings_title))
+    Box(
         modifier = modifier
             .fillMaxSize()
             .background(colors.background)
             .testTag(TAG_SETTINGS_SCREEN),
     ) {
-        ScreenHeader(labels = ScreenHeaderLabels(title = stringResource(R.string.settings_title)))
-        LazyColumn(
-            modifier = Modifier.fillMaxWidth().weight(1f),
-            contentPadding = PaddingValues(
-                start = SklyankaSpacing.Section,
-                end = SklyankaSpacing.Section,
-                bottom = SklyankaSpacing.Section,
-            ),
-            verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Block),
-        ) {
-            profilesBlock(state, onIntent)
-            remindersBlock(state, onIntent)
-            systemBlock(state, onIntent)
-            dataBlock(onIntent)
-            item { AboutPlate(state.version) }
-        }
-        BottomBar(
-            selected = BottomBarTab.Settings,
-            onSelect = { tab ->
-                when (tab) {
-                    BottomBarTab.Today -> onIntent(SettingsIntent.OpenToday)
-                    BottomBarTab.Meds -> onIntent(SettingsIntent.OpenMedications)
-                    BottomBarTab.Settings -> Unit
+        Column(modifier = Modifier.fillMaxSize()) {
+            // Крупный заголовок — контент и уезжает вместе с содержимым; «Настройки» — корень
+            // без возврата и без действия, поэтому ряд несёт только компактный заголовок (§7).
+            LazyColumn(
+                modifier = Modifier.fillMaxWidth().weight(1f),
+                contentPadding = PaddingValues(bottom = SklyankaSpacing.Section),
+                verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Block),
+            ) {
+                item { ScreenHeader(labels = labels, pinning = header) }
+                profilesBlock(state, onIntent)
+                remindersBlock(state, onIntent)
+                systemBlock(state, onIntent)
+                dataBlock(onIntent)
+                item {
+                    AboutPlate(state.version, modifier = Modifier.padding(horizontal = SklyankaSpacing.Section))
                 }
-            },
-        )
-        if (state.snoozePickerVisible) {
-            SnoozePicker(state, onIntent)
+            }
+            BottomBar(
+                selected = BottomBarTab.Settings,
+                onSelect = { tab ->
+                    when (tab) {
+                        BottomBarTab.Today -> onIntent(SettingsIntent.OpenToday)
+                        BottomBarTab.Meds -> onIntent(SettingsIntent.OpenMedications)
+                        BottomBarTab.Settings -> Unit
+                    }
+                },
+            )
+            if (state.snoozePickerVisible) {
+                SnoozePicker(state, onIntent)
+            }
         }
+        // Ряд — слой над прокруткой: до порога его не видно, и места в потоке он не держит (§7).
+        PinnedHeaderBar(
+            labels = labels,
+            state = header,
+            modifier = Modifier.align(Alignment.TopCenter),
+        )
     }
 }
 
@@ -124,13 +136,15 @@ private fun SnoozePicker(state: SettingsUiState, onIntent: (SettingsIntent) -> U
  * Раздел «Профили» (ПРФ-19, ПРФ-26, ПРФ-7).
  *
  * Свой профиль первым с подписью «Мои лекарства», чужой — с числом лекарств и состоянием
- * дублирования, последней строкой «Добавить профиль». У активного чужого профиля следом,
- * за разделителем, стоит строка удаления (ОВ-7, SKL-36): удалить можно ровно того,
- * в чьём контексте человек находится, и только его одного. Само переключение — SKL-15:
- * экран только сообщает, какую строку нажали.
+ * дублирования. У активного чужого профиля следом, за разделителем, стоит строка удаления
+ * (ОВ-7, SKL-36): удалить можно ровно того, в чьём контексте человек находится, и только
+ * его одного. Само переключение — SKL-15: экран только сообщает, какую строку нажали.
  *
- * Строка «Добавить профиль» до появления мастера выключена (SKL-58): нажимаемый элемент
- * без перехода обещал бы функцию, которой нет.
+ * Строки «Добавить профиль» здесь нет: мастера создания профиля не существует, а строка
+ * «будет доступно в ближайшем обновлении» — обещание функции, которой нет, то есть тот же
+ * класс лжи, что и лже-отчёт (П-7, Р-29). Шов открытия мастера
+ * ([SettingsIntent.AddProfile], [SettingsNavigation.addProfile]) сохранён в коде: возвращение
+ * мастера не потребует правки навигации.
  */
 private fun LazyListScope.profilesBlock(state: SettingsUiState, onIntent: (SettingsIntent) -> Unit) {
     item {
@@ -139,8 +153,6 @@ private fun LazyListScope.profilesBlock(state: SettingsUiState, onIntent: (Setti
                 if (index > 0) RowDivider()
                 ProfileRow(profile) { onIntent(SettingsIntent.SelectProfile(profile.id)) }
             }
-            if (state.profiles.isNotEmpty()) RowDivider()
-            AddProfileRow()
             state.deletableProfile?.let { profile ->
                 RowDivider(modifier = Modifier.testTag(TAG_DELETE_DIVIDER))
                 DeleteProfileRow(profile) { onIntent(SettingsIntent.DeleteProfile) }
@@ -221,46 +233,6 @@ private fun ProfileRowState.initial(): String {
     val fallback = stringResource(R.string.settings_profile_self_initial)
     if (isSelf) return fallback
     return name.trim().take(1).uppercase(interfaceLocale()).ifEmpty { fallback }
-}
-
-/**
- * Выключенная строка «Добавить профиль» (`ПРФ-9`, `ОВ-3`, SKL-58).
- *
- * Мастер создания профиля — отдельная задача после макета дизайнера. До него строка
- * остаётся на месте по макету, но не нажимается: кнопка без перехода обещала бы функцию,
- * которой нет. Гашение цвета — признак недоступности, а причину несёт подпись словами
- * (§6.1 дизайн-системы, НФТ-30): один `TextDisabled` смысла не удержал бы.
- *
- * Намерение [SettingsIntent.AddProfile] и переход [SettingsNavigation.addProfile] сохранены
- * швом пост-MVP: возвращение мастера не потребует правки навигации.
- */
-@Composable
-private fun AddProfileRow() {
-    val colors = SklyankaTheme.colors
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .minTouchTarget()
-            .semantics { disabled() }
-            .testTag(TAG_ADD_PROFILE)
-            .padding(horizontal = SklyankaSpacing.Block, vertical = SklyankaSpacing.Large),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Medium),
-    ) {
-        DashedCircle(colors.textDisabled)
-        Column(verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Hair)) {
-            Text(
-                text = stringResource(R.string.settings_profile_add),
-                style = SklyankaType.BodyDefaultStrong,
-                color = colors.textDisabled,
-            )
-            Text(
-                text = stringResource(R.string.settings_profile_add_unavailable),
-                style = SklyankaType.CaptionSmall,
-                color = colors.textMuted,
-            )
-        }
-    }
 }
 
 /**
@@ -422,16 +394,23 @@ private fun AboutPlate(version: String, modifier: Modifier = Modifier) {
     }
 }
 
-/** Рубрика и карточка раздела одним блоком: они всегда идут парой. */
+/**
+ * Рубрика и карточка раздела одним блоком: они всегда идут парами.
+ *
+ * Боковое поле экрана стоит на блоке, а не на списке: крупный заголовок — тоже элемент
+ * списка, и он обязан занимать всю ширину, тогда как карточкам нужно поле (§7).
+ */
 @Composable
 private fun SettingsBlock(rubric: String, content: @Composable () -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Small)) {
+    Column(
+        modifier = Modifier.padding(horizontal = SklyankaSpacing.Section),
+        verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Small),
+    ) {
         SectionRubric(rubric)
         SettingsCard { content() }
     }
 }
 
-internal const val TAG_ADD_PROFILE = "settings_add_profile"
 internal const val TAG_DELETE_PROFILE_ROW = "settings_delete_profile_row"
 internal const val TAG_DELETE_DIVIDER = "settings_delete_divider"
 internal const val TAG_HISTORY_ROW = "settings_history_row"

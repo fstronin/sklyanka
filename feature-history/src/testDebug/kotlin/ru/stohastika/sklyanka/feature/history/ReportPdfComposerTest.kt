@@ -14,6 +14,7 @@ import ru.stohastika.sklyanka.domain.history.DoctorReport
 import ru.stohastika.sklyanka.domain.history.DoctorReportBuilder
 import ru.stohastika.sklyanka.domain.history.HistorySlice
 import ru.stohastika.sklyanka.domain.history.HistoryWindow
+import ru.stohastika.sklyanka.domain.history.OnTimeRule
 import ru.stohastika.sklyanka.domain.model.ArchiveReason
 import ru.stohastika.sklyanka.domain.model.FoodRelation
 import ru.stohastika.sklyanka.domain.model.Intake
@@ -77,17 +78,23 @@ class ReportPdfComposerTest {
             percent(2, 5, 40),
             content.summary.first { it.label == "Принято:" }.value,
         )
-        assertEquals("Принято вовремя: —", content.summary[1].let { "${it.label} ${it.value}" })
+        // Строка доли посчитана, а не прочеркнута: доля есть у периода с наступившими
+        // плановыми приёмами (Р-21, Р-27).
+        assertEquals("Принято вовремя:", content.summary[1].label)
+        assertTrue(
+            "the on time line must carry a counted percent: ${content.summary[1].value}",
+            content.summary[1].value.endsWith("%"),
+        )
         assertEquals(report.period.daysWithoutMisses.toString(), content.summary[2].value)
         assertEquals(report.period.missesInPeriod.toString(), content.summary[3].value)
     }
 
-    /** Порог «вовремя» не согласован (ОВ-4): в документе прочерк, а не выдуманное число. */
+    /** Р-33: мерить нечего — строки нет вовсе (ни числа, ни прочерка). */
     @Test
-    fun `the on time share is a dash while the threshold is not agreed`() {
-        val text = content().documentText()
+    fun `the on time share line is absent when there is nothing to measure`() {
+        val text = content(emptyReport()).documentText()
 
-        assertTrue(text.contains("Принято вовремя: —"))
+        assertTrue("доли нет — строки нет: $text", !text.contains("Принято вовремя"))
     }
 
     @Test
@@ -175,7 +182,7 @@ class ReportPdfComposerTest {
             historyStartsAt = LocalDate.of(2026, 9, 1),
         )
         val report = DoctorReportBuilder.build(
-            period = AdherenceCalculator().of(slice, WINDOW, TODAY, ZONE),
+            period = AdherenceCalculator(OnTimeRule.TwoHours).of(slice, WINDOW, TODAY, ZONE),
             slice = slice,
             profileName = PROFILE_NAME,
             generatedAt = GENERATED_AT,
@@ -264,7 +271,7 @@ class ReportPdfComposerTest {
     private fun content(report: DoctorReport = report()): ReportPdfContent = composer.compose(report, ZONE)
 
     private fun emptyReport(): DoctorReport = DoctorReportBuilder.build(
-        period = AdherenceCalculator().of(HistorySlice.empty(PROFILE_ID), WINDOW, TODAY, ZONE),
+        period = AdherenceCalculator(OnTimeRule.TwoHours).of(HistorySlice.empty(PROFILE_ID), WINDOW, TODAY, ZONE),
         slice = HistorySlice.empty(PROFILE_ID),
         profileName = PROFILE_NAME,
         generatedAt = GENERATED_AT,
@@ -279,7 +286,7 @@ class ReportPdfComposerTest {
             historyStartsAt = LocalDate.of(2026, 9, 1),
         )
         return DoctorReportBuilder.build(
-            period = AdherenceCalculator().of(slice, WINDOW, TODAY, ZONE),
+            period = AdherenceCalculator(OnTimeRule.TwoHours).of(slice, WINDOW, TODAY, ZONE),
             slice = slice,
             profileName = PROFILE_NAME,
             generatedAt = GENERATED_AT,

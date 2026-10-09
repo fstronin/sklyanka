@@ -44,7 +44,7 @@ internal fun LazyListScope.denseSections(
 ) {
     layout.sections.forEach { section ->
         val expanded = state.isExpanded(section)
-        item(key = "section-${section.partOfDay}") {
+        todayItem(key = "section-${section.partOfDay}") {
             if (expanded) {
                 SectionDivider(section)
             } else {
@@ -53,7 +53,7 @@ internal fun LazyListScope.denseSections(
         }
         if (expanded) {
             section.groups.forEach { group ->
-                item(key = "dense-lane-${group.time}") {
+                todayItem(key = "dense-lane-${group.time}") {
                     if (group.items.size > 1 && group.isNow) {
                         TimeLane(group, state, onIntent)
                     } else {

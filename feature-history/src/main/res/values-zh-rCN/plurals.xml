@@ -26,6 +26,10 @@
         <item quantity="other">%1$d 天无漏服</item>
     </plurals>
 
+    <plurals name="cd_history_on_time">
+        <item quantity="other">按时服用，%2$d 次中的 %1$d 次</item>
+    </plurals>
+
     <plurals name="cd_history_misses">
         <item quantity="other">本月 %1$d 次漏服</item>
     </plurals>

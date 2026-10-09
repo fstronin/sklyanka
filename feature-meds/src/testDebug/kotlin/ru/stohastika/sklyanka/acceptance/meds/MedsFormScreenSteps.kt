@@ -48,6 +48,7 @@ import ru.stohastika.sklyanka.feature.meds.form.TAG_RELEASE_FORM
 import ru.stohastika.sklyanka.feature.meds.form.TAG_SAVE_BUTTON
 import ru.stohastika.sklyanka.feature.meds.form.TAG_START_DATE
 import ru.stohastika.sklyanka.feature.meds.form.TAG_STOCK_FIELD
+import ru.stohastika.sklyanka.feature.meds.form.TAG_STRENGTH_FIELD
 import ru.stohastika.sklyanka.feature.meds.form.TAG_TABLET_SHAPE_ROW
 import ru.stohastika.sklyanka.feature.meds.form.TAG_TIMES_BLOCK
 import ru.stohastika.sklyanka.feature.meds.form.TAG_TIME_ROW
@@ -516,6 +517,7 @@ class MedsFormScreenSteps(private val world: AcceptanceWorld) {
             "Форма выпуска" to listOf(TAG_RELEASE_FORM),
             "Вид таблетки" to listOf(TAG_TABLET_SHAPE_ROW),
             "Доза на один приём" to listOf(TAG_DOSE_FIELD),
+            "Дозировка препарата" to listOf(TAG_STRENGTH_FIELD),
             "Режим приёма" to listOf(TAG_MODE_SWITCH),
             "расписание" to listOf(TAG_COUNTER_CARD, TAG_TIMES_BLOCK),
             "Связь с едой" to listOf(TAG_FOOD_RELATION),

@@ -23,6 +23,7 @@ import ru.stohastika.sklyanka.domain.history.BuildDoctorReportUseCase
 import ru.stohastika.sklyanka.domain.history.DayState
 import ru.stohastika.sklyanka.domain.history.MissedPatternRule
 import ru.stohastika.sklyanka.domain.history.ObserveAdherenceUseCase
+import ru.stohastika.sklyanka.domain.history.OnTimeRule
 import ru.stohastika.sklyanka.domain.history.OnTimeShare
 import ru.stohastika.sklyanka.domain.history.ReportPreset
 import ru.stohastika.sklyanka.domain.history.ReportShareResult
@@ -128,7 +129,7 @@ class HistoryViewModelTest {
         assertTrue(state.isEmptyMonth)
         assertTrue(state.period.byMedication.isEmpty())
         assertNull(state.insightTime)
-        assertEquals(OnTimeShare.Undefined, state.period.onTimeShare)
+        assertEquals(OnTimeShare.Absent, state.period.onTimeShare)
         // Календарь остаётся календарём: пустой месяц — это тридцать один нейтральный
         // день, а не отсутствие сетки.
         assertEquals(31, state.period.days.size)
@@ -555,15 +556,36 @@ class HistoryViewModelTest {
         assertFalse(text.contains("%"))
     }
 
-    /** ОВ-4: правило «вовремя» не зарегистрировано — плитка показывает прочерк. */
+    /** Р-21/Р-27: доля считается по наступившим плановым приёмам — числитель к знаменателю. */
     @Test
-    fun `the on time share stays undefined until the threshold is agreed`() = runTest(dispatcher) {
+    fun `the on time share counts due scheduled intakes`() = runTest(dispatcher) {
         fillSeptember()
         val viewModel = viewModel()
         advanceUntilIdle()
 
-        assertEquals(OnTimeShare.Undefined, viewModel.state.value.period.onTimeShare)
-        assertTrue(log.records.any { it.event == OpEvent.HISTORY_ON_TIME_UNDEFINED })
+        // Все приёмы сентября отмечены в назначенное время: числитель равен знаменателю.
+        assertEquals(OnTimeShare.Value(onTime = 29, due = 29), viewModel.state.value.period.onTimeShare)
+        assertFalse(log.records.any { it.event == OpEvent.HISTORY_ON_TIME_NOT_MEASURED })
+    }
+
+    /** Р-33: наступивших плановых приёмов нет — мерить нечего, и журнал называет причину. */
+    @Test
+    fun `no due scheduled intakes leaves the share absent and the journal says so`() = runTest(dispatcher) {
+        history.put(
+            profileId = HistoryTestData.PROFILE_ID,
+            intakes = HistoryTestData.daily(
+                from = LocalDate.of(2026, 9, 1),
+                to = LocalDate.of(2026, 9, 29),
+                status = IntakeStatus.PENDING,
+            ),
+            medications = listOf(HistoryTestData.medication()),
+        )
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        assertEquals(OnTimeShare.Absent, viewModel.state.value.period.onTimeShare)
+        val trace = log.records.last { it.event == OpEvent.HISTORY_ON_TIME_NOT_MEASURED }
+        assertEquals("on_time_not_measured", trace.detail)
     }
 
     /** ПРФ-14: отметка владельца телефона в чужом профиле подписана. */
@@ -613,7 +635,7 @@ class HistoryViewModelTest {
         observeAdherence = ObserveAdherenceUseCase(
             activeProfile = activeProfile,
             history = history,
-            calculator = AdherenceCalculator(),
+            calculator = AdherenceCalculator(OnTimeRule.TwoHours),
             time = clock,
             log = log,
         ),
@@ -621,7 +643,7 @@ class HistoryViewModelTest {
             activeProfile = activeProfile,
             profiles = profiles,
             history = history,
-            calculator = AdherenceCalculator(),
+            calculator = AdherenceCalculator(OnTimeRule.TwoHours),
             time = clock,
             log = log,
         ),

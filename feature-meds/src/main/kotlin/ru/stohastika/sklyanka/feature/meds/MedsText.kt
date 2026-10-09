@@ -81,18 +81,20 @@ internal fun formAndShapeLabel(form: MedicationForm, shape: TabletShape?): Strin
 internal fun medicationPreviewTitle(form: MedicationForm, shape: TabletShape?): String = formAndShapeLabel(form, shape)
 
 /**
- * Подпись превью выбора (§4.16, ОВ-94).
+ * Числа превью выбора: «2 шт · 48 мг» (§5.3, ЭКР-7).
  *
- * У форм, где доза описывается силуэтом (таблетка и капсула), — фраза про узнавание;
- * у форм, где доза описывается словами, — фраза с введённым количеством. Пустое поле
- * дозы называет общую фразу без числа: до ввода назвать дозу нечем.
+ * Порядок — как в подписи лекарства: сначала доза на один приём, затем дозировка
+ * препарата. Пустая часть в строку не попадает — пустая дозировка законна (ИНВ-5),
+ * и «·» без числа называл бы отсутствие данных числом. Пусто и то и другое — строка
+ * пуста: форму и вид называет заголовок превью, и он остаётся всегда.
  */
 @Composable
-internal fun medicationPreviewCaption(form: MedicationForm, dose: String?): String = when {
-    form == MedicationForm.TABLET || form == MedicationForm.CAPSULE -> stringResource(R.string.form_preview_reusable)
-    dose.isNullOrBlank() -> stringResource(R.string.form_preview_dose_words_empty)
-    else -> stringResource(R.string.form_preview_dose_words, dose)
-}
+internal fun medicationPreviewNumbers(dose: String?, strength: String?): String =
+    listOfNotNull(dose?.takeIf { it.isNotBlank() }, strength?.takeIf { it.isNotBlank() })
+        .joinToString(PREVIEW_NUMBER_SEPARATOR)
+
+/** Разделитель чисел превью — точка-пауза из макета (`AddMed.dc.html`). */
+private const val PREVIEW_NUMBER_SEPARATOR = " · "
 
 /**
  * Подпись пресета срока окончания (ПМ-12, SKL-75).

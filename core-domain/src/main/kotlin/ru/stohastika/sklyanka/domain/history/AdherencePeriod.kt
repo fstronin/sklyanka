@@ -27,7 +27,10 @@ data class AdherencePeriod(
     val daysWithoutMisses: Int,
     /** Плитка «пропусков за месяц»: и отмеченные человеком, и автоматические (ПР-1). */
     val missesInPeriod: Int,
-    /** Плитка «принято вовремя». Не число, а тип: порог не согласован (ОВ-4, [OnTimeShare]). */
+    /**
+     * Плитка «принято вовремя». Не число, а тип: доли может не быть, когда мерить нечего
+     * (Р-33, [OnTimeShare]).
+     */
     val onTimeShare: OnTimeShare,
     /** Пропуски по времени приёма — опора строки-вывода ([MissedPatternRule]). */
     val missesByTime: Map<LocalTime, Int>,
@@ -62,7 +65,7 @@ data class AdherencePeriod(
             byMedication = emptyList(),
             daysWithoutMisses = 0,
             missesInPeriod = 0,
-            onTimeShare = OnTimeShare.Undefined,
+            onTimeShare = OnTimeShare.Absent,
             missesByTime = emptyMap(),
             scheduledTimes = emptySet(),
         )

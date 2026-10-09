@@ -21,6 +21,7 @@ import ru.stohastika.sklyanka.ui.component.IntakeCardActions
 import ru.stohastika.sklyanka.ui.component.IntakeCardLabels
 import ru.stohastika.sklyanka.ui.component.IntakeCardState
 import ru.stohastika.sklyanka.ui.component.OnboardingSteps
+import ru.stohastika.sklyanka.ui.component.PinnedHeaderBar
 import ru.stohastika.sklyanka.ui.component.PrimaryButton
 import ru.stohastika.sklyanka.ui.component.PrimaryButtonKind
 import ru.stohastika.sklyanka.ui.component.ProfileStripe
@@ -30,6 +31,7 @@ import ru.stohastika.sklyanka.ui.component.QuietButtonKind
 import ru.stohastika.sklyanka.ui.component.ScreenHeader
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderKind
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderLabels
+import ru.stohastika.sklyanka.ui.component.ScreenHeaderState
 import ru.stohastika.sklyanka.ui.component.SecondaryButton
 import ru.stohastika.sklyanka.ui.component.SklyankaChip
 import ru.stohastika.sklyanka.ui.component.SklyankaNumberField
@@ -40,6 +42,7 @@ import ru.stohastika.sklyanka.ui.component.SklyankaTextField
 import ru.stohastika.sklyanka.ui.component.SwitchState
 import ru.stohastika.sklyanka.ui.component.TextFieldState
 import ru.stohastika.sklyanka.ui.profile.LocalProfileChrome
+import ru.stohastika.sklyanka.ui.profile.ProfileAvatar
 import ru.stohastika.sklyanka.ui.profile.ProfileChromeState
 import ru.stohastika.sklyanka.ui.theme.ProfileAccent
 import ru.stohastika.sklyanka.ui.token.ProfileColor
@@ -229,6 +232,29 @@ class ComponentStateSnapshotTest {
         capture("progress-onboarding-steps") { OnboardingSteps(total = STEPS, current = STEP) }
     }
 
+    /**
+     * Сжатый закреплённый ряд (§7): компактный заголовок и действие справа.
+     *
+     * Состояние новое в SKL-105, и без эталона оно не закреплено ничем: порог по геометрии
+     * проверяется тестом, но вид ряда — только кадром.
+     */
+    @Test
+    fun thePinnedRowCollapsed() {
+        capture("screen-header-pinned-collapsed") {
+            PinnedHeaderBar(
+                labels = ScreenHeaderLabels(title = context.getString(R.string.preview_screen_title)),
+                state = collapsedHeader(),
+                trailing = { ProfileAvatar(onOpenProfiles = {}) },
+            )
+        }
+    }
+
+    /** Ряд, у которого крупный заголовок ушёл под него: порог §7 измеряется геометрией. */
+    private fun collapsedHeader() = ScreenHeaderState().apply {
+        reportBarBottom(0)
+        reportTitleBottom(0)
+    }
+
     @Test
     fun screenHeaderInEveryKind() {
         val title = context.getString(R.string.preview_screen_title)
@@ -288,10 +314,15 @@ class ComponentStateSnapshotTest {
     )
 
     @OptIn(ExperimentalRoborazziApi::class)
-    private fun capture(name: String, profile: ProfileAccent = ProfileAccent.Owner, content: @Composable () -> Unit) {
+    private fun capture(
+        name: String,
+        profile: ProfileAccent = ProfileAccent.Owner,
+        fontScale: Float = 1f,
+        content: @Composable () -> Unit,
+    ) {
         captureRoboImage(
             file = Snapshots.golden(GROUP, name),
-            roborazziComposeOptions = Snapshots.options(),
+            roborazziComposeOptions = Snapshots.options(fontScale = fontScale),
         ) {
             SnapshotSurface(profile = profile) {
                 // Компоненты, которые в каталоге стоят в строку, в снимке остаются
@@ -308,5 +339,8 @@ class ComponentStateSnapshotTest {
         const val TOTAL = 5
         const val STEPS = 3
         const val STEP = 2
+
+        /** Системный шрифт 200 %: тот же множитель, что у снимка среды (`§6.3`). */
+        const val SCALE_200 = 2.0f
     }
 }

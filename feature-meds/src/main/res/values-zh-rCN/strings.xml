@@ -26,13 +26,13 @@
     <string name="form_save_existing">保存</string>
 
     <string name="form_label_name">名称</string>
+    <string name="medication_delete_word">删除</string>
     <string name="form_label_release_form">剂型</string>
     <string name="form_label_tablet_shape">药片形状</string>
 
-    <string name="form_preview_reusable">药物将在列表和卡片中以这种方式识别</string>
-    <string name="form_preview_dose_words">剂量以文字描述：“%1$s” — 不显示形状</string>
-    <string name="form_preview_dose_words_empty">剂量以文字描述，不显示形状</string>
     <string name="form_label_dose">单次剂量</string>
+    <string name="form_label_strength">药物规格</string>
+    <string name="form_strength_hint">可选。每单位含多少有效成分——卡片中显示，不参与计算。</string>
     <string name="form_label_intakes_per_day">每日服药次数</string>
     <string name="form_caption_times_below">时间在下方设置</string>
     <string name="form_label_times">服药时间</string>

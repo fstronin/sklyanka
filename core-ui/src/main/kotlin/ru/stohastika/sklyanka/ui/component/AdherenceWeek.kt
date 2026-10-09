@@ -18,6 +18,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.text.style.TextAlign
 import ru.stohastika.sklyanka.ui.R
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
@@ -67,10 +68,17 @@ data class AdherenceDay(val label: String, val state: AdherenceDayState, val des
  *
  * Живёт в дизайн-системе, а не в `feature-meds`: тот же блок нужен экрану истории
  * (SKL-18), а `feature-*` друг от друга не зависят.
+ *
+ * **Пустая неделя сжимается.** Завершённых дней с исходом нет — компонент не рисует
+ * ни ряда, ни легенды: сравнивать не с чем, кружок «сегодня» без соседей отвечает
+ * на вопрос, которого блок не задаёт, а легенда без марок не объясняет ничего (V-1).
+ * Решение принимает компонент, а не экран: заголовок блока — часть карточки, и «ронять»
+ * блок по месту значило бы повторять это правило на каждом потребителе (§5.2).
  */
 @Composable
 fun AdherenceWeek(days: List<AdherenceDay>, modifier: Modifier = Modifier) {
     val colors = SklyankaTheme.colors
+    if (days.none { it.state.isOutcome }) return
     Column(
         modifier = modifier.fillMaxWidth().testTag(TAG_ADHERENCE_WEEK),
         verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Large),
@@ -87,6 +95,10 @@ fun AdherenceWeek(days: List<AdherenceDay>, modifier: Modifier = Modifier) {
     }
 }
 
+/** День с состоявшимся исходом: только такие дни делают ряд и легенду осмысленными (§5.2). */
+private val AdherenceDayState.isOutcome: Boolean
+    get() = this == AdherenceDayState.Taken || this == AdherenceDayState.Partial || this == AdherenceDayState.Missed
+
 @Composable
 private fun DayColumn(day: AdherenceDay, colors: SklyankaColors, modifier: Modifier = Modifier) {
     Column(
@@ -97,7 +109,10 @@ private fun DayColumn(day: AdherenceDay, colors: SklyankaColors, modifier: Modif
         Text(
             text = day.label,
             style = if (day.state == AdherenceDayState.Today) SklyankaType.MicroStrong else SklyankaType.Micro,
-            color = if (day.state == AdherenceDayState.Today) colors.text else colors.textTertiary,
+            // Метка дня — `textMuted`, а не `textTertiary`: 11 sp — мелкий текст, а третий
+            // уровень текста объявлен исключением только для крупного (§6.1). Сегодняшняя
+            // метка — `text`: она называет место в неделе, а не исход.
+            color = if (day.state == AdherenceDayState.Today) colors.text else colors.textMuted,
             textAlign = TextAlign.Center,
         )
         DayMark(day, colors)
@@ -110,6 +125,10 @@ private fun DayColumn(day: AdherenceDay, colors: SklyankaColors, modifier: Modif
  * Подпись для чтения с экрана ставится на кружок и затирает всё, что под ним:
  * читалке нужен один осмысленный узел «Пятница, сегодня», а не пара «Пт» и безымянная
  * фигура (НФТ-30).
+ *
+ * День без приёмов (`Empty`) — точка 10 dp по центру поля дня, а не пустое место:
+ * столбик без рисунка читается как отсутствующий, и ряд рвётся. Размер — третий носитель
+ * смысла помимо цвета, поэтому точка не путается с залитым кружком «пропущено» (§5.2).
  */
 @Composable
 private fun DayMark(day: AdherenceDay, colors: SklyankaColors) {
@@ -130,8 +149,23 @@ private fun DayMark(day: AdherenceDay, colors: SklyankaColors) {
                     Modifier
                 },
             )
-            .clearAndSetSemantics { contentDescription = day.description },
-    )
+            .clearAndSetSemantics {
+                contentDescription = day.description
+                // Метка дня без приёмов: тег ставится здесь же, потому что наследников
+                // у узла нет — их стирает `clearAndSetSemantics`, и по ним состояние
+                // не проверить (§5.2, НФТ-33).
+                if (day.state == AdherenceDayState.Empty) testTag = TAG_ADHERENCE_EMPTY_DOT
+            },
+        contentAlignment = Alignment.Center,
+    ) {
+        if (day.state == AdherenceDayState.Empty) {
+            Box(
+                modifier = Modifier
+                    .size(SklyankaSizes.AdherenceLegendDot)
+                    .background(colors.switchOff, SklyankaShapes.Pill),
+            )
+        }
+    }
 }
 
 @Composable
@@ -186,3 +220,6 @@ private fun LegendItem(text: String, fill: Color?, outlined: Boolean, colors: Sk
 const val TAG_ADHERENCE_WEEK = "adherence_week"
 const val TAG_ADHERENCE_DAY = "adherence_day"
 const val TAG_ADHERENCE_LEGEND = "adherence_legend"
+
+/** Точка дня без приёмов: третий носитель смысла помимо цвета, и он проверяем тегом (§5.2). */
+const val TAG_ADHERENCE_EMPTY_DOT = "adherence_empty_dot"

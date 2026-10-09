@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -61,46 +62,52 @@ public fun <T> ListPickerDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
-        Surface(
-            modifier = modifier
-                .fillMaxWidth()
-                .padding(SklyankaSpacing.Screen)
-                .testTag(TAG_LIST_PICKER),
-            shape = SklyankaShapes.Large,
-            color = colors.surface,
-            border = BorderStroke(SklyankaSizes.BorderThin, colors.lineOnSurface),
-        ) {
-            Column(
-                modifier = Modifier.padding(vertical = SklyankaSpacing.Block),
-                verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Small),
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            // То же затемнение, что у остальных модальных слоёв (§2.3): одна роль,
+            // одна непрозрачность — своя подложка у диалога выбора значения разошлась бы
+            // с диалогом времени на первой же правке.
+            AppDialogScrim(onDismiss = onDismiss)
+            Surface(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .padding(SklyankaSpacing.Screen)
+                    .testTag(TAG_LIST_PICKER),
+                shape = SklyankaShapes.Large,
+                color = colors.surface,
+                border = BorderStroke(SklyankaSizes.BorderThin, colors.lineOnSurface),
             ) {
-                Text(
-                    text = title,
-                    style = SklyankaType.BodyDefaultStrong,
-                    color = colors.text,
-                    modifier = Modifier.padding(horizontal = SklyankaSpacing.Block),
-                )
-                options.forEachIndexed { index, option ->
-                    if (index > 0) ListDivider()
-                    OptionRow(
-                        text = label(option),
-                        selected = option == selected,
-                        onClick = { onSelect(option) },
-                    )
-                }
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = SklyankaSpacing.Block),
-                    horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Default, Alignment.End),
-                    verticalAlignment = Alignment.CenterVertically,
+                Column(
+                    modifier = Modifier.padding(vertical = SklyankaSpacing.Block),
+                    verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Small),
                 ) {
-                    QuietButton(
-                        text = stringResource(R.string.action_cancel),
-                        onClick = onDismiss,
-                        kind = QuietButtonKind.Muted,
-                        form = QuietButtonForm.Header,
+                    Text(
+                        text = title,
+                        style = SklyankaType.BodyDefaultStrong,
+                        color = colors.text,
+                        modifier = Modifier.padding(horizontal = SklyankaSpacing.Block),
                     )
+                    options.forEachIndexed { index, option ->
+                        if (index > 0) ListDivider()
+                        OptionRow(
+                            text = label(option),
+                            selected = option == selected,
+                            onClick = { onSelect(option) },
+                        )
+                    }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = SklyankaSpacing.Block),
+                        horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Default, Alignment.End),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        QuietButton(
+                            text = stringResource(R.string.action_cancel),
+                            onClick = onDismiss,
+                            kind = QuietButtonKind.Muted,
+                            form = QuietButtonForm.Header,
+                        )
+                    }
                 }
             }
         }

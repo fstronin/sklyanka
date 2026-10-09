@@ -26,7 +26,8 @@
       интерфейса, пусть и из одного знака.
     -->
     <string name="history_value_dash">—</string>
-    <string name="history_percent">%1$d %%</string>
+    <string name="history_percent">%1$d %%</string>
+    <string name="history_percent_less_than_one">&lt; 1 %</string>
 
     <!--
       Календарь месяца.

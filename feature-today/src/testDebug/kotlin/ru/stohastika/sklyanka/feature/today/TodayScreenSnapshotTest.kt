@@ -52,13 +52,11 @@ class TodayScreenSnapshotTest {
     @Test
     fun aDenseDay() = capture("dense-day") { TodayScreen(state = TodayFixtures.denseDay(), onIntent = {}) }
 
-    @Test
-    fun anExhaustedAsNeededLimit() = capture("exhausted-prn") {
-        TodayScreen(
-            state = TodayFixtures.plainDay().copy(prn = listOf(TodayFixtures.exhaustedPrn())),
-            onIntent = {},
-        )
-    }
+    // Снимка «исчерпанный лимит по потребности» здесь нет: блок «По потребности» стоит ниже
+    // границы кадра, и кадр выходил побайтово равным `plain-day` — доказательством состояния
+    // он не был. Само состояние проверяется утверждениями `TodayScreenTest` (лимит исчерпан —
+    // кнопка «Принять» недоступна), а не картинкой; место в потолке эталонов возвращено
+    // новым состояниям SKL-105.
 
     /**
      * Экран в чужом профиле — все признаки разом (ПРФ-11).

@@ -7,9 +7,9 @@
     <string name="action_taken">已服用</string>
     <string name="action_skip">跳过</string>
     <string name="action_take">服用</string>
-    <string name="action_back">返回</string>
     <string name="action_cancel">取消</string>
     <string name="action_done">完成</string>
+    <string name="confirm_word_label">输入“%1$s”以确认</string>
     <string name="status_missed">漏服</string>
     <string name="status_marked_by_you">由您标记</string>
     <string name="label_as_needed">按需</string>
@@ -25,6 +25,7 @@
 
     <string name="cd_mark_intake">标记服药 %1$s</string>
     <string name="cd_back">返回</string>
+    <string name="cd_confirm_word_field">确认词</string>
     <string name="cd_app_mark">Sklyanka 标记</string>
     <string name="cd_app_mark_glass">Sklyanka 标记：厚玻璃瓶底</string>
     <string name="cd_icon_on_dark">深色背景上的图标</string>

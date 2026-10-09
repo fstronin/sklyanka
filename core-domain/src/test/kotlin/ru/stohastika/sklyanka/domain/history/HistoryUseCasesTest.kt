@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import ru.stohastika.sklyanka.domain.log.OpEvent
 import ru.stohastika.sklyanka.domain.model.Intake
+import ru.stohastika.sklyanka.domain.model.IntakeStatus
 import ru.stohastika.sklyanka.domain.model.Profile
 import ru.stohastika.sklyanka.domain.repository.HistoryRepository
 import ru.stohastika.sklyanka.domain.schedule.FakeProfileRepository
@@ -101,15 +102,23 @@ class HistoryUseCasesTest {
         )
     }
 
-    /** Прочерк на плитке «принято вовремя» оставляет след: иначе он выглядит дефектом (ОВ-4). */
+    /**
+     * След у неизмеренной доли: мерить нечего — так и записано (Р-33).
+     *
+     * Прежняя формулировка «порог не согласован» ушла вместе с Р-21: порог согласован,
+     * и отсутствие плитки объясняется пустым знаменателем.
+     */
     @Test
-    fun `an undefined on time share leaves its own trace`() = runTest {
-        history.put(Months.PROFILE_ID, ownMonth())
+    fun `an unmeasured on time share leaves its own trace`() = runTest {
+        history.put(
+            Months.PROFILE_ID,
+            Months.slice(intakes = listOf(Months.intake(Months.TODAY.atTime(Months.EVENING), IntakeStatus.PENDING))),
+        )
 
         observe().invoke(Months.SEPTEMBER).first()
 
-        val record = log.records.single { it.event == OpEvent.HISTORY_ON_TIME_UNDEFINED }
-        assertEquals("on_time_rule_missing", record.detail)
+        val record = log.records.single { it.event == OpEvent.HISTORY_ON_TIME_NOT_MEASURED }
+        assertEquals("on_time_not_measured", record.detail)
     }
 
     @Test
@@ -164,7 +173,7 @@ class HistoryUseCasesTest {
     private fun observe() = ObserveAdherenceUseCase(
         activeProfile = activeProfile,
         history = history,
-        calculator = AdherenceCalculator(),
+        calculator = AdherenceCalculator(OnTimeRule.TwoHours),
         time = clock,
         log = log,
     )
@@ -173,7 +182,7 @@ class HistoryUseCasesTest {
         activeProfile = activeProfile,
         profiles = profiles,
         history = history,
-        calculator = AdherenceCalculator(),
+        calculator = AdherenceCalculator(OnTimeRule.TwoHours),
         time = clock,
         log = log,
     )

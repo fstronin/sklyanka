@@ -17,6 +17,7 @@ import ru.stohastika.sklyanka.domain.history.AdherenceCalculator
 import ru.stohastika.sklyanka.domain.history.AdherencePeriod
 import ru.stohastika.sklyanka.domain.history.HistorySlice
 import ru.stohastika.sklyanka.domain.history.HistoryWindow
+import ru.stohastika.sklyanka.domain.history.OnTimeRule
 import ru.stohastika.sklyanka.domain.intake.MarkResult
 import ru.stohastika.sklyanka.domain.model.Intake
 import ru.stohastika.sklyanka.domain.model.Medication
@@ -247,7 +248,7 @@ class ProfileIsolationSteps(private val world: AcceptanceWorld) {
             medications = world.medications.all().filter { it.profileId == profile.id },
             historyStartsAt = intakes.minOfOrNull { it.scheduledAt.toLocalDate() },
         )
-        return AdherenceCalculator().of(slice, window, world.clock.today(), world.clock.zone)
+        return AdherenceCalculator(OnTimeRule.TwoHours).of(slice, window, world.clock.today(), world.clock.zone)
     }
 
     private fun nameOf(medicationId: String): String = requireNotNull(

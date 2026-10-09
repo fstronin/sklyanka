@@ -7,9 +7,9 @@
     <string name="action_taken">Қабылданды</string>
     <string name="action_skip">Өткізіп жіберу</string>
     <string name="action_take">Қабылдау</string>
-    <string name="action_back">Артқа</string>
     <string name="action_cancel">Болдырмау</string>
     <string name="action_done">Дайын</string>
+    <string name="confirm_word_label">Растау үшін «%1$s» сөзін енгізіңіз</string>
     <string name="status_missed">Өткізілді</string>
     <string name="status_marked_by_you">сіз белгіледіңіз</string>
     <string name="label_as_needed">Қажетіне қарай</string>
@@ -25,6 +25,7 @@
 
     <string name="cd_mark_intake">%1$s қабылдауын белгілеу</string>
     <string name="cd_back">Артқа</string>
+    <string name="cd_confirm_word_field">Растау сөзі</string>
     <string name="cd_app_mark">Sklyanka белгісі</string>
     <string name="cd_app_mark_glass">Sklyanka белгісі: қалың шыны түбі</string>
     <string name="cd_icon_on_dark">Қою фондағы белгіше</string>

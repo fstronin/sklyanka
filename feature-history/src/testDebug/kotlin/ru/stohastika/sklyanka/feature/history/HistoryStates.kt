@@ -66,7 +66,9 @@ internal object HistoryStates {
             ),
             daysWithoutMisses = 9,
             missesInPeriod = 12,
-            onTimeShare = OnTimeShare.Undefined,
+            // Доля «вовремя» берётся из того же месяца, что и разбивка по лекарствам:
+            // иначе плитка «100 %» спорит с «72 из 90» в шторке отчёта о том же периоде (§5.4).
+            onTimeShare = OnTimeShare.Value(onTime = 72, due = 90),
             missesByTime = mapOf(EVENING to 9, LocalTime.of(8, 0) to 3),
             scheduledTimes = setOf(LocalTime.of(8, 0), EVENING),
         ),

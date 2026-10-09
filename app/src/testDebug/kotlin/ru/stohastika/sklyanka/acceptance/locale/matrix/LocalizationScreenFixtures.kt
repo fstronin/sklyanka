@@ -576,7 +576,7 @@ internal object LocalizationScreenFixtures {
         ),
         daysWithoutMisses = 9,
         missesInPeriod = 12,
-        onTimeShare = OnTimeShare.Undefined,
+        onTimeShare = OnTimeShare.Value(onTime = 12, due = 14),
         missesByTime = mapOf(EVENING to 9, LocalTime.of(8, 0) to 3),
         scheduledTimes = setOf(LocalTime.of(8, 0), EVENING),
     )

@@ -36,9 +36,9 @@ import ru.stohastika.sklyanka.feature.meds.card.TAG_SCHEDULE_BLOCK
 import ru.stohastika.sklyanka.feature.meds.card.TAG_STOCK_BLOCK
 import ru.stohastika.sklyanka.feature.meds.card.TAG_SUBTITLE
 import ru.stohastika.sklyanka.feature.meds.card.TAG_TITLE
+import ru.stohastika.sklyanka.feature.meds.card.TAG_WEEK_BLOCK
 import ru.stohastika.sklyanka.feature.meds.list.TAG_MED_LIST_GLYPH
 import ru.stohastika.sklyanka.feature.meds.list.TAG_TRAILING_LINE
-import ru.stohastika.sklyanka.ui.component.TAG_ADHERENCE_DAY
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalTime
@@ -496,7 +496,7 @@ class MedsGlyphScreenSteps(private val world: AcceptanceWorld) {
         "Расписание" -> TAG_SCHEDULE_BLOCK
         "Курс" -> TAG_COURSE_BLOCK
         "Остаток" -> TAG_STOCK_BLOCK
-        "Последние 7 дней" -> TAG_ADHERENCE_DAY
+        "Последние 7 дней" -> TAG_WEEK_BLOCK
         else -> error("unknown card block: $name")
     }
 

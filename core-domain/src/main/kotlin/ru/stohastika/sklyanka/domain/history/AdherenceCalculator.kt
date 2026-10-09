@@ -4,6 +4,7 @@ import ru.stohastika.sklyanka.domain.medication.CourseOutcome
 import ru.stohastika.sklyanka.domain.model.Intake
 import ru.stohastika.sklyanka.domain.model.IntakeStatus
 import ru.stohastika.sklyanka.domain.model.Medication
+import ru.stohastika.sklyanka.domain.model.ScheduleMode
 import java.time.LocalDate
 import java.time.ZoneId
 
@@ -30,7 +31,13 @@ import java.time.ZoneId
  * с низкой приверженностью» (`docs/v2/10-behavior.md`) числом не задано нигде.
  */
 class AdherenceCalculator(
-    private val onTimeRule: OnTimeRule = OnTimeRule.NotAgreed,
+    /**
+     * Правило «вовремя» (Р-21). Обязательный параметр, а не значение по умолчанию:
+     * пока правило приходило с умолчанием «не согласовано», доля не считалась вовсе,
+     * и продукт показывал прочерк (V-2). Теперь его подставляет привязка
+     * (`app/di/HistoryModule.kt`), а расчёт часов не знает.
+     */
+    private val onTimeRule: OnTimeRule.Agreed,
     /**
      * Ниже этой доли строка лекарства выделяется акцентом.
      *
@@ -67,7 +74,7 @@ class AdherenceCalculator(
             byMedication = breakdown(counted, medications),
             daysWithoutMisses = days.count { it.state == DayState.ALL_TAKEN },
             missesInPeriod = counted.count { it.isMiss },
-            onTimeShare = onTimeShare(counted, zone),
+            onTimeShare = onTimeShare(counted, medications, zone),
             missesByTime = counted.filter { it.isMiss }
                 .groupingBy { it.scheduledAt.toLocalTime() }
                 .eachCount(),
@@ -103,17 +110,22 @@ class AdherenceCalculator(
             .sortedBy { it.name }
 
     /**
-     * Доля принятого вовремя — или отказ её считать (ОВ-4, [OnTimeShare.Undefined]).
+     * Доля принятого вовремя — или признак, что мерить нечего ([OnTimeShare.Absent], Р-33).
+     *
+     * Знаменатель — **наступившие плановые** приёмы периода (Р-27): приём, который человеку
+     * ещё предстоит, не бывает ни принятым вовремя, ни принятым с опозданием, а приём
+     * «по потребности» не с чем сравнивать — назначенного времени у него нет. Исключаются
+     * оба целиком: ни в числитель, ни в знаменатель.
      */
-    private fun onTimeShare(intakes: List<Intake>, zone: ZoneId): OnTimeShare {
-        val rule = onTimeRule as? OnTimeRule.Agreed
-        // Знаменатель — приёмы, у которых исход уже есть: приём, который человеку ещё
-        // предстоит, не бывает ни принятым вовремя, ни принятым с опозданием.
-        val decided = intakes.filter { it.status != IntakeStatus.PENDING }
-        return if (rule == null || decided.isEmpty()) {
-            OnTimeShare.Undefined
+    private fun onTimeShare(intakes: List<Intake>, medications: Map<String, Medication>, zone: ZoneId): OnTimeShare {
+        val due = intakes.filter { intake ->
+            intake.status != IntakeStatus.PENDING &&
+                medications[intake.medicationId]?.scheduleMode == ScheduleMode.SCHEDULED
+        }
+        return if (due.isEmpty()) {
+            OnTimeShare.Absent
         } else {
-            OnTimeShare.Value(decided.count { isOnTime(it, rule, zone) }.toDouble() / decided.size)
+            OnTimeShare.Value(onTime = due.count { isOnTime(it, onTimeRule, zone) }, due = due.size)
         }
     }
 

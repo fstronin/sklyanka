@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,8 +28,11 @@ import ru.stohastika.sklyanka.feature.meds.Segment
 import ru.stohastika.sklyanka.feature.meds.SegmentedControl
 import ru.stohastika.sklyanka.feature.meds.screenPadding
 import ru.stohastika.sklyanka.ui.component.EmptyState
+import ru.stohastika.sklyanka.ui.component.PinnedHeaderBar
 import ru.stohastika.sklyanka.ui.component.ScreenHeader
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderLabels
+import ru.stohastika.sklyanka.ui.component.ScreenHeaderState
+import ru.stohastika.sklyanka.ui.component.rememberScreenHeaderState
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaShapes
 import ru.stohastika.sklyanka.ui.token.SklyankaSizes
@@ -45,8 +49,15 @@ import ru.stohastika.sklyanka.ui.token.SklyankaSpacing
  * макет `Main.dc.html`) и в каталоге дизайн-системы пока отсутствует.
  */
 @Composable
-fun MedicationListScreen(state: MedsUiState, onIntent: (MedsIntent) -> Unit, modifier: Modifier = Modifier) {
+fun MedicationListScreen(
+    state: MedsUiState,
+    onIntent: (MedsIntent) -> Unit,
+    modifier: Modifier = Modifier,
+    onOpenProfiles: (() -> Unit)? = null,
+) {
     val colors = SklyankaTheme.colors
+    val header = rememberScreenHeaderState()
+    val labels = ScreenHeaderLabels(title = stringResource(R.string.meds_title))
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -54,23 +65,14 @@ fun MedicationListScreen(state: MedsUiState, onIntent: (MedsIntent) -> Unit, mod
             .testTag(TAG_MEDICATION_LIST),
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Large)) {
-            ScreenHeader(labels = ScreenHeaderLabels(title = stringResource(R.string.meds_title)))
-            SegmentedControl(
-                segments = listOf(
-                    Segment(
-                        label = stringResource(R.string.meds_tab_active, state.activeCount),
-                        selected = state.tab == MedsTab.ACTIVE,
-                        onClick = { onIntent(MedsIntent.SelectTab(MedsTab.ACTIVE)) },
-                    ),
-                    Segment(
-                        label = stringResource(R.string.meds_tab_archive, state.archiveCount),
-                        selected = state.tab == MedsTab.ARCHIVE,
-                        onClick = { onIntent(MedsIntent.SelectTab(MedsTab.ARCHIVE)) },
-                    ),
-                ),
-                modifier = Modifier.screenPadding(),
-            )
             if (state.isEmpty) {
+                // Прокручивать нечего — шапка остаётся развёрнутой, закреплённого ряда нет (§7).
+                // Шапка и сегмент — один блок: шапка вне прокрутки несёт своё нижнее поле,
+                // и оно же отделяет сегмент — ритм внешнего столбца к нему не прибавляется.
+                Column {
+                    ScreenHeader(labels = labels)
+                    SegmentedControl(segments = segments(state, onIntent), modifier = Modifier.screenPadding())
+                }
                 EmptyState(
                     title = stringResource(R.string.meds_empty_title),
                     text = stringResource(R.string.meds_empty_text),
@@ -79,8 +81,18 @@ fun MedicationListScreen(state: MedsUiState, onIntent: (MedsIntent) -> Unit, mod
                     modifier = Modifier.padding(top = SklyankaSpacing.Screen),
                 )
             } else {
-                MedicationList(state.items, onIntent, Modifier.weight(1f))
+                MedicationList(state, onIntent, labels, header, Modifier.weight(1f))
             }
+        }
+        if (!state.isEmpty) {
+            // Ряд — слой над прокруткой, а не сосед в столбце: до порога его не видно,
+            // и места в потоке он не держит (§7).
+            PinnedHeaderBar(
+                labels = labels,
+                state = header,
+                modifier = Modifier.align(Alignment.TopCenter),
+                onOpenProfiles = onOpenProfiles,
+            )
         }
         AddMedicationButton(
             onClick = { onIntent(MedsIntent.AddMedication) },
@@ -95,25 +107,61 @@ fun MedicationListScreen(state: MedsUiState, onIntent: (MedsIntent) -> Unit, mod
     }
 }
 
+/** Переключатель «Активные · N / Архив · N»: один и тот же на обоих состояниях вкладки. */
+@Composable
+private fun segments(state: MedsUiState, onIntent: (MedsIntent) -> Unit): List<Segment> = listOf(
+    Segment(
+        label = stringResource(R.string.meds_tab_active, state.activeCount),
+        selected = state.tab == MedsTab.ACTIVE,
+        onClick = { onIntent(MedsIntent.SelectTab(MedsTab.ACTIVE)) },
+    ),
+    Segment(
+        label = stringResource(R.string.meds_tab_archive, state.archiveCount),
+        selected = state.tab == MedsTab.ARCHIVE,
+        onClick = { onIntent(MedsIntent.SelectTab(MedsTab.ARCHIVE)) },
+    ),
+)
+
 @Composable
 private fun MedicationList(
-    items: List<MedicationCardUi>,
+    state: MedsUiState,
     onIntent: (MedsIntent) -> Unit,
+    labels: ScreenHeaderLabels,
+    header: ScreenHeaderState,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
-        modifier = modifier.fillMaxWidth().screenPadding(),
-        verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Default),
+        modifier = modifier.fillMaxWidth(),
+        // Зазоры ставятся карточкам: границу с шапкой несёт ритм экрана, а между карточками
+        // остаётся их собственный `Default` 10 dp (§7).
+        verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.None),
         // Нижнее поле оставляет место круглой кнопке добавления: иначе она накрывает
-        // последнюю карточку, и до неё нельзя дотянуться, не прокрутив список дальше.
-        contentPadding = PaddingValues(bottom = SklyankaSpacing.EmptyStateSide),
+        // последнюю карточку, и до неё нельзя дотянуться, не прокрутив список дальше
+        // (`SklyankaSizes.FloatingActionInset` — высота наложения плюс два боковых поля, §4.1).
+        contentPadding = PaddingValues(bottom = SklyankaSizes.FloatingActionInset),
     ) {
-        items(items = items, key = { it.medicationId }) { card ->
-            MedicationCard(
-                card = card,
-                onOpen = { onIntent(MedsIntent.OpenMedication(card.medicationId)) },
-                onTake = { onIntent(MedsIntent.TakeNow(card.medicationId)) },
-            )
+        // Крупный заголовок — контент и уезжает вместе с содержимым; сегмент
+        // «Активные/Архив» — служебный блок шапки и уезжает с ним же (§7). Блок один:
+        // зазор между заголовком и сегментом задаёт сам заголовок, а не ритм списка —
+        // иначе к его нижнему полю прибавился бы зазор карточек (§4).
+        item(key = KEY_LIST_HEADER) {
+            Column(verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Large)) {
+                ScreenHeader(labels = labels, pinning = header)
+                SegmentedControl(segments = segments(state, onIntent), modifier = Modifier.screenPadding())
+            }
+        }
+        itemsIndexed(items = state.items, key = { _, card -> card.medicationId }) { index, card ->
+            Box(
+                modifier = Modifier
+                    .screenPadding()
+                    .padding(top = if (index == 0) SklyankaSpacing.Large else SklyankaSpacing.Default),
+            ) {
+                MedicationCard(
+                    card = card,
+                    onOpen = { onIntent(MedsIntent.OpenMedication(card.medicationId)) },
+                    onTake = { onIntent(MedsIntent.TakeNow(card.medicationId)) },
+                )
+            }
         }
     }
 }
@@ -143,3 +191,6 @@ private fun AddMedicationButton(onClick: () -> Unit, modifier: Modifier = Modifi
 
 const val TAG_MEDICATION_LIST = "medication_list"
 const val TAG_ADD_MEDICATION = "add_medication"
+
+/** Ключи элементов списка: шапка и сегмент едут вместе с содержимым (§7). */
+private const val KEY_LIST_HEADER = "meds-header"

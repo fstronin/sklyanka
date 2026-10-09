@@ -2,9 +2,11 @@ package ru.stohastika.sklyanka.ui.component
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.DatePicker
@@ -71,44 +73,49 @@ internal fun DateTimePickerShell(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
-        Surface(
-            modifier = modifier
-                .fillMaxWidth()
-                .padding(SklyankaSpacing.Screen)
-                .testTag(TAG_DATE_TIME_PICKER),
-            shape = SklyankaShapes.Large,
-            color = colors.surface,
-            border = BorderStroke(SklyankaSizes.BorderThin, colors.lineOnSurface),
-        ) {
-            Column(
-                modifier = Modifier.padding(SklyankaSpacing.Block),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Large),
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            // Затемнение рисует приложение ролью `scrim`, а не прошивка чёрной подложкой
+            // (§2.3, V-4): под слоем — оболочка диалога, и другого затемнения нет.
+            AppDialogScrim(onDismiss = onDismiss)
+            Surface(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .padding(SklyankaSpacing.Screen)
+                    .testTag(TAG_DATE_TIME_PICKER),
+                shape = SklyankaShapes.Large,
+                color = colors.surface,
+                border = BorderStroke(SklyankaSizes.BorderThin, colors.lineOnSurface),
             ) {
-                Text(
-                    text = title,
-                    style = SklyankaType.BodyDefaultStrong,
-                    color = colors.text,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                content()
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Default, Alignment.End),
-                    verticalAlignment = Alignment.CenterVertically,
+                Column(
+                    modifier = Modifier.padding(SklyankaSpacing.Block),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Large),
                 ) {
-                    QuietButton(
-                        text = stringResource(R.string.action_cancel),
-                        onClick = onDismiss,
-                        kind = QuietButtonKind.Muted,
-                        form = QuietButtonForm.Header,
+                    Text(
+                        text = title,
+                        style = SklyankaType.BodyDefaultStrong,
+                        color = colors.text,
+                        modifier = Modifier.fillMaxWidth(),
                     )
-                    QuietButton(
-                        text = stringResource(R.string.action_done),
-                        onClick = onConfirm,
-                        form = QuietButtonForm.Header,
-                        state = if (confirmEnabled) ButtonState.Normal else ButtonState.Disabled,
-                    )
+                    content()
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Default, Alignment.End),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        QuietButton(
+                            text = stringResource(R.string.action_cancel),
+                            onClick = onDismiss,
+                            kind = QuietButtonKind.Muted,
+                            form = QuietButtonForm.Header,
+                        )
+                        QuietButton(
+                            text = stringResource(R.string.action_done),
+                            onClick = onConfirm,
+                            form = QuietButtonForm.Header,
+                            state = if (confirmEnabled) ButtonState.Normal else ButtonState.Disabled,
+                        )
+                    }
                 }
             }
         }
@@ -145,7 +152,9 @@ fun DateTimePickerDialog(
     val baseDensity = LocalDensity.current
     val pickerTypography = timePickerTypography()
     val pickerColors = TimePickerDefaults.colors(
-        clockDialColor = colors.surface,
+        // Поле циферблата — нейтральная плашка, а не белая пустота: циферблат читается
+        // предметом, а не «дырой» в оболочке (§5.5, V-9). Роль существующая.
+        clockDialColor = colors.neutralSoft,
         clockDialSelectedContentColor = colors.surface,
         clockDialUnselectedContentColor = colors.text,
         selectorColor = colors.accent,
@@ -207,6 +216,12 @@ private fun timePickerTypography(): Typography {
         displayMedium = digits,
         displaySmall = SklyankaType.Display,
         headlineLarge = SklyankaType.Display,
+        // Цифры кольца циферблата механизм набирает ролью `bodyLarge` (в закреплённой
+        // версии — `TimePickerTokens.ClockDialLabelTextFont`): тема отдаёт её
+        // `SklyankaType.Body` 16/400, и цифры читались мелко и бледно. `BodyLarge` 17/600 —
+        // предел, за который без риска не выйти: в 24-часовом режиме в кольце 24 числа,
+        // и более крупный кегль начал бы перекрывать соседей (§5.5).
+        bodyLarge = SklyankaType.BodyLarge,
     )
 }
 

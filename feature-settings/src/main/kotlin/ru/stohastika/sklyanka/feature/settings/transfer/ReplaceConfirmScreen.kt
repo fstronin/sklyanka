@@ -16,16 +16,12 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import ru.stohastika.sklyanka.domain.transfer.TransferCounts
 import ru.stohastika.sklyanka.feature.settings.R
-import ru.stohastika.sklyanka.feature.settings.matchesConfirmationWord
 import ru.stohastika.sklyanka.ui.component.Banner
-import ru.stohastika.sklyanka.ui.component.ButtonState
-import ru.stohastika.sklyanka.ui.component.PrimaryButton
-import ru.stohastika.sklyanka.ui.component.PrimaryButtonKind
+import ru.stohastika.sklyanka.ui.component.ConfirmWordField
 import ru.stohastika.sklyanka.ui.component.ScreenHeader
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderKind
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderLabels
 import ru.stohastika.sklyanka.ui.component.SecondaryButton
-import ru.stohastika.sklyanka.ui.component.SklyankaTextField
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaSpacing
 import ru.stohastika.sklyanka.ui.token.SklyankaType
@@ -67,7 +63,6 @@ fun ReplaceConfirmScreen(
 ) {
     val colors = SklyankaTheme.colors
     val word = stringResource(R.string.transfer_replace_word)
-    val wordMatches = matchesConfirmationWord(confirmationWord, word)
     Column(modifier = modifier.fillMaxSize().navigationBarsPadding().imePadding().testTag(TAG_REPLACE_CONFIRM)) {
         ScreenHeader(
             labels = ScreenHeaderLabels(title = stringResource(R.string.transfer_replace_title)),
@@ -101,51 +96,23 @@ fun ReplaceConfirmScreen(
                 color = colors.textMuted,
                 modifier = Modifier.testTag(TAG_SAFETY_COPY),
             )
-            ConfirmationWordBlock(
-                word = word,
-                value = confirmationWord,
-                onValueChange = onConfirmationWordChange,
-            )
-            // Отступ перед подтверждающей кнопкой: она не должна оказаться под пальцем
-            // там, где на прошлом экране была кнопка «Выбрать файл».
+            // Отступ перед подтверждением: кнопка не должна оказаться под пальцем там,
+            // где на прошлом экране была кнопка «Выбрать файл».
             Spacer(modifier = Modifier.padding(top = SklyankaSpacing.Section))
             SecondaryButton(
                 text = stringResource(R.string.transfer_replace_cancel),
                 onClick = onCancel,
                 modifier = Modifier.fillMaxWidth(),
             )
-            PrimaryButton(
-                text = stringResource(R.string.transfer_replace_confirm),
-                onClick = onConfirm,
-                state = if (wordMatches) ButtonState.Normal else ButtonState.Disabled,
-                kind = PrimaryButtonKind.Danger,
-                modifier = Modifier.fillMaxWidth().testTag(TAG_REPLACE_CONFIRM_ACTION),
+            ConfirmWordField(
+                word = word,
+                value = confirmationWord,
+                onValueChange = onConfirmationWordChange,
+                confirmLabel = stringResource(R.string.transfer_replace_confirm),
+                onConfirm = onConfirm,
+                confirmModifier = Modifier.fillMaxWidth().testTag(TAG_REPLACE_CONFIRM_ACTION),
             )
         }
-    }
-}
-
-/**
- * Подпись-образец и поле слова-подтверждения (ОВ-7/ОВ-67).
- *
- * Поле не переводится в состояние ошибки никогда: неверный ввод виден недоступной
- * кнопкой, а не красной рамкой (ОВ-38 к этому полю не применяется) — человеку нечего
- * «исправлять», и подписи под полем не заводится.
- */
-@Composable
-private fun ConfirmationWordBlock(word: String, value: String, onValueChange: (String) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Micro)) {
-        Text(
-            text = stringResource(R.string.transfer_replace_word_label, word),
-            style = SklyankaType.BodyDefault,
-            color = SklyankaTheme.colors.text,
-            modifier = Modifier.testTag(TAG_REPLACE_WORD_LABEL),
-        )
-        SklyankaTextField(
-            value = value,
-            onValueChange = onValueChange,
-            modifier = Modifier.fillMaxWidth().testTag(TAG_REPLACE_WORD_FIELD),
-        )
     }
 }
 
@@ -174,8 +141,6 @@ private fun CountsColumn(title: String, counts: TransferCounts, modifier: Modifi
 
 const val TAG_REPLACE_CONFIRM = "transfer_replace_confirm"
 const val TAG_REPLACE_CONFIRM_ACTION = "transfer_replace_confirm_action"
-const val TAG_REPLACE_WORD_LABEL = "transfer_replace_word_label"
-const val TAG_REPLACE_WORD_FIELD = "transfer_replace_word_field"
 const val TAG_REPLACE_WARNING = "transfer_replace_warning"
 const val TAG_COUNTS_NOW = "transfer_counts_now"
 const val TAG_COUNTS_AFTER = "transfer_counts_after"

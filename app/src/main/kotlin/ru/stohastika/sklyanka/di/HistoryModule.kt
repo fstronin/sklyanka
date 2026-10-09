@@ -50,20 +50,16 @@ abstract class HistoryModule {
     companion object {
 
         /**
-         * Порог «вовремя» — единственная строка, которой отвечают на ОВ-4.
+         * Порог «вовремя» (Р-21): окно ±2 часа вокруг назначенного времени.
          *
-         * Правило не зарегистрировано: граница окна перехода «ожидается → пропущено»
-         * выбрана «до конца суток» (SKL-07, `EndOfDayIntakeWindow`), и при ней «вовремя»
-         * совпадает с «принято» — метрика вырождается в долю отмеченных и перестаёт
-         * отличаться от приверженности. Плитка «принято вовремя» показывает прочерк.
-         *
-         * Это проектное решение, а не заглушка: выдуманное число человек покажет врачу.
-         * Когда заказчик согласует порог, здесь появляется `OnTimeRule.Agreed { … }` —
-         * расчёт при этом не переделывается.
+         * Значение объявлено в домене ([OnTimeRule.TwoHours]) и здесь только подставляется:
+         * окно — часть смысла метрики, а не настройка сборки, и стенды приёмки обязаны
+         * брать то же правило, а не его пересказ. Расчёт приверженности правило принимает
+         * параметром и часов не считает.
          */
         @Provides
         @Singleton
-        fun provideOnTimeRule(): OnTimeRule = OnTimeRule.NotAgreed
+        fun provideOnTimeRule(): OnTimeRule.Agreed = OnTimeRule.TwoHours
 
         /**
          * Расчёт приверженности.
@@ -73,7 +69,7 @@ abstract class HistoryModule {
          */
         @Provides
         @Singleton
-        fun provideAdherenceCalculator(onTimeRule: OnTimeRule): AdherenceCalculator =
+        fun provideAdherenceCalculator(onTimeRule: OnTimeRule.Agreed): AdherenceCalculator =
             AdherenceCalculator(onTimeRule = onTimeRule)
 
         /**

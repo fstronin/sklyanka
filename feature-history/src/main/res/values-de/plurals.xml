@@ -33,6 +33,11 @@
         <item quantity="other">%1$d Tage ohne Auslassungen</item>
     </plurals>
 
+    <plurals name="cd_history_on_time">
+        <item quantity="one">pünktlich eingenommen, %1$d von %2$d Einnahmen</item>
+        <item quantity="other">pünktlich eingenommen, %1$d von %2$d Einnahmen</item>
+    </plurals>
+
     <plurals name="cd_history_misses">
         <item quantity="one">%1$d Auslassung im Monat</item>
         <item quantity="other">%1$d Auslassungen im Monat</item>

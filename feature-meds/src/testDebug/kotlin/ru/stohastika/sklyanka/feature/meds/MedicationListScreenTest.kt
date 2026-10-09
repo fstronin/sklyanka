@@ -43,6 +43,9 @@ import ru.stohastika.sklyanka.ui.R as UiR
  * компилироваться (`assembleDebugAndroidTest`), прогон — на эталонном устройстве.
  */
 @RunWith(AndroidJUnit4::class)
+// Высота с запасом: список начинается с шапки и сегмента, и проверкам нужно, чтобы
+// последняя карточка попала в окно, а не осталась незакомпонованной (SKL-105).
+@Config(qualifiers = "w390dp-h1200dp-mdpi")
 class MedicationListScreenTest {
 
     @get:Rule

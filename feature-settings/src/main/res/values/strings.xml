@@ -80,7 +80,6 @@
     <string name="transfer_replace_confirm">Стереть и загрузить</string>
     <string name="transfer_replace_cancel">Не стирать</string>
     <string name="transfer_replace_word">Заменить</string>
-    <string name="transfer_replace_word_label">Введите слово «%1$s», чтобы подтвердить</string>
 
     <!-- ===== Отчёт (ПЕР-15 п. 7, критерий 17) ===== -->
     <string name="transfer_report_title">Загрузка завершена</string>
@@ -168,13 +167,6 @@
     <string name="settings_profile_self_initial">Я</string>
     <string name="settings_profile_mirrored">напоминания дублируются мне</string>
     <string name="settings_profile_subtitle">%1$s · %2$s</string>
-    <string name="settings_profile_add">Добавить профиль</string>
-    <!--
-      SKL-58, решение заказчика (30.09.2026): мастера создания профиля ещё нет, и строка
-      «Добавить профиль» выключена. Смысл несёт эта подпись, а не гашение цвета: слово
-      «недоступно» здесь сказано словами (НФТ-30, §6.1 дизайн-системы).
-    -->
-    <string name="settings_profile_add_unavailable">Будет доступно в ближайшем обновлении</string>
     <!--
       ОВ-7: строка последняя в разделе, за разделителем, и только у активного чужого
       профиля. Свой не удаляется никогда, и строки для него не существует (ПРФ-28).
@@ -244,8 +236,8 @@
     <string name="profile_delete_export_saved">Файл сохранён — %1$s</string>
     <!--
       Слово-подтверждение своё: здесь «Удалить», в «Заменить всё» — «Заменить».
-      Правило сравнения общее (ConfirmationWord.matches), и подпись-образец тоже:
-      transfer_replace_word_label («Введите слово «%1$s», чтобы подтвердить»).
+      Правило сравнения и подпись-образец общие и живут в дизайн-системе
+      (`core-ui`: ConfirmWordField, `confirm_word_label`).
     -->
     <string name="profile_delete_word">Удалить</string>
     <string name="profile_delete_confirm">Удалить профиль</string>

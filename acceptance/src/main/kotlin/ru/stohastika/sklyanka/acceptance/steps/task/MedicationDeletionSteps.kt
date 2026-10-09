@@ -16,6 +16,7 @@ import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
 import ru.stohastika.sklyanka.acceptance.world.TransferFileBuilder
 import ru.stohastika.sklyanka.domain.history.AdherenceCalculator
 import ru.stohastika.sklyanka.domain.history.HistoryWindow
+import ru.stohastika.sklyanka.domain.history.OnTimeRule
 import ru.stohastika.sklyanka.domain.intake.MarkResult
 import ru.stohastika.sklyanka.domain.log.OpEvent
 import ru.stohastika.sklyanka.domain.medication.DeleteOutcome
@@ -326,7 +327,7 @@ class MedicationDeletionSteps(private val world: AcceptanceWorld) {
     @Тогда("^разбивка по лекарствам удалённое лекарство не называет$")
     fun theBreakdownDoesNotNameIt() {
         val medicationId = world.medications.get(world.medications.last).id
-        val period = AdherenceCalculator().of(
+        val period = AdherenceCalculator(OnTimeRule.TwoHours).of(
             world.history.slice(world.profiles.get(world.profiles.active).id, HistoryWindow.of(HISTORY_MONTH)),
             HistoryWindow.of(HISTORY_MONTH),
             world.clock.today(),

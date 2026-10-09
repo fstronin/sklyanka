@@ -62,7 +62,6 @@
     <string name="transfer_replace_confirm">Жою және жүктеу</string>
     <string name="transfer_replace_cancel">Жоймау</string>
     <string name="transfer_replace_word">Ауыстыру</string>
-    <string name="transfer_replace_word_label">Растау үшін «%1$s» сөзін енгізіңіз</string>
 
     <string name="transfer_report_title">Жүктеу аяқталды</string>
     <string name="transfer_report_profiles">Қосылған бейіндер: %1$d</string>
@@ -129,8 +128,6 @@
     <string name="settings_profile_self_initial">М</string>
     <string name="settings_profile_mirrored">еске салғыштар маған қайталанады</string>
     <string name="settings_profile_subtitle">%1$s · %2$s</string>
-    <string name="settings_profile_add">Бейін қосу</string>
-    <string name="settings_profile_add_unavailable">Жақын арадағы жаңартуда қолжетімді болады</string>
     <string name="settings_profile_delete">«%1$s» бейінін жою</string>
     <string name="cd_settings_profile_active">Белсенді бейін</string>
 

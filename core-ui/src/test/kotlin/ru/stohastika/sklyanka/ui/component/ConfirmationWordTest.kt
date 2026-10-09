@@ -1,13 +1,17 @@
-package ru.stohastika.sklyanka.feature.settings
+package ru.stohastika.sklyanka.ui.component
 
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Правило слова-подтверждения (ОВ-67): регистр и краевые пробелы не считаются,
+ * Правило слова-подтверждения (§5.7): регистр и краевые пробелы не считаются,
  * внутренние пробелы значимы. Образец — ресурсное слово, поэтому в тесте он тоже
  * латиницей: кириллица в строковом литерале Kotlin запрещена (НФТ-42).
+ *
+ * Правило живёт рядом с компонентом, который его применяет ([ConfirmWordField]):
+ * второе правило сравнения — это второй ответ на вопрос «подтверждено ли действие»,
+ * и его не должно быть ни у одного экрана.
  */
 class ConfirmationWordTest {
 

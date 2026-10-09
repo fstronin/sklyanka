@@ -26,13 +26,13 @@
     <string name="form_save_existing">Guardar</string>
 
     <string name="form_label_name">Nombre</string>
+    <string name="medication_delete_word">Eliminar</string>
     <string name="form_label_release_form">Forma farmacéutica</string>
     <string name="form_label_tablet_shape">Forma del comprimido</string>
 
-    <string name="form_preview_reusable">Así se reconocerá el medicamento en la lista y en la tarjeta</string>
-    <string name="form_preview_dose_words">La dosis se describe con palabras: «%1$s» — sin silueta</string>
-    <string name="form_preview_dose_words_empty">La dosis se describe con palabras, sin silueta</string>
     <string name="form_label_dose">Dosis por toma</string>
+    <string name="form_label_strength">Dosificación del medicamento</string>
+    <string name="form_strength_hint">Opcional. Cuánto principio activo contiene una unidad — se muestra en la tarjeta, no se usa en los cálculos.</string>
     <string name="form_label_intakes_per_day">Tomas al día</string>
     <string name="form_caption_times_below">La hora se indica abajo</string>
     <string name="form_label_times">Hora de la toma</string>

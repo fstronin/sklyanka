@@ -6,6 +6,7 @@ import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
 import ru.stohastika.sklyanka.domain.history.AdherenceCalculator
 import ru.stohastika.sklyanka.domain.history.AdherencePeriod
 import ru.stohastika.sklyanka.domain.history.ObserveAdherenceUseCase
+import ru.stohastika.sklyanka.domain.history.OnTimeRule
 import java.time.YearMonth
 
 /**
@@ -14,7 +15,8 @@ import java.time.YearMonth
  * Состояние собирает настоящий [ObserveAdherenceUseCase]: профиль берётся из контекста
  * активного профиля (ПР-10), срез — из `HistoryRepository` мира, расчёт — из
  * `AdherenceCalculator` с тем же правилом «вовремя», что зарегистрировано в продукте
- * (`OnTimeRule.NotAgreed`, прочерк вместо доли). Выдуманное состояние проверяло бы
+ * (`OnTimeRule.TwoHours`, окно ±2 ч, Р-21): доли нет только там, где мерить нечего,
+ * и тогда плитки нет вовсе (Р-33). Выдуманное состояние проверяло бы
  * разметку, а приёмка SKL-18 говорит о продукте.
  */
 internal object HistoryFromWorld {
@@ -23,7 +25,7 @@ internal object HistoryFromWorld {
         val useCase = ObserveAdherenceUseCase(
             activeProfile = world.profileSession.activeStore,
             history = world.history,
-            calculator = AdherenceCalculator(),
+            calculator = AdherenceCalculator(OnTimeRule.TwoHours),
             time = world.clock.time,
             log = world.log,
         )

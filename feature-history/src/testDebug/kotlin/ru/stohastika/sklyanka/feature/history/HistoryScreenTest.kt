@@ -21,8 +21,10 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import ru.stohastika.sklyanka.domain.history.OnTimeShare
 import ru.stohastika.sklyanka.ui.component.TAG_PROFILE_LABEL
 import ru.stohastika.sklyanka.ui.component.TAG_PROFILE_STRIPE
+import ru.stohastika.sklyanka.ui.component.TAG_SCREEN_HEADER
 import ru.stohastika.sklyanka.ui.profile.ProfileChrome
 import ru.stohastika.sklyanka.ui.profile.ProfileChromeState
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
@@ -55,16 +57,24 @@ class HistoryScreenTest {
         composeRule.onNodeWithText(context.getString(R.string.history_report_action)).assertIsDisplayed()
     }
 
+    /**
+     * Развёрнутая шапка начинается своим верхним полем: ряд места не держит (§7).
+     *
+     * Закреплённый ряд — слой над прокруткой, и до порога его не видно: 56 dp в потоке
+     * не резервируются, иначе над рядом действия и крупным заголовком встала бы пустая
+     * полоса. Отсчёт идёт от верхней грани шапки до её первой строки — ряда действия.
+     */
     @Test
-    fun theTitleStandsRightUnderTheActionRow() {
+    fun theHeaderStartsAtItsOwnTopPaddingWhileTheRowIsHidden() {
         show(HistoryStates.september())
 
+        val header = composeRule.onNodeWithTag(TAG_SCREEN_HEADER).fetchSemanticsNode()
         val action = composeRule.onNodeWithTag(TAG_REPORT_ACTION).fetchSemanticsNode()
-        val title = composeRule.onNodeWithText(context.getString(R.string.history_title)).fetchSemanticsNode()
-        val gapDp = with(composeRule.density) { (title.boundsInRoot.top - action.boundsInRoot.bottom).toDp() }
+        val gap = with(composeRule.density) { (action.boundsInRoot.top - header.boundsInRoot.top).toDp() }
+        val padding = with(composeRule.density) { SklyankaSizes.HeaderTopPadding }
         assertTrue(
-            "the title must follow the action row with the macket gap, but the gap is $gapDp",
-            gapDp >= 3.5.dp && gapDp <= 12.5.dp,
+            "the action row stands $gap from the header top, and only the top padding ($padding) is allowed",
+            gap <= padding + 1.dp,
         )
     }
 
@@ -117,17 +127,38 @@ class HistoryScreenTest {
     }
 
     /**
-     * ОВ-4: плитка «принято вовремя» показывает прочерк.
+     * Р-21/Р-27: плитка «принято вовремя» показывает посчитанную долю, а не прочерк.
      *
      * Проверка стоит здесь, а не только в домене, потому что это видимое обещание экрана:
-     * подмена прочерка любым числом обязана падать.
+     * подмена доли прочерком или чужим числом обязана падать.
      */
     @Test
-    fun theOnTimeTileShowsADashWhileTheThresholdIsNotAgreed() {
-        show(HistoryStates.september())
+    fun theOnTimeTileShowsTheCountedShare() {
+        val state = HistoryStates.september()
+        show(state)
 
-        composeRule.onNodeWithText(context.getString(R.string.history_value_dash), useUnmergedTree = true)
+        val share = requireNotNull(state.period.onTimeShare as? OnTimeShare.Value) {
+            "the fixture must carry a counted share for this check to mean anything"
+        }
+        composeRule.onNodeWithTag(TAG_TILE_ON_TIME, useUnmergedTree = true).assertIsDisplayed()
+        composeRule.onNodeWithText(context.getString(R.string.history_percent, share.percent), useUnmergedTree = true)
             .assertIsDisplayed()
+    }
+
+    /**
+     * Р-33: когда мерить нечего, плитки «принято вовремя» нет вовсе, а не прочерк.
+     *
+     * Прочерк читался как поломка (V-2): доля либо посчитана, либо плитки нет, и две
+     * оставшиеся плитки делят ряд пополам.
+     */
+    @Test
+    fun theOnTimeTileIsAbsentWhenThereIsNothingToMeasure() {
+        val state = HistoryStates.september().let {
+            it.copy(period = it.period.copy(onTimeShare = OnTimeShare.Absent))
+        }
+        show(state)
+
+        composeRule.onAllNodesWithTag(TAG_TILE_ON_TIME, useUnmergedTree = true).assertCountEquals(0)
     }
 
     @Test
@@ -264,10 +295,11 @@ class HistoryScreenTest {
     }
 
     /**
-     * Пустой месяц: прочерки, пустой календарь, скрытый блок «По лекарствам».
+     * Пустой месяц: прочерки у двух плиток, пустой календарь, скрытый блок «По лекарствам».
      *
-     * И ни одного сообщения об ошибке: месяц без записей — это нормальное состояние,
-     * а не сбой (`docs/v2/10-behavior.md`, состояние «Данных за месяц нет»).
+     * Плитки «принято вовремя» нет вовсе — мерить нечего (Р-33), а не прочерк. И ни одного
+     * сообщения об ошибке: месяц без записей — это нормальное состояние, а не сбой
+     * (`docs/v2/10-behavior.md`, состояние «Данных за месяц нет»).
      */
     @Test
     fun anEmptyMonthShowsDashesAndHidesTheBreakdown() {
@@ -275,9 +307,10 @@ class HistoryScreenTest {
 
         composeRule.onAllNodesWithTag(TAG_BREAKDOWN).assertCountEquals(0)
         composeRule.onAllNodesWithTag(TAG_INSIGHT, useUnmergedTree = true).assertCountEquals(0)
+        composeRule.onAllNodesWithTag(TAG_TILE_ON_TIME, useUnmergedTree = true).assertCountEquals(0)
         composeRule.onNodeWithTag(TAG_CALENDAR).assertIsDisplayed()
         composeRule.onAllNodesWithText(context.getString(R.string.history_value_dash), useUnmergedTree = true)
-            .assertCountEquals(3)
+            .assertCountEquals(2)
     }
 
     /**

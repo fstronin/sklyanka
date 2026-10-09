@@ -6,12 +6,15 @@ import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextReplacement
 import androidx.test.core.app.ApplicationProvider
 import io.cucumber.java.ru.Допустим
 import io.cucumber.java.ru.Когда
@@ -32,6 +35,7 @@ import ru.stohastika.sklyanka.feature.meds.card.TAG_DELETE_SHEET_CANCEL
 import ru.stohastika.sklyanka.feature.meds.card.TAG_DELETE_SHEET_TEXT
 import ru.stohastika.sklyanka.feature.meds.card.TAG_DELETE_SHEET_TITLE
 import ru.stohastika.sklyanka.ui.component.TAG_SNACKBAR
+import ru.stohastika.sklyanka.ui.component.TAG_TEXT_FIELD_INPUT
 import ru.stohastika.sklyanka.ui.token.SklyankaSizes
 
 /**
@@ -53,6 +57,14 @@ class MedDeletionScreenSteps(private val world: AcceptanceWorld) {
 
     /** Лекарство, о котором говорит сценарий: карточка открыта последней. */
     private var focused: String = ""
+
+    /**
+     * Слово, набранное шагом сценария; проверки набирают его же в своей композиции.
+     *
+     * Композиция стенда собирается заново на каждый шаг, и поле шторки держит слово
+     * локально, — поэтому слово хранит шаг, а не разметка.
+     */
+    private var typedWord: String? = null
 
     // --- Предыстория ---------------------------------------------------------------------
 
@@ -188,9 +200,38 @@ class MedDeletionScreenSteps(private val world: AcceptanceWorld) {
         assertFalse(world.medications.get(medication).isDeleted)
     }
 
+    @Когда("^человек набирает слово «(.+)»$")
+    fun thePersonTypesTheWord(word: String) {
+        typedWord = word
+        MedCardStand.act(world, focusedMedication(), deleteConfirmation = true) { test ->
+            test.onNodeWithTag(TAG_TEXT_FIELD_INPUT, useUnmergedTree = true).performTextReplacement(word)
+        }
+    }
+
+    @Тогда("^кнопка «Удалить» пока недоступна$")
+    fun theConfirmButtonIsNotYetAvailable() {
+        MedCardStand.ask(world, focusedMedication(), deleteConfirmation = true) { test ->
+            test.onNodeWithTag(TAG_DELETE_CONFIRM, useUnmergedTree = true).assertIsNotEnabled()
+        }
+    }
+
+    @Тогда("^кнопка «Удалить» доступна$")
+    fun theConfirmButtonIsAvailable() {
+        val word = typedWord ?: context.getString(R.string.medication_delete_word)
+        MedCardStand.ask(world, focusedMedication(), deleteConfirmation = true) { test ->
+            test.onNodeWithTag(TAG_TEXT_FIELD_INPUT, useUnmergedTree = true).performTextReplacement(word)
+            test.onNodeWithTag(TAG_DELETE_CONFIRM, useUnmergedTree = true).assertIsEnabled()
+        }
+    }
+
     @Когда("^человек подтверждает удаление в шторке$")
     fun thePersonConfirmsTheDeletion() {
+        // Подтверждение — вводом слова: без него кнопка недоступна, и нажатие не делает
+        // ничего (ПЕР-16, §5.7). Слово сценария — то же, что просит шторка; без шага ввода
+        // берём его из ресурса шторки, чтобы проверить именно подтверждение.
+        val word = typedWord ?: context.getString(R.string.medication_delete_word)
         val intents = MedCardStand.act(world, focusedMedication(), deleteConfirmation = true) { test ->
+            test.onNodeWithTag(TAG_TEXT_FIELD_INPUT, useUnmergedTree = true).performTextReplacement(word)
             test.onNodeWithTag(TAG_DELETE_CONFIRM, useUnmergedTree = true).performClick()
         }
         assertTrue("the confirm must delete: $intents", MedCardIntent.DeleteConfirmed in intents)

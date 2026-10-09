@@ -1,6 +1,7 @@
 package ru.stohastika.sklyanka.acceptance.settings
 
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.runComposeUiTest
 import androidx.compose.ui.unit.dp
@@ -36,7 +37,7 @@ class Sk90TransferHeaderScreenSteps {
                     )
                 }
             }
-            val back = onNodeWithText(context.getString(UiR.string.action_back)).fetchSemanticsNode()
+            val back = onNodeWithContentDescription(context.getString(UiR.string.cd_back)).fetchSemanticsNode()
             val title = onNodeWithText(context.getString(R.string.transfer_title)).fetchSemanticsNode()
             val gap = with(density) { (title.boundsInRoot.top - back.boundsInRoot.bottom).toDp() }
             assertTrue("the title must follow the action row closely, but the gap is $gap", gap in MIN_GAP..MAX_GAP)

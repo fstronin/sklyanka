@@ -8,6 +8,7 @@ import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onAllNodesWithTag
@@ -35,7 +36,6 @@ import ru.stohastika.sklyanka.feature.meds.card.MedCardIntent
 import ru.stohastika.sklyanka.feature.meds.card.MedCardUiState
 import ru.stohastika.sklyanka.feature.meds.card.RefillUi
 import ru.stohastika.sklyanka.feature.meds.card.TAG_ARCHIVE
-import ru.stohastika.sklyanka.feature.meds.card.TAG_BACK
 import ru.stohastika.sklyanka.feature.meds.card.TAG_BLOCK_TRAILING
 import ru.stohastika.sklyanka.feature.meds.card.TAG_COURSE_BAR
 import ru.stohastika.sklyanka.feature.meds.card.TAG_COURSE_BLOCK
@@ -53,6 +53,7 @@ import ru.stohastika.sklyanka.feature.meds.card.TAG_TIME_CHIP
 import ru.stohastika.sklyanka.feature.meds.form.FormMode
 import ru.stohastika.sklyanka.feature.meds.list.TAG_MEDICATION_CARD
 import ru.stohastika.sklyanka.ui.component.TAG_ADHERENCE_DAY
+import ru.stohastika.sklyanka.ui.component.TAG_ADHERENCE_EMPTY_DOT
 import ru.stohastika.sklyanka.ui.component.TAG_ADHERENCE_LEGEND
 import ru.stohastika.sklyanka.ui.component.TAG_SCREEN_HEADER
 import java.time.LocalDate
@@ -481,8 +482,8 @@ class MedCardScreenSteps(private val world: AcceptanceWorld) {
         assertTrue("the counter must include them", state().week.taken >= cell.taken)
     }
 
-    @Тогда("^столбики за (.+) нарисованы пустыми, без цвета$")
-    fun thoseDaysAreDrawnEmpty(dates: String) {
+    @Тогда("^столбики за (.+) отмечены точкой$")
+    fun thoseDaysAreMarkedWithADot(dates: String) {
         val days = RussianDates.dates(dates, world.clock.today())
         val cells = state().week.days
         days.forEach { day ->
@@ -491,8 +492,12 @@ class MedCardScreenSteps(private val world: AcceptanceWorld) {
         }
         MedCardStand.ask(world, focusedMedication()) { test ->
             days.forEach { day ->
-                test.onNodeWithContentDescription(
-                    context.getString(R.string.cd_adherence_before_course, fullWeekday(day)),
+                val description = context.getString(R.string.cd_adherence_before_course, fullWeekday(day))
+                test.onNodeWithContentDescription(description, useUnmergedTree = true).assertExists()
+                // День без приёмов отмечен точкой 10 dp, а не пустым местом (§5.2, НФТ-33):
+                // точка — третий носитель смысла помимо цвета, и она стоит именно в этом дне.
+                test.onNode(
+                    hasTestTag(TAG_ADHERENCE_EMPTY_DOT) and hasContentDescription(description),
                     useUnmergedTree = true,
                 ).assertExists()
             }
@@ -643,9 +648,11 @@ class MedCardScreenSteps(private val world: AcceptanceWorld) {
     @Когда("^он нажимает «Назад»$")
     fun thePersonPressesBack() {
         val intents = MedCardStand.act(world, focusedMedication()) { test ->
-            test.onNodeWithTag(TAG_BACK).performClick()
+            // Возврат — шеврон с доступным именем «Назад» (§7, Р-30): ищем по имени,
+            // а не по тегу разметки.
+            test.onNodeWithContentDescription(context.getString(UiR.string.cd_back)).performClick()
         }
-        assertTrue("the back arrow must return to the list: $intents", MedCardIntent.Back in intents)
+        assertTrue("the back chevron must return to the list: $intents", MedCardIntent.Back in intents)
     }
 
     @Тогда("^открывается список лекарств$")

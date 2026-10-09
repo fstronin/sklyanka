@@ -6,6 +6,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.runComposeUiTest
 import androidx.test.core.app.ApplicationProvider
 import io.cucumber.java.ru.Допустим
@@ -21,9 +22,9 @@ import ru.stohastika.sklyanka.acceptance.today.MedicationCardFromWorld
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
 import ru.stohastika.sklyanka.domain.medication.DeleteMedicationUseCase
 import ru.stohastika.sklyanka.domain.medication.DeleteOutcome
+import ru.stohastika.sklyanka.feature.meds.R
 import ru.stohastika.sklyanka.feature.meds.card.MedCardIntent
 import ru.stohastika.sklyanka.feature.meds.card.MedicationCardScreen
-import ru.stohastika.sklyanka.feature.meds.card.TAG_DELETE
 import ru.stohastika.sklyanka.feature.meds.card.TAG_DELETE_CONFIRM
 import ru.stohastika.sklyanka.feature.meds.card.TAG_MEDICATION_CARD_SCREEN
 import ru.stohastika.sklyanka.feature.today.TodayIntent
@@ -32,6 +33,7 @@ import ru.stohastika.sklyanka.navigation.AddMedicationLaunch
 import ru.stohastika.sklyanka.navigation.MedsDestination
 import ru.stohastika.sklyanka.navigation.RootNavigation
 import ru.stohastika.sklyanka.ui.component.TAG_SNACKBAR
+import ru.stohastika.sklyanka.ui.component.TAG_TEXT_FIELD_INPUT
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.feature.today.R as TodayR
 
@@ -88,8 +90,7 @@ class DeletionCompositionSteps(private val world: AcceptanceWorld) {
     fun thePersonDeletesFromTheCard(medication: String) {
         focused = medication
         openCard()
-        pressOnTheCard(TAG_DELETE)
-        pressOnTheCard(TAG_DELETE_CONFIRM, deleteConfirmation = true)
+        deleteFromTheCard()
     }
 
     @Когда("^приходит действие ярлыка «([^»]+)»$")
@@ -185,21 +186,30 @@ class DeletionCompositionSteps(private val world: AcceptanceWorld) {
         }
     }
 
-    /** Нажатие на карточке: намерение собирается, стенд применяет его к миру. */
-    private fun pressOnTheCard(tag: String, deleteConfirmation: Boolean = false) {
+    /**
+     * Удаление с карточки целиком: шторка открыта, слово набрано, «Удалить» нажата.
+     *
+     * Шторка подтверждения сравнивает введённое слово с образцом из ресурса (ПР-14, §5.7),
+     * поэтому стенд набирает его так же, как человек: без слова кнопка недоступна, и нажатие
+     * проверяло бы разметку, а не продукт.
+     */
+    private fun deleteFromTheCard() {
         val medication = cardMedication()
         val intents = mutableListOf<MedCardIntent>()
         runComposeUiTest {
             setContent {
                 SklyankaTheme {
                     MedicationCardScreen(
-                        state = MedicationCardFromWorld.state(world, medication, deleteConfirmation),
+                        state = MedicationCardFromWorld.state(world, medication, deleteConfirmation = true),
                         onIntent = intents::add,
                     )
                 }
             }
             waitForIdle()
-            onNodeWithTag(tag, useUnmergedTree = true).performClick()
+            onNodeWithTag(TAG_TEXT_FIELD_INPUT, useUnmergedTree = true)
+                .performTextReplacement(context.getString(R.string.medication_delete_word))
+            waitForIdle()
+            onNodeWithTag(TAG_DELETE_CONFIRM, useUnmergedTree = true).performClick()
             waitForIdle()
         }
         intents.forEach { applyCardIntent(medication.id, it) }

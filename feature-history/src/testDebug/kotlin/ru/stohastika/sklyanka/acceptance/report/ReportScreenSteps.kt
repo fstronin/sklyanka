@@ -119,14 +119,24 @@ class ReportScreenSteps(private val world: AcceptanceWorld) {
             ),
             summary.first { it.label == context.getString(R.string.report_document_taken_label) }.value,
         )
-        assertEquals(
-            "the on time share must be the same as on the screen (ОВ-4)",
-            when (val share = screen.onTimeShare) {
-                is OnTimeShare.Value -> context.getString(R.string.history_percent, share.percent)
-                OnTimeShare.Undefined -> context.getString(R.string.history_value_dash)
-            },
-            summary.first { it.label == context.getString(R.string.report_document_on_time_label) }.value,
-        )
+        val onTimeLabel = context.getString(R.string.report_document_on_time_label)
+        val onTimeLine = summary.firstOrNull { it.label == onTimeLabel }
+        when (val share = screen.onTimeShare) {
+            is OnTimeShare.Value -> assertEquals(
+                "the on time share must be the same as on the screen (Р-21, Р-27)",
+                if (share.lessThanOnePercent) {
+                    context.getString(R.string.history_percent_less_than_one)
+                } else {
+                    context.getString(R.string.history_percent, share.percent)
+                },
+                onTimeLine?.value,
+            )
+            // Мерить нечего — строки о доле в отчёте нет вовсе, как и плитки на экране (Р-33).
+            OnTimeShare.Absent -> assertNull(
+                "when there is nothing to measure, the report prints no on-time line (Р-33)",
+                onTimeLine,
+            )
+        }
         assertEquals(
             "the days without misses must be the same as on the screen",
             screen.daysWithoutMisses.toString(),

@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,6 +26,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import ru.stohastika.sklyanka.domain.medication.ArchiveCaption
 import ru.stohastika.sklyanka.domain.medication.ArchiveCard
+import ru.stohastika.sklyanka.domain.medication.ArchiveContent
 import ru.stohastika.sklyanka.feature.meds.DeletionSnackbarHost
 import ru.stohastika.sklyanka.feature.meds.R
 import ru.stohastika.sklyanka.feature.meds.SectionLabel
@@ -36,9 +38,12 @@ import ru.stohastika.sklyanka.ui.component.Banner
 import ru.stohastika.sklyanka.ui.component.BannerKind
 import ru.stohastika.sklyanka.ui.component.EmptyState
 import ru.stohastika.sklyanka.ui.component.MedicationGlyph
+import ru.stohastika.sklyanka.ui.component.PinnedHeaderBar
 import ru.stohastika.sklyanka.ui.component.ScreenHeader
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderLabels
+import ru.stohastika.sklyanka.ui.component.ScreenHeaderState
 import ru.stohastika.sklyanka.ui.component.SecondaryButton
+import ru.stohastika.sklyanka.ui.component.rememberScreenHeaderState
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaShapes
 import ru.stohastika.sklyanka.ui.token.SklyankaSizes
@@ -53,8 +58,16 @@ import ru.stohastika.sklyanka.ui.token.SklyankaType
  * той же причине, что и на списке лекарств: она принадлежит экрану «Сегодня».
  */
 @Composable
-fun ArchiveScreen(state: ArchiveUiState, onIntent: (ArchiveIntent) -> Unit, modifier: Modifier = Modifier) {
+fun ArchiveScreen(
+    state: ArchiveUiState,
+    onIntent: (ArchiveIntent) -> Unit,
+    modifier: Modifier = Modifier,
+    onOpenProfiles: (() -> Unit)? = null,
+) {
     val colors = SklyankaTheme.colors
+    val header = rememberScreenHeaderState()
+    val labels = ScreenHeaderLabels(title = stringResource(R.string.meds_title))
+    val segments = archiveSegments(state, onIntent)
     Box(modifier = modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
@@ -63,57 +76,143 @@ fun ArchiveScreen(state: ArchiveUiState, onIntent: (ArchiveIntent) -> Unit, modi
                 .testTag(TAG_ARCHIVE_SCREEN),
             verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Large),
         ) {
-            ScreenHeader(labels = ScreenHeaderLabels(title = stringResource(R.string.meds_title)))
-            SegmentedControl(
-                segments = listOf(
-                    Segment(
-                        label = stringResource(R.string.meds_tab_active, state.activeCount),
-                        selected = false,
-                        onClick = { onIntent(ArchiveIntent.SelectActive) },
-                    ),
-                    Segment(
-                        label = stringResource(R.string.meds_tab_archive, state.archiveCount),
-                        selected = true,
-                        onClick = {},
-                    ),
-                ),
-                modifier = Modifier.screenPadding(),
-            )
-            state.notice?.let { notice -> NoticeBanner(notice, onIntent) }
             val content = state.content
-            when {
-                state.loading -> Box(modifier = Modifier.weight(1f))
-                content == null -> EmptyState(
-                    title = stringResource(R.string.archive_empty_title),
-                    text = stringResource(R.string.archive_empty_text),
-                    modifier = Modifier
-                        .padding(top = SklyankaSpacing.Screen)
-                        .testTag(TAG_ARCHIVE_EMPTY),
+            if (content == null || state.loading) {
+                ArchivePlaceholder(
+                    loading = state.loading,
+                    state = state,
+                    labels = labels,
+                    segments = segments,
+                    onIntent = onIntent,
                 )
-
-                else -> ArchiveList(
-                    groups = listOf(
-                        ArchiveGroupUi(
-                            title = stringResource(R.string.archive_group_finished),
-                            tag = TAG_GROUP_FINISHED,
-                            cards = content.finished,
-                        ),
-                        ArchiveGroupUi(
-                            title = stringResource(R.string.archive_group_manual),
-                            tag = TAG_GROUP_MANUAL,
-                            cards = content.manual,
-                        ),
+            } else {
+                ArchiveScrollable(
+                    content = content,
+                    chrome = ArchiveChrome(
+                        labels = labels,
+                        header = header,
+                        segments = segments,
+                        notice = state.notice,
                     ),
-                    banner = stringResource(R.string.archive_history_banner),
                     onIntent = onIntent,
                     modifier = Modifier.weight(1f),
                 )
             }
         }
+        // Ряд — слой над прокруткой: до порога его не видно, и места в потоке он не держит (§7).
+        // Прокручивать нечего — заголовок остаётся развёрнутым, и ряд не нужен вовсе.
+        if (!state.loading && state.content != null) {
+            PinnedHeaderBar(
+                labels = labels,
+                state = header,
+                modifier = Modifier.align(Alignment.TopCenter),
+                onOpenProfiles = onOpenProfiles,
+            )
+        }
         // Окно «Отменить» после удаления из архивного вида (ОВ-124): тот же снэкбар §4.12.
         DeletionNotice(state, onIntent)
     }
 }
+
+/**
+ * Архив без прокрутки: загрузка или пустой архив.
+ *
+ * Шапка здесь развёрнута и закреплённого ряда не имеет: прокручивать нечего (§7). Ветка
+ * вынесена отдельной функцией, чтобы экран оставался обозримым (detekt `LongMethod`).
+ */
+@Composable
+private fun ColumnScope.ArchivePlaceholder(
+    loading: Boolean,
+    state: ArchiveUiState,
+    labels: ScreenHeaderLabels,
+    segments: List<Segment>,
+    onIntent: (ArchiveIntent) -> Unit,
+) {
+    // Шапка и сегмент — один блок: шапка вне прокрутки несёт своё нижнее поле, и оно же
+    // отделяет сегмент — ритм внешнего столбца к нему не прибавляется (§7).
+    Column {
+        ScreenHeader(labels = labels)
+        SegmentedControl(segments = segments, modifier = Modifier.screenPadding())
+    }
+    if (loading) {
+        Box(modifier = Modifier.weight(1f))
+        return
+    }
+    state.notice?.let { notice -> NoticeBanner(notice, onIntent) }
+    EmptyState(
+        title = stringResource(R.string.archive_empty_title),
+        text = stringResource(R.string.archive_empty_text),
+        modifier = Modifier
+            .padding(top = SklyankaSpacing.Screen)
+            .testTag(TAG_ARCHIVE_EMPTY),
+    )
+}
+
+/** Служебные блоки шапки архива одним значением: надписи, состояние ряда, сегмент и плашка. */
+private data class ArchiveChrome(
+    val labels: ScreenHeaderLabels,
+    val header: ScreenHeaderState,
+    val segments: List<Segment>,
+    val notice: ArchiveNotice?,
+)
+
+/**
+ * Архив, который прокручивается: группы, плашка о сохранности истории и служебные блоки шапки.
+ *
+ * Крупный заголовок и сегмент «Активные/Архив» — служебные блоки: они едут вместе
+ * с содержимым, а закреплённый ряд остаётся (§7).
+ */
+@Composable
+private fun ColumnScope.ArchiveScrollable(
+    content: ArchiveContent,
+    chrome: ArchiveChrome,
+    onIntent: (ArchiveIntent) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    ArchiveList(
+        groups = listOf(
+            ArchiveGroupUi(
+                title = stringResource(R.string.archive_group_finished),
+                tag = TAG_GROUP_FINISHED,
+                cards = content.finished,
+            ),
+            ArchiveGroupUi(
+                title = stringResource(R.string.archive_group_manual),
+                tag = TAG_GROUP_MANUAL,
+                cards = content.manual,
+            ),
+        ),
+        banner = stringResource(R.string.archive_history_banner),
+        onIntent = onIntent,
+        modifier = modifier,
+        leading = {
+            // Заголовок и сегмент — один блок: зазор между ними задаёт сам заголовок,
+            // а не ритм групп архива (§4).
+            item(key = KEY_ARCHIVE_HEADER) {
+                Column(verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Large)) {
+                    ScreenHeader(labels = chrome.labels, pinning = chrome.header)
+                    SegmentedControl(segments = chrome.segments, modifier = Modifier.screenPadding())
+                }
+            }
+            chrome.notice?.let { shown -> item(key = KEY_ARCHIVE_NOTICE) { NoticeBanner(shown, onIntent) } }
+        },
+    )
+}
+
+/** Переключатель вкладки: второй сегмент выбран всегда — на этом экране открыт архив. */
+@Composable
+private fun archiveSegments(state: ArchiveUiState, onIntent: (ArchiveIntent) -> Unit): List<Segment> = listOf(
+    Segment(
+        label = stringResource(R.string.meds_tab_active, state.activeCount),
+        selected = false,
+        onClick = { onIntent(ArchiveIntent.SelectActive) },
+    ),
+    Segment(
+        label = stringResource(R.string.meds_tab_archive, state.archiveCount),
+        selected = true,
+        onClick = {},
+    ),
+)
 
 /** Окно отмены удаления на архивном экране: разметка не знает, откуда взялось окно. */
 @Composable
@@ -144,18 +243,22 @@ private fun ArchiveList(
     banner: String,
     onIntent: (ArchiveIntent) -> Unit,
     modifier: Modifier = Modifier,
+    leading: LazyListScope.() -> Unit = {},
 ) {
     LazyColumn(
-        modifier = modifier.fillMaxWidth().screenPadding().testTag(TAG_ARCHIVE_LIST),
-        verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Default),
+        modifier = modifier.fillMaxWidth().testTag(TAG_ARCHIVE_LIST),
+        // Ритм архива — `Large` 14 dp (§7): им же отделяется и блок шапки от первой группы.
+        verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Large),
         contentPadding = PaddingValues(bottom = SklyankaSpacing.Screen),
     ) {
+        leading()
         groups.forEach { group -> group(group, onIntent) }
         item(key = KEY_HISTORY_BANNER) {
             Banner(
                 text = banner,
                 kind = BannerKind.Neutral,
                 modifier = Modifier
+                    .screenPadding()
                     .padding(top = SklyankaSpacing.Small)
                     .testTag(TAG_HISTORY_BANNER),
             )
@@ -175,12 +278,15 @@ private fun LazyListScope.group(group: ArchiveGroupUi, onIntent: (ArchiveIntent)
         SectionLabel(
             text = group.title,
             modifier = Modifier
+                .screenPadding()
                 .padding(top = SklyankaSpacing.Small)
                 .testTag(group.tag),
         )
     }
     items(group.cards.size, key = { index -> group.cards[index].medicationId }) { index ->
-        ArchivedMedicationCard(group.cards[index], onIntent)
+        Box(modifier = Modifier.screenPadding()) {
+            ArchivedMedicationCard(group.cards[index], onIntent)
+        }
     }
 }
 
@@ -265,6 +371,10 @@ private fun NoticeBanner(notice: ArchiveNotice, onIntent: (ArchiveIntent) -> Uni
 
 /** Опора ключа плашки в ленивом списке: ключи обязаны быть уникальными и стабильными. */
 private const val KEY_HISTORY_BANNER = "archive_history_banner"
+
+/** Ключи служебных блоков шапки: они едут вместе с содержимым (§7). */
+private const val KEY_ARCHIVE_HEADER = "archive-header"
+private const val KEY_ARCHIVE_NOTICE = "archive-notice"
 
 const val TAG_ARCHIVE_SCREEN = "archive_screen"
 const val TAG_ARCHIVE_LIST = "archive_list"

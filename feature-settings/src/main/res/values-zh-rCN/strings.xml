@@ -62,7 +62,6 @@
     <string name="transfer_replace_confirm">清除并导入</string>
     <string name="transfer_replace_cancel">不清除</string>
     <string name="transfer_replace_word">替换</string>
-    <string name="transfer_replace_word_label">输入“%1$s”以确认</string>
 
     <string name="transfer_report_title">导入完成</string>
     <string name="transfer_report_profiles">已添加档案：%1$d</string>
@@ -129,8 +128,6 @@
     <string name="settings_profile_self_initial">我</string>
     <string name="settings_profile_mirrored">提醒会同步给我</string>
     <string name="settings_profile_subtitle">%1$s · %2$s</string>
-    <string name="settings_profile_add">添加档案</string>
-    <string name="settings_profile_add_unavailable">将在最近的更新中提供</string>
     <string name="settings_profile_delete">删除档案“%1$s”</string>
     <string name="cd_settings_profile_active">当前档案</string>
 

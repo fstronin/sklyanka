@@ -69,34 +69,7 @@ class SettingsScreenTest {
 
         composeRule.onNodeWithText(string(R.string.settings_profile_self)).assertIsDisplayed()
         composeRule.onNodeWithTag(TAG_ACTIVE_PROFILE, useUnmergedTree = true).assertExists()
-        composeRule.onNodeWithText(string(R.string.settings_profile_add)).assertIsDisplayed()
         assertEquals(2, composeRule.onAllNodesWithTag(TAG_PROFILE_ROW).fetchSemanticsNodes().size)
-    }
-
-    /**
-     * SKL-58: пока мастера создания профиля нет, строка «Добавить профиль» выключена
-     * и объясняет, что функция появится позже.
-     *
-     * Нажимаемость проверяется отсутствием действия нажатия. Цвет — только признак
-     * недоступности, смысл несёт подпись словами (§6.1 дизайн-системы, НФТ-30).
-     */
-    @Test
-    fun theAddProfileRowIsDisabledUntilTheWizardExists() {
-        show()
-
-        composeRule.onNodeWithText(string(R.string.settings_profile_add), useUnmergedTree = true).assertExists()
-        composeRule
-            .onNodeWithText(string(R.string.settings_profile_add_unavailable), useUnmergedTree = true)
-            .assertExists()
-        val node = composeRule.onNodeWithTag(TAG_ADD_PROFILE, useUnmergedTree = true).fetchSemanticsNode()
-        assertTrue(
-            "the add-profile row must not be clickable while the wizard is missing",
-            !node.config.contains(androidx.compose.ui.semantics.SemanticsActions.OnClick),
-        )
-        assertTrue(
-            "the add-profile row must be announced as disabled",
-            node.config.contains(androidx.compose.ui.semantics.SemanticsProperties.Disabled),
-        )
     }
 
     /** ПРФ-7: строка чужого профиля несёт число лекарств и состояние дублирования. */
@@ -301,8 +274,8 @@ class SettingsScreenTest {
     /**
      * ОВ-7: строка удаления — только у активного чужого профиля и последней в разделе.
      *
-     * «Последняя» проверяется положением: строка стоит ниже и «Добавить профиль»,
-     * и разделителя перед ней — как в решении по ОВ-7.
+     * «Последняя» проверяется положением: строка стоит за разделителем перед ней —
+     * как в решении по ОВ-7.
      */
     @Test
     fun theForeignActiveProfileOffersDeletionAsTheLastRowOfTheBlock() {
@@ -311,11 +284,9 @@ class SettingsScreenTest {
 
         val title = context.getString(R.string.settings_profile_delete, SettingsScreenFixtures.FOREIGN_NAME)
         composeRule.onNodeWithText(title, useUnmergedTree = true).assertExists()
-        val add = composeRule.onNodeWithTag(TAG_ADD_PROFILE).fetchSemanticsNode()
         val divider = composeRule.onNodeWithTag(TAG_DELETE_DIVIDER).fetchSemanticsNode()
         val delete = composeRule.onNodeWithTag(TAG_DELETE_PROFILE_ROW).fetchSemanticsNode()
         assertTrue("the deletion row must stand behind a divider", delete.boundsInRoot.top > divider.boundsInRoot.top)
-        assertTrue("the deletion row must be the last of the block", delete.boundsInRoot.top > add.boundsInRoot.top)
 
         composeRule.onNodeWithTag(TAG_DELETE_PROFILE_ROW).performClick()
         assertEquals(listOf(SettingsIntent.DeleteProfile), intents)

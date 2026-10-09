@@ -59,13 +59,19 @@ internal class ReportPdfText(private val context: Context) {
     )
 
     /**
-     * «Принято вовремя: 74 %» — или прочерк, пока порог не согласован (ОВ-4).
+     * «Принято вовремя: 74 %» — или `null`, когда мерить нечего (Р-33).
      *
-     * Выдуманное число в отчёте врачу недопустимо ровно так же, как на плитке экрана.
+     * Выдуманное число в отчёте врачу недопустимо ровно так же, как на плитке экрана,
+     * а прочерк в документе читался бы как измерение, которого не было: строке нечего
+     * сообщить, и она не печатается — тем же правилом, что и плитка на экране.
      */
-    fun onTimeValue(report: DoctorReport): String = when (val share = report.period.onTimeShare) {
-        is OnTimeShare.Value -> percent(share.percent)
-        OnTimeShare.Undefined -> context.getString(R.string.history_value_dash)
+    fun onTimeValue(report: DoctorReport): String? = when (val share = report.period.onTimeShare) {
+        is OnTimeShare.Value -> if (share.lessThanOnePercent) {
+            context.getString(R.string.history_percent_less_than_one)
+        } else {
+            percent(share.percent)
+        }
+        OnTimeShare.Absent -> null
     }
 
     /**

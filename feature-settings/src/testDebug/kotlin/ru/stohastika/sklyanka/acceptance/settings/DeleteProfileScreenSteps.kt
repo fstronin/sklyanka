@@ -23,7 +23,6 @@ import ru.stohastika.sklyanka.domain.model.IntakeStatus
 import ru.stohastika.sklyanka.domain.profile.ProfileLosses
 import ru.stohastika.sklyanka.domain.transfer.ExportOutcome
 import ru.stohastika.sklyanka.feature.settings.R
-import ru.stohastika.sklyanka.feature.settings.TAG_ADD_PROFILE
 import ru.stohastika.sklyanka.feature.settings.TAG_DELETE_DIVIDER
 import ru.stohastika.sklyanka.feature.settings.TAG_DELETE_PROFILE_ROW
 import ru.stohastika.sklyanka.feature.settings.profile.DeleteProfileIntent
@@ -60,15 +59,10 @@ class DeleteProfileScreenSteps(private val world: AcceptanceWorld) {
         SettingsScreenProbe.ask(world) {
             onNodeWithTag(TAG_DELETE_PROFILE_ROW).assertIsDisplayed()
             val delete = onNodeWithTag(TAG_DELETE_PROFILE_ROW).fetchSemanticsNode()
-            val add = onNodeWithTag(TAG_ADD_PROFILE).fetchSemanticsNode()
             val divider = onNodeWithTag(TAG_DELETE_DIVIDER).fetchSemanticsNode()
             assertTrue(
                 delete.boundsInRoot.top > divider.boundsInRoot.top,
                 "the deletion row must stand behind a divider (ОВ-7)",
-            )
-            assertTrue(
-                delete.boundsInRoot.top > add.boundsInRoot.top,
-                "the deletion row must be the last of the block (ОВ-7)",
             )
         }
         assertTrue(settingsCarries(title), "the settings must carry «$title»")

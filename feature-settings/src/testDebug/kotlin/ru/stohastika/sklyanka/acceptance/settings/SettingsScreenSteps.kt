@@ -41,7 +41,6 @@ import ru.stohastika.sklyanka.feature.settings.SettingsScreen
 import ru.stohastika.sklyanka.feature.settings.SettingsUiState
 import ru.stohastika.sklyanka.feature.settings.TAG_ABOUT
 import ru.stohastika.sklyanka.feature.settings.TAG_ACTIVE_PROFILE
-import ru.stohastika.sklyanka.feature.settings.TAG_ADD_PROFILE
 import ru.stohastika.sklyanka.feature.settings.TAG_HISTORY_ROW
 import ru.stohastika.sklyanka.feature.settings.TAG_PERMISSIONS_ROW
 import ru.stohastika.sklyanka.feature.settings.TAG_PROFILE_ROW
@@ -112,23 +111,6 @@ class SettingsScreenSteps(private val world: AcceptanceWorld) {
         val state = SettingsScreenProbe.state(world)
         assertTrue(hasText(state, "Мама"), "the row «Мама» must be shown")
         assertTrue(hasText(state, expected), "the row «Мама» must carry «$expected» (ПРФ-7)")
-    }
-
-    @Тогда("^последней идёт строка «Добавить профиль»$")
-    fun theAddProfileRowComesLast() {
-        SettingsScreenProbe.ask(world) {
-            val rowTops = onAllNodesWithText(string(R.string.settings_profile_add), useUnmergedTree = true)
-                .fetchSemanticsNodes()
-                .map { it.boundsInRoot.top }
-            val profileTops = onAllNodesWithTag(TAG_PROFILE_ROW, useUnmergedTree = true)
-                .fetchSemanticsNodes()
-                .map { it.boundsInRoot.top }
-            assertTrue(rowTops.isNotEmpty(), "the add-profile row must be on the screen")
-            assertTrue(
-                rowTops.min() > requireNotNull(profileTops.maxOrNull()),
-                "«${string(R.string.settings_profile_add)}» must go after the profiles",
-            )
-        }
     }
 
     @Но("^строка «Мои лекарства» не несёт признаков чужого профиля$")
@@ -541,7 +523,6 @@ class SettingsScreenSteps(private val world: AcceptanceWorld) {
 
         /** Строки, до которых обязан дойти человек, проходя экран сверху донизу. */
         val REACHABLE = listOf(
-            TAG_ADD_PROFILE,
             TAG_SWITCH_ROW,
             TAG_PERMISSIONS_ROW,
             TAG_HISTORY_ROW,
@@ -557,10 +538,10 @@ class SettingsScreenSteps(private val world: AcceptanceWorld) {
         /**
          * Слова проверки или предложения обновления, а не корень «обновлен».
          *
-         * SKL-58 ставит на экран честную подпись «Будет доступно в ближайшем обновлении»:
-         * это утверждение о будущей функции, а не предложение проверить или поставить
-         * обновление. Корень ловил бы её как ложный признак, поэтому признаки названы
-         * действиями — так проверка НФТ-15 остаётся такой же строгой и не шумит.
+         * Утверждение о будущей функции — не предложение проверить или поставить
+         * обновление. Корень ловил бы такое утверждение как ложный признак, поэтому
+         * признаки названы действиями — так проверка НФТ-15 остаётся такой же строгой
+         * и не шумит.
          */
         val UPDATE_KEYS = listOf(
             "проверить обновлен",

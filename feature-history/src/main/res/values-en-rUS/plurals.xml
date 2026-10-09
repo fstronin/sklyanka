@@ -33,6 +33,11 @@
         <item quantity="other">%1$d days without misses</item>
     </plurals>
 
+    <plurals name="cd_history_on_time">
+        <item quantity="one">taken on time, %1$d of %2$d intakes</item>
+        <item quantity="other">taken on time, %1$d of %2$d intakes</item>
+    </plurals>
+
     <plurals name="cd_history_misses">
         <item quantity="one">%1$d miss this month</item>
         <item quantity="other">%1$d misses this month</item>

@@ -26,13 +26,13 @@
     <string name="form_save_existing">Сақтау</string>
 
     <string name="form_label_name">Атауы</string>
+    <string name="medication_delete_word">Жою</string>
     <string name="form_label_release_form">Шығарылым түрі</string>
     <string name="form_label_tablet_shape">Дәрі пішіні</string>
 
-    <string name="form_preview_reusable">Дәрі тізімде және картада осылай танылады</string>
-    <string name="form_preview_dose_words">Доза сөзбен сипатталады: «%1$s» — пішінсіз</string>
-    <string name="form_preview_dose_words_empty">Доза сөзбен сипатталады, пішінсіз</string>
     <string name="form_label_dose">Бір қабылдауға доза</string>
+    <string name="form_label_strength">Препарат дозасы</string>
+    <string name="form_strength_hint">Міндетті емес. Бір өлшемдегі әсер етуші зат мөлшері — картада көрінеді, есептеуге қатыспайды.</string>
     <string name="form_label_intakes_per_day">Тәулігіне қабылдау саны</string>
     <string name="form_caption_times_below">Уақыт төменде белгіленеді</string>
     <string name="form_label_times">Қабылдау уақыты</string>

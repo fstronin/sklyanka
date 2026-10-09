@@ -77,7 +77,7 @@ class MedsScreenSnapshotTest {
     }
 
     @Test
-    fun theMedicationForm() = capture("meds-form", heightDp = TALL) {
+    fun theMedicationForm() = capture("meds-form", heightDp = FORM_TALL) {
         MedicationFormScreen(
             state = MedFormUiState.of(draft(), FormMode.Create, FormInputs()),
             onIntent = {},
@@ -88,7 +88,7 @@ class MedsScreenSnapshotTest {
     }
 
     @Test
-    fun theMedicationFormWithTheChosenPreset() = capture("meds-form-preset", heightDp = TALL) {
+    fun theMedicationFormWithTheChosenPreset() = capture("meds-form-preset", heightDp = FORM_TALL) {
         MedicationFormScreen(
             state = MedFormUiState.of(presetDraft(), FormMode.Create, FormInputs()),
             onIntent = {},
@@ -99,7 +99,7 @@ class MedsScreenSnapshotTest {
     }
 
     @Test
-    fun theMedicationFormWithACustomEndDate() = capture("meds-form-other-date", heightDp = TALL) {
+    fun theMedicationFormWithACustomEndDate() = capture("meds-form-other-date", heightDp = FORM_TALL) {
         MedicationFormScreen(
             state = MedFormUiState.of(customEndDateDraft(), FormMode.Create, FormInputs()),
             onIntent = {},
@@ -112,6 +112,17 @@ class MedsScreenSnapshotTest {
     @Test
     fun theMedicationCard() = capture("meds-card", heightDp = TALL) {
         MedicationCardScreen(state = cardState(), onIntent = {})
+    }
+
+    /**
+     * Шторка удаления с полем слова (ПР-14, §5.7): образец, поле и кнопка до ввода слова.
+     *
+     * Состояние новое в SKL-105: слово-подтверждение встало у третьего разрушительного
+     * действия, и его вид ничем не закреплён, кроме этого кадра.
+     */
+    @Test
+    fun theDeleteSheetWithTheWordField() = capture("meds-card-delete-sheet", heightDp = TALL) {
+        MedicationCardScreen(state = cardState(deleteConfirmation = true), onIntent = {})
     }
 
     @Test
@@ -169,7 +180,7 @@ class MedsScreenSnapshotTest {
         endDate = LocalDate.of(2026, 11, 17),
     )
 
-    private fun cardState() = MedCardUiState(
+    private fun cardState(deleteConfirmation: Boolean = false) = MedCardUiState(
         medicationId = "medication-1",
         title = "med-a",
         form = MedicationForm.TABLET,
@@ -198,6 +209,7 @@ class MedsScreenSnapshotTest {
         isArchived = false,
         courseFinishedOffer = false,
         refill = null,
+        deleteConfirmation = deleteConfirmation,
         notice = null,
     )
 
@@ -257,6 +269,13 @@ class MedsScreenSnapshotTest {
 
         /** Форма и карточка длиннее экрана телефона: снимок берёт их целиком. */
         const val TALL = 1800
+
+        /**
+         * Форма выше карточки: второй названный блок дозы (§5.3) сдвинул «Период приёма»
+         * вниз, и на прежней высоте различающая кадры строка «Окончание» уходила за грань.
+         * Кадр пресета и кадр своей даты обязаны различаться — иначе они ничего не доказывают.
+         */
+        const val FORM_TALL = 2400
 
         const val PROFILE_ID = "11111111-1111-4111-8111-111111111111"
         const val ACTIVE_COUNT = 5

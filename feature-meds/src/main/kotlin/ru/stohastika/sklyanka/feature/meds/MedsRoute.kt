@@ -68,6 +68,9 @@ fun MedsRoute(
             Column(modifier = modifier) {
                 MedicationListScreen(
                     state = listState,
+                    // Аватар в чужом профиле ведёт туда же, куда вкладка настроек:
+                    // список профилей живёт в настройках (ПРФ-19, §5.8).
+                    onOpenProfiles = onOpenSettings,
                     onIntent = { intent ->
                         when (intent) {
                             MedsIntent.AddMedication -> formOpen = true

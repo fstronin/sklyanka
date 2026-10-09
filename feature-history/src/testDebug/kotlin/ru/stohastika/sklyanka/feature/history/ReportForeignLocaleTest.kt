@@ -13,6 +13,7 @@ import ru.stohastika.sklyanka.domain.history.DoctorReport
 import ru.stohastika.sklyanka.domain.history.DoctorReportBuilder
 import ru.stohastika.sklyanka.domain.history.HistorySlice
 import ru.stohastika.sklyanka.domain.history.HistoryWindow
+import ru.stohastika.sklyanka.domain.history.OnTimeRule
 import ru.stohastika.sklyanka.domain.model.FoodRelation
 import ru.stohastika.sklyanka.domain.model.Intake
 import ru.stohastika.sklyanka.domain.model.IntakeSource
@@ -97,7 +98,7 @@ class ReportForeignLocaleTest {
             historyStartsAt = LocalDate.of(2026, 9, 1),
         )
         return DoctorReportBuilder.build(
-            period = AdherenceCalculator().of(slice, WINDOW, TODAY, ZONE),
+            period = AdherenceCalculator(OnTimeRule.TwoHours).of(slice, WINDOW, TODAY, ZONE),
             slice = slice,
             profileName = PROFILE_NAME,
             generatedAt = GENERATED_AT,

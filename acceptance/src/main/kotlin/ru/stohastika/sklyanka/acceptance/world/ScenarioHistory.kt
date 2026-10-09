@@ -8,6 +8,7 @@ import ru.stohastika.sklyanka.domain.history.BuildDoctorReportUseCase
 import ru.stohastika.sklyanka.domain.history.DoctorReport
 import ru.stohastika.sklyanka.domain.history.HistorySlice
 import ru.stohastika.sklyanka.domain.history.HistoryWindow
+import ru.stohastika.sklyanka.domain.history.OnTimeRule
 import ru.stohastika.sklyanka.domain.repository.ActiveProfileRepository
 import ru.stohastika.sklyanka.domain.repository.HistoryRepository
 import ru.stohastika.sklyanka.domain.repository.ProfileRepository
@@ -75,7 +76,7 @@ class ScenarioHistory(
             activeProfile = activeProfile,
             profiles = profiles,
             history = this,
-            calculator = AdherenceCalculator(),
+            calculator = AdherenceCalculator(OnTimeRule.TwoHours),
             time = clock.time,
             log = log,
         )

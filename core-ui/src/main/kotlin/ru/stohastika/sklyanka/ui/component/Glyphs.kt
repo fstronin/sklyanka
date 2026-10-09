@@ -63,6 +63,25 @@ private const val CHEVRON_TOP_Y = 0.22f
 private const val CHEVRON_MID_Y = 0.5f
 private const val CHEVRON_BOTTOM_Y = 0.78f
 
+/**
+ * Зеркальные точки шеврона «влево» — отдельная отрисовка, а не поворот на 180° (§7).
+ *
+ * Поворот как графический приём система не применяет (§8.1), и он размывает штрих
+ * на нечётных плотностях: координаты «влево» — те же доли, отражённые по оси X, то есть
+ * концы ломаной стоят справа, а остриё — слева.
+ */
+private const val CHEVRON_LEFT_TOP_X = 1f - CHEVRON_TOP_X
+private const val CHEVRON_LEFT_MID_X = 1f - CHEVRON_MID_X
+
+/**
+ * Направление шеврона: правое — признак перехода, левое — возврат (§7).
+ *
+ * Направление возврата закреплено эталоном `core-ui/screenshots/component/screen-header-nested.png`:
+ * зеркало, собранное из тех же долей, давало шеврон, смотрящий в сторону перехода, и глазу
+ * это видно только на кадре.
+ */
+enum class ChevronDirection { Right, Left }
+
 /** Облачко-сообщение: прямоугольник с хвостом влево-вниз. */
 private const val CHAT_LEFT = 0.19f
 private const val CHAT_RIGHT = 0.81f
@@ -209,14 +228,23 @@ fun InfoGlyph(color: Color, modifier: Modifier = Modifier, size: Dp = SklyankaSi
 
 /** Шеврон перехода: тихий признак «дальше» рядом с подписью действия. */
 @Composable
-fun ChevronGlyph(color: Color, modifier: Modifier = Modifier, size: Dp = SklyankaSizes.Chevron) {
+fun ChevronGlyph(
+    color: Color,
+    modifier: Modifier = Modifier,
+    size: Dp = SklyankaSizes.Chevron,
+    direction: ChevronDirection = ChevronDirection.Right,
+) {
     Canvas(modifier.size(size)) {
         val side = this.size.minDimension
+        val (topX, midX) = when (direction) {
+            ChevronDirection.Right -> CHEVRON_TOP_X to CHEVRON_MID_X
+            ChevronDirection.Left -> CHEVRON_LEFT_TOP_X to CHEVRON_LEFT_MID_X
+        }
         drawPath(
             path = Path().apply {
-                moveTo(side * CHEVRON_TOP_X, side * CHEVRON_TOP_Y)
-                lineTo(side * CHEVRON_MID_X, side * CHEVRON_MID_Y)
-                lineTo(side * CHEVRON_TOP_X, side * CHEVRON_BOTTOM_Y)
+                moveTo(side * topX, side * CHEVRON_TOP_Y)
+                lineTo(side * midX, side * CHEVRON_MID_Y)
+                lineTo(side * topX, side * CHEVRON_BOTTOM_Y)
             },
             color = color,
             style = Stroke(width = side * STROKE_RATIO, cap = StrokeCap.Round, join = StrokeJoin.Round),

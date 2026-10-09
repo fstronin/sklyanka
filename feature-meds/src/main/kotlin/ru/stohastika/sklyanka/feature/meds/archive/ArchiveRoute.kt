@@ -35,6 +35,8 @@ fun ArchiveRoute(
     Column(modifier = modifier) {
         ArchiveScreen(
             state = state,
+            // Аватар в чужом профиле ведёт в список профилей настроек (ПРФ-19, §5.8).
+            onOpenProfiles = onOpenSettings,
             onIntent = { intent ->
                 when (intent) {
                     ArchiveIntent.SelectActive -> onSelectActive()

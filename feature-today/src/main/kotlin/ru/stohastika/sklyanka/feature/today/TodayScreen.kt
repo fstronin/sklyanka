@@ -40,11 +40,14 @@ import ru.stohastika.sklyanka.ui.component.BannerKind
 import ru.stohastika.sklyanka.ui.component.BottomBar
 import ru.stohastika.sklyanka.ui.component.BottomBarTab
 import ru.stohastika.sklyanka.ui.component.EmptyState
+import ru.stohastika.sklyanka.ui.component.PinnedHeaderBar
 import ru.stohastika.sklyanka.ui.component.ProgressAction
 import ru.stohastika.sklyanka.ui.component.ScreenHeader
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderLabels
+import ru.stohastika.sklyanka.ui.component.ScreenHeaderState
 import ru.stohastika.sklyanka.ui.component.SklyankaProgressBar
 import ru.stohastika.sklyanka.ui.component.Snackbar
+import ru.stohastika.sklyanka.ui.component.rememberScreenHeaderState
 import ru.stohastika.sklyanka.ui.motion.MotionPhase
 import ru.stohastika.sklyanka.ui.motion.motionTiming
 import ru.stohastika.sklyanka.ui.profile.ProfileAvatar
@@ -192,7 +195,12 @@ private fun TodayEmpty(state: TodayUiState.Empty, onIntent: (TodayIntent) -> Uni
 
 @Composable
 private fun TodayContent(state: TodayUiState.Content, onIntent: (TodayIntent) -> Unit, modifier: Modifier = Modifier) {
-    Column(
+    val header = rememberScreenHeaderState()
+    val labels = ScreenHeaderLabels(
+        title = stringResource(R.string.today_title),
+        overline = state.date.headerDate(),
+    )
+    Box(
         modifier = modifier
             .fillMaxWidth()
             .pointerInput(state.confirmingGroup) {
@@ -206,74 +214,85 @@ private fun TodayContent(state: TodayUiState.Content, onIntent: (TodayIntent) ->
                 }
             },
     ) {
-        TodayHeader(state, onIntent)
         LazyColumn(
-            modifier = Modifier.fillMaxWidth().weight(1f),
-            contentPadding = PaddingValues(
-                start = SklyankaSpacing.Section,
-                end = SklyankaSpacing.Section,
-                top = SklyankaSpacing.Small,
-                bottom = SklyankaSpacing.Section,
-            ),
+            modifier = Modifier.fillMaxSize(),
+            // Сверху поля нет: шапка начинается своим верхним полем (30 dp, в чужом профиле
+            // 24 dp) — лишние 8 dp сдвигали её вниз (§4, V-13).
+            contentPadding = PaddingValues(bottom = SklyankaSpacing.Section),
             verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Section),
         ) {
+            item(key = KEY_TODAY_HEADER) { TodayHeader(state, onIntent, labels, header) }
             when (val layout = state.layout) {
                 is TodayLayout.Plain -> plainLanes(layout, state, onIntent)
                 is TodayLayout.Dense -> denseSections(layout, state, onIntent)
             }
             prnBlock(state, onIntent)
-            if (state.nothingToday) item { NothingToday() }
+            if (state.nothingToday) todayItem(key = KEY_NOTHING_TODAY) { NothingToday() }
         }
+        // Ряд — слой над прокруткой, а не сосед в столбце: до порога его не видно,
+        // и места в потоке он не держит (§7). Аватар-индикатор профиля на пороге
+        // переезжает сюда из шапки — тот же аватар 44 dp (§5.8).
+        PinnedHeaderBar(
+            labels = labels,
+            state = header,
+            modifier = Modifier.align(Alignment.TopCenter),
+            trailing = { ProfileAvatar(onOpenProfiles = { onIntent(TodayIntent.OpenSettings) }) },
+        )
     }
 }
 
 /** Шапка: дата и заголовок, полоса прогресса дня, плашка остатка (`Main.dc.html`). */
 @Composable
-private fun TodayHeader(state: TodayUiState.Content, onIntent: (TodayIntent) -> Unit) {
-    ScreenHeader(
-        labels = ScreenHeaderLabels(
-            title = stringResource(R.string.today_title),
-            overline = state.date.headerDate(),
-        ),
-        // Аватар — индикатор активного профиля; нажатие ведёт в список профилей
-        // настроек, а не раскрывает меню (ПРФ-19, `ОВ-54`).
-        trailing = { ProfileAvatar(onOpenProfiles = { onIntent(TodayIntent.OpenSettings) }) },
-    )
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = SklyankaSpacing.Section),
-        verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Large),
-    ) {
-        // Предупреждение о ненадёжности — первым в шапке, выше полосы прогресса и плашки
-        // остатка (ОВ-82): пока напоминания не придут, об этом надо сказать раньше всего.
-        state.reliability?.let { warning ->
-            Banner(
-                text = warning.text(),
-                kind = BannerKind.Warning,
-                actionLabel = stringResource(R.string.today_reliability_action),
-                onAction = { onIntent(TodayIntent.OpenPermissions) },
-                modifier = Modifier.testTag(TAG_RELIABILITY_BANNER),
-            )
-        }
-        // Полоса дня показывается, только когда есть что считать: «Принято 0 из 0»
-        // не сообщает ничего, а место занимает.
-        if (state.progress.hasPlan) {
-            SklyankaProgressBar(
-                progress = state.progress.fraction,
-                label = state.progress.caption(dense = state.isDense),
-                action = ProgressAction(
-                    label = stringResource(R.string.today_history_link),
-                    onClick = { onIntent(TodayIntent.OpenHistory) },
-                ),
-                modifier = Modifier.testTag(TAG_DAY_PROGRESS),
-            )
-        }
-        state.stockWarning?.let { notice ->
-            Banner(
-                text = notice.text(),
-                actionLabel = stringResource(R.string.today_stock_action),
-                onAction = { onIntent(TodayIntent.OpenStock(notice.medicationId)) },
-                modifier = Modifier.testTag(TAG_STOCK_BANNER),
-            )
+private fun TodayHeader(
+    state: TodayUiState.Content,
+    onIntent: (TodayIntent) -> Unit,
+    labels: ScreenHeaderLabels,
+    header: ScreenHeaderState,
+) {
+    // Аватар-индикатор профиля стоит в прокручиваемой шапке — справа от даты и заголовка
+    // (§7, `Main.dc.html`); на пороге его место берёт закреплённый ряд (§5.8).
+    Column(verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Large)) {
+        ScreenHeader(
+            labels = labels,
+            pinning = header,
+            trailing = { ProfileAvatar(onOpenProfiles = { onIntent(TodayIntent.OpenSettings) }) },
+        )
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = SklyankaSpacing.Section),
+            verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Large),
+        ) {
+            // Предупреждение о ненадёжности — первым в шапке, выше полосы прогресса и плашки
+            // остатка (ОВ-82): пока напоминания не придут, об этом надо сказать раньше всего.
+            state.reliability?.let { warning ->
+                Banner(
+                    text = warning.text(),
+                    kind = BannerKind.Warning,
+                    actionLabel = stringResource(R.string.today_reliability_action),
+                    onAction = { onIntent(TodayIntent.OpenPermissions) },
+                    modifier = Modifier.testTag(TAG_RELIABILITY_BANNER),
+                )
+            }
+            // Полоса дня показывается, только когда есть что считать: «Принято 0 из 0»
+            // не сообщает ничего, а место занимает.
+            if (state.progress.hasPlan) {
+                SklyankaProgressBar(
+                    progress = state.progress.fraction,
+                    label = state.progress.caption(dense = state.isDense),
+                    action = ProgressAction(
+                        label = stringResource(R.string.today_history_link),
+                        onClick = { onIntent(TodayIntent.OpenHistory) },
+                    ),
+                    modifier = Modifier.testTag(TAG_DAY_PROGRESS),
+                )
+            }
+            state.stockWarning?.let { notice ->
+                Banner(
+                    text = notice.text(),
+                    actionLabel = stringResource(R.string.today_stock_action),
+                    onAction = { onIntent(TodayIntent.OpenStock(notice.medicationId)) },
+                    modifier = Modifier.testTag(TAG_STOCK_BANNER),
+                )
+            }
         }
     }
 }
@@ -317,6 +336,21 @@ private fun NothingToday() {
     )
 }
 
+/**
+ * Элемент ленты «Сегодня»: боковое поле экрана стоит на элементе, а не на списке.
+ *
+ * Крупный заголовок — тоже элемент списка, и он занимает всю ширину (§7): поле,
+ * поставленное на список, сузило бы и его, и заголовок перестал бы совпадать
+ * с закреплённым рядом.
+ */
+internal fun LazyListScope.todayItem(key: Any, content: @Composable () -> Unit) {
+    item(key = key) {
+        Box(modifier = Modifier.fillMaxWidth().padding(horizontal = SklyankaSpacing.Section)) {
+            content()
+        }
+    }
+}
+
 /** Обычный день: ленты приёмов подряд (`Main.dc.html`). */
 private fun LazyListScope.plainLanes(
     layout: TodayLayout.Plain,
@@ -324,7 +358,7 @@ private fun LazyListScope.plainLanes(
     onIntent: (TodayIntent) -> Unit,
 ) {
     layout.groups.forEach { group ->
-        item(key = "lane-${group.time}") { TimeLane(group, state, onIntent) }
+        todayItem(key = "lane-${group.time}") { TimeLane(group, state, onIntent) }
     }
 }
 
@@ -334,3 +368,7 @@ const val TAG_DAY_PROGRESS = "day_progress"
 const val TAG_STOCK_BANNER = "stock_banner"
 const val TAG_RELIABILITY_BANNER = "reliability_banner"
 const val TAG_NOTHING_TODAY = "nothing_today"
+
+/** Ключи элементов ленты: у списка «Сегодня» состав меняется от состояния. */
+private const val KEY_TODAY_HEADER = "today-header"
+private const val KEY_NOTHING_TODAY = "nothing-today"

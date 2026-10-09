@@ -72,6 +72,7 @@ fun SklyankaTextField(
     multiline: Boolean = false,
     forcedState: TextFieldState? = null,
     surface: TextFieldSurface = TextFieldSurface.Surface,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
 ) {
     val colors = SklyankaTheme.colors
     val interactionSource = remember { MutableInteractionSource() }
@@ -96,9 +97,15 @@ fun SklyankaTextField(
                     value = value,
                     onValueChange = onValueChange,
                     state = state,
-                    numeric = numeric,
                     multiline = multiline,
                     interactionSource = interactionSource,
+                    // Числовое поле перекрывает тип клавиатуры поверх пришедших настроек:
+                    // остальные режимы (автозамена, капитализация) задаёт вызывающий.
+                    keyboardOptions = if (numeric) {
+                        keyboardOptions.copy(keyboardType = KeyboardType.Number)
+                    } else {
+                        keyboardOptions
+                    },
                 )
                 if (value.isEmpty() && hint.isNotEmpty()) {
                     Text(text = hint, style = SklyankaType.Body, color = colors.textDisabled)
@@ -189,9 +196,9 @@ private fun FieldInput(
     value: String,
     onValueChange: (String) -> Unit,
     state: TextFieldState,
-    numeric: Boolean,
     multiline: Boolean,
     interactionSource: MutableInteractionSource,
+    keyboardOptions: KeyboardOptions,
 ) {
     val colors = SklyankaTheme.colors
     BasicTextField(
@@ -202,9 +209,7 @@ private fun FieldInput(
         textStyle = SklyankaType.Body.copy(
             color = if (state == TextFieldState.Disabled) colors.textDisabled else colors.text,
         ),
-        keyboardOptions = KeyboardOptions(
-            keyboardType = if (numeric) KeyboardType.Number else KeyboardType.Text,
-        ),
+        keyboardOptions = keyboardOptions,
         cursorBrush = SolidColor(colors.accent),
         singleLine = !multiline,
         modifier = (if (multiline) Modifier.fillMaxWidth() else Modifier.fillMaxSize())

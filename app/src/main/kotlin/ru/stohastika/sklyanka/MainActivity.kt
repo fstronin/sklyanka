@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
@@ -469,6 +470,12 @@ class MainActivity : ComponentActivity() {
             motion = rootNavigation.rootMotion,
             modifier = Modifier.fillMaxSize(),
         ) { layer ->
+            // Корень вкладки: возвращаться некуда, но выходить из приложения нажатием,
+            // которое человек ждёт как возврат, нельзя — «Назад» ведёт на «Сегодня»
+            // (`docs/v2/10-behavior.md` §5.1). На «Сегодня» обработчика нет: там
+            // приложение завершается штатно. Вложенные экраны ставят свой обработчик выше
+            // и перехватывают нажатие раньше — этот срабатывает только на корне вкладки.
+            BackHandler(enabled = layer == RootLayer.Settings) { rootNavigation.openToday() }
             when (layer) {
                 // История, открытая с «Сегодня» (ОВ-84, SKL-31): тот же второй уровень, что
                 // из настроек, но место входа — строка прогресса дня. Ветка стоит рядом
@@ -519,10 +526,10 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun settingsNavigation(): SettingsNavigation = SettingsNavigation(
-        // Строка «Добавить профиль» выключена до мастера (`ОВ-3`, SKL-58):
-        // экран создания профиля не зафиксирован, а нажимаемая строка без
-        // перехода обещала бы больше, чем продукт умеет. Намерение и переход —
-        // шов пост-MVP: мастер вернётся без правки навигации.
+        // Строки «Добавить профиль» на экране нет: мастера создания профиля не существует,
+        // а «будет доступно в ближайшем обновлении» — обещание функции, которой нет (П-7,
+        // Р-29). Намерение и переход остаются швом пост-MVP: мастер вернётся без правки
+        // навигации (SKL-121).
         addProfile = {},
         // «Звук» — системный экран уведомлений приложения (ОВ-98): там оба
         // канала и выбор звука с важностью для каждого.

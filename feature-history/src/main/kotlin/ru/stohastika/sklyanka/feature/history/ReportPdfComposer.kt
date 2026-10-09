@@ -95,19 +95,30 @@ internal class ReportPdfComposer(applicationContext: Context) {
         ),
     )
 
-    /** Сводка: те же числа, что на экране. */
-    private fun summary(report: DoctorReport): List<ReportPdfSummaryLine> = listOf(
-        ReportPdfSummaryLine(context.getString(R.string.report_document_taken_label), text.takenValue(report)),
-        ReportPdfSummaryLine(context.getString(R.string.report_document_on_time_label), text.onTimeValue(report)),
-        ReportPdfSummaryLine(
-            context.getString(R.string.report_document_days_without_misses_label),
-            report.period.daysWithoutMisses.toString(),
-        ),
-        ReportPdfSummaryLine(
-            context.getString(R.string.report_document_misses_label),
-            report.period.missesInPeriod.toString(),
-        ),
-    )
+    /**
+     * Сводка: те же числа, что на экране.
+     *
+     * Строка «Принято вовремя» печатается, только когда ей есть что сообщить (Р-33):
+     * пустого значения в документе врачу не бывает — ни числа, ни прочерка.
+     */
+    private fun summary(report: DoctorReport): List<ReportPdfSummaryLine> = buildList {
+        add(ReportPdfSummaryLine(context.getString(R.string.report_document_taken_label), text.takenValue(report)))
+        text.onTimeValue(report)?.let { share ->
+            add(ReportPdfSummaryLine(context.getString(R.string.report_document_on_time_label), share))
+        }
+        add(
+            ReportPdfSummaryLine(
+                context.getString(R.string.report_document_days_without_misses_label),
+                report.period.daysWithoutMisses.toString(),
+            ),
+        )
+        add(
+            ReportPdfSummaryLine(
+                context.getString(R.string.report_document_misses_label),
+                report.period.missesInPeriod.toString(),
+            ),
+        )
+    }
 
     private fun moment(value: Instant, zone: ZoneId, locale: Locale): String =
         value.atZone(zone).format(text.pattern(R.string.history_datetime_pattern, locale))

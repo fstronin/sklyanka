@@ -71,6 +71,13 @@
         <item quantity="other">%1$d дня без пропусков</item>
     </plurals>
 
+    <plurals name="cd_history_on_time">
+        <item quantity="one">принято вовремя, %1$d из %2$d приёма</item>
+        <item quantity="few">принято вовремя, %1$d из %2$d приёмов</item>
+        <item quantity="many">принято вовремя, %1$d из %2$d приёмов</item>
+        <item quantity="other">принято вовремя, %1$d из %2$d приёма</item>
+    </plurals>
+
     <!-- Подпись плитки «пропусков за месяц» для чтения с экрана. -->
     <plurals name="cd_history_misses">
         <item quantity="one">%1$d пропуск за месяц</item>

@@ -21,6 +21,7 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import ru.stohastika.sklyanka.domain.profile.ProfileLosses
 import ru.stohastika.sklyanka.feature.settings.R
+import ru.stohastika.sklyanka.ui.component.TAG_CONFIRM_WORD_LABEL
 import ru.stohastika.sklyanka.ui.component.TAG_TEXT_FIELD_ERROR
 import ru.stohastika.sklyanka.ui.component.TAG_TEXT_FIELD_INPUT
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
@@ -77,7 +78,7 @@ class DeleteProfileScreenTest {
     fun theConfirmationWordOpensTheDangerAction() {
         showTyping()
 
-        composeRule.onNodeWithTag(TAG_DELETE_WORD_LABEL).assertIsDisplayed()
+        composeRule.onNodeWithTag(TAG_CONFIRM_WORD_LABEL).assertIsDisplayed()
         composeRule.onNodeWithTag(TAG_DELETE_CONFIRM).assertIsNotEnabled()
 
         composeRule.onNodeWithTag(TAG_TEXT_FIELD_INPUT).performTextReplacement("Udalit")

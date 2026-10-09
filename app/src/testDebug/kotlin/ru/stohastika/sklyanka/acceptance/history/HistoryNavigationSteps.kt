@@ -35,6 +35,7 @@ import ru.stohastika.sklyanka.domain.history.AdherenceCalculator
 import ru.stohastika.sklyanka.domain.history.BuildDoctorReportUseCase
 import ru.stohastika.sklyanka.domain.history.MissedPatternRule
 import ru.stohastika.sklyanka.domain.history.ObserveAdherenceUseCase
+import ru.stohastika.sklyanka.domain.history.OnTimeRule
 import ru.stohastika.sklyanka.domain.history.TransferDoctorReportUseCase
 import ru.stohastika.sklyanka.domain.intake.CreatePrnIntakeUseCase
 import ru.stohastika.sklyanka.domain.intake.MarkIntakeUseCase
@@ -193,7 +194,7 @@ class HistoryNavigationSteps(private val world: AcceptanceWorld) {
         observeAdherence = ObserveAdherenceUseCase(
             activeProfile = world.profileSession.activeStore,
             history = world.history,
-            calculator = AdherenceCalculator(),
+            calculator = AdherenceCalculator(OnTimeRule.TwoHours),
             time = world.clock.time,
             log = world.log,
         ),
@@ -201,7 +202,7 @@ class HistoryNavigationSteps(private val world: AcceptanceWorld) {
             activeProfile = world.profileSession.activeStore,
             profiles = world.repositories.profileStore,
             history = world.history,
-            calculator = AdherenceCalculator(),
+            calculator = AdherenceCalculator(OnTimeRule.TwoHours),
             time = world.clock.time,
             log = world.log,
         ),

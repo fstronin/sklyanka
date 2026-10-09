@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -30,14 +29,13 @@ import ru.stohastika.sklyanka.feature.meds.R
 import ru.stohastika.sklyanka.feature.meds.SectionLabel
 import ru.stohastika.sklyanka.feature.meds.doseSuffix
 import ru.stohastika.sklyanka.feature.meds.label
-import ru.stohastika.sklyanka.feature.meds.medicationPreviewCaption
+import ru.stohastika.sklyanka.feature.meds.medicationPreviewNumbers
 import ru.stohastika.sklyanka.feature.meds.medicationPreviewTitle
 import ru.stohastika.sklyanka.feature.meds.message
 import ru.stohastika.sklyanka.ui.component.MedicationGlyph
 import ru.stohastika.sklyanka.ui.component.MedicationPreview
 import ru.stohastika.sklyanka.ui.component.SklyankaTextField
 import ru.stohastika.sklyanka.ui.component.TabletShapeGlyph
-import ru.stohastika.sklyanka.ui.component.TextFieldState
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaShapes
 import ru.stohastika.sklyanka.ui.token.SklyankaSizes
@@ -105,11 +103,14 @@ internal fun PreviewBlock(state: MedFormUiState) {
     val dose = draft.doseAmount?.let { amount ->
         "${amount.stripTrailingZeros().toPlainString()} ${state.applicability.doseUnit.doseSuffix()}"
     }
+    val strength = draft.strength?.let { amount ->
+        "${amount.stripTrailingZeros().toPlainString()} ${stringResource(R.string.strength_unit_milligram)}"
+    }
     MedicationPreview(
         form = draft.form,
         shape = draft.shape,
         title = medicationPreviewTitle(draft.form, draft.shape),
-        caption = medicationPreviewCaption(draft.form, dose),
+        caption = medicationPreviewNumbers(dose, strength),
         modifier = Modifier.fillMaxWidth().testTag(TAG_MEDICATION_PREVIEW),
     )
 }
@@ -198,47 +199,48 @@ internal fun TabletShapeBlock(state: MedFormUiState, onIntent: (MedFormIntent) -
 }
 
 /**
- * «Доза на один приём» — количество с производной единицей и дозировка препарата.
+ * «Доза на один приём» и «Дозировка препарата» — два названных блока, а не ряд из двух полей.
  *
- * Единица количества следует за формой выпуска, единица дозировки зафиксирована
- * макетом как «мг» и человеком не правится: закрытый это список или свободный ввод —
- * открытый вопрос ОВ-16.
+ * Незавершённость новой формы читалась именно из одного заголовка над двумя полями, второе
+ * из которых ничем не названо (V-3). Доза обязательна (ИНВ-4), дозировка — нет (ИНВ-5), и
+ * нарушение печатается под своим блоком: блоков два, и пояснение дозы не уезжает под
+ * дозировку (§5.3).
+ *
+ * Единица количества следует за формой выпуска, единица дозировки зафиксирована макетом
+ * как «мг»: состав закрытого списка единиц — отдельная задача (Р-45, SKL-126).
  */
 @Composable
 internal fun DoseBlock(state: MedFormUiState, onIntent: (MedFormIntent) -> Unit, anchors: FormAnchors) {
     val amountLabel = stringResource(R.string.cd_dose_amount)
     val strengthLabel = stringResource(R.string.cd_strength)
-    val doseViolation = state.violationOf(DraftField.DOSE)
-    val strengthViolation = state.violationOf(DraftField.STRENGTH)
     FormBlock(stringResource(R.string.form_label_dose), DraftField.DOSE, anchors) {
-        Row(horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Default)) {
-            SklyankaTextField(
-                value = state.inputs.doseAmount,
-                onValueChange = { onIntent(MedFormIntent.DoseAmountChanged(it)) },
-                unitLabel = state.applicability.doseUnit.doseSuffix(),
-                numeric = true,
-                // Оба поля стоят в одной строке, и пояснение под каждым из них
-                // разъехалось бы по ширине в 120 dp: граница показывается у поля,
-                // а слова — одной строкой под всем блоком.
-                forcedState = if (doseViolation == null) null else TextFieldState.Error,
-                modifier = Modifier
-                    .width(SklyankaSizes.DoseField)
-                    .semantics { contentDescription = amountLabel }
-                    .testTag(TAG_DOSE_FIELD),
-            )
-            SklyankaTextField(
-                value = state.inputs.strength,
-                onValueChange = { onIntent(MedFormIntent.StrengthChanged(it)) },
-                unitLabel = stringResource(R.string.strength_unit_milligram),
-                numeric = true,
-                forcedState = if (strengthViolation == null) null else TextFieldState.Error,
-                modifier = Modifier
-                    .weight(1f)
-                    .semantics { contentDescription = strengthLabel }
-                    .testTag(TAG_STRENGTH_FIELD),
-            )
-        }
-        (doseViolation ?: strengthViolation)?.let { ViolationText(it.message()) }
+        SklyankaTextField(
+            value = state.inputs.doseAmount,
+            onValueChange = { onIntent(MedFormIntent.DoseAmountChanged(it)) },
+            unitLabel = state.applicability.doseUnit.doseSuffix(),
+            numeric = true,
+            errorText = state.violationOf(DraftField.DOSE)?.message(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .semantics { contentDescription = amountLabel }
+                .testTag(TAG_DOSE_FIELD),
+        )
+    }
+    FormBlock(stringResource(R.string.form_label_strength), DraftField.STRENGTH, anchors) {
+        SklyankaTextField(
+            value = state.inputs.strength,
+            onValueChange = { onIntent(MedFormIntent.StrengthChanged(it)) },
+            unitLabel = stringResource(R.string.strength_unit_milligram),
+            numeric = true,
+            errorText = state.violationOf(DraftField.STRENGTH)?.message(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .semantics { contentDescription = strengthLabel }
+                .testTag(TAG_STRENGTH_FIELD),
+        )
+        // Необязательное поле называет себя словами: конвенция формы — обязательное молчит,
+        // необязательное поясняет, чем оно не участвует в расчётах (§5.3).
+        BlockHint(stringResource(R.string.form_strength_hint))
     }
 }
 

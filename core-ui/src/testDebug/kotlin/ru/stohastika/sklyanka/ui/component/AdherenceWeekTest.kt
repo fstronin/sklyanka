@@ -61,6 +61,40 @@ class AdherenceWeekTest {
         }
     }
 
+    /**
+     * V-1: неделя без завершённых дней с исходом сжимается — ряда, кружка «сегодня»
+     * и легенды нет вовсе.
+     */
+    @Test
+    fun anEmptyWeekCollapsesToNothing() {
+        composeRule.setContent {
+            SklyankaTheme {
+                AdherenceWeek(
+                    days = listOf(
+                        AdherenceDay("1", AdherenceDayState.Empty, "day-1"),
+                        AdherenceDay("2", AdherenceDayState.Empty, "day-2"),
+                        AdherenceDay("3", AdherenceDayState.Today, "day-3"),
+                    ),
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag(TAG_ADHERENCE_WEEK).assertDoesNotExist()
+        composeRule.onNodeWithTag(TAG_ADHERENCE_LEGEND, useUnmergedTree = true).assertDoesNotExist()
+    }
+
+    /** День без приёмов отмечен точкой: размер — третий носитель смысла помимо цвета (§5.2). */
+    @Test
+    fun theDayWithoutIntakesCarriesADot() {
+        composeRule.setContent {
+            SklyankaTheme {
+                AdherenceWeek(days = week())
+            }
+        }
+
+        composeRule.onNodeWithTag(TAG_ADHERENCE_EMPTY_DOT, useUnmergedTree = true).assertIsDisplayed()
+    }
+
     private fun show() {
         composeRule.setContent {
             SklyankaTheme { AdherenceWeek(days = week()) }

@@ -7,9 +7,9 @@
     <string name="action_taken">Taken</string>
     <string name="action_skip">Skip</string>
     <string name="action_take">Take</string>
-    <string name="action_back">Back</string>
     <string name="action_cancel">Cancel</string>
     <string name="action_done">Done</string>
+    <string name="confirm_word_label">Type the word “%1$s” to confirm</string>
     <string name="status_missed">Missed</string>
     <string name="status_marked_by_you">marked by you</string>
     <string name="label_as_needed">As needed</string>
@@ -25,6 +25,7 @@
 
     <string name="cd_mark_intake">Mark intake %1$s</string>
     <string name="cd_back">Back</string>
+    <string name="cd_confirm_word_field">Confirmation word</string>
     <string name="cd_app_mark">Sklyanka mark</string>
     <string name="cd_app_mark_glass">Sklyanka mark: thick glass bottom</string>
     <string name="cd_icon_on_dark">Icon on a dark background</string>

@@ -62,7 +62,6 @@
     <string name="transfer_replace_confirm">Erase and load</string>
     <string name="transfer_replace_cancel">Do not erase</string>
     <string name="transfer_replace_word">Replace</string>
-    <string name="transfer_replace_word_label">Type the word “%1$s” to confirm</string>
 
     <string name="transfer_report_title">Import complete</string>
     <string name="transfer_report_profiles">Profiles added: %1$d</string>
@@ -129,8 +128,6 @@
     <string name="settings_profile_self_initial">M</string>
     <string name="settings_profile_mirrored">reminders are mirrored to me</string>
     <string name="settings_profile_subtitle">%1$s · %2$s</string>
-    <string name="settings_profile_add">Add profile</string>
-    <string name="settings_profile_add_unavailable">Coming in a future update</string>
     <string name="settings_profile_delete">Delete profile “%1$s”</string>
     <string name="cd_settings_profile_active">Active profile</string>
 

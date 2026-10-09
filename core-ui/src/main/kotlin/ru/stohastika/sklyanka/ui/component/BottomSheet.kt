@@ -33,7 +33,6 @@ import ru.stohastika.sklyanka.ui.motion.MotionPhase
 import ru.stohastika.sklyanka.ui.motion.MotionTiming
 import ru.stohastika.sklyanka.ui.motion.motionTiming
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
-import ru.stohastika.sklyanka.ui.token.Palette
 import ru.stohastika.sklyanka.ui.token.SklyankaMotion
 import ru.stohastika.sklyanka.ui.token.SklyankaShapes
 
@@ -71,6 +70,7 @@ fun SklyankaBottomSheet(
 /** Затемнение шторки: закрывает экран целиком и перехватывает нажатия — фон под слоем недоступен. */
 @Composable
 private fun SheetScrim(visible: Boolean, enter: MotionTiming, exit: MotionTiming, onDismiss: () -> Unit) {
+    val scrim = SklyankaTheme.colors.scrim
     AnimatedVisibility(
         visible = visible,
         enter = fadeIn(tween(SCRIM_ENTER_MS, easing = enter.easing)),
@@ -80,7 +80,7 @@ private fun SheetScrim(visible: Boolean, enter: MotionTiming, exit: MotionTiming
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Palette.DarkBackground.copy(alpha = SCRIM_ALPHA))
+                .background(scrim)
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null,
@@ -152,9 +152,6 @@ private fun SheetSurface(
 const val TAG_BOTTOM_SHEET = "bottom_sheet"
 const val TAG_BOTTOM_SHEET_SCRIM = "bottom_sheet_scrim"
 const val TAG_BOTTOM_SHEET_SURFACE = "bottom_sheet_surface"
-
-/** Затемнение `DarkBackground` 32 % (ОВ-125). */
-private const val SCRIM_ALPHA = 0.32f
 
 /** Затемнение: появление 200 ms, уход 150 ms — §9.3, сценарий 8/9. */
 private const val SCRIM_ENTER_MS = 200

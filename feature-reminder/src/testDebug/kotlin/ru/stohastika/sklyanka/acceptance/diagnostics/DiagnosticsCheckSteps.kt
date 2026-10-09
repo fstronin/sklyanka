@@ -6,8 +6,8 @@ import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.core.app.ApplicationProvider
@@ -174,8 +174,10 @@ class DiagnosticsCheckSteps(private val world: AcceptanceWorld) {
 
     @Когда("^человек нажимает системную кнопку «Назад»$")
     fun thePersonPressesBack() {
-        val back = context.getString(ru.stohastika.sklyanka.ui.R.string.action_back)
-        DiagnosticsStand.actRaw(world) { onNodeWithText(back).performClick() }
+        // Возврат — шеврон в цели 44 dp; слова «Назад» на экране нет, и цель ищется
+        // по доступному имени `cd_back`, а не по тексту (12-design §7).
+        val back = context.getString(ru.stohastika.sklyanka.ui.R.string.cd_back)
+        DiagnosticsStand.actRaw(world) { onNodeWithContentDescription(back).performClick() }
     }
 
     // --- Проверки первого уровня ---------------------------------------------------------------
@@ -328,8 +330,8 @@ class DiagnosticsCheckSteps(private val world: AcceptanceWorld) {
 
     @Тогда("^снова открыт экран «Настройки»$")
     fun theSettingsScreenIsOpen() {
-        // Стенд диагностики не владеет графом навигации: системная «Назад» закрывает экран,
-        // и возврат в настройки проверяется на устройстве. Здесь фиксируется сам факт нажатия.
+        // Стенд диагностики не владеет графом навигации: системная кнопка возврата закрывает
+        // экран, и возврат в настройки проверяется на устройстве. Здесь фиксируется сам факт нажатия.
         assertTrue(DiagnosticsStand.backRequested, "the system back must be handled by the screen")
     }
 

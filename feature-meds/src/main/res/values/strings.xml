@@ -47,21 +47,21 @@
     <string name="form_save_existing">Сохранить</string>
 
     <string name="form_label_name">Название</string>
+    <string name="medication_delete_word">Удалить</string>
     <string name="form_label_release_form">Форма выпуска</string>
     <string name="form_label_tablet_shape">Вид таблетки</string>
 
     <!--
-      Блок-превью выбора (ОВ-94, §4.16).
+      Блок-превью выбора (ОВ-94, §5.3).
 
-      У форм, где доза описывается силуэтом (таблетка и капсула), подпись говорит про
-      узнавание; у остальных — про дозу словами. Дословная формулировка ОВ-94 —
-      «Доза описывается словами: «2 впрыска» — без силуэта»; единица берётся из формы
-      (закрытый список ОВ-16), а до ввода дозы число назвать нечем — общая фраза.
+      Превью всегда называет форму и вид — их несёт заголовок, — а подпись собирается
+      из чисел в порядке ЭКР-7: сначала доза на один приём, затем дозировка препарата.
+      Пустая часть в строку не попадает; строк иных формулировок у превью нет, чтобы
+      подпись не расходилась с тем, что видно в списке и карточке.
     -->
-    <string name="form_preview_reusable">Так лекарство будет узнаваться в списке и карточке</string>
-    <string name="form_preview_dose_words">Доза описывается словами: «%1$s» — без силуэта</string>
-    <string name="form_preview_dose_words_empty">Доза описывается словами, без силуэта</string>
     <string name="form_label_dose">Доза на один приём</string>
+    <string name="form_label_strength">Дозировка препарата</string>
+    <string name="form_strength_hint">Необязательно. Сколько действующего вещества в одной единице — в карточке видно, в расчётах не участвует</string>
     <string name="form_label_intakes_per_day">Приёмов в сутки</string>
     <string name="form_caption_times_below">Время задаётся ниже</string>
     <string name="form_label_times">Время приёма</string>
@@ -233,7 +233,7 @@
     <string name="card_restore">Вернуть</string>
     <string name="card_delete">Удалить</string>
     <string name="card_delete_hint">Удалить можно, пока нет ни одной отметки „принято“</string>
-    <string name="card_delete_sheet_title">Удалить „%1$s“?</string>
+    <string name="card_delete_sheet_title">Удалить «%1$s»?</string>
     <string name="card_delete_sheet_text">Лекарство исчезнет из списков и напоминаний. Сразу после удаления его можно вернуть кнопкой «Отменить».</string>
     <string name="meds_deleted_snackbar">%1$s — лекарство удалено</string>
     <string name="meds_undo_action">Отменить</string>

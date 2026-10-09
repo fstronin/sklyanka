@@ -17,17 +17,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import ru.stohastika.sklyanka.feature.settings.R
-import ru.stohastika.sklyanka.feature.settings.matchesConfirmationWord
 import ru.stohastika.sklyanka.feature.settings.transfer.dateAndTime
 import ru.stohastika.sklyanka.ui.component.Banner
 import ru.stohastika.sklyanka.ui.component.ButtonState
+import ru.stohastika.sklyanka.ui.component.ConfirmWordField
 import ru.stohastika.sklyanka.ui.component.PrimaryButton
-import ru.stohastika.sklyanka.ui.component.PrimaryButtonKind
 import ru.stohastika.sklyanka.ui.component.ScreenHeader
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderKind
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderLabels
 import ru.stohastika.sklyanka.ui.component.SecondaryButton
-import ru.stohastika.sklyanka.ui.component.SklyankaTextField
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaSpacing
 import ru.stohastika.sklyanka.ui.token.SklyankaType
@@ -81,7 +79,6 @@ private fun ConfirmationStep(
 ) {
     val colors = SklyankaTheme.colors
     val word = stringResource(R.string.profile_delete_word)
-    val wordMatches = matchesConfirmationWord(state.word, word)
     ScreenHeader(
         labels = ScreenHeaderLabels(title = stringResource(R.string.profile_delete_title)),
         kind = ScreenHeaderKind.Nested,
@@ -115,24 +112,17 @@ private fun ConfirmationStep(
         ExportBlock(state = state, onSaveFile = onSaveFile, onDismissFailure = {
             onIntent(DeleteProfileIntent.DismissFailure)
         })
-        ConfirmationWordBlock(
-            word = word,
-            value = state.word,
-            onValueChange = { onIntent(DeleteProfileIntent.WordChanged(it)) },
-        )
         // Кнопка не должна оказаться под пальцем там, где на прошлом экране была
         // строка «Удалить профиль «Имя»».
         Spacer(modifier = Modifier.padding(top = SklyankaSpacing.Section))
-        PrimaryButton(
-            text = stringResource(R.string.profile_delete_confirm),
-            onClick = { onIntent(DeleteProfileIntent.Confirm) },
-            state = when {
-                state.busy -> ButtonState.Busy
-                wordMatches -> ButtonState.Normal
-                else -> ButtonState.Disabled
-            },
-            kind = PrimaryButtonKind.Danger,
-            modifier = Modifier.fillMaxWidth().testTag(TAG_DELETE_CONFIRM),
+        ConfirmWordField(
+            word = word,
+            value = state.word,
+            onValueChange = { onIntent(DeleteProfileIntent.WordChanged(it)) },
+            confirmLabel = stringResource(R.string.profile_delete_confirm),
+            onConfirm = { onIntent(DeleteProfileIntent.Confirm) },
+            busy = state.busy,
+            confirmModifier = Modifier.fillMaxWidth().testTag(TAG_DELETE_CONFIRM),
         )
     }
 }
@@ -206,30 +196,6 @@ private fun ExportBlock(state: DeleteProfileUiState, onSaveFile: () -> Unit, onD
     }
 }
 
-/**
- * Подпись-образец и поле слова-подтверждения (ОВ-7).
- *
- * Подпись и правило сравнения — те же, что у «Заменить всё» (`ConfirmationWord`);
- * слово своё. Поле не переводится в состояние ошибки никогда: неверный ввод виден
- * недоступной кнопкой, а не красной рамкой (ОВ-38 к этому полю не применяется).
- */
-@Composable
-private fun ConfirmationWordBlock(word: String, value: String, onValueChange: (String) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Micro)) {
-        Text(
-            text = stringResource(R.string.transfer_replace_word_label, word),
-            style = SklyankaType.BodyDefault,
-            color = SklyankaTheme.colors.text,
-            modifier = Modifier.testTag(TAG_DELETE_WORD_LABEL),
-        )
-        SklyankaTextField(
-            value = value,
-            onValueChange = onValueChange,
-            modifier = Modifier.fillMaxWidth().testTag(TAG_DELETE_WORD_FIELD),
-        )
-    }
-}
-
 /** Итог: профиль удалён, активным стал владелец; «Готово» возвращает в настройки. */
 @Composable
 private fun ResultStep(state: DeleteProfileUiState, onDone: () -> Unit) {
@@ -279,8 +245,6 @@ const val TAG_DELETE_EXPORT = "profile_delete_export"
 const val TAG_DELETE_EXPORT_NOTE = "profile_delete_export_note"
 const val TAG_DELETE_EXPORT_FACT = "profile_delete_export_fact"
 const val TAG_DELETE_FAILURE = "profile_delete_failure"
-const val TAG_DELETE_WORD_LABEL = "profile_delete_word_label"
-const val TAG_DELETE_WORD_FIELD = "profile_delete_word_field"
 const val TAG_DELETE_CONFIRM = "profile_delete_confirm"
 const val TAG_DELETE_RESULT_TITLE = "profile_delete_result_title"
 const val TAG_DELETE_RESULT_ACTIVE = "profile_delete_result_active"

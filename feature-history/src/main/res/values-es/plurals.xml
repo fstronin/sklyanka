@@ -33,6 +33,11 @@
         <item quantity="other">%1$d días sin omisiones</item>
     </plurals>
 
+    <plurals name="cd_history_on_time">
+        <item quantity="one">tomadas a tiempo, %1$d de %2$d tomas</item>
+        <item quantity="other">tomadas a tiempo, %1$d de %2$d tomas</item>
+    </plurals>
+
     <plurals name="cd_history_misses">
         <item quantity="one">%1$d omisión del mes</item>
         <item quantity="other">%1$d omisiones del mes</item>

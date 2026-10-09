@@ -7,8 +7,8 @@ import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.core.app.ApplicationProvider
@@ -355,8 +355,10 @@ class Sk102DiagnosticsSteps(private val world: AcceptanceWorld) {
 
     @Когда("^человек нажимает «Назад»$")
     fun thePersonPressesBack() {
-        val back = context.getString(ru.stohastika.sklyanka.ui.R.string.action_back)
-        DiagnosticsStand.actRaw(world) { onNodeWithText(back).performClick() }
+        // Возврат — шеврон в цели 44 dp; слова «Назад» на экране нет, и цель ищется
+        // по доступному имени `cd_back`, а не по тексту (12-design §7).
+        val back = context.getString(ru.stohastika.sklyanka.ui.R.string.cd_back)
+        DiagnosticsStand.actRaw(world) { onNodeWithContentDescription(back).performClick() }
     }
 
     @Когда("^человек ушёл из-за «Исправить» в системные настройки$")

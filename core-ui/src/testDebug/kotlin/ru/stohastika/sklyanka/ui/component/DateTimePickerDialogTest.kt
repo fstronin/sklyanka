@@ -2,11 +2,16 @@ package ru.stohastika.sklyanka.ui.component
 
 import android.content.Context
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.test.assertHasClickAction
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Assert.assertEquals
@@ -195,6 +200,32 @@ class DateTimePickerDialogTest {
         )
     }
 
+    /**
+     * V-4, §2.3: затемнение модального слоя рисует приложение — ролью `scrim`, а не чёрной
+     * подложкой прошивки; слой закрывает окно целиком и перехватывает нажатия.
+     */
+    @Test
+    fun theDialogDrawsItsOwnScrimAndItClosesTheLayer() {
+        var dismissed = false
+        show {
+            DateTimePickerDialog(
+                title = TIME_TITLE,
+                initial = LocalTime.of(8, 0),
+                is24Hour = true,
+                onDismiss = { dismissed = true },
+                onConfirm = {},
+            )
+        }
+
+        composeTestRule.onNodeWithTag(TAG_DIALOG_SCRIM).assertIsDisplayed().assertHasClickAction()
+        composeTestRule.onNodeWithTag(TAG_DATE_TIME_PICKER).assertIsDisplayed()
+        // Тап по слою вне оболочки: центр слоя закрыт ею же, и нажатие досталось бы
+        // оболочке — в углу до слоя доходит именно то, что должен получить фон.
+        composeTestRule.onNodeWithTag(TAG_DIALOG_SCRIM).performTouchInput { click(Offset(CLICK_X, CLICK_Y)) }
+
+        assertTrue("тап по затемнению закрывает слой", dismissed)
+    }
+
     private fun show(content: @Composable () -> Unit) {
         composeTestRule.setContent {
             SklyankaTheme { content() }
@@ -204,6 +235,10 @@ class DateTimePickerDialogTest {
     private companion object {
         const val TIME_TITLE = "Time"
         const val DATE_TITLE = "Date"
+
+        /** Точка тапа по слою вне оболочки диалога, в пикселях от его верхнего левого угла. */
+        const val CLICK_X = 4f
+        const val CLICK_Y = 4f
 
         // Подпись полудня приходит из ресурсов Material3, а не из строк проекта:
         // она показывает, что флаг 12/24 дошёл до механизма пикера.

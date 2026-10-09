@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -14,21 +15,25 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import ru.stohastika.sklyanka.domain.history.OnTimeShare
+import ru.stohastika.sklyanka.ui.component.PinnedHeaderBar
 import ru.stohastika.sklyanka.ui.component.ScreenHeader
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderKind
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderLabels
+import ru.stohastika.sklyanka.ui.component.ScreenHeaderState
 import ru.stohastika.sklyanka.ui.component.SecondaryButton
+import ru.stohastika.sklyanka.ui.component.rememberScreenHeaderState
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaShapes
 import ru.stohastika.sklyanka.ui.token.SklyankaSizes
 import ru.stohastika.sklyanka.ui.token.SklyankaSpacing
 import ru.stohastika.sklyanka.ui.token.SklyankaType
-import ru.stohastika.sklyanka.ui.R as UiR
 
 /**
  * Экран истории приёмов (`design/screens/History.dc.html`).
@@ -63,6 +68,8 @@ import ru.stohastika.sklyanka.ui.R as UiR
 @Composable
 fun HistoryScreen(state: HistoryUiState, onIntent: (HistoryIntent) -> Unit, modifier: Modifier = Modifier) {
     val colors = SklyankaTheme.colors
+    val header = rememberScreenHeaderState()
+    val labels = ScreenHeaderLabels(title = stringResource(R.string.history_title))
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -70,51 +77,81 @@ fun HistoryScreen(state: HistoryUiState, onIntent: (HistoryIntent) -> Unit, modi
             .testTag(TAG_HISTORY_SCREEN),
     ) {
         Column(modifier = Modifier.fillMaxSize().navigationBarsPadding()) {
-            ScreenHeader(
-                labels = ScreenHeaderLabels(title = stringResource(R.string.history_title)),
-                kind = ScreenHeaderKind.Nested,
-                leading = {
-                    GlyphButton(
-                        contentDescription = stringResource(UiR.string.cd_back),
-                        onClick = { onIntent(HistoryIntent.Back) },
-                    ) {
-                        ChevronGlyph(color = colors.text, pointsLeft = true, size = SklyankaSizes.IconPlateGlyph)
-                    }
-                },
-                trailing = {
-                    SecondaryButton(
-                        text = stringResource(R.string.history_report_action),
-                        onClick = { onIntent(HistoryIntent.ReportRequested) },
-                        modifier = Modifier.testTag(TAG_REPORT_ACTION),
-                    )
-                },
-            )
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = SklyankaSpacing.Section)
-                    .padding(bottom = SklyankaSpacing.Screen),
+                    .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Large),
             ) {
-                SummaryTiles(state)
-                CalendarMonth(month = state.month, days = state.period.days, onIntent = onIntent)
-                // Блок «По лекарствам» скрыт, когда за месяц нет ни одной записи: пустая
-                // карточка с заголовком сообщает человеку, что экран сломан.
-                if (state.period.byMedication.isNotEmpty()) {
-                    MedicationBreakdown(rows = state.period.byMedication, insightTime = state.insightTime)
+                // Возврат и «Отчёт врачу» стоят в прокручиваемой шапке, как нарисован
+                // макет «История — покой»; на пороге те же кнопки рисует ряд (§7).
+                ScreenHeader(
+                    labels = labels,
+                    kind = ScreenHeaderKind.Nested,
+                    pinning = header,
+                    onBack = { onIntent(HistoryIntent.Back) },
+                    trailing = { ReportAction(onIntent) },
+                )
+                Column(
+                    modifier = Modifier.padding(horizontal = SklyankaSpacing.Section),
+                    verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Large),
+                ) {
+                    SummaryTiles(state)
+                    CalendarMonth(month = state.month, days = state.period.days, onIntent = onIntent)
+                    // Блок «По лекарствам» скрыт, когда за месяц нет ни одной записи: пустая
+                    // карточка с заголовком сообщает человеку, что экран сломан.
+                    if (state.period.byMedication.isNotEmpty()) {
+                        MedicationBreakdown(rows = state.period.byMedication, insightTime = state.insightTime)
+                    }
                 }
+                Spacer(modifier = Modifier.padding(bottom = SklyankaSpacing.Screen))
             }
         }
+        // Ряд — слой над прокруткой: до порога его не видно, и места в потоке он не держит (§7).
+        HistoryPinnedRow(labels, header, onIntent, Modifier.align(Alignment.TopCenter))
         ReportSheetHost(report = state.report, outcome = state.reportOutcome, onIntent = onIntent)
     }
 }
 
 /**
+ * Закреплённый ряд «Истории»: возврат и «Отчёт врачу» (§7).
+ *
+ * Ряд — слой над прокруткой и включается порогом; до него те же кнопки рисует шапка
+ * в содержимом, поэтому состав у них один.
+ */
+@Composable
+private fun HistoryPinnedRow(
+    labels: ScreenHeaderLabels,
+    header: ScreenHeaderState,
+    onIntent: (HistoryIntent) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    PinnedHeaderBar(
+        labels = labels,
+        state = header,
+        modifier = modifier,
+        kind = ScreenHeaderKind.Nested,
+        onBack = { onIntent(HistoryIntent.Back) },
+        trailing = { ReportAction(onIntent) },
+    )
+}
+
+/** «Отчёт врачу» — одно и то же действие в шапке и в ряду. */
+@Composable
+private fun ReportAction(onIntent: (HistoryIntent) -> Unit) {
+    SecondaryButton(
+        text = stringResource(R.string.history_report_action),
+        onClick = { onIntent(HistoryIntent.ReportRequested) },
+        modifier = Modifier.testTag(TAG_REPORT_ACTION),
+    )
+}
+
+/**
  * Три плитки сводки: «принято вовремя», «дней без пропусков», «пропусков за месяц».
  *
- * Плитка «принято вовремя» показывает прочерк, и это проектное решение, а не заглушка:
- * порог «вовремя» не согласован (ОВ-4), а выдуманное число человек покажет врачу.
+ * Плитка «принято вовремя» рисуется, только когда ей есть что сказать (Р-33): доля либо
+ * посчитана, либо плитки нет — прочерк читался как поломка (V-2). Две оставшиеся плитки
+ * в этом случае делят ряд пополам: пустой колонки-заполнителя не остаётся (§5.4).
  */
 @Composable
 private fun SummaryTiles(state: HistoryUiState) {
@@ -122,12 +159,15 @@ private fun SummaryTiles(state: HistoryUiState) {
         modifier = Modifier.fillMaxWidth().testTag(TAG_SUMMARY),
         horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Default),
     ) {
-        SummaryTile(
-            value = state.period.onTimeShare.label(),
-            caption = stringResource(R.string.history_tile_on_time),
-            description = null,
-            modifier = Modifier.weight(1f).testTag(TAG_TILE_ON_TIME),
-        )
+        val share = state.period.onTimeShare as? OnTimeShare.Value
+        if (share != null) {
+            SummaryTile(
+                value = share.shareLabel(),
+                caption = stringResource(R.string.history_tile_on_time),
+                description = share.shareDescription(),
+                modifier = Modifier.weight(1f).testTag(TAG_TILE_ON_TIME),
+            )
+        }
         SummaryTile(
             value = tileValue(state.period.daysWithoutMisses, state.isEmptyMonth),
             caption = stringResource(R.string.history_tile_days_without_misses),

@@ -269,9 +269,16 @@ class MedsListScreenSteps(private val world: AcceptanceWorld) {
         MedsListStand.ask(world) { }
     }
 
-    @Тогда("^кнопка «([^»]+)» недоступна$")
-    fun thatButtonIsDisabled(button: String) {
-        assertEquals(button, context.getString(UiR.string.action_take))
+    /**
+     * Кнопка «Принять» карточки по потребности недоступна (ПР-7).
+     *
+     * Слово названо в самом выражении, а не приходит группой: шаг проверяет одно действие —
+     * дневной лимит, — и общее «кнопка «X» недоступна» перехватывало бы чужие строки,
+     * например подтверждение удаления лекарства словом (SKL-105).
+     */
+    @Тогда("^кнопка «Принять» недоступна$")
+    fun thatButtonIsDisabled() {
+        val button = context.getString(UiR.string.action_take)
         val id = world.medications.get(world.medicationNamed(focusedCard)).id
         val card = MedsListStand.state(world).items.first { it.medicationId == id }
         assertFalse("the taken count must reach the daily limit (ПР-7)", requireNotNull(card.asNeeded).takeEnabled)

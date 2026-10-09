@@ -18,6 +18,7 @@ import ru.stohastika.sklyanka.domain.history.AdherenceCalculator
 import ru.stohastika.sklyanka.domain.history.BuildDoctorReportUseCase
 import ru.stohastika.sklyanka.domain.history.MissedPatternRule
 import ru.stohastika.sklyanka.domain.history.ObserveAdherenceUseCase
+import ru.stohastika.sklyanka.domain.history.OnTimeRule
 import ru.stohastika.sklyanka.domain.history.TransferDoctorReportUseCase
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import java.time.LocalDate
@@ -50,8 +51,21 @@ internal class ReportShareStand {
     }
 
     val viewModel: HistoryViewModel = HistoryViewModel(
-        observeAdherence = ObserveAdherenceUseCase(activeProfile, history, AdherenceCalculator(), clock, log),
-        buildReport = BuildDoctorReportUseCase(activeProfile, profiles, history, AdherenceCalculator(), clock, log),
+        observeAdherence = ObserveAdherenceUseCase(
+            activeProfile,
+            history,
+            AdherenceCalculator(OnTimeRule.TwoHours),
+            clock,
+            log,
+        ),
+        buildReport = BuildDoctorReportUseCase(
+            activeProfile,
+            profiles,
+            history,
+            AdherenceCalculator(OnTimeRule.TwoHours),
+            clock,
+            log,
+        ),
         transferReport = TransferDoctorReportUseCase(transfer, activeProfile, log),
         renderer = renderer,
         missedPattern = MissedPatternRule(),

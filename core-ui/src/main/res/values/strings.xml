@@ -27,9 +27,14 @@
     <string name="action_taken">Принято</string>
     <string name="action_skip">Пропустить</string>
     <string name="action_take">Принять</string>
-    <string name="action_back">Назад</string>
     <string name="action_cancel">Отмена</string>
     <string name="action_done">Готово</string>
+    <!--
+      Подпись-образец подтверждения словом (§5.7). Один ресурс на все три разрушительных
+      действия: человек копирует слово глазами, а сравнение идёт тем же словом, которое
+      подставил экран, — второго литерала не заводится.
+    -->
+    <string name="confirm_word_label">Введите слово «%1$s», чтобы подтвердить</string>
     <string name="status_missed">Пропущено</string>
     <string name="status_marked_by_you">отметили вы</string>
     <string name="label_as_needed">По потребности</string>
@@ -63,6 +68,8 @@
     <!-- Описания для чтения с экрана (НФТ-30); формулировки — из aria-label макетов -->
     <string name="cd_mark_intake">Отметить приём %1$s</string>
     <string name="cd_back">Назад</string>
+    <!-- Доступное имя поля слова-подтверждения (§5.7, НФТ-30). -->
+    <string name="cd_confirm_word_field">Слово подтверждения</string>
     <string name="cd_app_mark">Знак Склянка</string>
     <string name="cd_app_mark_glass">Знак Склянка: донце толстого стекла</string>
     <string name="cd_icon_on_dark">Иконка на тёмном фоне</string>

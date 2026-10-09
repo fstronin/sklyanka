@@ -62,7 +62,6 @@
     <string name="transfer_replace_confirm">Löschen und importieren</string>
     <string name="transfer_replace_cancel">Nicht löschen</string>
     <string name="transfer_replace_word">Ersetzen</string>
-    <string name="transfer_replace_word_label">Geben Sie das Wort „%1$s“ ein, um zu bestätigen</string>
 
     <string name="transfer_report_title">Import abgeschlossen</string>
     <string name="transfer_report_profiles">Profile hinzugefügt: %1$d</string>
@@ -129,8 +128,6 @@
     <string name="settings_profile_self_initial">I</string>
     <string name="settings_profile_mirrored">Ich erhalte diese Erinnerungen auch</string>
     <string name="settings_profile_subtitle">%1$s · %2$s</string>
-    <string name="settings_profile_add">Profil hinzufügen</string>
-    <string name="settings_profile_add_unavailable">Im nächsten Update verfügbar</string>
     <string name="settings_profile_delete">Profil „%1$s“ löschen</string>
     <string name="cd_settings_profile_active">Aktives Profil</string>
 

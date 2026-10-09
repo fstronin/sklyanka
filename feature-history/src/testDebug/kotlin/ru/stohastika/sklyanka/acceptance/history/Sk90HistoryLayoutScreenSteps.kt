@@ -29,6 +29,7 @@ import ru.stohastika.sklyanka.feature.history.TAG_REPORT_CONTENT
 import ru.stohastika.sklyanka.feature.history.TAG_REPORT_DATA_NOTE
 import ru.stohastika.sklyanka.feature.history.TAG_REPORT_SAVE
 import ru.stohastika.sklyanka.feature.history.TAG_REPORT_SHARE
+import ru.stohastika.sklyanka.ui.component.TAG_SCREEN_HEADER
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaSizes
 
@@ -44,21 +45,30 @@ class Sk90HistoryLayoutScreenSteps {
 
     @Тогда("^верхний отступ шапки «Истории» взят один раз$")
     fun theTopPaddingIsAppliedOnce() = probe(HistoryStates.september()) {
+        // Крупный отступ шапка берёт один раз и с самой верхней грани (§4, §7): закреплённый
+        // ряд — слой над прокруткой, до порога его не видно и места в потоке он не держит.
+        // Полоса ряда перед заголовком означала бы второй отступ.
+        val header = onNodeWithTag(TAG_SCREEN_HEADER).fetchSemanticsNode()
         val action = onNodeWithTag(TAG_REPORT_ACTION).fetchSemanticsNode()
-        val top = with(density) { action.boundsInRoot.top.toDp() }
+        val gap = with(density) { (action.boundsInRoot.top - header.boundsInRoot.top).toDp() }
+        val padding = with(density) { SklyankaSizes.HeaderTopPadding }
         assertTrue(
-            "the header top padding must be applied once, but the action row starts at $top",
-            top in SklyankaSizes.HeaderTopPaddingProfile..(SklyankaSizes.HeaderTopPadding + TOLERANCE),
+            "the header must take its top padding once ($padding), but its action row starts $gap below the top",
+            gap <= padding + TOLERANCE,
         )
     }
 
     @И("^между рядом действия и заголовком «История» зазор не больше 12 dp$")
     fun theTitleFollowsTheActionRow() = probe(HistoryStates.september()) {
+        // Ряд действия стоит в прокручиваемой шапке — так нарисован макет «История — покой»;
+        // заголовок следует за рядом, а не за кнопкой, поэтому считаем от нижней грани ряда
+        // действия (кнопка «Отчёт врачу» в цели 44 dp) (§7).
         val action = onNodeWithTag(TAG_REPORT_ACTION).fetchSemanticsNode()
         val title = onNodeWithText(context.getString(R.string.history_title)).fetchSemanticsNode()
         val gap = with(density) { (title.boundsInRoot.top - action.boundsInRoot.bottom).toDp() }
         assertTrue(
-            "the title must follow the action row closely, but the gap is $gap",
+            "the title must follow the action row closely, but the gap is $gap " +
+                "(title=${title.boundsInRoot}, action=${action.boundsInRoot})",
             gap in MIN_GAP..MAX_GAP,
         )
     }
