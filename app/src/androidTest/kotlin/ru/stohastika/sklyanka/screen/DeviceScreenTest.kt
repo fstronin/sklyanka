@@ -194,10 +194,14 @@ abstract class DeviceScreenTest {
     /**
      * Ввести значение в поле по тегу-обёртке: поле адресуется действием ввода среди
      * потомков, потому что на экране не одно поле (TDD §8.3).
+     *
+     * `scroll = false` — для полотна, до которого прокручивать нечего (шторка стоит
+     * на экране целиком): `performScrollTo` без родителя с действием прокрутки падает
+     * («Semantic Node has no parent layout with a Scroll SemanticsAction»).
      */
-    protected fun typeInto(fieldTag: String, value: String) {
+    protected fun typeInto(fieldTag: String, value: String, scroll: Boolean = true) {
         val input = inputOf(fieldTag)
-        input.performScrollTo()
+        if (scroll) input.performScrollTo()
         input.performTextInput(value)
         compose.waitForIdle()
     }

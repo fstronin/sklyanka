@@ -1,6 +1,5 @@
 package ru.stohastika.sklyanka.screen
 
-import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import dagger.hilt.android.testing.HiltAndroidTest
@@ -16,6 +15,7 @@ import ru.stohastika.sklyanka.feature.meds.list.TAG_MEDICATION_LIST
 import ru.stohastika.sklyanka.screen.support.DeviceTestClock
 import ru.stohastika.sklyanka.screen.support.DeviceTestSeed
 import ru.stohastika.sklyanka.test.R
+import ru.stohastika.sklyanka.ui.component.TAG_CONFIRM_WORD_FIELD
 import ru.stohastika.sklyanka.feature.meds.R as MedsR
 
 /**
@@ -52,9 +52,15 @@ class MedicationDeletionDeviceTest : DeviceScreenTest() {
 
         click(TAG_DELETE)
         waitForTag(TAG_DELETE_SHEET)
-        // Шторка — отдельное окно: у корня композиции два корня, кадр берётся у диалога.
-        capture("delete-sheet", compose.onNode(isDialog()))
+        // Шторка рисуется самим приложением: у диалога своего окна больше нет, а затемнение —
+        // роль `scrim` поверх экрана (§2.3). Поэтому кадр берётся у окна приложения целиком —
+        // иначе свидетельства затемнения не осталось бы вовсе.
+        capture("delete-sheet")
 
+        // Удаление подтверждается вводом слова (§5.7): до него подтверждающая кнопка
+        // недоступна, и нажатие ничего бы не сделало.
+        val word = targetContext.getString(MedsR.string.medication_delete_word)
+        typeInto(TAG_CONFIRM_WORD_FIELD, word, scroll = false)
         click(TAG_DELETE_CONFIRM)
         waitForTag(TAG_MEDICATION_LIST)
         val deletedText = targetContext.getString(MedsR.string.meds_deleted_snackbar, name)
