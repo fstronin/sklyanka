@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import ru.stohastika.sklyanka.domain.medication.DoseUnit
+import ru.stohastika.sklyanka.domain.medication.StrengthUnit
 import ru.stohastika.sklyanka.domain.medication.doseUnit
 import ru.stohastika.sklyanka.domain.reminder.DeliveryCheckOutcome
 import ru.stohastika.sklyanka.domain.reminder.DeliveryCheckState
@@ -45,14 +46,26 @@ internal fun ReminderRow.doseLine(): String {
 }
 
 /**
- * Единица дозировки словами языка: канонический код «mg» показывается как «мг»/«毫克»,
- * как в списке и форме лекарства. Остальные единицы — ввод человека и не переводятся.
+ * Единица дозировки словами языка: закрытый список Р-45 печатается словом языка, как
+ * в списке и форме лекарства. Незнакомая единица — из файла переноса данных или из более
+ * старой версии — показывается как есть (МГ-6), а не подменяется своей.
  */
 @Composable
-private fun strengthUnitLabel(unit: String): String =
-    if (unit == MILLIGRAM_CODE) stringResource(R.string.strength_unit_milligram) else unit
+private fun strengthUnitLabel(code: String): String =
+    StrengthUnit.ofCode(code)?.label() ?: code
 
-private const val MILLIGRAM_CODE = "mg"
+/** Слово единицы дозировки из закрытого списка (Р-45). */
+@Composable
+private fun StrengthUnit.label(): String = stringResource(
+    when (this) {
+        StrengthUnit.MILLIGRAM -> R.string.strength_unit_milligram
+        StrengthUnit.MICROGRAM -> R.string.strength_unit_microgram
+        StrengthUnit.GRAM -> R.string.strength_unit_gram
+        StrengthUnit.MILLILITRE -> R.string.strength_unit_millilitre
+        StrengthUnit.INTERNATIONAL_UNIT -> R.string.strength_unit_international_unit
+        StrengthUnit.PERCENT -> R.string.strength_unit_percent
+    },
+)
 
 /**
  * «2 таблетки» — доза с единицей по форме выпуска.
@@ -66,7 +79,9 @@ private fun doseLabel(amount: BigDecimal, unit: DoseUnit): String = pluralString
         DoseUnit.TABLET -> R.plurals.reminder_dose_tablets
         DoseUnit.CAPSULE -> R.plurals.reminder_dose_capsules
         DoseUnit.MILLILITRE -> R.plurals.reminder_dose_millilitres
-        DoseUnit.DOSE -> R.plurals.reminder_dose_doses
+        DoseUnit.DROP -> R.plurals.reminder_dose_drops
+        DoseUnit.SPRAY -> R.plurals.reminder_dose_sprays
+        DoseUnit.INJECTION -> R.plurals.reminder_dose_injections
     },
     amount.toInt(),
     amount.stripTrailingZeros().toPlainString(),

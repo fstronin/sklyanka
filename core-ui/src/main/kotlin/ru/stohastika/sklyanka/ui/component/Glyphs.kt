@@ -74,6 +74,19 @@ private const val CHEVRON_LEFT_TOP_X = 1f - CHEVRON_TOP_X
 private const val CHEVRON_LEFT_MID_X = 1f - CHEVRON_MID_X
 
 /**
+ * Шеврон вниз: пропорции макета `m6 9 6 6 6-6` в поле 24×24.
+ *
+ * Отдельные доли, а не поворот правого шеврона: поворот как графический приём система
+ * не применяет (§8.1), и на нечётных плотностях штрих от него размывается.
+ */
+private const val DOWN_CHEVRON_LEFT_X = 0.25f
+private const val DOWN_CHEVRON_MID_X = 0.5f
+private const val DOWN_CHEVRON_RIGHT_X = 0.75f
+private const val DOWN_CHEVRON_TOP_Y = 0.375f
+private const val DOWN_CHEVRON_BOTTOM_Y = 0.625f
+private const val DOWN_CHEVRON_STROKE_RATIO = 0.09f
+
+/**
  * Направление шеврона: правое — признак перехода, левое — возврат (§7).
  *
  * Направление возврата закреплено эталоном `core-ui/screenshots/component/screen-header-nested.png`:
@@ -248,6 +261,32 @@ fun ChevronGlyph(
             },
             color = color,
             style = Stroke(width = side * STROKE_RATIO, cap = StrokeCap.Round, join = StrokeJoin.Round),
+        )
+    }
+}
+
+/**
+ * Шеврон вниз: он обещает продолжение, и продолжение есть — раскрытие списка
+ * (единица дозировки в поле, список профилей в аватаре).
+ *
+ * Смысл несёт подпись рядом, поэтому глиф декоративен и чтению не объявляется.
+ */
+@Composable
+fun ChevronDownGlyph(color: Color, modifier: Modifier = Modifier, size: Dp = SklyankaSizes.Chevron) {
+    Canvas(modifier.size(size)) {
+        val side = this.size.minDimension
+        drawPath(
+            path = Path().apply {
+                moveTo(side * DOWN_CHEVRON_LEFT_X, side * DOWN_CHEVRON_TOP_Y)
+                lineTo(side * DOWN_CHEVRON_MID_X, side * DOWN_CHEVRON_BOTTOM_Y)
+                lineTo(side * DOWN_CHEVRON_RIGHT_X, side * DOWN_CHEVRON_TOP_Y)
+            },
+            color = color,
+            style = Stroke(
+                width = side * DOWN_CHEVRON_STROKE_RATIO,
+                cap = StrokeCap.Round,
+                join = StrokeJoin.Round,
+            ),
         )
     }
 }

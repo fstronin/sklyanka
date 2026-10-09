@@ -288,7 +288,7 @@ class MedCardScreenSteps(private val world: AcceptanceWorld) {
         }
     }
 
-    @Тогда("^показано значение «(\\d+) таблет\\S+ из (\\d+)»$")
+    @Тогда("^показано значение «(\\d+) \\S+ из (\\d+)»$")
     fun theStockValueWithThePackageIsShown(units: Int, packageSize: Int) {
         val expected = context.getString(
             R.string.card_stock_of_package,
@@ -398,12 +398,14 @@ class MedCardScreenSteps(private val world: AcceptanceWorld) {
         }
     }
 
-    /** Числительное остатка по единице: та же четвёрка, что у `MedsText.stockLeftLabel`. */
+    /** Числительное остатка по единице: та же шестёрка, что у `MedsText.stockLeftLabel` (Р-45). */
     private fun stockPlural(unit: DoseUnit): Int = when (unit) {
         DoseUnit.TABLET -> R.plurals.stock_left_tablets
         DoseUnit.CAPSULE -> R.plurals.stock_left_capsules
         DoseUnit.MILLILITRE -> R.plurals.stock_left_millilitres
-        DoseUnit.DOSE -> R.plurals.stock_left_doses
+        DoseUnit.DROP -> R.plurals.stock_left_drops
+        DoseUnit.SPRAY -> R.plurals.stock_left_sprays
+        DoseUnit.INJECTION -> R.plurals.stock_left_injections
     }
 
     // --- Неделя приёмов ----------------------------------------------------------------

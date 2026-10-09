@@ -15,6 +15,7 @@ import ru.stohastika.sklyanka.acceptance.steps.medicationNamed
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
 import ru.stohastika.sklyanka.domain.medication.MedicationDraft
 import ru.stohastika.sklyanka.domain.medication.SaveResult
+import ru.stohastika.sklyanka.domain.medication.StrengthUnit
 import ru.stohastika.sklyanka.domain.model.FoodRelation
 import ru.stohastika.sklyanka.domain.model.Medication
 import ru.stohastika.sklyanka.domain.model.MedicationForm
@@ -181,7 +182,7 @@ class MedicationSaveSteps(private val world: AcceptanceWorld) {
             form = releaseForm(form),
             doseAmount = BigDecimal(dose),
             strength = BigDecimal(strength),
-            strengthUnit = MILLIGRAM_CODE,
+            strengthUnit = StrengthUnit.MILLIGRAM,
             scheduleMode = ScheduleMode.PRN,
             maxPerDay = limit,
             times = emptyList(),
@@ -326,6 +327,5 @@ class MedicationSaveSteps(private val world: AcceptanceWorld) {
     private companion object {
         val DEFAULT_TIME: LocalTime = LocalTime.of(8, 0)
         val SECOND_TIME: LocalTime = LocalTime.of(20, 0)
-        const val MILLIGRAM_CODE = "mg"
     }
 }

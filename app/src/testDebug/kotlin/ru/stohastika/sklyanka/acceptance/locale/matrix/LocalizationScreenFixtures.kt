@@ -28,6 +28,7 @@ import ru.stohastika.sklyanka.domain.medication.CourseProgress
 import ru.stohastika.sklyanka.domain.medication.DayCell
 import ru.stohastika.sklyanka.domain.medication.DoseUnit
 import ru.stohastika.sklyanka.domain.medication.MedicationDraft
+import ru.stohastika.sklyanka.domain.medication.StrengthUnit
 import ru.stohastika.sklyanka.domain.medication.MedicationSubtitle
 import ru.stohastika.sklyanka.domain.medication.TrailingLine
 import ru.stohastika.sklyanka.domain.medication.WeekAdherenceStrip
@@ -211,7 +212,7 @@ internal object LocalizationScreenFixtures {
             shape = TabletShape.ROUND_SCORED,
             doseAmount = BigDecimal("2"),
             strength = BigDecimal("48"),
-            strengthUnit = "mg",
+            strengthUnit = StrengthUnit.MILLIGRAM,
             foodRelation = FoodRelation.BEFORE_MEAL,
             scheduleMode = ScheduleMode.SCHEDULED,
             times = listOf(LocalTime.of(8, 0), LocalTime.of(20, 0)),

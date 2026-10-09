@@ -32,7 +32,7 @@ internal object Drafts {
         shape = null,
         doseAmount = BigDecimal("2"),
         strength = BigDecimal("48"),
-        strengthUnit = "mg",
+        strengthUnit = StrengthUnit.MILLIGRAM,
         scheduleMode = ScheduleMode.SCHEDULED,
         times = listOf(MORNING, EVENING),
         startDate = TODAY,

@@ -178,6 +178,11 @@
     <string name="report_file_pattern" translatable="false">yyyy-MM</string>
     <string name="report_media_type" translatable="false">application/pdf</string>
 
-    <!-- Единица дозировки в документе отчёта -->
+    <!-- Единицы дозировки в документе отчёта: закрытый список (Р-45). Незнакомый код печатается как есть (МГ-6). -->
     <string name="strength_unit_milligram">мг</string>
+    <string name="strength_unit_microgram">мкг</string>
+    <string name="strength_unit_gram">г</string>
+    <string name="strength_unit_millilitre">мл</string>
+    <string name="strength_unit_international_unit">МЕ</string>
+    <string name="strength_unit_percent">%</string>
 </resources>

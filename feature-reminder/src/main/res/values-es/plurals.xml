@@ -16,9 +16,19 @@
         <item quantity="other">%1$s ml</item>
     </plurals>
 
-    <plurals name="reminder_dose_doses">
-        <item quantity="one">%1$s dosis</item>
-        <item quantity="other">%1$s dosis</item>
+    <plurals name="reminder_dose_drops">
+        <item quantity="one">%1$s gota</item>
+        <item quantity="other">%1$s gotas</item>
+    </plurals>
+
+    <plurals name="reminder_dose_sprays">
+        <item quantity="one">%1$s pulverización</item>
+        <item quantity="other">%1$s pulverizaciones</item>
+    </plurals>
+
+    <plurals name="reminder_dose_injections">
+        <item quantity="one">%1$s inyección</item>
+        <item quantity="other">%1$s inyecciones</item>
     </plurals>
 
 

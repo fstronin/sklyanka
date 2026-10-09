@@ -23,9 +23,17 @@
         <item quantity="one">%1$s ml</item>
         <item quantity="other">%1$s ml</item>
     </plurals>
-    <plurals name="report_document_dose_doses">
-        <item quantity="one">%1$s dosis</item>
-        <item quantity="other">%1$s dosis</item>
+    <plurals name="report_document_dose_drops">
+        <item quantity="one">%1$s gota</item>
+        <item quantity="other">%1$s gotas</item>
+    </plurals>
+    <plurals name="report_document_dose_sprays">
+        <item quantity="one">%1$s pulverización</item>
+        <item quantity="other">%1$s pulverizaciones</item>
+    </plurals>
+    <plurals name="report_document_dose_injections">
+        <item quantity="one">%1$s inyección</item>
+        <item quantity="other">%1$s inyecciones</item>
     </plurals>
 
     <plurals name="cd_history_days_without_misses">

@@ -27,11 +27,23 @@
         <item quantity="many">%1$s мл</item>
         <item quantity="other">%1$s мл</item>
     </plurals>
-    <plurals name="reminder_dose_doses">
-        <item quantity="one">%1$s доза</item>
-        <item quantity="few">%1$s дозы</item>
-        <item quantity="many">%1$s доз</item>
-        <item quantity="other">%1$s дозы</item>
+    <plurals name="reminder_dose_drops">
+        <item quantity="one">%1$s капля</item>
+        <item quantity="few">%1$s капли</item>
+        <item quantity="many">%1$s капель</item>
+        <item quantity="other">%1$s капли</item>
+    </plurals>
+    <plurals name="reminder_dose_sprays">
+        <item quantity="one">%1$s впрыск</item>
+        <item quantity="few">%1$s впрыска</item>
+        <item quantity="many">%1$s впрысков</item>
+        <item quantity="other">%1$s впрыска</item>
+    </plurals>
+    <plurals name="reminder_dose_injections">
+        <item quantity="one">%1$s инъекция</item>
+        <item quantity="few">%1$s инъекции</item>
+        <item quantity="many">%1$s инъекций</item>
+        <item quantity="other">%1$s инъекции</item>
     </plurals>
 
 

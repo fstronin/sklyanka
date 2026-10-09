@@ -30,9 +30,10 @@ class ValidateMedicationDraft {
     private fun doseViolations(draft: MedicationDraft): List<DraftViolation> = buildList {
         val dose = draft.doseAmount
         if (dose == null || dose <= BigDecimal.ZERO) add(DraftViolation.DoseNotPositive)
-        val unit = draft.strengthUnit?.trim()?.ifBlank { null }
-        if (draft.strength != null && unit == null) add(DraftViolation.StrengthWithoutUnit)
-        if (draft.strength == null && unit != null) add(DraftViolation.UnitWithoutStrength)
+        // Единица дозировки — значение закрытого списка (Р-45), поэтому «пустая строка»
+        // как отдельный случай ушла: единица либо выбрана, либо её нет.
+        if (draft.strength != null && draft.strengthUnit == null) add(DraftViolation.StrengthWithoutUnit)
+        if (draft.strength == null && draft.strengthUnit != null) add(DraftViolation.UnitWithoutStrength)
     }
 
     /**

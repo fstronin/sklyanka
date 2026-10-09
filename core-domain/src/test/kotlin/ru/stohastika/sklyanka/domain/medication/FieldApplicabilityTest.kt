@@ -82,17 +82,37 @@ class FieldApplicabilityTest {
     }
 
     @Test
-    fun `the four units of the specification follow the release form`() {
+    fun `every unit of the decision follows its release form`() {
         assertEquals(DoseUnit.TABLET, MedicationForm.TABLET.doseUnit())
         assertEquals(DoseUnit.CAPSULE, MedicationForm.CAPSULE.doseUnit())
         assertEquals(DoseUnit.MILLILITRE, MedicationForm.SYRUP.doseUnit())
-        assertEquals(DoseUnit.DOSE, MedicationForm.SPRAY.doseUnit())
+        assertEquals(DoseUnit.DROP, MedicationForm.DROPS.doseUnit())
+        assertEquals(DoseUnit.SPRAY, MedicationForm.SPRAY.doseUnit())
+        assertEquals(DoseUnit.INJECTION, MedicationForm.INJECTION.doseUnit())
+    }
+
+    @Test
+    fun `every release form yields a dose unit of its own`() {
+        val units = MedicationForm.entries.map { it.doseUnit() }
+        assertEquals(MedicationForm.entries.size, units.toSet().size)
     }
 
     @Test
     fun `a dose unit survives a round trip through its code`() {
         DoseUnit.entries.forEach { unit -> assertEquals(unit, DoseUnit.ofCode(unit.code)) }
         assertNull(DoseUnit.ofCode("no-such-unit"))
+    }
+
+    @Test
+    fun `the retired dose value is not a unit any more`() {
+        assertNull(DoseUnit.ofCode("dose"))
+        assertTrue(DoseUnit.entries.all { it.code != "dose" })
+    }
+
+    @Test
+    fun `a strength unit survives a round trip through its code`() {
+        StrengthUnit.entries.forEach { unit -> assertEquals(unit, StrengthUnit.ofCode(unit.code)) }
+        assertNull(StrengthUnit.ofCode("мгр"))
     }
 
     // --- Сброс неприменимого --------------------------------------------------------------

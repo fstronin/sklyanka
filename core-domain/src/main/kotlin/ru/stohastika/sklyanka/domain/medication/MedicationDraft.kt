@@ -38,7 +38,11 @@ data class MedicationDraft(
     val shape: TabletShape? = null,
     val doseAmount: BigDecimal? = null,
     val strength: BigDecimal? = null,
-    val strengthUnit: String? = null,
+    /**
+     * Единица дозировки — из закрытого списка (Р-45); человек выбирает её из списка,
+     * свободного ввода нет. В записи она хранится кодом ([StrengthUnit.code]).
+     */
+    val strengthUnit: StrengthUnit? = null,
     val foodRelation: FoodRelation = FoodRelation.ANY,
     val scheduleMode: ScheduleMode = ScheduleMode.SCHEDULED,
     /** Ограничение «не чаще N раз в сутки»; применимо только к «по потребности» (ПР-7). */
@@ -56,7 +60,7 @@ data class MedicationDraft(
     val stockThresholdDays: Int? = null,
 ) {
 
-    /** Единица дозы и остатка — производная формы выпуска, человеком не правится (ОВ-16). */
+    /** Единица дозы и остатка — производная формы выпуска, человеком не правится (Р-45). */
     val doseUnit: DoseUnit get() = form.doseUnit()
 
     /** Число приёмов в сутки: производная длины списка времён, а не хранимое значение. */
@@ -78,7 +82,7 @@ data class MedicationDraft(
         doseAmount = requireNotNull(doseAmount) { "Dose amount must be validated before saving" },
         doseUnit = doseUnit.code,
         strength = strength,
-        strengthUnit = strengthUnit?.trim()?.ifBlank { null },
+        strengthUnit = strengthUnit?.code,
         foodRelation = foodRelation,
         scheduleMode = scheduleMode,
         maxPerDay = maxPerDay,
@@ -106,6 +110,10 @@ data class MedicationDraft(
          * Архивация и причина архивации не переносятся: форма их не показывает и не меняет,
          * а перенос значения в черновик означал бы, что сохранение способно вернуть курс
          * из архива незаметно для человека.
+         *
+         * Единица дозировки разбирается из кода: запись, пришедшая из файла переноса с чужой
+         * единицей, даёт `null`, и человек выбирает единицу из списка сам. Подставить вместо
+         * чужой единицы «мг» значило бы переписать медицинские данные молча.
          */
         fun of(medication: Medication): MedicationDraft = MedicationDraft(
             id = medication.id,
@@ -115,7 +123,7 @@ data class MedicationDraft(
             shape = medication.shape,
             doseAmount = medication.doseAmount,
             strength = medication.strength,
-            strengthUnit = medication.strengthUnit,
+            strengthUnit = medication.strengthUnit?.let(StrengthUnit::ofCode),
             foodRelation = medication.foodRelation,
             scheduleMode = medication.scheduleMode,
             maxPerDay = medication.maxPerDay,

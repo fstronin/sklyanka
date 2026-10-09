@@ -1,6 +1,5 @@
 package ru.stohastika.sklyanka.ui.profile
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -14,15 +13,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.StrokeJoin
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.Dp
 import ru.stohastika.sklyanka.ui.R
+import ru.stohastika.sklyanka.ui.component.ChevronDownGlyph
 import ru.stohastika.sklyanka.ui.component.semanticsLabel
 import ru.stohastika.sklyanka.ui.locale.interfaceLocale
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
@@ -83,7 +77,7 @@ fun ProfileAvatar(onOpenProfiles: () -> Unit, modifier: Modifier = Modifier) {
                 color = if (foreign) colors.surface else colors.taken,
             )
         }
-        ChevronDownGlyph(color = colors.textTertiary)
+        ChevronDownGlyph(color = colors.textTertiary, size = SklyankaSizes.ProfileAvatarChevron)
     }
 }
 
@@ -101,33 +95,5 @@ private fun ProfileChromeState.initial(): String {
     return name.trim().take(1).uppercase(interfaceLocale()).ifEmpty { fallback }
 }
 
-/** Шеврон вниз: он обещает продолжение, и продолжение есть — экран списка профилей. */
-@Composable
-private fun ChevronDownGlyph(color: Color, size: Dp = SklyankaSizes.ProfileAvatarChevron) {
-    Canvas(Modifier.size(size)) {
-        val side = this.size.minDimension
-        drawPath(
-            path = Path().apply {
-                moveTo(side * CHEVRON_LEFT_X, side * CHEVRON_TOP_Y)
-                lineTo(side * CHEVRON_MID_X, side * CHEVRON_BOTTOM_Y)
-                lineTo(side * CHEVRON_RIGHT_X, side * CHEVRON_TOP_Y)
-            },
-            color = color,
-            style = Stroke(
-                width = side * CHEVRON_STROKE_RATIO,
-                cap = StrokeCap.Round,
-                join = StrokeJoin.Round,
-            ),
-        )
-    }
-}
-
-/** Пропорции шеврона из макета: `m6 9 6 6 6-6` в поле 24×24. */
-private const val CHEVRON_LEFT_X = 0.25f
-private const val CHEVRON_MID_X = 0.5f
-private const val CHEVRON_RIGHT_X = 0.75f
-private const val CHEVRON_TOP_Y = 0.375f
-private const val CHEVRON_BOTTOM_Y = 0.625f
-private const val CHEVRON_STROKE_RATIO = 0.09f
-
+/** Шеврон вниз — глиф дизайн-системы: он обещает продолжение, и продолжение есть. */
 const val TAG_PROFILE_AVATAR = "profile_avatar"

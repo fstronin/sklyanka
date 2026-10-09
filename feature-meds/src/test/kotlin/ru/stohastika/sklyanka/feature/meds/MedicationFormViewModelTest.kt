@@ -23,6 +23,7 @@ import ru.stohastika.sklyanka.domain.medication.DoseUnit
 import ru.stohastika.sklyanka.domain.medication.DraftField
 import ru.stohastika.sklyanka.domain.medication.DraftViolation
 import ru.stohastika.sklyanka.domain.medication.SaveMedicationUseCase
+import ru.stohastika.sklyanka.domain.medication.StrengthUnit
 import ru.stohastika.sklyanka.domain.medication.ValidateMedicationDraft
 import ru.stohastika.sklyanka.domain.model.FoodRelation
 import ru.stohastika.sklyanka.domain.model.MedicationForm
@@ -308,15 +309,44 @@ class MedicationFormViewModelTest {
     }
 
     @Test
-    fun `the strength unit follows the value being present at all`() = runTest(dispatcher) {
+    fun `the strength unit appears with the value and the default is the milligram`() = runTest(dispatcher) {
         open()
 
         model.onIntent(MedFormIntent.StrengthChanged("48"))
-        assertEquals("mg", model.state.value!!.draft.strengthUnit)
+        assertEquals(StrengthUnit.MILLIGRAM, model.state.value!!.draft.strengthUnit)
 
         model.onIntent(MedFormIntent.StrengthChanged(""))
         assertNull(model.state.value!!.draft.strengthUnit)
         assertNull(model.state.value!!.draft.strength)
+    }
+
+    @Test
+    fun `the chosen strength unit survives editing the number`() = runTest(dispatcher) {
+        open()
+
+        model.onIntent(MedFormIntent.StrengthChanged("48"))
+        model.onIntent(MedFormIntent.StrengthUnitChanged(StrengthUnit.MICROGRAM))
+        model.onIntent(MedFormIntent.StrengthChanged("250"))
+
+        assertEquals(StrengthUnit.MICROGRAM, model.state.value!!.draft.strengthUnit)
+    }
+
+    @Test
+    fun `a unit without a value is a violation of the pair rule`() = runTest(dispatcher) {
+        open()
+        model.onIntent(MedFormIntent.NameChanged("med-a"))
+        model.onIntent(MedFormIntent.DoseAmountChanged("1"))
+        model.onIntent(MedFormIntent.StrengthUnitChanged(StrengthUnit.INTERNATIONAL_UNIT))
+
+        model.onIntent(MedFormIntent.Save)
+        advanceUntilIdle()
+
+        // Форма «по расписанию» без времён нарушает ещё и ИНВ-6: проверяется само правило
+        // пары — единица без значения (ИНВ-5), а не полный список нарушений черновика.
+        assertTrue(
+            "the pair rule must fire: ${model.state.value!!.violations}",
+            DraftViolation.UnitWithoutStrength in model.state.value!!.violations,
+        )
     }
 
     @Test

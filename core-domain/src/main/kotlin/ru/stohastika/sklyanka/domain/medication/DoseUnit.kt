@@ -3,11 +3,12 @@ package ru.stohastika.sklyanka.domain.medication
 import ru.stohastika.sklyanka.domain.model.MedicationForm
 
 /**
- * Единица дозы — производная от формы выпуска (`docs/v2/10-behavior.md`, «Новое лекарство»).
+ * Единица дозы — производная от формы выпуска (`docs/v2/10-behavior.md` §1.1, решение Р-45).
  *
- * Человеку единица не даётся на редактирование: вопрос «закрытый список или свободный ввод»
- * не решён (ОВ-16), а производная единица оставляет данные, которые потом можно
- * сгруппировать, тогда как свободный ввод — нет.
+ * Человеку единица не даётся на редактирование: её называет форма выпуска, и другого ответа
+ * на вопрос «чем меряют дозу» у приложения нет. Значение «доза» (`dose`) убрано: оно было
+ * не единицей измерения, а заглушкой — под ним сходились впрыск из флакона и укол ампулой,
+ * а капли числились миллилитрами наравне с сиропом.
  *
  * Латинские коды, а не русские слова: в домене русского текста нет вовсе (НФТ-42),
  * склонение и перевод — дело ресурсов экрана. Хранится в `Medication.doseUnit` именно
@@ -18,7 +19,9 @@ enum class DoseUnit(val code: String) {
     TABLET("tablet"),
     CAPSULE("capsule"),
     MILLILITRE("millilitre"),
-    DOSE("dose"),
+    DROP("drop"),
+    SPRAY("spray"),
+    INJECTION("injection"),
     ;
 
     companion object {
@@ -29,13 +32,15 @@ enum class DoseUnit(val code: String) {
 /**
  * Единица дозы по форме выпуска.
  *
- * Спецификация перечисляет ровно четыре единицы — «таблеток», «капсул», «мл», «доз», —
- * поэтому «капли» отнесены к миллилитрам, а «инъекция» к дозам: пятая и шестая единицы
- * появились бы здесь раньше, чем в спецификации, и разошлись бы с ней молча.
+ * Таблица «форма → единица» — единственное место, где эта связь записана (§1.1). Сироп
+ * меряют миллилитрами, капли — каплями; раньше они сходились в одну единицу, и остаток
+ * «60 мл» у капель называл не то, что стоит в упаковке.
  */
 fun MedicationForm.doseUnit(): DoseUnit = when (this) {
     MedicationForm.TABLET -> DoseUnit.TABLET
     MedicationForm.CAPSULE -> DoseUnit.CAPSULE
-    MedicationForm.SYRUP, MedicationForm.DROPS -> DoseUnit.MILLILITRE
-    MedicationForm.SPRAY, MedicationForm.INJECTION -> DoseUnit.DOSE
+    MedicationForm.SYRUP -> DoseUnit.MILLILITRE
+    MedicationForm.DROPS -> DoseUnit.DROP
+    MedicationForm.SPRAY -> DoseUnit.SPRAY
+    MedicationForm.INJECTION -> DoseUnit.INJECTION
 }

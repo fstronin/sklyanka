@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import ru.stohastika.sklyanka.acceptance.RussianDates
+import ru.stohastika.sklyanka.acceptance.MedicationUnits
 import ru.stohastika.sklyanka.acceptance.RussianNames
 import ru.stohastika.sklyanka.acceptance.steps.dateOf
 import ru.stohastika.sklyanka.acceptance.steps.medicationNamed
@@ -266,8 +267,8 @@ class MedsListContextSteps(private val world: AcceptanceWorld) {
         else -> MedicationForm.INJECTION
     }
 
-    /** «мг» form writes as the code `mg`; «мкг» и «МЕ» показываются как есть (ОВ-16). */
-    private fun strengthCode(unit: String): String = if (unit == MILLIGRAM) MILLIGRAM_CODE else unit
+    /** Слово единицы дозировки → код домена: закрытый список Р-45 (SKL-126). */
+    private fun strengthCode(unit: String): String = MedicationUnits.strengthCode(unit)
 
     private companion object {
         const val MEDICATION_COLUMN = "лекарство"
@@ -293,8 +294,6 @@ class MedsListContextSteps(private val world: AcceptanceWorld) {
         const val SPACE = " "
 
         /** Единицы препарата из таблицы сценария; всё остальное — количество за приём. */
-        val STRENGTH_UNITS = setOf("мкг", "МЕ", "мг")
-        const val MILLIGRAM = "мг"
-        const val MILLIGRAM_CODE = "mg"
+        val STRENGTH_UNITS = MedicationUnits.STRENGTH_WORDS
     }
 }

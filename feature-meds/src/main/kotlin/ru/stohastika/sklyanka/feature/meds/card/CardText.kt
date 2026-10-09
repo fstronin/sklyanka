@@ -73,7 +73,9 @@ internal fun doseText(amount: BigDecimal, unit: DoseUnit): String {
             DoseUnit.TABLET -> R.plurals.card_dose_tablets
             DoseUnit.CAPSULE -> R.plurals.card_dose_capsules
             DoseUnit.MILLILITRE -> R.plurals.card_dose_millilitres
-            DoseUnit.DOSE -> R.plurals.card_dose_doses
+            DoseUnit.DROP -> R.plurals.card_dose_drops
+            DoseUnit.SPRAY -> R.plurals.card_dose_sprays
+            DoseUnit.INJECTION -> R.plurals.card_dose_injections
         },
         whole,
         amount.plain(),

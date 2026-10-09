@@ -2,6 +2,7 @@ package ru.stohastika.sklyanka.ui.component
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -25,6 +26,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaColors
@@ -67,6 +72,14 @@ fun SklyankaTextField(
     modifier: Modifier = Modifier,
     hint: String = "",
     unitLabel: String? = null,
+    /**
+     * Единица как цель нажатия: у поля дозировки единица выбирается из закрытого списка
+     * (Р-45), и открывает список именно она. Без обработчика единица остаётся подписью —
+     * так ведёт себя поле дозы, где единицу задаёт форма выпуска.
+     */
+    onUnitClick: (() -> Unit)? = null,
+    /** Доступное имя цели единицы: у подписи «мг» из чтения с экрана смысла не собрать. */
+    unitContentDescription: String? = null,
     errorText: String? = null,
     numeric: Boolean = false,
     multiline: Boolean = false,
@@ -112,14 +125,59 @@ fun SklyankaTextField(
                 }
             }
             // Единица измерения — подпись, а не часть значения: она не редактируется и
-            // не уезжает в домен вместе с числом.
+            // не уезжает в домен вместе с числом. Там, где единица выбирается из списка,
+            // она же служит целью нажатия (§5.3).
             if (unitLabel != null) {
-                Text(text = unitLabel, style = SklyankaType.Body, color = colors.textMuted)
+                if (onUnitClick == null) {
+                    Text(
+                        text = unitLabel,
+                        style = SklyankaType.Body,
+                        color = colors.textMuted,
+                        modifier = Modifier.testTag(TAG_TEXT_FIELD_UNIT),
+                    )
+                } else {
+                    UnitPickerLabel(
+                        label = unitLabel,
+                        contentDescription = unitContentDescription,
+                        onClick = onUnitClick,
+                    )
+                }
             }
         }
         if (errorText != null) {
             FieldError(errorText)
         }
+    }
+}
+
+/**
+ * Единица измерения как цель нажатия (§5.3): подпись и шеврон вниз в цели на всю высоту поля.
+ *
+ * Высота поля — 50 dp, поэтому цель выходит не меньше 44 dp без отдельного габарита;
+ * цель на слово в 13 sp, наоборот, была бы меньше 44 dp и нарушила бы §5.8.
+ */
+@Composable
+private fun UnitPickerLabel(label: String, contentDescription: String?, onClick: () -> Unit) {
+    val colors = SklyankaTheme.colors
+    Row(
+        modifier = Modifier
+            .fillMaxHeight()
+            .clickable(onClick = onClick)
+            .semantics {
+                role = Role.Button
+                contentDescription?.let { this.contentDescription = it }
+            }
+            .testTag(TAG_TEXT_FIELD_UNIT_PICKER),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Micro),
+    ) {
+        Text(
+            text = label,
+            style = SklyankaType.Body,
+            color = colors.textMuted,
+            modifier = Modifier.testTag(TAG_TEXT_FIELD_UNIT),
+        )
+        ChevronDownGlyph(color = colors.textMuted, size = SklyankaSizes.FieldUnitChevron)
     }
 }
 
@@ -301,6 +359,12 @@ fun SklyankaNumberField(
 const val TAG_TEXT_FIELD = "text_field"
 const val TAG_TEXT_FIELD_INPUT = "text_field_input"
 const val TAG_TEXT_FIELD_ERROR = "text_field_error"
+
+/** Цель нажатия единицы измерения: у поля дозировки она открывает список единиц (Р-45). */
+const val TAG_TEXT_FIELD_UNIT_PICKER = "text_field_unit_picker"
+
+/** Подпись единицы измерения: у любого поля она называет единицу и читается приёмкой. */
+const val TAG_TEXT_FIELD_UNIT = "text_field_unit"
 const val TAG_NUMBER_FIELD = "number_field"
 
 /**

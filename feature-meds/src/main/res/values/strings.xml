@@ -143,22 +143,35 @@
 
     <!-- ===== Единицы ===== -->
 
-    <!-- Суффикс поля количества дозы: «2 шт», «5 мл», «2 дозы» — по форме выпуска. -->
-    <string name="dose_suffix_piece">шт</string>
+    <!--
+      Единицы дозы производны от формы выпуска: «2 таблетки», «5 мл», «2 капли».
+      Единица дозировки — закрытый список из шести значений (Р-45).
+    -->
+    <string name="dose_suffix_tablet">таблетка</string>
+    <string name="dose_suffix_capsule">капсула</string>
     <string name="dose_suffix_millilitre">мл</string>
-    <string name="dose_suffix_dose">доз</string>
+    <string name="dose_suffix_drop">капля</string>
+    <string name="dose_suffix_spray">впрыск</string>
+    <string name="dose_suffix_injection">инъекция</string>
 
     <!--
-      Единица дозировки препарата. В макете она зафиксирована как «мг» и человеком
-      не редактируется: закрытый это список или свободный ввод — открытый вопрос ОВ-16.
+      Единица дозировки препарата: закрытый список из шести значений (Р-45).
     -->
+    <string name="form_label_strength_unit">Единица дозировки</string>
     <string name="strength_unit_milligram">мг</string>
+    <string name="strength_unit_microgram">мкг</string>
+    <string name="strength_unit_gram">г</string>
+    <string name="strength_unit_millilitre">мл</string>
+    <string name="strength_unit_international_unit">МЕ</string>
+    <string name="strength_unit_percent">%</string>
 
     <!-- Единица остатка в упаковке: следует за формой выпуска (критерий 13). -->
     <string name="stock_unit_tablets">таблеток</string>
     <string name="stock_unit_capsules">капсул</string>
     <string name="stock_unit_millilitres">мл</string>
-    <string name="stock_unit_doses">доз</string>
+    <string name="stock_unit_drops">капель</string>
+    <string name="stock_unit_sprays">впрысков</string>
+    <string name="stock_unit_injections">инъекций</string>
 
     <!--
       ===== Ограничение приёмов в сутки (дефект постановки Д-1) =====

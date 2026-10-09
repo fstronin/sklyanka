@@ -30,6 +30,7 @@ import ru.stohastika.sklyanka.acceptance.steps.medicationNamed
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
 import ru.stohastika.sklyanka.domain.medication.MedicationDraft
 import ru.stohastika.sklyanka.domain.medication.SaveResult
+import ru.stohastika.sklyanka.acceptance.MedicationUnits
 import ru.stohastika.sklyanka.domain.medication.normalized
 import ru.stohastika.sklyanka.domain.model.FoodRelation
 import ru.stohastika.sklyanka.domain.model.IntakeStatus
@@ -103,7 +104,7 @@ class MedsSaveCompositionSteps(private val world: AcceptanceWorld) {
             shape = tabletShape(shape),
             doseAmount = BigDecimal(dose),
             strength = BigDecimal(strength),
-            strengthUnit = if (strengthUnit == MILLIGRAM) MILLIGRAM_CODE else strengthUnit,
+            strengthUnit = MedicationUnits.strengthUnit(strengthUnit),
             foodRelation = foodRelation(food),
             scheduleMode = scheduleMode(mode),
             times = listOf(LocalTime.parse(first), LocalTime.parse(second)),
@@ -269,7 +270,5 @@ class MedsSaveCompositionSteps(private val world: AcceptanceWorld) {
 
     private companion object {
         const val AS_NEEDED = "По потребности"
-        const val MILLIGRAM = "мг"
-        const val MILLIGRAM_CODE = "mg"
     }
 }

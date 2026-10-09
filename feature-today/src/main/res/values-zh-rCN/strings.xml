@@ -30,6 +30,14 @@
 
     <string name="today_strength">%1$s %2$s</string>
 
+    <!-- Единица дозировки — закрытый список из шести значений (Р-45), незнакомый код печатается как есть (МГ-6). -->
+    <string name="strength_unit_milligram">毫克</string>
+    <string name="strength_unit_microgram">微克</string>
+    <string name="strength_unit_gram">克</string>
+    <string name="strength_unit_millilitre">毫升</string>
+    <string name="strength_unit_international_unit">国际单位</string>
+    <string name="strength_unit_percent">%</string>
+
     <string name="today_food_before">饭前</string>
     <string name="today_food_with">随餐</string>
     <string name="today_food_after">饭后</string>

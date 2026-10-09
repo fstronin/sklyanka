@@ -23,9 +23,17 @@
         <item quantity="one">%1$d мл қалды</item>
         <item quantity="other">%1$d мл қалды</item>
     </plurals>
-    <plurals name="stock_left_doses">
-        <item quantity="one">%1$d доза қалды</item>
-        <item quantity="other">%1$d доза қалды</item>
+    <plurals name="stock_left_drops">
+        <item quantity="one">%1$d тамшы қалды</item>
+        <item quantity="other">%1$d тамшы қалды</item>
+    </plurals>
+    <plurals name="stock_left_sprays">
+        <item quantity="one">%1$d бүрікпе қалды</item>
+        <item quantity="other">%1$d бүрікпе қалды</item>
+    </plurals>
+    <plurals name="stock_left_injections">
+        <item quantity="one">%1$d инъекция қалды</item>
+        <item quantity="other">%1$d инъекция қалды</item>
     </plurals>
 
     <plurals name="card_intakes_per_day">
@@ -45,9 +53,42 @@
         <item quantity="one">%1$s мл</item>
         <item quantity="other">%1$s мл</item>
     </plurals>
-    <plurals name="card_dose_doses">
-        <item quantity="one">%1$s доза</item>
-        <item quantity="other">%1$s доза</item>
+    <plurals name="card_dose_drops">
+        <item quantity="one">%1$s тамшы</item>
+        <item quantity="other">%1$s тамшы</item>
+    </plurals>
+    <plurals name="card_dose_sprays">
+        <item quantity="one">%1$s бүрікпе</item>
+        <item quantity="other">%1$s бүрікпе</item>
+    </plurals>
+    <plurals name="card_dose_injections">
+        <item quantity="one">%1$s инъекция</item>
+        <item quantity="other">%1$s инъекция</item>
+    </plurals>
+
+    <plurals name="preview_dose_tablets">
+        <item quantity="one">%1$s таблетка</item>
+        <item quantity="other">%1$s таблетка</item>
+    </plurals>
+    <plurals name="preview_dose_capsules">
+        <item quantity="one">%1$s капсула</item>
+        <item quantity="other">%1$s капсула</item>
+    </plurals>
+    <plurals name="preview_dose_millilitres">
+        <item quantity="one">%1$s мл</item>
+        <item quantity="other">%1$s мл</item>
+    </plurals>
+    <plurals name="preview_dose_drops">
+        <item quantity="one">%1$s тамшы</item>
+        <item quantity="other">%1$s тамшы</item>
+    </plurals>
+    <plurals name="preview_dose_sprays">
+        <item quantity="one">%1$s бүрікпе</item>
+        <item quantity="other">%1$s бүрікпе</item>
+    </plurals>
+    <plurals name="preview_dose_injections">
+        <item quantity="one">%1$s инъекция</item>
+        <item quantity="other">%1$s инъекция</item>
     </plurals>
 
     <plurals name="card_course_days_left">

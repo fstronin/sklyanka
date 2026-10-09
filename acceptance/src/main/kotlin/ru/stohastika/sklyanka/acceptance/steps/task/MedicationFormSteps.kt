@@ -7,12 +7,14 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
+import ru.stohastika.sklyanka.acceptance.MedicationUnits
 import ru.stohastika.sklyanka.acceptance.RussianDates
 import ru.stohastika.sklyanka.domain.medication.CourseEndPreset
 import ru.stohastika.sklyanka.domain.medication.DoseUnit
 import ru.stohastika.sklyanka.domain.medication.DraftField
 import ru.stohastika.sklyanka.domain.medication.DraftViolation
 import ru.stohastika.sklyanka.domain.medication.MedicationDraft
+import ru.stohastika.sklyanka.domain.medication.StrengthUnit
 import ru.stohastika.sklyanka.domain.medication.ValidateMedicationDraft
 import ru.stohastika.sklyanka.domain.medication.applicability
 import ru.stohastika.sklyanka.domain.medication.normalized
@@ -119,7 +121,34 @@ class MedicationFormSteps {
 
     @Given("^в блоке «Доза на один приём» указана единица «(.+)», а значение дозировки пусто$")
     fun theUnitHasNoStrength(unit: String) {
-        draft = draft.copy(strength = null, strengthUnit = unit)
+        draft = draft.copy(strength = null, strengthUnit = MedicationUnits.strengthUnit(unit))
+    }
+
+    @Given("^значение дозировки пусто$")
+    fun theStrengthIsEmpty() {
+        draft = draft.copy(strength = null)
+    }
+
+    /**
+     * Выбор единицы дозировки в домене: половина пары «значение + единица» (ИНВ-5).
+     *
+     * Экранный сценарий выбирает единицу своим шагом — тем, который умеет нажимать
+     * список (`Sk126UnitsScreenSteps`): общая оснастка не подставляет нажатия в доменные
+     * шаги, где нажатия нет по определению.
+     */
+    @When("^человек выбирает единицу дозировки «([^»]+)»$")
+    fun theStrengthUnitIsChosen(unit: String) {
+        draft = draft.copy(strengthUnit = MedicationUnits.strengthUnit(unit))
+    }
+
+    @Then("^в записи единица дозы записана кодом (.+)$")
+    fun theDoseUnitCodeIs(code: String) {
+        assertEquals(code, draft.doseUnit.code)
+    }
+
+    @Then("^в записи единица дозировки записана кодом (.+)$")
+    fun theStrengthUnitCodeIs(code: String) {
+        assertEquals(code, draft.strengthUnit?.code)
     }
 
     // --- Период приёма -------------------------------------------------------------------------
@@ -258,8 +287,8 @@ class MedicationFormSteps {
 
     @Then("^в блоке «Остаток в упаковке» единицей показано «(.+)»$")
     fun theStockUnitIs(unit: String) {
-        // Единица производна от формы выпуска (ОВ-16 не решён), поэтому проверяется
-        // соответствие «код домена — слово интерфейса», а не сама строка ресурса.
+        // Единица производна от формы выпуска (Р-45), поэтому проверяется соответствие
+        // «код домена — слово интерфейса», а не сама строка ресурса.
         assertEquals(unit, STOCK_UNITS.getValue(draft.applicability().doseUnit))
     }
 
@@ -452,12 +481,14 @@ class MedicationFormSteps {
         const val SCHEDULED_LABEL = "По расписанию"
         const val VISIBLE_LABEL = "показан"
 
-        /** Единицы остатка из `docs/v2/10-behavior.md`: четыре и ровно четыре. */
+        /** Единицы остатка по Р-45: шесть, по одной на форму выпуска. */
         val STOCK_UNITS = mapOf(
             DoseUnit.TABLET to "таблеток",
             DoseUnit.CAPSULE to "капсул",
             DoseUnit.MILLILITRE to "мл",
-            DoseUnit.DOSE to "доз",
+            DoseUnit.DROP to "капель",
+            DoseUnit.SPRAY to "впрысков",
+            DoseUnit.INJECTION to "инъекций",
         )
 
         /** «сейчас 25 сентября 2026, 10:00» из предыстории сценариев. */
@@ -485,7 +516,7 @@ class MedicationFormSteps {
             form = MedicationForm.TABLET,
             doseAmount = BigDecimal("2"),
             strength = BigDecimal("48"),
-            strengthUnit = "mg",
+            strengthUnit = StrengthUnit.MILLIGRAM,
             scheduleMode = ScheduleMode.SCHEDULED,
             times = listOf(DEFAULT_TIME),
             startDate = REFERENCE_DATE,

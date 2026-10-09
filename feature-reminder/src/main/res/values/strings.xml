@@ -27,9 +27,18 @@
     <!-- Разделитель дозы и дозировки: «2 таблетки · 48 мг». -->
     <string name="reminder_dose_separator">" · "</string>
 
-    <!-- «48 мг»: дозировка и её единица введены человеком и переводу не подлежат. -->
+    <!--
+      «48 мкг»: дозировка и её единица. Единица дозировки — закрытый список из шести
+      значений (Р-45) и печатается словом языка; незнакомый код из старой записи
+      показывается как есть (МГ-6).
+    -->
     <string name="reminder_strength">%1$s %2$s</string>
     <string name="strength_unit_milligram">мг</string>
+    <string name="strength_unit_microgram">мкг</string>
+    <string name="strength_unit_gram">г</string>
+    <string name="strength_unit_millilitre">мл</string>
+    <string name="strength_unit_international_unit">МЕ</string>
+    <string name="strength_unit_percent">%</string>
 
     <!-- Отметка строки в карточке из нескольких приёмов (НАП-36). -->
     <string name="reminder_row_taken">Принято</string>

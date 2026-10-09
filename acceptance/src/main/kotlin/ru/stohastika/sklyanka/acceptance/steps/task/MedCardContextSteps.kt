@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import ru.stohastika.sklyanka.acceptance.RussianDates
+import ru.stohastika.sklyanka.acceptance.MedicationUnits
 import ru.stohastika.sklyanka.acceptance.steps.dateOf
 import ru.stohastika.sklyanka.acceptance.steps.medicationNamed
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
@@ -70,7 +71,8 @@ class MedCardContextSteps(private val world: AcceptanceWorld) {
         world.medications.update(medication) {
             it.copy(
                 form = releaseForm(requireNotNull(facts[FORM])),
-                shape = tabletShape(requireNotNull(facts[SHAPE])),
+                // Вид таблетки необязателен и применим только к форме «таблетка» (ПР-9, ИНВ-16).
+                shape = facts[SHAPE]?.let(::tabletShape),
                 strength = leadingNumber(strength),
                 strengthUnit = strengthCode(strength.substringAfterLast(SPACE)),
                 foodRelation = foodRelation(requireNotNull(facts[FOOD])),
@@ -426,7 +428,7 @@ class MedCardContextSteps(private val world: AcceptanceWorld) {
         else -> FoodRelation.ANY
     }
 
-    private fun strengthCode(unit: String): String = if (unit == MILLIGRAM) MILLIGRAM_CODE else unit
+    private fun strengthCode(unit: String): String = MedicationUnits.strengthCode(unit)
 
     private companion object {
         const val FORM = "форма выпуска"
@@ -445,8 +447,7 @@ class MedCardContextSteps(private val world: AcceptanceWorld) {
 
         const val PERIOD_SEPARATOR = " — "
         const val SPACE = " "
-        const val MILLIGRAM = "мг"
-        const val MILLIGRAM_CODE = "mg"
+
         const val ALL_TIMES = 2
 
         val DEFAULT_TIME: LocalTime = LocalTime.of(8, 0)

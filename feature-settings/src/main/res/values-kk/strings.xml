@@ -51,6 +51,11 @@
     <string name="transfer_matches_apply">Жүктеу</string>
     <string name="transfer_times_empty">қажетіне қарай</string>
     <string name="transfer_strength_unit_milligram">мг</string>
+    <string name="transfer_strength_unit_microgram">мкг</string>
+    <string name="transfer_strength_unit_gram">г</string>
+    <string name="transfer_strength_unit_millilitre">мл</string>
+    <string name="transfer_strength_unit_international_unit">ХБ</string>
+    <string name="transfer_strength_unit_percent">%</string>
 
     <string name="transfer_replace_title">Барлығын ауыстырайық па?</string>
     <string name="transfer_replace_warning">Осы құрылғыдағы қазіргі деректер жойылып, файл мазмұнымен ауыстырылады. Мұны қайтару мүмкін емес.</string>

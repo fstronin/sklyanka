@@ -8,6 +8,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.runComposeUiTest
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
 import ru.stohastika.sklyanka.domain.medication.MedicationDraft
+import ru.stohastika.sklyanka.domain.medication.StrengthUnit
 import ru.stohastika.sklyanka.domain.medication.normalized
 import ru.stohastika.sklyanka.domain.model.Medication
 import ru.stohastika.sklyanka.domain.stock.StockThresholds
@@ -182,13 +183,20 @@ internal object MedsFormStand {
                 inputs.copy(doseAmount = intent.text),
             )
 
-            is MedFormIntent.StrengthChanged -> current.with(
-                draft.copy(
-                    strength = decimalOf(intent.text),
-                    strengthUnit = if (decimalOf(intent.text) == null) null else STRENGTH_UNIT,
-                ),
-                inputs.copy(strength = intent.text),
-            )
+            is MedFormIntent.StrengthChanged -> {
+                val amount = decimalOf(intent.text)
+                current.with(
+                    draft.copy(
+                        strength = amount,
+                        // Та же логика, что в `MedicationFormViewModel.reduce`: единица
+                        // по умолчанию — «мг», выбранная — переживает правку числа (Р-45).
+                        strengthUnit = if (amount == null) null else draft.strengthUnit ?: StrengthUnit.MILLIGRAM,
+                    ),
+                    inputs.copy(strength = intent.text),
+                )
+            }
+
+            is MedFormIntent.StrengthUnitChanged -> current.with(draft.copy(strengthUnit = intent.unit))
 
             is MedFormIntent.ModeChanged -> current.with(draft.copy(scheduleMode = intent.mode))
             MedFormIntent.TimeAdded -> current.with(draft.copy(times = draft.times + nextTime(draft.times)))
@@ -269,5 +277,4 @@ internal object MedsFormStand {
 
     private val DEFAULT_TIME: LocalTime = LocalTime.of(8, 0)
     private const val TIME_STEP_HOURS = 4L
-    private const val STRENGTH_UNIT = "mg"
 }

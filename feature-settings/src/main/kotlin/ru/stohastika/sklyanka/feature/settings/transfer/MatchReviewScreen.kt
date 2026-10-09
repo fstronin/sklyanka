@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import ru.stohastika.sklyanka.domain.medication.StrengthUnit
 import ru.stohastika.sklyanka.domain.transfer.MatchDecision
 import ru.stohastika.sklyanka.domain.transfer.MatchDifference
 import ru.stohastika.sklyanka.domain.transfer.MedicationMatch
@@ -151,24 +152,30 @@ private fun DecisionChip(value: MatchDecision, selected: MatchDecision, onDecide
 }
 
 /**
- * Дозировка препарата в подписи карточки.
- *
  * Дозировка, а не доза на приём: именно она вместе с названием образует совпадение (ПЕР-20),
  * и человек обязан видеть в карточке ровно то, по чему совпадение признано.
  *
- * Своя форма пишет код `mg` и показывает его как «мг»; любая другая единица показывается
- * как есть — подменять чужую единицу своей нельзя, это медицинские данные (ОВ-16).
+ * Единица из закрытого списка (Р-45) печатается словом языка; незнакомая единица файла —
+ * как есть: подменять чужую единицу своей нельзя, это медицинские данные (МГ-6).
  */
 @Composable
 private fun strengthLabel(match: MedicationMatch): String {
     val strength = match.file.strength?.stripTrailingZeros()?.toPlainString().orEmpty()
-    val rawUnit = match.file.strengthUnit.orEmpty()
-    val unit = if (rawUnit == MILLIGRAM_CODE) stringResource(R.string.transfer_strength_unit_milligram) else rawUnit
+    val unit = strengthUnitText(match.file.strengthUnit.orEmpty())
     return stringResource(R.string.transfer_match_dosage_value, strength, unit).trim()
 }
 
-/** Код единицы дозировки, который пишет форма лекарства (SKL-09). */
-private const val MILLIGRAM_CODE = "mg"
+/** Слово единицы дозировки: закрытый список Р-45, незнакомый код — как есть (МГ-6). */
+@Composable
+private fun strengthUnitText(code: String): String = when (StrengthUnit.ofCode(code)) {
+    StrengthUnit.MILLIGRAM -> stringResource(R.string.transfer_strength_unit_milligram)
+    StrengthUnit.MICROGRAM -> stringResource(R.string.transfer_strength_unit_microgram)
+    StrengthUnit.GRAM -> stringResource(R.string.transfer_strength_unit_gram)
+    StrengthUnit.MILLILITRE -> stringResource(R.string.transfer_strength_unit_millilitre)
+    StrengthUnit.INTERNATIONAL_UNIT -> stringResource(R.string.transfer_strength_unit_international_unit)
+    StrengthUnit.PERCENT -> stringResource(R.string.transfer_strength_unit_percent)
+    null -> code
+}
 
 internal fun matchTag(fileMedicationId: String): String = "transfer_match_$fileMedicationId"
 

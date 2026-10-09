@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import ru.stohastika.sklyanka.acceptance.RepositoryLayout
 import ru.stohastika.sklyanka.acceptance.RussianDates
+import ru.stohastika.sklyanka.acceptance.MedicationUnits
 import ru.stohastika.sklyanka.acceptance.steps.dateOf
 import ru.stohastika.sklyanka.acceptance.steps.localMoment
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
@@ -95,7 +96,7 @@ class ReminderScheduleSteps(private val world: AcceptanceWorld) {
                 name = name,
                 doseAmount = RussianDates.amount(dose),
                 strength = RussianDates.amount(strength),
-                strengthUnit = if (unit == MILLIGRAM_WORDS) MILLIGRAM_CODE else unit,
+                strengthUnit = MedicationUnits.strengthCode(unit),
                 stockLeft = BigDecimal(STOCK),
             )
         }
@@ -721,8 +722,6 @@ class ReminderScheduleSteps(private val world: AcceptanceWorld) {
 
     private companion object {
         const val DEFAULT_MEDICATION = "Магний B6"
-        const val MILLIGRAM_WORDS = "мг"
-        const val MILLIGRAM_CODE = "mg"
         const val DAILY_TIME = "14:00"
         const val NIGHT_HOUR = 3
         const val HOURS = 1L

@@ -13,6 +13,7 @@ import kotlinx.coroutines.launch
 import ru.stohastika.sklyanka.domain.medication.MedicationDraft
 import ru.stohastika.sklyanka.domain.medication.SaveMedicationUseCase
 import ru.stohastika.sklyanka.domain.medication.SaveResult
+import ru.stohastika.sklyanka.domain.medication.StrengthUnit
 import ru.stohastika.sklyanka.domain.medication.ValidateMedicationDraft
 import ru.stohastika.sklyanka.domain.medication.applicability
 import ru.stohastika.sklyanka.domain.medication.normalized
@@ -102,15 +103,21 @@ class MedicationFormViewModel @Inject constructor(
             is MedFormIntent.DoseAmountChanged ->
                 state.with(draft.copy(doseAmount = decimalOf(intent.text)), inputs.copy(doseAmount = intent.text))
 
-            is MedFormIntent.StrengthChanged -> state.with(
-                // Единица дозировки в макете зафиксирована как «мг» и человеком не правится
-                // (ОВ-16), поэтому она следует за значением: есть число — есть единица.
-                draft.copy(
-                    strength = decimalOf(intent.text),
-                    strengthUnit = if (decimalOf(intent.text) == null) null else STRENGTH_UNIT,
-                ),
-                inputs.copy(strength = intent.text),
-            )
+            is MedFormIntent.StrengthChanged -> {
+                val amount = decimalOf(intent.text)
+                state.with(
+                    // Единица дозировки выбирается из закрытого списка (Р-45) и переживает
+                    // правку числа: сброс к «мг» на каждой цифре стирал бы выбор человека.
+                    // Нет числа — нет и единицы: пара живёт вместе (ИНВ-5).
+                    draft.copy(
+                        strength = amount,
+                        strengthUnit = if (amount == null) null else draft.strengthUnit ?: StrengthUnit.MILLIGRAM,
+                    ),
+                    inputs.copy(strength = intent.text),
+                )
+            }
+
+            is MedFormIntent.StrengthUnitChanged -> state.with(draft.copy(strengthUnit = intent.unit))
 
             is MedFormIntent.ModeChanged -> state.with(draft.copy(scheduleMode = intent.mode))
             MedFormIntent.TimeAdded -> state.with(draft.copy(times = draft.times + nextTime(draft.times)))
@@ -234,8 +241,5 @@ class MedicationFormViewModel @Inject constructor(
     private companion object {
         val DEFAULT_TIME: LocalTime = LocalTime.of(8, 0)
         const val TIME_STEP_HOURS = 4L
-
-        /** Единица дозировки из макета формы; свободный ввод — открытый вопрос ОВ-16. */
-        const val STRENGTH_UNIT = "mg"
     }
 }

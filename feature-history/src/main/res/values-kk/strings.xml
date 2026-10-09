@@ -97,7 +97,13 @@
     <string name="report_document_disclaimer">Медициналық құжат емес</string>
     <string name="report_document_page">Sklyanka · %1$d-бет</string>
 
+    <!-- Единицы дозировки в документе отчёта: закрытый список (Р-45). Незнакомый код печатается как есть (МГ-6). -->
     <string name="strength_unit_milligram">мг</string>
+    <string name="strength_unit_microgram">мкг</string>
+    <string name="strength_unit_gram">г</string>
+    <string name="strength_unit_millilitre">мл</string>
+    <string name="strength_unit_international_unit">ХБ</string>
+    <string name="strength_unit_percent">%</string>
 
     <string name="history_month_pattern">LLLL yyyy</string>
     <string name="history_date_pattern">d MMMM</string>

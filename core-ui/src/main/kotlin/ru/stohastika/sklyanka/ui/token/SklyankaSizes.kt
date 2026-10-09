@@ -268,6 +268,9 @@ object SklyankaSizes {
     val ProfileAvatarButton: Dp = 44.dp
     val ProfileAvatar: Dp = 30.dp
     val ProfileAvatarChevron: Dp = 14.dp
+
+    /** Шеврон цели единицы в поле ввода (§5.3): подпись «мг» рядом с ним, а не вместо него. */
+    val FieldUnitChevron: Dp = 14.dp
     val ProfileAvatarPadding: Dp = 6.dp
 
     /** Шапка экрана (§4.9): верхний отступ 26–30 dp. */

@@ -1,6 +1,7 @@
 package ru.stohastika.sklyanka.feature.meds.form
 
 import ru.stohastika.sklyanka.domain.medication.CourseEndPreset
+import ru.stohastika.sklyanka.domain.medication.StrengthUnit
 import ru.stohastika.sklyanka.domain.model.FoodRelation
 import ru.stohastika.sklyanka.domain.model.MedicationForm
 import ru.stohastika.sklyanka.domain.model.ScheduleMode
@@ -29,6 +30,14 @@ sealed interface MedFormIntent {
     data class DoseAmountChanged(val text: String) : MedFormIntent
 
     data class StrengthChanged(val text: String) : MedFormIntent
+
+    /**
+     * Выбор единицы дозировки из закрытого списка (Р-45).
+     *
+     * Отдельное намерение, а не часть [StrengthChanged]: единица выбирается диалогом
+     * и переживает правку числа, иначе выбор терялся бы на первой же цифре.
+     */
+    data class StrengthUnitChanged(val unit: StrengthUnit) : MedFormIntent
 
     data class ModeChanged(val mode: ScheduleMode) : MedFormIntent
 

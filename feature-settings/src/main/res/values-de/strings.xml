@@ -51,6 +51,11 @@
     <string name="transfer_matches_apply">Importieren</string>
     <string name="transfer_times_empty">bei Bedarf</string>
     <string name="transfer_strength_unit_milligram">mg</string>
+    <string name="transfer_strength_unit_microgram">µg</string>
+    <string name="transfer_strength_unit_gram">g</string>
+    <string name="transfer_strength_unit_millilitre">ml</string>
+    <string name="transfer_strength_unit_international_unit">I.E.</string>
+    <string name="transfer_strength_unit_percent">%</string>
 
     <string name="transfer_replace_title">Alles ersetzen?</string>
     <string name="transfer_replace_warning">Die aktuellen Daten auf diesem Gerät werden gelöscht und durch den Inhalt der Datei ersetzt. Das lässt sich nicht rückgängig machen.</string>

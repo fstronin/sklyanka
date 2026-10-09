@@ -5,6 +5,7 @@ import ru.stohastika.sklyanka.domain.history.DoctorReport
 import ru.stohastika.sklyanka.domain.history.OnTimeShare
 import ru.stohastika.sklyanka.domain.history.ReportMedicationRow
 import ru.stohastika.sklyanka.domain.medication.DoseUnit
+import ru.stohastika.sklyanka.domain.medication.StrengthUnit
 import ru.stohastika.sklyanka.domain.medication.doseUnit
 import java.math.BigDecimal
 import java.time.LocalDate
@@ -188,15 +189,18 @@ internal class ReportPdfText(private val context: Context) {
             DoseUnit.TABLET -> R.plurals.report_document_dose_tablets
             DoseUnit.CAPSULE -> R.plurals.report_document_dose_capsules
             DoseUnit.MILLILITRE -> R.plurals.report_document_dose_millilitres
-            DoseUnit.DOSE -> R.plurals.report_document_dose_doses
+            DoseUnit.DROP -> R.plurals.report_document_dose_drops
+            DoseUnit.SPRAY -> R.plurals.report_document_dose_sprays
+            DoseUnit.INJECTION -> R.plurals.report_document_dose_injections
         }
         return context.resources.getQuantityString(template, row.doseAmount.toInt(), amount(row.doseAmount))
     }
 
     /**
      * «50 мкг». Дозировка печатается только целиком: число без единицы врачу не говорит
-     * ничего, а по модели без единицы и не хранится (ИНВ-5). Незнакомый код показывается
-     * как есть — отказать врачу в строке хуже, чем показать код (МГ-6).
+     * ничего, а по модели без единицы и не хранится (ИНВ-5). Единица из закрытого списка
+     * печатается словом языка; незнакомый код показывается как есть — отказать врачу
+     * в строке хуже, чем показать код (МГ-6).
      */
     private fun strength(row: ReportMedicationRow): String? {
         val strength = row.strength
@@ -204,8 +208,15 @@ internal class ReportPdfText(private val context: Context) {
         return if (strength != null && unit != null) amount(strength) + " " + unitText(unit) else null
     }
 
-    private fun unitText(code: String): String =
-        if (code == MILLIGRAM_CODE) context.getString(R.string.strength_unit_milligram) else code
+    private fun unitText(code: String): String = when (StrengthUnit.ofCode(code)) {
+        StrengthUnit.MILLIGRAM -> context.getString(R.string.strength_unit_milligram)
+        StrengthUnit.MICROGRAM -> context.getString(R.string.strength_unit_microgram)
+        StrengthUnit.GRAM -> context.getString(R.string.strength_unit_gram)
+        StrengthUnit.MILLILITRE -> context.getString(R.string.strength_unit_millilitre)
+        StrengthUnit.INTERNATIONAL_UNIT -> context.getString(R.string.strength_unit_international_unit)
+        StrengthUnit.PERCENT -> context.getString(R.string.strength_unit_percent)
+        null -> code
+    }
 
     /** «0,5» и «2»: лишние нули дозы в отчёте только мешают. */
     private fun amount(value: BigDecimal): String = value.stripTrailingZeros().toPlainString()
@@ -213,8 +224,4 @@ internal class ReportPdfText(private val context: Context) {
     private fun percent(value: Int): String = context.getString(R.string.history_percent, value)
 
     private fun separator(): String = context.getString(R.string.report_document_part_separator)
-
-    private companion object {
-        const val MILLIGRAM_CODE = "mg"
-    }
 }

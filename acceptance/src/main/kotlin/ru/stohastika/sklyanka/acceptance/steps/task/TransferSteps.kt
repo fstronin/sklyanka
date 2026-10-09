@@ -10,6 +10,8 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import ru.stohastika.sklyanka.acceptance.RussianDates
+import ru.stohastika.sklyanka.acceptance.MedicationUnits
+import ru.stohastika.sklyanka.domain.medication.StrengthUnit
 import ru.stohastika.sklyanka.acceptance.steps.dateOf
 import ru.stohastika.sklyanka.acceptance.steps.localMoment
 import ru.stohastika.sklyanka.acceptance.steps.medicationNamed
@@ -294,7 +296,7 @@ class TransferSteps(private val world: AcceptanceWorld) {
             profileKey = profile,
             name = TRANSFERRED_FILE_MEDICATION,
             strength = BigDecimal.ONE,
-            strengthUnit = MILLIGRAM,
+            strengthUnit = StrengthUnit.MILLIGRAM.code,
             times = listOf(MORNING),
         )
         val moment = world.localMoment(FILE_DATE, MORNING_TEXT)
@@ -845,7 +847,7 @@ class TransferSteps(private val world: AcceptanceWorld) {
         world.medications.names().firstOrNull { world.medications.get(it).id == medication.id },
     ) { "unknown medication id: ${medication.id}" }
 
-    private fun strengthCode(unit: String): String = if (unit == MILLIGRAM_DISPLAY) MILLIGRAM else unit
+    private fun strengthCode(unit: String): String = MedicationUnits.strengthCode(unit)
 
     /**
      * Встречается ли имя отдельным словом, а не куском идентификатора.
@@ -879,8 +881,7 @@ class TransferSteps(private val world: AcceptanceWorld) {
         const val ONE = 1
         const val PRN_DAILY_LIMIT = 1
 
-        const val MILLIGRAM = "mg"
-        const val MILLIGRAM_DISPLAY = "мг"
+
 
         const val MORNING_HOUR = 8
         const val NOON = 12

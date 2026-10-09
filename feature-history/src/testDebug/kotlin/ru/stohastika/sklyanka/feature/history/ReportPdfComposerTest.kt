@@ -15,6 +15,7 @@ import ru.stohastika.sklyanka.domain.history.DoctorReportBuilder
 import ru.stohastika.sklyanka.domain.history.HistorySlice
 import ru.stohastika.sklyanka.domain.history.HistoryWindow
 import ru.stohastika.sklyanka.domain.history.OnTimeRule
+import ru.stohastika.sklyanka.domain.medication.DoseUnit
 import ru.stohastika.sklyanka.domain.model.ArchiveReason
 import ru.stohastika.sklyanka.domain.model.FoodRelation
 import ru.stohastika.sklyanka.domain.model.Intake
@@ -103,6 +104,23 @@ class ReportPdfComposerTest {
 
         assertTrue("the dose must decline with its amount", text.contains("med-a · 1 таблетка · 50 мг · 08:00"))
         assertTrue("the share must stand in the block: $text", text.contains(share(1, 4, 25)))
+    }
+
+    /**
+     * Р-45: доза печатается словом своей формы, а не знаком «шт» и не выдуманной «дозой»
+     * (SKL-126). Капли проверяются отдельно от таблетки: у них своя строка склонений,
+     * и ошибку «капля показана миллилитром» видно только на другой единице.
+     */
+    @Test
+    fun `the dose carries the word of its own unit`() {
+        val drops = medication().copy(
+            form = MedicationForm.DROPS,
+            doseAmount = BigDecimal("20"),
+            doseUnit = DoseUnit.DROP.code,
+        )
+        val text = composer.compose(report(medication = drops), ZONE).documentText()
+
+        assertTrue("капли печатаются каплями: $text", text.contains("med-a · 20 капель"))
     }
 
     @Test

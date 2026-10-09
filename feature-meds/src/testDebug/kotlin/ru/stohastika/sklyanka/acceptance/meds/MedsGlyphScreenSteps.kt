@@ -154,7 +154,7 @@ class MedsGlyphScreenSteps(private val world: AcceptanceWorld) {
             form = formOf(formLabel),
             shape = null,
             strength = BigDecimal("2000"),
-            strengthUnit = "МЕ",
+            strengthUnit = "iu",
         )
     }
 

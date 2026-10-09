@@ -15,6 +15,7 @@ import androidx.compose.ui.res.stringResource
 import ru.stohastika.sklyanka.domain.medication.CourseEndPreset
 import ru.stohastika.sklyanka.domain.medication.DoseUnit
 import ru.stohastika.sklyanka.domain.medication.DraftViolation
+import ru.stohastika.sklyanka.domain.medication.StrengthUnit
 import ru.stohastika.sklyanka.domain.medication.TrailingLine
 import ru.stohastika.sklyanka.domain.model.FoodRelation
 import ru.stohastika.sklyanka.domain.model.MedicationForm
@@ -179,24 +180,29 @@ internal fun trailingTextOf(line: TrailingLine): String = when (line) {
     }
 }
 
-/** Суффикс поля количества дозы: «шт» у штучных форм, «мл» и «доз» у остальных. */
+/** Суффикс поля количества дозы: слово единицы по форме выпуска (Р-45, §5.3). */
 @Composable
 internal fun DoseUnit.doseSuffix(): String = stringResource(
     when (this) {
-        DoseUnit.TABLET, DoseUnit.CAPSULE -> R.string.dose_suffix_piece
+        DoseUnit.TABLET -> R.string.dose_suffix_tablet
+        DoseUnit.CAPSULE -> R.string.dose_suffix_capsule
         DoseUnit.MILLILITRE -> R.string.dose_suffix_millilitre
-        DoseUnit.DOSE -> R.string.dose_suffix_dose
+        DoseUnit.DROP -> R.string.dose_suffix_drop
+        DoseUnit.SPRAY -> R.string.dose_suffix_spray
+        DoseUnit.INJECTION -> R.string.dose_suffix_injection
     },
 )
 
-/** Единица остатка в упаковке: «таблеток», «капсул», «мл», «доз» (критерий 13). */
+/** Единица остатка в упаковке: «таблеток», «капсул», «мл», «капель» (критерий 13). */
 @Composable
 internal fun DoseUnit.stockLabel(): String = stringResource(
     when (this) {
         DoseUnit.TABLET -> R.string.stock_unit_tablets
         DoseUnit.CAPSULE -> R.string.stock_unit_capsules
         DoseUnit.MILLILITRE -> R.string.stock_unit_millilitres
-        DoseUnit.DOSE -> R.string.stock_unit_doses
+        DoseUnit.DROP -> R.string.stock_unit_drops
+        DoseUnit.SPRAY -> R.string.stock_unit_sprays
+        DoseUnit.INJECTION -> R.string.stock_unit_injections
     },
 )
 
@@ -209,12 +215,35 @@ internal fun stockLeftLabel(left: BigDecimal, unit: DoseUnit): String {
             DoseUnit.TABLET -> R.plurals.stock_left_tablets
             DoseUnit.CAPSULE -> R.plurals.stock_left_capsules
             DoseUnit.MILLILITRE -> R.plurals.stock_left_millilitres
-            DoseUnit.DOSE -> R.plurals.stock_left_doses
+            DoseUnit.DROP -> R.plurals.stock_left_drops
+            DoseUnit.SPRAY -> R.plurals.stock_left_sprays
+            DoseUnit.INJECTION -> R.plurals.stock_left_injections
         },
         amount,
         amount,
     )
 }
+
+/**
+ * «2 таблетки», «3 капли» — доза одного приёма словами языка (§5.3, ЭКР-7).
+ *
+ * Число для склонения — целая часть: «1,5 таблетки» склоняется по «1», как и в остальном
+ * интерфейсе. Единица словами, а не знаком «шт»: знак отвечает на вопрос «сколько штук»,
+ * которого у капель, впрыска и инъекции не существует.
+ */
+@Composable
+internal fun previewDoseLabel(amount: BigDecimal, unit: DoseUnit): String = pluralStringResource(
+    when (unit) {
+        DoseUnit.TABLET -> R.plurals.preview_dose_tablets
+        DoseUnit.CAPSULE -> R.plurals.preview_dose_capsules
+        DoseUnit.MILLILITRE -> R.plurals.preview_dose_millilitres
+        DoseUnit.DROP -> R.plurals.preview_dose_drops
+        DoseUnit.SPRAY -> R.plurals.preview_dose_sprays
+        DoseUnit.INJECTION -> R.plurals.preview_dose_injections
+    },
+    amount.toInt(),
+    amount.stripTrailingZeros().toPlainString(),
+)
 
 /**
  * «9 таблеток из 60» — остаток с размером упаковки (ОВ-45).
@@ -232,13 +261,26 @@ internal fun stockPackageLabel(left: BigDecimal, packageSize: BigDecimal, unit: 
 /**
  * Единица дозировки препарата.
  *
- * Собственная форма пишет код `mg` и показывает его как «мг»; любое другое значение —
- * это запись, пришедшая из файла переноса данных (SKL-19) или из более старой версии,
- * и показывается как есть: подменять чужую единицу своей нельзя, это медицинские данные.
+ * Известный код печатается словом языка (Р-45); незнакомый — как есть. Незнакомая единица
+ * приходит только из файла переноса данных или из более старой версии, и подменять её своей
+ * нельзя: это медицинские данные (МГ-6).
  */
 @Composable
-internal fun strengthUnitLabel(unit: String): String =
-    if (unit == MILLIGRAM_CODE) stringResource(R.string.strength_unit_milligram) else unit
+internal fun strengthUnitLabel(code: String): String =
+    StrengthUnit.ofCode(code)?.label() ?: code
+
+/** Слово единицы дозировки из закрытого списка (Р-45). */
+@Composable
+internal fun StrengthUnit.label(): String = stringResource(
+    when (this) {
+        StrengthUnit.MILLIGRAM -> R.string.strength_unit_milligram
+        StrengthUnit.MICROGRAM -> R.string.strength_unit_microgram
+        StrengthUnit.GRAM -> R.string.strength_unit_gram
+        StrengthUnit.MILLILITRE -> R.string.strength_unit_millilitre
+        StrengthUnit.INTERNATIONAL_UNIT -> R.string.strength_unit_international_unit
+        StrengthUnit.PERCENT -> R.string.strength_unit_percent
+    },
+)
 
 /** Текст отказа: каждое правило говорит, что именно не так, и про какое поле. */
 @Composable
@@ -295,6 +337,3 @@ private fun formatter(pattern: Int): DateTimeFormatter {
         DateTimeFormatter.ofPattern(text, configuration.locales[0])
     }
 }
-
-/** Код единицы дозировки, который пишет форма; показывается как «мг» (ОВ-16). */
-private const val MILLIGRAM_CODE = "mg"

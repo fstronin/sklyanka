@@ -51,6 +51,11 @@
     <string name="transfer_matches_apply">导入</string>
     <string name="transfer_times_empty">按需</string>
     <string name="transfer_strength_unit_milligram">毫克</string>
+    <string name="transfer_strength_unit_microgram">微克</string>
+    <string name="transfer_strength_unit_gram">克</string>
+    <string name="transfer_strength_unit_millilitre">毫升</string>
+    <string name="transfer_strength_unit_international_unit">国际单位</string>
+    <string name="transfer_strength_unit_percent">%</string>
 
     <string name="transfer_replace_title">全部替换？</string>
     <string name="transfer_replace_warning">此设备上的现有数据将被清除，并由文件内容替换。此操作无法撤销。</string>

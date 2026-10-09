@@ -91,16 +91,27 @@
     <string name="food_relation_with">随餐</string>
     <string name="food_relation_after">饭后</string>
 
-    <string name="dose_suffix_piece">片</string>
+    <string name="dose_suffix_tablet">片</string>
+    <string name="dose_suffix_capsule">粒</string>
     <string name="dose_suffix_millilitre">毫升</string>
-    <string name="dose_suffix_dose">剂</string>
+    <string name="dose_suffix_drop">滴</string>
+    <string name="dose_suffix_spray">喷</string>
+    <string name="dose_suffix_injection">注射</string>
 
+    <string name="form_label_strength_unit">剂量单位</string>
     <string name="strength_unit_milligram">毫克</string>
+    <string name="strength_unit_microgram">微克</string>
+    <string name="strength_unit_gram">克</string>
+    <string name="strength_unit_millilitre">毫升</string>
+    <string name="strength_unit_international_unit">国际单位</string>
+    <string name="strength_unit_percent">%</string>
 
     <string name="stock_unit_tablets">片</string>
     <string name="stock_unit_capsules">粒</string>
     <string name="stock_unit_millilitres">毫升</string>
-    <string name="stock_unit_doses">剂</string>
+    <string name="stock_unit_drops">滴</string>
+    <string name="stock_unit_sprays">喷</string>
+    <string name="stock_unit_injections">注射</string>
 
     <string name="form_label_max_per_day">每天不超过、次</string>
     <string name="form_caption_max_per_day">手动标记服药</string>

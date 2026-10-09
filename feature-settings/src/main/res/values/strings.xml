@@ -66,8 +66,13 @@
     <string name="transfer_matches_drop_all">Не загружать ничего из совпавших</string>
     <string name="transfer_matches_apply">Загрузить</string>
     <string name="transfer_times_empty">по потребности</string>
-    <!-- Код единицы дозировки, который пишет форма (ОВ-16); чужая единица показывается как есть. -->
+    <!-- Единицы дозировки — закрытый список из шести значений (Р-45); форма пишет их (ОВ-16), чужая единица показывается как есть (МГ-6). -->
     <string name="transfer_strength_unit_milligram">мг</string>
+    <string name="transfer_strength_unit_microgram">мкг</string>
+    <string name="transfer_strength_unit_gram">г</string>
+    <string name="transfer_strength_unit_millilitre">мл</string>
+    <string name="transfer_strength_unit_international_unit">МЕ</string>
+    <string name="transfer_strength_unit_percent">%</string>
 
     <!-- ===== Подтверждение замены всего (ПЕР-16 п. 2) ===== -->
     <string name="transfer_replace_title">Заменить всё?</string>

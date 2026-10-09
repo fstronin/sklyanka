@@ -23,9 +23,17 @@
         <item quantity="one">%1$s ml left</item>
         <item quantity="other">%1$s ml left</item>
     </plurals>
-    <plurals name="today_stock_left_doses">
-        <item quantity="one">%1$s dose left</item>
-        <item quantity="other">%1$s doses left</item>
+    <plurals name="today_stock_left_drops">
+        <item quantity="one">%1$s drop left</item>
+        <item quantity="other">%1$s drops left</item>
+    </plurals>
+    <plurals name="today_stock_left_sprays">
+        <item quantity="one">%1$s spray left</item>
+        <item quantity="other">%1$s sprays left</item>
+    </plurals>
+    <plurals name="today_stock_left_injections">
+        <item quantity="one">%1$s injection left</item>
+        <item quantity="other">%1$s injections left</item>
     </plurals>
 
     <plurals name="today_dose_tablets">
@@ -40,9 +48,17 @@
         <item quantity="one">%1$s ml</item>
         <item quantity="other">%1$s ml</item>
     </plurals>
-    <plurals name="today_dose_doses">
-        <item quantity="one">%1$s dose</item>
-        <item quantity="other">%1$s doses</item>
+    <plurals name="today_dose_drops">
+        <item quantity="one">%1$s drop</item>
+        <item quantity="other">%1$s drops</item>
+    </plurals>
+    <plurals name="today_dose_sprays">
+        <item quantity="one">%1$s spray</item>
+        <item quantity="other">%1$s sprays</item>
+    </plurals>
+    <plurals name="today_dose_injections">
+        <item quantity="one">%1$s injection</item>
+        <item quantity="other">%1$s injections</item>
     </plurals>
 
     <plurals name="today_prn_subtitle">

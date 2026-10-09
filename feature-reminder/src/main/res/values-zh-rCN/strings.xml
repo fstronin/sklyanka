@@ -10,6 +10,11 @@
 
     <string name="reminder_strength">%1$s %2$s</string>
     <string name="strength_unit_milligram">毫克</string>
+    <string name="strength_unit_microgram">微克</string>
+    <string name="strength_unit_gram">克</string>
+    <string name="strength_unit_millilitre">毫升</string>
+    <string name="strength_unit_international_unit">国际单位</string>
+    <string name="strength_unit_percent">%</string>
 
     <string name="reminder_row_taken">已服用</string>
     <string name="reminder_row_skip">跳过</string>

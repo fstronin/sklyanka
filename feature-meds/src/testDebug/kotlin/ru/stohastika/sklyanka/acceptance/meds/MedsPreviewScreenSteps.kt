@@ -23,6 +23,8 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import ru.stohastika.sklyanka.acceptance.steps.task.MedicationFormSteps
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
+import ru.stohastika.sklyanka.domain.medication.DoseUnit
+import ru.stohastika.sklyanka.domain.medication.StrengthUnit
 import ru.stohastika.sklyanka.domain.model.MedicationForm
 import ru.stohastika.sklyanka.domain.model.TabletShape
 import ru.stohastika.sklyanka.feature.meds.R
@@ -273,15 +275,20 @@ class MedsPreviewScreenSteps(private val world: AcceptanceWorld, private val for
      * Подпись превью по тому же правилу, что и `medicationPreviewNumbers` (§5.3, ЭКР-7).
      *
      * Числа в порядке ЭКР-7: сначала доза на один приём, затем дозировка препарата, через
-     * « · ». Пустая часть в строку не попадает; пусто и то и другое — подпись пуста, а форму
-     * и вид называет заголовок, который остаётся всегда.
+     * « · ». Доза печатается словом единицы со склонением по числу (Р-45), дозировка —
+     * словом выбранной единицы; пустая часть в строку не попадает.
      */
     private fun expectedCaption(state: MedFormUiState): String = listOfNotNull(
         state.draft.doseAmount?.let { amount ->
-            "${amount.stripTrailingZeros().toPlainString()} ${doseUnitLabel(state.applicability.doseUnit)}"
+            context.resources.getQuantityString(
+                previewDoseTemplate(state.applicability.doseUnit),
+                amount.toInt(),
+                amount.stripTrailingZeros().toPlainString(),
+            )
         },
         state.draft.strength?.let { amount ->
-            "${amount.stripTrailingZeros().toPlainString()} ${context.getString(R.string.strength_unit_milligram)}"
+            val unit = state.draft.strengthUnit ?: return@let null
+            "${amount.stripTrailingZeros().toPlainString()} ${context.getString(strengthUnitTemplate(unit))}"
         },
     ).filter { it.isNotBlank() }.joinToString(PREVIEW_NUMBER_SEPARATOR)
 
@@ -329,20 +336,32 @@ class MedsPreviewScreenSteps(private val world: AcceptanceWorld, private val for
 
     private fun doseText(state: MedFormUiState): String {
         val amount = requireNotNull(state.draft.doseAmount) { "the scenario must have entered a dose" }
-        return "${amount.stripTrailingZeros().toPlainString()} ${doseUnitLabel(state.applicability.doseUnit)}"
+        return context.resources.getQuantityString(
+            previewDoseTemplate(state.applicability.doseUnit),
+            amount.toInt(),
+            amount.stripTrailingZeros().toPlainString(),
+        )
     }
 
-    /** Суффикс единицы дозы: та же четвёрка, что у `MedsText.doseSuffix`. */
-    private fun doseUnitLabel(unit: ru.stohastika.sklyanka.domain.medication.DoseUnit): String = context.getString(
-        when (unit) {
-            ru.stohastika.sklyanka.domain.medication.DoseUnit.TABLET,
-            ru.stohastika.sklyanka.domain.medication.DoseUnit.CAPSULE,
-            -> R.string.dose_suffix_piece
+    /** Семейство склонений дозы: та же шестёрка, что у `MedsText.previewDoseLabel` (Р-45). */
+    private fun previewDoseTemplate(unit: DoseUnit): Int = when (unit) {
+        DoseUnit.TABLET -> R.plurals.preview_dose_tablets
+        DoseUnit.CAPSULE -> R.plurals.preview_dose_capsules
+        DoseUnit.MILLILITRE -> R.plurals.preview_dose_millilitres
+        DoseUnit.DROP -> R.plurals.preview_dose_drops
+        DoseUnit.SPRAY -> R.plurals.preview_dose_sprays
+        DoseUnit.INJECTION -> R.plurals.preview_dose_injections
+    }
 
-            ru.stohastika.sklyanka.domain.medication.DoseUnit.MILLILITRE -> R.string.dose_suffix_millilitre
-            ru.stohastika.sklyanka.domain.medication.DoseUnit.DOSE -> R.string.dose_suffix_dose
-        },
-    )
+    /** Слово единицы дозировки: та же шестёрка, что у `MedsText.StrengthUnit.label` (Р-45). */
+    private fun strengthUnitTemplate(unit: StrengthUnit): Int = when (unit) {
+        StrengthUnit.MILLIGRAM -> R.string.strength_unit_milligram
+        StrengthUnit.MICROGRAM -> R.string.strength_unit_microgram
+        StrengthUnit.GRAM -> R.string.strength_unit_gram
+        StrengthUnit.MILLILITRE -> R.string.strength_unit_millilitre
+        StrengthUnit.INTERNATIONAL_UNIT -> R.string.strength_unit_international_unit
+        StrengthUnit.PERCENT -> R.string.strength_unit_percent
+    }
 
     private fun descriptions(node: androidx.compose.ui.semantics.SemanticsNode): List<String> =
         node.config.getOrNull(SemanticsProperties.ContentDescription).orEmpty() +

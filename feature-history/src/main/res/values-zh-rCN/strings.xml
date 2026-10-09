@@ -98,7 +98,13 @@
     <string name="report_document_disclaimer">非医疗文件</string>
     <string name="report_document_page">Sklyanka · 第 %1$d 页</string>
 
+    <!-- Единицы дозировки в документе отчёта: закрытый список (Р-45). Незнакомый код печатается как есть (МГ-6). -->
     <string name="strength_unit_milligram">毫克</string>
+    <string name="strength_unit_microgram">微克</string>
+    <string name="strength_unit_gram">克</string>
+    <string name="strength_unit_millilitre">毫升</string>
+    <string name="strength_unit_international_unit">国际单位</string>
+    <string name="strength_unit_percent">%</string>
 
     <string name="history_month_pattern">yyyy年M月</string>
     <string name="history_date_pattern">M月d日</string>

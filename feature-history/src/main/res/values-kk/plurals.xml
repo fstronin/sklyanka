@@ -23,9 +23,17 @@
         <item quantity="one">%1$s мл</item>
         <item quantity="other">%1$s мл</item>
     </plurals>
-    <plurals name="report_document_dose_doses">
-        <item quantity="one">%1$s доза</item>
-        <item quantity="other">%1$s доза</item>
+    <plurals name="report_document_dose_drops">
+        <item quantity="one">%1$s тамшы</item>
+        <item quantity="other">%1$s тамшы</item>
+    </plurals>
+    <plurals name="report_document_dose_sprays">
+        <item quantity="one">%1$s бүрікпе</item>
+        <item quantity="other">%1$s бүрікпе</item>
+    </plurals>
+    <plurals name="report_document_dose_injections">
+        <item quantity="one">%1$s инъекция</item>
+        <item quantity="other">%1$s инъекция</item>
     </plurals>
 
     <plurals name="cd_history_days_without_misses">

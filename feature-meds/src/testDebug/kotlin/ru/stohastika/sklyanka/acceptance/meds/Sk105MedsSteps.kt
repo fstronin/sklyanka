@@ -39,6 +39,7 @@ import ru.stohastika.sklyanka.acceptance.steps.medicationNamed
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
 import ru.stohastika.sklyanka.domain.medication.DoseUnit
 import ru.stohastika.sklyanka.domain.medication.DraftField
+import ru.stohastika.sklyanka.domain.medication.StrengthUnit
 import ru.stohastika.sklyanka.domain.medication.ValidateMedicationDraft
 import ru.stohastika.sklyanka.domain.medication.doseUnit
 import ru.stohastika.sklyanka.domain.model.Intake
@@ -767,29 +768,47 @@ class Sk105MedsSteps(
     }
 
     /**
-     * Числа превью: «2 шт · 48 мг» — тем же правилом, что `medicationPreviewNumbers` (§5.3).
+     * Числа превью: «2 таблетки · 48 мг» — тем же правилом, что `medicationPreviewNumbers` (§5.3).
      *
-     * Порядок ЭКР-7: доза на приём, затем дозировка препарата, через « · ». Пустая часть
-     * в строку не попадает; пусто и то и другое — строка пуста, а форму и вид называет
-     * заголовок, который остаётся всегда.
+     * Порядок ЭКР-7: доза на приём, затем дозировка препарата, через « · ». Доза печатается
+     * словом единицы со склонением по числу (Р-45), дозировка — словом выбранной единицы;
+     * пустая часть в строку не попадает.
      */
     private fun expectedPreviewNumbers(state: MedFormUiState): String {
         val dose = state.draft.doseAmount?.let { amount ->
-            val suffix = context.getString(doseSuffixOf(state.draft.form.doseUnit()))
-            "${amount.stripTrailingZeros().toPlainString()} $suffix"
+            val count = amount.toInt()
+            context.resources.getQuantityString(
+                previewDoseTemplate(state.draft.form.doseUnit()),
+                count,
+                amount.stripTrailingZeros().toPlainString(),
+            )
         }
         val strength = state.draft.strength?.let { amount ->
-            "${amount.stripTrailingZeros().toPlainString()} ${context.getString(R.string.strength_unit_milligram)}"
+            val unit = state.draft.strengthUnit ?: return@let null
+            "${amount.stripTrailingZeros().toPlainString()} ${context.getString(strengthUnitTemplate(unit))}"
         }
         return listOfNotNull(dose?.takeIf { it.isNotBlank() }, strength?.takeIf { it.isNotBlank() })
             .joinToString(PREVIEW_NUMBER_SEPARATOR)
     }
 
-    /** Единица дозы штучных форм и остальных — та же четвёрка, что у `MedsText.doseSuffix`. */
-    private fun doseSuffixOf(unit: DoseUnit): Int = when (unit) {
-        DoseUnit.TABLET, DoseUnit.CAPSULE -> R.string.dose_suffix_piece
-        DoseUnit.MILLILITRE -> R.string.dose_suffix_millilitre
-        DoseUnit.DOSE -> R.string.dose_suffix_dose
+    /** Семейство склонений дозы — та же шестёрка, что у `MedsText.previewDoseLabel` (Р-45). */
+    private fun previewDoseTemplate(unit: DoseUnit): Int = when (unit) {
+        DoseUnit.TABLET -> R.plurals.preview_dose_tablets
+        DoseUnit.CAPSULE -> R.plurals.preview_dose_capsules
+        DoseUnit.MILLILITRE -> R.plurals.preview_dose_millilitres
+        DoseUnit.DROP -> R.plurals.preview_dose_drops
+        DoseUnit.SPRAY -> R.plurals.preview_dose_sprays
+        DoseUnit.INJECTION -> R.plurals.preview_dose_injections
+    }
+
+    /** Слово единицы дозировки — та же шестёрка, что у `MedsText.StrengthUnit.label` (Р-45). */
+    private fun strengthUnitTemplate(unit: StrengthUnit): Int = when (unit) {
+        StrengthUnit.MILLIGRAM -> R.string.strength_unit_milligram
+        StrengthUnit.MICROGRAM -> R.string.strength_unit_microgram
+        StrengthUnit.GRAM -> R.string.strength_unit_gram
+        StrengthUnit.MILLILITRE -> R.string.strength_unit_millilitre
+        StrengthUnit.INTERNATIONAL_UNIT -> R.string.strength_unit_international_unit
+        StrengthUnit.PERCENT -> R.string.strength_unit_percent
     }
 
     private fun formLabelOf(form: MedicationForm): Int = when (form) {

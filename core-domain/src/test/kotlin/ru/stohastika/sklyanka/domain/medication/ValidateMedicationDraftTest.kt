@@ -64,14 +64,6 @@ class ValidateMedicationDraftTest {
     }
 
     @Test
-    fun `a blank unit counts as no unit at all`() {
-        assertEquals(
-            listOf(DraftViolation.StrengthWithoutUnit),
-            validate(Drafts.valid().copy(strengthUnit = "  ")),
-        )
-    }
-
-    @Test
     fun `a unit without its strength is rejected`() {
         assertEquals(
             listOf(DraftViolation.UnitWithoutStrength),

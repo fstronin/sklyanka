@@ -12,6 +12,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -22,6 +26,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import ru.stohastika.sklyanka.domain.medication.DraftField
+import ru.stohastika.sklyanka.domain.medication.StrengthUnit
 import ru.stohastika.sklyanka.domain.model.MedicationForm
 import ru.stohastika.sklyanka.domain.model.TabletShape
 import ru.stohastika.sklyanka.feature.meds.ChoiceTile
@@ -29,9 +34,12 @@ import ru.stohastika.sklyanka.feature.meds.R
 import ru.stohastika.sklyanka.feature.meds.SectionLabel
 import ru.stohastika.sklyanka.feature.meds.doseSuffix
 import ru.stohastika.sklyanka.feature.meds.label
+import ru.stohastika.sklyanka.feature.meds.message
 import ru.stohastika.sklyanka.feature.meds.medicationPreviewNumbers
 import ru.stohastika.sklyanka.feature.meds.medicationPreviewTitle
-import ru.stohastika.sklyanka.feature.meds.message
+import ru.stohastika.sklyanka.feature.meds.previewDoseLabel
+import ru.stohastika.sklyanka.feature.meds.strengthUnitLabel
+import ru.stohastika.sklyanka.ui.component.ListPickerDialog
 import ru.stohastika.sklyanka.ui.component.MedicationGlyph
 import ru.stohastika.sklyanka.ui.component.MedicationPreview
 import ru.stohastika.sklyanka.ui.component.SklyankaTextField
@@ -100,11 +108,11 @@ internal fun NameBlock(state: MedFormUiState, onIntent: (MedFormIntent) -> Unit,
 @Composable
 internal fun PreviewBlock(state: MedFormUiState) {
     val draft = state.draft
-    val dose = draft.doseAmount?.let { amount ->
-        "${amount.stripTrailingZeros().toPlainString()} ${state.applicability.doseUnit.doseSuffix()}"
-    }
+    val dose = draft.doseAmount?.let { amount -> previewDoseLabel(amount, state.applicability.doseUnit) }
     val strength = draft.strength?.let { amount ->
-        "${amount.stripTrailingZeros().toPlainString()} ${stringResource(R.string.strength_unit_milligram)}"
+        draft.strengthUnit?.let { unit ->
+            "${amount.stripTrailingZeros().toPlainString()} ${strengthUnitLabel(unit.code)}"
+        }
     }
     MedicationPreview(
         form = draft.form,
@@ -206,13 +214,16 @@ internal fun TabletShapeBlock(state: MedFormUiState, onIntent: (MedFormIntent) -
  * нарушение печатается под своим блоком: блоков два, и пояснение дозы не уезжает под
  * дозировку (§5.3).
  *
- * Единица количества следует за формой выпуска, единица дозировки зафиксирована макетом
- * как «мг»: состав закрытого списка единиц — отдельная задача (Р-45, SKL-126).
+ * Единица количества следует за формой выпуска и человеком не выбирается (Р-45). Единица
+ * дозировки — вторая половина значения, и выбирается она из закрытого списка диалогом
+ * дизайн-системы: цель нажатия — сама единица в поле (§5.3), свободного ввода нет вовсе.
  */
 @Composable
 internal fun DoseBlock(state: MedFormUiState, onIntent: (MedFormIntent) -> Unit, anchors: FormAnchors) {
     val amountLabel = stringResource(R.string.cd_dose_amount)
     val strengthLabel = stringResource(R.string.cd_strength)
+    val unitLabel = stringResource(R.string.form_label_strength_unit)
+    var unitPickerOpen by remember { mutableStateOf(false) }
     FormBlock(stringResource(R.string.form_label_dose), DraftField.DOSE, anchors) {
         SklyankaTextField(
             value = state.inputs.doseAmount,
@@ -230,7 +241,12 @@ internal fun DoseBlock(state: MedFormUiState, onIntent: (MedFormIntent) -> Unit,
         SklyankaTextField(
             value = state.inputs.strength,
             onValueChange = { onIntent(MedFormIntent.StrengthChanged(it)) },
-            unitLabel = stringResource(R.string.strength_unit_milligram),
+            // Единица по умолчанию — «мг»: она появляется вместе с числом (Р-45, §5.3)
+            // и стоит в поле даже тогда, когда человек ещё ничего не набрал, — иначе
+            // куда нажимать, чтобы сменить её, было бы не видно.
+            unitLabel = strengthUnitLabel((state.draft.strengthUnit ?: StrengthUnit.MILLIGRAM).code),
+            onUnitClick = { unitPickerOpen = true },
+            unitContentDescription = unitLabel,
             numeric = true,
             errorText = state.violationOf(DraftField.STRENGTH)?.message(),
             modifier = Modifier
@@ -241,6 +257,20 @@ internal fun DoseBlock(state: MedFormUiState, onIntent: (MedFormIntent) -> Unit,
         // Необязательное поле называет себя словами: конвенция формы — обязательное молчит,
         // необязательное поясняет, чем оно не участвует в расчётах (§5.3).
         BlockHint(stringResource(R.string.form_strength_hint))
+    }
+    if (unitPickerOpen) {
+        ListPickerDialog(
+            title = unitLabel,
+            options = StrengthUnit.entries,
+            selected = state.draft.strengthUnit,
+            label = { unit -> unit.label() },
+            onSelect = { unit ->
+                onIntent(MedFormIntent.StrengthUnitChanged(unit))
+                unitPickerOpen = false
+            },
+            onDismiss = { unitPickerOpen = false },
+            modifier = Modifier.testTag(TAG_STRENGTH_UNIT_DIALOG),
+        )
     }
 }
 
@@ -264,3 +294,6 @@ const val TAG_FORM_TILE_GLYPH = "form_release_form_glyph"
 const val TAG_TABLET_SHAPE_ROW = "form_tablet_shape"
 const val TAG_DOSE_FIELD = "form_dose_amount"
 const val TAG_STRENGTH_FIELD = "form_strength"
+
+/** Диалог выбора единицы дозировки: цель нажатия — единица в поле дозировки (Р-45). */
+const val TAG_STRENGTH_UNIT_DIALOG = "form_strength_unit_picker"

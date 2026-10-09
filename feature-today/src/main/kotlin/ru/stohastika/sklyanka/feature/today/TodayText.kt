@@ -7,6 +7,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import ru.stohastika.sklyanka.domain.intake.MarkResult
 import ru.stohastika.sklyanka.domain.medication.DoseUnit
+import ru.stohastika.sklyanka.domain.medication.StrengthUnit
 import ru.stohastika.sklyanka.domain.medication.doseUnit
 import ru.stohastika.sklyanka.domain.model.FoodRelation
 import ru.stohastika.sklyanka.domain.model.Medication
@@ -120,12 +121,37 @@ internal fun Medication.doseCaption(): String {
     val parts = buildList {
         add(doseLabel(doseAmount, DoseUnit.ofCode(doseUnit) ?: form.doseUnit()))
         strength?.let { value ->
-            add(stringResource(R.string.today_strength, value.plain(), strengthUnit.orEmpty()))
+            add(stringResource(R.string.today_strength, value.plain(), strengthUnitText(strengthUnit)))
         }
         foodRelation.label()?.let(::add)
     }
     return parts.joinToString(separator)
 }
+
+/**
+ * Единица дозировки словом языка из закрытого списка (Р-45); незнакомый код — как есть.
+ *
+ * Код приходит из записи: своя форма пишет код закрытого списка, чужая единица — из файла
+ * переноса данных или из более старой версии, и подменять её своей нельзя (МГ-6).
+ */
+@Composable
+private fun strengthUnitText(code: String?): String {
+    if (code == null) return ""
+    return StrengthUnit.ofCode(code)?.label() ?: code
+}
+
+/** Слово единицы дозировки из закрытого списка (Р-45). */
+@Composable
+private fun StrengthUnit.label(): String = stringResource(
+    when (this) {
+        StrengthUnit.MILLIGRAM -> R.string.strength_unit_milligram
+        StrengthUnit.MICROGRAM -> R.string.strength_unit_microgram
+        StrengthUnit.GRAM -> R.string.strength_unit_gram
+        StrengthUnit.MILLILITRE -> R.string.strength_unit_millilitre
+        StrengthUnit.INTERNATIONAL_UNIT -> R.string.strength_unit_international_unit
+        StrengthUnit.PERCENT -> R.string.strength_unit_percent
+    },
+)
 
 /** «1 таблетка», «2 таблетки», «1 капсула». */
 @Composable
@@ -134,7 +160,9 @@ private fun doseLabel(amount: BigDecimal, unit: DoseUnit): String = pluralString
         DoseUnit.TABLET -> R.plurals.today_dose_tablets
         DoseUnit.CAPSULE -> R.plurals.today_dose_capsules
         DoseUnit.MILLILITRE -> R.plurals.today_dose_millilitres
-        DoseUnit.DOSE -> R.plurals.today_dose_doses
+        DoseUnit.DROP -> R.plurals.today_dose_drops
+        DoseUnit.SPRAY -> R.plurals.today_dose_sprays
+        DoseUnit.INJECTION -> R.plurals.today_dose_injections
     },
     amount.toInt(),
     amount.plain(),
@@ -147,7 +175,9 @@ private fun stockLeftLabel(left: BigDecimal, unit: DoseUnit): String = pluralStr
         DoseUnit.TABLET -> R.plurals.today_stock_left_tablets
         DoseUnit.CAPSULE -> R.plurals.today_stock_left_capsules
         DoseUnit.MILLILITRE -> R.plurals.today_stock_left_millilitres
-        DoseUnit.DOSE -> R.plurals.today_stock_left_doses
+        DoseUnit.DROP -> R.plurals.today_stock_left_drops
+        DoseUnit.SPRAY -> R.plurals.today_stock_left_sprays
+        DoseUnit.INJECTION -> R.plurals.today_stock_left_injections
     },
     left.toInt(),
     left.plain(),
