@@ -3,15 +3,22 @@ package ru.stohastika.sklyanka.data.room
 import android.content.Context
 
 /**
- * Состояние базы относительно сборки (Р-44, `ADR-0012` п. 7).
+ * Состояние базы относительно сборки (Р-44, `ADR-0012` пп. 3, 7).
  *
- * Различаются два состояния, и оба — не ошибка человека: [Ready] — обычная работа
- * (в том числе первая установка, когда файла базы ещё нет), [Newer] — база создана
- * более новой сборкой, и эта читать её не имеет права.
+ * Три состояния, и ни одно из них — не ошибка человека:
+ * [Ready] — обычная работа (в том числе первая установка, когда файла базы ещё нет);
+ * [Newer] — база создана более новой сборкой, и эта читать её не имеет права;
+ * [NotEnoughSpace] — база старее сборки, а места на копию перед миграцией нет, поэтому
+ * миграция не выполняется (`ADR-0012` п. 3).
+ *
+ * Отказ от миграции — не мелочь удобства: миграцию без копии норма запрещает, а открыть
+ * схему, не мигрировав её, значит либо упасть, либо тронуть данные. Поэтому третье
+ * состояние несут и старт, и приёмник будильника: оба обязаны ответить одинаково.
  */
-enum class DatabaseState {
+sealed interface DatabaseState {
+
     /** Схема этой сборки знает базу: можно открывать и работать. */
-    Ready,
+    data object Ready : DatabaseState
 
     /**
      * База новее: схема не открывается, данные не меняются.
@@ -20,26 +27,42 @@ enum class DatabaseState {
      * (`ADR-0012` п. 1), поэтому единственный честный путь — сказать человеку обновить
      * приложение, а не притвориться, что базы нет.
      */
-    Newer,
+    data object Newer : DatabaseState
+
+    /**
+     * Места на копию перед миграцией не хватает: миграция не выполняется, данные не меняются.
+     *
+     * Человеку называется [MigrationCopyBudget.missingMegabytes]: отказ без числа — это
+     * молчаливое «не работает», а причина здесь ровно одна и она измерима.
+     */
+    data class NotEnoughSpace(val budget: MigrationCopyBudget) : DatabaseState
 }
 
 /**
  * Правило состояния базы — единственное место, где оно записано.
  *
- * Чистая функция: сравнение версий не зависит ни от Android, ни от файла, и проверяется
- * на JVM. Отсутствие базы (`null`) — это первая установка, а не «новее»: ждать от файла,
- * которого нет, нечего.
+ * Чистая функция: сравнение версий и места не зависит ни от Android, ни от файла,
+ * и проверяется на JVM. Отсутствие базы (`null`) — это первая установка, а не «новее»:
+ * ждать от файла, которого нет, нечего.
  *
  * [expectedVersion] — параметр, а не константа внутри: тест правила не должен ломаться
  * от того, что схема получила очередную версию, а вызывающий называет версию сборки явно
  * и один раз (`SklyankaDatabase.VERSION`).
+ *
+ * [budget] называется только тогда, когда миграция действительно предстоит: без него
+ * правило не может отказать из-за места и отвечает [DatabaseState.Ready] — так вызовы,
+ * которым место неважно (правило версии само по себе), остаются прежними.
  */
-fun databaseState(storedVersion: Int?, expectedVersion: Int = SklyankaDatabase.VERSION): DatabaseState =
-    if (storedVersion != null && storedVersion > expectedVersion) {
-        DatabaseState.Newer
-    } else {
-        DatabaseState.Ready
-    }
+fun databaseState(
+    storedVersion: Int?,
+    expectedVersion: Int = SklyankaDatabase.VERSION,
+    budget: MigrationCopyBudget? = null,
+): DatabaseState = when {
+    storedVersion != null && storedVersion > expectedVersion -> DatabaseState.Newer
+    storedVersion != null && storedVersion < expectedVersion && budget != null && !budget.fits ->
+        DatabaseState.NotEnoughSpace(budget)
+    else -> DatabaseState.Ready
+}
 
 /**
  * Состояние базы по контексту: прочитать версию и применить правило (Р-44).
@@ -47,5 +70,13 @@ fun databaseState(storedVersion: Int?, expectedVersion: Int = SklyankaDatabase.V
  * Одна точка для всех, кто спрашивает «можно ли работать с базой»: сборщик базы в графе
  * и приёмник будильника спрашивают одно и то же, и второй реализации этого вопроса быть
  * не должно. Чтения нет вовсе, если файла ещё нет: это первая установка.
+ *
+ * Место считается только при предстоящей миграции — вопрос о копии возникает лишь тогда.
  */
-fun databaseStateOf(context: Context): DatabaseState = databaseState(DatabaseVersionReader(context).read())
+fun databaseStateOf(context: Context): DatabaseState {
+    val stored = DatabaseVersionReader(context).read()
+    return databaseState(
+        storedVersion = stored,
+        budget = MigrationCopyBudget.onlyWhenPending(context, stored),
+    )
+}

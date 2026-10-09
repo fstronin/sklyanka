@@ -12,14 +12,15 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import ru.stohastika.sklyanka.data.room.DatabaseState
+import ru.stohastika.sklyanka.data.room.DatabaseUpgrade
 import ru.stohastika.sklyanka.data.room.SklyankaDatabase
 import ru.stohastika.sklyanka.data.room.SklyankaMigrations
 import ru.stohastika.sklyanka.data.room.dao.IntakeDao
 import ru.stohastika.sklyanka.data.room.dao.MedicationDao
 import ru.stohastika.sklyanka.data.room.dao.OpLogDao
 import ru.stohastika.sklyanka.data.room.dao.ProfileDao
-import ru.stohastika.sklyanka.data.room.databaseStateOf
 import ru.stohastika.sklyanka.data.room.withForeignKeysEnabled
+import ru.stohastika.sklyanka.domain.time.TimeSource
 import javax.inject.Singleton
 
 /**
@@ -34,7 +35,7 @@ import javax.inject.Singleton
 object DataModule {
 
     /**
-     * База приложения — и первое место, где решается её судьба (Р-44, `ADR-0012` п. 7).
+     * База приложения — и первое место, где решается её судьба (Р-44, `ADR-0012` пп. 3, 7).
      *
      * Состояние читается **до** `build()`: `Builder.build()` файла не касается, а открывает
      * его `withForeignKeysEnabled()`, и на базе новее ожидаемой именно там старая сборка
@@ -42,27 +43,39 @@ object DataModule {
      * собирается (иначе приложение не дошло бы до экрана отказа), но ни одна выборка
      * не выполняется — их и не зовёт никто: старт и маршрут в этом состоянии пропускаются.
      *
+     * Здесь же снимается копия перед миграцией (`ADR-0012` п. 3): подготовка идёт до открытия,
+     * потому что после него миграция уже случилась бы — а без копии она запрещена. Если места
+     * на копию нет, миграция не выполняется вовсе, и база возвращается неоткрытой: третье
+     * состояние ([DatabaseState.NotEnoughSpace]) — такой же отказ, как база новее.
+     *
      * Разрушающая деградация здесь не вызывается и не появится (МГ-2): отказ
      * честнее разрушения, а данные человека — единственная их копия.
      */
     @Provides
     @Singleton
-    fun provideDatabase(@ApplicationContext context: Context, state: DatabaseState): SklyankaDatabase {
+    fun provideDatabase(@ApplicationContext context: Context, upgrade: DatabaseUpgrade): SklyankaDatabase {
+        upgrade.prepare()
         val builder = Room.databaseBuilder(context, SklyankaDatabase::class.java, SklyankaDatabase.NAME)
         SklyankaMigrations.ALL.forEach { builder.addMigrations(it) }
         val database = builder.build()
-        return if (state == DatabaseState.Newer) database else database.withForeignKeysEnabled()
+        // Состояние спрашивается **после** подготовки, а не приходит готовым значением:
+        // отказ по месту, случившийся между решением и копией, обязан победить и здесь —
+        // иначе база откроется и мигрирует без копии (`ADR-0012` п. 3).
+        val open = upgrade.state() == DatabaseState.Ready
+        return if (open) database.withForeignKeysEnabled() else database
     }
 
     /**
-     * Состояние базы — один раз на процесс.
+     * Подготовка базы к открытию (`ADR-0012` пп. 3, 4).
      *
-     * Читается без Room (прямым `PRAGMA`), поэтому спрашивать его можно до сборки базы:
-     * приёмник будильника обязан знать ответ раньше, чем коснётся графа.
+     * Собирается здесь, а не конструктором с `@Inject`: имя файла базы — параметр
+     * со значением по умолчанию, и Dagger потребовал бы отдельной привязки для строки,
+     * которую в продукте всегда называют одним и тем же именем базы.
      */
     @Provides
     @Singleton
-    fun provideDatabaseState(@ApplicationContext context: Context): DatabaseState = databaseStateOf(context)
+    fun provideDatabaseUpgrade(@ApplicationContext context: Context, time: TimeSource): DatabaseUpgrade =
+        DatabaseUpgrade(context, time)
 
     @Provides
     fun provideProfileDao(database: SklyankaDatabase): ProfileDao = database.profileDao()

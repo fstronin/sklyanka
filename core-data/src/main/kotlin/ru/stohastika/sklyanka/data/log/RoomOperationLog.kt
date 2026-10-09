@@ -8,6 +8,7 @@ import ru.stohastika.sklyanka.domain.log.OpLogRecord
 import ru.stohastika.sklyanka.domain.log.OperationLog
 import ru.stohastika.sklyanka.domain.time.TimeSource
 import java.time.Duration
+import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -62,6 +63,9 @@ class RoomOperationLog @Inject constructor(private val dao: OpLogDao, private va
             detail = entity.detail,
         )
     }
+
+    override suspend fun lastOccurredAt(event: OpEvent): Instant? =
+        dao.lastAt(event.name)?.let(SklyankaConverters::millisToInstant)
 
     override suspend fun prune(keepDays: Long, keepRecords: Int) {
         dao.pruneOlderThan(time.now().minus(Duration.ofDays(keepDays)).toEpochMilli())

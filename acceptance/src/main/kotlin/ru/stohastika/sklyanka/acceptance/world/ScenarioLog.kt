@@ -3,6 +3,7 @@ package ru.stohastika.sklyanka.acceptance.world
 import ru.stohastika.sklyanka.domain.log.OpEvent
 import ru.stohastika.sklyanka.domain.log.OpLogRecord
 import ru.stohastika.sklyanka.domain.log.OperationLog
+import java.time.Instant
 
 /**
  * Журнал сценария — один на сценарий.
@@ -48,6 +49,8 @@ class ScenarioLog(private val clock: ScenarioClock) : OperationLog {
     }
 
     override suspend fun recent(limit: Int): List<OpLogRecord> = records.takeLast(limit)
+
+    override suspend fun lastOccurredAt(event: OpEvent): Instant? = records.lastOrNull { it.event == event }?.at
 
     override suspend fun prune(keepDays: Long, keepRecords: Int) = Unit
 }

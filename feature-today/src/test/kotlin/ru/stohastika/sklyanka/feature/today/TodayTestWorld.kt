@@ -449,5 +449,8 @@ internal class RecordingLog : OperationLog {
 
     override suspend fun recent(limit: Int): List<OpLogRecord> = records.takeLast(limit)
 
+    /** Подделка пишет всем записям один момент: «когда это было в прошлый раз» ею не проверяется. */
+    override suspend fun lastOccurredAt(event: OpEvent): Instant? = records.lastOrNull { it.event == event }?.at
+
     override suspend fun prune(keepDays: Long, keepRecords: Int) = Unit
 }

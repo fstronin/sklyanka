@@ -11,6 +11,7 @@ import ru.stohastika.sklyanka.domain.log.OpLogRecord
 import ru.stohastika.sklyanka.domain.log.OperationLog
 import ru.stohastika.sklyanka.domain.model.Fixtures
 import ru.stohastika.sklyanka.domain.repository.ActiveProfileRepository
+import java.time.Instant
 
 /**
  * Удаление чужого профиля: правило, порядок и след (ОВ-7, ПРФ-28, ПРФ-30, ПРФ-31).
@@ -131,6 +132,9 @@ private class OrderRecordingLog(private val order: MutableList<String>) : Operat
     }
 
     override suspend fun recent(limit: Int): List<OpLogRecord> = emptyList()
+
+    /** Подделка следит за порядком вызовов, а не за моментами: «когда это было» ею не проверяется. */
+    override suspend fun lastOccurredAt(event: OpEvent): Instant? = null
 
     override suspend fun prune(keepDays: Long, keepRecords: Int) = Unit
 }
