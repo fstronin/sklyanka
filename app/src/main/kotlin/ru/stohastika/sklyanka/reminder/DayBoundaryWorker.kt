@@ -17,14 +17,21 @@ import ru.stohastika.sklyanka.di.ReminderEntryPoint
 class DayBoundaryWorker(context: Context, parameters: WorkerParameters) : CoroutineWorker(context, parameters) {
 
     @Suppress("TooGenericExceptionCaught")
-    override suspend fun doWork(): Result = try {
-        ReminderEntryPoint.of(applicationContext).sweepAtDayBoundary()()
-        Result.success()
-    } catch (error: Exception) {
-        // Тот же довод, что в RescheduleWorker: причина отказа базы неперечислима, а цена —
-        // карточка вчерашнего приёма, висящая в шторке до следующего события. Исчерпав
-        // попытки, ошибку пробрасываем: молчаливый отказ разбирать нечем.
-        if (runAttemptCount < MAX_ATTEMPTS) Result.retry() else throw error
+    override suspend fun doWork(): Result {
+        // База новее: полуночный проход читал бы и писал базу, которой эта сборка
+        // не знает (Р-44), поэтому работа не выполняется и исход — успех.
+        if (wakeUpDecision(wakeUpStateOf(applicationContext)) == WakeUpDecision.AskToUpdate) {
+            return Result.success()
+        }
+        return try {
+            ReminderEntryPoint.of(applicationContext).sweepAtDayBoundary()()
+            Result.success()
+        } catch (error: Exception) {
+            // Тот же довод, что в RescheduleWorker: причина отказа базы неперечислима, а цена —
+            // карточка вчерашнего приёма, висящая в шторке до следующего события. Исчерпав
+            // попытки, ошибку пробрасываем: молчаливый отказ разбирать нечем.
+            if (runAttemptCount < MAX_ATTEMPTS) Result.retry() else throw error
+        }
     }
 
     private companion object {

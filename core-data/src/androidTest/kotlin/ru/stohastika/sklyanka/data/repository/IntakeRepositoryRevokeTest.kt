@@ -53,7 +53,13 @@ class IntakeRepositoryRevokeTest {
     fun fillProfileAndOnDemandMedication() = runTest {
         db.profiles.insert(TestData.owner())
         db.medications.upsert(
-            TestData.medication(id = TestData.PRN_MEDICATION_ID, scheduleMode = ScheduleMode.PRN),
+            // Остаток уже уменьшен на дозу: запись существует потому, что её отметили,
+            // а отметка «принято» списала дозу (ПР-5). Снятие обязано вернуть ровно её.
+            TestData.medication(
+                id = TestData.PRN_MEDICATION_ID,
+                scheduleMode = ScheduleMode.PRN,
+                stockLeft = STOCK_AFTER_THE_TAKE,
+            ),
         )
         db.intakes.insertAll(listOf(TestData.prnIntake(id = INTAKE_ID, scheduledAt = MOMENT_IN_LOCAL)))
     }
@@ -148,6 +154,9 @@ class IntakeRepositoryRevokeTest {
 
     private companion object {
         const val INTAKE_ID = "bbbbbbbb-0000-4000-8000-000000000001"
+
+        /** Остаток после состоявшейся отметки: от него снятие возвращает дозу. */
+        const val STOCK_AFTER_THE_TAKE = "29"
         const val RECENT_LIMIT = 50
         val MOMENT: Instant = Instant.parse("2026-09-25T05:05:00Z")
         val MOMENT_IN_LOCAL: LocalDateTime = LocalDate.of(2026, 9, 25).atTime(13, 20)

@@ -8,6 +8,7 @@ import androidx.work.await
 import kotlinx.coroutines.launch
 import ru.stohastika.sklyanka.di.DirectBootEntryPoint
 import ru.stohastika.sklyanka.domain.reminder.RescheduleReason
+import ru.stohastika.sklyanka.platform.notification.UpdateRequiredNotifier
 
 /**
  * События загрузки до и после первой разблокировки (SKL-87).
@@ -24,6 +25,12 @@ import ru.stohastika.sklyanka.domain.reminder.RescheduleReason
 class DirectBootReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
+        // База новее: ни пересборки, ни переноса следа — оба читают или пишут базу,
+        // которой эта сборка не знает (Р-44). Человеку сообщается обновление.
+        if (wakeUpDecision(wakeUpStateOf(context)) == WakeUpDecision.AskToUpdate) {
+            UpdateRequiredNotifier.show(context)
+            return
+        }
         // Компонент может отсутствовать: систему не интересует, под какой точкой сборки
         // поднят процесс, и broadcast приходит в процесс, графа ещё не имеющий
         // (например, инструментальный процесс тестовой сборки). Восстанавливать

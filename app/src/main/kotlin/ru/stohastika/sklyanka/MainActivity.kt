@@ -21,6 +21,7 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import ru.stohastika.sklyanka.data.room.DatabaseState
 import ru.stohastika.sklyanka.domain.onboarding.OnboardingSource
 import ru.stohastika.sklyanka.domain.onboarding.ShouldShowOnboardingUseCase
 import ru.stohastika.sklyanka.domain.profile.ProfileContextProvider
@@ -46,6 +47,7 @@ import ru.stohastika.sklyanka.feature.settings.profile.DeleteProfileViewModel
 import ru.stohastika.sklyanka.feature.settings.transfer.DataTransferViewModel
 import ru.stohastika.sklyanka.feature.today.TodayNavigation
 import ru.stohastika.sklyanka.feature.today.TodayRoute
+import ru.stohastika.sklyanka.feature.today.TodayUiState
 import ru.stohastika.sklyanka.feature.today.TodayViewModel
 import ru.stohastika.sklyanka.navigation.HistoryOrigin
 import ru.stohastika.sklyanka.navigation.HistorySection
@@ -115,6 +117,14 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var startupRouter: StartupRouter
+
+    /**
+     * Состояние базы: новее ожидаемой — приложение не работает (Р-44, `ADR-0012` п. 7).
+     *
+     * Читается без Room, поэтому решение принимается до первого касания данных.
+     */
+    @Inject
+    lateinit var databaseState: DatabaseState
 
     /**
      * Показывать ли экран разрешений самому (НАП-21).
@@ -216,6 +226,8 @@ class MainActivity : ComponentActivity() {
         // человек остаётся на экране с окном.
         val addMedicationRequested = rootNavigation.openFromLaunch(intent?.action, undoActions.live())
 
+        val databaseTooNew = databaseState == DatabaseState.Newer
+
         var decision by mutableStateOf<StartupDecision?>(null)
         var onboardingUnseen by mutableStateOf(false)
         // Системный кадр приложение не удерживает: на Android 12+ платформа держит его
@@ -236,7 +248,15 @@ class MainActivity : ComponentActivity() {
                 // решает человек кнопкой, и решение живёт в состоянии экрана, а не в том,
                 // что система ответила про разрешения (НАП-21).
                 var onboardingDone by remember { mutableStateOf(false) }
-                val todayState by today.state.collectAsState()
+                // Пока база новее, «Сегодня» не читается вовсе: его состояние — это
+                // запросы к базе, а схему, которой эта сборка не знает, открывать нельзя
+                // (Р-44, ADR-0012 п. 7). Ветка стоит здесь, а не в правиле кадров: решает
+                // не правило, а возможность обратиться к данным.
+                val todayState = if (databaseTooNew) {
+                    TodayUiState.Opening
+                } else {
+                    today.state.collectAsState().value
+                }
                 // Кадр заставки — экран удержания: он виден от снятия системного кадра
                 // до готовности первого экрана и ни кадром дольше. Пока заставка на
                 // экране, первый экран не компонуется вовсе, поэтому пустой кадр
@@ -247,6 +267,7 @@ class MainActivity : ComponentActivity() {
                         onboardingUnseen = onboardingUnseen,
                         onboardingDone = onboardingDone,
                         today = todayState,
+                        databaseTooNew = databaseTooNew,
                     ),
                 ) {
                     LaunchRouting(

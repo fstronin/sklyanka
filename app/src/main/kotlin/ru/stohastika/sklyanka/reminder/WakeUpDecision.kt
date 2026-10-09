@@ -1,0 +1,43 @@
+package ru.stohastika.sklyanka.reminder
+
+import android.content.Context
+import ru.stohastika.sklyanka.data.room.DatabaseState
+import ru.stohastika.sklyanka.data.room.databaseStateOf
+
+/**
+ * Что делать тому, кого разбудили будильником, при текущем состоянии базы (Р-44, `ADR-0012` п. 7).
+ *
+ * Правило вынесено из приёмников и задач отдельной функцией: оно предметное («в этом
+ * состоянии напоминание отработать не может»), а не техническое, и проверяется на JVM.
+ * Проверять его через сам приёмник значило бы поднимать `WorkManager`, граф Hilt и
+ * устройство ради одной ветви.
+ */
+enum class WakeUpDecision {
+
+    /** Обычный путь: напоминание обрабатывается как всегда. */
+    Handle,
+
+    /**
+     * База новее установленной сборки: отметок не создаём, карточку не показываем,
+     * сообщаем о необходимости обновления (П-7).
+     *
+     * Напоминание, не способное отработать честно, не лжёт: показать карточку приёма
+     * здесь нечем — приём лежит в базе, которую эта сборка читать не умеет, а отметка,
+     * записанная «наугад», потерялась бы вместе с процессом.
+     */
+    AskToUpdate,
+}
+
+/** Решение сработавшего будильника по состоянию базы. */
+fun wakeUpDecision(state: DatabaseState): WakeUpDecision = when (state) {
+    DatabaseState.Ready -> WakeUpDecision.Handle
+    DatabaseState.Newer -> WakeUpDecision.AskToUpdate
+}
+
+/**
+ * Состояние базы по контексту — тем же чтением, что у графа, и без Room.
+ *
+ * Приёмник спрашивает это до обращения к графу: иначе первый же запрос к приёму открыл бы
+ * схему, которой эта сборка не знает.
+ */
+fun wakeUpStateOf(context: Context): DatabaseState = databaseStateOf(context)

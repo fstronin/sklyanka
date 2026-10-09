@@ -7,6 +7,7 @@ import androidx.work.await
 import kotlinx.coroutines.launch
 import ru.stohastika.sklyanka.di.ReminderEntryPoint
 import ru.stohastika.sklyanka.domain.reminder.RescheduleReason
+import ru.stohastika.sklyanka.platform.notification.UpdateRequiredNotifier
 import ru.stohastika.sklyanka.platform.reminder.ReminderAlarms
 
 /**
@@ -25,6 +26,13 @@ import ru.stohastika.sklyanka.platform.reminder.ReminderAlarms
 class AlarmReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
+        // База новее установленной сборки: ни отметки, ни карточки, а просьба обновиться
+        // (Р-44, ADR-0012 п. 7). Проверка идёт до графа и без Room — иначе первый же
+        // запрос к приёму упал бы на схеме, которой эта сборка не знает.
+        if (wakeUpDecision(wakeUpStateOf(context)) == WakeUpDecision.AskToUpdate) {
+            UpdateRequiredNotifier.show(context)
+            return
+        }
         // Граф может отсутствовать: в процессе без приложения продукта (инструментальный
         // прогон тестовой сборки) система всё равно доставляет системные broadcast'ы,
         // и приёмник обязан их пережить, а не уронить процесс (SKL-97).

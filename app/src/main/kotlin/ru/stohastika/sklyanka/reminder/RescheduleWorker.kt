@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import ru.stohastika.sklyanka.di.ReminderEntryPoint
+import ru.stohastika.sklyanka.domain.reminder.RescheduleReason
 
 /**
  * Пересборка окна будильников фоновой задачей (НАП-11, НАП-13, `TDD.md §5.4`).
@@ -25,16 +26,26 @@ class RescheduleWorker(context: Context, parameters: WorkerParameters) : Corouti
      * Последняя попытка пробрасывает исходную ошибку: `Result.failure()` записал бы в историю
      * задач «не получилось» без причины, и разбирать было бы нечего.
      */
-    @Suppress("TooGenericExceptionCaught")
     override suspend fun doWork(): Result {
         val reason = ReminderWork.reasonOf(inputData.getString(ReminderWork.KEY_REASON))
-            ?: return Result.failure()
-        return try {
-            ReminderEntryPoint.of(applicationContext).reminderPlanning().planAll(reason)
-            Result.success()
-        } catch (error: Exception) {
-            if (runAttemptCount < MAX_ATTEMPTS) Result.retry() else throw error
+        return when {
+            // База новее: пересборка окна читала бы и писала базу, которой эта сборка
+            // не знает (Р-44). Задача завершается успешно и ничего не делает: сообщить
+            // человеку успел приёмник будильника, а не фоновая задача.
+            wakeUpDecision(wakeUpStateOf(applicationContext)) == WakeUpDecision.AskToUpdate -> Result.success()
+
+            reason == null -> Result.failure()
+
+            else -> replan(reason)
         }
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private suspend fun replan(reason: RescheduleReason): Result = try {
+        ReminderEntryPoint.of(applicationContext).reminderPlanning().planAll(reason)
+        Result.success()
+    } catch (error: Exception) {
+        if (runAttemptCount < MAX_ATTEMPTS) Result.retry() else throw error
     }
 
     private companion object {

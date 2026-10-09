@@ -20,4 +20,10 @@
     <string name="diagnostics_shortcut_label">Erinnerungen</string>
 
     <string name="permissions_shortcut_label">Berechtigungen und Autostart</string>
+
+    <string name="database_too_new_title">Datenbank ist neuer, App aktualisieren</string>
+    <string name="database_too_new_explanation">Die Daten auf dem Telefon wurden von einer neueren Version der App erstellt. Diese Version kennt sie nicht und wird sie nicht ändern.</string>
+    <string name="database_too_new_data_kept">Die Einnahmehistorie ist unversehrt. Installieren Sie die neue Version aus dem Store, dann öffnet sich die App wie zuvor.</string>
+    <string name="database_too_new_notification_title">App aktualisieren</string>
+    <string name="database_too_new_notification_text">Erinnerungen funktionieren erst, wenn Sie die App aktualisieren.</string>
 </resources>

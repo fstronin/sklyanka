@@ -20,4 +20,10 @@
     <string name="diagnostics_shortcut_label">Еске салғыштар</string>
 
     <string name="permissions_shortcut_label">Рұқсаттар және автожүгірту</string>
+
+    <string name="database_too_new_title">Дерекқор жаңарақ, қолданбаны жаңартыңыз</string>
+    <string name="database_too_new_explanation">Телефондағы деректер қолданбаның жаңарақ нұсқасымен жасалған. Бұл нұсқа оларды танымайды және өзгертпейді.</string>
+    <string name="database_too_new_data_kept">Қабылдау тарихы сақтаулы. Дүкеннен жаңа нұсқаны орнатыңыз — қолданба бұрынғыша ашылады.</string>
+    <string name="database_too_new_notification_title">Қолданбаны жаңартыңыз</string>
+    <string name="database_too_new_notification_text">Қолданбаны жаңартпайынша, еске салғыштар істемейді.</string>
 </resources>

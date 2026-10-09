@@ -20,4 +20,10 @@
     <string name="diagnostics_shortcut_label">Reminders</string>
 
     <string name="permissions_shortcut_label">Permissions and autostart</string>
+
+    <string name="database_too_new_title">Database is newer, update the app</string>
+    <string name="database_too_new_explanation">The data on this phone was created by a newer version of the app. This version does not know it and will not change it.</string>
+    <string name="database_too_new_data_kept">Your intake history is intact. Install the new version from the store and the app will open as before.</string>
+    <string name="database_too_new_notification_title">Update the app</string>
+    <string name="database_too_new_notification_text">Reminders will not work until you update the app.</string>
 </resources>

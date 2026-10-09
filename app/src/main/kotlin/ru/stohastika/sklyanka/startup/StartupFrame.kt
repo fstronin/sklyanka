@@ -8,7 +8,9 @@ import ru.stohastika.sklyanka.feature.today.TodayUiState
  *
  * На холодном старте кадров три: системный (его рисует платформа по теме
  * `Theme.Sklyanka.Splash`, приложению он не подчиняется), заставка приложения
- * и первый экран. Здесь названы два последних — то, чем распоряжается приложение.
+ * и первый экран. Здесь названы два последних — то, чем распоряжается приложение, —
+ * и третий, который бывает вместо них: отказ от работы на базе новее установленной
+ * сборки (`ADR-0012` п. 7).
  */
 enum class StartupFrame {
 
@@ -20,6 +22,15 @@ enum class StartupFrame {
 
     /** Первый экран запуска: разрешения, онбординг или «Сегодня» с содержимым. */
     FirstScreen,
+
+    /**
+     * База новее установленной сборки: приложение не открывается, показывается объяснение.
+     *
+     * Кадр первый в правиле и не зависит от остальных входов: пока база новее, ни один
+     * экран продукта показать нельзя — каждый из них открыл бы схему, которой эта сборка
+     * не знает (Р-44, МГ-2).
+     */
+    DatabaseTooNew,
 }
 
 /**
@@ -41,7 +52,10 @@ fun startupFrame(
     onboardingUnseen: Boolean,
     onboardingDone: Boolean,
     today: TodayUiState,
+    /** Состояние базы: новее ожидаемой — приложение работать не может (Р-44). */
+    databaseTooNew: Boolean = false,
 ): StartupFrame = when {
+    databaseTooNew -> StartupFrame.DatabaseTooNew
     destination == null -> StartupFrame.AppSplash
     destination == StartDestination.Onboarding && onboardingUnseen && !onboardingDone -> StartupFrame.FirstScreen
     today is TodayUiState.Opening -> StartupFrame.AppSplash
@@ -66,6 +80,9 @@ fun startupFrame(
 fun StartupFrames(frame: StartupFrame, firstScreen: @Composable () -> Unit) {
     when (frame) {
         StartupFrame.AppSplash -> SplashScreen()
+        StartupFrame.DatabaseTooNew -> DatabaseTooNewScreen()
+        // Первый экран не компонуется ни в одном другом кадре — ни заставкой, ни отказом:
+        // маршрут строит граф, а граф читает базу, которую в отказе читать нельзя.
         StartupFrame.FirstScreen -> firstScreen()
     }
 }

@@ -12,6 +12,7 @@ import dagger.hilt.testing.TestInstallIn
 import ru.stohastika.sklyanka.data.di.DataModule
 import ru.stohastika.sklyanka.data.di.DirectBootModule
 import ru.stohastika.sklyanka.data.di.DirectBootPreferences
+import ru.stohastika.sklyanka.data.room.DatabaseState
 import ru.stohastika.sklyanka.data.room.SklyankaDatabase
 import ru.stohastika.sklyanka.data.room.dao.IntakeDao
 import ru.stohastika.sklyanka.data.room.dao.MedicationDao
@@ -38,6 +39,17 @@ internal object DeviceStorageModule {
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): SklyankaDatabase =
         Room.inMemoryDatabaseBuilder(context, SklyankaDatabase::class.java).build().withForeignKeysEnabled()
+
+    /**
+     * Состояние базы в проверке устройства — всегда рабочее.
+     *
+     * База здесь своя, в памяти, и «новее ожидаемой» она быть не может: проверять отказ
+     * пришлось бы на настоящем файле с завышенной версией, а это дело инструментальной
+     * проверки версии (`DatabaseVersionReaderTest`), а не экранного прогона.
+     */
+    @Provides
+    @Singleton
+    fun provideDatabaseState(): DatabaseState = DatabaseState.Ready
 
     @Provides
     fun provideProfileDao(database: SklyankaDatabase): ProfileDao = database.profileDao()

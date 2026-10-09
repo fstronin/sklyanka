@@ -103,6 +103,37 @@ class StartupFrameTest {
         )
     }
 
+    @Test
+    fun `a newer database blocks the app no matter how ready the rest is`() {
+        // База новее установленной сборки: ни первый экран, ни заставка (Р-44,
+        // ADR-0012 п. 7). Готовность «Сегодня» здесь не спасает и не спасает вообще
+        // ничего: любой экран продукта открыл бы схему, которой эта сборка не знает.
+        assertEquals(
+            StartupFrame.DatabaseTooNew,
+            startupFrame(
+                destination = StartDestination.Today,
+                onboardingUnseen = false,
+                onboardingDone = true,
+                today = ready,
+                databaseTooNew = true,
+            ),
+        )
+    }
+
+    @Test
+    fun `an ordinary database keeps the usual frames`() {
+        assertEquals(
+            StartupFrame.FirstScreen,
+            startupFrame(
+                destination = StartDestination.Today,
+                onboardingUnseen = false,
+                onboardingDone = true,
+                today = ready,
+                databaseTooNew = false,
+            ),
+        )
+    }
+
     private companion object {
         val DATE: LocalDate = LocalDate.of(2026, 10, 12)
     }

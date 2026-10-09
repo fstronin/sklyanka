@@ -9,6 +9,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import ru.stohastika.sklyanka.data.log.LogRetention
 import ru.stohastika.sklyanka.data.repository.ProfileBootstrap
+import ru.stohastika.sklyanka.data.room.DatabaseState
 import ru.stohastika.sklyanka.domain.log.OperationLog
 import ru.stohastika.sklyanka.domain.reminder.RescheduleReason
 import ru.stohastika.sklyanka.platform.AppForegroundTracker
@@ -103,6 +104,10 @@ class SklyankaApp : Application() {
     @Inject
     lateinit var seeds: Set<@JvmSuppressWildcards StartupSeed>
 
+    /** Состояние базы: новее ожидаемой — старт не делает ничего (Р-44, `ADR-0012` п. 7). */
+    @Inject
+    lateinit var databaseState: DatabaseState
+
     private val startupScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onCreate() {
@@ -120,6 +125,12 @@ class SklyankaApp : Application() {
         // которая их трогает, запускает `USER_UNLOCKED` (план) и следующий открытый запуск
         // (bootstrap и подрезка), поэтому здесь достаточно выйти, не уронив процесс.
         if (!isUserUnlocked()) return
+        // База новее установленной сборки: ни одна работа старта не выполняется (Р-44,
+        // `ADR-0012` п. 7). Читать её нельзя, а «сделать вид» — тем более: проход по
+        // профилям, планирование и подрезка журнала молча писали бы в базу, которую
+        // эта сборка не знает. Каналы уведомлений выше уже созданы: ими сообщают
+        // о необходимости обновления.
+        if (databaseState == DatabaseState.Newer) return
         startupScope.launch {
             directBootTraceDrain.drainIntoJournal()
             profileBootstrap.ensureOwnerProfile(

@@ -20,4 +20,10 @@
     <string name="diagnostics_shortcut_label">提醒</string>
 
     <string name="permissions_shortcut_label">权限与自启动</string>
+
+    <string name="database_too_new_title">数据库版本较新，请更新应用</string>
+    <string name="database_too_new_explanation">手机上的数据由更新版本的应用创建。当前版本无法识别这些数据，也不会更改它们。</string>
+    <string name="database_too_new_data_kept">服药记录完好。请从应用商店安装新版本，应用将照常打开。</string>
+    <string name="database_too_new_notification_title">请更新应用</string>
+    <string name="database_too_new_notification_text">在您更新应用之前，提醒不会生效。</string>
 </resources>

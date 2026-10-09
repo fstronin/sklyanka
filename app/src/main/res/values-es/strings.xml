@@ -20,4 +20,10 @@
     <string name="diagnostics_shortcut_label">Recordatorios</string>
 
     <string name="permissions_shortcut_label">Permisos e inicio automático</string>
+
+    <string name="database_too_new_title">La base de datos es más nueva, actualiza la aplicación</string>
+    <string name="database_too_new_explanation">Los datos del teléfono fueron creados por una versión más nueva de la aplicación. Esta versión no los conoce y no los cambiará.</string>
+    <string name="database_too_new_data_kept">El historial de tomas está intacto. Instala la nueva versión desde la tienda y la aplicación se abrirá como antes.</string>
+    <string name="database_too_new_notification_title">Actualiza la aplicación</string>
+    <string name="database_too_new_notification_text">Los recordatorios no funcionarán hasta que actualices la aplicación.</string>
 </resources>

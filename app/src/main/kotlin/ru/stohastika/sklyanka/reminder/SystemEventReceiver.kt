@@ -8,6 +8,7 @@ import androidx.work.await
 import kotlinx.coroutines.launch
 import ru.stohastika.sklyanka.di.ReminderEntryPoint
 import ru.stohastika.sklyanka.domain.reminder.RescheduleReason
+import ru.stohastika.sklyanka.platform.notification.UpdateRequiredNotifier
 
 /**
  * Системные события, после которых будильников больше нет (НАП-11).
@@ -25,6 +26,17 @@ class SystemEventReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         val reason = SystemEvents.reasonOf(intent.action) ?: return
+        // База новее: перепланировать нечего — план живёт в базе, которую эта сборка
+        // не читает (Р-44). Сообщаем обновление и ничего не планируем.
+        if (wakeUpDecision(wakeUpStateOf(context)) == WakeUpDecision.AskToUpdate) {
+            UpdateRequiredNotifier.show(context)
+        } else {
+            enqueue(context, reason)
+        }
+    }
+
+    /** Постановка задачи перепланирования: она переживает смерть процесса (НАП-13). */
+    private fun enqueue(context: Context, reason: RescheduleReason) {
         // Граф может отсутствовать: в процессе без приложения продукта (инструментальный
         // прогон тестовой сборки) система всё равно доставляет системные broadcast'ы,
         // и приёмник обязан их пережить, а не уронить процесс (SKL-97).
