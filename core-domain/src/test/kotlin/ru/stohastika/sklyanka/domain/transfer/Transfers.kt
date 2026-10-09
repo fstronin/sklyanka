@@ -182,7 +182,7 @@ internal object Transfers {
         intakes: List<Intake> = emptyList(),
     ) = DeviceState(profiles, medications, intakes)
 
-    private const val SELF_COLOR = 0x00B4512F
+    private const val SELF_COLOR = 0x005F6F2E
     private const val OTHER_COLOR = 0x008F3E23
     private const val PRN_LIMIT = 3
 }

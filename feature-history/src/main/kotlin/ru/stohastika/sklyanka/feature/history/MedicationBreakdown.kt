@@ -112,9 +112,12 @@ private fun BreakdownRow(row: MedicationAdherence) {
             }
             Text(
                 text = row.percentLabel(),
-                style = SklyankaType.Caption,
-                color = colors.textMuted,
+                style = if (row.low) SklyankaType.CaptionStrong else SklyankaType.Caption,
+                color = if (row.low) colors.text else colors.textMuted,
             )
+            // Низкая доля называется подписью, а не цветом полосы: акцент после Р-20 —
+            // олива, то есть зелёное семейство, и «плохо» в нём читалось бы «хорошо»
+            // (`docs/v2/12-design.md` §2.1).
         }
         AdherenceBar(row)
     }
@@ -123,9 +126,10 @@ private fun BreakdownRow(row: MedicationAdherence) {
 /**
  * Полоса доли принятого.
  *
- * Лекарство с низкой приверженностью окрашено акцентом, а не цветом «принято»
- * (`docs/v2/10-behavior.md`): в чужом профиле акцент — цвет профиля, и выделение
- * остаётся выделением (ПРФ-11).
+ * Цвет полосы — доля принятого, и он один во всех строках: низкая доля называет себя
+ * подписью (см. [BreakdownRow]), а не оттенком. Акцентом она не рисуется: после Р-20
+ * акцент — олива, то есть зелёное семейство, и отрицательное состояние в нём читалось бы
+ * как «хорошо» (`docs/v2/12-design.md` §2.1).
  *
  * Полоса убрана из дерева доступности: число рядом уже прочитано, и «прогресс-бар без
  * значения» читалка озвучивает шумом. Подпись всей строки собрана в [description].
@@ -147,7 +151,7 @@ private fun AdherenceBar(row: MedicationAdherence) {
             modifier = Modifier
                 .fillMaxWidth(row.takenShare.toFloat().coerceIn(0f, 1f))
                 .fillMaxHeight()
-                .background(if (row.low) colors.accent else colors.taken, SklyankaShapes.Pill),
+                .background(colors.taken, SklyankaShapes.Pill),
         )
     }
 }

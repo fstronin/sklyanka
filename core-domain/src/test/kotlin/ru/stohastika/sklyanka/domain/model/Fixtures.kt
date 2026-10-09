@@ -33,7 +33,7 @@ internal object Fixtures {
     fun profile(name: String = "self", isSelf: Boolean = true) = Profile(
         id = PROFILE_ID,
         name = name,
-        color = 0x00B4512F,
+        color = 0x005F6F2E,
         isSelf = isSelf,
         mirrorReminders = false,
     )

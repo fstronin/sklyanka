@@ -117,18 +117,22 @@ class BrandMarkSteps {
 
     @И("^видна тёплая дуга преломлённого луча по нижнему краю$")
     fun theWarmArcIsVisible() {
-        val hot = WARM_ARC_ANGLES.count { angle ->
+        // «Тёплая дуга» — имя элемента знака, а не утверждение об оттенке: решением Р-20
+        // акцентом стала олива, и дуга идёт цветом акцента. Проверяется поэтому совпадение
+        // порядка каналов с акцентом, а не «тёплое»: иначе проверка падала бы на каждой
+        // смене палитры, ничего не говоря о самом знаке.
+        val points = WARM_ARC_ANGLES.count { angle ->
             inkAtCircle(SklyankaMarkTokens.WARM_ARC_RADIUS, angle) &&
-                isWarm(colourAtCircle(SklyankaMarkTokens.WARM_ARC_RADIUS, angle))
+                isAccentHued(colourAtCircle(SklyankaMarkTokens.WARM_ARC_RADIUS, angle))
         }
-        assertTrue(hot >= 2, "the warm arc is not on the lower edge or not warm: $hot points")
+        assertTrue(points >= 2, "the accent arc is not on the lower edge: $points points")
     }
 
     @И("^видна каустика — световое пятно под знаком$")
     fun theCausticIsVisible() {
         val caustic = colourAtField(SklyankaMarkTokens.CENTER, SklyankaMarkTokens.CAUSTIC_CENTER_Y)
         assertTrue(colourGap(caustic, darkColors().background.toArgb()) > GAP, "the caustic leaves no paint")
-        assertTrue(isWarm(caustic), "the caustic must be the accent spot under the sign: ${hex(caustic)}")
+        assertTrue(isAccentHued(caustic), "the caustic must be the accent spot under the sign: ${hex(caustic)}")
     }
 
     @И("^видна центральная точка$")
@@ -369,8 +373,23 @@ class BrandMarkSteps {
         angles: List<Float> = (0 until RING_SAMPLES).map { it * 360f / RING_SAMPLES },
     ): Int = angles.count { angle -> inkAtCircle(radius, angle) }
 
-    private fun isWarm(colour: Int): Boolean =
-        Color.red(colour) - Color.blue(colour) >= WARM_GAP && Color.red(colour) >= Color.green(colour)
+    /**
+     * Краска идёт цветом акцента: порядок каналов совпадает с акцентом, а точка отличается
+     * от фона среды. Проверка не завязана на конкретный оттенок — палитра меняется решением
+     * (Р-20), а знак обязан остаться тем же знаком.
+     */
+    private fun isAccentHued(colour: Int): Boolean =
+        channelOrder(colour) == channelOrder(darkColors().accent.toArgb()) &&
+            colourGap(colour, darkColors().background.toArgb()) > GAP
+
+    private fun channelOrder(colour: Int): List<Int> =
+        CHANNELS.sortedByDescending { channel -> channelValue(colour, channel) }
+
+    private fun channelValue(colour: Int, channel: Int): Int = when (channel) {
+        RED_CHANNEL -> Color.red(colour)
+        GREEN_CHANNEL -> Color.green(colour)
+        else -> Color.blue(colour)
+    }
 
     private fun hex(colour: Int): String = String.format("#%06X", colour and 0xFFFFFF)
 
@@ -384,7 +403,10 @@ class BrandMarkSteps {
 
     private companion object {
         const val GAP = 8
-        const val WARM_GAP = 20
+        const val RED_CHANNEL = 0
+        const val GREEN_CHANNEL = 1
+        const val BLUE_CHANNEL = 2
+        val CHANNELS = listOf(RED_CHANNEL, GREEN_CHANNEL, BLUE_CHANNEL)
         const val LIGHT = 200
         const val RING_SAMPLES = 12
         const val LOCKUP_WIDTH = 390

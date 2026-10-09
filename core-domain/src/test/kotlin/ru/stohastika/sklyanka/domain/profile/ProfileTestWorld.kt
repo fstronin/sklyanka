@@ -94,7 +94,7 @@ internal class ProfileTestWorld {
         /** Набор цветов профиля — те же значения, что в палитре дизайн-системы (ПРФ-15). */
         const val FOREIGN_COLOUR = 0xFF8F3E23.toInt()
         const val SECOND_COLOUR = 0xFF1F5F6B.toInt()
-        const val OUTSIDE_PALETTE_COLOUR = 0xFFB4512F.toInt()
+        const val OUTSIDE_PALETTE_COLOUR = 0xFF5F6F2E.toInt()
         const val FOREIGN_MEDICATION_ID = "55555555-5555-4555-8555-555555555555"
 
         val PALETTE: Set<Int> = setOf(FOREIGN_COLOUR, SECOND_COLOUR)

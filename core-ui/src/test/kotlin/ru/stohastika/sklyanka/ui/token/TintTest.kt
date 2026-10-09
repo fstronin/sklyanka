@@ -10,10 +10,10 @@ import kotlin.math.roundToInt
 /**
  * Тонирование поверхностей чужого профиля (TDD §5.2, критерий 1).
  *
- * Эталон — макет `MainProfile.dc.html` при цвете профиля `#8F3E23`. Совпадение
- * проверяется с допуском: макет рисовался глазом, и требовать от функции побитового
- * совпадения с ним значит подгонять функцию под погрешность рисования. Допуск при
- * этом мал — подкраска обязана оставаться той же самой подкраской.
+ * Эталон — значения при цвете профиля `#8F3E23`, посчитанные от текущих базовых
+ * токенов и доли: палитра пересматривалась решением Р-20, а макеты `design/`
+ * не редактируются, поэтому кадр макета эталоном быть перестал. Допуск — округление
+ * канала; подкраска обязана оставаться той же самой подкраской, что и функция.
  */
 class TintTest {
 
@@ -22,14 +22,14 @@ class TintTest {
     private val tinted = tintedColors(light, profile)
 
     @Test
-    fun `tinted surfaces match the profile mockup`() {
-        assertChannelsClose("background", tinted.background, MOCKUP_BACKGROUND)
-        assertChannelsClose("profileBackground", tinted.profileBackground, MOCKUP_BACKGROUND)
-        assertChannelsClose("profileHeader", tinted.profileHeader, MOCKUP_HEADER)
-        assertChannelsClose("line", tinted.line, MOCKUP_LINE)
-        assertChannelsClose("lineOnSurface", tinted.lineOnSurface, MOCKUP_LINE_ON_SURFACE)
-        assertChannelsClose("lineInteractive", tinted.lineInteractive, MOCKUP_LINE_INTERACTIVE)
-        assertChannelsClose("accentBorder", tinted.accentBorder, MOCKUP_ACCENT_BORDER)
+    fun `tinted surfaces follow the base tokens`() {
+        assertChannelsClose("background", tinted.background, TINTED_BACKGROUND)
+        assertChannelsClose("profileBackground", tinted.profileBackground, TINTED_BACKGROUND)
+        assertChannelsClose("profileHeader", tinted.profileHeader, TINTED_HEADER)
+        assertChannelsClose("line", tinted.line, TINTED_LINE)
+        assertChannelsClose("lineOnSurface", tinted.lineOnSurface, TINTED_LINE_ON_SURFACE)
+        assertChannelsClose("lineInteractive", tinted.lineInteractive, TINTED_LINE_INTERACTIVE)
+        assertChannelsClose("accentBorder", tinted.accentBorder, TINTED_ACCENT_BORDER)
     }
 
     @Test
@@ -97,20 +97,17 @@ class TintTest {
         /**
          * Допуск по каналу.
          *
-         * TDD §5.2 закладывал один-два пункта; фактическое расхождение доходит до
-         * четырёх на линиях. Причина — в макете каждая линия подкрашена своей долей
-         * (от 0,041 до 0,066), а система держит одну долю на все линии. Заводить три
-         * доли ради четырёх пунктов не стоит: на экране разница не видна, а лишняя
-         * константа — это лишний способ рассогласовать набор.
+         * Значения посчитаны от тех же токенов и той же доли, что и [tint], поэтому
+         * разойтись может только округление канала.
          */
-        const val TOLERANCE = 4
+        const val TOLERANCE = 1
         const val MAX_CHANNEL = 255f
 
-        const val MOCKUP_BACKGROUND = 0xFFF7F1EA.toInt()
-        const val MOCKUP_HEADER = 0xFFF0E2D6.toInt()
-        const val MOCKUP_LINE = 0xFFE3D2C3.toInt()
-        const val MOCKUP_LINE_ON_SURFACE = 0xFFEBDFD2.toInt()
-        const val MOCKUP_LINE_INTERACTIVE = 0xFFD8C3B2.toInt()
-        const val MOCKUP_ACCENT_BORDER = 0xFFD8B49F.toInt()
+        const val TINTED_BACKGROUND = 0xFFF4F0E8.toInt()
+        const val TINTED_HEADER = 0xFFEBE0D7.toInt()
+        const val TINTED_LINE = 0xFFE0D3C6.toInt()
+        const val TINTED_LINE_ON_SURFACE = 0xFFE8DBCE.toInt()
+        const val TINTED_LINE_INTERACTIVE = 0xFFD4C3B2.toInt()
+        const val TINTED_ACCENT_BORDER = 0xFFC2B6A1.toInt()
     }
 }

@@ -51,6 +51,7 @@ class ContrastTest {
             "warning on accentSoft" to contrastRatio(light.warning, light.accentSoft),
             "banner text on accentSoft" to contrastRatio(light.onAccentSoft, light.accentSoft),
             "muted on archive" to contrastRatio(light.textMuted, light.archiveBackground),
+            "archive title on archive" to contrastRatio(light.archiveText, light.archiveBackground),
         )
         pairs.forEach { (name, ratio) ->
             assertTrue("$name: $ratio < $AA_NORMAL", ratio >= AA_NORMAL)
@@ -105,7 +106,7 @@ class ContrastTest {
      * §6.1, вывод 4: основной акцент в тёмной среде на тексте не применяется.
      *
      * Проверяется не запретом, а подменой: в тёмном наборе роль `accent` — это уже
-     * `AccentOnDark`, и применить `#B4512F` в тёмной среде неоткуда.
+     * `AccentOnDark`, и применить `#5F6F2E` в тёмной среде неоткуда.
      */
     @Test
     fun `dark environment replaces the light accent`() {
@@ -124,8 +125,8 @@ class ContrastTest {
     /**
      * Подпись акцентной кнопки читается в обеих средах (ОВ-90).
      *
-     * Светлая пара — [Palette.Surface] на [Palette.Accent] (5,05). В тёмной среде
-     * подпись набирается фоном тёмной среды: поверхность на `AccentOnDark` даёт 3,44
+     * Светлая пара — [Palette.Surface] на [Palette.Accent] (5,53). В тёмной среде
+     * подпись набирается фоном тёмной среды: поверхность на `AccentOnDark` даёт 1,88
      * и не проходит AA — ровно поэтому роль `onAccent` и заведена.
      */
     @Test
@@ -176,39 +177,40 @@ class ContrastTest {
     private companion object {
 
         /**
-         * Таблица §6.1 целиком, за вычетом двух архивных строк: цвета `#4A433C` и
-         * `#6E655C` помечены в §1.2 производными и токенами не являются — сверять
-         * по ним нечего, архивная пара проверяется отдельно требованием AA.
+         * Таблица §6.1 целиком, за вычетом двух архивных строк: `archiveText` — цвет
+         * производный (`tint(text, archiveBackground, 0,18)`), а не токен палитры,
+         * поэтому архивная пара проверяется требованием AA отдельно.
          *
          * Строки «напоминания» считаются на фоне `#241F1B` — том самом значении,
-         * которое макет `Reminder.dc.html` использует вместо `DarkBackground`
-         * (ОВ-9). Совпадение с токеном `Text` здесь не случайность, а суть вопроса.
+         * которое макет `Reminder.dc.html` использует вместо фона тёмной среды
+         * (ОВ-9; решением Р-20 фон тёмной среды — `#181712`, а `#241F1B` — цвет
+         * текста, фоном он не применяется, §9).
          */
         val TABLE = listOf(
-            Pair("text on background", Palette.Text, Palette.Background, 15.29),
+            Pair("text on background", Palette.Text, Palette.Background, 15.09),
             Pair("text on surface", Palette.Text, Palette.Surface, 16.32),
-            Pair("muted on background", Palette.TextMuted, Palette.Background, 6.73),
+            Pair("muted on background", Palette.TextMuted, Palette.Background, 6.64),
             Pair("muted on surface", Palette.TextMuted, Palette.Surface, 7.18),
-            Pair("accent on background", Palette.Accent, Palette.Background, 4.73),
-            Pair("accent on surface", Palette.Accent, Palette.Surface, 5.05),
-            Pair("surface on accent", Palette.Surface, Palette.Accent, 5.05),
-            Pair("onAccent on accentOnDark", Palette.DarkBackground, Palette.AccentOnDark, 4.61),
+            Pair("accent on background", Palette.Accent, Palette.Background, 5.11),
+            Pair("accent on surface", Palette.Accent, Palette.Surface, 5.53),
+            Pair("surface on accent", Palette.Surface, Palette.Accent, 5.53),
+            Pair("onAccent on accentOnDark", Palette.DarkBackground, Palette.AccentOnDark, 9.52),
             Pair("surface on danger", Palette.Surface, Palette.ProfileForeign, 7.29),
             Pair("taken on surface", Palette.Taken, Palette.Surface, 7.22),
             Pair("taken on takenSoft", Palette.Taken, Palette.TakenSoft, 6.10),
-            Pair("profile on background", Palette.ProfileForeign, Palette.Background, 6.83),
-            Pair("profile on accentSoft", Palette.ProfileForeign, Palette.AccentSoft, 6.04),
-            Pair("onAccentSoft on accentSoft", Palette.OnAccentSoft, Palette.AccentSoft, 8.01),
-            Pair("tertiary on background", Palette.TextTertiary, Palette.Background, 3.56),
+            Pair("profile on background", Palette.ProfileForeign, Palette.Background, 6.74),
+            Pair("profile on accentSoft", Palette.ProfileForeign, Palette.AccentSoft, 6.17),
+            Pair("onAccentSoft on accentSoft", Palette.OnAccentSoft, Palette.AccentSoft, 8.24),
+            Pair("tertiary on background", Palette.TextTertiary, Palette.Background, 3.52),
             Pair("tertiary on surface", Palette.TextTertiary, Palette.Surface, 3.80),
             Pair("disabled on surface", Palette.TextDisabled, Palette.Surface, 2.69),
-            Pair("dark text on dark background", Palette.Background, Palette.DarkBackground, 17.00),
-            Pair("accentOnDark on dark background", Palette.AccentOnDark, Palette.DarkBackground, 4.61),
-            Pair("light accent on dark background", Palette.Accent, Palette.DarkBackground, 3.59),
+            Pair("dark text on dark background", Palette.Background, Palette.DarkBackground, 16.60),
+            Pair("accentOnDark on dark background", Palette.AccentOnDark, Palette.DarkBackground, 9.52),
+            Pair("light accent on dark background", Palette.Accent, Palette.DarkBackground, 3.25),
             Pair("reminder: textOnDark", Palette.TextOnDark, Palette.Text, 12.04),
             Pair("reminder: missed", Palette.Missed, Palette.Text, 8.99),
             Pair("reminder: disabled", Palette.TextDisabled, Palette.Text, 6.06),
-            Pair("line on background", Palette.Line, Palette.Background, 1.25),
+            Pair("line on background", Palette.Line, Palette.Background, 1.23),
             Pair("lineOnSurface on surface", Palette.LineOnSurface, Palette.Surface, 1.23),
             Pair("lineInteractive on surface", Palette.LineInteractive, Palette.Surface, 1.57),
         )

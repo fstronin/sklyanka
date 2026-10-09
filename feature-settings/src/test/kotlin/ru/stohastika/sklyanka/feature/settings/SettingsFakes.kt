@@ -202,6 +202,6 @@ internal object SettingsFixtures {
     )
 
     /** Цвета из закрытого набора дизайн-системы; числа здесь — только опора проверок. */
-    private const val OWNER_COLOR = 0xFFB4512F.toInt()
+    private const val OWNER_COLOR = 0xFF5F6F2E.toInt()
     private const val FOREIGN_COLOR = 0xFF1F5F6B.toInt()
 }

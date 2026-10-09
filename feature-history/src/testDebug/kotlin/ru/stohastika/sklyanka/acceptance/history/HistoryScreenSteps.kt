@@ -278,10 +278,10 @@ class HistoryScreenSteps(private val world: AcceptanceWorld) {
     /**
      * Лекарство с низкой приверженностью выделено.
      *
-     * «Выделено» — это цвет полосы, и цвет в семантике не живёт. Проверяются обе
-     * половины: правило домена (`low`) и картинка (акцентная полоса есть ровно тогда,
-     * когда правило её просит). Без второй половины подмена `row.low` в разметке
-     * осталась бы незамеченной.
+     * «Выделено» — это подпись строки, а не цвет полосы: после Р-20 акцент — олива,
+     * и отрицательное состояние им не рисуется (`12-design` §2.1). Проверяются обе
+     * половины: правило домена (`low`) и картинка — низкая доля добавляет своей краски
+     * подписи, а акцента в разбивке не появляется вовсе.
      */
     @Then("^строка «([^»]+)» выделена визуально иначе, чем строки с высокой долей принятого$")
     fun theRowIsVisuallyDifferent(medication: String) {
@@ -294,11 +294,16 @@ class HistoryScreenSteps(private val world: AcceptanceWorld) {
             "the rows with a high share must not be low: ${rows.filterNot { it.medicationId == id }}",
             rows.filterNot { it.medicationId == id }.none { it.low },
         )
-        assertTrue("the accent bar of the low row is not drawn", accentPixels(rows) > 0)
         assertEquals(
-            "without the low flag the breakdown must carry no accent at all",
+            "the breakdown must carry no accent at all: a low share is not painted (12-design §2.1)",
             0,
-            accentPixels(rows.map { it.copy(low = false) }),
+            pixelsOf(rows, lightColors().accent),
+        )
+        val withLow = pixelsOf(rows, lightColors().text)
+        val withoutLow = pixelsOf(rows.map { it.copy(low = false) }, lightColors().text)
+        assertTrue(
+            "the low share must add its own ink to the label: $withLow against $withoutLow",
+            withLow > withoutLow,
         )
     }
 
@@ -819,14 +824,14 @@ class HistoryScreenSteps(private val world: AcceptanceWorld) {
     }
 
     /**
-     * Пиксели акцентного цвета на картинке блока «По лекарствам».
+     * Пиксели заданного цвета на картинке блока «По лекарствам».
      *
-     * Снимок во временный каталог: эталоны эти шаги не трогают и не пишут. Цвет полосы —
-     * единственный носитель «выделено», и в семантике он не живёт; поэтому вопрос
-     * задаётся картинке, как это делает шаг различимости в `core-ui`.
+     * Снимок во временный каталог: эталоны эти шаги не трогают и не пишут. Цвет в семантике
+     * не живёт, поэтому и вопрос о том, какой краской нарисовано состояние, задаётся картинке —
+     * как это делает шаг различимости в `core-ui`.
      */
     @OptIn(ExperimentalRoborazziApi::class)
-    private fun accentPixels(rows: List<MedicationAdherence>): Int {
+    private fun pixelsOf(rows: List<MedicationAdherence>, colour: Color): Int {
         val target = File.createTempFile("history-breakdown", ".png")
         try {
             captureRoboImage(
@@ -845,8 +850,7 @@ class HistoryScreenSteps(private val world: AcceptanceWorld) {
             val bitmap = requireNotNull(BitmapFactory.decodeFile(target.path)) { "the breakdown was not rendered" }
             val pixels = IntArray(bitmap.width * bitmap.height)
             bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
-            val accent = lightColors().accent.toArgb()
-            return pixels.count { it == accent }
+            return pixels.count { it == colour.toArgb() }
         } finally {
             target.delete()
         }

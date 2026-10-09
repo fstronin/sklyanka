@@ -132,7 +132,7 @@ private fun Tab(
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
     // Невыбранная вкладка — TextMuted, а не TextTertiary: третий уровень текста
-    // не проходит AA на поверхности (3,56–3,80, §6.1 вывод 1).
+    // не проходит AA на поверхности (3,52–3,80, §6.1 вывод 1).
     val base = if (selected) colors.accent else colors.textMuted
     val showPressed = pressed && !selected
     val animation = tabTint(base = base, pressed = showPressed)

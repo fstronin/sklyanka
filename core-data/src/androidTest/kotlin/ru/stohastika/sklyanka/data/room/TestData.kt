@@ -25,7 +25,7 @@ object TestData {
     const val RELATIVE_MEDICATION_ID = "44444444-4444-4444-8444-444444444444"
     const val PRN_MEDICATION_ID = "55555555-5555-4555-8555-555555555555"
 
-    const val OWNER_COLOR = 0x00B4512F
+    const val OWNER_COLOR = 0x005F6F2E
     const val RELATIVE_COLOR = 0x008F3E23
 
     val TODAY: LocalDate = LocalDate.of(2026, 9, 25)
