@@ -9,6 +9,7 @@ import ru.stohastika.sklyanka.domain.intake.MarkOutcome
 import ru.stohastika.sklyanka.domain.intake.PrnCommand
 import ru.stohastika.sklyanka.domain.intake.PrnDailyLimit
 import ru.stohastika.sklyanka.domain.intake.PrnOutcome
+import ru.stohastika.sklyanka.domain.intake.RevokeDecision
 import ru.stohastika.sklyanka.domain.intake.StockEffect
 import ru.stohastika.sklyanka.domain.intake.UndoCommand
 import ru.stohastika.sklyanka.domain.intake.UndoDecision
@@ -126,7 +127,13 @@ class ScenarioRepositories(
         override suspend fun delete(medicationId: String): Boolean {
             val changed = medications.deleteById(
                 medicationId = medicationId,
-                hasTaken = intakes.all().any { it.medicationId == medicationId && it.status == IntakeStatus.TAKEN },
+                // Снятая запись отметкой не считается (Р-46, SKL-127): условие повторяет
+                // `NOT EXISTS … revoked_at IS NULL` условного удаления в `MedicationDao`.
+                hasTaken = intakes.all().any {
+                    it.medicationId == medicationId &&
+                        it.status == IntakeStatus.TAKEN &&
+                        it.revokedAt == null
+                },
             )
             if (changed) {
                 log.record(
@@ -176,14 +183,19 @@ class ScenarioRepositories(
                 .filter { it.medicationId == medicationId && it.scheduledAt.toLocalDate() in from..to },
         )
 
+        // Снятая запись отметкой «принято» не является (Р-46, SKL-127): условие
+        // `revoked_at IS NULL` повторяет выборку DAO, и лекарство без видимых отметок
+        // удаляется (ИНВ-22).
         override suspend fun hasTaken(profileId: String, medicationId: String): Boolean =
-            medications.byId(medicationId)?.profileId == profileId &&
-                intakes.all().any { it.medicationId == medicationId && it.status == IntakeStatus.TAKEN }
+            medications.byId(medicationId)?.profileId == profileId && hasVisibleTaken(medicationId)
 
         override fun observeHasTaken(profileId: String, medicationId: String): Flow<Boolean> = flowOf(
-            medications.byId(medicationId)?.profileId == profileId &&
-                intakes.all().any { it.medicationId == medicationId && it.status == IntakeStatus.TAKEN },
+            medications.byId(medicationId)?.profileId == profileId && hasVisibleTaken(medicationId),
         )
+
+        private fun hasVisibleTaken(medicationId: String): Boolean = intakes.all().any {
+            it.medicationId == medicationId && it.status == IntakeStatus.TAKEN && it.revokedAt == null
+        }
 
         override suspend fun get(intakeId: String): Intake? = intakes.get(intakeId)
 
@@ -284,9 +296,9 @@ class ScenarioRepositories(
         }
 
         /**
-         * Та же последовательность, что и в транзакции Room (SKL-30): прочитать действие
-         * целиком, проверить режим и профили, отменить правилом домена, вернуть остаток
-         * и записать след. Отсутствие любого приёма отменяет всё действие.
+         * Та же последовательность, что и в транзакции Room (SKL-30, SKL-127): прочитать
+         * действие целиком, проверить режим и профили, применить правило своего режима,
+         * вернуть остаток и записать след. Отсутствие любого приёма отменяет всё действие.
          */
         override suspend fun undoAtomically(command: UndoCommand): UndoOutcome {
             val current = command.intakeIds.map { intakeId -> intakes.get(intakeId) ?: return UndoOutcome.NotFound }
@@ -298,9 +310,16 @@ class ScenarioRepositories(
             require(medicationsById.values.map { it.profileId }.distinct().size == 1) {
                 "Undo command spans several profiles"
             }
-            require(medicationsById.values.all { it.scheduleMode == ScheduleMode.SCHEDULED }) {
-                "Undo addresses an on-demand intake"
+            require(medicationsById.values.map { it.scheduleMode }.distinct().size == 1) {
+                "Undo command spans several schedule modes"
             }
+            return when (medicationsById.values.first().scheduleMode) {
+                ScheduleMode.SCHEDULED -> undoMarks(current, command)
+                ScheduleMode.PRN -> revokeRecords(current, command, clock.now())
+            }
+        }
+
+        private suspend fun undoMarks(current: List<Intake>, command: UndoCommand): UndoOutcome {
             var undone = 0
             current.forEach { intake ->
                 when (val decision = IntakeTransition.undo(intake)) {
@@ -325,6 +344,31 @@ class ScenarioRepositories(
             return UndoOutcome.Applied(undone)
         }
 
+        private suspend fun revokeRecords(current: List<Intake>, command: UndoCommand, at: Instant): UndoOutcome {
+            var revoked = 0
+            current.forEach { intake ->
+                when (val decision = IntakeTransition.revoke(intake, at)) {
+                    is RevokeDecision.Keep -> Unit
+                    is RevokeDecision.Revoked -> {
+                        Invariants.requireValid(Invariants.violations(decision.intake))
+                        intakes.store(decision.intake)
+                        applyStock(intake.medicationId, decision.stock)
+                        log.record(
+                            event = OpEvent.INTAKE_REVOKED,
+                            profileId = command.actorProfileId,
+                            medicationId = intake.medicationId,
+                            intakeId = intake.id,
+                            before = intake.status.name,
+                            after = intake.status.name,
+                            source = command.source.name,
+                        )
+                        revoked++
+                    }
+                }
+            }
+            return UndoOutcome.Applied(revoked)
+        }
+
         override suspend fun createPrnAtomically(command: PrnCommand): PrnOutcome {
             val medication = medications.byId(command.medicationId)
             return when {
@@ -339,8 +383,14 @@ class ScenarioRepositories(
             medication: ru.stohastika.sklyanka.domain.model.Medication,
         ): PrnOutcome {
             val day = command.scheduledAt.toLocalDate()
+            // Снятые записи в лимит не входят (Р-46, SKL-127): условие повторяет
+            // `revoked_at IS NULL` в `IntakeDao.countOnDay`.
             val countToday = intakes.all()
-                .count { it.medicationId == medication.id && it.scheduledAt.toLocalDate() == day }
+                .count {
+                    it.medicationId == medication.id &&
+                        it.scheduledAt.toLocalDate() == day &&
+                        it.revokedAt == null
+                }
             val limit = medication.maxPerDay
             return if (PrnDailyLimit.reached(limit, countToday)) {
                 PrnOutcome.RejectedDailyLimit(limit = requireNotNull(limit), countToday = countToday)

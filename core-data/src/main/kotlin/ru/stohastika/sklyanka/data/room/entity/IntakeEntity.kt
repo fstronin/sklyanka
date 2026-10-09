@@ -60,6 +60,14 @@ data class IntakeEntity(
     @ColumnInfo(name = "acted_at") val actedAt: Long?,
     @ColumnInfo(name = "source") val source: String?,
     @ColumnInfo(name = "actor_profile_id") val actorProfileId: String?,
+    /**
+     * Момент снятия записи в UTC; NULL — запись продукту видна (Р-46, SKL-127).
+     *
+     * Статус при снятии не меняется: снятие отвечает на вопрос «существует ли запись
+     * для продукта», а статус — «что решил человек». Индекса по колонке нет: снятые
+     * не выбираются никогда, и составной индекс обслуживал бы выборку без строк.
+     */
+    @ColumnInfo(name = "revoked_at") val revokedAt: Long?,
 ) {
     companion object {
         /** Значение слота у приёма по расписанию. */

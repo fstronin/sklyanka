@@ -25,6 +25,7 @@ fun IntakeEntity.decode(): Decoded<Intake> {
             actedAt = SklyankaConverters.millisToInstant(actedAt),
             source = decodedSource,
             actorProfileId = actorProfileId,
+            revokedAt = SklyankaConverters.millisToInstant(revokedAt),
         ),
     )
 }
@@ -46,4 +47,5 @@ fun Intake.toEntity(scheduleMode: ScheduleMode): IntakeEntity = IntakeEntity(
     actedAt = SklyankaConverters.instantToMillis(actedAt),
     source = source?.name,
     actorProfileId = actorProfileId,
+    revokedAt = SklyankaConverters.instantToMillis(revokedAt),
 )

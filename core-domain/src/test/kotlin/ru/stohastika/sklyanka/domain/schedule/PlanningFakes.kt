@@ -9,6 +9,7 @@ import ru.stohastika.sklyanka.domain.intake.MarkOutcome
 import ru.stohastika.sklyanka.domain.intake.PrnCommand
 import ru.stohastika.sklyanka.domain.intake.PrnDailyLimit
 import ru.stohastika.sklyanka.domain.intake.PrnOutcome
+import ru.stohastika.sklyanka.domain.intake.RevokeDecision
 import ru.stohastika.sklyanka.domain.intake.StockEffect
 import ru.stohastika.sklyanka.domain.intake.UndoCommand
 import ru.stohastika.sklyanka.domain.intake.UndoDecision
@@ -159,8 +160,9 @@ internal class FakeIntakeRepository(
     }
 
     /**
-     * Та же последовательность, что и в транзакции Room (SKL-30): прочитать действие
-     * целиком, проверить режим и профили, отменить правилом домена, вернуть остаток.
+     * Та же последовательность, что и в транзакции Room (SKL-30, SKL-127): прочитать
+     * действие целиком, проверить режим и профили, применить правило своего режима,
+     * вернуть остаток.
      */
     override suspend fun undoAtomically(command: UndoCommand): UndoOutcome {
         val current = command.intakeIds.map { intakeId -> stored[intakeId] ?: return UndoOutcome.NotFound }
@@ -171,9 +173,15 @@ internal class FakeIntakeRepository(
         }
         val profiles = medicationsById.values.map { it.profileId }.distinct()
         require(profiles.size == 1) { "Undo command spans several profiles: $profiles" }
-        require(medicationsById.values.all { it.scheduleMode == ScheduleMode.SCHEDULED }) {
-            "Undo addresses an on-demand intake"
+        val modes = medicationsById.values.map { it.scheduleMode }.distinct()
+        require(modes.size == 1) { "Undo command spans several schedule modes: $modes" }
+        return when (modes.single()) {
+            ScheduleMode.SCHEDULED -> undoMarks(current, command)
+            ScheduleMode.PRN -> revokeRecords(current, command, time.now())
         }
+    }
+
+    private suspend fun undoMarks(current: List<Intake>, command: UndoCommand): UndoOutcome {
         var undone = 0
         current.forEach { intake ->
             when (val decision = IntakeTransition.undo(intake)) {
@@ -195,6 +203,30 @@ internal class FakeIntakeRepository(
             }
         }
         return UndoOutcome.Applied(undone)
+    }
+
+    private suspend fun revokeRecords(current: List<Intake>, command: UndoCommand, at: Instant): UndoOutcome {
+        var revoked = 0
+        current.forEach { intake ->
+            when (val decision = IntakeTransition.revoke(intake, at)) {
+                is RevokeDecision.Keep -> Unit
+                is RevokeDecision.Revoked -> {
+                    stored[intake.id] = decision.intake
+                    applyStock(intake.medicationId, decision.stock)
+                    log?.record(
+                        event = OpEvent.INTAKE_REVOKED,
+                        profileId = command.actorProfileId,
+                        medicationId = intake.medicationId,
+                        intakeId = intake.id,
+                        before = intake.status.name,
+                        after = intake.status.name,
+                        source = command.source.name,
+                    )
+                    revoked++
+                }
+            }
+        }
+        return UndoOutcome.Applied(revoked)
     }
 
     override suspend fun createPrnAtomically(command: PrnCommand): PrnOutcome {

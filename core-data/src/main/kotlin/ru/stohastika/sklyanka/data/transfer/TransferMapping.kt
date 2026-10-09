@@ -90,6 +90,7 @@ internal class TransferMapping(private val zone: ZoneId) {
             actedAt = actedAt,
             source = source(dto.source, status, dto.id, notices),
             actorProfileId = dto.actorProfileId,
+            revokedAt = dto.revokedAt?.let { TransferValues.moment(it, "intakes.revoked_at") },
         )
     }
 
@@ -158,6 +159,7 @@ internal class TransferMapping(private val zone: ZoneId) {
         actedAt = intake.actedAt?.let(::momentText),
         source = intake.source?.name,
         actorProfileId = intake.actorProfileId,
+        revokedAt = intake.revokedAt?.let(::momentText),
     )
 
     fun settingsDto(settings: TransferSettings) = SettingsDto(

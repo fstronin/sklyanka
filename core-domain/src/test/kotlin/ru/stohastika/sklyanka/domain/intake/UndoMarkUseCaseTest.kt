@@ -2,6 +2,7 @@ package ru.stohastika.sklyanka.domain.intake
 
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.DisplayName
@@ -114,17 +115,22 @@ class UndoMarkUseCaseTest {
     }
 
     @Test
-    fun `an on-demand intake is refused because the take button has no undo`() = runTest {
+    fun `an on-demand record is revoked instead of returning to pending`() = runTest {
+        // Было отказом: «у кнопки Принять отмены нет». Решение Р-46 (SKL-127) отмену
+        // разрешает, но другой: запись снимается, а не возвращается в «ожидается» —
+        // ожидающихся приёмов у режима «по потребности» не существует (ПР-4).
         world.useOnDemand()
         world.pending()
         world.moveTo(morning)
         world.mark(MarkRequest(Fixtures.INTAKE_ID, MarkResult.TAKEN, IntakeSource.PHONE))
 
-        val failure = runCatching { world.undo(UndoRequest(listOf(Fixtures.INTAKE_ID))) }.exceptionOrNull()
+        val outcome = world.undo(UndoRequest(listOf(Fixtures.INTAKE_ID)))
 
-        assertTrue(failure is IllegalArgumentException, "expected a refusal, got $failure")
-        assertEquals(IntakeStatus.TAKEN, world.stored().status)
-        assertEquals(BigDecimal("29"), world.stock())
+        assertEquals(UndoOutcome.Applied(undone = 1), outcome)
+        val revoked = world.stored()
+        assertEquals(IntakeStatus.TAKEN, revoked.status)
+        assertNotNull(revoked.revokedAt, "the record must be marked as revoked")
+        assertEquals(BigDecimal("30"), world.stock())
     }
 
     @Test

@@ -116,6 +116,15 @@ class ScenarioIntakes(private val clock: ScenarioClock, private val medications:
         return byId.values.filter { it.medicationId == medicationId }.sortedBy { it.scheduledAt }
     }
 
+    /**
+     * Записи, которые видит продукт: снятые исключены (Р-46, SKL-127).
+     *
+     * Зеркало условия `revoked_at IS NULL` из выборок хранилища (`IntakeDao`): сам SQL
+     * закреплён инструментальным тестом, а сценарному прогону нужен тот же ответ, что
+     * получает экран, — иначе «невидимость» снятой записи в доменном прогоне не проверить.
+     */
+    fun visibleOf(name: String): List<Intake> = of(name).filter { it.revokedAt == null }
+
     fun pendingOf(name: String): List<Intake> = of(name).filter { it.isPending }
 
     fun ofProfile(profiles: ScenarioProfiles, profileName: String): List<Intake> {

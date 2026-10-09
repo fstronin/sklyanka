@@ -121,6 +121,15 @@ internal data class IntakeDto(
     @SerialName("acted_at") val actedAt: String? = null,
     val source: String? = null,
     @SerialName("actor_profile_id") val actorProfileId: String? = null,
+    /**
+     * Момент снятия записи «по потребности» (Р-46, SKL-127); необязательное поле,
+     * версию формата не поднимает (ПЕР-7).
+     *
+     * Поле едет в файле намеренно: без него снятая запись вернулась бы к жизни при
+     * загрузке файла на другое устройство — запись, которой для человека нет, снова
+     * стала бы приёмом.
+     */
+    @SerialName("revoked_at") val revokedAt: String? = null,
 )
 
 @Serializable

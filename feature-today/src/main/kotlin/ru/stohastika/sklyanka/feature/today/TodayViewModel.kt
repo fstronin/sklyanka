@@ -20,6 +20,7 @@ import ru.stohastika.sklyanka.domain.intake.CreatePrnIntakeUseCase
 import ru.stohastika.sklyanka.domain.intake.MarkIntakeUseCase
 import ru.stohastika.sklyanka.domain.intake.MarkRequest
 import ru.stohastika.sklyanka.domain.intake.MarkResult
+import ru.stohastika.sklyanka.domain.intake.PrnOutcome
 import ru.stohastika.sklyanka.domain.intake.UndoMarkUseCase
 import ru.stohastika.sklyanka.domain.intake.UndoRequest
 import ru.stohastika.sklyanka.domain.medication.UndoDeleteMedicationUseCase
@@ -188,7 +189,16 @@ class TodayViewModel @Inject constructor(
             is TodayIntent.TakePrn -> {
                 clearConfirmation()
                 viewModelScope.launch {
-                    createPrn(intent.medicationId, IntakeSource.PHONE)
+                    // Окно отмены открывается только по состоявшейся записи: отказ лимита —
+                    // не новое действие, и снимать в нём нечего (Р-46, SKL-127).
+                    val outcome = createPrn(intent.medicationId, IntakeSource.PHONE)
+                    if (outcome is PrnOutcome.Created) {
+                        undoActions.publishMark(
+                            intakeIds = listOf(outcome.intake.id),
+                            result = MarkResult.TAKEN,
+                            medicationNames = listOfNotNull(prnMedicationName(outcome.intake.medicationId)),
+                        )
+                    }
                 }
             }
 
@@ -360,6 +370,18 @@ class TodayViewModel @Inject constructor(
         undoActions.clear()
         viewModelScope.launch { undoDelete(medicationId) }
     }
+
+    /**
+     * Имя лекарства по идентификатору — из блока «По потребности», второго чтения нет.
+     *
+     * Записи «по потребности» в лентах времени не стоят (у них нет назначенного времени),
+     * поэтому имя берётся из того же блока, откуда пришло нажатие.
+     */
+    private fun prnMedicationName(medicationId: String): String? = (state.value as? TodayUiState.Content)
+        ?.prn
+        ?.firstOrNull { it.medicationId == medicationId }
+        ?.medication
+        ?.name
 
     /** Имя лекарства по идентификатору приёма — из очереди суток, второго чтения нет. */
     private fun medicationName(intakeId: String): String? = (state.value as? TodayUiState.Content)

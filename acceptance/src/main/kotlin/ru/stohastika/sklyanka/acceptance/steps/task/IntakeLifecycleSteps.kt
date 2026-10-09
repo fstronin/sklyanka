@@ -397,8 +397,14 @@ class IntakeLifecycleSteps(private val world: AcceptanceWorld) {
         world.sweep(reason)
     }
 
+    /**
+     * Записи лекарства за сутки, видимые продукту: снятые исключены (Р-46, SKL-127).
+     *
+     * Число приёмов суток — тот же источник, что у суточного лимита и блока «По потребности»:
+     * условие `revoked_at IS NULL` выборок Room зеркалит `ScenarioIntakes.visibleOf`.
+     */
     private fun intakesOn(medication: String, date: LocalDate): List<Intake> =
-        world.intakes.of(medication).filter { it.scheduledAt.toLocalDate() == date }
+        world.intakes.visibleOf(medication).filter { it.scheduledAt.toLocalDate() == date }
 
     private fun date(text: String): LocalDate = RussianDates.date(text, world.clock.today())
 

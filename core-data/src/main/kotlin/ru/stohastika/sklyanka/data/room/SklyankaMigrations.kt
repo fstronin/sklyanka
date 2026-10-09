@@ -140,6 +140,23 @@ object SklyankaMigrations {
         }
     }
 
+    /**
+     * Версия 8 → 9: у приёма появляется признак снятия записи «по потребности»
+     * (Р-46, SKL-127).
+     *
+     * `ALTER TABLE … ADD COLUMN` — та же манера, что у `deleted_at` у лекарства
+     * (`MIGRATION_6_7`): таблица не перестраивается, индексы и внешние ключи не
+     * трогаются, существующие строки получают `NULL` — «не снято».
+     *
+     * Снятие не выражается статусом, поэтому и перечислитель `status` не меняется:
+     * добавление значения в него потребовало бы решения о чтении старыми сборками (МГ-6).
+     */
+    val MIGRATION_8_9 = object : Migration(8, 9) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE `intake` ADD COLUMN `revoked_at` INTEGER")
+        }
+    }
+
     /** Все миграции по порядку. Room выбирает путь сам; пропусков в цепочке быть не должно. */
     val ALL: Array<Migration> = arrayOf(
         MIGRATION_1_2,
@@ -149,6 +166,7 @@ object SklyankaMigrations {
         MIGRATION_5_6,
         MIGRATION_6_7,
         MIGRATION_7_8,
+        MIGRATION_8_9,
     )
 
     /**

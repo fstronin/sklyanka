@@ -1,0 +1,616 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 9,
+    "identityHash": "68a55a9042d5b97477e0cd70b978b620",
+    "entities": [
+      {
+        "tableName": "profile",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `color` INTEGER NOT NULL, `is_self` INTEGER NOT NULL, `mirror_reminders` INTEGER NOT NULL, `self_slot` TEXT, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "color",
+            "columnName": "color",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isSelf",
+            "columnName": "is_self",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "mirrorReminders",
+            "columnName": "mirror_reminders",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "selfSlot",
+            "columnName": "self_slot",
+            "affinity": "TEXT",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_profile_self_slot",
+            "unique": true,
+            "columnNames": [
+              "self_slot"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_profile_self_slot` ON `${TABLE_NAME}` (`self_slot`)"
+          }
+        ],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "medication",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `profile_id` TEXT NOT NULL, `name` TEXT NOT NULL, `form` TEXT NOT NULL, `shape` TEXT, `dose_amount` TEXT NOT NULL, `dose_unit` TEXT NOT NULL, `strength` TEXT, `strength_unit` TEXT, `food_relation` TEXT NOT NULL, `schedule_mode` TEXT NOT NULL, `max_per_day` INTEGER, `times` TEXT NOT NULL, `start_date` TEXT NOT NULL, `end_date` TEXT, `stock_left` TEXT, `package_size` TEXT, `stock_threshold_days` INTEGER, `archived_at` INTEGER, `archive_reason` TEXT, `deleted_at` INTEGER, PRIMARY KEY(`id`), FOREIGN KEY(`profile_id`) REFERENCES `profile`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "profileId",
+            "columnName": "profile_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "form",
+            "columnName": "form",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "shape",
+            "columnName": "shape",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "doseAmount",
+            "columnName": "dose_amount",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "doseUnit",
+            "columnName": "dose_unit",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "strength",
+            "columnName": "strength",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "strengthUnit",
+            "columnName": "strength_unit",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "foodRelation",
+            "columnName": "food_relation",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "scheduleMode",
+            "columnName": "schedule_mode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "maxPerDay",
+            "columnName": "max_per_day",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "times",
+            "columnName": "times",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startDate",
+            "columnName": "start_date",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "endDate",
+            "columnName": "end_date",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "stockLeft",
+            "columnName": "stock_left",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "packageSize",
+            "columnName": "package_size",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "stockThresholdDays",
+            "columnName": "stock_threshold_days",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "archivedAt",
+            "columnName": "archived_at",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "archiveReason",
+            "columnName": "archive_reason",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "deletedAt",
+            "columnName": "deleted_at",
+            "affinity": "INTEGER",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_medication_profile_id_archived_at",
+            "unique": false,
+            "columnNames": [
+              "profile_id",
+              "archived_at"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_medication_profile_id_archived_at` ON `${TABLE_NAME}` (`profile_id`, `archived_at`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "profile",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "profile_id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "intake",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `medication_id` TEXT NOT NULL, `scheduled_at` TEXT NOT NULL, `schedule_slot` TEXT, `status` TEXT NOT NULL, `acted_at` INTEGER, `source` TEXT, `actor_profile_id` TEXT, `revoked_at` INTEGER, PRIMARY KEY(`id`), FOREIGN KEY(`medication_id`) REFERENCES `medication`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT , FOREIGN KEY(`actor_profile_id`) REFERENCES `profile`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "medicationId",
+            "columnName": "medication_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "scheduledAt",
+            "columnName": "scheduled_at",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "scheduleSlot",
+            "columnName": "schedule_slot",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "actedAt",
+            "columnName": "acted_at",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "source",
+            "columnName": "source",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "actorProfileId",
+            "columnName": "actor_profile_id",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "revokedAt",
+            "columnName": "revoked_at",
+            "affinity": "INTEGER",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_intake_medication_id_scheduled_at_schedule_slot",
+            "unique": true,
+            "columnNames": [
+              "medication_id",
+              "scheduled_at",
+              "schedule_slot"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_intake_medication_id_scheduled_at_schedule_slot` ON `${TABLE_NAME}` (`medication_id`, `scheduled_at`, `schedule_slot`)"
+          },
+          {
+            "name": "index_intake_scheduled_at_status",
+            "unique": false,
+            "columnNames": [
+              "scheduled_at",
+              "status"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_intake_scheduled_at_status` ON `${TABLE_NAME}` (`scheduled_at`, `status`)"
+          },
+          {
+            "name": "index_intake_actor_profile_id",
+            "unique": false,
+            "columnNames": [
+              "actor_profile_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_intake_actor_profile_id` ON `${TABLE_NAME}` (`actor_profile_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "medication",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "medication_id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "profile",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "actor_profile_id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "op_log",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `at` INTEGER NOT NULL, `event` TEXT NOT NULL, `profile_id` TEXT, `medication_id` TEXT, `intake_id` TEXT, `value_before` TEXT, `value_after` TEXT, `source` TEXT, `detail` TEXT)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "at",
+            "columnName": "at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "event",
+            "columnName": "event",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "profileId",
+            "columnName": "profile_id",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "medicationId",
+            "columnName": "medication_id",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "intakeId",
+            "columnName": "intake_id",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "valueBefore",
+            "columnName": "value_before",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "valueAfter",
+            "columnName": "value_after",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "source",
+            "columnName": "source",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "detail",
+            "columnName": "detail",
+            "affinity": "TEXT",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_op_log_at",
+            "unique": false,
+            "columnNames": [
+              "at"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_op_log_at` ON `${TABLE_NAME}` (`at`)"
+          }
+        ],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "reminder_log",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `occurred_at` INTEGER NOT NULL, `event` TEXT NOT NULL, `intake_id` TEXT, `medication_id` TEXT, `profile_id` TEXT, `scheduled_at` INTEGER, `fired_at` INTEGER, `deviation_seconds` INTEGER, `channel` TEXT, `delivered` INTEGER, `reason` TEXT, `alarms_cancelled` INTEGER, `alarms_scheduled` INTEGER, `attempt` INTEGER, `snooze_minutes` INTEGER)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "occurredAt",
+            "columnName": "occurred_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "event",
+            "columnName": "event",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "intakeId",
+            "columnName": "intake_id",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "medicationId",
+            "columnName": "medication_id",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "profileId",
+            "columnName": "profile_id",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "scheduledAt",
+            "columnName": "scheduled_at",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "firedAt",
+            "columnName": "fired_at",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "deviationSeconds",
+            "columnName": "deviation_seconds",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "channel",
+            "columnName": "channel",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "delivered",
+            "columnName": "delivered",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "reason",
+            "columnName": "reason",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "alarmsCancelled",
+            "columnName": "alarms_cancelled",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "alarmsScheduled",
+            "columnName": "alarms_scheduled",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "attempt",
+            "columnName": "attempt",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "snoozeMinutes",
+            "columnName": "snooze_minutes",
+            "affinity": "INTEGER",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_reminder_log_occurred_at",
+            "unique": false,
+            "columnNames": [
+              "occurred_at"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_reminder_log_occurred_at` ON `${TABLE_NAME}` (`occurred_at`)"
+          },
+          {
+            "name": "index_reminder_log_intake_id",
+            "unique": false,
+            "columnNames": [
+              "intake_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_reminder_log_intake_id` ON `${TABLE_NAME}` (`intake_id`)"
+          }
+        ],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "deferred_reminder",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`intake_id` TEXT NOT NULL, `fire_at` INTEGER NOT NULL, `attempt` INTEGER NOT NULL, PRIMARY KEY(`intake_id`), FOREIGN KEY(`intake_id`) REFERENCES `intake`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "intakeId",
+            "columnName": "intake_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fireAt",
+            "columnName": "fire_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "attempt",
+            "columnName": "attempt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "intake_id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": [
+          {
+            "table": "intake",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "intake_id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      }
+    ],
+    "views": [],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '68a55a9042d5b97477e0cd70b978b620')"
+    ]
+  }
+}

@@ -82,7 +82,7 @@ abstract class SklyankaDatabase : RoomDatabase() {
     abstract fun transferDao(): TransferDao
 
     companion object {
-        const val VERSION = 8
+        const val VERSION = 9
 
         /**
          * Имя файла базы.

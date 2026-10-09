@@ -91,6 +91,7 @@ object TestData {
         status: IntakeStatus = IntakeStatus.PENDING,
         actedAt: Long? = null,
         source: String? = null,
+        revokedAt: Long? = null,
     ) = IntakeEntity(
         id = id,
         medicationId = medicationId,
@@ -100,6 +101,7 @@ object TestData {
         actedAt = actedAt,
         source = source,
         actorProfileId = null,
+        revokedAt = revokedAt,
     )
 
     /**
@@ -111,6 +113,7 @@ object TestData {
         medicationId: String = PRN_MEDICATION_ID,
         scheduledAt: LocalDateTime = MORNING,
         actedAt: Long = 0L,
+        revokedAt: Long? = null,
     ) = IntakeEntity(
         id = id,
         medicationId = medicationId,
@@ -120,5 +123,6 @@ object TestData {
         actedAt = actedAt,
         source = "PHONE",
         actorProfileId = null,
+        revokedAt = revokedAt,
     )
 }

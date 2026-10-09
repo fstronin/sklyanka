@@ -18,6 +18,7 @@ import ru.stohastika.sklyanka.domain.intake.MarkOutcome
 import ru.stohastika.sklyanka.domain.intake.PrnCommand
 import ru.stohastika.sklyanka.domain.intake.PrnDailyLimit
 import ru.stohastika.sklyanka.domain.intake.PrnOutcome
+import ru.stohastika.sklyanka.domain.intake.RevokeDecision
 import ru.stohastika.sklyanka.domain.intake.StockEffect
 import ru.stohastika.sklyanka.domain.intake.UndoCommand
 import ru.stohastika.sklyanka.domain.intake.UndoDecision
@@ -252,15 +253,18 @@ class IntakeRepositoryImpl @Inject constructor(
     }
 
     /**
-     * Отмена отметки целиком одной транзакцией (SKL-30).
+     * Отмена отметки и снятие записи целиком одной транзакцией (SKL-30, SKL-127).
      *
      * Последовательность неразрывна: прочитать действие целиком, убедиться, что оно
-     * одного профиля и не «по потребности», отменить правилом домена и только затем
-     * вернуть дозу. Отсутствие любого приёма отменяет всё действие без единой записи —
-     * та же «вся группа или никак», что у групповой отметки.
+     * одного профиля, применить правило своего режима и только затем вернуть дозу.
+     * Отсутствие любого приёма отменяет всё действие без единой записи — та же «вся
+     * группа или никак», что у групповой отметки.
      *
-     * Защита от PRN стоит здесь, а не в UI: у «Принять» отмены нет, и `require` —
-     * защита от будущего четвёртого пути записи, а не рабочий сценарий.
+     * Режим выбирает исход, а не запрещает его: у планового приёма отметка возвращается
+     * в «ожидается» (`IntakeTransition.undo`), а запись «по потребности» **снимается**
+     * мягким признаком (Р-46): ожидающихся приёмов у режима не существует (ПР-4),
+     * а физическое удаление запрещено (`ADR-0012` п. 5). Смешение режимов в одном
+     * действии — ошибка вызова: человек отменяет одно действие одного лекарства.
      */
     override suspend fun undoAtomically(command: UndoCommand): UndoOutcome = transactor.inTransaction {
         val current = command.intakeIds.map { intakeId ->
@@ -274,11 +278,19 @@ class IntakeRepositoryImpl @Inject constructor(
         }
         val profiles = medicationsById.values.map { it.profileId }.distinct()
         require(profiles.size == 1) { "Undo command spans several profiles: $profiles" }
-        medicationsById.values.forEach { stored ->
-            val mode = SklyankaConverters.textToEnum<ScheduleMode>(stored.scheduleMode) ?: ScheduleMode.SCHEDULED
-            require(mode == ScheduleMode.SCHEDULED) { "Undo addresses an on-demand intake: ${stored.id}" }
-        }
+        val modes = medicationsById.values.map { stored ->
+            SklyankaConverters.textToEnum<ScheduleMode>(stored.scheduleMode) ?: ScheduleMode.SCHEDULED
+        }.distinct()
+        require(modes.size == 1) { "Undo command spans several schedule modes: $modes" }
 
+        when (modes.single()) {
+            ScheduleMode.SCHEDULED -> undoMarks(current, command)
+            ScheduleMode.PRN -> revokeRecords(current, command)
+        }
+    }
+
+    /** Плановая отмена: приём возвращается в «ожидается», доза возвращается (SKL-30). */
+    private suspend fun undoMarks(current: List<Intake>, command: UndoCommand): UndoOutcome {
         var undone = 0
         current.forEach { intake ->
             when (val decision = IntakeTransition.undo(intake)) {
@@ -315,7 +327,53 @@ class IntakeRepositoryImpl @Inject constructor(
                 }
             }
         }
-        UndoOutcome.Applied(undone)
+        return UndoOutcome.Applied(undone)
+    }
+
+    /**
+     * Снятие записи «по потребности» (Р-46): признак «снято», доза возвращается.
+     *
+     * Ноль изменённых строк — не ошибка человека, а проигранная гонка (запись успели
+     * снять или перевести в «пропущено»): возвращать дозу в этом случае нельзя, иначе
+     * остаток разойдётся с упаковкой, и след об этом остаётся в журнале.
+     */
+    private suspend fun revokeRecords(current: List<Intake>, command: UndoCommand): UndoOutcome {
+        val at = time.now()
+        var revoked = 0
+        current.forEach { intake ->
+            when (val decision = IntakeTransition.revoke(intake, at)) {
+                is RevokeDecision.Keep -> Unit
+                is RevokeDecision.Revoked -> {
+                    // Снятие не переписывает решение человека: статус остаётся «принято»,
+                    // поля отметки не чистятся (ИНВ-10/11 не затрагиваются).
+                    Invariants.requireValid(Invariants.violations(decision.intake))
+                    val changed = dao.revoke(intake.id, at.toEpochMilli())
+                    if (changed == 0) {
+                        log.record(
+                            event = OpEvent.DB_WRITE_FAILED,
+                            medicationId = intake.medicationId,
+                            intakeId = intake.id,
+                            before = intake.status.name,
+                            source = command.source.name,
+                            detail = STALE_READ,
+                        )
+                    } else {
+                        applyStock(intake.medicationId, intake.id, decision.stock)
+                        log.record(
+                            event = OpEvent.INTAKE_REVOKED,
+                            profileId = command.actorProfileId,
+                            medicationId = intake.medicationId,
+                            intakeId = intake.id,
+                            before = intake.status.name,
+                            after = intake.status.name,
+                            source = command.source.name,
+                        )
+                        revoked++
+                    }
+                }
+            }
+        }
+        return UndoOutcome.Applied(revoked)
     }
 
     /**

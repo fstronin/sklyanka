@@ -178,6 +178,58 @@ class IntakeTransitionTest {
         assertEquals(UndoDecision.Keep(pending), IntakeTransition.undo(pending))
     }
 
+    // --- Снятие записи «по потребности» (Р-46, SKL-127) ---------------------------------------
+
+    @Test
+    fun `revoking a taken intake marks the moment and returns the dose`() {
+        val taken = Fixtures.takenIntake(actedAt = eightOhFive)
+
+        val revoked = assertRevoked(IntakeTransition.revoke(taken, eightTen))
+
+        assertEquals(eightTen, revoked.intake.revokedAt)
+        // Статус не подменяется: снятие не переписывает решение человека (Р-46).
+        assertEquals(IntakeStatus.TAKEN, revoked.intake.status)
+        assertEquals(eightOhFive, revoked.intake.actedAt)
+        assertEquals(StockEffect.RESTORE, revoked.stock)
+        assertEquals(emptyList<String>(), Invariants.violations(revoked.intake))
+    }
+
+    @Test
+    fun `revoking never rewrites the scheduled moment`() {
+        val taken = Fixtures.takenIntake(actedAt = eightOhFive)
+
+        val revoked = assertRevoked(IntakeTransition.revoke(taken, eightTen))
+
+        assertEquals(taken.scheduledAt, revoked.intake.scheduledAt)
+    }
+
+    @Test
+    fun `an already revoked intake is silent the second time`() {
+        val revoked = Fixtures.takenIntake(actedAt = eightOhFive).copy(revokedAt = eightTen)
+
+        assertEquals(RevokeDecision.Keep(revoked), IntakeTransition.revoke(revoked, eightTen))
+    }
+
+    @Test
+    fun `a pending intake has nothing to revoke`() {
+        val pending = Fixtures.pendingIntake()
+
+        assertEquals(RevokeDecision.Keep(pending), IntakeTransition.revoke(pending, eightTen))
+    }
+
+    @Test
+    fun `a deliberate skip is not revoked because only a taken record is`() {
+        // Снятие — про запись, появившуюся нажатием «Принять»; осознанный пропуск
+        // снимается отменой отметки, а не снятием записи (Р-46).
+        val skipped = Fixtures.pendingIntake().copy(
+            status = IntakeStatus.SKIPPED,
+            actedAt = eightOhFive,
+            source = IntakeSource.PHONE,
+        )
+
+        assertEquals(RevokeDecision.Keep(skipped), IntakeTransition.revoke(skipped, eightTen))
+    }
+
     @Test
     fun `an automatically missed intake is not resurrected by an undo`() {
         val missed = IntakeTransition.expire(Fixtures.pendingIntake(), eightTen)
@@ -211,5 +263,10 @@ class IntakeTransitionTest {
     private fun assertRevert(decision: UndoDecision): UndoDecision.Revert {
         assertTrue(decision is UndoDecision.Revert, "expected a revert, got $decision")
         return decision as UndoDecision.Revert
+    }
+
+    private fun assertRevoked(decision: RevokeDecision): RevokeDecision.Revoked {
+        assertTrue(decision is RevokeDecision.Revoked, "expected a revocation, got $decision")
+        return decision as RevokeDecision.Revoked
     }
 }

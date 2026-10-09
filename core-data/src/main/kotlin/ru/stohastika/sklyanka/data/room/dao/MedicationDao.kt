@@ -66,7 +66,8 @@ interface MedicationDao {
     /**
      * Мягкое удаление одной условной записью (ПР-14, ИНВ-21, ИНВ-22).
      *
-     * Условие «нет ни одной отметки `TAKEN`» стоит внутри самого UPDATE: между чтением
+     * Условие «нет ни одной отметки `TAKEN`» стоит внутри самого UPDATE (снятые записи
+     * отметками не считаются, Р-46, SKL-127): между чтением
      * карточки и подтверждением отметку мог поставить другой путь (часы, групповая
      * отметка), и удаление, скрывшее факт приёма, недопустимо. Здесь же очищаются поля
      * архива: частично заполненного состояния не бывает даже на время. Строки `intake`
@@ -81,7 +82,7 @@ interface MedicationDao {
         WHERE id = :medicationId AND deleted_at IS NULL
           AND NOT EXISTS (
             SELECT 1 FROM intake i
-            WHERE i.medication_id = :medicationId AND i.status = 'TAKEN'
+            WHERE i.medication_id = :medicationId AND i.status = 'TAKEN' AND i.revoked_at IS NULL
           )
         """,
     )

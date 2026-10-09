@@ -168,7 +168,9 @@ class TodayViewModelTest {
 
             viewModel.onIntent(TodayIntent.TakePrn("m-prn"))
 
-            val content = awaitItem() as TodayUiState.Content
+            // Кадров после нажатия два: окно отмены публикуется раньше, чем повестка дня
+            // соберётся заново (Р-46, SKL-127), — ждём именно пересобранную повестку.
+            val content = awaitContentWhere { it.prn.single().takenToday == 1 }
             assertEquals(1, content.prn.single().takenToday)
             // Приём «по потребности» не входит ни в числитель, ни в знаменатель (ЭКР-1).
             assertEquals(0, content.progress.taken)
@@ -566,7 +568,9 @@ class TodayViewModelTest {
     }
 
     @Test
-    fun `taking an on-demand medication opens no undo window`() = runTest {
+    fun `taking an on-demand medication opens the same undo window as a planned mark`() = runTest {
+        // Было наоборот: окна не открывалось вовсе. Решение Р-46 (SKL-127) даёт записи
+        // «по потребности» то же окно — снятие записи в пять секунд.
         val world = worldWithDay(startAt = 16, minute = 40)
         world.medications.put(TodayTest.medication("m-prn", mode = ScheduleMode.PRN, maxPerDay = 3))
         val viewModel = world.viewModel()
@@ -574,14 +578,32 @@ class TodayViewModelTest {
         viewModel.state.test {
             awaitContent()
             viewModel.onIntent(TodayIntent.TakePrn("m-prn"))
-            // Действие состоялось: блок «по потребности» пересобран.
-            var content = awaitItem() as TodayUiState.Content
-            while (content.prn.single().takenToday == 0) content = awaitItem() as TodayUiState.Content
 
-            assertNull(content.undo)
-            assertNull(world.undoActions.live())
+            val undo = awaitUndo { it.result == MarkResult.TAKEN }
+            assertEquals(1, undo.intakeIds.size)
+            // Имя лекарства берётся из очереди суток — то же, что у плановой отметки.
+            assertEquals(listOf("m-prn"), undo.medicationNames)
             cancelAndIgnoreRemainingEvents()
         }
+    }
+
+    @Test
+    fun `an exhausted daily limit opens no undo window`() = runTest {
+        // Отказ лимита — не новое действие: снимать в нём нечего, и окно не открывается.
+        val world = worldWithDay(startAt = 21, minute = 0)
+        world.medications.put(TodayTest.medication("m-prn", mode = ScheduleMode.PRN, maxPerDay = 1))
+        world.intakes.put(TodayTest.intake("i-prn", "m-prn", TodayTest.at(8, 10), IntakeStatus.TAKEN))
+        val viewModel = world.viewModel()
+
+        viewModel.state.test {
+            assertFalse(awaitContent().prn.single().canTake)
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        viewModel.onIntent(TodayIntent.TakePrn("m-prn"))
+        runCurrent()
+
+        assertNull(world.undoActions.live())
     }
 
     @Test

@@ -2,6 +2,7 @@ package ru.stohastika.sklyanka.data.transfer
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import ru.stohastika.sklyanka.domain.model.IntakeStatus
@@ -26,6 +27,15 @@ class JsonTransferCodecTest {
     private val time = FixedTimeSource(TransferFixtures.EXPORTED_AT, ZoneId.of("Europe/Moscow"))
     private val codec = JsonTransferCodec(time)
 
+    /** Момент снятия записи в сценариях этого файла: любой момент до выгрузки. */
+    private val REVOKED_AT = TransferFixtures.EXPORTED_AT.minusSeconds(3600)
+
+    /** Идентификатор снятой записи: у своей копии он отличается от записей заготовки. */
+    private val REVOKED_ID = "i-revoked"
+
+    /** Строка поля снятия в файле: её снимает сценарий «файл прежней сборки». */
+    private val REVOKED_FIELD = Regex(""",?\n\s*"revoked_at": "[^"]+"""")
+
     @Test
     fun `a snapshot survives the round trip through json`() {
         val original = TransferFixtures.snapshot()
@@ -48,6 +58,40 @@ class JsonTransferCodecTest {
 
         assertTrue(text.contains("\"${TransferFormat.MARKER}\""))
         assertTrue(text.contains("\"format_version\": ${TransferFormat.CURRENT_VERSION}"))
+    }
+
+    /**
+     * Снятая запись «по потребности» едет в файле как снятая (Р-46, SKL-127).
+     *
+     * Без поля она вернулась бы к жизни при загрузке файла на другое устройство: запись,
+     * которой для человека нет, снова стала бы приёмом и попала бы в историю и в остаток.
+     */
+    @Test
+    fun `a revoked on-demand record survives the round trip as revoked`() {
+        val revoked = TransferFixtures.taken().copy(id = REVOKED_ID, revokedAt = REVOKED_AT)
+        val snapshot = TransferFixtures.snapshot().let { it.copy(intakes = it.intakes + revoked) }
+
+        val text = codec.encode(snapshot)
+        val restored = (codec.decode(text) as TransferDecoded.Loaded)
+            .snapshot.intakes.single { it.id == revoked.id }
+
+        assertTrue("the field must be written to the file", text.contains("\"revoked_at\""))
+        assertEquals(REVOKED_AT, restored.revokedAt)
+    }
+
+    /** Файл прежней сборки поля не несёт: отсутствие — это «не снято», а не ошибка (МГ-6). */
+    @Test
+    fun `a record of a file without the revocation field reads as not revoked`() {
+        val revoked = TransferFixtures.taken().copy(id = REVOKED_ID, revokedAt = REVOKED_AT)
+        val snapshot = TransferFixtures.snapshot().let { it.copy(intakes = listOf(revoked)) }
+        val withoutField = REVOKED_FIELD.replace(codec.encode(snapshot), "")
+
+        assertTrue("the scenario must really strip the field", !withoutField.contains("revoked_at"))
+        val decoded = codec.decode(withoutField)
+
+        val restored = (decoded as TransferDecoded.Loaded).snapshot.intakes.single()
+        assertNull("an absent field means «not revoked»", restored.revokedAt)
+        assertTrue("an old file must be read without complaints: ${decoded.notices}", decoded.notices.isEmpty())
     }
 
     @Test

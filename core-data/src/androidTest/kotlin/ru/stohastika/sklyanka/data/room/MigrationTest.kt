@@ -292,6 +292,42 @@ class MigrationTest {
         }
     }
 
+    /**
+     * Версия 8 → 9 на реальной базе с данными (МГ-3, Р-46, SKL-127).
+     *
+     * Признак снятия записи «по потребности» появляется колонкой, а не перестройкой
+     * таблицы и не новым значением перечислителя статуса: индексы, внешние ключи и строки
+     * истории не трогаются, а прежние приёмы читаются как неснятые — `NULL` и означает
+     * «не снято».
+     */
+    @Test
+    fun theRevokedAtColumnArrivesWithoutTouchingAnyRow() {
+        helper.createDatabase(TEST_DB, 8).use { old ->
+            old.execSQL(INSERT_PROFILE)
+            old.execSQL(INSERT_MEDICATION)
+            old.execSQL(INSERT_INTAKE)
+        }
+
+        val migrated = helper.runMigrationsAndValidate(
+            TEST_DB,
+            SklyankaDatabase.VERSION,
+            true,
+            *SklyankaMigrations.ALL,
+        )
+
+        migrated.use { db ->
+            db.query("SELECT `status`, `revoked_at` FROM `intake` WHERE `id` = 'intake-1'").use { cursor ->
+                assertTrue("the intake row must survive the migration", cursor.moveToFirst())
+                assertEquals("the status must stay untouched", "PENDING", cursor.getString(0))
+                assertTrue("an old record must read as not revoked", cursor.isNull(1))
+            }
+            db.query("SELECT COUNT(*) FROM `medication`").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals("no medication row may be lost (MG-2)", 1, cursor.getInt(0))
+            }
+        }
+    }
+
     private fun tableExists(db: SupportSQLiteDatabase, table: String): Boolean =
         db.query("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?", arrayOf(table))
             .use { it.count > 0 }

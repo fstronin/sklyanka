@@ -27,6 +27,7 @@ interface IntakeDao {
         JOIN medication m ON m.id = i.medication_id
         WHERE m.profile_id = :profileId
           AND m.deleted_at IS NULL
+          AND i.revoked_at IS NULL
           AND i.scheduled_at >= :dayStart AND i.scheduled_at < :nextDayStart
         ORDER BY i.scheduled_at
         """,
@@ -39,6 +40,7 @@ interface IntakeDao {
         JOIN medication m ON m.id = i.medication_id
         WHERE m.profile_id = :profileId
           AND m.deleted_at IS NULL
+          AND i.revoked_at IS NULL
           AND i.scheduled_at >= :from AND i.scheduled_at < :to
         ORDER BY i.scheduled_at
         """,
@@ -58,6 +60,7 @@ interface IntakeDao {
         JOIN medication m ON m.id = i.medication_id
         WHERE i.medication_id = :medicationId AND m.profile_id = :profileId
           AND m.deleted_at IS NULL
+          AND i.revoked_at IS NULL
           AND i.scheduled_at >= :from AND i.scheduled_at < :to
         ORDER BY i.scheduled_at
         """,
@@ -83,6 +86,7 @@ interface IntakeDao {
             JOIN medication m ON m.id = i.medication_id
             WHERE i.medication_id = :medicationId AND m.profile_id = :profileId
               AND i.status = 'TAKEN'
+              AND i.revoked_at IS NULL
         )
         """,
     )
@@ -95,6 +99,7 @@ interface IntakeDao {
             JOIN medication m ON m.id = i.medication_id
             WHERE i.medication_id = :medicationId AND m.profile_id = :profileId
               AND i.status = 'TAKEN'
+              AND i.revoked_at IS NULL
         )
         """,
     )
@@ -221,6 +226,22 @@ interface IntakeDao {
     )
     suspend fun unmark(intakeId: String): Int
 
+    /**
+     * Снятие записи «по потребности» (Р-46, SKL-127): мягкий признак, а не удаление.
+     *
+     * Условный запрос, как [markIfPending] и [unmark]: повторное снятие меняет ноль строк
+     * и не даёт вернуть дозу второй раз. Условие по статусу отсекает запись, которую
+     * успели перевести в «пропущено»: снимается только состоявшаяся отметка «принято».
+     */
+    @Query(
+        """
+        UPDATE intake
+        SET revoked_at = :at
+        WHERE id = :intakeId AND revoked_at IS NULL AND status = 'TAKEN'
+        """,
+    )
+    suspend fun revoke(intakeId: String, at: Long): Int
+
     /** Просроченные ожидающие приёмы для перевода в MISSED (ПР-1); граница окна — параметр домена (ОВ-4). */
     @Query("SELECT * FROM intake WHERE status = 'PENDING' AND scheduled_at < :before")
     suspend fun selectExpiredPending(before: String): List<IntakeEntity>
@@ -254,6 +275,7 @@ interface IntakeDao {
         JOIN medication m ON m.id = i.medication_id
         WHERE i.medication_id = :medicationId AND m.profile_id = :profileId
           AND m.deleted_at IS NULL
+          AND i.revoked_at IS NULL
           AND i.scheduled_at >= :dayStart AND i.scheduled_at < :nextDayStart
         """,
     )

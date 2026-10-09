@@ -104,3 +104,19 @@ sealed interface UndoDecision {
     /** Не трогать запись: отменять нечего. */
     data class Keep(val intake: Intake) : UndoDecision
 }
+
+/**
+ * Что делать с записью «по потребности» при снятии (Р-46, SKL-127).
+ *
+ * Отдельное решение, а не [UndoDecision] с лишним полем: у снятия нет возврата
+ * в «ожидается», и смешение двух исходов позволило бы собрать состояние, которого
+ * в продукте нет, — снятую запись, снова ожидающуюся.
+ */
+sealed interface RevokeDecision {
+
+    /** Пометить запись снятой моментом [at] и вернуть дозу (у TAKEN). */
+    data class Revoked(val intake: Intake, val stock: StockEffect) : RevokeDecision
+
+    /** Не трогать запись: снимать нечего (уже снята, не «принято» или ещё ожидается). */
+    data class Keep(val intake: Intake) : RevokeDecision
+}
