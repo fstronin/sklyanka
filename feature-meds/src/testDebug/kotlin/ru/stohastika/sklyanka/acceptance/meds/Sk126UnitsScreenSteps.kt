@@ -58,7 +58,14 @@ class Sk126UnitsScreenSteps(private val world: AcceptanceWorld) {
     }
 
     @Тогда("^в списке предложены единицы «(.+)», «(.+)», «(.+)», «(.+)», «(.+)» и «(.+)»$")
-    fun thePickerOffersThoseUnits(first: String, second: String, third: String, fourth: String, fifth: String, sixth: String) {
+    fun thePickerOffersThoseUnits(
+        first: String,
+        second: String,
+        third: String,
+        fourth: String,
+        fifth: String,
+        sixth: String,
+    ) {
         val expected = listOf(first, second, third, fourth, fifth, sixth)
         // Список открывается в том же проходе композиции, что и читается: открытое
         // состояние живёт в разметке экрана, и отдельная сборка показала бы форму без него.

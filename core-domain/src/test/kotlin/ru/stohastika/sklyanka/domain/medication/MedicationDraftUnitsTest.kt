@@ -42,11 +42,12 @@ class MedicationDraftUnitsTest {
     @Test
     fun `an unknown unit code stays in the record and gives no unit to the draft`() {
         // Чужая единица — из файла переноса или из более старой версии. Запись её хранит
-        // и показывает как есть; форма показывает выбор заново, а не подставляет «мг»
-        // молча: подмена переписала бы медицинские данные.
-        val medication = record(strengthUnit = "мгр")
+        // и показывает как есть; форма показывает выбор заново, а не подставляет миллиграмм
+        // молча: подмена переписала бы медицинские данные. Код латиницей: русские написания
+        // остаются текстами норматива (НФТ-42).
+        val medication = record(strengthUnit = UNKNOWN_UNIT)
 
-        assertEquals("мгр", medication.strengthUnit)
+        assertEquals(UNKNOWN_UNIT, medication.strengthUnit)
         assertNull(MedicationDraft.of(medication).strengthUnit)
         assertEquals(BigDecimal("48"), MedicationDraft.of(medication).strength)
     }
@@ -73,4 +74,10 @@ class MedicationDraftUnitsTest {
         archivedAt = null,
         archiveReason = null,
     )
+
+    private companion object {
+
+        /** Единица, которой нет в закрытом списке: чужая запись, а не наша форма. */
+        const val UNKNOWN_UNIT = "old-build-unit"
+    }
 }

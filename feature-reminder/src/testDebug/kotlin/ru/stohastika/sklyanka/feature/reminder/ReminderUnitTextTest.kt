@@ -62,11 +62,7 @@ class ReminderUnitTextTest {
         composeRule.onNodeWithText("2 таблетки · 50 мкг").assertExists()
     }
 
-    private fun row(
-        form: MedicationForm,
-        amount: BigDecimal,
-        strengthUnit: String? = null,
-    ): ReminderRow = ReminderRow(
+    private fun row(form: MedicationForm, amount: BigDecimal, strengthUnit: String? = null): ReminderRow = ReminderRow(
         intakeId = "intake-1",
         name = "med-a",
         form = form,

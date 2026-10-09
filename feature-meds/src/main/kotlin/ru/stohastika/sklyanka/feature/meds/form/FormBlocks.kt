@@ -34,9 +34,9 @@ import ru.stohastika.sklyanka.feature.meds.R
 import ru.stohastika.sklyanka.feature.meds.SectionLabel
 import ru.stohastika.sklyanka.feature.meds.doseSuffix
 import ru.stohastika.sklyanka.feature.meds.label
-import ru.stohastika.sklyanka.feature.meds.message
 import ru.stohastika.sklyanka.feature.meds.medicationPreviewNumbers
 import ru.stohastika.sklyanka.feature.meds.medicationPreviewTitle
+import ru.stohastika.sklyanka.feature.meds.message
 import ru.stohastika.sklyanka.feature.meds.previewDoseLabel
 import ru.stohastika.sklyanka.feature.meds.strengthUnitLabel
 import ru.stohastika.sklyanka.ui.component.ListPickerDialog

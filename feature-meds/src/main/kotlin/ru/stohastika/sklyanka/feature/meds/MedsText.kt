@@ -266,8 +266,7 @@ internal fun stockPackageLabel(left: BigDecimal, packageSize: BigDecimal, unit: 
  * нельзя: это медицинские данные (МГ-6).
  */
 @Composable
-internal fun strengthUnitLabel(code: String): String =
-    StrengthUnit.ofCode(code)?.label() ?: code
+internal fun strengthUnitLabel(code: String): String = StrengthUnit.ofCode(code)?.label() ?: code
 
 /** Слово единицы дозировки из закрытого списка (Р-45). */
 @Composable

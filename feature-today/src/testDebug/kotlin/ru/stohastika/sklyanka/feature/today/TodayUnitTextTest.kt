@@ -73,11 +73,7 @@ class TodayUnitTextTest {
         composeRule.onNodeWithText("20 таблеток · 250 мкг").assertExists()
     }
 
-    private fun medication(
-        form: MedicationForm,
-        unit: DoseUnit,
-        strengthUnit: String? = null,
-    ): Medication = Medication(
+    private fun medication(form: MedicationForm, unit: DoseUnit, strengthUnit: String? = null): Medication = Medication(
         id = "med-1",
         profileId = "profile-1",
         name = "med-a",

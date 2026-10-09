@@ -112,7 +112,9 @@ class FieldApplicabilityTest {
     @Test
     fun `a strength unit survives a round trip through its code`() {
         StrengthUnit.entries.forEach { unit -> assertEquals(unit, StrengthUnit.ofCode(unit.code)) }
-        assertNull(StrengthUnit.ofCode("мгр"))
+        // Незнакомая единица в коде латиницей: русские написания («мгр») живут
+        // в текстах норматива, а в Kotlin их нет вовсе (НФТ-42).
+        assertNull(StrengthUnit.ofCode("mgm"))
     }
 
     // --- Сброс неприменимого --------------------------------------------------------------

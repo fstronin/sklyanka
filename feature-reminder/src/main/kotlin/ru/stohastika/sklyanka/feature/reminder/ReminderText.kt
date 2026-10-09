@@ -51,8 +51,7 @@ internal fun ReminderRow.doseLine(): String {
  * старой версии — показывается как есть (МГ-6), а не подменяется своей.
  */
 @Composable
-private fun strengthUnitLabel(code: String): String =
-    StrengthUnit.ofCode(code)?.label() ?: code
+private fun strengthUnitLabel(code: String): String = StrengthUnit.ofCode(code)?.label() ?: code
 
 /** Слово единицы дозировки из закрытого списка (Р-45). */
 @Composable

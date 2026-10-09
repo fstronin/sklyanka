@@ -9,9 +9,8 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
-import ru.stohastika.sklyanka.acceptance.RussianDates
 import ru.stohastika.sklyanka.acceptance.MedicationUnits
-import ru.stohastika.sklyanka.domain.medication.StrengthUnit
+import ru.stohastika.sklyanka.acceptance.RussianDates
 import ru.stohastika.sklyanka.acceptance.steps.dateOf
 import ru.stohastika.sklyanka.acceptance.steps.localMoment
 import ru.stohastika.sklyanka.acceptance.steps.medicationNamed
@@ -19,6 +18,7 @@ import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
 import ru.stohastika.sklyanka.acceptance.world.TransferFileBuilder
 import ru.stohastika.sklyanka.domain.intake.MarkResult
 import ru.stohastika.sklyanka.domain.log.OpEvent
+import ru.stohastika.sklyanka.domain.medication.StrengthUnit
 import ru.stohastika.sklyanka.domain.model.Intake
 import ru.stohastika.sklyanka.domain.model.IntakeSource
 import ru.stohastika.sklyanka.domain.model.IntakeStatus
@@ -880,8 +880,6 @@ class TransferSteps(private val world: AcceptanceWorld) {
         const val TWELVE = 12
         const val ONE = 1
         const val PRN_DAILY_LIMIT = 1
-
-
 
         const val MORNING_HOUR = 8
         const val NOON = 12

@@ -23,6 +23,7 @@ import io.cucumber.java.ru.Тогда
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
+import ru.stohastika.sklyanka.acceptance.MedicationUnits
 import ru.stohastika.sklyanka.acceptance.profile.TodayFromWorld
 import ru.stohastika.sklyanka.acceptance.steps.dateOf
 import ru.stohastika.sklyanka.acceptance.steps.localMoment
@@ -30,7 +31,6 @@ import ru.stohastika.sklyanka.acceptance.steps.medicationNamed
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
 import ru.stohastika.sklyanka.domain.medication.MedicationDraft
 import ru.stohastika.sklyanka.domain.medication.SaveResult
-import ru.stohastika.sklyanka.acceptance.MedicationUnits
 import ru.stohastika.sklyanka.domain.medication.normalized
 import ru.stohastika.sklyanka.domain.model.FoodRelation
 import ru.stohastika.sklyanka.domain.model.IntakeStatus

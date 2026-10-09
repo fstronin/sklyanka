@@ -28,13 +28,13 @@ class JsonTransferCodecTest {
     private val codec = JsonTransferCodec(time)
 
     /** Момент снятия записи в сценариях этого файла: любой момент до выгрузки. */
-    private val REVOKED_AT = TransferFixtures.EXPORTED_AT.minusSeconds(3600)
+    private val revokedAt = TransferFixtures.EXPORTED_AT.minusSeconds(3600)
 
     /** Идентификатор снятой записи: у своей копии он отличается от записей заготовки. */
-    private val REVOKED_ID = "i-revoked"
+    private val revokedId = "i-revoked"
 
     /** Строка поля снятия в файле: её снимает сценарий «файл прежней сборки». */
-    private val REVOKED_FIELD = Regex(""",?\n\s*"revoked_at": "[^"]+"""")
+    private val revokedField = Regex(""",?\n\s*"revoked_at": "[^"]+"""")
 
     @Test
     fun `a snapshot survives the round trip through json`() {
@@ -68,7 +68,7 @@ class JsonTransferCodecTest {
      */
     @Test
     fun `a revoked on-demand record survives the round trip as revoked`() {
-        val revoked = TransferFixtures.taken().copy(id = REVOKED_ID, revokedAt = REVOKED_AT)
+        val revoked = TransferFixtures.taken().copy(id = revokedId, revokedAt = revokedAt)
         val snapshot = TransferFixtures.snapshot().let { it.copy(intakes = it.intakes + revoked) }
 
         val text = codec.encode(snapshot)
@@ -76,15 +76,15 @@ class JsonTransferCodecTest {
             .snapshot.intakes.single { it.id == revoked.id }
 
         assertTrue("the field must be written to the file", text.contains("\"revoked_at\""))
-        assertEquals(REVOKED_AT, restored.revokedAt)
+        assertEquals(revokedAt, restored.revokedAt)
     }
 
     /** Файл прежней сборки поля не несёт: отсутствие — это «не снято», а не ошибка (МГ-6). */
     @Test
     fun `a record of a file without the revocation field reads as not revoked`() {
-        val revoked = TransferFixtures.taken().copy(id = REVOKED_ID, revokedAt = REVOKED_AT)
+        val revoked = TransferFixtures.taken().copy(id = revokedId, revokedAt = revokedAt)
         val snapshot = TransferFixtures.snapshot().let { it.copy(intakes = listOf(revoked)) }
-        val withoutField = REVOKED_FIELD.replace(codec.encode(snapshot), "")
+        val withoutField = revokedField.replace(codec.encode(snapshot), "")
 
         assertTrue("the scenario must really strip the field", !withoutField.contains("revoked_at"))
         val decoded = codec.decode(withoutField)

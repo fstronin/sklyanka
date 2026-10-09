@@ -28,8 +28,8 @@ import ru.stohastika.sklyanka.domain.medication.CourseProgress
 import ru.stohastika.sklyanka.domain.medication.DayCell
 import ru.stohastika.sklyanka.domain.medication.DoseUnit
 import ru.stohastika.sklyanka.domain.medication.MedicationDraft
-import ru.stohastika.sklyanka.domain.medication.StrengthUnit
 import ru.stohastika.sklyanka.domain.medication.MedicationSubtitle
+import ru.stohastika.sklyanka.domain.medication.StrengthUnit
 import ru.stohastika.sklyanka.domain.medication.TrailingLine
 import ru.stohastika.sklyanka.domain.medication.WeekAdherenceStrip
 import ru.stohastika.sklyanka.domain.model.FoodRelation
