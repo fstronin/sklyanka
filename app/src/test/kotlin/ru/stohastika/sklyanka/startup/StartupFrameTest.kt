@@ -2,6 +2,7 @@ package ru.stohastika.sklyanka.startup
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import ru.stohastika.sklyanka.data.room.MigrationCopyBudget
 import ru.stohastika.sklyanka.feature.today.TodayUiState
 import java.time.LocalDate
 
@@ -109,13 +110,32 @@ class StartupFrameTest {
         // ADR-0012 п. 7). Готовность «Сегодня» здесь не спасает и не спасает вообще
         // ничего: любой экран продукта открыл бы схему, которой эта сборка не знает.
         assertEquals(
-            StartupFrame.DatabaseTooNew,
+            StartupFrame.DatabaseBlocked(DatabaseBlock.TooNew),
             startupFrame(
                 destination = StartDestination.Today,
                 onboardingUnseen = false,
                 onboardingDone = true,
                 today = ready,
-                databaseTooNew = true,
+                block = DatabaseBlock.TooNew,
+            ),
+        )
+    }
+
+    @Test
+    fun `a database without room for the migration copy blocks the app the same way`() {
+        // Места на копию перед миграцией нет — миграция не выполняется (ADR-0012 п. 3),
+        // и открывать базу этой сборке нельзя ровно так же, как на базе новее. Кадр тот же,
+        // а причина — своя: «освободите место» вместо «обновите приложение».
+        val budget = MigrationCopyBudget(requiredBytes = 50, freeBytes = 10)
+
+        assertEquals(
+            StartupFrame.DatabaseBlocked(DatabaseBlock.NotEnoughSpace(budget)),
+            startupFrame(
+                destination = StartDestination.Today,
+                onboardingUnseen = false,
+                onboardingDone = true,
+                today = ready,
+                block = DatabaseBlock.NotEnoughSpace(budget),
             ),
         )
     }
@@ -129,7 +149,7 @@ class StartupFrameTest {
                 onboardingUnseen = false,
                 onboardingDone = true,
                 today = ready,
-                databaseTooNew = false,
+                block = null,
             ),
         )
     }

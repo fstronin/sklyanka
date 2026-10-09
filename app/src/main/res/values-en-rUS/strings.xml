@@ -26,4 +26,10 @@
     <string name="database_too_new_data_kept">Your intake history is intact. Install the new version from the store and the app will open as before.</string>
     <string name="database_too_new_notification_title">Update the app</string>
     <string name="database_too_new_notification_text">Reminders will not work until you update the app.</string>
+    <string name="database_no_space_title">Not enough space to update</string>
+    <string name="database_no_space_missing">Free up %1$d MB more.</string>
+    <string name="database_no_space_explanation">To update the database without losing data, the app needs to save a copy of it. Until there is space, the update does not run.</string>
+    <string name="database_no_space_data_kept">Your intake history is intact. Free up space and open the app again.</string>
+    <string name="database_no_space_notification_title">Not enough space</string>
+    <string name="database_no_space_notification_text">Reminders will not work until you free up space.</string>
 </resources>

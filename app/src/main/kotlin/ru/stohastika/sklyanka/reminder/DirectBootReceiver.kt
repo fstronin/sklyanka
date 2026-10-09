@@ -9,7 +9,6 @@ import kotlinx.coroutines.launch
 import ru.stohastika.sklyanka.data.room.databaseStateOf
 import ru.stohastika.sklyanka.di.DirectBootEntryPoint
 import ru.stohastika.sklyanka.domain.reminder.RescheduleReason
-import ru.stohastika.sklyanka.platform.notification.UpdateRequiredNotifier
 
 /**
  * События загрузки до и после первой разблокировки (SKL-87).
@@ -26,12 +25,11 @@ import ru.stohastika.sklyanka.platform.notification.UpdateRequiredNotifier
 class DirectBootReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
-        // База новее: ни пересборки, ни переноса следа — оба читают или пишут базу,
-        // которой эта сборка не знает (Р-44). Человеку сообщается обновление.
-        if (wakeUpDecision(databaseStateOf(context)) == WakeUpDecision.AskToUpdate) {
-            UpdateRequiredNotifier.show(context)
-            return
-        }
+        // База закрыта (новее или места нет): ни пересборки, ни переноса следа — оба читают
+        // или пишут базу, которой эта сборка работать не может (Р-44, ADR-0012 пп. 3, 7).
+        // Человеку называется причина: обновление или место.
+        val decision = wakeUpDecision(databaseStateOf(context))
+        if (announceBlockedWakeUp(context, decision)) return
         // Компонент может отсутствовать: систему не интересует, под какой точкой сборки
         // поднят процесс, и broadcast приходит в процесс, графа ещё не имеющий
         // (например, инструментальный процесс тестовой сборки). Восстанавливать

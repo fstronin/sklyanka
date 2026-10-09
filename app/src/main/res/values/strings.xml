@@ -62,4 +62,12 @@
     <string name="database_too_new_data_kept">История приёмов цела. Установите новую версию из магазина — приложение откроется как прежде.</string>
     <string name="database_too_new_notification_title">Обновите приложение</string>
     <string name="database_too_new_notification_text">Напоминания не сработают, пока вы не обновите приложение.</string>
+    <!-- База старее сборки, а места на копию перед обновлением схемы нет (ADR-0012 п. 3):
+         обновление не выполняется, данные не меняются, человеку называется число. -->
+    <string name="database_no_space_title">Не хватает места для обновления</string>
+    <string name="database_no_space_missing">Нужно освободить ещё %1$d МБ.</string>
+    <string name="database_no_space_explanation">Чтобы обновить базу без потери данных, приложению нужно сохранить её копию. Пока места нет, обновление не выполняется.</string>
+    <string name="database_no_space_data_kept">История приёмов цела. Освободите место и откройте приложение снова.</string>
+    <string name="database_no_space_notification_title">Не хватает места</string>
+    <string name="database_no_space_notification_text">Напоминания не сработают, пока вы не освободите место.</string>
 </resources>

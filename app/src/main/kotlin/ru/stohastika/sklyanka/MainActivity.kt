@@ -21,7 +21,7 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
-import ru.stohastika.sklyanka.data.room.DatabaseState
+import ru.stohastika.sklyanka.data.room.DatabaseUpgrade
 import ru.stohastika.sklyanka.domain.onboarding.OnboardingSource
 import ru.stohastika.sklyanka.domain.onboarding.ShouldShowOnboardingUseCase
 import ru.stohastika.sklyanka.domain.profile.ProfileContextProvider
@@ -65,6 +65,7 @@ import ru.stohastika.sklyanka.navigation.layer
 import ru.stohastika.sklyanka.platform.startup.StartupRouter
 import ru.stohastika.sklyanka.reminder.DeliveryCheckAnnouncer
 import ru.stohastika.sklyanka.reminder.ReminderOutageAnnouncer
+import ru.stohastika.sklyanka.startup.DatabaseBlock
 import ru.stohastika.sklyanka.startup.StartDestination
 import ru.stohastika.sklyanka.startup.StartupDecision
 import ru.stohastika.sklyanka.startup.StartupFrames
@@ -119,12 +120,12 @@ class MainActivity : ComponentActivity() {
     lateinit var startupRouter: StartupRouter
 
     /**
-     * Состояние базы: новее ожидаемой — приложение не работает (Р-44, `ADR-0012` п. 7).
-     *
-     * Читается без Room, поэтому решение принимается до первого касания данных.
+     * Подготовка базы: её решение о состоянии решает, что показывать запуску (Р-44,
+     * `ADR-0012` пп. 3, 7). Спрашивается в `onCreate`, а не приходит готовым полем: граф
+     * к этому моменту уже подготовил базу, и отказ по месту обязан быть виден экрану.
      */
     @Inject
-    lateinit var databaseState: DatabaseState
+    lateinit var databaseUpgrade: DatabaseUpgrade
 
     /**
      * Показывать ли экран разрешений самому (НАП-21).
@@ -226,7 +227,7 @@ class MainActivity : ComponentActivity() {
         // человек остаётся на экране с окном.
         val addMedicationRequested = rootNavigation.openFromLaunch(intent?.action, undoActions.live())
 
-        val databaseTooNew = databaseState == DatabaseState.Newer
+        val block = DatabaseBlock.of(databaseUpgrade.state())
 
         var decision by mutableStateOf<StartupDecision?>(null)
         var onboardingUnseen by mutableStateOf(false)
@@ -248,11 +249,12 @@ class MainActivity : ComponentActivity() {
                 // решает человек кнопкой, и решение живёт в состоянии экрана, а не в том,
                 // что система ответила про разрешения (НАП-21).
                 var onboardingDone by remember { mutableStateOf(false) }
-                // Пока база новее, «Сегодня» не читается вовсе: его состояние — это
-                // запросы к базе, а схему, которой эта сборка не знает, открывать нельзя
-                // (Р-44, ADR-0012 п. 7). Ветка стоит здесь, а не в правиле кадров: решает
-                // не правило, а возможность обратиться к данным.
-                val todayState = if (databaseTooNew) {
+                // Пока база закрыта (новее сборки или без места на копию перед миграцией),
+                // «Сегодня» не читается вовсе: его состояние — это запросы к базе, а открывать
+                // схему, которой этой сборкой открывать нельзя, нельзя (Р-44, ADR-0012 пп. 3, 7).
+                // Ветка стоит здесь, а не в правиле кадров: решает не правило, а возможность
+                // обратиться к данным.
+                val todayState = if (block != null) {
                     TodayUiState.Opening
                 } else {
                     today.state.collectAsState().value
@@ -267,7 +269,7 @@ class MainActivity : ComponentActivity() {
                         onboardingUnseen = onboardingUnseen,
                         onboardingDone = onboardingDone,
                         today = todayState,
-                        databaseTooNew = databaseTooNew,
+                        block = block,
                     ),
                 ) {
                     LaunchRouting(

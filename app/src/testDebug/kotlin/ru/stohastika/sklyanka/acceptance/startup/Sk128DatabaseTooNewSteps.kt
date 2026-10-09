@@ -33,6 +33,7 @@ import ru.stohastika.sklyanka.domain.model.IntakeStatus
 import ru.stohastika.sklyanka.feature.today.TodayUiState
 import ru.stohastika.sklyanka.platform.reminder.ReminderAlarms
 import ru.stohastika.sklyanka.reminder.AlarmReceiver
+import ru.stohastika.sklyanka.startup.DatabaseBlock
 import ru.stohastika.sklyanka.startup.StartDestination
 import ru.stohastika.sklyanka.startup.StartupFrames
 import ru.stohastika.sklyanka.startup.TAG_DATABASE_TOO_NEW
@@ -179,6 +180,7 @@ class Sk128DatabaseTooNewSteps(private val world: AcceptanceWorld) {
      */
     private fun ask(question: (ComposeUiTest) -> Unit) {
         ensureScenarioDatabase()
+        val block = DatabaseBlock.of(databaseStateOf(context))
         runComposeUiTest {
             setContent {
                 SklyankaTheme {
@@ -188,7 +190,7 @@ class Sk128DatabaseTooNewSteps(private val world: AcceptanceWorld) {
                             onboardingUnseen = false,
                             onboardingDone = true,
                             today = TodayUiState.Empty(LocalDate.of(2026, 9, 25)),
-                            databaseTooNew = databaseStateOf(context) == DatabaseState.Newer,
+                            block = block,
                         ),
                     ) {
                         Box(modifier = Modifier.testTag(TAG_FIRST_SCREEN))

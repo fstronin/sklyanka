@@ -30,10 +30,11 @@ class RescheduleWorker(context: Context, parameters: WorkerParameters) : Corouti
     override suspend fun doWork(): Result {
         val reason = ReminderWork.reasonOf(inputData.getString(ReminderWork.KEY_REASON))
         return when {
-            // База новее: пересборка окна читала бы и писала базу, которой эта сборка
-            // не знает (Р-44). Задача завершается успешно и ничего не делает: сообщить
-            // человеку успел приёмник будильника, а не фоновая задача.
-            wakeUpDecision(databaseStateOf(applicationContext)) == WakeUpDecision.AskToUpdate -> Result.success()
+            // База закрыта (новее или места нет): пересборка окна читала бы и писала базу,
+            // которой эта сборка работать не может (Р-44, ADR-0012 пп. 3, 7). Задача
+            // завершается успешно и ничего не делает: сообщить человеку успел приёмник
+            // будильника, а не фоновая задача.
+            wakeUpDecision(databaseStateOf(applicationContext)) != WakeUpDecision.Handle -> Result.success()
 
             reason == null -> Result.failure()
 

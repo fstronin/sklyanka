@@ -9,7 +9,9 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import ru.stohastika.sklyanka.data.log.LogRetention
 import ru.stohastika.sklyanka.data.repository.ProfileBootstrap
+import ru.stohastika.sklyanka.data.room.DatabaseMaintenance
 import ru.stohastika.sklyanka.data.room.DatabaseState
+import ru.stohastika.sklyanka.data.room.DatabaseUpgrade
 import ru.stohastika.sklyanka.domain.log.OperationLog
 import ru.stohastika.sklyanka.domain.reminder.RescheduleReason
 import ru.stohastika.sklyanka.platform.AppForegroundTracker
@@ -104,9 +106,19 @@ class SklyankaApp : Application() {
     @Inject
     lateinit var seeds: Set<@JvmSuppressWildcards StartupSeed>
 
-    /** Состояние базы: новее ожидаемой — старт не делает ничего (Р-44, `ADR-0012` п. 7). */
+    /**
+     * Подготовка базы и её решение о состоянии (Р-44, `ADR-0012` пп. 3, 7).
+     *
+     * Состояние спрашивается уже здесь, а не приходит готовым полем: за время инъекции
+     * граф успевает подготовить базу (снять копию или отказать из-за места), и старт обязан
+     * увидеть именно её решение — иначе отказ по месту разошёлся бы с экраном.
+     */
     @Inject
-    lateinit var databaseState: DatabaseState
+    lateinit var databaseUpgrade: DatabaseUpgrade
+
+    /** След применённой миграции и проверки целостности (`ADR-0012` п. 4). */
+    @Inject
+    lateinit var databaseMaintenance: DatabaseMaintenance
 
     private val startupScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -125,13 +137,17 @@ class SklyankaApp : Application() {
         // которая их трогает, запускает `USER_UNLOCKED` (план) и следующий открытый запуск
         // (bootstrap и подрезка), поэтому здесь достаточно выйти, не уронив процесс.
         if (!isUserUnlocked()) return
-        // База новее установленной сборки: ни одна работа старта не выполняется (Р-44,
-        // `ADR-0012` п. 7). Читать её нельзя, а «сделать вид» — тем более: проход по
-        // профилям, планирование и подрезка журнала молча писали бы в базу, которую
-        // эта сборка не знает. Каналы уведомлений выше уже созданы: ими сообщают
-        // о необходимости обновления.
-        if (databaseState == DatabaseState.Newer) return
+        // База закрыта — неважно, почему (новее установленной сборки или нет места на копию
+        // перед миграцией): ни одна работа старта не выполняется (Р-44, `ADR-0012` пп. 3, 7).
+        // Читать её нельзя, а «сделать вид» — тем более: проход по профилям, планирование
+        // и подрезка журнала молча писали бы в базу, которой эта сборка работать не может.
+        // Каналы уведомлений выше уже созданы: ими сообщают о причине.
+        if (databaseUpgrade.state() != DatabaseState.Ready) return
         startupScope.launch {
+            // Первым делом — след миграции и проверки целостности (`ADR-0012` п. 4): факт
+            // перехода схемы обязан быть записан раньше любой другой работы, иначе
+            // разбирать «приложение показывает не то после обновления» было бы нечем.
+            databaseMaintenance.onStart()
             directBootTraceDrain.drainIntoJournal()
             profileBootstrap.ensureOwnerProfile(
                 // Имя профиля по умолчанию — текст интерфейса, и язык у него свой (НФТ-43а).

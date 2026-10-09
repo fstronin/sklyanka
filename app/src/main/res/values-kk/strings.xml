@@ -26,4 +26,10 @@
     <string name="database_too_new_data_kept">Қабылдау тарихы сақтаулы. Дүкеннен жаңа нұсқаны орнатыңыз — қолданба бұрынғыша ашылады.</string>
     <string name="database_too_new_notification_title">Қолданбаны жаңартыңыз</string>
     <string name="database_too_new_notification_text">Қолданбаны жаңартпайынша, еске салғыштар істемейді.</string>
+    <string name="database_no_space_title">Жаңартуға орын жетпейді</string>
+    <string name="database_no_space_missing">Тағы %1$d МБ босату керек.</string>
+    <string name="database_no_space_explanation">Дерекқорды деректерді жоғалтпай жаңарту үшін қолданбаға оның көшірмесін сақтау қажет. Орын болмайынша, жаңарту орындалмайды.</string>
+    <string name="database_no_space_data_kept">Қабылдау тарихы сақтаулы. Орын босатып, қолданбаны қайта ашыңыз.</string>
+    <string name="database_no_space_notification_title">Орын жетпейді</string>
+    <string name="database_no_space_notification_text">Орын босатылмайынша, еске салғыштар істемейді.</string>
 </resources>

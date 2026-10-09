@@ -9,7 +9,6 @@ import kotlinx.coroutines.launch
 import ru.stohastika.sklyanka.data.room.databaseStateOf
 import ru.stohastika.sklyanka.di.ReminderEntryPoint
 import ru.stohastika.sklyanka.domain.reminder.RescheduleReason
-import ru.stohastika.sklyanka.platform.notification.UpdateRequiredNotifier
 
 /**
  * Системные события, после которых будильников больше нет (НАП-11).
@@ -27,13 +26,12 @@ class SystemEventReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         val reason = SystemEvents.reasonOf(intent.action) ?: return
-        // База новее: перепланировать нечего — план живёт в базе, которую эта сборка
-        // не читает (Р-44). Сообщаем обновление и ничего не планируем.
-        if (wakeUpDecision(databaseStateOf(context)) == WakeUpDecision.AskToUpdate) {
-            UpdateRequiredNotifier.show(context)
-        } else {
-            enqueue(context, reason)
-        }
+        // База закрыта (новее или места нет): перепланировать нечего — план живёт в базе,
+        // которой эта сборка работать не может (Р-44, ADR-0012 пп. 3, 7). Человеку
+        // называется причина, и ничего не планируется.
+        val decision = wakeUpDecision(databaseStateOf(context))
+        if (announceBlockedWakeUp(context, decision)) return
+        enqueue(context, reason)
     }
 
     /** Постановка задачи перепланирования: она переживает смерть процесса (НАП-13). */

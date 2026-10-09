@@ -26,4 +26,10 @@
     <string name="database_too_new_data_kept">服药记录完好。请从应用商店安装新版本，应用将照常打开。</string>
     <string name="database_too_new_notification_title">请更新应用</string>
     <string name="database_too_new_notification_text">在您更新应用之前，提醒不会生效。</string>
+    <string name="database_no_space_title">存储空间不足，无法更新</string>
+    <string name="database_no_space_missing">还需释放 %1$d MB。</string>
+    <string name="database_no_space_explanation">为了在不丢失数据的情况下更新数据库，应用需要保存一份副本。空间不足时，更新不会执行。</string>
+    <string name="database_no_space_data_kept">服药记录完好。请释放空间后重新打开应用。</string>
+    <string name="database_no_space_notification_title">存储空间不足</string>
+    <string name="database_no_space_notification_text">在您释放空间之前，提醒不会生效。</string>
 </resources>

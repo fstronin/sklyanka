@@ -26,4 +26,10 @@
     <string name="database_too_new_data_kept">Die Einnahmehistorie ist unversehrt. Installieren Sie die neue Version aus dem Store, dann öffnet sich die App wie zuvor.</string>
     <string name="database_too_new_notification_title">App aktualisieren</string>
     <string name="database_too_new_notification_text">Erinnerungen funktionieren erst, wenn Sie die App aktualisieren.</string>
+    <string name="database_no_space_title">Nicht genug Speicher für das Update</string>
+    <string name="database_no_space_missing">Bitte geben Sie %1$d MB mehr frei.</string>
+    <string name="database_no_space_explanation">Um die Datenbank ohne Datenverlust zu aktualisieren, muss die App eine Kopie davon speichern. Solange kein Speicher frei ist, wird das Update nicht ausgeführt.</string>
+    <string name="database_no_space_data_kept">Die Einnahmehistorie ist unversehrt. Geben Sie Speicher frei und öffnen Sie die App erneut.</string>
+    <string name="database_no_space_notification_title">Nicht genug Speicher</string>
+    <string name="database_no_space_notification_text">Erinnerungen funktionieren erst, wenn Sie Speicher freigeben.</string>
 </resources>

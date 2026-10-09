@@ -9,28 +9,32 @@ import ru.stohastika.sklyanka.feature.today.TodayUiState
  * На холодном старте кадров три: системный (его рисует платформа по теме
  * `Theme.Sklyanka.Splash`, приложению он не подчиняется), заставка приложения
  * и первый экран. Здесь названы два последних — то, чем распоряжается приложение, —
- * и третий, который бывает вместо них: отказ от работы на базе новее установленной
- * сборки (`ADR-0012` п. 7).
+ * и третий, который бывает вместо них: работа с базой невозможна (Р-44, `ADR-0012` пп. 3, 7).
+ *
+ * Кадр отказа несёт свою причину внутри себя намеренно: причина нужна и экрану, и словам
+ * на нём, и вторым параметром рядом с кадром она рано или поздно разошлась бы с ним —
+ * «отказ» без причины или причина без отказа.
  */
-enum class StartupFrame {
+sealed interface StartupFrame {
 
     /**
      * Заставка приложения: экран удержания от снятия системного кадра до готовности
      * первого экрана показать своё содержимое (`docs/v2/10-behavior.md` «Заставка»).
      */
-    AppSplash,
+    data object AppSplash : StartupFrame
 
     /** Первый экран запуска: разрешения, онбординг или «Сегодня» с содержимым. */
-    FirstScreen,
+    data object FirstScreen : StartupFrame
 
     /**
-     * База новее установленной сборки: приложение не открывается, показывается объяснение.
+     * Работа с базой невозможна: приложение не открывается, показывается объяснение.
      *
-     * Кадр первый в правиле и не зависит от остальных входов: пока база новее, ни один
-     * экран продукта показать нельзя — каждый из них открыл бы схему, которой эта сборка
-     * не знает (Р-44, МГ-2).
+     * Кадр первый в правиле и не зависит от остальных входов: пока база новее или не хватает
+     * места на копию перед миграцией, ни один экран продукта показать нельзя — каждый из них
+     * открыл бы схему, которую этой сборке открывать нельзя (Р-44, МГ-2). Причина блокировки —
+     * в [block]: «обновите приложение» и «освободите место» требуют разных действий.
      */
-    DatabaseTooNew,
+    data class DatabaseBlocked(val block: DatabaseBlock) : StartupFrame
 }
 
 /**
@@ -52,10 +56,10 @@ fun startupFrame(
     onboardingUnseen: Boolean,
     onboardingDone: Boolean,
     today: TodayUiState,
-    /** Состояние базы: новее ожидаемой — приложение работать не может (Р-44). */
-    databaseTooNew: Boolean = false,
+    /** Почему база закрыта: новее ожидаемой или не хватает места на копию (Р-44, `ADR-0012` пп. 3, 7). */
+    block: DatabaseBlock? = null,
 ): StartupFrame = when {
-    databaseTooNew -> StartupFrame.DatabaseTooNew
+    block != null -> StartupFrame.DatabaseBlocked(block)
     destination == null -> StartupFrame.AppSplash
     destination == StartDestination.Onboarding && onboardingUnseen && !onboardingDone -> StartupFrame.FirstScreen
     today is TodayUiState.Opening -> StartupFrame.AppSplash
@@ -80,7 +84,7 @@ fun startupFrame(
 fun StartupFrames(frame: StartupFrame, firstScreen: @Composable () -> Unit) {
     when (frame) {
         StartupFrame.AppSplash -> SplashScreen()
-        StartupFrame.DatabaseTooNew -> DatabaseTooNewScreen()
+        is StartupFrame.DatabaseBlocked -> DatabaseBlockedScreen(block = frame.block)
         // Первый экран не компонуется ни в одном другом кадре — ни заставкой, ни отказом:
         // маршрут строит граф, а граф читает базу, которую в отказе читать нельзя.
         StartupFrame.FirstScreen -> firstScreen()

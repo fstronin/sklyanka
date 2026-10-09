@@ -19,9 +19,11 @@ class DayBoundaryWorker(context: Context, parameters: WorkerParameters) : Corout
 
     @Suppress("TooGenericExceptionCaught")
     override suspend fun doWork(): Result {
-        // База новее: полуночный проход читал бы и писал базу, которой эта сборка
-        // не знает (Р-44), поэтому работа не выполняется и исход — успех.
-        if (wakeUpDecision(databaseStateOf(applicationContext)) == WakeUpDecision.AskToUpdate) {
+        // База закрыта (новее или места нет): полуночный проход читал бы и писал базу,
+        // которой эта сборка работать не может (Р-44, ADR-0012 пп. 3, 7), поэтому работа
+        // не выполняется и исход — успех. Сообщает человеку приёмник будильника, а не
+        // фоновая задача: у неё нет ни повода, ни карточки.
+        if (wakeUpDecision(databaseStateOf(applicationContext)) != WakeUpDecision.Handle) {
             return Result.success()
         }
         return try {

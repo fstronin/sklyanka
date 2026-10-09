@@ -24,10 +24,21 @@ enum class WakeUpDecision {
      * записанная «наугад», потерялась бы вместе с процессом.
      */
     AskToUpdate,
+
+    /**
+     * Места на копию перед миграцией не хватает: отметок не создаём, карточку не показываем,
+     * сообщаем о нехватке места (`ADR-0012` п. 3).
+     *
+     * Отдельно от [AskToUpdate] намеренно: «обновите приложение» и «освободите место» —
+     * разные действия, и совет не по причине человек выполнить не может. Исход для напоминания
+     * тот же: писать в базу, которую нельзя мигрировать по правилам, нельзя.
+     */
+    AskToFreeSpace,
 }
 
 /** Решение сработавшего будильника по состоянию базы. */
 fun wakeUpDecision(state: DatabaseState): WakeUpDecision = when (state) {
     DatabaseState.Ready -> WakeUpDecision.Handle
     DatabaseState.Newer -> WakeUpDecision.AskToUpdate
+    is DatabaseState.NotEnoughSpace -> WakeUpDecision.AskToFreeSpace
 }

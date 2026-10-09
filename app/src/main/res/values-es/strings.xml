@@ -26,4 +26,10 @@
     <string name="database_too_new_data_kept">El historial de tomas está intacto. Instala la nueva versión desde la tienda y la aplicación se abrirá como antes.</string>
     <string name="database_too_new_notification_title">Actualiza la aplicación</string>
     <string name="database_too_new_notification_text">Los recordatorios no funcionarán hasta que actualices la aplicación.</string>
+    <string name="database_no_space_title">No hay espacio suficiente para actualizar</string>
+    <string name="database_no_space_missing">Libera %1$d MB más.</string>
+    <string name="database_no_space_explanation">Para actualizar la base de datos sin perder datos, la aplicación necesita guardar una copia. Mientras no haya espacio, la actualización no se realiza.</string>
+    <string name="database_no_space_data_kept">El historial de tomas está intacto. Libera espacio y vuelve a abrir la aplicación.</string>
+    <string name="database_no_space_notification_title">No hay espacio suficiente</string>
+    <string name="database_no_space_notification_text">Los recordatorios no funcionarán hasta que liberes espacio.</string>
 </resources>
