@@ -3,6 +3,7 @@ package ru.stohastika.sklyanka.reminder
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import ru.stohastika.sklyanka.data.room.databaseStateOf
 import ru.stohastika.sklyanka.di.ReminderEntryPoint
 import ru.stohastika.sklyanka.domain.reminder.RescheduleReason
 
@@ -32,7 +33,7 @@ class RescheduleWorker(context: Context, parameters: WorkerParameters) : Corouti
             // База новее: пересборка окна читала бы и писала базу, которой эта сборка
             // не знает (Р-44). Задача завершается успешно и ничего не делает: сообщить
             // человеку успел приёмник будильника, а не фоновая задача.
-            wakeUpDecision(wakeUpStateOf(applicationContext)) == WakeUpDecision.AskToUpdate -> Result.success()
+            wakeUpDecision(databaseStateOf(applicationContext)) == WakeUpDecision.AskToUpdate -> Result.success()
 
             reason == null -> Result.failure()
 

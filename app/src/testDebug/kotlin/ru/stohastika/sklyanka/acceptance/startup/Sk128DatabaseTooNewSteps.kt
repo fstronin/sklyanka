@@ -28,11 +28,11 @@ import ru.stohastika.sklyanka.R
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
 import ru.stohastika.sklyanka.data.room.DatabaseState
 import ru.stohastika.sklyanka.data.room.SklyankaDatabase
+import ru.stohastika.sklyanka.data.room.databaseStateOf
 import ru.stohastika.sklyanka.domain.model.IntakeStatus
 import ru.stohastika.sklyanka.feature.today.TodayUiState
 import ru.stohastika.sklyanka.platform.reminder.ReminderAlarms
 import ru.stohastika.sklyanka.reminder.AlarmReceiver
-import ru.stohastika.sklyanka.reminder.wakeUpStateOf
 import ru.stohastika.sklyanka.startup.StartDestination
 import ru.stohastika.sklyanka.startup.StartupFrames
 import ru.stohastika.sklyanka.startup.TAG_DATABASE_TOO_NEW
@@ -75,7 +75,7 @@ class Sk128DatabaseTooNewSteps(private val world: AcceptanceWorld) {
         databaseIsNewer = true
         assertEquals(
             DatabaseState.Newer,
-            wakeUpStateOf(context),
+            databaseStateOf(context),
             "the reader must see the newer database",
         )
     }
@@ -188,7 +188,7 @@ class Sk128DatabaseTooNewSteps(private val world: AcceptanceWorld) {
                             onboardingUnseen = false,
                             onboardingDone = true,
                             today = TodayUiState.Empty(LocalDate.of(2026, 9, 25)),
-                            databaseTooNew = wakeUpStateOf(context) == DatabaseState.Newer,
+                            databaseTooNew = databaseStateOf(context) == DatabaseState.Newer,
                         ),
                     ) {
                         Box(modifier = Modifier.testTag(TAG_FIRST_SCREEN))

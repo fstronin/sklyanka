@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import androidx.work.await
 import kotlinx.coroutines.launch
+import ru.stohastika.sklyanka.data.room.databaseStateOf
 import ru.stohastika.sklyanka.di.ReminderEntryPoint
 import ru.stohastika.sklyanka.domain.reminder.RescheduleReason
 import ru.stohastika.sklyanka.platform.notification.UpdateRequiredNotifier
@@ -28,7 +29,7 @@ class SystemEventReceiver : BroadcastReceiver() {
         val reason = SystemEvents.reasonOf(intent.action) ?: return
         // База новее: перепланировать нечего — план живёт в базе, которую эта сборка
         // не читает (Р-44). Сообщаем обновление и ничего не планируем.
-        if (wakeUpDecision(wakeUpStateOf(context)) == WakeUpDecision.AskToUpdate) {
+        if (wakeUpDecision(databaseStateOf(context)) == WakeUpDecision.AskToUpdate) {
             UpdateRequiredNotifier.show(context)
         } else {
             enqueue(context, reason)

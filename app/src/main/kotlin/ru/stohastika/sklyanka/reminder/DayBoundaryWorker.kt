@@ -3,6 +3,7 @@ package ru.stohastika.sklyanka.reminder
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import ru.stohastika.sklyanka.data.room.databaseStateOf
 import ru.stohastika.sklyanka.di.ReminderEntryPoint
 
 /**
@@ -20,7 +21,7 @@ class DayBoundaryWorker(context: Context, parameters: WorkerParameters) : Corout
     override suspend fun doWork(): Result {
         // База новее: полуночный проход читал бы и писал базу, которой эта сборка
         // не знает (Р-44), поэтому работа не выполняется и исход — успех.
-        if (wakeUpDecision(wakeUpStateOf(applicationContext)) == WakeUpDecision.AskToUpdate) {
+        if (wakeUpDecision(databaseStateOf(applicationContext)) == WakeUpDecision.AskToUpdate) {
             return Result.success()
         }
         return try {

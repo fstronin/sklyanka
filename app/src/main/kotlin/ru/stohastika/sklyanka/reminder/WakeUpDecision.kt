@@ -1,8 +1,6 @@
 package ru.stohastika.sklyanka.reminder
 
-import android.content.Context
 import ru.stohastika.sklyanka.data.room.DatabaseState
-import ru.stohastika.sklyanka.data.room.databaseStateOf
 
 /**
  * Что делать тому, кого разбудили будильником, при текущем состоянии базы (Р-44, `ADR-0012` п. 7).
@@ -33,11 +31,3 @@ fun wakeUpDecision(state: DatabaseState): WakeUpDecision = when (state) {
     DatabaseState.Ready -> WakeUpDecision.Handle
     DatabaseState.Newer -> WakeUpDecision.AskToUpdate
 }
-
-/**
- * Состояние базы по контексту — тем же чтением, что у графа, и без Room.
- *
- * Приёмник спрашивает это до обращения к графу: иначе первый же запрос к приёму открыл бы
- * схему, которой эта сборка не знает.
- */
-fun wakeUpStateOf(context: Context): DatabaseState = databaseStateOf(context)

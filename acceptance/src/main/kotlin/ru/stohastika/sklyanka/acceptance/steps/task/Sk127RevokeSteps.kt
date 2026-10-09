@@ -22,7 +22,8 @@ import java.time.LocalTime
  *
  * Невидимость снятой записи проверяется по [ru.stohastika.sklyanka.acceptance.world.ScenarioIntakes.visibleOf]:
  * сценарное хранилище повторяет условие `revoked_at IS NULL` выборок Room, сам SQL закреплён
- * инструментальным тестом (`IntakeRepositoryUndoTest`).
+ * инструментальным тестом (`IntakeRepositoryRevokeTest`: признак, невидимость в выборках дня и периода,
+ * счёт суток и условное удаление лекарства).
  *
  * Русский текст в аннотациях — ключевые слова Gherkin, а не текст интерфейса.
  */
