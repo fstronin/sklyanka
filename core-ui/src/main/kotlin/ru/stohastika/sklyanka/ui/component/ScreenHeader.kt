@@ -9,12 +9,15 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -23,6 +26,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,6 +39,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Dp
 import ru.stohastika.sklyanka.ui.R
 import ru.stohastika.sklyanka.ui.locale.interfaceLocale
 import ru.stohastika.sklyanka.ui.profile.LocalProfileChrome
@@ -45,6 +50,61 @@ import ru.stohastika.sklyanka.ui.token.SklyankaSizes
 import ru.stohastika.sklyanka.ui.token.SklyankaSpacing
 import ru.stohastika.sklyanka.ui.token.SklyankaType
 
+/**
+ * Верхний инсет экрана, сообщённый обёрткой профиля (Р-54).
+ *
+ * Обёртка [ru.stohastika.sklyanka.ui.profile.ProfileChrome] уже резервирует высоту
+ * системной панели полосой цвета шапки — и она же кладёт это значение сюда. Читать инсет
+ * по месту экрана нельзя: тогда правило верхнего поля пришлось бы проверять на устройстве,
+ * а на стенде инсет подставляется явно, и правило проверяется без него.
+ *
+ * Значение по умолчанию — `null`: это значит «обёртки нет». Тогда шапка читает настоящий
+ * `WindowInsets.statusBars` ([screenTopInset]) и ведёт себя как раньше — но правило потолка
+ * («инсет + полоса + поле» ≤ 56 dp) для такого экрана верно, только если полосу под системной
+ * панелью зарезервировал он сам (`statusBarsPadding`, `windowInsetsTopHeight`). Экран, который
+ * этого не сделал, потолком поле урежет, а полосу не зарезервирует — шапка уедет под системную
+ * панель (находка ревью SKL-137: так было у шторки проверки доставки).
+ */
+val LocalScreenTopInset = staticCompositionLocalOf<Dp?> { null }
+
+/**
+ * Верхний инсет, действующий для этой шапки: сообщённый обёрткой либо настоящий.
+ *
+ * `null` в локале означает «обёртки нет»: только тогда читается платформенный инсет.
+ *
+ * Прочитанный инсет **не** резервируется: поле шапки отсчитывается от того места, где шапка
+ * уже стоит. Обёртка профиля резервирует полосу сама, а экран вне обёртки обязан сделать это
+ * своими средствами (`statusBarsPadding`) — иначе поле урежется потолком, а полоса над шапкой
+ * останется под системной панелью (находка ревью SKL-137).
+ */
+@Composable
+internal fun screenTopInset(): Dp = LocalScreenTopInset.current
+    ?: WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+
+/**
+ * Поле шапки сверху: базовое, урезанное потолком суммы «инсет + полоса + поле» (§4, Р-54).
+ *
+ * Сумма «инсет + [stripe] + поле» держится в `HeaderTopCap` 56 dp от верхней грани экрана,
+ * а поле не уходит в минус. Потолок достижим, пока сам инсет с полосой его не превышает:
+ * выше потолка поле обнуляется, и сумма упирается в них — ниже системной панели её не
+ * опустить. На стенде и на телефоне без выреза (инсет 0) правило ничего не меняет;
+ * на строке состояния 24 dp сумма остаётся 54 dp; на вырезе 49,5 dp поле урезается до 6,5 dp,
+ * а в чужом профиле — до 0,5 dp: 6 dp из того же поля занимает полоса.
+ *
+ * [stripe] — высота полосы чужого профиля между системной панелью и шапкой. Она входит
+ * в то же верхнее поле (§4: «30 dp, из них 6 dp — полоса»), и без неё сумма на вырезе
+ * превысила бы потолок на её высоту. У профиля владельца полосы нет — [SklyankaSpacing.None].
+ *
+ * Чистая функция — одна на все шапки: будь она по месту экрана, на одиннадцати экранах
+ * завелось бы одиннадцать чисел, и расхождение между ними было бы не видно (НФТ-47).
+ * Базовые значения (30 dp, 24 dp в чужом профиле) она не меняет — только ограничивает.
+ */
+internal fun headerTopPadding(inset: Dp, base: Dp, stripe: Dp): Dp =
+    minOf(base, (SklyankaSizes.HeaderTopCap - inset - stripe).coerceAtLeast(SklyankaSpacing.None))
+
+// Параметров семь: заголовки, вид, возврат, ведущий слот, действие и состояние ряда.
+// Свернуть их в контейнер можно, но контейнер здесь — тот же список под другим именем,
+// и он спрятал бы, что именно экран объявляет (то же снятие, что у `SklyankaTextField`).
 /**
  * Шапка экрана.
  *
@@ -62,14 +122,27 @@ import ru.stohastika.sklyanka.ui.token.SklyankaType
  * Заголовок не обрезается и переносится на вторую строку при увеличенном системном
  * шрифте: шапка растёт по высоте (§6.3, критерий 5).
  *
- * **Строка вида `Modal` — одна сетка слотов (§7, Р-53).** Ведущее действие («Отмена»)
- * стоит слева, название — сразу за ним слева, замыкающее действие — справа; слова действий
- * встают на боковое поле шапки `SklyankaSpacing.Section` 20 dp, на одной горизонтальной
- * линии с названием. Пустой слот не заполняется ничем: невидимых заглушек и поддельной
- * центровки в модальной шапке нет (V-15). Строку собирает [ModalHeaderRow] — одна часть
- * на все три модальные поверхности: форма лекарства и шторка проверки доставки приходят
- * сюда, шторка отчёта врачу — тем же компонентом. Второй сборки строки по месту быть
- * не должно: именно она и разошлась молча.
+ * **Строка вида `Modal` — одна сетка слотов (§7, Р-53).** Ведущее действие стоит слева —
+ * у той поверхности, у которой оно есть (у шторки отчёта врачу это «Отмена»); название —
+ * сразу за ним слева, замыкающее действие — справа; слова действий встают на боковое поле
+ * шапки `SklyankaSpacing.Section` 20 dp, на одной горизонтальной линии с названием. Пустой
+ * слот не заполняется ничем: невидимых заглушек и поддельной центровки в модальной шапке
+ * нет (V-15). Строку собирает [ModalHeaderRow] — одна часть на обе оставшиеся модальные
+ * поверхности: шторка проверки доставки (заголовок без действий: её выход — системный
+ * «Назад») и шторка отчёта врачу (её собственные действия отправки). Второй сборки строки
+ * по месту быть не должно: именно она и разошлась молча.
+ *
+ * **Слово «Отмена» у вида `Modal` не обязательно (Р-54).** Его имеет та поверхность,
+ * у которой оно есть: у шторки отчёта врачу — как ведущее действие до отправки. Форма
+ * лекарства из этого вида вышла: у неё вложенная шапка **без возврата** (Р-54), и слова
+ * в шапке нет вовсе — выход даёт системный «Назад», сохранение — нижняя кнопка (Д-3).
+ *
+ * **Верхнее поле шапки ограничено суммой с инсетом и полосой (§4, Р-54).** Поле считается
+ * [headerTopPadding] от инсета, который сообщает обёртка профиля ([LocalScreenTopInset]),
+ * и от полосы чужого профиля: сумма «инсет + полоса + поле» держится в потолке
+ * `SklyankaSizes.HeaderTopCap` 56 dp, пока сам инсет с полосой его не превышает (выше
+ * потолка поле обнуляется — ниже системной панели сумма не опускается). На стенде и на
+ * телефоне без выреза (инсет 0) вид не меняется — 30 dp, как в макете.
  *
  * **Закрепление модальной шапки.** Модальная шапка уезжает вместе с содержимым, как
  * корневые и вложенные (§7): крупного заголовка у неё нет, поэтому под закреплённый ряд
@@ -81,9 +154,6 @@ import ru.stohastika.sklyanka.ui.token.SklyankaType
  *   показывать ли компактный заголовок. У несжатого экрана этого параметра нет, и шапка
  *   ведёт себя как прежде — рисует себя целиком, включая баннер чужого профиля.
  */
-// Параметров семь: заголовки, вид, возврат, ведущий слот, действие и состояние ряда.
-// Свернуть их в контейнер можно, но контейнер здесь — тот же список под другим именем,
-// и он спрятал бы, что именно экран объявляет (то же снятие, что у `SklyankaTextField`).
 @Suppress("LongParameterList")
 @Composable
 fun ScreenHeader(
@@ -116,8 +186,14 @@ fun ScreenHeader(
     val nestedWithBack = kind == ScreenHeaderKind.Nested && actionRow != null
     // Верхний отступ берётся один раз на шапку: у закреплённого ряда он свой (2 dp), а шапка
     // под ним отделяется малым зазором — как ряд действия в развёрнутой шапке (§7). Иначе
-    // крупный заголовок уезжал бы вниз на два отступа сразу.
-    val topPadding = if (foreign) SklyankaSizes.HeaderTopPaddingProfile else SklyankaSizes.HeaderTopPadding
+    // крупный заголовок уезжал бы вниз на два отступа сразу. Поле урезается потолком суммы
+    // «инсет + полоса + поле» (§4, Р-54): на вырезе шапка не растёт вместе с ним.
+    val basePadding = if (foreign) SklyankaSizes.HeaderTopPaddingProfile else SklyankaSizes.HeaderTopPadding
+    // Полоса чужого профиля стоит между системной панелью и шапкой и входит в то же верхнее
+    // поле (§4: «30 dp, из них 6 dp — полоса»): без неё на вырезе сумма превысила бы потолок
+    // на её высоту (находка ревью SKL-137).
+    val stripe = if (foreign) SklyankaSizes.ProfileStripeHeight else SklyankaSpacing.None
+    val topPadding = headerTopPadding(screenTopInset(), basePadding, stripe)
     // Шапка в прокрутке своего нижнего поля не несёт: она первый элемент прокрутки, и зазор
     // до содержимого даёт её ритм (§7). Шапка вне прокрутки поле сохраняет — оно и есть
     // воздух над нижней границей `line` у чужого профиля (находка прогона 09.10.2026: поле
@@ -173,6 +249,11 @@ fun ScreenHeader(
  * подкраску, и она же продолжалась под статус-баром до появления ряда. Баннер чужого
  * профиля стоит ниже ряда и не сворачивается (§7, ПРФ-13).
  *
+ * **Ведущий слот — только под настоящий переход (П-7, Р-54).** Шеврон вложенной шапки
+ * рисуется, лишь когда возврат есть: у формы лекарства и отчёта о переносе возврата нет,
+ * и шеврон без нажатия обещал бы путь, которого нет. Слово действия модальной строки
+ * («Отмена» шторки отчёта врачу) остаётся: у него действие есть.
+ *
  * @param onOpenProfiles действие аватара-индикатора: в чужом профиле ряд показывает его
  *   сам, если экран назвал, куда ведёт нажатие. Экран без такого перехода аватара не
  *   получает — нажимаемый элемент без перехода обещал бы функцию, которой нет (П-7).
@@ -223,9 +304,11 @@ fun PinnedHeaderBar(
             // Содержимое — только по порогу: до него ряд служит одной мерой геометрии,
             // и его пустая полоса не ловит нажатия (детей нет вовсе).
             if (collapsed) {
-                // В корне вкладки возврата нет: возвращаться некуда, и видимый возврат был бы
-                // обещанием пути, которого нет (§7).
-                if (kind == ScreenHeaderKind.Nested) {
+                // Шеврон — только там, где возврат есть (§7, П-7): у вложенной шапки без
+                // возврата (форма лекарства, Р-54) он выглядел бы живым и не нажимался —
+                // нажимаемый на вид элемент без перехода. В корне вкладки возвращаться
+                // некуда по той же причине.
+                if (kind == ScreenHeaderKind.Nested && onBack != null) {
                     BackChevronAction(label = stringResource(R.string.cd_back), onBack = onBack)
                 } else if (kind == ScreenHeaderKind.Modal) {
                     // Модальная шапка шеврона не получает ни в своей строке, ни в ряду (§7, Р-53):
@@ -470,9 +553,9 @@ private fun SingleHeaderRow(
  * Пустой слот не заполняется ничем: невидимой заглушки ради центровки названия здесь нет
  * (Р-53, V-15). Название прижато влево и занимает всю оставшуюся ширину.
  *
- * Публичная, потому что строку берут все три модальные поверхности: форма лекарства
- * и шторка проверки доставки приходят через [ScreenHeader], а шторка отчёта врачу собирает
- * шапку по месту — и обязана брать ту же строку, а не вторую её копию.
+ * Публичная, потому что строку берут обе оставшиеся модальные поверхности: шторка проверки
+ * доставки приходит через [ScreenHeader], а шторка отчёта врачу собирает шапку по месту —
+ * и обязана брать ту же строку, а не вторую её копию.
  */
 @Composable
 fun ModalHeaderRow(
@@ -652,9 +735,13 @@ private fun BackAction(kind: ScreenHeaderKind, onBack: () -> Unit) {
  * (§6.1). Слова «Назад» на экране нет: смысл несёт доступное имя `cd_back`, а сам глиф
  * декоративен и чтению не объявляется. Поле цели сдвинуто на 10 dp влево от бокового
  * поля шапки, чтобы глиф встал на одну вертикаль с началом заголовка.
+ *
+ * `onBack` не нулевой: шеврон рисуется только там, где возврат есть (П-7). Нулевой
+ * колбэк, выключавший нажатие (`clickable(enabled = false)`), оставлял живой на вид глиф
+ * без перехода — того состояния у компонента больше нет (Р-54).
  */
 @Composable
-private fun BackChevronAction(label: String, onBack: (() -> Unit)?) {
+private fun BackChevronAction(label: String, onBack: () -> Unit) {
     val colors = SklyankaTheme.colors
     Box(
         modifier = Modifier
@@ -664,8 +751,7 @@ private fun BackChevronAction(label: String, onBack: (() -> Unit)?) {
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
-                enabled = onBack != null,
-                onClick = { onBack?.invoke() },
+                onClick = onBack,
             )
             .semantics { contentDescription = label },
         contentAlignment = Alignment.Center,

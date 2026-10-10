@@ -100,7 +100,6 @@ internal sealed interface ProfileScreen {
         override fun Content(today: TodayUiState) = MedicationFormScreen(
             state = form(),
             onIntent = {},
-            onCancel = {},
             onPickDate = {},
             onPickTime = { _, _ -> },
         )

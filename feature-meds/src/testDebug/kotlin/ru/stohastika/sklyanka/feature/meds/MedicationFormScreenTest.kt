@@ -13,6 +13,7 @@ import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -239,12 +240,13 @@ class MedicationFormScreenTest {
     }
 
     @Test
-    fun thereIsExactlyOneSaveActionAndTheHeaderKeepsOnlyCancel() {
-        // Отступление от макета по Д-3: «Готово» в шапке не рисуется вовсе.
+    fun thereIsExactlyOneSaveActionAndNoActionInTheHeader() {
+        // Отступление от макета по Д-3: «Готово» в шапке не рисуется вовсе. Действия
+        // в шапке нет и подавно (Р-54): из формы выводит системный «Назад» (SKL-137).
         show(draft())
 
         composeRule.onNodeWithText(context.getString(R.string.form_save_new)).assertIsDisplayed()
-        composeRule.onNodeWithText(context.getString(UiR.string.action_cancel)).assertIsDisplayed()
+        composeRule.onAllNodesWithText(context.getString(UiR.string.action_cancel)).assertCountEquals(0)
     }
 
     @Test
@@ -299,7 +301,6 @@ class MedicationFormScreenTest {
                         FormInputs(),
                     ),
                     onIntent = {},
-                    onCancel = {},
                     onPickDate = {},
                     onPickTime = { index, time -> picked = index to time },
                 )
@@ -383,7 +384,6 @@ class MedicationFormScreenTest {
                 MedicationFormScreen(
                     state = MedFormUiState.of(draft, mode, FormInputs()).copy(violations = violations),
                     onIntent = {},
-                    onCancel = {},
                     onPickDate = {},
                     onPickTime = { _, _ -> },
                 )

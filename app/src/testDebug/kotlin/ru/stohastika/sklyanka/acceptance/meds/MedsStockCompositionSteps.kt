@@ -135,7 +135,6 @@ class MedsStockCompositionSteps(private val world: AcceptanceWorld) {
                     MedicationFormScreen(
                         state = shown,
                         onIntent = intents::add,
-                        onCancel = {},
                         onPickDate = {},
                         onPickTime = { _, _ -> },
                     )

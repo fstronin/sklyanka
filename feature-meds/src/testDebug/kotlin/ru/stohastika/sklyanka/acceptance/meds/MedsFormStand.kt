@@ -1,11 +1,17 @@
 package ru.stohastika.sklyanka.acceptance.meds
 
+import androidx.activity.OnBackPressedDispatcher
+import androidx.activity.OnBackPressedDispatcherOwner
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
-import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.runComposeUiTest
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.LifecycleRegistry
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
 import ru.stohastika.sklyanka.domain.medication.MedicationDraft
 import ru.stohastika.sklyanka.domain.medication.StrengthUnit
@@ -41,7 +47,7 @@ internal object MedsFormStand {
 
     private var lastWorld: AcceptanceWorld? = null
     private var state: MedFormUiState? = null
-    private var cancelledHere = false
+    private var closedHere = false
 
     /** Форма нового лекарства; времена можно задать предпосылкой сценария. */
     fun open(world: AcceptanceWorld, times: List<LocalTime> = emptyList()): MedFormUiState {
@@ -80,8 +86,8 @@ internal object MedsFormStand {
         return MedFormUiState.of(draft, FormMode.Edit(medication.name), inputsOf(draft)).also { state = it }
     }
 
-    /** Открыта ли форма в этом сценарии и была ли она закрыта «Отменой». */
-    val cancelled: Boolean get() = cancelledHere
+    /** Открыта ли форма в этом сценарии и была ли она закрыта системным «Назад» без сохранения. */
+    val closedWithoutSaving: Boolean get() = closedHere
 
     /**
      * Синхронизировать стенд с доменным черновиком (SKL-66).
@@ -111,7 +117,6 @@ internal object MedsFormStand {
                     MedicationFormScreen(
                         state = open(world),
                         onIntent = {},
-                        onCancel = {},
                         onPickDate = {},
                         onPickTime = { _, _ -> },
                     )
@@ -139,7 +144,6 @@ internal object MedsFormStand {
                             intents += intent
                             interactive.value = apply(interactive.value, intent)
                         },
-                        onCancel = { cancelledHere = true },
                         onPickDate = {},
                         onPickTime = { _, _ -> },
                     )
@@ -152,21 +156,33 @@ internal object MedsFormStand {
         return intents
     }
 
-    /** Нажатие «Отмены» в шапке: форма закрывается без сохранения. */
-    fun cancel(world: AcceptanceWorld, cancelLabel: String) {
+    /**
+     * Системная «Назад» на форме: маршрут снимается, черновик не сохраняется (Р-54).
+     *
+     * Своего `BackHandler` форма не заводит: закрытие даёт обработчик раздела
+     * (`MedsSection` с `BackHandler(enabled = true)`), а не экран. Стенд ставит его
+     * плейсхолдер **снаружи** формы и раньше неё: обработчики Compose разбираются
+     * от последнего к первому, поэтому перехвати форма «Назад» — закрылась бы она сама,
+     * а флаг остался бы `false`. То есть проверка «форма не перехватывает возврат»
+     * настоящая, а не пересказ разметки.
+     */
+    fun systemBack(world: AcceptanceWorld) {
+        val owner = RecordingBackOwner()
         runComposeUiTest {
             setContent {
-                SklyankaTheme {
-                    MedicationFormScreen(
-                        state = open(world),
-                        onIntent = {},
-                        onCancel = { cancelledHere = true },
-                        onPickDate = {},
-                        onPickTime = { _, _ -> },
-                    )
+                CompositionLocalProvider(LocalOnBackPressedDispatcherOwner provides owner) {
+                    SklyankaTheme {
+                        BackHandler(enabled = true) { closedHere = true }
+                        MedicationFormScreen(
+                            state = open(world),
+                            onIntent = {},
+                            onPickDate = {},
+                            onPickTime = { _, _ -> },
+                        )
+                    }
                 }
             }
-            onNodeWithText(cancelLabel).performClick()
+            owner.onBackPressedDispatcher.onBackPressed()
             waitForIdle()
         }
     }
@@ -253,7 +269,7 @@ internal object MedsFormStand {
         if (lastWorld !== world) {
             lastWorld = world
             state = null
-            cancelledHere = false
+            closedHere = false
         }
     }
 
@@ -277,4 +293,28 @@ internal object MedsFormStand {
 
     private val DEFAULT_TIME: LocalTime = LocalTime.of(8, 0)
     private const val TIME_STEP_HOURS = 4L
+}
+
+/**
+ * Владелец диспетчера системной «Назад» без Activity (Р-54, образец — `RecordingBackOwner`
+ * `Sk101ReportSheetScreenSteps`).
+ *
+ * Форма своего `BackHandler` не заводит: закрытие даёт обработчик раздела. Стенд обязан
+ * подставить диспетчер, которого ждёт композиция, и нажать Назад через него — иначе шаг
+ * был бы пересказом разметки. Владельцем жизненного цикла он же и является: обработчик
+ * привязывается к нему и обязан быть в состоянии `RESUMED`, иначе он выключен.
+ */
+private class RecordingBackOwner :
+    OnBackPressedDispatcherOwner,
+    LifecycleOwner {
+
+    override val onBackPressedDispatcher = OnBackPressedDispatcher()
+
+    private val registry = LifecycleRegistry(this)
+
+    override val lifecycle: Lifecycle get() = registry
+
+    init {
+        registry.currentState = Lifecycle.State.RESUMED
+    }
 }

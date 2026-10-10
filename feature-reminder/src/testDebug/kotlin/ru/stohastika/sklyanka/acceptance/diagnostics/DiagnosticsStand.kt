@@ -1,5 +1,7 @@
 package ru.stohastika.sklyanka.acceptance.diagnostics
 
+import androidx.activity.OnBackPressedDispatcher
+import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.ComposeUiTest
@@ -221,6 +223,30 @@ internal object DiagnosticsStand {
         runComposeUiTest {
             setContent { Content(world, onAction = { performed += it }) }
             action(this)
+            waitForIdle()
+        }
+        performed.forEach { it() }
+    }
+
+    /**
+     * Системная «Назад»: нажатие идёт через настоящий диспетчер окна стенда (Р-54).
+     *
+     * Шторка проверки доставки действия в шапке больше не несёт, и её выход наблюдаем
+     * только так: обработчик возврата — её собственный `BackHandler`, а диспетчер даёт
+     * композиция. Раньше шаг нажимал слово «Отмена» из шапки; способ изменился, поведение
+     * закрытия — нет.
+     */
+    fun pressSystemBack(world: AcceptanceWorld) {
+        reset(world)
+        val performed = mutableListOf<() -> Unit>()
+        runComposeUiTest {
+            var back: OnBackPressedDispatcher? = null
+            setContent {
+                back = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
+                Content(world, onAction = { performed += it })
+            }
+            waitForIdle()
+            requireNotNull(back) { "the stand must run inside a composition with a back dispatcher" }.onBackPressed()
             waitForIdle()
         }
         performed.forEach { it() }

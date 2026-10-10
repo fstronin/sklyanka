@@ -756,7 +756,6 @@ class Sk105MedsSteps(
                     MedicationFormScreen(
                         state = live.value,
                         onIntent = {},
-                        onCancel = {},
                         onPickDate = {},
                         onPickTime = { _, _ -> },
                         modifier = formSize?.let { Modifier.size(it) } ?: Modifier,

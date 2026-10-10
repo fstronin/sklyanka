@@ -79,17 +79,30 @@ class DeliveryCheckScreenSteps(private val world: AcceptanceWorld) {
         assertTrue(hasText(text), "the sheet must carry the instruction word for word")
     }
 
-    @И("^действия «([^»]+)» и «([^»]+)»$")
-    fun theSheetCarriesActions(start: String, cancel: String) {
-        assertTrue(hasTag(TAG_CHECK_START), "the primary action must be there")
-        assertTrue(hasText(start), "the primary action must say «$start»")
-        // Отмена живёт в шапке ведущим действием и ищется словом ресурса, а не тегом:
-        // тега тихой кнопки в теле шторки больше нет (Р-53).
-        assertTrue(
-            hasText(string(UiR.string.action_cancel)),
-            "the header must carry the cancel action",
-        )
-        assertTrue(hasText(cancel), "the cancel must say «$cancel»")
+    /**
+     * Р-54: у шторки проверки доставки одно действие — запуск проверки.
+     *
+     * Слово «Отмена» снято из шапки: выход дают системный «Назад» и подложка, и второе
+     * действие в шторке было бы третьим способом её закрыть. Отсутствие слова проверяется
+     * здесь же — иначе утверждение «одно действие» осталось бы без своего «а второго нет».
+     */
+    @И("^есть действие «([^»]+)»$")
+    fun theSheetCarriesTheSingleAction(action: String) {
+        DiagnosticsStand.askRaw(world) {
+            assertTrue(
+                onAllNodesWithTag(TAG_CHECK_START, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty(),
+                "the primary action must be there",
+            )
+            assertTrue(
+                onAllNodesWithText(action, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty(),
+                "the action must say «$action»",
+            )
+            assertTrue(
+                onAllNodesWithText(string(UiR.string.action_cancel), useUnmergedTree = true)
+                    .fetchSemanticsNodes().isEmpty(),
+                "the header must carry no cancel any more",
+            )
+        }
     }
 
     @Допустим("^человек открыл шторку «Проверка доставки»$")
@@ -98,11 +111,12 @@ class DeliveryCheckScreenSteps(private val world: AcceptanceWorld) {
         assertTrue(DiagnosticsStand.state(world).checkSheetOpen, "the sheet must be open")
     }
 
-    @Когда("^он нажимает «Отмена»$")
-    fun hePressesCancel() {
-        // Отмена — действие шапки (Р-53), и нажимается слово ресурса, а не тег: тихой
-        // кнопки в теле шторки больше нет.
-        DiagnosticsStand.actRaw(world) { onNodeWithText(string(UiR.string.action_cancel)).performClick() }
+    @Когда("^он нажимает системную «Назад»$")
+    fun hePressesSystemBack() {
+        // Шторка действия в шапке не несёт: выход дают системный «Назад» и подложка (Р-54).
+        // Нажатие идёт через настоящий диспетчер композиции, а не пересказом шага:
+        // обработчик — собственный `BackHandler` шторки.
+        DiagnosticsStand.pressSystemBack(world)
     }
 
     @Тогда("^шторка закрывается$")
@@ -112,12 +126,12 @@ class DeliveryCheckScreenSteps(private val world: AcceptanceWorld) {
 
     @И("^тестовое срабатывание не назначено$")
     fun theTestFiringIsNotArmed() {
-        assertNull(world.reminders.deliveryCheckAlarm(), "«Отмена» must arm nothing")
+        assertNull(world.reminders.deliveryCheckAlarm(), "the system back must arm nothing")
     }
 
     @И("^в журнале нет записи о проверке$")
     fun thereIsNoCheckRecord() {
-        assertTrue(world.reminders.deliveryCheckRecords().isEmpty(), "«Отмена» must leave no record")
+        assertTrue(world.reminders.deliveryCheckRecords().isEmpty(), "the system back must leave no record")
     }
 
     @Когда("^человек в (\\d{2}):(\\d{2}) нажимает «Начать проверку»$")

@@ -36,4 +36,8 @@ dependencies {
     // фабрика объектов Cucumber раздаёт один мир всем классам шагов сценария.
     testDebugImplementation(project(":acceptance"))
     testDebugImplementation(libs.cucumber.picocontainer)
+    // Стенд формы нажимает системную «Назад» настоящим `OnBackPressedDispatcher` (Р-54):
+    // обработчик возврата живёт в разделе (`app`), а форма его не перехватывает, и проверка
+    // обязана идти через диспетчер, а не пересказом шага (образец — `Sk101ReportSheetScreenSteps`).
+    testDebugImplementation(libs.androidx.activity.compose)
 }

@@ -81,7 +81,6 @@ class MedsScreenSnapshotTest {
         MedicationFormScreen(
             state = MedFormUiState.of(draft(), FormMode.Create, FormInputs()),
             onIntent = {},
-            onCancel = {},
             onPickDate = {},
             onPickTime = { _, _ -> },
         )
@@ -92,7 +91,6 @@ class MedsScreenSnapshotTest {
         MedicationFormScreen(
             state = MedFormUiState.of(presetDraft(), FormMode.Create, FormInputs()),
             onIntent = {},
-            onCancel = {},
             onPickDate = {},
             onPickTime = { _, _ -> },
         )
@@ -103,7 +101,6 @@ class MedsScreenSnapshotTest {
         MedicationFormScreen(
             state = MedFormUiState.of(customEndDateDraft(), FormMode.Create, FormInputs()),
             onIntent = {},
-            onCancel = {},
             onPickDate = {},
             onPickTime = { _, _ -> },
         )

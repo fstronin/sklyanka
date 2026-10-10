@@ -35,7 +35,6 @@ import ru.stohastika.sklyanka.feature.meds.form.TAG_SAVE_BUTTON
 import ru.stohastika.sklyanka.feature.meds.list.MedsIntent
 import ru.stohastika.sklyanka.feature.meds.list.TAG_ADD_MEDICATION
 import ru.stohastika.sklyanka.feature.meds.list.TAG_MEDICATION_CARD
-import ru.stohastika.sklyanka.ui.R as UiR
 
 /**
  * Экранные шаги приёмки повторного открытия формы нового лекарства (SKL-57, `@screen`).
@@ -70,8 +69,8 @@ class MedsReopenScreenSteps(
     /** Чем кончилось последнее сохранение: «форма закрывается» отвечает по нему. */
     private var lastSave: SaveResult? = null
 
-    /** Снимок числа лекарств до отмены: «форма закрылась без сохранения». */
-    private var countBeforeCancel: Int = 0
+    /** Снимок числа лекарств до возврата: «форма закрылась без сохранения». */
+    private var countBeforeBack: Int = 0
 
     init {
         // Экранный прогон подставляет нажатие на собранной форме: доменный шаг
@@ -115,11 +114,11 @@ class MedsReopenScreenSteps(
         fillMinimalCourse()
     }
 
-    @Когда("^человек нажимает «Отмена»$")
-    fun thePersonPressesCancel() {
-        countBeforeCancel = world.medications.names().size
-        MedsFormStand.cancel(world, context.getString(UiR.string.action_cancel))
-        assertTrue("«Отмена» must close the route", MedsFormStand.cancelled)
+    @Когда("^человек нажимает системную «Назад»$")
+    fun thePersonPressesSystemBack() {
+        countBeforeBack = world.medications.names().size
+        MedsFormStand.systemBack(world)
+        assertTrue("the system back must close the route", MedsFormStand.closedWithoutSaving)
         formOpen = false
     }
 
@@ -188,8 +187,8 @@ class MedsReopenScreenSteps(
 
     @Тогда("^форма закрывается без сохранения$")
     fun theFormClosesWithoutSaving() {
-        assertTrue("«Отмена» must close the form", !formOpen)
-        assertEquals("cancelling must not save anything", countBeforeCancel, world.medications.names().size)
+        assertTrue("the system back must close the form", !formOpen)
+        assertEquals("closing the form must not save anything", countBeforeBack, world.medications.names().size)
     }
 
     @Тогда("^открывается форма лекарства «([^»]+)»$")

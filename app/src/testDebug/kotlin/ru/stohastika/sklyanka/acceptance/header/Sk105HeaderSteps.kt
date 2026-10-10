@@ -56,7 +56,6 @@ import ru.stohastika.sklyanka.acceptance.steps.medicationNamed
 import ru.stohastika.sklyanka.acceptance.today.MedicationCardFromWorld
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
 import ru.stohastika.sklyanka.domain.history.AdherencePeriod
-import ru.stohastika.sklyanka.domain.medication.MedicationDraft
 import ru.stohastika.sklyanka.domain.medication.TrailingLine
 import ru.stohastika.sklyanka.domain.model.MedicationForm
 import ru.stohastika.sklyanka.domain.model.TabletShape
@@ -65,10 +64,6 @@ import ru.stohastika.sklyanka.feature.history.HistoryUiState
 import ru.stohastika.sklyanka.feature.meds.card.MedCardUiState
 import ru.stohastika.sklyanka.feature.meds.card.MedicationCardScreen
 import ru.stohastika.sklyanka.feature.meds.card.TAG_MEDICATION_CARD_SCREEN
-import ru.stohastika.sklyanka.feature.meds.form.FormInputs
-import ru.stohastika.sklyanka.feature.meds.form.FormMode
-import ru.stohastika.sklyanka.feature.meds.form.MedFormUiState
-import ru.stohastika.sklyanka.feature.meds.form.MedicationFormScreen
 import ru.stohastika.sklyanka.feature.meds.list.MedicationCardUi
 import ru.stohastika.sklyanka.feature.meds.list.MedicationListScreen
 import ru.stohastika.sklyanka.feature.meds.list.MedsTab
@@ -338,34 +333,6 @@ class Sk105HeaderSteps(private val world: AcceptanceWorld) {
                 "the back target must be at least 44 dp: ${bounds.width} × ${bounds.height} px at ${density}x",
                 bounds.width >= min - TOLERANCE && bounds.height >= min - TOLERANCE,
             )
-        }
-    }
-
-    // =======================================================================================
-    // 4. Модальная форма сохраняет слово «Отмена»
-    // =======================================================================================
-
-    @Тогда("^слева в шапке стоит слово «Отмена»$")
-    fun theCancelWordStandsOnTheLeft() {
-        val cancel = string(UiR.string.action_cancel)
-        runComposeUiTest {
-            setContent { Stand { formScreen() } }
-            waitForIdle()
-            val node = onNodeWithText(cancel, useUnmergedTree = true)
-            node.assertExists()
-            node.assertIsDisplayed()
-            val left = node.fetchSemanticsNode().boundsInRoot
-            val header = onNodeWithTag(TAG_SCREEN_HEADER, useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
-            assertTrue("«$cancel» must stand on the left of the modal header", left.center.x < header.center.x)
-        }
-    }
-
-    @Но("^шеврона возврата в модальной шапке нет$")
-    fun theModalHeaderHasNoChevron() {
-        runComposeUiTest {
-            setContent { Stand { formScreen() } }
-            waitForIdle()
-            onAllNodesWithContentDescription(backLabel(), useUnmergedTree = true).assertCountEquals(0)
         }
     }
 
@@ -1026,31 +993,10 @@ class Sk105HeaderSteps(private val world: AcceptanceWorld) {
         node.config.getOrNull(SemanticsProperties.Text).orEmpty().map { it.text } +
             node.children.flatMap { textsOf(it) }
 
-    @Composable
-    private fun formScreen() {
-        MedicationFormScreen(
-            state = formState(),
-            onIntent = {},
-            onCancel = {},
-            onPickDate = {},
-            onPickTime = { _, _ -> },
-        )
-    }
-
     private fun cardState(deleteConfirmation: Boolean): MedCardUiState {
         val name = world.medications.get(world.medicationNamed(cardMedication.ifEmpty { DEFAULT_MEDICATION }))
         return MedicationCardFromWorld.state(world, name, deleteConfirmation)
     }
-
-    private fun formState(): MedFormUiState = MedFormUiState.of(
-        draft = MedicationDraft(
-            id = null,
-            profileId = world.profiles.get(world.profiles.active).id,
-            startDate = world.clock.today(),
-        ),
-        mode = FormMode.Create,
-        inputs = FormInputs(),
-    )
 
     private fun historyState(): HistoryUiState {
         val month = YearMonth.from(world.clock.today())

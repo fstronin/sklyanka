@@ -79,7 +79,6 @@ internal object LocalizationScreenCatalog {
                 MedicationFormScreen(
                     state = fixtures.medForm(),
                     onIntent = {},
-                    onCancel = {},
                     onPickDate = {},
                     onPickTime = { _, _ -> },
                 )

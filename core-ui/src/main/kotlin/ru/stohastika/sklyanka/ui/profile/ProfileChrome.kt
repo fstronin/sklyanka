@@ -4,14 +4,17 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
+import ru.stohastika.sklyanka.ui.component.LocalScreenTopInset
 import ru.stohastika.sklyanka.ui.component.ProfileStripe
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 
@@ -52,7 +55,17 @@ val LocalProfileChrome = staticCompositionLocalOf<ProfileChromeState> { ProfileC
 @Composable
 fun ProfileChrome(state: ProfileChromeState, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
     SklyankaTheme(profile = state.accent) {
-        CompositionLocalProvider(LocalProfileChrome provides state) {
+        // Верхний инсет обёртка знает первой — она и резервирует высоту системной панели
+        // полосой цвета шапки. Тот же инсет она отдаёт потомкам (Р-54): шапка считает от него
+        // своё поле, и правило «инсет + поле ≤ 56 dp» проверяется на стенде без окна, а не
+        // чтением платформы по месту экрана. Подставленное значение (стенд, тест) берётся
+        // как есть — и полоса резервируется той же высоты, иначе замер по кадру врал бы.
+        val override = LocalScreenTopInset.current
+        val inset = override ?: WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+        CompositionLocalProvider(
+            LocalProfileChrome provides state,
+            LocalScreenTopInset provides inset,
+        ) {
             Column(
                 modifier = modifier
                     .fillMaxSize()
@@ -66,7 +79,13 @@ fun ProfileChrome(state: ProfileChromeState, modifier: Modifier = Modifier, cont
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(SklyankaTheme.colors.profileHeader)
-                        .windowInsetsTopHeight(WindowInsets.statusBars),
+                        .then(
+                            if (override != null) {
+                                Modifier.height(override)
+                            } else {
+                                Modifier.windowInsetsTopHeight(WindowInsets.statusBars)
+                            },
+                        ),
                 )
                 ProfileStripe()
                 content()

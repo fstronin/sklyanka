@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertCountEquals
@@ -14,6 +16,7 @@ import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -23,8 +26,11 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import ru.stohastika.sklyanka.ui.R
+import ru.stohastika.sklyanka.ui.profile.LocalProfileChrome
+import ru.stohastika.sklyanka.ui.profile.foreignProfileChrome
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaSizes
+import ru.stohastika.sklyanka.ui.token.SklyankaSpacing
 import kotlin.math.abs
 
 /**
@@ -94,7 +100,7 @@ class ScreenHeaderTest {
         composeRule.onNodeWithText(backName()).assertDoesNotExist()
     }
 
-    /** Модальная форма сохраняет слово «Отмена» и шеврона не получает (§7). */
+    /** Вид `Modal` со словом «Отмена» остаётся у шторки отчёта врачу и шеврона не получает (§7, Р-53). */
     @Test
     fun theModalHeaderKeepsTheWordCancel() {
         show {
@@ -325,13 +331,140 @@ class ScreenHeaderTest {
         )
     }
 
+    /**
+     * Р-54: сумма «верхний инсет + полоса чужого профиля + поле шапки» не больше 56 dp,
+     * а базовые 30/24 dp не меняются, пока инсет их не урежет.
+     *
+     * Стенд эталонов и обычный телефон (инсет 0) правило не замечают — 30 dp, как в макете;
+     * строка состояния 24 dp даёт сумму 54 dp; вырез 49,5 dp урезает поле до 6,5 dp вместо
+     * сегодняшних 79,6 dp от верхней грани (§4, Р-54). Полоса чужого профиля (6 dp) стоит
+     * между системной панелью и шапкой и входит в то же поле: на вырезе она отнимает своё
+     * у поля — до 0,5 dp, иначе сумма превысила бы потолок на её высоту.
+     */
+    @Test
+    fun theHeaderTopPaddingIsCappedByTheInset() {
+        val noStripe = SklyankaSpacing.None
+        val stripe = SklyankaSizes.ProfileStripeHeight
+        assertEquals(30.dp, headerTopPadding(0.dp, SklyankaSizes.HeaderTopPadding, noStripe))
+        assertEquals(30.dp, headerTopPadding(24.dp, SklyankaSizes.HeaderTopPadding, noStripe))
+        assertEquals(6.5.dp, headerTopPadding(49.5.dp, SklyankaSizes.HeaderTopPadding, noStripe))
+        assertEquals(0.dp, headerTopPadding(60.dp, SklyankaSizes.HeaderTopPadding, noStripe))
+        // Чужой профиль (24 dp) считается тем же правилом, а полоса делит потолок с инсетом
+        // и полем: та же арифметика, но из 56 dp сперва вычитаются 6 dp полосы.
+        assertEquals(24.dp, headerTopPadding(0.dp, SklyankaSizes.HeaderTopPaddingProfile, stripe))
+        assertEquals(24.dp, headerTopPadding(24.dp, SklyankaSizes.HeaderTopPaddingProfile, stripe))
+        assertEquals(0.5.dp, headerTopPadding(49.5.dp, SklyankaSizes.HeaderTopPaddingProfile, stripe))
+        assertEquals(0.dp, headerTopPadding(60.dp, SklyankaSizes.HeaderTopPaddingProfile, stripe))
+        // Потолок — сумма, а не поле: пока инсет с полосой сам не выше потолка, сумма
+        // в него укладывается — и у владельца (полосы нет), и в чужом профиле.
+        listOf(0.dp, 24.dp, 49.5.dp).forEach { inset ->
+            listOf(
+                SklyankaSizes.HeaderTopPadding to noStripe,
+                SklyankaSizes.HeaderTopPaddingProfile to stripe,
+            ).forEach { (base, band) ->
+                val sum = inset + band + headerTopPadding(inset, base, band)
+                assertTrue(
+                    "the sum at inset $inset must not exceed the cap but is $sum",
+                    sum <= SklyankaSizes.HeaderTopCap,
+                )
+            }
+        }
+        // Выше потолка он недостижим: поле обнуляется, и сумма упирается в инсет с полосой —
+        // опустить её ниже системной панели нельзя.
+        listOf(60.dp, 100.dp).forEach { inset ->
+            listOf(
+                SklyankaSizes.HeaderTopPadding to noStripe,
+                SklyankaSizes.HeaderTopPaddingProfile to stripe,
+            ).forEach { (base, band) ->
+                assertEquals(
+                    "above the cap the field must be zero, so the sum is the inset plus the stripe",
+                    inset + band,
+                    inset + band + headerTopPadding(inset, base, band),
+                )
+            }
+        }
+    }
+
+    /** Р-54: сообщённый обёрткой инсет доходит до поля шапки — сумма не выходит за потолок. */
+    @Test
+    fun theHeaderReadsTheInsetReportedByTheWrapper() {
+        show(inset = 49.dp) { ScreenHeader(labels = ScreenHeaderLabels(title = TITLE)) }
+
+        val title = composeRule.onNodeWithText(TITLE).fetchSemanticsNode()
+        val topDp = with(composeRule.density) { title.boundsInRoot.top.toDp() }
+        assertTrue(
+            "the field must be cut by the reported inset: the title starts at $topDp dp, " +
+                "the cap is ${SklyankaSizes.HeaderTopCap}",
+            topDp <= SklyankaSizes.HeaderTopCap,
+        )
+        assertTrue("the reported inset must cut the field, but the title starts at $topDp dp", topDp < 30.dp)
+    }
+
+    /**
+     * П-7, Р-54: шеврон закреплённого ряда не рисуется там, где возврата нет.
+     *
+     * До решения ряд рисовал его всем вложенным шапкам, а нулевой колбэк молча выключал
+     * нажатие: нажимаемый на вид глиф без перехода.
+     */
+    @Test
+    fun theCollapsedNestedRowWithoutReturnDrawsNoChevron() {
+        val header = ScreenHeaderState()
+        show {
+            PinnedHeaderBar(
+                labels = ScreenHeaderLabels(title = TITLE),
+                state = header,
+                kind = ScreenHeaderKind.Nested,
+            )
+        }
+
+        composeRule.runOnIdle { header.reportCollapsibleBottom(TITLE_UNDER_BAR) }
+
+        composeRule.onNodeWithTag(TAG_COMPACT_TITLE).assertIsDisplayed()
+        composeRule.onNodeWithContentDescription(backName()).assertDoesNotExist()
+    }
+
+    /** И в развёрнутой вложенной шапке без возврата шеврона нет: рисовать его нечем (Р-54). */
+    @Test
+    fun theNestedHeaderWithoutReturnDrawsNoChevron() {
+        show { ScreenHeader(labels = ScreenHeaderLabels(title = TITLE), kind = ScreenHeaderKind.Nested) }
+
+        composeRule.onNodeWithContentDescription(backName()).assertDoesNotExist()
+        composeRule.onNodeWithText(TITLE).assertIsDisplayed()
+    }
+
+    /** Р-54: полоса чужого профиля (6 dp) — между системной панелью и шапкой и в том же поле. */
+    @Test
+    fun theForeignStripeTakesItsShareOfTheCap() {
+        show(inset = 49.dp, foreign = true) { ScreenHeader(labels = ScreenHeaderLabels(title = TITLE)) }
+
+        // Границы шапки — её поле содержимого (тег стоит внутри собственного поля шапки),
+        // и верх шапки и есть поле: крупного заголовка над ним нет.
+        val header = composeRule.onNodeWithTag(TAG_SCREEN_HEADER).fetchSemanticsNode()
+        val topDp = with(composeRule.density) { header.boundsInRoot.top.toDp() }
+        val room = SklyankaSizes.HeaderTopCap - 49.dp - SklyankaSizes.ProfileStripeHeight
+        assertTrue(
+            "the field must leave room for the stripe: the header starts at $topDp dp, room is $room",
+            topDp <= room + 0.5.dp,
+        )
+    }
+
     private fun backName(): String = context.getString(R.string.cd_back)
 
     private fun cancelName(): String = context.getString(R.string.action_cancel)
 
-    private fun show(content: @androidx.compose.runtime.Composable () -> Unit) {
+    private fun show(inset: Dp? = null, foreign: Boolean = false, content: @Composable () -> Unit) {
         composeRule.setContent {
-            SklyankaTheme { content() }
+            SklyankaTheme {
+                CompositionLocalProvider(LocalScreenTopInset provides inset) {
+                    if (foreign) {
+                        CompositionLocalProvider(LocalProfileChrome provides foreignProfileChrome()) {
+                            content()
+                        }
+                    } else {
+                        content()
+                    }
+                }
+            }
         }
     }
 

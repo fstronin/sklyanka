@@ -424,18 +424,17 @@ class MedsFormScreenSteps(private val world: AcceptanceWorld) {
         }
     }
 
-    @Тогда("^в шапке слева показана «(.+)»$")
-    fun theCancelStandsOnTheLeftOfTheHeader(label: String) {
+    /**
+     * Р-54: слова «Отмена» на форме нет — ни в шапке, ни в теле.
+     *
+     * Слово перестало быть обязательным у вида `Modal` и ушло с формы вместе с действием:
+     * выход даёт системный «Назад», сохранение — нижняя кнопка (Д-3). Слово интерфейса
+     * не удалялось: оно осталось у шторки отчёта врачу, где действие есть.
+     */
+    @Тогда("^в шапке нет слова «Отмена»$")
+    fun theHeaderKeepsNoCancelWord() {
         MedsFormStand.ask(world) { test ->
-            val header = hasAnyAncestor(hasTestTag(TAG_SCREEN_HEADER))
-            val cancel = test.onNode(hasText(label) and header, useUnmergedTree = true).fetchSemanticsNode()
-            val title = test
-                .onNode(hasText(context.getString(R.string.form_title_new)) and header, useUnmergedTree = true)
-                .fetchSemanticsNode()
-            assertTrue(
-                "«$label» must stand to the left of the title",
-                cancel.boundsInRoot.left < title.boundsInRoot.left,
-            )
+            test.onAllNodesWithText(context.getString(UiR.string.action_cancel)).assertCountEquals(0)
         }
     }
 
@@ -447,7 +446,7 @@ class MedsFormScreenSteps(private val world: AcceptanceWorld) {
         }
     }
 
-    // --- Отмена -------------------------------------------------------------------------
+    // --- Системный возврат ----------------------------------------------------------------
 
     @Допустим("^человек заполнил название «(.+?)» и форму выпуска «(.+?)»$")
     fun thePersonHasFilledInTheNameAndForm(name: String, form: String) {
@@ -457,15 +456,15 @@ class MedsFormScreenSteps(private val world: AcceptanceWorld) {
         MedsFormStand.ask(world) { test -> test.onNodeWithText(name).assertExists() }
     }
 
-    @Когда("^он нажимает «Отмена»$")
-    fun thePersonPressesCancel() {
-        MedsFormStand.cancel(world, context.getString(UiR.string.action_cancel))
-        assertTrue("«Отмена» must close the form", MedsFormStand.cancelled)
+    @Когда("^он нажимает системную «Назад»$")
+    fun thePersonPressesSystemBack() {
+        MedsFormStand.systemBack(world)
+        assertTrue("the system back must close the form", MedsFormStand.closedWithoutSaving)
     }
 
     @Тогда("^форма закрывается и открывается список лекарств$")
     fun theFormClosesAndTheListOpens() {
-        assertTrue("«Отмена» must close the form", MedsFormStand.cancelled)
+        assertTrue("the system back must close the form", MedsFormStand.closedWithoutSaving)
         MedsListStand.ask(world) { test ->
             assertTrue(
                 "the medication list must open after the form",

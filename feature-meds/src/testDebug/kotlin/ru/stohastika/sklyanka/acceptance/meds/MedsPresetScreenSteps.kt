@@ -176,7 +176,6 @@ class MedsPresetScreenSteps(private val world: AcceptanceWorld) {
                     MedicationFormScreen(
                         state = state,
                         onIntent = {},
-                        onCancel = {},
                         onPickDate = { target -> if (target == DateTarget.END) dialog = true },
                         onPickTime = { _, _ -> },
                     )

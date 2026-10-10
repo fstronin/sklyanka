@@ -30,7 +30,9 @@ import ru.stohastika.sklyanka.ui.component.DateTimePickerDialog
  * не переписывает форму, её снимки и стенды приёмки.
  *
  * @param medicationId `null` — новое лекарство; иначе правка существующего.
- * @param onDone форма закрылась: человек отменил либо сохранение прошло.
+ * @param onDone форма закрылась **после сохранения**. Возврат без сохранения закрывает
+ *   маршрут снаружи: системный «Назад» снимает его навигацией раздела (`MedsSection`),
+ *   и своего `BackHandler` форма не заводит (Р-54).
  */
 @Composable
 fun MedicationFormRoute(
@@ -57,7 +59,6 @@ fun MedicationFormRoute(
     MedicationFormScreen(
         state = current,
         onIntent = viewModel::onIntent,
-        onCancel = onDone,
         onPickDate = { target -> dateDialog = target },
         onPickTime = { index, _ -> timeDialogIndex = index },
         modifier = modifier,

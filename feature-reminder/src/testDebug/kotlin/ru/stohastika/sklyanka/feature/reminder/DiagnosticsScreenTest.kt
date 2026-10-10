@@ -1,6 +1,8 @@
 package ru.stohastika.sklyanka.feature.reminder
 
 import android.content.Context
+import androidx.activity.OnBackPressedDispatcher
+import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsActions
@@ -11,6 +13,7 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -60,6 +63,12 @@ class DiagnosticsScreenTest {
 
     @get:Rule
     val compose = createComposeRule()
+
+    /**
+     * Диспетчер возврата композиции: шторка проверки доставки закрывается системным
+     * «Назад» (Р-54) через собственный `BackHandler`, и нажать его иначе нечем.
+     */
+    private var backDispatcher: OnBackPressedDispatcher? = null
 
     private val context: Context = ApplicationProvider.getApplicationContext()
 
@@ -121,6 +130,7 @@ class DiagnosticsScreenTest {
         fontScale: Float = 1f,
     ) {
         compose.setContent {
+            backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
             val base = LocalDensity.current
             CompositionLocalProvider(LocalDensity provides Density(base.density, fontScale)) {
                 SklyankaTheme {
@@ -460,7 +470,7 @@ class DiagnosticsScreenTest {
     }
 
     @Test
-    fun theCheckSheetCarriesTheTitleInstructionAndBothActions() {
+    fun theCheckSheetCarriesTheTitleInstructionAndOneAction() {
         var started = 0
         var dismissed = 0
         show(
@@ -472,10 +482,17 @@ class DiagnosticsScreenTest {
         compose.onNodeWithTag(TAG_CHECK_SHEET).assertIsDisplayed()
         compose.onNodeWithText(context.getString(R.string.diagnostics_check_sheet_title)).assertExists()
         compose.onNodeWithText(context.getString(R.string.diagnostics_check_sheet_text)).assertExists()
+        // Действие в теле одно — запуск проверки; слова «Отмена» в шапке нет вовсе (Р-54),
+        // и второго способа закрыть шторку в её теле тоже нет.
+        compose.onAllNodesWithText(context.getString(UiR.string.action_cancel)).assertCountEquals(0)
         compose.onNodeWithTag(TAG_CHECK_START).performClick()
-        // Отмена — действие шапки (Р-53): тихой кнопки в теле шторки больше нет,
-        // и нажимается слово ресурса.
-        compose.onNodeWithText(context.getString(UiR.string.action_cancel)).performClick()
+        // Выход шторки — системный «Назад»: его держит собственный `BackHandler` шторки.
+        compose.runOnIdle {
+            val back = requireNotNull(backDispatcher) {
+                "the sheet must run inside a composition with a back dispatcher"
+            }
+            back.onBackPressed()
+        }
         assertEquals(1, started)
         assertEquals(1, dismissed)
     }

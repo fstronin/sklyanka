@@ -16,12 +16,12 @@ import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasScrollAction
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.runComposeUiTest
 import androidx.compose.ui.test.swipeUp
@@ -36,7 +36,6 @@ import io.cucumber.java.ru.Когда
 import io.cucumber.java.ru.Но
 import io.cucumber.java.ru.Тогда
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
 import ru.stohastika.sklyanka.domain.history.AdherencePeriod
@@ -48,14 +47,13 @@ import ru.stohastika.sklyanka.feature.history.HistoryUiState
 import ru.stohastika.sklyanka.feature.history.ReportComposition
 import ru.stohastika.sklyanka.feature.history.ReportOutcome
 import ru.stohastika.sklyanka.feature.history.ReportUi
+import ru.stohastika.sklyanka.feature.history.TAG_REPORT_SHARE
 import ru.stohastika.sklyanka.feature.history.TAG_REPORT_SHEET
 import ru.stohastika.sklyanka.feature.history.TAG_REPORT_SUCCESS
 import ru.stohastika.sklyanka.feature.meds.form.FormInputs
 import ru.stohastika.sklyanka.feature.meds.form.FormMode
 import ru.stohastika.sklyanka.feature.meds.form.MedFormUiState
 import ru.stohastika.sklyanka.feature.meds.form.MedicationFormScreen
-import ru.stohastika.sklyanka.feature.meds.form.TAG_NAME_FIELD
-import ru.stohastika.sklyanka.feature.meds.form.TAG_SAVE_BUTTON
 import ru.stohastika.sklyanka.feature.reminder.DeliveryCheckSheet
 import ru.stohastika.sklyanka.feature.reminder.TAG_CHECK_SHEET
 import ru.stohastika.sklyanka.feature.reminder.TAG_CHECK_START
@@ -83,10 +81,17 @@ import ru.stohastika.sklyanka.ui.R as UiR
 /**
  * Экранные шаги приёмки SKL-136 о сетке слотов модальной шапки и её закреплении.
  *
- * Живут в `app`, потому что сценарии говорят сразу о трёх модальных поверхностях разных
+ * Живут в `app`, потому что сценарии говорят сразу о нескольких поверхностях разных
  * модулей (форма лекарства, шторка проверки доставки, шторка отчёта врачу) и о диалоге
  * времени: единственное место, где всё это существует одновременно, — `app`
  * (`SKL-26/TDD.md §4.3`).
+ *
+ * **Р-54 отменил часть Р-53.** Обязательного слова «Отмена» у модальной шапки экрана
+ * больше нет: форма лекарства стала вложенной шапкой без возврата (SKL-137), шторка
+ * проверки доставки вышла без действия, и сетку слотов с типографикой теперь носит
+ * поверхность, у которой действие есть — шторка отчёта врачу. Утверждения задачи
+ * перевешены на неё, правило §7 осталось тем же; закрепление шапки формы проверяется
+ * на новой форме (ряд держит компактное название, действия в нём нет).
  *
  * Стенд пересобирает композицию на каждое утверждение: сессия Compose живёт внутри блока,
  * а шаги Gherkin — отдельные вызовы, и держать блок открытым между ними нечем (приём
@@ -113,21 +118,20 @@ class Sk136HeaderSteps(private val world: AcceptanceWorld) {
 
     private val context: Context = ApplicationProvider.getApplicationContext()
 
-    /** Наблюдения шторки проверки доставки: закрылась или нет, и не началась ли проверка. */
-    private var checkDismissed = false
-    private var checkStarted = false
-
     // =======================================================================================
-    // 1. Строка модальной формы: одна линия, одно поле (Р-53)
+    // 1. Строка модальной шапки: одна линия, одно поле (Р-53, Р-54)
     // =======================================================================================
 
-    @Тогда("^слово «Отмена» и название формы стоят на одной горизонтальной линии$")
-    fun theCancelAndTheFormTitleShareOneLine() {
+    @Тогда("^слово «Отмена» и название шторки стоят на одной горизонтальной линии$")
+    fun theCancelAndTheSheetTitleShareOneLine() {
         runComposeUiTest {
-            setContent { Stand { form() } }
+            setContent { Stand { reportSheet() } }
             waitForIdle()
-            val cancel = onNodeWithText(cancelWord(), useUnmergedTree = true).fetchSemanticsNode()
-            val title = onNodeWithText(formTitle(), useUnmergedTree = true).fetchSemanticsNode()
+            // Экран «История» под шторкой носит ту же подпись «Отчёт врачу» (действие,
+            // открывающее отчёт), и по всему дереву узлов два: берётся шторка.
+            val sheet = sheetOf()
+            val cancel = inSheet(sheet, cancelWord()).single()
+            val title = inSheet(sheet, reportTitle()).single()
             val lineShift = abs(cancel.boundsInRoot.center.y - title.boundsInRoot.center.y)
             assertTrue(
                 "the cancel word and the title must stand on one horizontal line, " +
@@ -142,26 +146,29 @@ class Sk136HeaderSteps(private val world: AcceptanceWorld) {
     }
 
     /**
-     * Поле слова — то же, где начинается содержимое формы.
+     * Поле слова — то же, где начинается содержимое модальной поверхности.
      *
-     * Границы шапки в семантике — её поле содержимого: тег шапки стоит внутри её
-     * собственного бокового поля, поэтому левый край узла и есть поле 20 dp.
+     * У шторки своего тега шапки нет (её строку рисует `ModalHeaderRow`): поле берётся
+     * от левого края шторки плюс боковое поле §4. Второй ориентир — блок действий: он стоит
+     * прямо в полотне шторки и начинается на том же боковом поле. Карточка состава для этого
+     * не годится: у неё своё поле, и её строка начинается глубже полотна на 16 dp.
      */
-    @И("^слово «Отмена» стоит на левом поле шапки — там же, где начинается содержимое формы$")
+    @И("^слово «Отмена» стоит на левом поле шапки — там же, где начинается содержимое шторки$")
     fun theCancelStandsOnTheSideField() {
         runComposeUiTest {
-            setContent { Stand { form() } }
+            setContent { Stand { reportSheet() } }
             waitForIdle()
-            val cancel = onNodeWithText(cancelWord(), useUnmergedTree = true).fetchSemanticsNode()
-            val header = onNodeWithTag(TAG_SCREEN_HEADER, useUnmergedTree = true).fetchSemanticsNode()
-            val content = onNodeWithTag(TAG_NAME_FIELD, useUnmergedTree = true).fetchSemanticsNode()
+            val sheet = sheetOf()
+            val cancel = inSheet(sheet, cancelWord()).single()
+            val content = onNodeWithTag(TAG_REPORT_SHARE, useUnmergedTree = true).fetchSemanticsNode()
+            val field = sheet.boundsInRoot.left + sideFieldPx()
             assertTrue(
-                "the cancel word must start on the side field at ${header.boundsInRoot.left} px, " +
+                "the cancel word must start on the sheet's side field at $field px, " +
                     "but starts at ${cancel.boundsInRoot.left} px",
-                abs(cancel.boundsInRoot.left - header.boundsInRoot.left) <= LINE_TOLERANCE,
+                abs(cancel.boundsInRoot.left - field) <= LINE_TOLERANCE,
             )
             assertTrue(
-                "the form content must start on the same field: the name field is at " +
+                "the sheet content must start on the same field: the actions block is at " +
                     "${content.boundsInRoot.left} px, the word at ${cancel.boundsInRoot.left} px",
                 abs(content.boundsInRoot.left - cancel.boundsInRoot.left) <= LINE_TOLERANCE,
             )
@@ -172,41 +179,39 @@ class Sk136HeaderSteps(private val world: AcceptanceWorld) {
     // 2. Пустой слот не заполняется ничем (Р-53, V-15)
     // =======================================================================================
 
+    /**
+     * Р-54 отменил часть Р-53: обязательного слова «Отмена» у модальной шапки экрана
+     * больше нет, форма лекарства вышла из вида `Modal`, и сетку слотов теперь носит
+     * шторка отчёта врачу — поверхность, у которой действие есть. Утверждение перевешено
+     * на неё; само правило (пустой слот не заполняется ничем) не изменилось.
+     */
     @Тогда("^справа от названия в шапке нет ни действия, ни заглушки$")
     fun theModalSlotRightOfTheTitleIsEmpty() {
         runComposeUiTest {
-            setContent { Stand { form() } }
+            setContent { Stand { reportSheet() } }
             waitForIdle()
-            val header = onNodeWithTag(TAG_SCREEN_HEADER, useUnmergedTree = true).fetchSemanticsNode()
-            // Тихая кнопка в шапке одна — ведущая «Отмена»: заглушки в замыкающем слоте нет.
-            val inHeader = quietButtons().filter { header.boundsInRoot.contains(it.boundsInRoot.center) }
+            val sheet = sheetOf()
+            // Тихая кнопка в шторке одна — ведущая «Отмена»: заглушки в замыкающем слоте нет.
+            val inHeader = quietButtons().filter { sheet.boundsInRoot.contains(it.boundsInRoot.center) }
             assertEquals("the modal header must keep exactly the leading action", 1, inHeader.size)
-            // Название тянется до правого поля: за ним ничего не стоит.
-            val title = onNodeWithText(formTitle(), useUnmergedTree = true).fetchSemanticsNode()
+            val title = inSheet(sheet, reportTitle()).single()
             assertTrue(
-                "the title must reach the right field at ${header.boundsInRoot.right} px, " +
+                "the leading action must stand left of the title: action ${inHeader.single().boundsInRoot}, " +
+                    "title ${title.boundsInRoot}",
+                inHeader.single().boundsInRoot.left <= title.boundsInRoot.left,
+            )
+            // Название тянется до правого поля: за ним ничего не стоит.
+            val rightField = sheet.boundsInRoot.right - sideFieldPx()
+            assertTrue(
+                "the title must reach the right field at $rightField px, " +
                     "but ends at ${title.boundsInRoot.right} px",
-                abs(title.boundsInRoot.right - header.boundsInRoot.right) <= LINE_TOLERANCE,
+                abs(title.boundsInRoot.right - rightField) <= LINE_TOLERANCE,
             )
         }
     }
 
-    @И("^сохранение на форме одно — нижняя кнопка$")
-    fun theFormKeepsTheSingleBottomSave() {
-        runComposeUiTest {
-            setContent { Stand { form() } }
-            waitForIdle()
-            onAllNodesWithTag(TAG_SAVE_BUTTON, useUnmergedTree = true).assertCountEquals(1)
-            // «Сохранить» в шапке нет: там стоит ровно одно действие — «Отмена».
-            val header = onNodeWithTag(TAG_SCREEN_HEADER, useUnmergedTree = true).fetchSemanticsNode()
-            val inHeader = quietButtons().filter { header.boundsInRoot.contains(it.boundsInRoot.center) }
-            assertEquals("the header must keep exactly one action — the cancel", 1, inHeader.size)
-            onAllNodesWithText(saveWord(), useUnmergedTree = true).assertCountEquals(1)
-        }
-    }
-
     // =======================================================================================
-    // 3. Закрепление модальной шапки (Р-53, §7)
+    // 3. Закрепление шапки формы без действия (Р-53, Р-54, §7)
     // =======================================================================================
 
     @Когда("^человек прокручивает содержимое формы до конца$")
@@ -214,15 +219,25 @@ class Sk136HeaderSteps(private val world: AcceptanceWorld) {
         // Прокрутка выполняется в «Тогда»: сессия композиции между шагами не живёт.
     }
 
-    @Тогда("^слово «Отмена» остаётся на экране$")
-    fun theCancelStaysOnScreen() {
+    /**
+     * Р-54: в закреплённом ряду формы нет ни возврата, ни действия.
+     *
+     * У формы нет возврата (выход — системный «Назад») и нет действия в шапке (сохранение —
+     * нижняя кнопка, Д-3), поэтому ведущему слоту ряда нечего показывать. Раньше на любом
+     * уровне прокрутки в ряду стояло слово «Отмена»; утверждение изменилось вместе с решением.
+     */
+    @И("^действия в закреплённом ряду формы нет$")
+    fun thePinnedRowCarriesNoAction() {
         runComposeUiTest {
             setContent { Stand { form() } }
             val bar = scrollFormUntilPinned()
+            val quiet = quietButtons().filter { bar.contains(it.boundsInRoot.center) }
+            val chevrons = onAllNodesWithContentDescription(backLabel(), useUnmergedTree = true)
+                .fetchSemanticsNodes()
+                .filter { bar.contains(it.boundsInRoot.center) }
             assertTrue(
-                "a cancel word must stand inside the pinned row $bar: " +
-                    cancelWords().map { it.boundsInRoot },
-                cancelWords().any { bar.contains(it.boundsInRoot.center) },
+                "the pinned row $bar must carry no action: quiet=$quiet, chevrons=${chevrons.map { it.boundsInRoot }}",
+                quiet.isEmpty() && chevrons.isEmpty(),
             )
         }
     }
@@ -270,13 +285,11 @@ class Sk136HeaderSteps(private val world: AcceptanceWorld) {
     }
 
     // =======================================================================================
-    // 4. Шторка проверки доставки: отмена в шапке, не в теле (Р-53)
+    // 4. Шторка проверки доставки: ни действия в шапке, ни отмены в теле (Р-53, Р-54)
     // =======================================================================================
 
     @Допустим("^человек открыл проверку доставки$")
     fun thePersonOpenedTheDeliveryCheck() {
-        checkDismissed = false
-        checkStarted = false
         runComposeUiTest {
             setContent { Stand { deliveryCheckSheet() } }
             waitForIdle()
@@ -284,66 +297,21 @@ class Sk136HeaderSteps(private val world: AcceptanceWorld) {
         }
     }
 
-    @Тогда("^«Отмена» стоит в шапке шторки ведущим действием$")
-    fun theCancelStandsInTheSheetHeader() {
-        runComposeUiTest {
-            setContent { Stand { deliveryCheckSheet() } }
-            waitForIdle()
-            val header = onNodeWithTag(TAG_SCREEN_HEADER, useUnmergedTree = true).fetchSemanticsNode()
-            val cancel = onNodeWithText(cancelWord(), useUnmergedTree = true).fetchSemanticsNode()
-            assertTrue(
-                "the cancel must stand in the sheet header ${header.boundsInRoot}, " +
-                    "but is at ${cancel.boundsInRoot}",
-                header.boundsInRoot.contains(cancel.boundsInRoot.center),
-            )
-            assertTrue(
-                "the cancel word must start on the side field at ${header.boundsInRoot.left} px, " +
-                    "but starts at ${cancel.boundsInRoot.left} px",
-                abs(cancel.boundsInRoot.left - header.boundsInRoot.left) <= LINE_TOLERANCE,
-            )
-        }
-    }
-
+    /**
+     * Р-53: в теле шторки нет второго способа закрыть её.
+     *
+     * Раньше вторым способом было слово «Отмена» в шапке, и шаг проверял, что тело его
+     * не повторяет. Р-54 снял слово и из шапки: выход дают системный «Назад» и подложка,
+     * и в теле шторки остаётся одна кнопка запуска проверки.
+     */
     @Но("^тихой «Отмены» в теле шторки нет$")
     fun theBodyHasNoSecondCancel() {
         runComposeUiTest {
             setContent { Stand { deliveryCheckSheet() } }
             waitForIdle()
-            // Слово отмены на шторке одно: второе было бы вторым способом закрыть её.
-            onAllNodesWithText(cancelWord(), useUnmergedTree = true).assertCountEquals(1)
+            onAllNodesWithText(cancelWord(), useUnmergedTree = true).assertCountEquals(0)
             onNodeWithTag(TAG_CHECK_START, useUnmergedTree = true).assertExists()
-            val header = onNodeWithTag(TAG_SCREEN_HEADER, useUnmergedTree = true).fetchSemanticsNode()
-            val cancel = onNodeWithText(cancelWord(), useUnmergedTree = true).fetchSemanticsNode()
-            val start = onNodeWithTag(TAG_CHECK_START, useUnmergedTree = true).fetchSemanticsNode()
-            assertTrue(
-                "the single cancel must be the header action, above the start button: " +
-                    "cancel ${cancel.boundsInRoot}, start ${start.boundsInRoot}",
-                cancel.boundsInRoot.bottom <= start.boundsInRoot.top &&
-                    header.boundsInRoot.contains(cancel.boundsInRoot.center),
-            )
         }
-    }
-
-    @Когда("^человек нажимает «Отмена» в шапке$")
-    fun thePersonPressesTheHeaderCancel() {
-        checkDismissed = false
-        checkStarted = false
-        runComposeUiTest {
-            setContent { Stand { deliveryCheckSheet() } }
-            waitForIdle()
-            onNodeWithText(cancelWord(), useUnmergedTree = true).performClick()
-            waitForIdle()
-        }
-    }
-
-    @Тогда("^шторка закрыта$")
-    fun theSheetIsClosed() {
-        assertTrue("the header cancel must close the sheet (Р-53)", checkDismissed)
-    }
-
-    @И("^проверка не начата$")
-    fun theCheckIsNotStarted() {
-        assertFalse("the header cancel must start nothing", checkStarted)
     }
 
     // =======================================================================================
@@ -411,15 +379,20 @@ class Sk136HeaderSteps(private val world: AcceptanceWorld) {
     }
 
     // =======================================================================================
-    // 6. Одна типографика на всех модальных поверхностях (ОВ-146, Р-53)
+    // 6. Одна типографика на модальных поверхностях (ОВ-146, Р-53, Р-54)
     // =======================================================================================
 
+    /**
+     * Р-54 перевёл ведущее действие с формы на шторку отчёта врачу: у формы действия
+     * в шапке больше нет, и слово «Отмена» носит та поверхность, у которой оно есть.
+     * Начертание и цвет не изменились — одно на всех модальных поверхностях.
+     */
     @Тогда("^ведущее действие шапки набрано 15/400 приглушённым цветом$")
     fun theHeaderActionKeepsTheMutedRole() {
         runComposeUiTest {
-            setContent { Stand { form() } }
+            setContent { Stand { reportSheet() } }
             waitForIdle()
-            val style = styleOf(cancelWord())
+            val style = styleOf(inSheet(sheetOf(), cancelWord()).single())
             assertEquals(SklyankaType.BodyDefault.fontWeight, style.fontWeight)
             assertEquals(SklyankaType.BodyDefault.fontSize.value, style.fontSize.value, FONT_TOLERANCE)
             assertEquals(lightColors().textMuted, style.color)
@@ -429,9 +402,9 @@ class Sk136HeaderSteps(private val world: AcceptanceWorld) {
     @И("^название шапки набрано 15/600 основным цветом$")
     fun theHeaderTitleKeepsTheStrongRole() {
         runComposeUiTest {
-            setContent { Stand { form() } }
+            setContent { Stand { reportSheet() } }
             waitForIdle()
-            val style = styleOf(formTitle())
+            val style = styleOf(inSheet(sheetOf(), reportTitle()).single())
             assertEquals(SklyankaType.BodyDefaultStrong.fontWeight, style.fontWeight)
             assertEquals(SklyankaType.BodyDefaultStrong.fontSize.value, style.fontSize.value, FONT_TOLERANCE)
             assertEquals(lightColors().text, style.color)
@@ -484,39 +457,41 @@ class Sk136HeaderSteps(private val world: AcceptanceWorld) {
 
     private fun formTitle(): String = string(MedsR.string.form_title_new)
 
-    private fun saveWord(): String = string(MedsR.string.form_save_new)
-
     private fun reportTitle(): String = string(HistoryR.string.history_report_title)
 
+    private fun backLabel(): String = string(UiR.string.cd_back)
+
     /**
-     * Прокрутка формы до порога: ряд обязан показать слово отмены внутри своих границ.
+     * Прокрутка формы до порога: ряд обязан показать компактное название внутри своих границ.
      *
      * Порог — геометрия (§7), поэтому шаг прокручивает до наблюдаемого состояния, а не
-     * «на N пикселей»: сколько свитков до него, зависит от высоты окна стенда.
+     * «на N пикселей»: сколько свитков до него, зависит от высоты окна стенда. Ориентир —
+     * компактное название: после Р-54 ведущего действия в ряду формы нет, и прежний
+     * ориентир (слово «Отмена» в ряду) исчез вместе с ним.
      */
     private fun ComposeUiTest.scrollFormUntilPinned(): Rect {
         repeat(SCROLL_SWIPES) {
             onAllNodes(hasScrollAction(), useUnmergedTree = true).onFirst().performTouchInput { swipeUp() }
             waitForIdle()
-            val cancels = cancelWords()
+            val titles = onAllNodesWithTag(TAG_COMPACT_TITLE, useUnmergedTree = true).fetchSemanticsNodes()
             onAllNodesWithTag(TAG_PINNED_HEADER_BAR, useUnmergedTree = true)
                 .fetchSemanticsNodes()
                 .map { it.boundsInRoot }
-                .firstOrNull { rect -> cancels.any { rect.contains(it.boundsInRoot.center) } }
+                .firstOrNull { rect -> titles.any { rect.contains(it.boundsInRoot.center) } }
                 ?.let { return it }
         }
         val rows = onAllNodesWithTag(TAG_PINNED_HEADER_BAR, useUnmergedTree = true)
             .fetchSemanticsNodes()
             .map { it.boundsInRoot }
-        val cancels = cancelWords().map { it.boundsInRoot }
-        throw AssertionError("the pinned row never took the cancel word: rows=$rows, cancels=$cancels")
+        throw AssertionError("the pinned row never took the compact title: rows=$rows")
     }
-
-    private fun ComposeUiTest.cancelWords(): List<SemanticsNode> =
-        onAllNodesWithText(cancelWord(), useUnmergedTree = true).fetchSemanticsNodes()
 
     private fun ComposeUiTest.quietButtons(): List<SemanticsNode> =
         onAllNodesWithTag(TAG_QUIET_BUTTON, useUnmergedTree = true).fetchSemanticsNodes()
+
+    /** Шторка отчёта: под ней стоит тот же экран целиком, и узлы берутся по её границам. */
+    private fun ComposeUiTest.sheetOf(): SemanticsNode =
+        onNodeWithTag(TAG_REPORT_SHEET, useUnmergedTree = true).fetchSemanticsNode()
 
     /** Текстовые узлы внутри названной части экрана: под шторкой стоит тот же экран целиком. */
     private fun ComposeUiTest.inSheet(sheet: SemanticsNode, text: String): List<SemanticsNode> =
@@ -524,8 +499,7 @@ class Sk136HeaderSteps(private val world: AcceptanceWorld) {
             .filter { sheet.boundsInRoot.contains(it.boundsInRoot.center) }
 
     /** Разрешённый стиль подписи: им проверяются роли действия шапки (ОВ-146, §7). */
-    private fun ComposeUiTest.styleOf(text: String): TextStyle {
-        val node = onNodeWithText(text, useUnmergedTree = true).fetchSemanticsNode()
+    private fun ComposeUiTest.styleOf(node: SemanticsNode): TextStyle {
         val layouts = mutableListOf<TextLayoutResult>()
         fun collect(current: SemanticsNode) {
             current.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(layouts)
@@ -539,11 +513,10 @@ class Sk136HeaderSteps(private val world: AcceptanceWorld) {
     private fun ComposeUiTest.sideFieldPx(): Float = with(density) { SIDE_FIELD.toPx() }
 
     @Composable
-    private fun form(onCancel: () -> Unit = {}) {
+    private fun form() {
         MedicationFormScreen(
             state = formState(),
             onIntent = {},
-            onCancel = onCancel,
             onPickDate = {},
             onPickTime = { _, _ -> },
         )
@@ -559,11 +532,17 @@ class Sk136HeaderSteps(private val world: AcceptanceWorld) {
         inputs = FormInputs(),
     )
 
+    /** Шторка отчёта врачу до отправки: единственная модальная поверхность с действием шапки (Р-54). */
+    @Composable
+    private fun reportSheet() {
+        historyWithReport(outcome = null)
+    }
+
     @Composable
     private fun deliveryCheckSheet() {
         DeliveryCheckSheet(
-            onStart = { checkStarted = true },
-            onDismiss = { checkDismissed = true },
+            onStart = {},
+            onDismiss = {},
         )
     }
 
