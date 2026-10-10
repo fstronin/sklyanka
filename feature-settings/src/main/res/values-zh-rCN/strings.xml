@@ -136,8 +136,8 @@
     <string name="settings_profile_delete">删除档案“%1$s”</string>
     <string name="cd_settings_profile_active">当前档案</string>
 
-    <string name="settings_sound">声音</string>
-    <string name="settings_sound_caption">系统通知设置</string>
+    <string name="settings_sound">系统通知设置</string>
+    <string name="settings_sound_caption">声音、重要性、振动</string>
     <string name="settings_persistent">持续提醒</string>
     <string name="settings_persistent_caption">未标记时重复</string>
     <string name="settings_snooze">稍后提醒</string>

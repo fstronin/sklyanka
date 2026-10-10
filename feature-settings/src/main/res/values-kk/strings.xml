@@ -136,8 +136,8 @@
     <string name="settings_profile_delete">«%1$s» бейінін жою</string>
     <string name="cd_settings_profile_active">Белсенді бейін</string>
 
-    <string name="settings_sound">Дыбыс</string>
-    <string name="settings_sound_caption">Жүйелік хабарлама параметрлері</string>
+    <string name="settings_sound">Жүйелік хабарлама параметрлері</string>
+    <string name="settings_sound_caption">Дыбыс, маңыздылық, діріл</string>
     <string name="settings_persistent">Қайталама еске салғыш</string>
     <string name="settings_persistent_caption">Белгіленбесе, қайталау</string>
     <string name="settings_snooze">Кейінге қалдыру</string>

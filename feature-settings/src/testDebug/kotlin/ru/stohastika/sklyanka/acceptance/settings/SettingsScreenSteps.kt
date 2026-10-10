@@ -140,16 +140,17 @@ class SettingsScreenSteps(private val world: AcceptanceWorld) {
     }
 
     /**
-     * SKL-78, ОВ-98: у строки «Звук» значения нет, а подпись называет, куда ведёт переход.
+     * SKL-78, ОВ-98, Р-52: у строки значения нет, заголовок называет экран, в который она
+     * ведёт, а подпись — то, что на нём настраивается.
      *
      * Фальшивое «Мягкий сигнал» снято: звук — свойство неизменяемого канала, и выбирается
      * он в системном экране уведомлений приложения.
      */
-    @Тогда("^строка «Звук» не показывает значения и подписана «(.+?)»$")
-    fun theSoundRowCarriesNoValueButNamesThePlace(caption: String) {
+    @Тогда("^строка «Системные настройки уведомлений» не показывает значения и подписана «(.+?)»$")
+    fun theRowCarriesNoValueButNamesTheScreen(caption: String) {
         val state = SettingsScreenProbe.state(world)
-        assertTrue(hasText(state, string(R.string.settings_sound)), "the sound row must be there")
-        assertTrue(hasText(state, caption), "the sound row must carry «$caption»")
+        assertTrue(hasText(state, string(R.string.settings_sound)), "the transition row must be there")
+        assertTrue(hasText(state, caption), "the transition row must carry «$caption»")
         assertFalse(
             hasText(state, FAKE_SOUND_VALUE),
             "the fake sound value must be gone (ПМ-15 п. 3, ОВ-98)",
@@ -532,7 +533,7 @@ class SettingsScreenSteps(private val world: AcceptanceWorld) {
         val SOUND_KEYS = listOf("звук для", "звук лекарства", "выбрать звук")
         val LINKS = listOf("http", "www.", ".ru/", ".com/", "mailto")
 
-        /** Прежнее фальшивое значение строки «Звук», снятое ОВ-98. Литерал намеренный. */
+        /** Прежнее фальшивое значение строки, снятое ОВ-98. Литерал намеренный. */
         const val FAKE_SOUND_VALUE = "Мягкий сигнал"
 
         /**

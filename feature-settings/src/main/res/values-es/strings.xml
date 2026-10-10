@@ -136,8 +136,8 @@
     <string name="settings_profile_delete">Eliminar el perfil «%1$s»</string>
     <string name="cd_settings_profile_active">Perfil activo</string>
 
-    <string name="settings_sound">Sonido</string>
-    <string name="settings_sound_caption">Ajustes de notificaciones del sistema</string>
+    <string name="settings_sound">Ajustes de notificaciones del sistema</string>
+    <string name="settings_sound_caption">Sonido, importancia, vibración</string>
     <string name="settings_persistent">Recordatorio insistente</string>
     <string name="settings_persistent_caption">Repetir si no se marca</string>
     <string name="settings_snooze">Posponer</string>

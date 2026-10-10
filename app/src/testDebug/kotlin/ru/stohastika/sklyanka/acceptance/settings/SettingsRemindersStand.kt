@@ -22,7 +22,7 @@ import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
  * Модель **одна на сценарий**, а не собирается заново на каждый вопрос, как у
  * `SettingsAppProbe`: видимость выбора интервала живёт в состоянии экрана, и пересборка
  * между «открыл» и «выбрал» потеряла бы открытый диалог. Строки ведут наружу настоящим
- * `SettingsRoute`; «Звук» считается переходом, а не исполняется.
+ * `SettingsRoute`; строка перехода считается переходом, а не исполняется.
  */
 @OptIn(ExperimentalTestApi::class)
 internal object SettingsRemindersStand {
@@ -30,7 +30,7 @@ internal object SettingsRemindersStand {
     private var lastWorld: AcceptanceWorld? = null
     private var viewModel: SettingsViewModel? = null
 
-    /** Сколько раз «Звук» попросил системные настройки уведомлений (ОВ-98). */
+    /** Сколько раз строка перехода попросила системные настройки уведомлений (ОВ-98). */
     var soundOpened: Int = 0
         private set
 

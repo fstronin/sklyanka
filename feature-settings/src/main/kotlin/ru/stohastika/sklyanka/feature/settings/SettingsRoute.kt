@@ -25,7 +25,8 @@ fun SettingsRoute(viewModel: SettingsViewModel, navigation: SettingsNavigation, 
             when (intent) {
                 SettingsIntent.AddProfile -> navigation.addProfile()
                 SettingsIntent.DeleteProfile -> navigation.deleteProfile()
-                // «Звук» ведёт в системные настройки уведомлений приложения (ОВ-98):
+                // Строка «Системные настройки уведомлений» ведёт в системный экран
+                // уведомлений приложения (ОВ-98, Р-52):
                 // платформенный `Intent` собирает `app`, экран о нём не знает.
                 SettingsIntent.OpenSound -> navigation.openSound()
                 SettingsIntent.OpenPermissions -> navigation.openDiagnostics()
@@ -61,7 +62,7 @@ data class SettingsNavigation(
      */
     val deleteProfile: () -> Unit = {},
     /**
-     * «Звук» → системные настройки уведомлений приложения (ОВ-98).
+     * «Системные настройки уведомлений» → системный экран уведомлений приложения (ОВ-98, Р-52).
      *
      * Звук и важность — свойство неизменяемого канала уведомлений (`ADR-0004`), и выбрать
      * их приложение не может: оно только приводит человека в системный экран каналов.

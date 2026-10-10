@@ -40,7 +40,8 @@ import ru.stohastika.sklyanka.feature.reminder.R as ReminderR
 import ru.stohastika.sklyanka.feature.settings.R as SettingsR
 
 /**
- * Экранные шаги приёмки настроек «Звук» и «Отложить на» (SKL-78, группа `@screen`).
+ * Экранные шаги приёмки строки перехода в системные настройки и «Отложить на»
+ * (SKL-78, SKL-134, группа `@screen`).
  *
  * Шаги живут в `app`, потому что сценарий последнего примера говорит и о карточке
  * напоминания (`feature-reminder`), и о настройках (`feature-settings`) — вместе их
@@ -65,10 +66,10 @@ class SettingsRemindersScreenSteps(private val world: AcceptanceWorld) {
         }
     }
 
-    // --- Звук ----------------------------------------------------------------------------------
+    // --- Строка перехода в системные настройки -------------------------------------------------
 
-    @Когда("^человек нажимает строку «Звук»$")
-    fun thePersonTapsTheSoundRow() {
+    @Когда("^человек нажимает строку «Системные настройки уведомлений»$")
+    fun thePersonTapsTheTransitionRow() {
         SettingsRemindersStand.act(world) {
             onNodeWithText(string(SettingsR.string.settings_sound), useUnmergedTree = true)
                 .performScrollTo()
@@ -79,14 +80,14 @@ class SettingsRemindersScreenSteps(private val world: AcceptanceWorld) {
     @Тогда("^приложение открывает системные настройки уведомлений приложения$")
     fun theAppOpensTheSystemNotificationSettings() {
         assertEquals(
-            "the «Звук» row must lead to the system notification settings (ОВ-98)",
+            "the row must lead to the system notification settings (ОВ-98, Р-52)",
             1,
             SettingsRemindersStand.soundOpened,
         )
     }
 
-    @Когда("^человек смотрит на строку «Звук»$")
-    fun thePersonLooksAtTheSoundRow() {
+    @Когда("^человек смотрит на строку «Системные настройки уведомлений»$")
+    fun thePersonLooksAtTheTransitionRow() {
         SettingsRemindersStand.ask(world) {
             onNodeWithText(string(SettingsR.string.settings_sound), useUnmergedTree = true).performScrollTo()
         }
@@ -105,12 +106,29 @@ class SettingsRemindersScreenSteps(private val world: AcceptanceWorld) {
         assertEquals("the sound must not be chosen inside the app (ПМ-15)", emptyList<String>(), offenders)
     }
 
-    @И("^строка подписана «Системные настройки уведомлений» и показывает шеврон$")
-    fun theRowNamesItsDestination() {
-        assertEquals("Системные настройки уведомлений", string(SettingsR.string.settings_sound_caption))
+    @И("^строка названа «Системные настройки уведомлений»$")
+    fun theRowIsNamedAfterTheScreenItOpens() {
+        // Пара «заголовок + подпись» — это и есть предмет приёмки (Р-52), поэтому ожидание
+        // названо литералом, а не взято из того же ресурса, что проверяется.
+        assertEquals("Системные настройки уведомлений", string(SettingsR.string.settings_sound))
         SettingsRemindersStand.ask(world) {
-            // Шеврон — не текст: о переходе говорит нажимаемость строки вместе с подписью.
-            onNode(hasText(string(SettingsR.string.settings_sound_caption)) and hasClickAction()).assertExists()
+            onNodeWithText(string(SettingsR.string.settings_sound), useUnmergedTree = true).assertExists()
+        }
+    }
+
+    @И("^строка подписана «Звук, важность, вибрация»$")
+    fun theRowNamesWhatTheScreenHolds() {
+        assertEquals("Звук, важность, вибрация", string(SettingsR.string.settings_sound_caption))
+        SettingsRemindersStand.ask(world) {
+            onNodeWithText(string(SettingsR.string.settings_sound_caption), useUnmergedTree = true).assertExists()
+        }
+    }
+
+    @И("^строка нажимается$")
+    fun theRowIsTappable() {
+        SettingsRemindersStand.ask(world) {
+            // Шеврон — не текст: о переходе говорит нажимаемость строки, а ведёт он наружу.
+            onNode(hasText(string(SettingsR.string.settings_sound)) and hasClickAction()).assertExists()
         }
     }
 
@@ -299,7 +317,7 @@ class SettingsRemindersScreenSteps(private val world: AcceptanceWorld) {
     )
 
     private companion object {
-        /** Прежнее фальшивое значение строки «Звук», снятое ОВ-98. */
+        /** Прежнее фальшивое значение строки, снятое ОВ-98. */
         const val FAKE_SOUND_VALUE = "Мягкий сигнал"
 
         /** Обещание выбора звука внутри приложения. */
