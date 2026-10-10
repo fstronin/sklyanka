@@ -21,6 +21,7 @@ import ru.stohastika.sklyanka.domain.model.FoodRelation
 import ru.stohastika.sklyanka.domain.model.MedicationForm
 import ru.stohastika.sklyanka.domain.model.TabletShape
 import ru.stohastika.sklyanka.ui.locale.interfaceLocale
+import ru.stohastika.sklyanka.ui.text.pluralQuantityOf
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalTime
@@ -82,7 +83,7 @@ internal fun formAndShapeLabel(form: MedicationForm, shape: TabletShape?): Strin
 internal fun medicationPreviewTitle(form: MedicationForm, shape: TabletShape?): String = formAndShapeLabel(form, shape)
 
 /**
- * Числа превью выбора: «2 шт · 48 мг» (§5.3, ЭКР-7).
+ * Числа превью выбора: «2 таблетки · 48 мг» (§5.3, ЭКР-7).
  *
  * Порядок — как в подписи лекарства: сначала доза на один приём, затем дозировка
  * препарата. Пустая часть в строку не попадает — пустая дозировка законна (ИНВ-5),
@@ -180,33 +181,39 @@ internal fun trailingTextOf(line: TrailingLine): String = when (line) {
     }
 }
 
-/** Суффикс поля количества дозы: слово единицы по форме выпуска (Р-45, §5.3). */
+/**
+ * Слово единицы дозы в поле: согласуется с набранным числом (§5.3).
+ *
+ * Число печатает само поле, поэтому ресурс несёт только слово: «1 таблетка», «2 таблетки»,
+ * «5 таблеток», «0,5 таблетки». Пустое поле показывает имя единицы — человек видит, какая
+ * единица применима (Р-45), и слово не прыгает на границе «пусто → 1».
+ *
+ * Одно семейство обслуживает все поля, где за числом стоит единица дозы: дозу на приём,
+ * строки «Сейчас есть» и «Размер упаковки» формы и поле пополнения остатка в карточке.
+ */
 @Composable
-internal fun DoseUnit.doseSuffix(): String = stringResource(
+internal fun DoseUnit.fieldWord(amount: BigDecimal?): String = pluralStringResource(
     when (this) {
-        DoseUnit.TABLET -> R.string.dose_suffix_tablet
-        DoseUnit.CAPSULE -> R.string.dose_suffix_capsule
-        DoseUnit.MILLILITRE -> R.string.dose_suffix_millilitre
-        DoseUnit.DROP -> R.string.dose_suffix_drop
-        DoseUnit.SPRAY -> R.string.dose_suffix_spray
-        DoseUnit.INJECTION -> R.string.dose_suffix_injection
+        DoseUnit.TABLET -> R.plurals.field_unit_tablets
+        DoseUnit.CAPSULE -> R.plurals.field_unit_capsules
+        DoseUnit.MILLILITRE -> R.plurals.field_unit_millilitres
+        DoseUnit.DROP -> R.plurals.field_unit_drops
+        DoseUnit.SPRAY -> R.plurals.field_unit_sprays
+        DoseUnit.INJECTION -> R.plurals.field_unit_injections
     },
+    amount?.let(::pluralQuantityOf) ?: UNIT_NAME_QUANTITY,
 )
 
-/** Единица остатка в упаковке: «таблеток», «капсул», «мл», «капель» (критерий 13). */
-@Composable
-internal fun DoseUnit.stockLabel(): String = stringResource(
-    when (this) {
-        DoseUnit.TABLET -> R.string.stock_unit_tablets
-        DoseUnit.CAPSULE -> R.string.stock_unit_capsules
-        DoseUnit.MILLILITRE -> R.string.stock_unit_millilitres
-        DoseUnit.DROP -> R.string.stock_unit_drops
-        DoseUnit.SPRAY -> R.string.stock_unit_sprays
-        DoseUnit.INJECTION -> R.string.stock_unit_injections
-    },
-)
+/** Количество, которым печатается имя единицы в пустом поле: то же, что у «1 таблетка». */
+private const val UNIT_NAME_QUANTITY = 1
 
-/** «осталось 9 таблеток» — склонение зависит и от числа, и от единицы. */
+/**
+ * «осталось 9 таблеток» — склонение зависит и от числа, и от единицы.
+ *
+ * Количество — целая часть: число печатает сама строка (`%1$d`), и дробный остаток она
+ * показать не может. Это дефект формата числа (НФТ-43), а не слова: «осталось 0 таблеток»
+ * при остатке «0,5» называется здесь честно, чтобы число и слово не разошлись.
+ */
 @Composable
 internal fun stockLeftLabel(left: BigDecimal, unit: DoseUnit): String {
     val amount = left.toInt()
@@ -227,9 +234,9 @@ internal fun stockLeftLabel(left: BigDecimal, unit: DoseUnit): String {
 /**
  * «2 таблетки», «3 капли» — доза одного приёма словами языка (§5.3, ЭКР-7).
  *
- * Число для склонения — целая часть: «1,5 таблетки» склоняется по «1», как и в остальном
- * интерфейсе. Единица словами, а не знаком «шт»: знак отвечает на вопрос «сколько штук»,
- * которого у капель, впрыска и инъекции не существует.
+ * Количество для формы слова даёт `pluralQuantityOf`: целому числу отвечает само число,
+ * дробному — форма дроби («0,5 таблетки»). Единица словами, а не знаком «шт»: знак отвечает
+ * на вопрос «сколько штук», которого у капель, впрыска и инъекции не существует.
  */
 @Composable
 internal fun previewDoseLabel(amount: BigDecimal, unit: DoseUnit): String = pluralStringResource(
@@ -241,7 +248,7 @@ internal fun previewDoseLabel(amount: BigDecimal, unit: DoseUnit): String = plur
         DoseUnit.SPRAY -> R.plurals.preview_dose_sprays
         DoseUnit.INJECTION -> R.plurals.preview_dose_injections
     },
-    amount.toInt(),
+    pluralQuantityOf(amount),
     amount.stripTrailingZeros().toPlainString(),
 )
 

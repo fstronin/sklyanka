@@ -266,9 +266,11 @@ class MedicationCardScreenTest {
             .onNodeWithText(context.getString(UiR.string.action_cancel), useUnmergedTree = true)
             .assertIsDisplayed()
         // Единица строки пополнения — та же, что у остатка: человек вводит число в тех же
-        // единицах, в каких карточка о нём говорит.
+        // единицах, в каких карточка о нём говорит. Поле пустое, поэтому слово стоит именем
+        // единицы (норма §5.3): при вводе «2» оно станет «таблетки».
+        val unitName = context.resources.getQuantityString(R.plurals.field_unit_tablets, 1)
         composeRule
-            .onNodeWithText(context.getString(R.string.stock_unit_tablets), useUnmergedTree = true)
+            .onNodeWithText(unitName, useUnmergedTree = true)
             .assertIsDisplayed()
     }
 

@@ -123,6 +123,20 @@ class ReportPdfComposerTest {
         assertTrue("капли печатаются каплями: $text", text.contains("med-a · 20 капель"))
     }
 
+    /**
+     * Дробная доза берёт форму дроби: «0,5 таблетки», а не «0,5 таблеток» (SKL-138).
+     *
+     * Проверяется слово, а не вся строка: число печатается своей формой, а разделитель дроби —
+     * отдельный дефект формата числа (НФТ-43), и утверждение всей строки закрепило бы его здесь.
+     */
+    @Test
+    fun `a fractional dose takes the fraction form`() {
+        val half = medication().copy(doseAmount = BigDecimal("0.5"))
+        val text = composer.compose(report(medication = half), ZONE).documentText()
+
+        assertTrue("дробь печатается формой дроби: $text", text.contains("таблетки"))
+    }
+
     @Test
     fun `a course without an end is printed as open`() {
         val medication = medication(id = MEDICATION_ID, name = "med-a").copy(endDate = null)

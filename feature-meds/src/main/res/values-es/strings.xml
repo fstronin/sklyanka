@@ -91,13 +91,6 @@
     <string name="food_relation_with">Con la comida</string>
     <string name="food_relation_after">Después de comer</string>
 
-    <string name="dose_suffix_tablet">comprimido</string>
-    <string name="dose_suffix_capsule">cápsula</string>
-    <string name="dose_suffix_millilitre">ml</string>
-    <string name="dose_suffix_drop">gota</string>
-    <string name="dose_suffix_spray">pulverización</string>
-    <string name="dose_suffix_injection">inyección</string>
-
     <string name="form_label_strength_unit">Unidad de la dosificación</string>
     <string name="strength_unit_milligram">mg</string>
     <string name="strength_unit_microgram">mcg</string>
@@ -105,13 +98,6 @@
     <string name="strength_unit_millilitre">ml</string>
     <string name="strength_unit_international_unit">UI</string>
     <string name="strength_unit_percent">%</string>
-
-    <string name="stock_unit_tablets">comprimidos</string>
-    <string name="stock_unit_capsules">cápsulas</string>
-    <string name="stock_unit_millilitres">ml</string>
-    <string name="stock_unit_drops">gotas</string>
-    <string name="stock_unit_sprays">pulverizaciones</string>
-    <string name="stock_unit_injections">inyecciones</string>
 
     <string name="form_label_max_per_day">No más de, veces al día</string>
     <string name="form_caption_max_per_day">La toma se marca manualmente</string>

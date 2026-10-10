@@ -115,4 +115,34 @@
         <item quantity="one">Wenn noch %1$d Tag bleibt</item>
         <item quantity="other">Wenn noch %1$d Tage bleiben</item>
     </plurals>
+
+    <!--
+      Das Wort der Dosiereinheit im Feld (12-design.md §5.3): die Zahl druckt das Feld
+      selbst, die Ressource tragt nur das Wort. Ein leeres Feld zeigt den Namen der
+      Einheit (die Form `one`).
+    -->
+    <plurals name="field_unit_tablets">
+        <item quantity="one">Tablette</item>
+        <item quantity="other">Tabletten</item>
+    </plurals>
+    <plurals name="field_unit_capsules">
+        <item quantity="one">Kapsel</item>
+        <item quantity="other">Kapseln</item>
+    </plurals>
+    <plurals name="field_unit_millilitres">
+        <item quantity="one">ml</item>
+        <item quantity="other">ml</item>
+    </plurals>
+    <plurals name="field_unit_drops">
+        <item quantity="one">Tropfen</item>
+        <item quantity="other">Tropfen</item>
+    </plurals>
+    <plurals name="field_unit_sprays">
+        <item quantity="one">Sprühstoß</item>
+        <item quantity="other">Sprühstöße</item>
+    </plurals>
+    <plurals name="field_unit_injections">
+        <item quantity="one">Injektion</item>
+        <item quantity="other">Injektionen</item>
+    </plurals>
 </resources>

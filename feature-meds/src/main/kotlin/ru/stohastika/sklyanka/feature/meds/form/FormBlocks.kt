@@ -32,7 +32,7 @@ import ru.stohastika.sklyanka.domain.model.TabletShape
 import ru.stohastika.sklyanka.feature.meds.ChoiceTile
 import ru.stohastika.sklyanka.feature.meds.R
 import ru.stohastika.sklyanka.feature.meds.SectionLabel
-import ru.stohastika.sklyanka.feature.meds.doseSuffix
+import ru.stohastika.sklyanka.feature.meds.fieldWord
 import ru.stohastika.sklyanka.feature.meds.label
 import ru.stohastika.sklyanka.feature.meds.medicationPreviewNumbers
 import ru.stohastika.sklyanka.feature.meds.medicationPreviewTitle
@@ -228,7 +228,7 @@ internal fun DoseBlock(state: MedFormUiState, onIntent: (MedFormIntent) -> Unit,
         SklyankaTextField(
             value = state.inputs.doseAmount,
             onValueChange = { onIntent(MedFormIntent.DoseAmountChanged(it)) },
-            unitLabel = state.applicability.doseUnit.doseSuffix(),
+            unitLabel = state.applicability.doseUnit.fieldWord(state.draft.doseAmount),
             numeric = true,
             errorText = state.violationOf(DraftField.DOSE)?.message(),
             modifier = Modifier

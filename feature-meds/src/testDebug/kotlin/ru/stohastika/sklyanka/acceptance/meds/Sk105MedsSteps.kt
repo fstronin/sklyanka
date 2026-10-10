@@ -90,6 +90,7 @@ import ru.stohastika.sklyanka.ui.component.TAG_SNACKBAR
 import ru.stohastika.sklyanka.ui.component.TAG_TEXT_FIELD_ERROR
 import ru.stohastika.sklyanka.ui.component.TAG_TEXT_FIELD_INPUT
 import ru.stohastika.sklyanka.ui.component.matchesConfirmationWord
+import ru.stohastika.sklyanka.ui.text.pluralQuantityOf
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaSizes
 import ru.stohastika.sklyanka.ui.token.SklyankaSpacing
@@ -423,9 +424,9 @@ class Sk105MedsSteps(
     /**
      * Подпись превью — по тому же правилу, что `medicationPreviewNumbers` (ЭКР-7).
      *
-     * Числа берутся у черновика, а слова — у ресурсов: «2 шт · 48 мг». Сценарий называет
-     * числа «2 таблетки · 48 мг» словами нормы, а единицу количества печатает продукт
-     * (`dose_suffix_piece` у штучных форм), поэтому сверяется собранная строка, а числа
+     * Числа берутся у черновика, а слова — у ресурсов: «2 таблетки · 48 мг». Сценарий
+     * называет числа «2 таблетки · 48 мг» словами нормы, а единицу количества печатает
+     * продукт (семейство `preview_dose_*`), поэтому сверяется собранная строка, а числа
      * сценария обязаны быть в ней названы.
      */
     @Тогда("^превью называет «(.+)»$")
@@ -802,7 +803,9 @@ class Sk105MedsSteps(
      */
     private fun expectedPreviewNumbers(state: MedFormUiState): String {
         val dose = state.draft.doseAmount?.let { amount ->
-            val count = amount.toInt()
+            // Количество для формы слова берётся тем же правилом, что в `MedsText.previewDoseLabel`:
+            // дробь (0,5) печатается формой дроби, а не формой целой части (SKL-138).
+            val count = pluralQuantityOf(amount)
             context.resources.getQuantityString(
                 previewDoseTemplate(state.draft.form.doseUnit()),
                 count,

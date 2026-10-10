@@ -288,8 +288,9 @@ class MedicationFormSteps {
     @Then("^в блоке «Остаток в упаковке» единицей показано «(.+)»$")
     fun theStockUnitIs(unit: String) {
         // Единица производна от формы выпуска (Р-45), поэтому проверяется соответствие
-        // «код домена — слово интерфейса», а не сама строка ресурса.
-        assertEquals(unit, STOCK_UNITS.getValue(draft.applicability().doseUnit))
+        // «код домена — слово интерфейса», а не сама строка ресурса. Поле пустое, значит
+        // слово стоит именем единицы; согласование с числом — дело экранной приёмки SKL-138.
+        assertEquals(unit, FIELD_UNIT_WORDS.getValue(draft.applicability().doseUnit))
     }
 
     // --- Заполненная форма целиком ---------------------------------------------------------------
@@ -481,14 +482,20 @@ class MedicationFormSteps {
         const val SCHEDULED_LABEL = "По расписанию"
         const val VISIBLE_LABEL = "показан"
 
-        /** Единицы остатка по Р-45: шесть, по одной на форму выпуска. */
-        val STOCK_UNITS = mapOf(
-            DoseUnit.TABLET to "таблеток",
-            DoseUnit.CAPSULE to "капсул",
+        /**
+         * Слова единиц в пустом поле остатка: шесть, по одной на форму выпуска.
+         *
+         * Поле пустое — числа нет, — и норма §5.3 (`12-design.md`) показывает имя единицы:
+         * «таблетка», а не счётное «таблеток». Слово, согласованное с числом, проверяет
+         * экранная приёмка SKL-138 — там оно читается из разметки, а не из этой таблицы.
+         */
+        val FIELD_UNIT_WORDS = mapOf(
+            DoseUnit.TABLET to "таблетка",
+            DoseUnit.CAPSULE to "капсула",
             DoseUnit.MILLILITRE to "мл",
-            DoseUnit.DROP to "капель",
-            DoseUnit.SPRAY to "впрысков",
-            DoseUnit.INJECTION to "инъекций",
+            DoseUnit.DROP to "капля",
+            DoseUnit.SPRAY to "впрыск",
+            DoseUnit.INJECTION to "инъекция",
         )
 
         /** «сейчас 25 сентября 2026, 10:00» из предыстории сценариев. */

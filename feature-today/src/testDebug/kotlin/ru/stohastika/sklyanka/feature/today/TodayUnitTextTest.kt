@@ -73,13 +73,37 @@ class TodayUnitTextTest {
         composeRule.onNodeWithText("20 таблеток · 250 мкг").assertExists()
     }
 
-    private fun medication(form: MedicationForm, unit: DoseUnit, strengthUnit: String? = null): Medication = Medication(
+    /**
+     * Дробная доза берёт форму дроби: «0,5 таблетки», а не «0,5 таблеток» (SKL-138).
+     *
+     * Проверяется слово, а не вся строка: число печатается своей формой, а разделитель дроби —
+     * отдельный дефект формата числа (НФТ-43), и утверждение всей строки закрепило бы его здесь.
+     */
+    @Test
+    fun aFractionalDoseTakesTheFractionForm() {
+        composeRule.setContent {
+            SklyankaTheme {
+                Text(
+                    medication(MedicationForm.TABLET, DoseUnit.TABLET, dose = BigDecimal("0.5")).doseCaption(),
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("таблетки", substring = true).assertExists()
+    }
+
+    private fun medication(
+        form: MedicationForm,
+        unit: DoseUnit,
+        strengthUnit: String? = null,
+        dose: BigDecimal = BigDecimal("20"),
+    ): Medication = Medication(
         id = "med-1",
         profileId = "profile-1",
         name = "med-a",
         form = form,
         shape = null,
-        doseAmount = BigDecimal("20"),
+        doseAmount = dose,
         doseUnit = unit.code,
         strength = strengthUnit?.let { BigDecimal("250") },
         strengthUnit = strengthUnit,

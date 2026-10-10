@@ -7,6 +7,7 @@ import ru.stohastika.sklyanka.domain.history.ReportMedicationRow
 import ru.stohastika.sklyanka.domain.medication.DoseUnit
 import ru.stohastika.sklyanka.domain.medication.StrengthUnit
 import ru.stohastika.sklyanka.domain.medication.doseUnit
+import ru.stohastika.sklyanka.ui.text.pluralQuantityOf
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.YearMonth
@@ -182,7 +183,10 @@ internal class ReportPdfText(private val context: Context) {
         }
     }
 
-    /** «1 таблетка», «2 таблетки»: склонение по количеству, формулировки карточки лекарства. */
+    /**
+     * «1 таблетка», «2 таблетки», «0,5 таблетки»: склонение по количеству,
+     * формулировки карточки лекарства.
+     */
     private fun dose(row: ReportMedicationRow): String {
         val unit = DoseUnit.ofCode(row.doseUnit) ?: row.form.doseUnit()
         val template = when (unit) {
@@ -193,7 +197,11 @@ internal class ReportPdfText(private val context: Context) {
             DoseUnit.SPRAY -> R.plurals.report_document_dose_sprays
             DoseUnit.INJECTION -> R.plurals.report_document_dose_injections
         }
-        return context.resources.getQuantityString(template, row.doseAmount.toInt(), amount(row.doseAmount))
+        return context.resources.getQuantityString(
+            template,
+            pluralQuantityOf(row.doseAmount),
+            amount(row.doseAmount),
+        )
     }
 
     /**

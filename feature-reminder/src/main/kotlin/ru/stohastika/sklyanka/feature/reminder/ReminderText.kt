@@ -11,6 +11,7 @@ import ru.stohastika.sklyanka.domain.reminder.DeliveryCheckState
 import ru.stohastika.sklyanka.domain.reminder.port.PermissionState
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPermission
 import ru.stohastika.sklyanka.ui.locale.interfaceLocale
+import ru.stohastika.sklyanka.ui.text.pluralQuantityOf
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -67,10 +68,10 @@ private fun StrengthUnit.label(): String = stringResource(
 )
 
 /**
- * «2 таблетки» — доза с единицей по форме выпуска.
+ * «2 таблетки», «0,5 таблетки» — доза с единицей по форме выпуска.
  *
- * Число для склонения берётся целой частью: «1,5 таблетки» склоняется по «1», как
- * и в остальном интерфейсе.
+ * Количество для формы слова даёт `pluralQuantityOf`: целому числу отвечает само число,
+ * дробному — форма дроби, как и в остальном интерфейсе.
  */
 @Composable
 private fun doseLabel(amount: BigDecimal, unit: DoseUnit): String = pluralStringResource(
@@ -82,7 +83,7 @@ private fun doseLabel(amount: BigDecimal, unit: DoseUnit): String = pluralString
         DoseUnit.SPRAY -> R.plurals.reminder_dose_sprays
         DoseUnit.INJECTION -> R.plurals.reminder_dose_injections
     },
-    amount.toInt(),
+    pluralQuantityOf(amount),
     amount.stripTrailingZeros().toPlainString(),
 )
 

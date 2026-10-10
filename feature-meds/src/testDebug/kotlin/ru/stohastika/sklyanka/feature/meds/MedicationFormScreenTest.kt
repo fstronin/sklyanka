@@ -190,7 +190,7 @@ class MedicationFormScreenTest {
         // Проверка адресует именно поле остатка, а не первое попавшееся совпадение.
         composeRule
             .onNodeWithTag(TAG_STOCK_UNIT)
-            .assertTextEquals(context.getString(R.string.stock_unit_millilitres))
+            .assertTextEquals(context.resources.getQuantityString(R.plurals.field_unit_millilitres, 1))
     }
 
     @Test
@@ -209,7 +209,7 @@ class MedicationFormScreenTest {
 
         composeRule
             .onNodeWithTag(TAG_PACKAGE_SIZE_UNIT)
-            .assertTextEquals(context.getString(R.string.stock_unit_millilitres))
+            .assertTextEquals(context.resources.getQuantityString(R.plurals.field_unit_millilitres, 1))
     }
 
     @Test

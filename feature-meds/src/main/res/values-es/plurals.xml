@@ -115,4 +115,34 @@
         <item quantity="one">Cuando quede %1$d día</item>
         <item quantity="other">Cuando queden %1$d días</item>
     </plurals>
+
+    <!--
+      La palabra de la unidad de dosis dentro del campo (12-design.md §5.3): el número
+      lo imprime el propio campo, así que el recurso lleva solo la palabra. Un campo
+      vacío muestra el nombre de la unidad (la forma `one`).
+    -->
+    <plurals name="field_unit_tablets">
+        <item quantity="one">comprimido</item>
+        <item quantity="other">comprimidos</item>
+    </plurals>
+    <plurals name="field_unit_capsules">
+        <item quantity="one">cápsula</item>
+        <item quantity="other">cápsulas</item>
+    </plurals>
+    <plurals name="field_unit_millilitres">
+        <item quantity="one">ml</item>
+        <item quantity="other">ml</item>
+    </plurals>
+    <plurals name="field_unit_drops">
+        <item quantity="one">gota</item>
+        <item quantity="other">gotas</item>
+    </plurals>
+    <plurals name="field_unit_sprays">
+        <item quantity="one">pulverización</item>
+        <item quantity="other">pulverizaciones</item>
+    </plurals>
+    <plurals name="field_unit_injections">
+        <item quantity="one">inyección</item>
+        <item quantity="other">inyecciones</item>
+    </plurals>
 </resources>

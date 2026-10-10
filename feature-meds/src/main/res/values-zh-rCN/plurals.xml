@@ -89,4 +89,27 @@
     <plurals name="stock_threshold_caption">
         <item quantity="other">剩余 %1$d 天时</item>
     </plurals>
+
+    <!--
+      字段内的剂量单位词 (12-design.md §5.3): 数字由字段本身打印, 资源只携带词。
+      空字段显示单位名称。
+    -->
+    <plurals name="field_unit_tablets">
+        <item quantity="other">片</item>
+    </plurals>
+    <plurals name="field_unit_capsules">
+        <item quantity="other">粒</item>
+    </plurals>
+    <plurals name="field_unit_millilitres">
+        <item quantity="other">毫升</item>
+    </plurals>
+    <plurals name="field_unit_drops">
+        <item quantity="other">滴</item>
+    </plurals>
+    <plurals name="field_unit_sprays">
+        <item quantity="other">喷</item>
+    </plurals>
+    <plurals name="field_unit_injections">
+        <item quantity="other">注射</item>
+    </plurals>
 </resources>

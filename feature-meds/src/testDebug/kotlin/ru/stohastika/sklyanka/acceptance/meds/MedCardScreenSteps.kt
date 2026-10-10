@@ -377,6 +377,37 @@ class MedCardScreenSteps(private val world: AcceptanceWorld) {
         }
     }
 
+    /**
+     * Единица в строке пополнения при введённом числе (SKL-138).
+     *
+     * Строка строится с тем текстом в поле, который набрал человек: слово единицы обязано
+     * следовать за числом, а пустое поле показало бы имя единицы и проверки не было бы.
+     */
+    @Тогда("^в строке пополнения при введённом (.+) показана единица «(.+)»$")
+    fun theRefillRowShowsTheUnitForTheAmount(amount: String, unit: String) {
+        MedCardStand.ask(world, focusedMedication(), refill = RefillUi(text = amount)) { test ->
+            val texts = MedsProbe.texts(test, TAG_REFILL_ROW)
+            assertTrue(
+                "the refill row must carry the unit «$unit» for «$amount»: $texts",
+                unit in texts,
+            )
+        }
+    }
+
+    /**
+     * Единица в блоке «Расписание» (SKL-138): слово дозы при дробном числе.
+     *
+     * Проверяется слово, а не вся строка: число печатается своей формой («по 0.5 таблетки»),
+     * а разделитель дроби — отдельный дефект формата числа (НФТ-43, issue #14).
+     */
+    @Тогда("^в блоке «Расписание» единицей названо «([^»]+)»$")
+    fun theScheduleBlockNamesTheUnit(unit: String) {
+        MedCardStand.ask(world, focusedMedication()) { test ->
+            val texts = MedsProbe.texts(test, TAG_SCHEDULE_BLOCK)
+            assertTrue("the schedule block must name the unit «$unit»: $texts", texts.any { unit in it })
+        }
+    }
+
     @Тогда("^рядом со строкой пополнения есть «(.+)»$")
     fun theRefillRowOffers(label: String) {
         MedCardStand.ask(world, focusedMedication(), refill = RefillUi(text = "")) { test ->

@@ -115,4 +115,33 @@
         <item quantity="one">%1$d күн қалғанда</item>
         <item quantity="other">%1$d күн қалғанда</item>
     </plurals>
+
+    <!--
+      Доза бірлігінің сөзі өрісте (12-design.md §5.3): санды өріс өзі басады, ресурс тек
+      сөзді алып жүреді. Бос өріс бірлік атауын көрсетеді (`one` түрі).
+    -->
+    <plurals name="field_unit_tablets">
+        <item quantity="one">таблетка</item>
+        <item quantity="other">таблетка</item>
+    </plurals>
+    <plurals name="field_unit_capsules">
+        <item quantity="one">капсула</item>
+        <item quantity="other">капсула</item>
+    </plurals>
+    <plurals name="field_unit_millilitres">
+        <item quantity="one">мл</item>
+        <item quantity="other">мл</item>
+    </plurals>
+    <plurals name="field_unit_drops">
+        <item quantity="one">тамшы</item>
+        <item quantity="other">тамшы</item>
+    </plurals>
+    <plurals name="field_unit_sprays">
+        <item quantity="one">бүрікпе</item>
+        <item quantity="other">бүрікпе</item>
+    </plurals>
+    <plurals name="field_unit_injections">
+        <item quantity="one">инъекция</item>
+        <item quantity="other">инъекция</item>
+    </plurals>
 </resources>

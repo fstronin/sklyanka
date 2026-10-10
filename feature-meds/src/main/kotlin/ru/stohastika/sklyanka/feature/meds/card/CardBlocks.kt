@@ -25,9 +25,10 @@ import ru.stohastika.sklyanka.domain.stock.StockPanel
 import ru.stohastika.sklyanka.feature.meds.ClockGlyph
 import ru.stohastika.sklyanka.feature.meds.R
 import ru.stohastika.sklyanka.feature.meds.SectionLabel
+import ru.stohastika.sklyanka.feature.meds.amountOf
+import ru.stohastika.sklyanka.feature.meds.fieldWord
 import ru.stohastika.sklyanka.feature.meds.formatted
 import ru.stohastika.sklyanka.feature.meds.sinceDayAndMonth
-import ru.stohastika.sklyanka.feature.meds.stockLabel
 import ru.stohastika.sklyanka.feature.meds.stockLeftLabel
 import ru.stohastika.sklyanka.feature.meds.stockPackageLabel
 import ru.stohastika.sklyanka.ui.component.AdherenceWeek
@@ -283,7 +284,7 @@ private fun RefillRow(refill: RefillUi, unit: DoseUnit, onIntent: (MedCardIntent
             value = refill.text,
             onValueChange = { text -> onIntent(MedCardIntent.RefillValueChanged(text)) },
             hint = stringResource(R.string.card_refill_hint),
-            unitLabel = unit.stockLabel(),
+            unitLabel = unit.fieldWord(amountOf(refill.text)),
             numeric = true,
             errorText = stringResource(R.string.error_stock_negative).takeIf { refill.invalid },
             modifier = Modifier.fillMaxWidth(),

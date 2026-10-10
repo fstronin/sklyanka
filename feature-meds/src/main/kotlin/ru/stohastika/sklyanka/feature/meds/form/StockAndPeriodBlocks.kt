@@ -21,10 +21,10 @@ import ru.stohastika.sklyanka.feature.meds.R
 import ru.stohastika.sklyanka.feature.meds.RowDivider
 import ru.stohastika.sklyanka.feature.meds.SectionCard
 import ru.stohastika.sklyanka.feature.meds.ValueRow
+import ru.stohastika.sklyanka.feature.meds.fieldWord
 import ru.stohastika.sklyanka.feature.meds.fullDate
 import ru.stohastika.sklyanka.feature.meds.label
 import ru.stohastika.sklyanka.feature.meds.message
-import ru.stohastika.sklyanka.feature.meds.stockLabel
 import ru.stohastika.sklyanka.ui.component.ChipState
 import ru.stohastika.sklyanka.ui.component.SklyankaChip
 import ru.stohastika.sklyanka.ui.component.SklyankaNumberField
@@ -63,14 +63,14 @@ internal fun StockBlock(state: MedFormUiState, onIntent: (MedFormIntent) -> Unit
                 label = stringResource(R.string.form_stock_now),
                 value = state.inputs.stockLeft,
                 onValueChange = { onIntent(MedFormIntent.StockChanged(it)) },
-                unit = state.applicability.doseUnit.stockLabel(),
+                unit = state.applicability.doseUnit.fieldWord(state.draft.stockLeft),
                 tags = StockRowTags(field = TAG_STOCK_FIELD, unit = TAG_STOCK_UNIT),
             )
             StockValueRow(
                 label = stringResource(R.string.form_package_size),
                 value = state.inputs.packageSize,
                 onValueChange = { onIntent(MedFormIntent.PackageSizeChanged(it)) },
-                unit = state.applicability.doseUnit.stockLabel(),
+                unit = state.applicability.doseUnit.fieldWord(state.draft.packageSize),
                 tags = StockRowTags(field = TAG_PACKAGE_SIZE_FIELD, unit = TAG_PACKAGE_SIZE_UNIT),
                 error = packageViolation != null,
             )

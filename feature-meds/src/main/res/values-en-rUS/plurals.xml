@@ -115,4 +115,34 @@
         <item quantity="one">When %1$d day is left</item>
         <item quantity="other">When %1$d days are left</item>
     </plurals>
+
+    <!--
+      The dose unit word inside a field (12-design.md §5.3): the field prints the number
+      itself, so the resource carries the word only and agrees with the number typed.
+      An empty field shows the unit name (the `one` form).
+    -->
+    <plurals name="field_unit_tablets">
+        <item quantity="one">tablet</item>
+        <item quantity="other">tablets</item>
+    </plurals>
+    <plurals name="field_unit_capsules">
+        <item quantity="one">capsule</item>
+        <item quantity="other">capsules</item>
+    </plurals>
+    <plurals name="field_unit_millilitres">
+        <item quantity="one">ml</item>
+        <item quantity="other">ml</item>
+    </plurals>
+    <plurals name="field_unit_drops">
+        <item quantity="one">drop</item>
+        <item quantity="other">drops</item>
+    </plurals>
+    <plurals name="field_unit_sprays">
+        <item quantity="one">spray</item>
+        <item quantity="other">sprays</item>
+    </plurals>
+    <plurals name="field_unit_injections">
+        <item quantity="one">injection</item>
+        <item quantity="other">injections</item>
+    </plurals>
 </resources>

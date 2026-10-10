@@ -21,6 +21,7 @@ import ru.stohastika.sklyanka.domain.repository.ActiveProfileRepository
 import ru.stohastika.sklyanka.domain.repository.MedicationRepository
 import ru.stohastika.sklyanka.domain.stock.StockThresholds
 import ru.stohastika.sklyanka.domain.time.TimeSource
+import ru.stohastika.sklyanka.feature.meds.amountOf
 import java.math.BigDecimal
 import java.time.LocalTime
 import javax.inject.Inject
@@ -101,10 +102,10 @@ class MedicationFormViewModel @Inject constructor(
             is MedFormIntent.ReleaseFormChanged -> state.with(draft.copy(form = intent.form))
             is MedFormIntent.ShapeChanged -> state.with(draft.copy(shape = intent.shape))
             is MedFormIntent.DoseAmountChanged ->
-                state.with(draft.copy(doseAmount = decimalOf(intent.text)), inputs.copy(doseAmount = intent.text))
+                state.with(draft.copy(doseAmount = amountOf(intent.text)), inputs.copy(doseAmount = intent.text))
 
             is MedFormIntent.StrengthChanged -> {
-                val amount = decimalOf(intent.text)
+                val amount = amountOf(intent.text)
                 state.with(
                     // Единица дозировки выбирается из закрытого списка (Р-45) и переживает
                     // правку числа: сброс к «мг» на каждой цифре стирал бы выбор человека.
@@ -139,11 +140,11 @@ class MedicationFormViewModel @Inject constructor(
 
             is MedFormIntent.FoodRelationChanged -> state.with(draft.copy(foodRelation = intent.relation))
             is MedFormIntent.StockChanged ->
-                state.with(draft.copy(stockLeft = decimalOf(intent.text)), inputs.copy(stockLeft = intent.text))
+                state.with(draft.copy(stockLeft = amountOf(intent.text)), inputs.copy(stockLeft = intent.text))
 
             is MedFormIntent.PackageSizeChanged ->
                 state.with(
-                    draft.copy(packageSize = decimalOf(intent.text)),
+                    draft.copy(packageSize = amountOf(intent.text)),
                     inputs.copy(packageSize = intent.text),
                 )
 
@@ -215,17 +216,6 @@ class MedicationFormViewModel @Inject constructor(
     )
 
     private fun BigDecimal?.plain(): String = this?.stripTrailingZeros()?.toPlainString().orEmpty()
-
-    /**
-     * Разбор набранного человеком числа.
-     *
-     * Запятая приравнивается к точке: на русской раскладке десятичный разделитель —
-     * запятая, и «0,5» обязано означать половину, а не отказ «введите число».
-     * Неразобранный текст даёт пустое значение, и о нём говорит правило поля,
-     * а не молчаливое обнуление.
-     */
-    private fun decimalOf(text: String): BigDecimal? =
-        text.trim().replace(',', '.').takeIf { it.isNotEmpty() }?.toBigDecimalOrNull()
 
     /**
      * Время новой строки расписания.

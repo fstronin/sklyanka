@@ -35,6 +35,7 @@ import ru.stohastika.sklyanka.feature.meds.form.TAG_MEDICATION_PREVIEW
 import ru.stohastika.sklyanka.feature.meds.form.TAG_NAME_FIELD
 import ru.stohastika.sklyanka.feature.meds.form.TAG_RELEASE_FORM
 import ru.stohastika.sklyanka.feature.meds.form.TAG_TABLET_SHAPE_ROW
+import ru.stohastika.sklyanka.ui.text.pluralQuantityOf
 
 /**
  * Экранные шаги приёмки SKL-66 — превью выбора и силуэты формы (группа `@preview`, `@form`).
@@ -282,7 +283,7 @@ class MedsPreviewScreenSteps(private val world: AcceptanceWorld, private val for
         state.draft.doseAmount?.let { amount ->
             context.resources.getQuantityString(
                 previewDoseTemplate(state.applicability.doseUnit),
-                amount.toInt(),
+                pluralQuantityOf(amount),
                 amount.stripTrailingZeros().toPlainString(),
             )
         },
@@ -338,7 +339,7 @@ class MedsPreviewScreenSteps(private val world: AcceptanceWorld, private val for
         val amount = requireNotNull(state.draft.doseAmount) { "the scenario must have entered a dose" }
         return context.resources.getQuantityString(
             previewDoseTemplate(state.applicability.doseUnit),
-            amount.toInt(),
+            pluralQuantityOf(amount),
             amount.stripTrailingZeros().toPlainString(),
         )
     }

@@ -206,4 +206,48 @@
         <item quantity="many">Когда останется на %1$d дней</item>
         <item quantity="other">Когда останется на %1$d дня</item>
     </plurals>
+
+    <!--
+      Слово единицы дозы в поле (12-design.md §5.3): число печатает само поле, а строка
+      несёт только слово и согласуется с набранным числом. Пустое поле показывает имя
+      единицы — форму `one`. У дозовых семейств `few` и `other` одно слово: дробное число
+      печатается количеством «2» (`pluralQuantityOf`), и поле не должно расходиться
+      с превью.
+    -->
+    <plurals name="field_unit_tablets">
+        <item quantity="one">таблетка</item>
+        <item quantity="few">таблетки</item>
+        <item quantity="many">таблеток</item>
+        <item quantity="other">таблетки</item>
+    </plurals>
+    <plurals name="field_unit_capsules">
+        <item quantity="one">капсула</item>
+        <item quantity="few">капсулы</item>
+        <item quantity="many">капсул</item>
+        <item quantity="other">капсулы</item>
+    </plurals>
+    <plurals name="field_unit_millilitres">
+        <item quantity="one">мл</item>
+        <item quantity="few">мл</item>
+        <item quantity="many">мл</item>
+        <item quantity="other">мл</item>
+    </plurals>
+    <plurals name="field_unit_drops">
+        <item quantity="one">капля</item>
+        <item quantity="few">капли</item>
+        <item quantity="many">капель</item>
+        <item quantity="other">капли</item>
+    </plurals>
+    <plurals name="field_unit_sprays">
+        <item quantity="one">впрыск</item>
+        <item quantity="few">впрыска</item>
+        <item quantity="many">впрысков</item>
+        <item quantity="other">впрыска</item>
+    </plurals>
+    <plurals name="field_unit_injections">
+        <item quantity="one">инъекция</item>
+        <item quantity="few">инъекции</item>
+        <item quantity="many">инъекций</item>
+        <item quantity="other">инъекции</item>
+    </plurals>
 </resources>

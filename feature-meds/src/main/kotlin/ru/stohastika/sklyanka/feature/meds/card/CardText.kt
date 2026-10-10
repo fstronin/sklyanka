@@ -15,6 +15,7 @@ import ru.stohastika.sklyanka.feature.meds.formAndShapeLabel
 import ru.stohastika.sklyanka.feature.meds.strengthUnitLabel
 import ru.stohastika.sklyanka.ui.component.AdherenceDay
 import ru.stohastika.sklyanka.ui.component.AdherenceDayState
+import ru.stohastika.sklyanka.ui.text.pluralQuantityOf
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -64,10 +65,14 @@ internal fun ScheduleBlockUi.Scheduled.summary(): String {
     return listOf(frequency, doseText(doseAmount, doseUnit)).joinToString(separator)
 }
 
-/** «по 2 таблетки»: склонение зависит и от числа, и от единицы дозы. */
+/**
+ * «по 2 таблетки», «по 0,5 таблетки»: склонение зависит и от числа, и от единицы дозы.
+ *
+ * Количество для формы слова даёт `pluralQuantityOf`: дробное число берёт форму дроби.
+ */
 @Composable
 internal fun doseText(amount: BigDecimal, unit: DoseUnit): String {
-    val whole = amount.toInt()
+    val quantity = pluralQuantityOf(amount)
     return pluralStringResource(
         when (unit) {
             DoseUnit.TABLET -> R.plurals.card_dose_tablets
@@ -77,7 +82,7 @@ internal fun doseText(amount: BigDecimal, unit: DoseUnit): String {
             DoseUnit.SPRAY -> R.plurals.card_dose_sprays
             DoseUnit.INJECTION -> R.plurals.card_dose_injections
         },
-        whole,
+        quantity,
         amount.plain(),
     )
 }

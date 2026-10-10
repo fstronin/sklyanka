@@ -91,13 +91,6 @@
     <string name="food_relation_with">With food</string>
     <string name="food_relation_after">After food</string>
 
-    <string name="dose_suffix_tablet">tablet</string>
-    <string name="dose_suffix_capsule">capsule</string>
-    <string name="dose_suffix_millilitre">ml</string>
-    <string name="dose_suffix_drop">drop</string>
-    <string name="dose_suffix_spray">spray</string>
-    <string name="dose_suffix_injection">injection</string>
-
     <string name="form_label_strength_unit">Dosage unit</string>
     <string name="strength_unit_milligram">mg</string>
     <string name="strength_unit_microgram">mcg</string>
@@ -105,13 +98,6 @@
     <string name="strength_unit_millilitre">ml</string>
     <string name="strength_unit_international_unit">IU</string>
     <string name="strength_unit_percent">%</string>
-
-    <string name="stock_unit_tablets">tablets</string>
-    <string name="stock_unit_capsules">capsules</string>
-    <string name="stock_unit_millilitres">ml</string>
-    <string name="stock_unit_drops">drops</string>
-    <string name="stock_unit_sprays">sprays</string>
-    <string name="stock_unit_injections">injections</string>
 
     <string name="form_label_max_per_day">No more than, times a day</string>
     <string name="form_caption_max_per_day">Intake is marked manually</string>

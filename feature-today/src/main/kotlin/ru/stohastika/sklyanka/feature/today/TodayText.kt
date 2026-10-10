@@ -16,6 +16,7 @@ import ru.stohastika.sklyanka.domain.today.GroupLabelForm
 import ru.stohastika.sklyanka.domain.today.IntakeItem
 import ru.stohastika.sklyanka.domain.today.PartOfDay
 import ru.stohastika.sklyanka.domain.today.StockNotice
+import ru.stohastika.sklyanka.ui.text.pluralQuantityOf
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalTime
@@ -153,7 +154,7 @@ private fun StrengthUnit.label(): String = stringResource(
     },
 )
 
-/** «1 таблетка», «2 таблетки», «1 капсула». */
+/** «1 таблетка», «2 таблетки», «0,5 таблетки» — количество для формы слова даёт `pluralQuantityOf`. */
 @Composable
 private fun doseLabel(amount: BigDecimal, unit: DoseUnit): String = pluralStringResource(
     when (unit) {
@@ -164,7 +165,7 @@ private fun doseLabel(amount: BigDecimal, unit: DoseUnit): String = pluralString
         DoseUnit.SPRAY -> R.plurals.today_dose_sprays
         DoseUnit.INJECTION -> R.plurals.today_dose_injections
     },
-    amount.toInt(),
+    pluralQuantityOf(amount),
     amount.plain(),
 )
 
@@ -179,7 +180,7 @@ private fun stockLeftLabel(left: BigDecimal, unit: DoseUnit): String = pluralStr
         DoseUnit.SPRAY -> R.plurals.today_stock_left_sprays
         DoseUnit.INJECTION -> R.plurals.today_stock_left_injections
     },
-    left.toInt(),
+    pluralQuantityOf(left),
     left.plain(),
 )
 

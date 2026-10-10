@@ -91,13 +91,6 @@
     <string name="food_relation_with">Тамақ кезінде</string>
     <string name="food_relation_after">Тамақтан кейін</string>
 
-    <string name="dose_suffix_tablet">таблетка</string>
-    <string name="dose_suffix_capsule">капсула</string>
-    <string name="dose_suffix_millilitre">мл</string>
-    <string name="dose_suffix_drop">тамшы</string>
-    <string name="dose_suffix_spray">бүрікпе</string>
-    <string name="dose_suffix_injection">инъекция</string>
-
     <string name="form_label_strength_unit">Доза бірлігі</string>
     <string name="strength_unit_milligram">мг</string>
     <string name="strength_unit_microgram">мкг</string>
@@ -105,13 +98,6 @@
     <string name="strength_unit_millilitre">мл</string>
     <string name="strength_unit_international_unit">ХБ</string>
     <string name="strength_unit_percent">%</string>
-
-    <string name="stock_unit_tablets">таблетка</string>
-    <string name="stock_unit_capsules">капсула</string>
-    <string name="stock_unit_millilitres">мл</string>
-    <string name="stock_unit_drops">тамшы</string>
-    <string name="stock_unit_sprays">бүрікпе</string>
-    <string name="stock_unit_injections">инъекция</string>
 
     <string name="form_label_max_per_day">Тәулігіне реттен көп емес</string>
     <string name="form_caption_max_per_day">Қабылдау қолмен белгіленеді</string>

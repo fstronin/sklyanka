@@ -33,6 +33,7 @@ import ru.stohastika.sklyanka.domain.stock.RefillOutcome
 import ru.stohastika.sklyanka.domain.stock.StockPanel
 import ru.stohastika.sklyanka.domain.time.TimeSource
 import ru.stohastika.sklyanka.domain.undo.UndoableActionStore
+import ru.stohastika.sklyanka.feature.meds.amountOf
 import java.math.BigDecimal
 import javax.inject.Inject
 
@@ -211,13 +212,14 @@ class MedicationCardViewModel @Inject constructor(
     /**
      * Пополнение остатка.
      *
-     * Значение разбирается так же, как в форме лекарства: запятая — десятичный разделитель
-     * русской раскладки, и «0,5» обязано означать половину, а не отказ.
+     * Значение разбирается тем же правилом, что в форме лекарства (`amountOf`): запятая —
+     * десятичный разделитель русской раскладки, и «0,5» обязано означать половину,
+     * а не отказ.
      */
     private fun refill() {
         val id = medicationId.value ?: return
         val text = local.value.refill?.text.orEmpty()
-        val value = text.trim().replace(',', '.').toBigDecimalOrNull()
+        val value = amountOf(text)
         if (value == null || value < BigDecimal.ZERO) {
             local.value = local.value.copy(refill = RefillUi(text = text, invalid = true))
             return

@@ -62,6 +62,21 @@ class ReminderUnitTextTest {
         composeRule.onNodeWithText("2 таблетки · 50 мкг").assertExists()
     }
 
+    /**
+     * Дробная доза берёт форму дроби: «0,5 таблетки», а не «0,5 таблеток» (SKL-138).
+     *
+     * Проверяется слово, а не вся строка: число печатается своей формой, а разделитель дроби —
+     * отдельный дефект формата числа (НФТ-43), и утверждение всей строки закрепило бы его здесь.
+     */
+    @Test
+    fun aFractionalDoseTakesTheFractionForm() {
+        composeRule.setContent {
+            SklyankaTheme { Text(row(MedicationForm.TABLET, BigDecimal("0.5")).doseLine()) }
+        }
+
+        composeRule.onNodeWithText("таблетки", substring = true).assertExists()
+    }
+
     private fun row(form: MedicationForm, amount: BigDecimal, strengthUnit: String? = null): ReminderRow = ReminderRow(
         intakeId = "intake-1",
         name = "med-a",
