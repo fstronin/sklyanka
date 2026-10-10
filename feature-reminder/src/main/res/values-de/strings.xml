@@ -71,7 +71,6 @@
     <string name="diagnostics_check_sheet_title">Zustellungsprüfung</string>
     <string name="diagnostics_check_sheet_text">Die App plant in 1–2 Minuten eine Testerinnerung. Schließen Sie die App direkt nach dem Start — wischen Sie sie aus der Liste der zuletzt verwendeten Apps. Bleibt die App geöffnet, findet die Prüfung nicht statt. Das Telefon muss nicht gesperrt werden.</string>
     <string name="diagnostics_check_start">Prüfung starten</string>
-    <string name="diagnostics_check_sheet_cancel">Abbrechen</string>
 
     <string name="diagnostics_check_running">Prüfung läuft: Die Testerinnerung wird in etwa einer Minute ausgelöst. Schließen Sie die App.</string>
     <string name="diagnostics_check_cancel">Prüfung abbrechen</string>

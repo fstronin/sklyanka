@@ -50,6 +50,14 @@ h1{font-family:'Literata',Georgia,serif;font-size:34px;font-weight:600;letter-sp
     «Профили» вместо шестерёнки «Настройки» (§5.8, ПРФ-19), то же в «Сегодня — профиль „Мама“» и
     «Сегодня — плотный день»; «Шапка экрана при прокрутке» — компактный заголовок без многоточия,
     порог по фактической ширине подписи (§7).</div>
+  <div class="note"><b>Правки Р-53 (10.10.2026).</b> Модальная шапка — одна сетка слотов: слова действий
+    стоят на боковом поле 20 <code>dp</code>, название идёт слева сразу за ведущим действием
+    («Отмена») и тянется до подтверждения в правом краю, действие и название — на одной
+    горизонтальной линии; пустой слот не заполняется заглушкой. Приведены: «Новое лекарство»
+    (строка шапки), шторки «Отчёт разработчику» в «Проверке напоминаний» (на успехе ведущий слот
+    пуст, «Готово» — в замыкающем), лист «Шапка экрана при прокрутке» — в нём появились два
+    модальных состояния: строка шапки в потоке и закреплённый ряд 56 <code>dp</code> с «Отменой»
+    словом и компактным заголовком (порог — по нижней грани самой строки, §7 <code>docs/v2/12-design.md</code>).</div>
   <div class="grid">
       <div class="card">
         <div class="thumb">
@@ -272,13 +280,13 @@ h1{font-family:'Literata',Georgia,serif;font-size:34px;font-weight:600;letter-sp
         </div>
       </div>
       <div class="card card--sheet">
-        <div class="thumb thumb--sheet" style="aspect-ratio:1820/3000">
-          <iframe src="screens/HeaderScroll.dc.html" title="Шапка экрана при прокрутке" scrolling="no" loading="lazy" style="width:1820px;height:3000px;transform:scale(.754)"></iframe>
+        <div class="thumb thumb--sheet" style="aspect-ratio:1820/4200">
+          <iframe src="screens/HeaderScroll.dc.html" title="Шапка экрана при прокрутке" scrolling="no" loading="lazy" style="width:1820px;height:4200px;transform:scale(.754)"></iframe>
           <a class="hit" href="screens/HeaderScroll.dc.html" target="_blank" rel="noopener" aria-label="Открыть макет: Шапка экрана при прокрутке"></a>
         </div>
         <div class="cap">
           <a class="cap-name" href="screens/HeaderScroll.dc.html" target="_blank" rel="noopener">Шапка экрана при прокрутке — состояния</a><span class="badge">Утверждено</span>
-          <span class="cap-file">ОВ-133 (утверждено заказчиком 04.10.2026): «заголовок уезжает, компактный ряд закреплён» + запасной и отклонённые варианты · компактный заголовок без многоточия, порог по фактической ширине подписи (§7) · HeaderScroll.dc.html</span>
+          <span class="cap-file">ОВ-133 (утверждено заказчиком 04.10.2026): «заголовок уезжает, компактный ряд закреплён» + запасной и отклонённые варианты · компактный заголовок без многоточия, порог по фактической ширине подписи (§7) · модальные состояния — сетка слотов и закреплённый ряд 56 dp (Р-53) · HeaderScroll.dc.html</span>
         </div>
       </div>
   </div>

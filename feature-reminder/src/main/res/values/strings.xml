@@ -118,7 +118,6 @@
     <string name="diagnostics_check_sheet_title">Проверка доставки</string>
     <string name="diagnostics_check_sheet_text">Приложение поставит тестовое напоминание через 1–2 минуты. Сразу после начала закройте приложение — смахните его из списка недавних. Если приложение будет открыто, проверка не состоится. Блокировать телефон не нужно.</string>
     <string name="diagnostics_check_start">Начать проверку</string>
-    <string name="diagnostics_check_sheet_cancel">Отмена</string>
 
     <!-- Ход проверки: плашка и тихая отмена. -->
     <string name="diagnostics_check_running">Проверка идёт: тестовое напоминание сработает примерно через минуту. Закройте приложение.</string>

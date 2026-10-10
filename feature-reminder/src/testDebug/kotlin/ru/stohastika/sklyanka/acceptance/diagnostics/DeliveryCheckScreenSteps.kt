@@ -30,10 +30,10 @@ import ru.stohastika.sklyanka.feature.reminder.TAG_CHECK_NOTICE
 import ru.stohastika.sklyanka.feature.reminder.TAG_CHECK_RESULT
 import ru.stohastika.sklyanka.feature.reminder.TAG_CHECK_RUNNING
 import ru.stohastika.sklyanka.feature.reminder.TAG_CHECK_SHEET
-import ru.stohastika.sklyanka.feature.reminder.TAG_CHECK_SHEET_CANCEL
 import ru.stohastika.sklyanka.feature.reminder.TAG_CHECK_START
 import ru.stohastika.sklyanka.feature.reminder.TAG_DELIVERY_CHECK
 import java.time.LocalTime
+import ru.stohastika.sklyanka.ui.R as UiR
 
 /**
  * Экранные шаги приёмки самопроверки доставки (SKL-86, ОВ-108).
@@ -82,8 +82,13 @@ class DeliveryCheckScreenSteps(private val world: AcceptanceWorld) {
     @И("^действия «([^»]+)» и «([^»]+)»$")
     fun theSheetCarriesActions(start: String, cancel: String) {
         assertTrue(hasTag(TAG_CHECK_START), "the primary action must be there")
-        assertTrue(hasTag(TAG_CHECK_SHEET_CANCEL), "the quiet cancel must be there")
         assertTrue(hasText(start), "the primary action must say «$start»")
+        // Отмена живёт в шапке ведущим действием и ищется словом ресурса, а не тегом:
+        // тега тихой кнопки в теле шторки больше нет (Р-53).
+        assertTrue(
+            hasText(string(UiR.string.action_cancel)),
+            "the header must carry the cancel action",
+        )
         assertTrue(hasText(cancel), "the cancel must say «$cancel»")
     }
 
@@ -95,7 +100,9 @@ class DeliveryCheckScreenSteps(private val world: AcceptanceWorld) {
 
     @Когда("^он нажимает «Отмена»$")
     fun hePressesCancel() {
-        DiagnosticsStand.actRaw(world) { onNodeWithTag(TAG_CHECK_SHEET_CANCEL).performClick() }
+        // Отмена — действие шапки (Р-53), и нажимается слово ресурса, а не тег: тихой
+        // кнопки в теле шторки больше нет.
+        DiagnosticsStand.actRaw(world) { onNodeWithText(string(UiR.string.action_cancel)).performClick() }
     }
 
     @Тогда("^шторка закрывается$")

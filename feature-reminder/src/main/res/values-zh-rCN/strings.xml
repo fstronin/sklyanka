@@ -71,7 +71,6 @@
     <string name="diagnostics_check_sheet_title">送达检查</string>
     <string name="diagnostics_check_sheet_text">应用将在 1–2 分钟后设置一条测试提醒。开始后请立即关闭应用——从最近任务列表中划掉它。如果应用保持打开，检查将无法进行。无需锁定手机。</string>
     <string name="diagnostics_check_start">开始检查</string>
-    <string name="diagnostics_check_sheet_cancel">取消</string>
 
     <string name="diagnostics_check_running">检查进行中：测试提醒将在大约一分钟后触发。请关闭应用。</string>
     <string name="diagnostics_check_cancel">取消检查</string>

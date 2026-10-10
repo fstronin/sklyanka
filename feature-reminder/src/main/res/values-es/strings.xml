@@ -71,7 +71,6 @@
     <string name="diagnostics_check_sheet_title">Comprobación de entrega</string>
     <string name="diagnostics_check_sheet_text">La aplicación programará un recordatorio de prueba en 1–2 minutos. Cierra la aplicación justo después de empezar: deslízala fuera de la lista de recientes. Si la aplicación permanece abierta, la comprobación no se realizará. No hace falta bloquear el teléfono.</string>
     <string name="diagnostics_check_start">Empezar la comprobación</string>
-    <string name="diagnostics_check_sheet_cancel">Cancelar</string>
 
     <string name="diagnostics_check_running">Comprobación en curso: el recordatorio de prueba se disparará en un minuto aproximadamente. Cierra la aplicación.</string>
     <string name="diagnostics_check_cancel">Cancelar la comprobación</string>

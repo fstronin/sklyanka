@@ -2,6 +2,7 @@ package ru.stohastika.sklyanka.feature.meds.form
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,19 +14,24 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import ru.stohastika.sklyanka.feature.meds.R
 import ru.stohastika.sklyanka.feature.meds.screenPadding
 import ru.stohastika.sklyanka.ui.component.ButtonState
+import ru.stohastika.sklyanka.ui.component.PinnedHeaderBar
 import ru.stohastika.sklyanka.ui.component.PrimaryButton
 import ru.stohastika.sklyanka.ui.component.ScreenHeader
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderKind
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderLabels
+import ru.stohastika.sklyanka.ui.component.rememberScreenHeaderState
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
+import ru.stohastika.sklyanka.ui.token.SklyankaSizes
 import ru.stohastika.sklyanka.ui.token.SklyankaSpacing
 import java.time.LocalTime
 
@@ -61,59 +67,106 @@ fun MedicationFormScreen(
     val colors = SklyankaTheme.colors
     val scroll = rememberScrollState()
     val anchors = remember { FormAnchors() }
+    val header = rememberScreenHeaderState()
+    val labels = ScreenHeaderLabels(title = titleOf(state))
+    val pinnedBarPx = with(LocalDensity.current) { SklyankaSizes.PinnedHeaderBar.roundToPx() }
 
     // Отказ без прокрутки к первому нарушению равносилен молчаливому отказу: сообщение
     // остаётся за пределами видимой области формы (критерий 27).
     LaunchedEffect(state.violations) {
         val target = state.firstViolationField?.let { anchors.offsetOf(it, scroll.value) } ?: return@LaunchedEffect
-        scroll.animateScrollTo(target)
+        // Вычитаем высоту закреплённого ряда всегда: ряд непрозрачен тогда и только тогда,
+        // когда шапка ушла вместе с содержимым, а уход шапки — это и есть глубокая прокрутка.
+        // При коротком содержимом прокрутки нет, разность не положительна и сдвига не даёт.
+        scroll.animateScrollTo((target - pinnedBarPx).coerceAtLeast(0))
     }
 
-    Column(
+    Box(
         modifier = modifier
             .fillMaxSize()
             .background(colors.background)
             .navigationBarsPadding()
             .testTag(TAG_MEDICATION_FORM),
     ) {
-        ScreenHeader(
-            labels = ScreenHeaderLabels(title = titleOf(state)),
+        Column(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .verticalScroll(scroll)
+                    .onGloballyPositioned { anchors.putContainerTop(it.positionInWindow().y.toInt()) }
+                    .imePadding(),
+                verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Screen),
+            ) {
+                // Шапка стоит в прокрутке и уезжает вместе с содержимым; поверх по порогу
+                // появляется закреплённый ряд (Р-53, §7). Своего нижнего поля в прокрутке
+                // шапка не несёт: зазор до содержимого даёт ритм прокрутки. Боковое поле
+                // шапка несёт сама, поэтому поле экрана здесь не прикладывается — иначе
+                // слово действия ушло бы на 40 dp вместо 20 (Р-53).
+                ScreenHeader(
+                    labels = labels,
+                    kind = ScreenHeaderKind.Modal,
+                    onBack = onCancel,
+                    pinning = header,
+                )
+                FormBlockColumn(state, onIntent, anchors, onPickDate, onPickTime)
+            }
+            SaveBar(state, onIntent)
+        }
+        // Ряд — слой над прокруткой, а не сосед в столбце: до порога его не видно,
+        // и места в потоке он не держит (§7). Ведущее действие ряда — та же «Отмена»
+        // словом, что и в развёрнутой шапке (Р-53).
+        PinnedHeaderBar(
+            labels = labels,
+            state = header,
             kind = ScreenHeaderKind.Modal,
             onBack = onCancel,
+            modifier = Modifier.align(Alignment.TopCenter),
         )
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .verticalScroll(scroll)
-                .onGloballyPositioned { anchors.putContainerTop(it.positionInWindow().y.toInt()) }
-                .imePadding()
-                .screenPadding()
-                // Панель кнопки — сосед прокрутки, а не наложение, и поле прокрутки равно
-                // шагу поля экрана (24 dp): иначе последний блок («Режим приёма») упирался
-                // в панель вплотную и читался обрезанным (V-10, §4.1).
-                .padding(bottom = SklyankaSpacing.Screen),
-            verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Screen),
-        ) {
-            // Порядок блоков — контракт формы, а не случайность разметки (Д-2).
-            // Превью стоит сразу под названием и обновляется вместе с черновиком (ОВ-94).
-            NameBlock(state, onIntent, anchors)
-            PreviewBlock(state)
-            ReleaseFormBlock(state, onIntent, anchors)
-            TabletShapeBlock(state, onIntent, anchors)
-            DoseBlock(state, onIntent, anchors)
-            ModeBlock(state, onIntent, anchors)
-            ScheduleBlock(state, onIntent, anchors, onPickTime)
-            // «Связь с едой» существует только при «по расписанию» (ОВ-83): приём
-            // «по потребности» ею не управляет, и решение дизайна предписывает блок
-            // скрыть — как скрыто время. Выбранное значение при этом не сбрасывается.
-            if (state.applicability.foodRelationVisible) {
-                FoodRelationBlock(state, onIntent, anchors)
-            }
-            StockBlock(state, onIntent, anchors)
-            PeriodBlock(state, onIntent, anchors, onPickDate)
+    }
+}
+
+/**
+ * Блоки формы с боковым полем экрана: своё поле шапка уже несёт, и оно здесь не повторяется.
+ *
+ * Вынесены из [MedicationFormScreen], чтобы функция экрана оставалась обозримой (detekt
+ * `LongMethod`): порядок блоков — контракт формы (Д-2) и от вынесения не меняется.
+ */
+@Composable
+private fun FormBlockColumn(
+    state: MedFormUiState,
+    onIntent: (MedFormIntent) -> Unit,
+    anchors: FormAnchors,
+    onPickDate: (DateTarget) -> Unit,
+    onPickTime: (index: Int, current: LocalTime) -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .screenPadding()
+            // Панель кнопки — сосед прокрутки, а не наложение, и поле прокрутки равно
+            // шагу поля экрана (24 dp): иначе последний блок («Режим приёма») упирался
+            // в панель вплотную и читался обрезанным (V-10, §4.1).
+            .padding(bottom = SklyankaSpacing.Screen),
+        verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Screen),
+    ) {
+        // Порядок блоков — контракт формы, а не случайность разметки (Д-2).
+        // Превью стоит сразу под названием и обновляется вместе с черновиком (ОВ-94).
+        NameBlock(state, onIntent, anchors)
+        PreviewBlock(state)
+        ReleaseFormBlock(state, onIntent, anchors)
+        TabletShapeBlock(state, onIntent, anchors)
+        DoseBlock(state, onIntent, anchors)
+        ModeBlock(state, onIntent, anchors)
+        ScheduleBlock(state, onIntent, anchors, onPickTime)
+        // «Связь с едой» существует только при «по расписанию» (ОВ-83): приём
+        // «по потребности» ею не управляет, и решение дизайна предписывает блок
+        // скрыть — как скрыто время. Выбранное значение при этом не сбрасывается.
+        if (state.applicability.foodRelationVisible) {
+            FoodRelationBlock(state, onIntent, anchors)
         }
-        SaveBar(state, onIntent)
+        StockBlock(state, onIntent, anchors)
+        PeriodBlock(state, onIntent, anchors, onPickDate)
     }
 }
 

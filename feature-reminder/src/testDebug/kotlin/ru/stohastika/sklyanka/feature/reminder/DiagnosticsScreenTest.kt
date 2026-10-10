@@ -42,6 +42,7 @@ import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import ru.stohastika.sklyanka.ui.R as UiR
 
 /**
  * Экран проверки напоминаний: финальный первый уровень (SKL-102, ОВ-126).
@@ -472,7 +473,9 @@ class DiagnosticsScreenTest {
         compose.onNodeWithText(context.getString(R.string.diagnostics_check_sheet_title)).assertExists()
         compose.onNodeWithText(context.getString(R.string.diagnostics_check_sheet_text)).assertExists()
         compose.onNodeWithTag(TAG_CHECK_START).performClick()
-        compose.onNodeWithTag(TAG_CHECK_SHEET_CANCEL).performClick()
+        // Отмена — действие шапки (Р-53): тихой кнопки в теле шторки больше нет,
+        // и нажимается слово ресурса.
+        compose.onNodeWithText(context.getString(UiR.string.action_cancel)).performClick()
         assertEquals(1, started)
         assertEquals(1, dismissed)
     }

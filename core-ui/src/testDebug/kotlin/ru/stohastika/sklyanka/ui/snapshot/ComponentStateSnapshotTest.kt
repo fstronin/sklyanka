@@ -249,10 +249,10 @@ class ComponentStateSnapshotTest {
         }
     }
 
-    /** Ряд, у которого крупный заголовок ушёл под него: порог §7 измеряется геометрией. */
+    /** Ряд, у которого то, что обязано уйти под него, ушло: порог §7 измеряется геометрией. */
     private fun collapsedHeader() = ScreenHeaderState().apply {
         reportBarBottom(0)
-        reportTitleBottom(0)
+        reportCollapsibleBottom(0)
     }
 
     @Test

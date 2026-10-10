@@ -1,5 +1,8 @@
 package ru.stohastika.sklyanka.acceptance.meds
 
+import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
@@ -25,6 +28,8 @@ import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.runComposeUiTest
 import androidx.compose.ui.test.swipeUp
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import io.cucumber.java.ru.Допустим
 import io.cucumber.java.ru.И
@@ -80,6 +85,7 @@ import ru.stohastika.sklyanka.ui.component.TAG_ADHERENCE_DAY
 import ru.stohastika.sklyanka.ui.component.TAG_ADHERENCE_LEGEND
 import ru.stohastika.sklyanka.ui.component.TAG_ADHERENCE_WEEK
 import ru.stohastika.sklyanka.ui.component.TAG_CONFIRM_WORD_LABEL
+import ru.stohastika.sklyanka.ui.component.TAG_PINNED_HEADER_BAR
 import ru.stohastika.sklyanka.ui.component.TAG_SNACKBAR
 import ru.stohastika.sklyanka.ui.component.TAG_TEXT_FIELD_ERROR
 import ru.stohastika.sklyanka.ui.component.TAG_TEXT_FIELD_INPUT
@@ -365,7 +371,11 @@ class Sk105MedsSteps(
      * Экран прокручен к первому нарушению.
      *
      * Проверяется то, ради чего прокрутка и заведена: сообщение не осталось за пределами
-     * видимой области. Блок — первый нарушенный (у пустой дозы поле идёт раньше расписания).
+     * видимой области и не спряталось под закреплённым рядом. Блок — первый нарушенный
+     * (у пустой дозы поле идёт раньше расписания).
+     *
+     * Композиция сжата до телефонного окна: в окне стенда (3000 dp) форма помещается
+     * целиком, прокрутки не случается, и обе границы сходились бы при любом поведении.
      */
     @И("^форма прокручена к первому нарушению$")
     fun theFormIsScrolledToTheFirstViolation() {
@@ -375,13 +385,20 @@ class Sk105MedsSteps(
             DraftField.DOSE,
             ValidateMedicationDraft()(state.draft).first().field,
         )
-        askAfterFailedSave { test ->
-            test.waitForIdle()
+        askAfterFailedSave(formSize = PHONE_FORM) { test ->
             val viewport = test.onNode(hasScrollAction(), useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
             val dose = test.onNodeWithTag(TAG_DOSE_FIELD, useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+            val bar = test
+                .onNodeWithTag(TAG_PINNED_HEADER_BAR, useUnmergedTree = true)
+                .fetchSemanticsNode()
+                .boundsInRoot
+            assertTrue(
+                "the first violation must stand below the pinned row: $dose vs $bar",
+                dose.top >= bar.bottom - SLACK,
+            )
             assertTrue(
                 "the first violation must stay inside the visible area: $dose vs $viewport",
-                dose.top >= viewport.top - SLACK && dose.bottom <= viewport.bottom + SLACK,
+                dose.bottom <= viewport.bottom + SLACK,
             )
         }
     }
@@ -722,23 +739,33 @@ class Sk105MedsSteps(
      * Стенд ведёт черновик, но не путь сохранения: перечень нарушений в продукте отдаёт
      * `SaveMedicationUseCase`, а он — то же доменное `ValidateMedicationDraft`. Здесь
      * берётся то же правило, иначе появилось бы второе «какое поле нарушено».
+     *
+     * Нарушения приходят второй фазой, после первой раскладки: так их появление — то же
+     * событие, что нажатие «Сохранить», и прокрутка к первому нарушению запускается при
+     * уже измеренных якорях блоков. [formSize] сжимает композицию до телефонного окна:
+     * окно стенда (3000 dp) вмещает форму целиком, и без сжатия прокрутки не случается.
      */
-    private fun <T> askAfterFailedSave(question: (ComposeUiTest) -> T): T {
+    private fun <T> askAfterFailedSave(formSize: DpSize? = null, question: (ComposeUiTest) -> T): T {
         val state = MedsFormStand.open(world)
         val failed = state.copy(violations = ValidateMedicationDraft()(state.draft))
+        val live = mutableStateOf(state)
         var answer: T? = null
         runComposeUiTest {
             setContent {
                 SklyankaTheme {
                     MedicationFormScreen(
-                        state = failed,
+                        state = live.value,
                         onIntent = {},
                         onCancel = {},
                         onPickDate = {},
                         onPickTime = { _, _ -> },
+                        modifier = formSize?.let { Modifier.size(it) } ?: Modifier,
                     )
                 }
             }
+            waitForIdle()
+            live.value = failed
+            waitForIdle()
             answer = question(this)
         }
         @Suppress("UNCHECKED_CAST")
@@ -894,6 +921,14 @@ class Sk105MedsSteps(
         /** Допуск сравнения координат и размеров: одна точка на округление раскладки. */
         const val SLACK = 1f
         const val SLACK_DP = 0.5f
+
+        /**
+         * Телефонное окно проверки прокрутки: 390 dp ширины, 600 dp высоты.
+         *
+         * Окно стенда (3000 dp) форму вмещает целиком, и здесь нужен размер, при котором
+         * содержимое выше видимой области, — иначе прокрутка к нарушению не случается.
+         */
+        val PHONE_FORM = DpSize(390.dp, 600.dp)
 
         /** Слова пояснения под блоком дозировки — требование §5.3, а не оформление. */
         const val OPTIONAL_WORD = "необязательно"

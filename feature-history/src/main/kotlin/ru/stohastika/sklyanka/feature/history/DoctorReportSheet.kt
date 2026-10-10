@@ -29,13 +29,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
@@ -46,10 +44,10 @@ import ru.stohastika.sklyanka.domain.history.ReportPreset
 import ru.stohastika.sklyanka.ui.component.Banner
 import ru.stohastika.sklyanka.ui.component.BannerKind
 import ru.stohastika.sklyanka.ui.component.ButtonForm
-import ru.stohastika.sklyanka.ui.component.ButtonState
 import ru.stohastika.sklyanka.ui.component.CheckGlyph
 import ru.stohastika.sklyanka.ui.component.ChipState
 import ru.stohastika.sklyanka.ui.component.DateTimePickerDialog
+import ru.stohastika.sklyanka.ui.component.ModalHeaderRow
 import ru.stohastika.sklyanka.ui.component.PrimaryButton
 import ru.stohastika.sklyanka.ui.component.QuietButton
 import ru.stohastika.sklyanka.ui.component.QuietButtonForm
@@ -112,47 +110,29 @@ internal fun DoctorReportSheet(report: ReportUi, outcome: ReportOutcome?, onInte
 @Composable
 private fun SheetHeader(success: Boolean, onIntent: (HistoryIntent) -> Unit) {
     val colors = SklyankaTheme.colors
-    val quietLabel = stringResource(if (success) UiR2.string.action_done else UiR2.string.action_cancel)
-    // Выход из успеха — подтверждающее действие шапки: «Готово» набрано `BodyDefaultStrong`
-    // 15/600 `Accent`; «Отмена» остаётся ведущим приглушённым действием `BodyDefault`
-    // 15/400 `TextMuted` (§4.9, ОВ-146). Иначе выход успеха читается как отмена.
-    val quietKind = if (success) QuietButtonKind.Accent else QuietButtonKind.Muted
+    // Отмена — ведущее приглушённое действие шапки, «Готово» — замыкающее подтверждение:
+    // «Отмена» набрана `BodyDefault` 15/400 `TextMuted`, «Готово» — `BodyDefaultStrong`
+    // 15/600 `Accent` (§3.2, §7, ОВ-146). Иначе выход успеха читается как отмена.
+    val action: @Composable () -> Unit = {
+        QuietButton(
+            text = stringResource(if (success) UiR2.string.action_done else UiR2.string.action_cancel),
+            onClick = { onIntent(HistoryIntent.ReportDismissed) },
+            kind = if (success) QuietButtonKind.Accent else QuietButtonKind.Muted,
+            form = QuietButtonForm.Header,
+        )
+    }
     Column(modifier = Modifier.fillMaxWidth()) {
-        Row(
+        ModalHeaderRow(
+            title = stringResource(R.string.history_report_title),
+            // Слоты по общей сетке: на успехе ведущий слот пустеет, подтверждение встаёт
+            // в замыкающий, а невидимой заглушки ради центровки названия нет (Р-53, V-15).
+            // Пустой слот не заполняется ничем.
+            leading = if (success) null else action,
+            trailing = if (success) action else null,
             modifier = Modifier
-                .fillMaxWidth()
                 .padding(horizontal = SklyankaSpacing.Section)
                 .heightIn(min = SklyankaSizes.MinTouchTarget),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            QuietButton(
-                text = quietLabel,
-                onClick = { onIntent(HistoryIntent.ReportDismissed) },
-                kind = quietKind,
-                form = QuietButtonForm.Header,
-            )
-            Text(
-                text = stringResource(R.string.history_report_title),
-                style = SklyankaType.BodyDefaultStrong,
-                color = colors.text,
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = SklyankaSpacing.Small),
-            )
-            // Симметричный невидимый слот той же ширины, что видимая кнопка: название
-            // остаётся по центру и при 200 % не наезжает на неё, а переносится внутри своей доли.
-            QuietButton(
-                text = quietLabel,
-                onClick = {},
-                kind = quietKind,
-                form = QuietButtonForm.Header,
-                state = ButtonState.Disabled,
-                modifier = Modifier
-                    .alpha(0f)
-                    .clearAndSetSemantics {},
-            )
-        }
+        )
         Box(
             modifier = Modifier
                 .fillMaxWidth()

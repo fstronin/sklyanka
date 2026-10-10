@@ -45,7 +45,6 @@ import ru.stohastika.sklyanka.feature.reminder.TAG_CHECK_RESULT
 import ru.stohastika.sklyanka.feature.reminder.TAG_CHECK_RESULT_ACKNOWLEDGE
 import ru.stohastika.sklyanka.feature.reminder.TAG_CHECK_RUNNING
 import ru.stohastika.sklyanka.feature.reminder.TAG_CHECK_SHEET
-import ru.stohastika.sklyanka.feature.reminder.TAG_CHECK_SHEET_CANCEL
 import ru.stohastika.sklyanka.feature.reminder.TAG_CHECK_START
 import ru.stohastika.sklyanka.feature.reminder.TAG_DIAGNOSTICS
 import ru.stohastika.sklyanka.feature.reminder.TAG_FIX
@@ -69,6 +68,7 @@ import ru.stohastika.sklyanka.ui.token.SklyankaType
 import java.time.LocalDateTime
 import java.time.LocalTime
 import kotlin.math.abs
+import ru.stohastika.sklyanka.ui.R as UiR
 
 /**
  * Экранные шаги приёмки «Проверки напоминаний» (SKL-102, группы `@screen`).
@@ -661,8 +661,13 @@ class Sk102DiagnosticsSteps(private val world: AcceptanceWorld) {
     @И("^есть действия «(.+)» и «(.+)»$")
     fun theSheetCarriesActions(start: String, cancel: String) {
         assertTrue(hasTag(TAG_CHECK_START), "the primary action must be there")
-        assertTrue(hasTag(TAG_CHECK_SHEET_CANCEL), "the cancel must be there")
         assertTrue(hasText(start), "the primary action must say «$start»")
+        // Отмена живёт в шапке ведущим действием и ищется словом ресурса, а не тегом:
+        // тега тихой кнопки в теле шторки больше нет (Р-53).
+        assertTrue(
+            hasText(string(UiR.string.action_cancel)),
+            "the header must carry the cancel action",
+        )
         assertTrue(hasText(cancel), "the cancel must say «$cancel»")
     }
 

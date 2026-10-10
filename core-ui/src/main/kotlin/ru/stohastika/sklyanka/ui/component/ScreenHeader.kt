@@ -62,8 +62,22 @@ import ru.stohastika.sklyanka.ui.token.SklyankaType
  * Заголовок не обрезается и переносится на вторую строку при увеличенном системном
  * шрифте: шапка растёт по высоте (§6.3, критерий 5).
  *
+ * **Строка вида `Modal` — одна сетка слотов (§7, Р-53).** Ведущее действие («Отмена»)
+ * стоит слева, название — сразу за ним слева, замыкающее действие — справа; слова действий
+ * встают на боковое поле шапки `SklyankaSpacing.Section` 20 dp, на одной горизонтальной
+ * линии с названием. Пустой слот не заполняется ничем: невидимых заглушек и поддельной
+ * центровки в модальной шапке нет (V-15). Строку собирает [ModalHeaderRow] — одна часть
+ * на все три модальные поверхности: форма лекарства и шторка проверки доставки приходят
+ * сюда, шторка отчёта врачу — тем же компонентом. Второй сборки строки по месту быть
+ * не должно: именно она и разошлась молча.
+ *
+ * **Закрепление модальной шапки.** Модальная шапка уезжает вместе с содержимым, как
+ * корневые и вложенные (§7): крупного заголовка у неё нет, поэтому под закреплённый ряд
+ * уходит сама строка, а порог считается по её нижней грани.
+ *
  * @param pinning состояние закреплённого ряда (§7), когда шапка стоит **внутри**
- *   прокрутки: тогда шапка сообщает ряду границу крупного заголовка, а ряд решает,
+ *   прокрутки: тогда шапка сообщает ряду нижнюю грань того, что обязано уйти под ряд
+ *   (у `Root`/`Nested` — крупный заголовок, у `Modal` — сама строка), а ряд решает,
  *   показывать ли компактный заголовок. У несжатого экрана этого параметра нет, и шапка
  *   ведёт себя как прежде — рисует себя целиком, включая баннер чужого профиля.
  */
@@ -125,7 +139,7 @@ fun ScreenHeader(
         verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Large),
     ) {
         if (nestedWithBack) {
-            StackedHeaderRows(actionRow, trailing, labels, kind, profileName, overline, pinning)
+            StackedHeaderRows(actionRow, trailing, labels, profileName, overline, pinning)
         } else {
             SingleHeaderRow(actionRow, trailing, labels, kind, profileName, overline, pinning)
         }
@@ -213,6 +227,14 @@ fun PinnedHeaderBar(
                 // обещанием пути, которого нет (§7).
                 if (kind == ScreenHeaderKind.Nested) {
                     BackChevronAction(label = stringResource(R.string.cd_back), onBack = onBack)
+                } else if (kind == ScreenHeaderKind.Modal) {
+                    // Модальная шапка шеврона не получает ни в своей строке, ни в ряду (§7, Р-53):
+                    // ведущее действие — то же слово «Отмена», на том же боковом поле.
+                    onBack?.let { action ->
+                        Box(modifier = Modifier.modalActionSlot(start = true)) {
+                            BackAction(ScreenHeaderKind.Modal, action)
+                        }
+                    }
                 }
                 CompactHeaderTitle(title = labels.title, collapsed = true, modifier = Modifier.weight(1f))
                 trailing?.invoke()
@@ -242,36 +264,42 @@ fun PinnedHeaderBar(
  * Состояние закреплённого компактного ряда (§7).
  *
  * Порог появления компактного заголовка — **геометрия**, а не число пикселей: заголовок
- * появляется, когда нижняя грань крупного заголовка пересекла нижнюю грань ряда, и тем же
- * порогом гаснет при прокрутке вверх. Порог по пикселям врал бы при смене масштаба шрифта,
+ * появляется, когда нижняя грань того, что обязано уйти под ряд, пересекла нижнюю грань ряда,
+ * и тем же порогом гаснет при прокрутке вверх. Под ряд уходит крупный заголовок
+ * (`Root`/`Nested`) либо сама строка модальной шапки (`Modal`, Р-53) — состояние различает
+ * их одной мерой, а не двумя. Порог по пикселям врал бы при смене масштаба шрифта,
  * длины локали и высоты шапки в чужом профиле.
  *
  * Обе границы приходят от раскладки (`onGloballyPositioned`, координаты одного корня),
- * и состояние не знает, прокручивается ли содержимое: не прокручивается — крупный
- * заголовок всегда ниже ряда, и шапка остаётся развёрнутой.
+ * и состояние не знает, прокручивается ли содержимое: не прокручивается — измеряемый
+ * элемент всегда ниже ряда, и шапка остаётся развёрнутой.
  */
 @Stable
 class ScreenHeaderState internal constructor() {
 
-    /** Крупный заголовок ушёл под ряд. */
+    /** То, что обязано уйти под ряд, ушло под него. */
     var collapsed: Boolean by mutableStateOf(false)
         private set
 
     private var barBottom: Int? = null
-    private var titleBottom: Int? = null
+    private var collapsibleBottom: Int? = null
 
     internal fun reportBarBottom(bottomInRoot: Int) {
         barBottom = bottomInRoot
         settle()
     }
 
-    internal fun reportTitleBottom(bottomInRoot: Int) {
-        titleBottom = bottomInRoot
+    /**
+     * Нижняя грань того, что обязано уйти под ряд: у `Root`/`Nested` — крупный заголовок,
+     * у `Modal` — сама строка шапки (крупного заголовка у неё нет, Р-53).
+     */
+    internal fun reportCollapsibleBottom(bottomInRoot: Int) {
+        collapsibleBottom = bottomInRoot
         settle()
     }
 
     /**
-     * Порог: нижняя грань крупного заголовка пересекла нижнюю грань ряда (§7).
+     * Порог: нижняя грань того, что обязано уйти под ряд, пересекла нижнюю грань ряда (§7).
      *
      * Обе границы хранятся как «измерено / не измерено», а не как число с нулём-признаком:
      * прокрученный за верхнюю грань заголовок сообщает ровно ноль (границы обрезаны окном),
@@ -279,16 +307,16 @@ class ScreenHeaderState internal constructor() {
      */
     private fun settle() {
         val bar = barBottom ?: return
-        val title = titleBottom ?: return
-        collapsed = title <= bar
+        val content = collapsibleBottom ?: return
+        collapsed = content <= bar
     }
 
     /**
-     * Крупный заголовок ушёл из композиции: он прокручен за верхнюю грань окна.
+     * То, что обязано уйти под ряд, ушло из композиции: оно прокручено за верхнюю грань окна.
      *
      * Быстрая прокрутка (свиток) выбрасывает элемент шапки из композиции в том же кадре,
-     * в котором он уходит из виду, и последнее измерение остаётся от кадра, где заголовок
-     * ещё виден. Состояние «мерить больше нечего» приходит из [androidx.compose.runtime.DisposableEffect]
+     * в котором он уходит из виду, и последнее измерение остаётся от кадра, где он ещё виден.
+     * Состояние «мерить больше нечего» приходит из [androidx.compose.runtime.DisposableEffect]
      * шапки: элемент ушёл — ряд обязан показать компактный заголовок (§7).
      */
     internal fun reportTitleScrolledAway() {
@@ -345,7 +373,6 @@ private fun StackedHeaderRows(
     actionRow: @Composable (() -> Unit)?,
     trailing: @Composable (() -> Unit)?,
     labels: ScreenHeaderLabels,
-    kind: ScreenHeaderKind,
     profileName: String?,
     overline: String?,
     pinning: ScreenHeaderState?,
@@ -367,7 +394,7 @@ private fun StackedHeaderRows(
             verticalAlignment = Alignment.Top,
             horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Medium),
         ) {
-            HeaderTitleColumn(labels, kind, profileName, overline, pinning)
+            HeaderTitleColumn(labels, profileName, overline, pinning)
         }
     }
 }
@@ -383,16 +410,109 @@ private fun SingleHeaderRow(
     overline: String?,
     pinning: ScreenHeaderState?,
 ) {
+    // Модальная строка — своя сетка слотов (Р-53), и собирается она общей частью: у неё нет
+    // крупного заголовка, вопрос «помещается ли заголовок рядом с действием» (SKL-60) не стоит,
+    // а под закреплённый ряд уходит сама строка.
+    if (kind == ScreenHeaderKind.Modal) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Hair),
+        ) {
+            // Надпись профиля и надстрочник стоят **над** строкой, а не в ней: строка одна
+            // и делится на слоты действия и названия, а имя профиля — не слот строки, а
+            // признак чужого профиля (ПРФ-11, ПРФ-12). Убранная отсюда надпись пропала бы
+            // молча: экран выглядел бы нормально, а индикация — нет.
+            when {
+                profileName != null -> ProfileOverline(profileName)
+
+                overline != null -> Text(
+                    text = overline.uppercased(),
+                    style = SklyankaType.OverlineDate,
+                    color = SklyankaTheme.colors.textMuted,
+                )
+            }
+            ModalHeaderRow(
+                title = labels.title,
+                leading = actionRow,
+                trailing = trailing,
+                modifier = if (pinning == null) {
+                    Modifier
+                } else {
+                    Modifier.onGloballyPositioned {
+                        pinning.reportCollapsibleBottom(it.boundsInRoot().bottom.toInt())
+                    }
+                },
+            )
+        }
+        return
+    }
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.Top,
         horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Medium),
     ) {
         if (kind != ScreenHeaderKind.Root) actionRow?.invoke()
-        HeaderTitleColumn(labels, kind, profileName, overline, pinning)
+        HeaderTitleColumn(labels, profileName, overline, pinning)
         trailing?.invoke()
     }
 }
+
+/**
+ * Строка модальной шапки: одна сетка слотов на все модальные поверхности (§7, Р-53).
+ *
+ * Ведущее действие слева, название сразу за ним слева, замыкающее действие справа — все
+ * на одной горизонтальной линии. Слова действий встают на боковое поле шапки
+ * `SklyankaSpacing.Section` 20 dp: слот гасит собственное поле тихой кнопки
+ * ([SklyankaSizes.QuietButtonPadding] 8 dp) смещением — тем же приёмом, каким возврат-шеврон
+ * гасит своё ([BackChevronAction]). Сдвигается место, а не размер: цель нажатия остаётся
+ * не меньше 44 dp (НФТ-29).
+ *
+ * Пустой слот не заполняется ничем: невидимой заглушки ради центровки названия здесь нет
+ * (Р-53, V-15). Название прижато влево и занимает всю оставшуюся ширину.
+ *
+ * Публичная, потому что строку берут все три модальные поверхности: форма лекарства
+ * и шторка проверки доставки приходят через [ScreenHeader], а шторка отчёта врачу собирает
+ * шапку по месту — и обязана брать ту же строку, а не вторую её копию.
+ */
+@Composable
+fun ModalHeaderRow(
+    title: String,
+    modifier: Modifier = Modifier,
+    leading: @Composable (() -> Unit)? = null,
+    trailing: @Composable (() -> Unit)? = null,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        // Вертикальная центровка, а не выравнивание по верхнему краю: кнопка центрует подпись
+        // внутри своей цели 44 dp, и при выравнивании по верху слово уходило ниже названия
+        // на 11 dp — та самая кривизна, которую нашёл заказчик (Р-53).
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Medium),
+    ) {
+        leading?.let {
+            Box(modifier = Modifier.modalActionSlot(start = true)) { it() }
+        }
+        Text(
+            text = title,
+            style = SklyankaType.BodyDefaultStrong,
+            color = SklyankaTheme.colors.text,
+            modifier = Modifier.weight(1f),
+        )
+        trailing?.let {
+            Box(modifier = Modifier.modalActionSlot(start = false)) { it() }
+        }
+    }
+}
+
+/**
+ * Смещение слота действия модальной строки: слово встаёт на боковое поле шапки (Р-53).
+ *
+ * Ведущий слот тянется влево, замыкающий — вправо, оба на собственное поле тихой кнопки.
+ * Размер и цель нажатия не меняются: смещается только место слова.
+ */
+private fun Modifier.modalActionSlot(start: Boolean): Modifier = offset(
+    x = if (start) -SklyankaSizes.QuietButtonPadding else SklyankaSizes.QuietButtonPadding,
+)
 
 /**
  * Колонка заголовка шапки: надпись профиля либо надстрочник и сам заголовок.
@@ -400,12 +520,11 @@ private fun SingleHeaderRow(
  * Вынесена из [ScreenHeader], чтобы функция шапки оставалась обозримой (detekt
  * `LongMethod`): порядок строк и перенос заголовка при крупном шрифте не меняются.
  * Нижняя грань заголовка сообщается закреплённому ряду: по ней ряд решает, показывать ли
- * компактный заголовок (§7).
+ * компактный заголовок (§7). Вид `Modal` сюда не приходит: у него своя строка ([ModalHeaderRow]).
  */
 @Composable
 private fun RowScope.HeaderTitleColumn(
     labels: ScreenHeaderLabels,
-    kind: ScreenHeaderKind,
     profileName: String?,
     overline: String?,
     pinning: ScreenHeaderState?,
@@ -426,16 +545,12 @@ private fun RowScope.HeaderTitleColumn(
         }
         Text(
             text = labels.title,
-            style = if (kind == ScreenHeaderKind.Modal) {
-                SklyankaType.BodyDefaultStrong
-            } else {
-                SklyankaType.TitleScreen
-            },
+            style = SklyankaType.TitleScreen,
             color = colors.text,
             modifier = if (pinning == null) {
                 Modifier
             } else {
-                Modifier.onGloballyPositioned { pinning.reportTitleBottom(it.boundsInRoot().bottom.toInt()) }
+                Modifier.onGloballyPositioned { pinning.reportCollapsibleBottom(it.boundsInRoot().bottom.toInt()) }
             },
         )
     }
@@ -521,7 +636,7 @@ private fun BackAction(kind: ScreenHeaderKind, onBack: () -> Unit) {
             text = stringResource(R.string.action_cancel),
             onClick = onBack,
             kind = QuietButtonKind.Muted,
-            // Действие модальной шапки — форма шапки, а не строки: 15 sp против 14 (§4.9, ОВ-146).
+            // Действие модальной шапки — форма шапки, а не строки: 15 sp против 14 (§3.2, §7, ОВ-146).
             form = QuietButtonForm.Header,
         )
     } else {

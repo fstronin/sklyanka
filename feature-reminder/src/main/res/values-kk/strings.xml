@@ -71,7 +71,6 @@
     <string name="diagnostics_check_sheet_title">Жеткізілуді тексеру</string>
     <string name="diagnostics_check_sheet_text">Қолданба 1–2 минуттан кейін сынақ еске салғышын қояды. Бастаған соң бірден қолданбаны жабыңыз — оны соңғылар тізімінен сыпырып тастаңыз. Қолданба ашық тұрса, тексеру өтпейді. Телефонды құлыптаудың қажеті жоқ.</string>
     <string name="diagnostics_check_start">Тексеруді бастау</string>
-    <string name="diagnostics_check_sheet_cancel">Болдырмау</string>
 
     <string name="diagnostics_check_running">Тексеру жүріп жатыр: сынақ еске салғышы шамамен бір минуттан кейін іске қосылады. Қолданбаны жабыңыз.</string>
     <string name="diagnostics_check_cancel">Тексеруді тоқтату</string>
