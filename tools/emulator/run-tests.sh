@@ -12,6 +12,7 @@
 #   data       DAO, журнал, перенос, история — настоящий движок базы
 #   heavy      объём и гонки: тысяча повторов в двух потоках, база годового объёма
 #   migration  миграции из экспортированных схем (МГ-3) — отдельно от всего
+#   journey    сквозные походы человека на настоящем файловом хранилище (SKL-140)
 #   ui         Compose-проверки экранов на настоящей платформе (SKL-96): модуль app
 #   all        всё подряд, одной задачей (по умолчанию)
 #
@@ -38,13 +39,25 @@ case "$group" in
         filter=(
             "-Pandroid.testInstrumentationRunnerArguments.package=$SKL_GROUP_DATA_PACKAGES"
             "-Pandroid.testInstrumentationRunnerArguments.notClass=$SKL_GROUP_HEAVY_CLASSES,$SKL_GROUP_MIGRATION_CLASSES"
+            "-Pandroid.testInstrumentationRunnerArguments.notPackage=$SKL_GROUP_JOURNEY_PACKAGES"
         )
         ;;
     heavy) filter=("-Pandroid.testInstrumentationRunnerArguments.class=$SKL_GROUP_HEAVY_CLASSES") ;;
     migration) filter=("-Pandroid.testInstrumentationRunnerArguments.class=$SKL_GROUP_MIGRATION_CLASSES") ;;
+    journey)
+        # Пакет походов — подпакет пакета экранных проверок, поэтому в группах ui и data
+        # он исключается явно (notPackage): иначе экранная группа тянула бы за собой
+        # сорок минут походов.
+        filter=(
+            "-Pandroid.testInstrumentationRunnerArguments.package=$SKL_GROUP_JOURNEY_PACKAGES"
+            "-Pandroid.testInstrumentationRunnerArguments.$SKL_JOURNEY_STORAGE_ARGUMENT"
+            "-Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true"
+        )
+        ;;
     ui)
         filter=(
             "-Pandroid.testInstrumentationRunnerArguments.package=$SKL_GROUP_UI_PACKAGES"
+            "-Pandroid.testInstrumentationRunnerArguments.notPackage=$SKL_GROUP_JOURNEY_PACKAGES"
             # AGP удаляет APK после connected-прогона, а кадры экранного прогона лежат
             # во внутреннем каталоге приложения и забираются screenshots.sh уже после
             # прогона: без этого AGP-свойства снимать было бы нечего.
@@ -52,14 +65,14 @@ case "$group" in
         )
         ;;
     all) filter=() ;;
-    *) skl_die "неизвестная группа: $group (fast|data|heavy|migration|ui|all)" ;;
+    *) skl_die "неизвестная группа: $group (fast|data|heavy|migration|journey|ui|all)" ;;
 esac
 
 # Какие модули исполняют группу: heavy, migration и fast — предмет core-data,
-# data и all — все модули проверок, ui — модуль приложения (SKL-96).
+# data и all — все модули проверок, ui и journey — модуль приложения (SKL-96, SKL-140).
 case "$group" in
     data | all) modules=("${SKL_TEST_MODULES[@]}") ;;
-    ui) modules=(":app") ;;
+    ui | journey) modules=(":app") ;;
     *) modules=("${SKL_TEST_MODULES[0]}") ;;
 esac
 

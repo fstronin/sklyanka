@@ -211,9 +211,9 @@ class ScreenDeviceHarnessSteps {
             .map { it.name }
             .sorted()
         assertEquals(
-            listOf(RUN_UI_SCRIPT, START_SCRIPT),
-            carriers,
-            "only the screen run may pass $WINDOW_ARG; every other script stays headless",
+            listOf(RUN_UI_SCRIPT, RUN_JOURNEYS_SCRIPT, START_SCRIPT).sorted(),
+            carriers.sorted(),
+            "only the on-screen runs may pass $WINDOW_ARG; every other script stays headless",
         )
     }
 
@@ -517,6 +517,7 @@ class ScreenDeviceHarnessSteps {
         const val GITIGNORE = ".gitignore"
 
         const val RUN_UI_SCRIPT = "run-ui.sh"
+        const val RUN_JOURNEYS_SCRIPT = "run-journeys.sh"
         const val START_SCRIPT = "start.sh"
         const val AVD_SCRIPT = "avd.sh"
         const val TESTS_SCRIPT = "run-tests.sh"
@@ -583,7 +584,11 @@ class ScreenDeviceHarnessSteps {
             "com.google.firebase",
             "com.google.android.play",
         )
-        val GROUP_PACKAGE_KEYS = listOf("SKL_GROUP_FAST_PACKAGES", "SKL_GROUP_DATA_PACKAGES")
+        val GROUP_PACKAGE_KEYS = listOf(
+            "SKL_GROUP_FAST_PACKAGES",
+            "SKL_GROUP_DATA_PACKAGES",
+            "SKL_GROUP_JOURNEY_PACKAGES",
+        )
         val GROUP_CLASS_KEYS = listOf("SKL_GROUP_HEAVY_CLASSES", "SKL_GROUP_MIGRATION_CLASSES")
 
         val TEST_ANNOTATION = Regex("""(?m)^\s*@Test\b""")

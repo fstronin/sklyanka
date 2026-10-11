@@ -154,6 +154,41 @@ SKL_UI_API_LEVEL=35
 SKL_GROUP_UI_PACKAGES="ru.stohastika.sklyanka.screen"
 SKL_UI_SCREENSHOT_DIR="ui-screens"
 
+# --- Прогон походов (SKL-140) --------------------------------------------------
+#
+# Сквозные проходы человека на настоящей платформе: модуль app, настоящее файловое
+# хранилище, своя группа journey. Идут отдельно от экранной группы по двум причинам:
+# их прогон — минуты, а не секунды, и он предвыпускной (Р-58, ADR 0014), а не на каждый push.
+#
+# Пакет походов — подпакет пакета экранных проверок: приёмка SKL-96 требует, чтобы файлы
+# проверок модуля app лежали в SKL_GROUP_UI_PACKAGES, и подпакет этому правилу отвечает.
+# Из групп ui и data походы исключаются явно: иначе экранная группа тянула бы их за собой.
+SKL_JOURNEY_API_LEVEL=35
+SKL_GROUP_JOURNEY_PACKAGES="ru.stohastika.sklyanka.screen.journey"
+SKL_JOURNEY_STORAGE_ARGUMENT="journeyStorage=file"
+# Эстафета выживания: фаза 1 пишет состояние и завершается, фаза 2 идёт отдельным запуском
+# инструментовки и утверждает, что состояние пережило смерть процесса (TDD §9).
+SKL_JOURNEY_SURVIVAL_WRITE_CLASSES="ru.stohastika.sklyanka.screen.journey.SurvivalPhaseOneJourneyTest"
+SKL_JOURNEY_SURVIVAL_CHECK_CLASSES="ru.stohastika.sklyanka.screen.journey.SurvivalPhaseTwoJourneyTest"
+# Состояние «права не выданы» и обстановка «масштаб шрифта и чужая локаль»: у каждого свой
+# запуск, потому что права и обстановку меняет скрипт вне приложения, а не человек.
+SKL_JOURNEY_NOT_GRANTED_CLASSES="ru.stohastika.sklyanka.screen.journey.PermissionsNotGrantedJourneyTest"
+SKL_JOURNEY_SETTING_CLASSES="ru.stohastika.sklyanka.screen.journey.HostileLocaleAndFontScaleTest"
+SKL_JOURNEY_FONT_SCALE="1.3"
+SKL_JOURNEY_FONT_SCALE_DEFAULT="1.0"
+SKL_JOURNEY_UNKNOWN_LOCALE="fr-FR"
+# Куда вернуть системную локаль после фазы обстановки: русская — базовая у продукта (НФТ-43).
+SKL_JOURNEY_DEFAULT_LOCALE="ru-RU"
+# Часы образа выставляются под управляемые часы похода (`DeviceTestClock`: 3 октября 2026,
+# 09:01, Europe/Moscow). Без этого платформенные пути судят по часам образа, а домен — по
+# управляемым, и поход «Проверка напоминаний» получал отрицательное опоздание, а будильники
+# стенда выглядели для системы прошлым. Формат — тот, что понимает `date` toybox.
+SKL_JOURNEY_TIMEZONE="Europe/Moscow"
+SKL_JOURNEY_CLOCK="100309012026.00"
+# Потолок времени прогона — обещание из постановки: сорок минут. Превышение не валит прогон,
+# но печатается предупреждением: молча растущий набор перестаёт быть предвыпускным.
+SKL_JOURNEY_BUDGET_SECONDS=2400
+
 # --- Приложение ----------------------------------------------------------------
 SKL_APP_ID="ru.stohastika.sklyanka"
 SKL_APP_DB="sklyanka.db"

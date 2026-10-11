@@ -510,8 +510,20 @@ class DistributedDictionarySteps {
      */
     private fun automaticTags(): String {
         val build = acceptanceBuild()
-        val line = build.lines().first { it.trim().startsWith("val automaticTags") }
-        return TAG_VARIABLES.entries.fold(line) { text, (variable, declaration) ->
+        val lines = build.lines()
+        val start = lines.indexOfFirst { it.trim().startsWith("val automaticTags") }
+        if (start < 0) return ""
+        val declaration = StringBuilder(lines[start])
+        var index = start
+        // Объявление может быть перенесено: SKL-140 добавил шестой тег, и строка перестала
+        // помещаться в предел длины. Читаем её вместе с продолжениями — до строки, которая
+        // закрывает строковый литерал, иначе проверка «исключение названо» видела бы пустоту.
+        while (!lines[index].trimEnd().endsWith("\"")) {
+            index++
+            if (index >= lines.size) break
+            declaration.append('\n').append(lines[index])
+        }
+        return TAG_VARIABLES.entries.fold(declaration.toString()) { text, (variable, declaration) ->
             val value = build.lines()
                 .first { it.trim().startsWith("val $declaration") }
                 .substringAfter('"').substringBefore('"')

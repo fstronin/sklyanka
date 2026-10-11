@@ -413,6 +413,55 @@ val acceptanceDeviceList by tasks.registering {
 }
 
 /**
+ * Сценарии, исполняемые походами на устройстве (SKL-140, Р-58, ADR 0014).
+ *
+ * От `@device` отличаются тем, что исполняются автоматом — группой `journey` оснастки
+ * эмулятора, на настоящем файловом хранилище. Прогон на JVM их исключает и печатает
+ * списком: исключение из прогона не должно становиться способом спрятать сценарий.
+ *
+ * Список называет походы отдельно от стражей реестра: первые помечены `@journey`,
+ * вторые исполняет сам автоматический прогон.
+ */
+val acceptanceJourneyList by tasks.registering {
+    group = "verification"
+    description = "Prints the @journey scenarios: they run in the emulator group journey."
+    dependsOn(tasks.named("testClasses"))
+    inputs.dir(rootProject.file(featuresPath))
+    // И основной набор, и тестовый: словарь шагов живёт в основном (SKL-26, TDD §4.1),
+    // и без него правка шага не перезапускала бы прогон — проверка проезжала бы на кеше.
+    inputs.files(sourceSets.main.get().output, sourceSets.test.get().output)
+    outputs.dir(acceptanceReports)
+
+    doLast {
+        val reportDir = acceptanceReports.get().asFile.also { it.mkdirs() }
+        val listing = StringBuilder(
+            "Scenarios executed by the journeys on a device ($journeyTag), not by the JVM runs\n",
+        )
+        featureTargets().forEach { target ->
+            val output = runCucumber(
+                target,
+                listOf(
+                    "--glue",
+                    "ru.stohastika.sklyanka.acceptance",
+                    "--tags",
+                    "$journeyTag and not $postponedTag",
+                    "--dry-run",
+                    "--plugin",
+                    "pretty",
+                ),
+            )
+            val scenarios = scenarioLine.findAll(output).map { it.groupValues[1].trim() }.toList()
+            if (scenarios.isNotEmpty()) {
+                listing.appendLine("  ${targetLabel(target)}:")
+                scenarios.forEach { listing.appendLine("    - $it") }
+            }
+        }
+        reportDir.resolve("journey-scenarios.txt").writeText(listing.toString())
+        listing.toString().trim().lines().forEach { logger.lifecycle(it) }
+    }
+}
+
+/**
  * Запуск реестра шагов (SKL-23).
  *
  * Тем же способом, что и Cucumber-CLI: тот же classpath, та же кодировка, тот же
@@ -531,6 +580,16 @@ val screenTag = "@screen"
 val deviceTag = "@device"
 
 /**
+ * Тег сценариев, исполняемых походами на устройстве (SKL-140, Р-58, ADR 0014).
+ *
+ * Поход — сквозной проход человека по приложению на настоящей платформе с настоящим
+ * хранилищем; в модуле приёмки (чистый Kotlin/JVM по ADR-0007) ему делать нечего.
+ * Исключение из прогона, а не сокрытие: список печатает задача acceptanceJourneyList,
+ * исполняет — группа `journey` оснастки эмулятора (`tools/emulator/run-journeys.sh`).
+ */
+val journeyTag = "@journey"
+
+/**
  * Тег отложенных сценариев (SKL-100).
  *
  * Сценарии удалённых контуров убираются вместе с кодом (П-7, Р-4): SKL-82 и SKL-83
@@ -539,8 +598,9 @@ val deviceTag = "@device"
  */
 val postponedTag = "@postponed"
 
-/** Что берёт автоматический прогон: всё, кроме ручного, медленного, отложенного, экранного и устройственного. */
-val automaticTags = "not @manual and not @slow and not $postponedTag and not $screenTag and not $deviceTag"
+/** Что берёт автоматический прогон: всё, кроме ручного, медленного, отложенного, экранного, устройственного и походного. */
+val automaticTags =
+    "not @manual and not @slow and not $postponedTag and not $screenTag and not $deviceTag and not $journeyTag"
 
 /** Строка итога реестра шагов: с неё начинается то, что стоит печатать в лог. */
 val dictionarySummary = "Словарь шагов:"

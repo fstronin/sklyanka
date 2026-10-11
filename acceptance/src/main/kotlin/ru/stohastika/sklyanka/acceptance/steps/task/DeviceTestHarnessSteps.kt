@@ -143,8 +143,17 @@ class DeviceTestHarnessSteps {
     @Тогда("база проверок поднимается в памяти на каждую проверку")
     fun theDatabaseIsRaisedInMemory() {
         assertTrue(
-            text(appChecks.single { it.name == "DeviceTestModules.kt" }).contains("inMemoryDatabaseBuilder"),
-            "the test graph must use an in-memory Room database",
+            modulesText.contains("DeviceJourneyStorage.open"),
+            "the test graph must take its database from the storage choice (SKL-140)",
+        )
+        val storage = text(appChecks.single { it.name == "DeviceJourneyStorage.kt" })
+        assertTrue(
+            storage.contains("inMemoryDatabaseBuilder"),
+            "the screen checks must still run on an in-memory Room database",
+        )
+        assertTrue(
+            storage.contains("Room.databaseBuilder"),
+            "the journeys must run on a real database file (SKL-140)",
         )
     }
 
@@ -172,11 +181,20 @@ class DeviceTestHarnessSteps {
         val setup = baseText
             .substringAfter("fun setUpDeviceStand()")
             .substringBefore("seedDefaultState()")
-        val clear = setup.indexOf("DeviceTestStores.clearAll")
+        val reset = setup.indexOf("resetBeforeScenario()")
         val inject = setup.indexOf("hilt.inject()")
-        assertTrue(clear >= 0 && clear < inject, "the stores must be cleared before the graph is built")
-        assertTrue(setup.contains("DeviceTestClock.reset()"), "the clock must be reset before every check")
-        assertTrue(setup.contains("clearLaunchMark()"), "the launch mark must be cleared before every check")
+        assertTrue(
+            reset >= 0 && reset < inject,
+            "the scenario state must be reset before the graph is built",
+        )
+        // Уборка живёт в своём методе (SKL-140 вынесла её хуком: поход со своим хранилищем
+        // стирает файл базы до сборки графа), поэтому проверяется и её состав.
+        val resetBody = baseText
+            .substringAfter("fun resetBeforeScenario()")
+            .substringBefore("\n    }")
+        assertTrue(resetBody.contains("DeviceTestStores.clearAll"), "the stores must be cleared before every check")
+        assertTrue(resetBody.contains("DeviceTestClock.reset()"), "the clock must be reset before every check")
+        assertTrue(resetBody.contains("clearLaunchMark()"), "the launch mark must be cleared before every check")
     }
 
     // --- Сид состояния ----------------------------------------------------------
@@ -356,11 +374,12 @@ class DeviceTestHarnessSteps {
         assertEquals(emptySet<String>(), missing, "these wave scenarios have no check class")
     }
 
-    @Тогда("четыре проверки первой волны переработаны под тестовый граф")
+    @Тогда("две проверки первой волны переработаны под тестовый граф")
     fun theFirstWaveChecksAreReworked() {
+        // Форму лекарства из этой волны заменил поход «Завести лекарство» (SKL-140):
+        // его утверждения шире и идут на настоящем файловом хранилище.
         val firstWave = listOf(
             "TodayScreenDeviceTest.kt",
-            "MedicationFormDeviceTest.kt",
             "DateTimePickerDeviceTest.kt",
         )
         firstWave.forEach { name ->
@@ -683,6 +702,7 @@ class DeviceTestHarnessSteps {
             "SKL_GROUP_DATA_PACKAGES",
             "SKL_GROUP_HEAVY_CLASSES",
             "SKL_GROUP_MIGRATION_CLASSES",
+            "SKL_GROUP_JOURNEY_PACKAGES",
         )
         val RECEIVERS = listOf(
             "app/src/main/kotlin/ru/stohastika/sklyanka/reminder/DirectBootReceiver.kt",

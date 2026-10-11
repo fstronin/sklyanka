@@ -8,6 +8,8 @@ import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import ru.stohastika.sklyanka.data.repository.ProfileBootstrap
+import ru.stohastika.sklyanka.domain.log.OpLogRecord
+import ru.stohastika.sklyanka.domain.log.OperationLog
 import ru.stohastika.sklyanka.domain.model.Intake
 import ru.stohastika.sklyanka.domain.model.IntakeSource
 import ru.stohastika.sklyanka.domain.model.IntakeStatus
@@ -16,6 +18,7 @@ import ru.stohastika.sklyanka.domain.model.Profile
 import ru.stohastika.sklyanka.domain.onboarding.port.OnboardingStateStore
 import ru.stohastika.sklyanka.domain.reminder.ReminderEvent
 import ru.stohastika.sklyanka.domain.reminder.ReminderLogEntry
+import ru.stohastika.sklyanka.domain.reminder.port.AlarmRegistry
 import ru.stohastika.sklyanka.domain.reminder.port.DeferredReminder
 import ru.stohastika.sklyanka.domain.reminder.port.DeferredReminders
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderJournal
@@ -24,6 +27,7 @@ import ru.stohastika.sklyanka.domain.repository.MedicationRepository
 import ru.stohastika.sklyanka.domain.schedule.PlanIntakesUseCase
 import ru.stohastika.sklyanka.domain.schedule.PlanScope
 import ru.stohastika.sklyanka.ui.token.ProfilePalette
+import java.time.Instant
 import java.time.LocalDate
 
 /**
@@ -54,6 +58,12 @@ internal interface DeviceTestGraph {
 
     /** Журнал срабатываний: следствие «Проверить сейчас» на экране диагностики. */
     fun reminderJournal(): ReminderJournal
+
+    /** Журнал критичных операций: след отметки, отмены, архивации и переноса (SKL-140). */
+    fun operationLog(): OperationLog
+
+    /** Память о поставленных будильниках: что пересборка ставила до смерти процесса (SKL-140). */
+    fun alarmRegistry(): AlarmRegistry
 }
 
 internal object DeviceTestSeed {
@@ -93,6 +103,34 @@ internal object DeviceTestSeed {
     fun lastJournalEvent(context: Context, event: ReminderEvent): ReminderLogEntry? = runBlocking {
         graph(context).reminderJournal().last(event)
     }
+
+    /** Видел ли человек экран разрешений: признак живёт в хранилище, а не в памяти (SKL-140). */
+    fun onboardingSeenFlag(context: Context): Boolean = runBlocking {
+        graph(context).onboardingState().seen()
+    }
+
+    /**
+     * Последние записи журнала операций: следствия действий похода (SKL-140, TDD §11).
+     *
+     * Читаются по идентификаторам и кодам событий: названий лекарств и доз в журнале
+     * нет и быть не должно.
+     */
+    fun opLogRecent(context: Context, limit: Int = OP_LOG_LIMIT): List<OpLogRecord> = runBlocking {
+        graph(context).operationLog().recent(limit)
+    }
+
+    /**
+     * Снимок будильников — «что мы ставили» глазами домена (SKL-140).
+     *
+     * Правда о существовании будильника остаётся за платформой: здесь только память
+     * пересборки, и по ней видно, что после смерти процесса набор не потерян.
+     */
+    fun alarmMirror(context: Context): Map<String, Instant> = runBlocking {
+        graph(context).alarmRegistry().all()
+    }
+
+    /** Сколько записей журнала операций читает поход: хватает на весь его путь. */
+    const val OP_LOG_LIMIT = 64
 
     private fun graph(context: Context): DeviceTestGraph =
         EntryPointAccessors.fromApplication(context.applicationContext, DeviceTestGraph::class.java)

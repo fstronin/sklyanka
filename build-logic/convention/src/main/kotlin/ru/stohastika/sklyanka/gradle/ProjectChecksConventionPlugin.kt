@@ -118,6 +118,9 @@ class ProjectChecksConventionPlugin : Plugin<Project> {
                 // То же для сценариев, проверяемых только на устройстве (SKL-26, ОВ-78):
                 // «шагу нужна платформа» перестаёт выглядеть как «шаг не написан».
                 ":acceptance:acceptanceDeviceList",
+                // И для походов (SKL-140, Р-58): они исполняются группой journey оснастки
+                // эмулятора, и список обязан оставаться видимым в едином прогоне.
+                ":acceptance:acceptanceJourneyList",
             )
         }
         }

@@ -514,7 +514,7 @@ class EmulatorHarnessSteps {
         const val BASH = "bash"
         const val SYNTAX_ONLY = "-n"
 
-        val GROUP_PACKAGES = listOf("SKL_GROUP_FAST_PACKAGES", "SKL_GROUP_DATA_PACKAGES")
+        val GROUP_PACKAGES = listOf("SKL_GROUP_FAST_PACKAGES", "SKL_GROUP_DATA_PACKAGES", "SKL_GROUP_JOURNEY_PACKAGES")
         val GROUP_CLASSES = listOf("SKL_GROUP_HEAVY_CLASSES", "SKL_GROUP_MIGRATION_CLASSES")
 
         val API_LEVELS_LINE = Regex("""SKL_API_LEVELS=\(([^)]*)\)""")

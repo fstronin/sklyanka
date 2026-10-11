@@ -3,7 +3,6 @@ package ru.stohastika.sklyanka.screen.support.di
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
-import androidx.room.Room
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -18,9 +17,9 @@ import ru.stohastika.sklyanka.data.room.dao.IntakeDao
 import ru.stohastika.sklyanka.data.room.dao.MedicationDao
 import ru.stohastika.sklyanka.data.room.dao.OpLogDao
 import ru.stohastika.sklyanka.data.room.dao.ProfileDao
-import ru.stohastika.sklyanka.data.room.withForeignKeysEnabled
 import ru.stohastika.sklyanka.di.TimeModule
 import ru.stohastika.sklyanka.domain.time.TimeSource
+import ru.stohastika.sklyanka.screen.support.DeviceJourneyStorage
 import ru.stohastika.sklyanka.screen.support.DeviceTestClock
 import ru.stohastika.sklyanka.screen.support.DeviceTestStores
 import javax.inject.Singleton
@@ -30,6 +29,9 @@ import javax.inject.Singleton
  *
  * Каждый модуль заменяет ровно один продуктовый: базу и DataStore, DE-снимок будильников
  * и часы. Продуктовые экраны, сценарии и мапперы остаются настоящими.
+ *
+ * База — память для экранной проверки и настоящий файл для похода (SKL-140): что именно
+ * открыть, решает `DeviceJourneyStorage` по аргументу инструментовки.
  */
 @Module
 @TestInstallIn(components = [SingletonComponent::class], replaces = [DataModule::class])
@@ -37,8 +39,7 @@ internal object DeviceStorageModule {
 
     @Provides
     @Singleton
-    fun provideDatabase(@ApplicationContext context: Context): SklyankaDatabase =
-        Room.inMemoryDatabaseBuilder(context, SklyankaDatabase::class.java).build().withForeignKeysEnabled()
+    fun provideDatabase(@ApplicationContext context: Context): SklyankaDatabase = DeviceJourneyStorage.open(context)
 
     /**
      * Подготовка базы в проверке устройства.

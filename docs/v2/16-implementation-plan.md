@@ -274,6 +274,7 @@ keystore по ответам заказчика (`docs/archive/tasks/SKL-22/keys
 | SKL-130 | документы | ∥ A5 |
 | SKL-109 | core-ui/token, марка, эталоны | соло, волна A4 |
 | SKL-110 | документы | ∥ A3–A4 |
+| SKL-140 | app/src/androidTest (походы), acceptance (стражи, тег), tools/emulator (группа journey), документы | соло: общий каркас и эстафета выживания; остальные походы — ∥ внутри волны, один писатель на Gradle |
 | SKL-112 | feature-onboarding, platform/permission | соло, B |
 | SKL-113 | tools/emulator, документы, прогон | соло, B (стена 14 сут) |
 | SKL-117 | core-domain/schedule, feature-meds | соло, C |

@@ -449,6 +449,7 @@ class DeviceActivityHarnessSteps {
             "SKL_GROUP_DATA_PACKAGES",
             "SKL_GROUP_HEAVY_CLASSES",
             "SKL_GROUP_MIGRATION_CLASSES",
+            "SKL_GROUP_JOURNEY_PACKAGES",
         )
         val PRODUCT_ACTIVITIES = listOf(
             DIAGNOSTICS_ACTIVITY,

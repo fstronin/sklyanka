@@ -109,13 +109,24 @@ abstract class DeviceScreenTest {
 
     @Before
     fun setUpDeviceStand() {
-        DeviceTestStores.clearAll(targetContext)
-        DeviceTestClock.reset()
-        clearLaunchMark()
+        resetBeforeScenario()
         hilt.inject()
         ownerProfile =
             DeviceTestSeed.ownerProfile(targetContext, testContext.getString(R.string.device_test_profile_name))
         seedDefaultState()
+    }
+
+    /**
+     * Уборка перед сценарием (выделено SKL-140).
+     *
+     * Поход со своим хранилищем достраивает её: стирает файл базы **до** сборки графа,
+     * потому что открытая база держала бы прежний файл. Фаза выживания переопределяет
+     * уборку и не делает её вовсе: она утверждает, что состояние предыдущей фазы осталось.
+     */
+    protected open fun resetBeforeScenario() {
+        DeviceTestStores.clearAll(targetContext)
+        DeviceTestClock.reset()
+        clearLaunchMark()
     }
 
     /**
