@@ -13,8 +13,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import ru.stohastika.sklyanka.ui.R
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
+import ru.stohastika.sklyanka.ui.token.MarkEnvironment
 import ru.stohastika.sklyanka.ui.token.SklyankaSpacing
 import ru.stohastika.sklyanka.ui.token.SklyankaType
+import ru.stohastika.sklyanka.ui.token.flatMarkColor
 
 /**
  * Пустое состояние (`docs/v2/12-design.md` §4.8).
@@ -23,7 +25,8 @@ import ru.stohastika.sklyanka.ui.token.SklyankaType
  * отличаются текстом и действием, а не устройством: заводить на каждый свой
  * компонент значит получить четыре расходящихся экрана из одного.
  *
- * Знак — плоская редукция цветом `switchOff`. Ресурсы стеклянной версии приходят в
+ * Знак — плоская редукция краской знака светлой плиты: знак остаётся холодным
+ * островом внутри тёплого интерфейса (Р-56). Ресурсы стеклянной версии приходят в
  * SKL-21; переключение по размеру — контракт знака, а не подбор по месту (§7).
  */
 @Composable
@@ -44,7 +47,7 @@ fun EmptyState(
         verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Screen),
     ) {
         FlatMark(
-            color = colors.switchOff,
+            color = flatMarkColor(MarkEnvironment.Light),
             modifier = Modifier.semanticsLabel(stringResource(R.string.cd_app_mark)),
         )
         Column(

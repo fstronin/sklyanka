@@ -18,6 +18,7 @@ import ru.stohastika.sklyanka.ui.token.ProfileColor
 import ru.stohastika.sklyanka.ui.token.ProfilePalette
 import ru.stohastika.sklyanka.ui.token.SCRIM_ALPHA
 import ru.stohastika.sklyanka.ui.token.SklyankaColors
+import ru.stohastika.sklyanka.ui.token.SklyankaMarkColors
 import ru.stohastika.sklyanka.ui.token.contrastRatio
 import ru.stohastika.sklyanka.ui.token.darkColors
 import ru.stohastika.sklyanka.ui.token.flatMarkColor
@@ -370,52 +371,63 @@ class Sk109PaletteSteps {
 
     // --- 6. Марка и оболочки иконок --------------------------------------------
 
-    @Тогда("знак на тёмной плите рисуется фоном светлой среды палитры")
+    @Тогда("знак на тёмной плите рисуется краской знака")
     fun theMarkOnTheDarkTileTakesTheLightBackground() {
-        val mark = glassMarkColors(MarkEnvironment.Dark, darkColors().accent)
+        val mark = glassMarkColors(MarkEnvironment.Dark)
         val layers = mark.body + mark.rim + mark.rings +
             listOfNotNull(mark.crescent, mark.reflection, mark.dot)
-        val expected = rgb(Palette.Background)
+        val expected = rgb(SklyankaMarkColors.InkOnDark)
         val other = layers.filterNot { rgb(it) == expected }
         assertTrue(
-            "${other.size} mark layers are not painted with the light background ${hex(Palette.Background)}: " +
-                other.joinToString { hex(it) },
+            "${other.size} mark layers are not painted with the mark ink " +
+                "${hex(SklyankaMarkColors.InkOnDark)}: " + other.joinToString { hex(it) },
             other.isEmpty(),
         )
     }
 
-    @И("плитка знака тёмной среды равна фону тёмной среды палитры")
+    @И("плитка знака тёмной среды равна тёмной плите знака")
     fun theDarkMarkTileRepeatsTheDarkBackground() {
-        assertEquals(Palette.DarkBackground.toArgb(), markTileBackground(MarkEnvironment.Dark).toArgb())
+        assertEquals(
+            SklyankaMarkColors.TileDark.toArgb(),
+            markTileBackground(MarkEnvironment.Dark).toArgb(),
+        )
     }
 
-    @И("плоская редукция светлой среды рисуется цветом основного текста")
+    @И("плоская редукция светлой среды рисуется краской знака на светлой плите")
     fun theFlatMarkOnLightTakesTheTextToken() {
-        assertEquals(Palette.Text.toArgb(), flatMarkColor(MarkEnvironment.Light).toArgb())
+        assertEquals(
+            SklyankaMarkColors.InkOnLight.toArgb(),
+            flatMarkColor(MarkEnvironment.Light).toArgb(),
+        )
     }
 
-    @И("краски иконок запуска, заставки и уведомления совпадают с токенами палитры")
+    @И("краски иконок запуска, заставки и уведомления совпадают с токенами палитры знака")
     fun theIconColoursRepeatThePalette() {
         val resources = File(repositoryRoot(), ICON_COLOURS).readText()
-        val background = hex6(Palette.Background)
-        val accent = hex6(Palette.AccentOnDark)
+        val inkOnDark = hex6(SklyankaMarkColors.InkOnDark)
+        val inkOnLight = hex6(SklyankaMarkColors.InkOnLight)
+        val amber = hex6(SklyankaMarkColors.Amber)
         val plain = mapOf(
-            "mark_tile_dark" to Palette.DarkBackground,
-            "mark_tile_light" to Palette.LineOnSurface,
-            "mark_ink_on_dark" to Palette.Background,
-            "mark_ink_on_light" to Palette.Text,
-            "mark_accent" to Palette.AccentOnDark,
+            "mark_tile_dark" to SklyankaMarkColors.TileDark,
+            "mark_tile_light" to SklyankaMarkColors.TileLight,
+            "mark_ink_on_dark" to SklyankaMarkColors.InkOnDark,
+            "mark_ink_on_light" to SklyankaMarkColors.InkOnLight,
+            "mark_accent" to SklyankaMarkColors.Amber,
         )
         val withAlpha = mapOf(
-            "mark_body_dark_0" to "3D$background",
-            "mark_body_dark_1" to "12$background",
-            "mark_body_dark_2" to "04$background",
-            "mark_rim_dark_0" to "D9$background",
-            "mark_rim_dark_1" to "29$background",
-            "mark_rim_dark_2" to "6B$background",
-            "mark_caustic_dark" to "9E$accent",
-            "mark_caustic_light" to "8C$accent",
-            "mark_caustic_clear" to "00$accent",
+            "mark_body_dark_0" to "3D$inkOnDark",
+            "mark_body_dark_1" to "12$inkOnDark",
+            "mark_body_dark_2" to "04$inkOnDark",
+            "mark_rim_dark_0" to "D9$inkOnDark",
+            "mark_rim_dark_1" to "29$inkOnDark",
+            "mark_rim_dark_2" to "6B$inkOnDark",
+            "mark_body_light_2" to "0F$inkOnLight",
+            "mark_rim_light_0" to "29$inkOnLight",
+            "mark_rim_light_1" to "80$inkOnLight",
+            "mark_rim_light_2" to "38$inkOnLight",
+            "mark_caustic_dark" to "9E$amber",
+            "mark_caustic_light" to "8C$amber",
+            "mark_caustic_clear" to "00$amber",
         )
         val wrong = plain.filterNot { (name, colour) ->
             resources.contains("name=\"$name\">${hex(colour)}<")
@@ -423,7 +435,7 @@ class Sk109PaletteSteps {
             resources.contains("name=\"$name\">#$value<")
         }.keys
         assertTrue(
-            "the icon resources do not repeat the palette: $wrong",
+            "the icon resources do not repeat the mark palette: $wrong",
             wrong.isEmpty(),
         )
     }

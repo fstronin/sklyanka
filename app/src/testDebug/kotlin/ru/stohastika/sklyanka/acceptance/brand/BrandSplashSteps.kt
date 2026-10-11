@@ -2,7 +2,6 @@ package ru.stohastika.sklyanka.acceptance.brand
 
 import android.content.Context
 import android.graphics.Bitmap
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -48,12 +47,15 @@ import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.FLAT_MARK_SHAPES
 import ru.stohastika.sklyanka.ui.token.MarkEnvironment
 import ru.stohastika.sklyanka.ui.token.MarkVariant
+import ru.stohastika.sklyanka.ui.token.SklyankaMarkColors
 import ru.stohastika.sklyanka.ui.token.SklyankaMarkTokens
 import ru.stohastika.sklyanka.ui.token.SklyankaSizes
-import ru.stohastika.sklyanka.ui.token.darkColors
+import ru.stohastika.sklyanka.ui.token.flatMarkColor
 import ru.stohastika.sklyanka.ui.token.glassMarkColors
-import ru.stohastika.sklyanka.ui.token.lightColors
+import ru.stohastika.sklyanka.ui.token.markCaptionColor
+import ru.stohastika.sklyanka.ui.token.markTileBackground
 import ru.stohastika.sklyanka.ui.token.markVariantFor
+import ru.stohastika.sklyanka.ui.token.markVendorColor
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.roundToInt
@@ -77,7 +79,6 @@ class BrandSplashSteps(private val world: AcceptanceWorld) {
 
     private val context: Context = ApplicationProvider.getApplicationContext()
 
-    private var systemThemeLight: Boolean = true
     private var fontScale: Double = 1.0
     private var conditions: StartupConditions? = null
     private var expectedReason: StartReason? = null
@@ -103,7 +104,11 @@ class BrandSplashSteps(private val world: AcceptanceWorld) {
 
     @Допустим("^системная тема устройства — светлая, если в сценарии не сказано иное$")
     fun theSystemThemeIsLight() {
-        systemThemeLight = true
+        // Системная тема на стенде не изображается, и знаку она больше не адресована:
+        // у знака своя палитра (Р-56), заставка тёмная всегда, а плитки иконки по теме
+        // проверяет `LauncherIconThemeTest` по ресурсам сборки. Шаг остаётся словом
+        // сценария и ничего не включает.
+        Unit
     }
 
     // --- Заставка ------------------------------------------------------------------------------
@@ -140,13 +145,17 @@ class BrandSplashSteps(private val world: AcceptanceWorld) {
         )
         val corner = requireNotNull(splashImage).colourAt(2, 2)
         assertEquals(
-            darkColors().background.toArgb(),
+            markTileBackground(MarkEnvironment.Dark).toArgb(),
             corner,
-            "the splash canvas must be dark: ${String.format("#%06X", corner and 0xFFFFFF)}",
+            "the splash canvas must be the cold mark tile: ${String.format("#%06X", corner and 0xFFFFFF)}",
         )
         assertTrue(
-            requireNotNull(splashImage).hasColourNear(facts.mark, darkColors().accent.toArgb(), ACCENT_TOLERANCE),
-            "the glass drawing must carry the warm arc of the accent",
+            requireNotNull(splashImage).hasColourNear(
+                facts.mark,
+                SklyankaMarkColors.Amber.toArgb(),
+                ACCENT_TOLERANCE,
+            ),
+            "the glass drawing must carry the amber arc",
         )
     }
 
@@ -245,7 +254,7 @@ class BrandSplashSteps(private val world: AcceptanceWorld) {
                 illustrationImage = bitmapOf(SCREEN_WIDTH, SCREEN_HEIGHT) {
                     SklyankaTheme { Box(Modifier.fillMaxSize()) { TodayScreen(state = state, onIntent = {}) } }
                 }
-                illustrationColour = roles().switchOff.toArgb()
+                illustrationColour = flatMarkColor(MarkEnvironment.Light).toArgb()
             }
 
             else -> {
@@ -257,7 +266,7 @@ class BrandSplashSteps(private val world: AcceptanceWorld) {
                 illustrationImage = bitmapOf(SCREEN_WIDTH, SCREEN_HEIGHT) {
                     SklyankaTheme { Box(Modifier.fillMaxSize()) { SettingsScreen(state = state, onIntent = {}) } }
                 }
-                illustrationColour = roles().textTertiary.toArgb()
+                illustrationColour = flatMarkColor(MarkEnvironment.Light).toArgb()
             }
         }
     }
@@ -379,10 +388,13 @@ class BrandSplashSteps(private val world: AcceptanceWorld) {
 
     @Когда("^измеряют контраст надписей заставки к фону$")
     fun theContrastIsMeasured() {
-        val colours = darkColors()
+        // Полотно заставки — холодная плитка знака, и надписи на ней холодные:
+        // название — краска знака, подпись — её производная (§2.4 нормы, Р-57).
+        val tile = markTileBackground(MarkEnvironment.Dark).toArgb()
         ratios = mapOf(
-            "название" to contrastRatio(colours.text.toArgb(), colours.background.toArgb()),
-            "подпись" to contrastRatio(colours.textMuted.toArgb(), colours.background.toArgb()),
+            "название" to contrastRatio(flatMarkColor(MarkEnvironment.Dark).toArgb(), tile),
+            "подпись" to contrastRatio(markCaptionColor().toArgb(), tile),
+            "издатель" to contrastRatio(markVendorColor().toArgb(), tile),
         )
     }
 
@@ -395,11 +407,12 @@ class BrandSplashSteps(private val world: AcceptanceWorld) {
 
     @И("^акцентная дуга знака не несёт смысла в одиночку$")
     fun theWarmArcMeansNothingAlone() {
-        // Дуга — та же акцентная роль в обеих средах и в обоих вариантах иконки:
-        // она украшение, а не носитель состояния (НФТ-33: смысл не в цвете).
-        val accent = roles().accent
-        assertEquals(accent, glassMarkColors(MarkEnvironment.Dark, accent).warmArc, "the arc is the accent on dark")
-        assertEquals(accent, glassMarkColors(MarkEnvironment.Light, accent).warmArc, "the arc is the accent on light")
+        // Дуга — янтарь, одна краска в обеих средах и в обоих вариантах иконки (Р-57):
+        // она украшение, а не носитель состояния (НФТ-33: смысл не в цвете). Акцент темы
+        // в неё больше не входит — знак не перекрашивается акцентной темой «Про» (Р-56).
+        val dark = glassMarkColors(MarkEnvironment.Dark).warmArc
+        assertEquals(SklyankaMarkColors.Amber, dark, "the arc is amber in the dark rendering")
+        assertEquals(dark, glassMarkColors(MarkEnvironment.Light).warmArc, "and the same in the light one")
         // И собственного описания у неё нет: знак озвучивается целиком, одним описанием.
         val descriptions = descriptionsOf {
             SklyankaMark(
@@ -412,8 +425,6 @@ class BrandSplashSteps(private val world: AcceptanceWorld) {
     }
 
     // --- Обвязка -------------------------------------------------------------------------------
-
-    private fun roles() = if (systemThemeLight) lightColors() else darkColors()
 
     /** Владелец телефона есть у приложения всегда (ПРФ); сценарий профиля не называет. */
     private fun ensureOwner() {

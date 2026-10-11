@@ -10,57 +10,59 @@
 -->
 <resources>
     <!--
-      Цвета фирменного знака (SKL-21).
+      Цвета фирменного знака (SKL-21, палитра — Р-56 и Р-57).
 
       Ресурсы, а не литералы в разметке: значения токенов дизайн-системы живут в одном
       месте, и векторные слои знака ссылаются на них так же, как код ссылается на
-      SklyankaColors (НФТ-47). Значения с прозрачностью записаны в #AARRGGBB — иначе
+      SklyankaMarkColors (НФТ-47). Значения с прозрачностью записаны в #AARRGGBB — иначе
       остановку градиента не задать: android:fillAlpha к отдельному <item> не относится.
 
-      Источник — docs/v2/12-design.md §5, §7 и макеты SklyankaMark.dc.html
-      и SklyankaIcon.dc.html. Значения — дубликат палитры дизайн-системы: векторные
-      иконки не читают токены, поэтому при пересмотре палитры (Р-20, SKL-109) этот
-      файл правится вместе с `core-ui/token/Palette.kt`, иначе значок запуска,
-      заставка и значок уведомления останутся от прежней палитры.
+      Источник — docs/v2/12-design.md §2.4 и макеты SklyankaMark.dc.html
+      и SklyankaIcon.dc.html. Значения — дубликат **палитры знака**
+      (core-ui/.../token/SklyankaMarkTokens.kt, объект SklyankaMarkColors), а не палитры
+      интерфейса: у знака своя холодная палитра, и она в роли интерфейса не входит (Р-56).
+      Векторные иконки токенов не читают, поэтому при правке палитры знака этот файл
+      правится вместе с SklyankaMarkColors, иначе значок запуска, заставка и значок
+      уведомления останутся от прежней палитры. Сходимость стережёт приёмка SKL-109 §4.
     -->
 
-    <!-- Плитки иконки: светлая по умолчанию, тёмная — в `-night` (ОВ-95, §7). -->
-    <color name="mark_tile_dark">#181712</color>
-    <color name="mark_tile_light">#EFE7DB</color>
+    <!-- Плитки иконки: светлая по умолчанию, тёмная — в `-night` (ОВ-95, §2.4). -->
+    <color name="mark_tile_dark">#111A1E</color>
+    <color name="mark_tile_light">#E7F0F4</color>
 
-    <!-- Краски знака: светлая на тёмной плитке, тёмная на светлой, белый блик серпа. -->
-    <color name="mark_ink_on_dark">#F8F6EF</color>
-    <color name="mark_ink_on_light">#241F1B</color>
+    <!-- Краски знака: светлое стекло на тёмной плитке, тёмное — на светлой, белый блик серпа. -->
+    <color name="mark_ink_on_dark">#C4F0F7</color>
+    <color name="mark_ink_on_light">#0B2831</color>
     <color name="mark_highlight">#FFFFFF</color>
 
-    <!-- Акцент тёмной среды: тёплая дуга преломлённого луча и каустика (§5). -->
-    <color name="mark_accent">#B5C47A</color>
+    <!-- Янтарная дуга преломлённого луча и каустика: одна краска в обеих версиях (§2.4). -->
+    <color name="mark_accent">#A86A22</color>
 
     <!-- Силуэт: монохромный слой иконки и значок уведомления. Систему он не красит. -->
     <color name="mark_silhouette">#FFFFFF</color>
 
     <!-- Тело знака: радиальный градиент 0,24 → 0,07 → 0,015 на тёмном. -->
-    <color name="mark_body_dark_0">#3DF8F6EF</color>
-    <color name="mark_body_dark_1">#12F8F6EF</color>
-    <color name="mark_body_dark_2">#04F8F6EF</color>
+    <color name="mark_body_dark_0">#3DC4F0F7</color>
+    <color name="mark_body_dark_1">#12C4F0F7</color>
+    <color name="mark_body_dark_2">#04C4F0F7</color>
 
-    <!-- Он же на светлом: белый блик гаснет в тёмную тень. -->
+    <!-- Он же на светлом: белый блик гаснет в тёмное стекло. -->
     <color name="mark_body_light_0">#F2FFFFFF</color>
     <color name="mark_body_light_1">#59FFFFFF</color>
-    <color name="mark_body_light_2">#0F241F1B</color>
+    <color name="mark_body_light_2">#0F0B2831</color>
 
     <!-- Ободок: линейный градиент 0,85 → 0,16 → 0,42 на тёмном. -->
-    <color name="mark_rim_dark_0">#D9F8F6EF</color>
-    <color name="mark_rim_dark_1">#29F8F6EF</color>
-    <color name="mark_rim_dark_2">#6BF8F6EF</color>
+    <color name="mark_rim_dark_0">#D9C4F0F7</color>
+    <color name="mark_rim_dark_1">#29C4F0F7</color>
+    <color name="mark_rim_dark_2">#6BC4F0F7</color>
 
     <!-- Он же на светлом: 0,16 → 0,5 → 0,22 тёмной краской. -->
-    <color name="mark_rim_light_0">#29241F1B</color>
-    <color name="mark_rim_light_1">#80241F1B</color>
-    <color name="mark_rim_light_2">#38241F1B</color>
+    <color name="mark_rim_light_0">#290B2831</color>
+    <color name="mark_rim_light_1">#800B2831</color>
+    <color name="mark_rim_light_2">#380B2831</color>
 
-    <!-- Каустика: акцент 0,62 (на тёмном) и 0,55 (на светлом), гаснущий в ноль. -->
-    <color name="mark_caustic_dark">#9EB5C47A</color>
-    <color name="mark_caustic_light">#8CB5C47A</color>
-    <color name="mark_caustic_clear">#00B5C47A</color>
+    <!-- Каустика: янтарь 0,62 (на тёмном) и 0,55 (на светлом), гаснущий в ноль. -->
+    <color name="mark_caustic_dark">#9EA86A22</color>
+    <color name="mark_caustic_light">#8CA86A22</color>
+    <color name="mark_caustic_clear">#00A86A22</color>
 </resources>

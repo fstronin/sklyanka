@@ -5,6 +5,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import kotlin.math.round
 
 /**
  * Геометрия и цвета фирменного знака — донца толстого стекла, вид сверху.
@@ -150,6 +151,73 @@ object SklyankaMarkTokens {
 }
 
 /**
+ * Палитра знака — собственная и закрытая, а не дубликат палитры интерфейса (Р-56, Р-57).
+ *
+ * **Почему отдельным объектом.** Знак — единственный холодный элемент бренда, а интерфейс
+ * остаётся «оливой на бумаге» (Р-20 не переписывается). Пока краски знака выводились
+ * из ролей интерфейса ([Palette][ru.stohastika.sklyanka.ui.token.Palette]), знак был
+ * теплым по конструкции; собственные значения делают холодность свойством палитры,
+ * а не подбором по месту. В роли [SklyankaColors] эти значения не входят, поэтому
+ * холодное стекло не перекрашивает тёплые экраны и обратно — смена акцентной темы «Про»
+ * знак не перекрашивает (акцент перестал быть входом [glassMarkColors]).
+ *
+ * **Литералы здесь законны.** Это пакет токенов — единственное место, где значение цвета
+ * записано числом (НФТ-47); экраны получают краску знака функциями токенов.
+ *
+ * Числа — из решения Р-57 (лист вариантов `docs/design-proposals/icon-variants.html`),
+ * норма — `docs/v2/12-design.md` §2.4. Геометрия знака решением не тронута (SKL-21).
+ */
+object SklyankaMarkColors {
+
+    /** Краска знака на тёмной плите: светлое стекло, контраст 14,41. */
+    val InkOnDark: Color = Color(0xFFC4F0F7)
+
+    /** Краска знака на светлой плите: тёмное стекло, контраст 13,34. */
+    val InkOnLight: Color = Color(0xFF0B2831)
+
+    /**
+     * Тёмная плитка иконки и полотно заставки с фирменным блоком.
+     *
+     * Принятое ограничение: против тёмных обоев `#14181B` контраст 1,012 — края плитки
+     * не видно, и знак держат точка (12,34) и серп (9,95). Заказчик оставил плитку
+     * и попросил записать ограничение в норму (§2.4), а не поднимать светлоту.
+     */
+    val TileDark: Color = Color(0xFF111A1E)
+
+    /** Светлая плитка иконки: замена тёплой бумаги `#EFE7DB`. */
+    val TileLight: Color = Color(0xFFE7F0F4)
+
+    /**
+     * Белый блик светлой среды: серп и первые две остановки тела.
+     *
+     * Значением совпадает с бумагой интерфейса, но берётся отсюда: это краска блика,
+     * а не роль поверхности, и знак её читает из своей палитры.
+     */
+    val Highlight: Color = Color(0xFFFFFFFF)
+
+    /**
+     * Янтарная дуга преломлённого луча и каустика — одна краска в обеих версиях (SKL-21).
+     *
+     * Потолок требования назван честно: 3,99 на тёмной плите и 3,83 на светлой при
+     * пороге крупной графики 3,0. Четвёртый порог одной краской взять негде — области
+     * светлоты для 4,5 не пересекаются (на светлой L ≤ 0,1519, на тёмной L ≥ 0,2178),
+     * а две разные дуги SKL-21 запрещает.
+     */
+    val Amber: Color = Color(0xFFA86A22)
+
+    /**
+     * Доли смешения краски знака с тёмной плиткой — производные надписи и издателя (Р-57).
+     *
+     * Подпись и издатель стоят на холодном полотне знака, и роль текста тёмной среды
+     * была бы там тёплой бумагой. Оттенок выведен из краски знака долей смешения,
+     * а не подобран по кадру (Правило 1 §1): 0,62 даёт `#809FA5` и 6,23 к плите,
+     * 0,54 — `#728E93` и 5,05; прежняя доля 0,42 давала 3,55 и AA не проходила.
+     */
+    const val CAPTION_FRACTION: Float = 0.62f
+    const val VENDOR_FRACTION: Float = 0.54f
+}
+
+/**
  * Среда, в которой стоит знак.
  *
  * Не тема оформления приложения, а свойство поверхности (§5): тёмными бывают
@@ -262,7 +330,8 @@ fun markVariantFor(size: Dp): MarkVariant = when {
 /**
  * Цвета слоёв стеклянной отрисовки для одной среды.
  *
- * Собираются из палитры дизайн-системы: собственных цветов у знака нет (`TDD.md` §9).
+ * Собираются из собственной палитры знака ([SklyankaMarkColors]), а не из ролей
+ * интерфейса: знак — единственный холодный элемент бренда (Р-56).
  * [reflection] — единственный необязательный слой: в светлой среде его нет.
  */
 @Immutable
@@ -282,22 +351,26 @@ data class GlassMarkColors(
 /**
  * Цвета стеклянного знака для среды.
  *
- * [accent] приходит снаружи — ролью темы, а не константой: в тёмной среде это
- * `AccentOnDark`, а при появлении палитры профилей (ОВ-10) знак обязан будет с ней
- * согласоваться, и менять придётся вызов, а не эту таблицу.
+ * Краски берутся из палитры знака ([SklyankaMarkColors]), и **акцент снаружи не приходит**:
+ * знак не перекрашивается акцентной темой «Про» (Р-56). Это и есть механическая гарантия
+ * того, что смена акцента не вернёт холодное стекло в тёплое оформление. Дуга и каустика
+ * янтарные и одни и те же в обеих версиях (SKL-21).
+ *
+ * Альфы слоёв — из [SklyankaMarkTokens] и не пересматриваются: под холодную краску
+ * прозрачности не поднимаются, иначе знак потеряет глубину стекла (Р-57, §2.4 нормы).
  */
-fun glassMarkColors(environment: MarkEnvironment, accent: Color): GlassMarkColors = when (environment) {
+fun glassMarkColors(environment: MarkEnvironment): GlassMarkColors = when (environment) {
     MarkEnvironment.Dark -> GlassMarkColors(
-        body = SklyankaMarkTokens.BODY_ALPHAS_ON_DARK.map { Palette.Background.copy(alpha = it) },
+        body = SklyankaMarkTokens.BODY_ALPHAS_ON_DARK.map { SklyankaMarkColors.InkOnDark.copy(alpha = it) },
         bodyStops = SklyankaMarkTokens.BODY_STOPS_ON_DARK,
-        rim = SklyankaMarkTokens.RIM_ALPHAS_ON_DARK.map { Palette.Background.copy(alpha = it) },
+        rim = SklyankaMarkTokens.RIM_ALPHAS_ON_DARK.map { SklyankaMarkColors.InkOnDark.copy(alpha = it) },
         rimStops = SklyankaMarkTokens.RIM_STOPS,
-        rings = SklyankaMarkTokens.RING_ALPHAS_ON_DARK.map { Palette.Background.copy(alpha = it) },
-        crescent = Palette.Background.copy(alpha = SklyankaMarkTokens.CRESCENT_ALPHA_ON_DARK),
-        reflection = Palette.Background.copy(alpha = SklyankaMarkTokens.REFLECTION_ALPHA),
-        warmArc = accent,
-        caustic = accent.copy(alpha = SklyankaMarkTokens.CAUSTIC_ALPHA_ON_DARK),
-        dot = Palette.Background.copy(alpha = SklyankaMarkTokens.DOT_ALPHA_ON_DARK),
+        rings = SklyankaMarkTokens.RING_ALPHAS_ON_DARK.map { SklyankaMarkColors.InkOnDark.copy(alpha = it) },
+        crescent = SklyankaMarkColors.InkOnDark.copy(alpha = SklyankaMarkTokens.CRESCENT_ALPHA_ON_DARK),
+        reflection = SklyankaMarkColors.InkOnDark.copy(alpha = SklyankaMarkTokens.REFLECTION_ALPHA),
+        warmArc = SklyankaMarkColors.Amber,
+        caustic = SklyankaMarkColors.Amber.copy(alpha = SklyankaMarkTokens.CAUSTIC_ALPHA_ON_DARK),
+        dot = SklyankaMarkColors.InkOnDark.copy(alpha = SklyankaMarkTokens.DOT_ALPHA_ON_DARK),
     )
 
     MarkEnvironment.Light -> GlassMarkColors(
@@ -305,42 +378,70 @@ fun glassMarkColors(environment: MarkEnvironment, accent: Color): GlassMarkColor
         // уже тёмная: стекло на светлом читается тенью, а не свечением.
         body = SklyankaMarkTokens.BODY_ALPHAS_ON_LIGHT.mapIndexed { index, alpha ->
             if (index == SklyankaMarkTokens.BODY_ALPHAS_ON_LIGHT.lastIndex) {
-                Palette.Text.copy(alpha = alpha)
+                SklyankaMarkColors.InkOnLight.copy(alpha = alpha)
             } else {
-                Palette.Surface.copy(alpha = alpha)
+                SklyankaMarkColors.Highlight.copy(alpha = alpha)
             }
         },
         bodyStops = SklyankaMarkTokens.BODY_STOPS_ON_LIGHT,
-        rim = SklyankaMarkTokens.RIM_ALPHAS_ON_LIGHT.map { Palette.Text.copy(alpha = it) },
+        rim = SklyankaMarkTokens.RIM_ALPHAS_ON_LIGHT.map { SklyankaMarkColors.InkOnLight.copy(alpha = it) },
         rimStops = SklyankaMarkTokens.RIM_STOPS,
-        rings = SklyankaMarkTokens.RING_ALPHAS_ON_LIGHT.map { Palette.Text.copy(alpha = it) },
-        crescent = Palette.Surface.copy(alpha = SklyankaMarkTokens.CRESCENT_ALPHA_ON_LIGHT),
+        rings = SklyankaMarkTokens.RING_ALPHAS_ON_LIGHT.map { SklyankaMarkColors.InkOnLight.copy(alpha = it) },
+        crescent = SklyankaMarkColors.Highlight.copy(alpha = SklyankaMarkTokens.CRESCENT_ALPHA_ON_LIGHT),
         reflection = null,
-        warmArc = accent,
-        caustic = accent.copy(alpha = SklyankaMarkTokens.CAUSTIC_ALPHA_ON_LIGHT),
-        dot = Palette.Text.copy(alpha = SklyankaMarkTokens.DOT_ALPHA_ON_LIGHT),
+        warmArc = SklyankaMarkColors.Amber,
+        caustic = SklyankaMarkColors.Amber.copy(alpha = SklyankaMarkTokens.CAUSTIC_ALPHA_ON_LIGHT),
+        dot = SklyankaMarkColors.InkOnLight.copy(alpha = SklyankaMarkTokens.DOT_ALPHA_ON_LIGHT),
     )
 }
 
 /**
- * Краска плоской ступени.
+ * Производная краска знака: краска знака, смешанная с тёмной плиткой покомпонентно в sRGB
+ * (Р-57, §2.4 нормы).
  *
- * Ступень рисуется одной краской без прозрачности и градиентов: в тёмной среде
- * светлой (§5, «фон и текст меняются местами»), в светлой — цветом текста `#241F1B`,
- * ровно как в макете `SklyankaScale.dc.html`.
+ * Подпись и издатель под знаком стоят на холодном полотне; оттенок выведен долей смешения,
+ * а не подобран по кадру (Правило 1 §1). Компоненты округляются до байта, поэтому
+ * производная равно `#728E93` при доле 0,54 и `#809FA5` при 0,62 — как в норме.
+ */
+fun markDerivedColor(fraction: Float): Color = Color(
+    red = mixedChannel(SklyankaMarkColors.TileDark.red, SklyankaMarkColors.InkOnDark.red, fraction),
+    green = mixedChannel(SklyankaMarkColors.TileDark.green, SklyankaMarkColors.InkOnDark.green, fraction),
+    blue = mixedChannel(SklyankaMarkColors.TileDark.blue, SklyankaMarkColors.InkOnDark.blue, fraction),
+)
+
+/** Подпись под знаком — «ПРИЁМ ЛЕКАРСТВ» на заставке и в фирменном блоке (доля 0,62). */
+fun markCaptionColor(): Color = markDerivedColor(SklyankaMarkColors.CAPTION_FRACTION)
+
+/** Издатель «Stohastika» у нижнего края заставки (доля 0,54). */
+fun markVendorColor(): Color = markDerivedColor(SklyankaMarkColors.VENDOR_FRACTION)
+
+/** Канал производной: доля возвращается с точностью 1/255, иначе hex разошёлся бы с нормой. */
+private fun mixedChannel(tile: Float, ink: Float, fraction: Float): Float {
+    val mixed = tile + fraction * (ink - tile)
+    return round(mixed * CHANNELS) / CHANNELS
+}
+
+/** Восемь бит на канал: производная совпадает с числом нормы, а не «почти». */
+private const val CHANNELS = 255f
+
+/**
+ * Краска знака на плите среды.
  *
- * Иллюстративные применения знака (пустое состояние, плашка «О приложении»,
- * диагностика часов) краску задают сами — там знак подчинён тону экрана, а не среде;
+ * Ею набрана плоская ступень редукции (одной краской, без прозрачностей и градиентов),
+ * она же — название в фирменном блоке и на заставке: и ступень, и надпись несут
+ * холодное стекло, а не роль интерфейса.
+ *
+ * Иллюстративные применения знака (пустое состояние, плашка «О приложении»)
+ * берут её же — знак остаётся холодным островом внутри тёплого интерфейса (Р-56);
  * для них есть [ru.stohastika.sklyanka.ui.component.FlatMark].
  */
 fun flatMarkColor(environment: MarkEnvironment): Color = when (environment) {
-    MarkEnvironment.Dark -> Palette.Background
-    MarkEnvironment.Light -> Palette.Text
+    MarkEnvironment.Dark -> SklyankaMarkColors.InkOnDark
+    MarkEnvironment.Light -> SklyankaMarkColors.InkOnLight
 }
 
-/** Подложка плитки иконки: тёмная — основная, светлая — для системы на тёмном фоне. */
+/** Подложка плитки иконки, полотна заставки и фирменного блока: тёмная — основная (Р-57). */
 fun markTileBackground(environment: MarkEnvironment): Color = when (environment) {
-    MarkEnvironment.Dark -> Palette.DarkBackground
-    // §7 сводит светлую подложку иконки #F1E9DD к токену линии на поверхности.
-    MarkEnvironment.Light -> Palette.LineOnSurface
+    MarkEnvironment.Dark -> SklyankaMarkColors.TileDark
+    MarkEnvironment.Light -> SklyankaMarkColors.TileLight
 }

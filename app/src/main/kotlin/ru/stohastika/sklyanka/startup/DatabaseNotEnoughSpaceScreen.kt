@@ -18,9 +18,11 @@ import androidx.compose.ui.res.stringResource
 import ru.stohastika.sklyanka.R
 import ru.stohastika.sklyanka.ui.component.SklyankaMark
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
+import ru.stohastika.sklyanka.ui.token.MarkEnvironment
 import ru.stohastika.sklyanka.ui.token.SklyankaSizes
 import ru.stohastika.sklyanka.ui.token.SklyankaSpacing
 import ru.stohastika.sklyanka.ui.token.SklyankaType
+import ru.stohastika.sklyanka.ui.token.markTileBackground
 import ru.stohastika.sklyanka.ui.R as UiR
 
 /**
@@ -46,7 +48,9 @@ fun DatabaseNotEnoughSpaceScreen(missingMegabytes: Long, modifier: Modifier = Mo
         Box(
             modifier = modifier
                 .fillMaxSize()
-                .background(SklyankaTheme.colors.background)
+                // Полотно — холодная плитка знака, как у заставки: системная заставка
+                // рисует ту же краску (Theme.Sklyanka.Splash), и продолжение не даёт шва (Р-57).
+                .background(markTileBackground(MarkEnvironment.Dark))
                 .statusBarsPadding()
                 .navigationBarsPadding()
                 .testTag(TAG_DATABASE_NOT_ENOUGH_SPACE),

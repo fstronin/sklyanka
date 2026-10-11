@@ -16,7 +16,6 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.unit.Dp
-import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.FLAT_MARK_SHAPES
 import ru.stohastika.sklyanka.ui.token.FlatMarkShape
 import ru.stohastika.sklyanka.ui.token.GlassMarkColors
@@ -50,9 +49,9 @@ fun SklyankaMark(
     modifier: Modifier = Modifier,
     environment: MarkEnvironment = MarkEnvironment.Dark,
 ) {
-    // Акцент берётся ролью темы, а не константой знака: когда появится палитра
-    // профилей (ОВ-10), тёплая дуга обязана будет согласоваться с ней сама.
-    val glass = glassMarkColors(environment, SklyankaTheme.colors.accent)
+    // Краски знака — своя палитра, акцент сюда не приходит: знак не перекрашивается
+    // акцентной темой «Про» (Р-56). Дуга и каустика янтарные и одни в обеих версиях.
+    val glass = glassMarkColors(environment)
     val flat = flatMarkColor(environment)
     val variant = markVariantFor(size)
     Canvas(

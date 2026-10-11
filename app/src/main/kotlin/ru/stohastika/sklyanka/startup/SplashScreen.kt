@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import ru.stohastika.sklyanka.ui.R
+import ru.stohastika.sklyanka.ui.component.BrandTitle
 import ru.stohastika.sklyanka.ui.component.SklyankaMark
 import ru.stohastika.sklyanka.ui.locale.interfaceLocale
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
@@ -22,6 +23,10 @@ import ru.stohastika.sklyanka.ui.token.MarkEnvironment
 import ru.stohastika.sklyanka.ui.token.SklyankaBrandType
 import ru.stohastika.sklyanka.ui.token.SklyankaSizes
 import ru.stohastika.sklyanka.ui.token.SklyankaSpacing
+import ru.stohastika.sklyanka.ui.token.flatMarkColor
+import ru.stohastika.sklyanka.ui.token.markCaptionColor
+import ru.stohastika.sklyanka.ui.token.markTileBackground
+import ru.stohastika.sklyanka.ui.token.markVendorColor
 
 /**
  * Заставка: знак, название, подпись и издатель на тёмном полотне
@@ -41,11 +46,13 @@ import ru.stohastika.sklyanka.ui.token.SklyankaSpacing
 @Composable
 fun SplashScreen(modifier: Modifier = Modifier) {
     SklyankaTheme(dark = true) {
-        val colors = SklyankaTheme.colors
         Box(
             modifier = modifier
                 .fillMaxSize()
-                .background(colors.background)
+                // Полотно — холодная плитка знака, а не фон тёмной среды интерфейса:
+                // системная заставка рисует ту же краску (Theme.Sklyanka.Splash), и переход
+                // к приложению не мигает (Р-57, §2.4 нормы).
+                .background(markTileBackground(MarkEnvironment.Dark))
                 .statusBarsPadding()
                 .navigationBarsPadding()
                 .testTag(TAG_SPLASH),
@@ -64,29 +71,31 @@ fun SplashScreen(modifier: Modifier = Modifier) {
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Default),
                 ) {
-                    Text(
+                    // Название — краска знака, не роль текста: знак и надпись вместе
+                    // несут холодное стекло, и акцентная тема его не перекрашивает (Р-56).
+                    // Кегль уменьшается сам, если слово не помещается (V-16).
+                    BrandTitle(
                         text = stringResource(R.string.app_name),
                         style = SklyankaBrandType.SplashTitle,
-                        color = colors.text,
+                        color = flatMarkColor(MarkEnvironment.Dark),
                     )
                     Text(
                         // Прописные — отрисовкой, а не в ресурсе: читалка должна
                         // произносить слова, а не перечислять буквы (НФТ-30).
                         text = stringResource(R.string.brand_tagline).uppercase(interfaceLocale()),
                         style = SklyankaBrandType.SplashTagline,
-                        // Макет задаёт подписи #8C837A, а издателю #6B635B. Новых цветов
-                        // задача не вводит (TDD §9), поэтому берутся две ближайшие роли
-                        // тёмной среды: они сохраняют ту же иерархию — подпись светлее
-                        // издателя — и обе проходят AA к фону (НФТ-32), чего оригиналы
-                        // не гарантируют.
-                        color = colors.textMuted,
+                        // Макет задаёт подписи #8C837A, а издателю #6B635B. Холодные
+                        // производные краски знака выводятся долей смешения с плиткой
+                        // (§2.4): 0,62 даёт 6,23 к полотну, 0,54 — 5,05; обе выше AA,
+                        // чего прежние роли тёплого серого не гарантировали.
+                        color = markCaptionColor(),
                     )
                 }
             }
             Text(
                 text = stringResource(R.string.brand_vendor),
                 style = SklyankaBrandType.SplashVendor,
-                color = colors.textTertiary,
+                color = markVendorColor(),
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(bottom = SklyankaSizes.SplashVendorBottom),

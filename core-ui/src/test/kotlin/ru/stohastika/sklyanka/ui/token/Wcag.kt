@@ -18,7 +18,7 @@ internal fun contrastRatio(foreground: Color, background: Color): Double {
     return (lighter + 0.05) / (darker + 0.05)
 }
 
-private fun relativeLuminance(color: Color): Double =
+internal fun relativeLuminance(color: Color): Double =
     RED_WEIGHT * linear(color.red) + GREEN_WEIGHT * linear(color.green) + BLUE_WEIGHT * linear(color.blue)
 
 private fun linear(channel: Float): Double {

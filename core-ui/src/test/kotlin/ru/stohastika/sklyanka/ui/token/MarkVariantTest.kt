@@ -118,10 +118,11 @@ class MarkVariantTest {
 
     @Test
     fun `the warm arc is the same in both environments`() {
-        // Дуга — то, что связывает тёмную и светлую версии (критерий 4).
-        val accent = darkColors().accent
-        val dark = glassMarkColors(MarkEnvironment.Dark, accent)
-        val light = glassMarkColors(MarkEnvironment.Light, accent)
+        // Дуга — то, что связывает тёмную и светлую версии (критерий 4 SKL-21), и она
+        // янтарная в обеих: акцент снаружи в краски знака не приходит (Р-56).
+        val dark = glassMarkColors(MarkEnvironment.Dark)
+        val light = glassMarkColors(MarkEnvironment.Light)
+        assertEquals(SklyankaMarkColors.Amber, dark.warmArc)
         assertEquals(dark.warmArc, light.warmArc)
         assertNotNull("the dark rendering keeps the reflection", dark.reflection)
         assertNull("the light one has none — a highlight on light reads as dirt", light.reflection)

@@ -18,6 +18,9 @@ import ru.stohastika.sklyanka.ui.token.MarkEnvironment
 import ru.stohastika.sklyanka.ui.token.SklyankaBrandType
 import ru.stohastika.sklyanka.ui.token.SklyankaSizes
 import ru.stohastika.sklyanka.ui.token.SklyankaSpacing
+import ru.stohastika.sklyanka.ui.token.flatMarkColor
+import ru.stohastika.sklyanka.ui.token.markCaptionColor
+import ru.stohastika.sklyanka.ui.token.markTileBackground
 
 /**
  * Логотип с названием: знак слева, «Склянка» и «приём лекарств» справа на тёмном фоне
@@ -35,10 +38,10 @@ import ru.stohastika.sklyanka.ui.token.SklyankaSpacing
 fun SklyankaLockup(modifier: Modifier = Modifier) {
     // Фирменный блок всегда стоит в тёмной среде — и в макете, и в магазине.
     SklyankaTheme(dark = true) {
-        val colors = SklyankaTheme.colors
         Row(
             modifier = modifier
-                .background(colors.background)
+                // Полотно — холодная плитка знака, а не фон тёмной среды интерфейса (§2.4).
+                .background(markTileBackground(MarkEnvironment.Dark))
                 .padding(SklyankaSpacing.Screen)
                 .testTag(TAG_LOCKUP),
             horizontalArrangement = Arrangement.spacedBy(SklyankaSizes.BrandGap),
@@ -50,15 +53,18 @@ fun SklyankaLockup(modifier: Modifier = Modifier) {
                 environment = MarkEnvironment.Dark,
             )
             Column(verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Default)) {
-                Text(
+                // Название — краска знака, подпись — её производная (§2.4): блок целиком
+                // холодный, и роли текста тёплой тёмной среды здесь не читаются.
+                // Кегль уменьшается сам, если слово не помещается (V-16).
+                BrandTitle(
                     text = stringResource(R.string.app_name),
                     style = SklyankaBrandType.LockupTitle,
-                    color = colors.text,
+                    color = flatMarkColor(MarkEnvironment.Dark),
                 )
                 Text(
                     text = stringResource(R.string.brand_tagline).uppercase(interfaceLocale()),
                     style = SklyankaBrandType.LockupTagline,
-                    color = colors.textMuted,
+                    color = markCaptionColor(),
                 )
             }
         }

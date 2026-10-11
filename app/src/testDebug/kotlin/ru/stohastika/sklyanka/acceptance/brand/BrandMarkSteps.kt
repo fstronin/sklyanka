@@ -31,9 +31,11 @@ import ru.stohastika.sklyanka.ui.token.FlatMarkShape
 import ru.stohastika.sklyanka.ui.token.MarkEnvironment
 import ru.stohastika.sklyanka.ui.token.MarkVariant
 import ru.stohastika.sklyanka.ui.token.SklyankaBrandType
+import ru.stohastika.sklyanka.ui.token.SklyankaMarkColors
 import ru.stohastika.sklyanka.ui.token.SklyankaMarkTokens
 import ru.stohastika.sklyanka.ui.token.SklyankaSizes
 import ru.stohastika.sklyanka.ui.token.darkColors
+import ru.stohastika.sklyanka.ui.token.markTileBackground
 import ru.stohastika.sklyanka.ui.token.markVariantFor
 import java.io.File
 import kotlin.math.abs
@@ -123,7 +125,7 @@ class BrandMarkSteps {
         // смене палитры, ничего не говоря о самом знаке.
         val points = WARM_ARC_ANGLES.count { angle ->
             inkAtCircle(SklyankaMarkTokens.WARM_ARC_RADIUS, angle) &&
-                isAccentHued(colourAtCircle(SklyankaMarkTokens.WARM_ARC_RADIUS, angle))
+                isArcPainted(colourAtCircle(SklyankaMarkTokens.WARM_ARC_RADIUS, angle))
         }
         assertTrue(points >= 2, "the accent arc is not on the lower edge: $points points")
     }
@@ -132,14 +134,17 @@ class BrandMarkSteps {
     fun theCausticIsVisible() {
         val caustic = colourAtField(SklyankaMarkTokens.CENTER, SklyankaMarkTokens.CAUSTIC_CENTER_Y)
         assertTrue(colourGap(caustic, darkColors().background.toArgb()) > GAP, "the caustic leaves no paint")
-        assertTrue(isAccentHued(caustic), "the caustic must be the accent spot under the sign: ${hex(caustic)}")
+        assertTrue(isArcPainted(caustic), "the caustic must be the amber spot under the sign: ${hex(caustic)}")
     }
 
     @И("^видна центральная точка$")
     fun theDotIsVisible() {
         val dot = colourAtField(SklyankaMarkTokens.CENTER, SklyankaMarkTokens.CENTER)
+        // Точка — светлое пятно на тёмном полотне: проверяется светлота, а не порог канала.
+        // Порог канала был привязан к прежней тёплой бумаге знака; холодное стекло (Р-56)
+        // светлее фона, но по каналам ниже, и «светлое» — свойство светлоты, а не канала.
         assertTrue(
-            Color.red(dot) >= LIGHT && Color.green(dot) >= LIGHT && Color.blue(dot) >= LIGHT,
+            relativeLuminance(dot) > DOT_LUMINANCE_FLOOR,
             "the central dot must be a light point: ${hex(dot)}",
         )
     }
@@ -338,11 +343,10 @@ class BrandMarkSteps {
     fun theLockupStandsOnDark() {
         val facts = requireNotNull(lockup)
         val corner = requireNotNull(lockupImage).colourAt(facts.lockup.left.toInt() + 2, facts.lockup.top.toInt() + 2)
-        assertEquals(
-            darkColors().background.toArgb(),
-            corner,
-            "the lockup background must be ${hex(darkColors().background.toArgb())}, got ${hex(corner)}",
-        )
+        // Фирменный блок стоит на холодной плите знака (Р-56, §2.4), а не на фоне тёмной
+        // среды интерфейса: знак и полотно — одна краска.
+        val tile = markTileBackground(MarkEnvironment.Dark).toArgb()
+        assertEquals(tile, corner, "the lockup background must be ${hex(tile)}, got ${hex(corner)}")
     }
 
     // --- Обвязка -------------------------------------------------------------------------------
@@ -374,12 +378,12 @@ class BrandMarkSteps {
     ): Int = angles.count { angle -> inkAtCircle(radius, angle) }
 
     /**
-     * Краска идёт цветом акцента: порядок каналов совпадает с акцентом, а точка отличается
-     * от фона среды. Проверка не завязана на конкретный оттенок — палитра меняется решением
-     * (Р-20), а знак обязан остаться тем же знаком.
+     * Краска идёт янтарной краской знака: порядок каналов совпадает с ней, а точка
+     * отличается от фона среды. Проверка не завязана на конкретный оттенок — краски знака
+     * меняются решением (Р-56), а знак обязан остаться тем же знаком.
      */
-    private fun isAccentHued(colour: Int): Boolean =
-        channelOrder(colour) == channelOrder(darkColors().accent.toArgb()) &&
+    private fun isArcPainted(colour: Int): Boolean =
+        channelOrder(colour) == channelOrder(SklyankaMarkColors.Amber.toArgb()) &&
             colourGap(colour, darkColors().background.toArgb()) > GAP
 
     private fun channelOrder(colour: Int): List<Int> =
@@ -407,7 +411,6 @@ class BrandMarkSteps {
         const val GREEN_CHANNEL = 1
         const val BLUE_CHANNEL = 2
         val CHANNELS = listOf(RED_CHANNEL, GREEN_CHANNEL, BLUE_CHANNEL)
-        const val LIGHT = 200
         const val RING_SAMPLES = 12
         const val LOCKUP_WIDTH = 390
         const val LOCKUP_HEIGHT = 220
@@ -418,11 +421,14 @@ class BrandMarkSteps {
         const val LIGHT_INK_FLOOR = 0.6
         const val LIGHT_TILE_FLOOR = 0.6
         const val DARK_INK_CEILING = 0.05
+
+        /** Точка знака — светлое пятно на тёмном полотне: светлота, а не порог канала. */
+        const val DOT_LUMINANCE_FLOOR = 0.6
         const val GLASS = "стеклянная отрисовка"
         const val GLASS_COMPOSITION = "кольца, серп, тёплая дуга, каустика, точка"
         const val DETEKT_CONFIG = "config/detekt/detekt.yml"
         const val HARDCODED_RULE = "HardcodedDesignToken"
-        val COLOUR_LITERAL = Regex("""Color\(|0x[0-9A-Fa-f]{6,}|Color\.""")
+        val COLOUR_LITERAL = Regex("""\bColor\(|0x[0-9A-Fa-f]{6,}|Color\.""")
         val CRESCENT_ANGLES = listOf(200f, 220f, 240f, 255f)
         val WARM_ARC_ANGLES = listOf(30f, 50f, 70f)
         val SELECTOR_FILES = listOf("Glyphs.kt", "SklyankaMark.kt", "SklyankaMarkTokens.kt")

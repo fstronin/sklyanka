@@ -1,0 +1,194 @@
+package ru.stohastika.sklyanka.acceptance.steps.task
+
+import io.cucumber.java.ru.Допустим
+import io.cucumber.java.ru.И
+import io.cucumber.java.ru.Когда
+import io.cucumber.java.ru.Но
+import io.cucumber.java.ru.Тогда
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
+import ru.stohastika.sklyanka.acceptance.RepositoryLayout
+import java.io.File
+
+/**
+ * Шаги приёмки SKL-139 без экрана: силуэты, норма и макеты.
+ *
+ * Сценарии знака, помеченные `@stand`, идут сценарным прогоном на JVM, где Compose
+ * недоступен, — и это правильно: силуэты знака, норма палитры и макеты проверяются
+ * **файлами**, а не отрисовкой. Экранная половина задачи (краски, контрасты, заставка,
+ * название при 200 %) живёт в шагах модуля `app` (`acceptance/mark/Sk139MarkSteps.kt`).
+ *
+ * Предыстория файла — «значения палитры знака закреплены нормой (Р-57)» — тоже здесь:
+ * она нужна обеим половинам, а шаг, объявленный дважды, гасит прогон
+ * (`:acceptance:verifyAcceptanceSteps`). Пакет `ru.stohastika.sklyanka.acceptance`
+ * виден обоим прогонам, поэтому объявление одно.
+ *
+ * Русский текст в аннотациях — ключевые слова Gherkin, а не текст интерфейса.
+ */
+class Sk139MarkSteps {
+
+    private var monochrome = ""
+    private var notification = ""
+    private var palette = ""
+    private var normative = ""
+    private var manifest = ""
+    private var mocks: Map<String, String> = emptyMap()
+    private var sheet = ""
+
+    // --- Предыстория --------------------------------------------------------------------------
+
+    @Допустим("^значения палитры знака закреплены нормой \\(Р-57\\)$")
+    fun theMarkPaletteIsFixedByTheDocument() {
+        normative = read(NORMATIVE_DOCUMENT)
+        val missing = REQUIRED_COLD_VALUES.filterNot { normative.contains(it, ignoreCase = true) }
+        assertTrue(missing.isEmpty(), "the design system document does not name ${missing.joinToString()}")
+    }
+
+    // --- Силуэты форму не меняют ---------------------------------------------------------------
+
+    @Когда("сверяют монохромный слой знака и значок уведомления")
+    fun theSilhouettesAreCompared() {
+        monochrome = read(MONOCHROME_LAYER)
+        notification = read(NOTIFICATION_MARK)
+        palette = read(MARK_COLOURS)
+    }
+
+    @Тогда("монохромный слой остаётся белой маской предельной ступени редукции")
+    fun theMonochromeLayerStaysTheLimitStep() {
+        // Предельная ступень — одно кольцо r=80 толщиной 26 и точка r=30 на поле 200
+        // (SKL-21, `FLAT_MARK_SHAPES`): у силуэта геометрия не пересматривается.
+        assertTrue(monochrome.contains(LIMIT_RING), "the layer must keep the ring")
+        assertTrue(monochrome.contains(STROKE_WIDTH), "the layer must keep the stroke")
+        assertTrue(monochrome.contains(LIMIT_DOT), "the layer must keep the limit dot")
+        assertTrue(monochrome.contains(SILHOUETTE_TOKEN), "the layer must be painted with the silhouette token")
+        assertFalse(LITERAL_COLOUR.containsMatchIn(monochrome), "the layer must carry no literal colour")
+    }
+
+    @И("его цвет системе не навязан")
+    fun itsColourIsNotImposedOnTheSystem() {
+        assertTrue(
+            palette.contains("<color name=\"mark_silhouette\">#FFFFFF</color>"),
+            "the silhouette token must be white: the system tints the mask",
+        )
+    }
+
+    @И("значок уведомления остаётся силуэтом")
+    fun theNotificationIconStaysASilhouette() {
+        assertTrue(notification.contains(LIMIT_RING), "the notification icon must keep the ring")
+        assertTrue(notification.contains(LIMIT_DOT), "the notification icon must keep the limit dot")
+        assertTrue(notification.contains(SILHOUETTE_TOKEN), "the notification icon must be a mask too")
+        assertFalse(
+            LITERAL_COLOUR.containsMatchIn(notification),
+            "the notification icon must carry no literal colour",
+        )
+    }
+
+    // --- Вторая палитра и макеты ---------------------------------------------------------------
+
+    @Когда("сверяют норму палитры знака")
+    fun thePaletteNormIsCompared() {
+        normative = read(NORMATIVE_DOCUMENT)
+        manifest = read(MANIFEST)
+    }
+
+    @Тогда("норма фиксирует обе палитры")
+    fun theNormFixesBothPalettes() {
+        val section = markSection()
+        assertTrue(section.isNotEmpty(), "the mark palette section is missing from $NORMATIVE_DOCUMENT")
+        val missing = (REQUIRED_COLD_VALUES + REQUIRED_WARM_VALUES)
+            .filterNot { section.contains(it, ignoreCase = true) }
+        assertTrue(missing.isEmpty(), "the section does not name ${missing.joinToString()}")
+    }
+
+    @И("прежняя тёплая оливовая иконка остаётся вторым вариантом")
+    fun theWarmIconStaysTheSecondVariant() {
+        // Вторая палитра названа словами, а не только числами: иначе тёплый вид прочли бы
+        // как забытые значения, а не как вариант платного набора (Р-56, Р-31).
+        val section = markSection()
+        assertTrue(
+            section.contains("вторым вариантом") && section.contains("«Про»"),
+            "the warm palette must be named as the second variant of the paid set",
+        )
+    }
+
+    @Но("механизм смены иконки нормой не заводится")
+    fun theIconSwitchMechanismIsNotIntroduced() {
+        // Механизм смены иконки — фаза C (Р-31): пока его нет, в манифесте нет ни одного
+        // `activity-alias`, и включить вторую иконку нечем.
+        assertFalse(manifest.contains(ACTIVITY_ALIAS), "the manifest must not declare an icon switch yet")
+    }
+
+    @Когда("сверяют макеты знака")
+    fun theMockupsAreCompared() {
+        mocks = MOCKUPS.associateWith { read(it) }
+        sheet = read(PREVIEW_SHEET)
+    }
+
+    @Тогда("терракотовой краски `#C9633D` в них нет")
+    fun theTerracottaIsGone() {
+        val guilty = mocks.filterValues { it.contains(TERRACOTTA, ignoreCase = true) }.keys
+        assertTrue(guilty.isEmpty(), "the terracotta is still in ${guilty.joinToString()}")
+    }
+
+    @И("макеты несут холодную палитру знака")
+    fun theMockupsCarryTheColdPalette() {
+        mocks.forEach { (path, text) ->
+            assertTrue(text.contains(MARK_INK_DARK, ignoreCase = true), "$path does not carry the cold mark ink")
+            assertTrue(text.contains(MARK_AMBER, ignoreCase = true), "$path does not carry the amber arc")
+        }
+    }
+
+    @И("сводный макет пересобран")
+    fun thePreviewSheetIsRebuilt() {
+        assertTrue(sheet.contains(MARK_INK_DARK, ignoreCase = true), "the sheet must carry the cold mark ink")
+        val missing = MOCKUPS.filterNot { sheet.contains(File(it).name) }
+        assertTrue(missing.isEmpty(), "the sheet does not show ${missing.joinToString()}")
+        assertFalse(sheet.contains(TERRACOTTA, ignoreCase = true), "the sheet must not carry the terracotta")
+    }
+
+    /** Раздел нормы о палитре знака: от его заголовка до следующего раздела первого уровня. */
+    private fun markSection(): String = normative.substringAfter(MARK_SECTION).substringBefore(NEXT_SECTION)
+
+    private fun read(path: String): String {
+        val file = File(RepositoryLayout.root, path)
+        assertTrue(file.isFile, "$path is missing")
+        return file.readText()
+    }
+
+    private companion object {
+        const val NORMATIVE_DOCUMENT = "docs/v2/12-design.md"
+        const val MANIFEST = "app/src/main/AndroidManifest.xml"
+        const val MARK_COLOURS = "app/src/main/res/values/colors.xml"
+        const val MONOCHROME_LAYER = "app/src/main/res/drawable/ic_launcher_monochrome.xml"
+        const val NOTIFICATION_MARK = "app/src/main/res/drawable/ic_notification_mark.xml"
+        const val PREVIEW_SHEET = "design/preview.html"
+
+        /** Четыре макета знака: их приведение к холодной палитре разрешено решением Р-56. */
+        val MOCKUPS = listOf(
+            "design/screens/SklyankaMark.dc.html",
+            "design/screens/SklyankaIcon.dc.html",
+            "design/screens/SklyankaLockup.dc.html",
+            "design/screens/Splash.dc.html",
+        )
+
+        /** Значения Р-57, которые обязана назвать норма (§2.4). */
+        val REQUIRED_COLD_VALUES = listOf("#C4F0F7", "#0B2831", "#111A1E", "#E7F0F4", "#A86A22")
+
+        /** Вторая палитра — тёплый оливковый вид «Про»: норма фиксирует обе (Р-56). */
+        val REQUIRED_WARM_VALUES = listOf("#F8F6EF", "#241F1B", "#181712", "#EFE7DB", "#B5C47A")
+
+        const val MARK_SECTION = "### 2.4 Палитра знака"
+        const val NEXT_SECTION = "## 3."
+        const val ACTIVITY_ALIAS = "activity-alias"
+        const val SILHOUETTE_TOKEN = "@color/mark_silhouette"
+        const val LIMIT_RING = "a80,80"
+        const val LIMIT_DOT = "a30,30"
+        const val STROKE_WIDTH = "strokeWidth=\"26\""
+        const val TERRACOTTA = "#C9633D"
+        const val MARK_INK_DARK = "#C4F0F7"
+        const val MARK_AMBER = "#A86A22"
+
+        /** Литерал цвета в разметке: у силуэта его быть не должно — цвет назначает система. */
+        val LITERAL_COLOUR = Regex("#[0-9A-Fa-f]{6}")
+    }
+}

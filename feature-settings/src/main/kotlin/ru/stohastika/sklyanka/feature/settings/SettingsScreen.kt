@@ -36,11 +36,13 @@ import ru.stohastika.sklyanka.ui.component.rememberScreenHeaderState
 import ru.stohastika.sklyanka.ui.locale.interfaceLocale
 import ru.stohastika.sklyanka.ui.modifier.minTouchTarget
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
+import ru.stohastika.sklyanka.ui.token.MarkEnvironment
 import ru.stohastika.sklyanka.ui.token.ProfilePalette
 import ru.stohastika.sklyanka.ui.token.SklyankaShapes
 import ru.stohastika.sklyanka.ui.token.SklyankaSizes
 import ru.stohastika.sklyanka.ui.token.SklyankaSpacing
 import ru.stohastika.sklyanka.ui.token.SklyankaType
+import ru.stohastika.sklyanka.ui.token.flatMarkColor
 
 /**
  * Экран «Настройки» (`design/screens/Settings.dc.html`).
@@ -367,7 +369,9 @@ private fun AboutPlate(version: String, modifier: Modifier = Modifier) {
         horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Medium),
     ) {
         FlatMark(
-            color = colors.textTertiary,
+            // Краска знака, а не роль интерфейса: холодное стекло остаётся холодным
+            // островом и внутри тёплого списка настроек (Р-56, §2.4 нормы).
+            color = flatMarkColor(MarkEnvironment.Light),
             size = SklyankaSizes.IconPlate,
             modifier = Modifier.semantics { contentDescription = markLabel },
         )
