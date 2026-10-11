@@ -37,7 +37,12 @@ class DiagnosticsDeviceTest : DeviceScreenTest() {
             exists(TAG_VERDICT) || exists(TAG_WARNING)
         }
         waitForTag(TAG_PERMISSIONS)
-        waitForTag(TAG_CHECK_BLOCK)
+        // Блоки ниже разрешений могут стоять за экраном, и ленивый список их не компонует:
+        // у образа, где доступ к политике «Не беспокоить» не читается, группа разрешений
+        // длиннее на строку, и `diagnostics_check_block` в дерево не попадает вовсе
+        // (проверено на образе `default` API 35: узел появляется после одного проматывания).
+        // Поэтому к блоку сначала прокручивают — тем же приёмом, что ниже к сводке недели.
+        scrollTo(TAG_DIAGNOSTICS, TAG_CHECK_BLOCK)
         waitForTag(TAG_CHECK_DELIVERY)
         capture("diagnostics")
 
