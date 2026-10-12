@@ -18,6 +18,11 @@ android {
 dependencies {
     implementation(project(":core-domain"))
 
+    // Обработчик системного возврата шторки: `BackHandler` живёт в activity-compose,
+    // и правило «возврат закрывает шторку» обязано стоять в самой шторке, а не в каждом
+    // её вызывающем по месту (SKL-143, `10-behavior.md` §5.3).
+    implementation(libs.androidx.activity.compose)
+
     // Расчёт контраста, тонирование и полнота наборов проверяются на JVM: эмулятор
     // для арифметики по токенам не нужен, а без эмулятора он и недоступен (TDD §11.1).
     testImplementation(libs.junit4)

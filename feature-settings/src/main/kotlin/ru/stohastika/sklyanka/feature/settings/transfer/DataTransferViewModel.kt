@@ -213,8 +213,13 @@ class DataTransferViewModel @Inject constructor(
 
     private fun apply() {
         val snapshot = pending ?: return
+        // Занятость ставится до операции и синхронно: повтор намерения, пришедший раньше,
+        // чем тело корутины дойдёт до первого приостановления, обязан увидеть «идёт запись»
+        // и отступить. Второй пояс к гейту экрана: занятая кнопка (`ButtonState.Busy`)
+        // уже не нажимается, но замена необратима, и одной перерисовки для защиты мало (ПЕР-16).
+        if (mutable.value.busy) return
+        mutable.update { it.copy(busy = true, failure = null) }
         viewModelScope.launch {
-            mutable.update { it.copy(busy = true, failure = null) }
             val outcome = if (mutable.value.mode == TransferMode.REPLACE_ALL) {
                 applyTransfer.replaceAll(snapshot, pendingNotices)
             } else {

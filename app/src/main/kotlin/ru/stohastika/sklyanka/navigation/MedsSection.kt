@@ -6,6 +6,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.listSaver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Modifier
@@ -153,13 +156,56 @@ class MedsStack internal constructor(private val entries: SnapshotStateList<Meds
  * Список всегда на дне, даже когда человек пришёл сразу в карточку с экрана «Сегодня»:
  * «Назад» из карточки обязана вести в список лекарств (критерий 23 SKL-10), а не выбрасывать
  * из раздела.
+ *
+ * Стек — сохранённое состояние композиции: поворот пересобирает её целиком, и без этого
+ * человек терял бы место в разделе (SKL-142). Уход из раздела состояние отпускает само
+ * (`rememberSaveable` живёт, пока живёт композиция), поэтому возвращение в раздел
+ * начинается с его начала, как и раньше.
  */
 @Composable
 private fun rememberMedsStack(initial: MedsDestination): MedsStack {
-    val entries = remember(initial) {
+    val entries = rememberSaveable(initial, saver = MedsStackSaver) {
         mutableStateListOf<MedsDestination>(MedsDestination.List).also {
             if (initial != MedsDestination.List) it += initial
         }
     }
     return remember(entries) { MedsStack(entries) }
+}
+
+/**
+ * Место в разделе строкой: сохранённое состояние обязано пережить пересоздание процесса
+ * записи состояния, а `MedsDestination` — не `Parcelable`.
+ */
+private const val MEDS_LIST = "list"
+private const val MEDS_ARCHIVE = "archive"
+private const val MEDS_NEW = "new"
+private const val MEDS_CARD = "card:"
+private const val MEDS_EDIT = "edit:"
+
+internal val MedsStackSaver: Saver<SnapshotStateList<MedsDestination>, Any> = listSaver(
+    save = { stack -> stack.map(::encodeDestination) },
+    restore = { encoded ->
+        val restored = encoded.mapNotNull { decodeDestination(it as String) }
+        mutableStateListOf<MedsDestination>().also { entries ->
+            entries += if (restored.isEmpty()) listOf(MedsDestination.List) else restored
+        }
+    },
+)
+
+internal fun encodeDestination(destination: MedsDestination): String = when (destination) {
+    MedsDestination.List -> MEDS_LIST
+    MedsDestination.Archive -> MEDS_ARCHIVE
+    MedsDestination.NewMedication -> MEDS_NEW
+    is MedsDestination.Card -> MEDS_CARD + destination.medicationId
+    is MedsDestination.Edit -> MEDS_EDIT + destination.medicationId
+}
+
+/** Неузнанное место не восстанавливается: пустой стек дал бы экран без списка на дне. */
+internal fun decodeDestination(encoded: String): MedsDestination? = when {
+    encoded == MEDS_LIST -> MedsDestination.List
+    encoded == MEDS_ARCHIVE -> MedsDestination.Archive
+    encoded == MEDS_NEW -> MedsDestination.NewMedication
+    encoded.startsWith(MEDS_CARD) -> MedsDestination.Card(encoded.removePrefix(MEDS_CARD))
+    encoded.startsWith(MEDS_EDIT) -> MedsDestination.Edit(encoded.removePrefix(MEDS_EDIT))
+    else -> null
 }

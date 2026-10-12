@@ -201,7 +201,14 @@ private fun SaveBar(state: MedFormUiState, onIntent: (MedFormIntent) -> Unit) {
                 is FormMode.Edit -> stringResource(R.string.form_save_existing)
             },
             onClick = { onIntent(MedFormIntent.Save) },
-            state = if (state.saveEnabled) ButtonState.Normal else ButtonState.Disabled,
+            // Пока идёт запись, кнопка занята, а не выглядит готовой к нажатию (НФТ-29,
+            // SKL-141): второе нажатие «на всякий случай» не имеет права завести второе
+            // лекарство. Занятая кнопка не нажимается — `isInteractive` только у `Normal`.
+            state = when {
+                state.saving -> ButtonState.Busy
+                state.saveEnabled -> ButtonState.Normal
+                else -> ButtonState.Disabled
+            },
             modifier = Modifier.fillMaxWidth().testTag(TAG_SAVE_BUTTON),
         )
     }

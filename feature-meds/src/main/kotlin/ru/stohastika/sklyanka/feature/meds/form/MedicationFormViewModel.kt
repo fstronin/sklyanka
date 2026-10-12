@@ -195,14 +195,25 @@ class MedicationFormViewModel @Inject constructor(
     }
 
     private fun save(state: MedFormUiState) {
+        // Повтор нажатия во время записи не даёт ни второй записи, ни второго плана приёмов:
+        // у нового черновика нет идентификатора, и каждый вызов сценария сохранения выдаёт
+        // новый (SKL-141). Признак ставится синхронно, до запуска корутины: второе нажатие
+        // приходит раньше, чем запись успевает начаться, и обязано увидеть «идёт запись».
+        if (state.saving) return
+        _state.value = state.copy(saving = true)
         viewModelScope.launch {
             when (val result = saveMedication(state.draft)) {
                 is SaveResult.Saved -> {
+                    _state.value = _state.value?.copy(saving = false)
                     _closed.tryEmit(Unit)
                 }
                 // Черновик не трогается: сохраняется всё, что человек ввёл, включая
-                // текст числовых полей, который в число не разобрался.
-                is SaveResult.Rejected -> _state.value = _state.value?.copy(violations = result.violations)
+                // текст числовых полей, который в число не разобрался. Отказ снимает
+                // признак записи: форма снова готова принять нажатие.
+                is SaveResult.Rejected -> _state.value = _state.value?.copy(
+                    violations = result.violations,
+                    saving = false,
+                )
             }
         }
     }

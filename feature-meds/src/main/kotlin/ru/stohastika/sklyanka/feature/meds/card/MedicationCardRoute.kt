@@ -36,6 +36,18 @@ fun MedicationCardRoute(
     val state by viewModel.state.collectAsState()
 
     var wasOpen by remember(medicationId) { mutableStateOf(false) }
+
+    /**
+     * Карточка показана открытой в этом заходе.
+     *
+     * Исход закрытия принадлежит **тому уходу**, который его поставил: `closed`, оставшийся
+     * от прошлого архивации или удаления, читается на первом кадре нового захода
+     * (`collectAsState` отдаёт последнее значение `StateFlow`), и закрытие прошлого ухода
+     * не имеет права закрывать только что открытую карточку (SKL-145; тот же класс дефекта,
+     * что чинили у экрана разрешений, SKL-40). `open()` остаётся точкой сброса: он гасит
+     * признак, и повторный вход начинается чистым.
+     */
+    var sawOpen by remember(medicationId) { mutableStateOf(false) }
     val current = state
     if (current != null) {
         wasOpen = true
@@ -46,7 +58,16 @@ fun MedicationCardRoute(
         if (wasOpen) LaunchedEffect(medicationId) { onBack() }
         return
     }
-    LaunchedEffect(current.closed) { if (current.closed) onBack() }
+    LaunchedEffect(medicationId, current.medicationId, current.closed) {
+        // Устаревший исход: закрытие пришло за другое лекарство или раньше, чем эта
+        // карточка была показана открытой.
+        if (current.medicationId != medicationId) return@LaunchedEffect
+        if (current.closed) {
+            if (sawOpen) onBack()
+        } else {
+            sawOpen = true
+        }
+    }
 
     MedicationCardScreen(
         state = current,

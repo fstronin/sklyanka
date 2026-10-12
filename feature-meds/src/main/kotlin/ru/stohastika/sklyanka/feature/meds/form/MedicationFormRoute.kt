@@ -7,6 +7,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -41,7 +42,18 @@ fun MedicationFormRoute(
     onDone: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    LaunchedEffect(medicationId) { viewModel.open(medicationId) }
+    // Открытие — один раз на заход, а не на сборку композиции. Поворот пересобирает
+    // композицию целиком, и безусловный `open()` затирал бы черновик человека: он живёт
+    // в ViewModel, который пересоздание переживает, а признак «форма уже открыта» —
+    // в сохранённом состоянии композиции (SKL-142). Свежий ViewModel (первый вход или
+    // смерть процесса) состояния не имеет — тогда форма читается заново.
+    var opened by rememberSaveable(medicationId) { mutableStateOf(false) }
+    LaunchedEffect(medicationId) {
+        if (!opened || viewModel.state.value == null) {
+            opened = true
+            viewModel.open(medicationId)
+        }
+    }
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
 

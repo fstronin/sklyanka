@@ -1,10 +1,17 @@
 package ru.stohastika.sklyanka.feature.settings.transfer
 
 import android.os.Looper
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import kotlinx.coroutines.CompletableDeferred
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -18,6 +25,7 @@ import ru.stohastika.sklyanka.domain.transfer.DeviceState
 import ru.stohastika.sklyanka.domain.transfer.ExportDataUseCase
 import ru.stohastika.sklyanka.domain.transfer.ReadTransferFileUseCase
 import ru.stohastika.sklyanka.domain.transfer.TransferDecoded
+import ru.stohastika.sklyanka.domain.transfer.TransferMode
 import ru.stohastika.sklyanka.domain.transfer.ValidateSnapshot
 import ru.stohastika.sklyanka.feature.settings.R
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
@@ -79,6 +87,62 @@ class DataTransferRouteTest {
         composeRule.waitUntil(timeoutMillis = WAIT_MS) {
             composeRule.onAllNodesWithText(expected, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
         }
+    }
+
+    /**
+     * Правило «идёт замена — кнопка занята, второе нажатие ничего не применяет» (ПЕР-16, SKL-144).
+     *
+     * Применение придержано защёлкой: без неё операция успевает завершиться внутри самого
+     * нажатия, и занятого состояния у кнопки не существует. Человек нажимает подтверждение
+     * дважды подряд по той же точке — как нажимает человек, — и замена обязана примениться
+     * ровно один раз, а кнопка на время записи — быть занятой, а не выглядеть готовой.
+     */
+    @Test
+    fun twoConfirmationPressesApplyTheReplacementOnce() {
+        val gate = CompletableDeferred<Unit>()
+        store.applyGate = { gate.await() }
+        val model = viewModel()
+        shadowOf(Looper.getMainLooper()).idle()
+
+        composeRule.setContent {
+            SklyankaTheme {
+                DataTransferRoute(viewModel = model, onOpenPermissions = {}, onBack = {})
+            }
+        }
+        // Шаги до подтверждения: режим «Заменить всё», файл и верное слово (ОВ-67).
+        composeRule.runOnUiThread {
+            model.onIntent(TransferIntent.SelectMode(TransferMode.REPLACE_ALL))
+            model.onIntent(TransferIntent.FileChosen("content://file"))
+        }
+        idleMain()
+        composeRule.runOnUiThread { model.onIntent(TransferIntent.ContinueFromSummary) }
+        idleMain()
+        composeRule.runOnUiThread {
+            model.onIntent(TransferIntent.ConfirmationWordChanged(context.getString(R.string.transfer_replace_word)))
+        }
+        composeRule.waitUntil(timeoutMillis = WAIT_MS) {
+            composeRule.onAllNodesWithTag(TAG_REPLACE_CONFIRM_ACTION).fetchSemanticsNodes().isNotEmpty()
+        }
+        val confirm = composeRule.onNodeWithTag(TAG_REPLACE_CONFIRM_ACTION, useUnmergedTree = true)
+
+        confirm.performClick()
+        composeRule.waitForIdle()
+        confirm.assertIsNotEnabled()
+        confirm.performClick()
+        composeRule.waitForIdle()
+
+        gate.complete(Unit)
+        composeRule.waitUntil(timeoutMillis = WAIT_MS) { store.applied.size == 1 }
+        composeRule.waitForIdle()
+
+        assertEquals("one confirmed replacement must apply exactly once", 1, store.applied.size)
+        composeRule.onNodeWithTag(TAG_REPORT).assertIsDisplayed()
+    }
+
+    /** Дать очередям главного потока выполниться: состояние шага двигается корутинами (Robolectric). */
+    private fun idleMain() {
+        shadowOf(Looper.getMainLooper()).idle()
+        composeRule.waitForIdle()
     }
 
     private fun viewModel(): DataTransferViewModel {

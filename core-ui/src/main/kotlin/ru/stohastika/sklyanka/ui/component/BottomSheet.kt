@@ -1,5 +1,6 @@
 package ru.stohastika.sklyanka.ui.component
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
@@ -61,6 +62,12 @@ fun SklyankaBottomSheet(
 ) {
     val enter = motionTiming(MotionPhase.SheetEnter)
     val exit = motionTiming(MotionPhase.SheetExit)
+    // Системная «Назад» — тот же путь закрытия, что «Отмена» и тап по затемнению:
+    // три пути зовут один обработчик, иначе расхождение между ними вернётся (SKL-143,
+    // `10-behavior.md` §5.3). Обработчик живёт в самой шторке, а не у каждого её
+    // вызывающего по месту: правило одинаково для всех шторок, и частный обработчик
+    // у каждой — второй ответ на вопрос «что делает возврат».
+    BackHandler(enabled = visible, onBack = onDismiss)
     Box(modifier = modifier.fillMaxSize().testTag(TAG_BOTTOM_SHEET)) {
         SheetScrim(visible = visible, enter = enter, exit = exit, onDismiss = onDismiss)
         SheetSurface(visible = visible, enter = enter, exit = exit, content = content)

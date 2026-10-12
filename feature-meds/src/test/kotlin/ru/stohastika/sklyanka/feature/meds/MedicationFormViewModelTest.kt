@@ -60,6 +60,12 @@ class MedicationFormViewModelTest {
     private val profiles = FakeProfiles()
     private val log = RecordingLog()
 
+    /** Сколько раз сценарий сохранения переспрашивал план приёмов: дубль виден числом. */
+    private var plannedSaves = 0
+
+    /** Идентификаторы выдаются на каждый вызов сохранения, как у продукта (SKL-141). */
+    private var issuedIds = 0
+
     private val model = MedicationFormViewModel(
         activeProfile = activeProfile,
         medications = medications,
@@ -67,6 +73,7 @@ class MedicationFormViewModelTest {
             validate = ValidateMedicationDraft(),
             medications = medications,
             planner = MedicationPlanner { medicationId, reason ->
+                plannedSaves += 1
                 PlanIntakesUseCase(
                     profiles = profiles,
                     medications = medications,
@@ -78,7 +85,7 @@ class MedicationFormViewModelTest {
             },
             transactor = DirectTransactor(),
             log = log,
-            newId = { NEW_ID },
+            newId = { "med-${++issuedIds}" },
         ),
         time = clock,
     )
@@ -475,6 +482,22 @@ class MedicationFormViewModelTest {
     }
 
     @Test
+    fun `a second save while the first is in flight leaves one medication and one plan`() = runTest(dispatcher) {
+        open()
+        fillValidSchedule()
+
+        // Два нажатия подряд, как их делает человек «на всякий случай»: второе приходит
+        // раньше, чем запись успевает завершиться. Дубль у нового черновика не виден
+        // по идентификатору — его нет, и каждый вызов сохранения выдаёт новый (SKL-141).
+        model.onIntent(MedFormIntent.Save)
+        model.onIntent(MedFormIntent.Save)
+        advanceUntilIdle()
+
+        assertEquals("a double press must leave exactly one medication", 1, medications.snapshot().size)
+        assertEquals("a double press must not double the plan", 1, plannedSaves)
+    }
+
+    @Test
     fun `a saved course tells the form to close exactly once`() = runTest(dispatcher) {
         val closes = mutableListOf<Unit>()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { model.closed.toList(closes) }
@@ -606,7 +629,6 @@ class MedicationFormViewModelTest {
     }
 
     private companion object {
-        const val NEW_ID = "55555555-5555-4555-8555-555555555555"
         const val WINDOW_DEPTH_DAYS = 7
     }
 }

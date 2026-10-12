@@ -49,9 +49,19 @@ internal class FakeTransferStore(var state: DeviceState = DeviceState.EMPTY) : T
     val applied = mutableListOf<TransferPlan>()
     var failWith: Throwable? = null
 
+    /**
+     * Задержка применения: пока она не отпущена, операция «идёт».
+     *
+     * Нужна проверкам «идёт запись»: занятое состояние кнопки видно только между началом
+     * применения и его концом, а без задержки применение на JVM успевает завершиться
+     * внутри того же нажатия. По умолчанию задержки нет — остальные проверки её не видят.
+     */
+    var applyGate: (suspend () -> Unit)? = null
+
     override suspend fun readAll(): DeviceState = state
 
     override suspend fun apply(plan: TransferPlan): TransferApplied {
+        applyGate?.invoke()
         failWith?.let { throw it }
         applied += plan
         return TransferApplied(

@@ -189,6 +189,7 @@ private fun ReplaceConfirmationStep(state: TransferUiState, onIntent: (TransferI
         onConfirm = { onIntent(TransferIntent.Apply) },
         onCancel = { onIntent(TransferIntent.Leave) },
         modifier = modifier,
+        busy = state.busy,
     )
 }
 

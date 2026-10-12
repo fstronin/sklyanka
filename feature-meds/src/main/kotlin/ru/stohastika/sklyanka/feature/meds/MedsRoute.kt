@@ -6,7 +6,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import ru.stohastika.sklyanka.feature.meds.form.MedicationFormRoute
@@ -44,7 +44,10 @@ fun MedsRoute(
     modifier: Modifier = Modifier,
 ) {
     val listState by listViewModel.state.collectAsState()
-    var formOpen by remember { mutableStateOf(false) }
+    // Открытость формы переживает пересоздание активности: поворот не имеет права
+    // выбрасывать человека из формы в список (SKL-142). Уход из раздела состояние
+    // отпускает: форма и место принадлежат заходу, а не приложению целиком.
+    var formOpen by rememberSaveable { mutableStateOf(false) }
     // Уход с экрана закрывает окно удаления (SKL-30, ОВ-124): точка выхода одна.
     DisposableEffect(Unit) {
         onDispose { listViewModel.onScreenLeft() }

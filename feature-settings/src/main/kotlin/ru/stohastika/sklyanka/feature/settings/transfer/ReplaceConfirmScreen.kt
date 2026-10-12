@@ -43,12 +43,17 @@ import ru.stohastika.sklyanka.ui.token.SklyankaType
  * ошибкой поля не объявляется (ОВ-38 к этому полю не применяется) — поле остаётся
  * обычным, и человеку нечего «исправлять».
  *
+ * Пока замена идёт, [busy] — кнопка занята (`ButtonState.Busy`), а не выглядит готовой
+ * к нажатию: второе нажатие по той же точке не имеет права применить замену второй раз
+ * (ПЕР-16, SKL-144). Признак приходит из состояния экрана тем же путём, что у удаления
+ * профиля (ОВ-7).
+ *
  * Экрана в макетах нет; собран из существующих компонентов дизайн-системы (ОВ-67).
  */
-// Параметров восемь: числа с двух сторон, имя страховочной копии, слово и его обработчик,
-// два действия и модификатор. Свернуть их в контейнер можно, но контейнер здесь — тот же
-// список под другим именем, и он спрятал бы, что именно экран показывает. У `SklyankaTextField`
-// порог тот же и снят так же.
+// Параметров девять: числа с двух сторон, имя страховочной копии, слово и его обработчик,
+// два действия, признак «идёт запись» и модификатор. Свернуть их в контейнер можно, но
+// контейнер здесь — тот же список под другим именем, и он спрятал бы, что именно экран
+// показывает. У `SklyankaTextField` порог тот же и снят так же.
 @Suppress("LongParameterList")
 @Composable
 fun ReplaceConfirmScreen(
@@ -60,6 +65,7 @@ fun ReplaceConfirmScreen(
     onConfirm: () -> Unit,
     onCancel: () -> Unit,
     modifier: Modifier = Modifier,
+    busy: Boolean = false,
 ) {
     val colors = SklyankaTheme.colors
     val word = stringResource(R.string.transfer_replace_word)
@@ -110,6 +116,7 @@ fun ReplaceConfirmScreen(
                 onValueChange = onConfirmationWordChange,
                 confirmLabel = stringResource(R.string.transfer_replace_confirm),
                 onConfirm = onConfirm,
+                busy = busy,
                 confirmModifier = Modifier.fillMaxWidth().testTag(TAG_REPLACE_CONFIRM_ACTION),
             )
         }

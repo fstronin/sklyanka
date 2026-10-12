@@ -56,6 +56,7 @@ import ru.stohastika.sklyanka.navigation.MedsSection
 import ru.stohastika.sklyanka.navigation.MedsViewModels
 import ru.stohastika.sklyanka.navigation.RootLayer
 import ru.stohastika.sklyanka.navigation.RootNavigation
+import ru.stohastika.sklyanka.navigation.RootNavigationViewModel
 import ru.stohastika.sklyanka.navigation.RootTab
 import ru.stohastika.sklyanka.navigation.SettingsDestination
 import ru.stohastika.sklyanka.navigation.SettingsSection
@@ -188,8 +189,15 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var undoActions: UndoableActionStore
 
-    /** Состояние корня приложения — маршрут и возврат из `onResume` (SKL-43). */
-    private val rootNavigation = RootNavigation()
+    /**
+     * Состояние корня приложения — маршрут и возврат из `onResume` (SKL-43).
+     *
+     * Живёт в `ViewModel`, а не полем активности: поля пересоздание не переживают, и
+     * поворот выбрасывал бы человека на «Сегодня» из любого места (SKL-142, §5.1).
+     */
+    private val rootNavigationHolder: RootNavigationViewModel by viewModels()
+
+    private val rootNavigation: RootNavigation get() = rootNavigationHolder.navigation
 
     /**
      * Экран разрешений поверх «Сегодня» (НАП-21, SKL-29).
