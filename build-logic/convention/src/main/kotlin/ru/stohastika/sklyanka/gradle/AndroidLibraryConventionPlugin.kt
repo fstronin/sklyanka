@@ -31,6 +31,7 @@ class AndroidLibraryConventionPlugin : Plugin<Project> {
             configureSklyankaInstrumentation()
         }
         configureKotlinJvmTarget()
+        skipDuplicateReleaseUnitTest()
 
         dependencies {
             add("androidTestImplementation", libs.findLibrary("junit4").get())

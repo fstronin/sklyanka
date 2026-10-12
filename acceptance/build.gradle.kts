@@ -111,26 +111,75 @@ fun featureTargets(): List<File> {
 fun targetLabel(target: File): String = if (target.isDirectory) target.name else target.nameWithoutExtension
 
 /**
- * Один запуск Cucumber-CLI на каталог задачи.
+ * Прогон всех целей одной задачей — **один запуск JVM на задачу**, а не на цель.
  *
- * Отдельными запусками, а не одним общим: неразбираемый файл одной задачи иначе
- * обрывает весь прогон, и остальные задачи молча исчезают из отчёта.
+ * Целей сто одна (по файлу сценариев на задачу), и отдельный `javaexec` на каждую означал
+ * пять сотен запусков JVM в едином прогоне: проект `:acceptance` переставал быть тем,
+ * чем он является (исполнением сценариев), и становился тем, чем измеряется время запуска
+ * JVM. Разбор — в `CucumberBatch.kt`, который цели и исполняет.
+ *
+ * Изоляция целей осталась прежней: цели исполняются по одной, и исключение одной цели
+ * не доходит до следующей — за это отвечает `CucumberBatch` (SKL-24, ОВ-78).
+ *
+ * @return вывод Cucumber по каждой цели, в порядке переданных целей
  */
-fun runCucumber(target: File, extraArgs: List<String>): String {
+fun runCucumber(targets: List<File>, extraArgs: List<String>): List<Pair<File, String>> {
+    if (targets.isEmpty()) return emptyList()
     val captured = ByteArrayOutputStream()
     project.javaexec {
         classpath = sourceSets.test.get().runtimeClasspath
-        mainClass.set("io.cucumber.core.cli.Main")
+        mainClass.set("ru.stohastika.sklyanka.acceptance.run.CucumberBatch")
         // Сценарии и шаги — на русском: без явной кодировки вывод превращается в «?????».
         jvmArgs("-Dfile.encoding=UTF-8", "-Dsun.stdout.encoding=UTF-8", "-Dsun.stderr.encoding=UTF-8")
         systemProperty("sklyanka.repo.root", rootProject.projectDir.absolutePath)
-        args = extraArgs + target.absolutePath
+        args = extraArgs + batchTargets + targets.map { it.absolutePath }
         standardOutput = captured
         errorOutput = captured
         isIgnoreExitValue = true
     }
-    // Cucumber раскрашивает вывод; в отчёт и в чек-лист коды не нужны.
-    return ansiCodes.replace(captured.toString(Charsets.UTF_8.name()), "")
+    return readBatch(captured.toString(Charsets.UTF_8.name()), targets)
+}
+
+/**
+ * Разбор протокола `CucumberBatch`: отбивка, путь цели, длина вывода, вывод, код возврата.
+ *
+ * Длина, а не строка-разделитель: вывод Cucumber — чужой текст, и он вправе содержать
+ * любую строку, какую мы выбрали бы разделителем. Отбивки — служебные знаки \u0001 и
+ * \u0002: их в отчётах не печатает никто, и склейка двух целей в один блок невозможна.
+ *
+ * Разбор идёт до снятия цветовых кодов: длину считает `CucumberBatch` на том же тексте,
+ * который печатает, — снять коды раньше значило бы сдвинуть все длины.
+ */
+fun readBatch(raw: String, targets: List<File>): List<Pair<File, String>> {
+    val outputs = mutableListOf<Pair<File, String>>()
+    var cursor = 0
+    while (cursor < raw.length) {
+        val open = raw.indexOf(batchOpen, cursor)
+        if (open < 0) break
+        val pathEnd = raw.indexOf(batchOpen, open + 1)
+        val lengthEnd = raw.indexOf(batchOpen, pathEnd + 1)
+        val close = raw.indexOf(batchClose, lengthEnd + 1)
+        check(pathEnd > 0 && lengthEnd > pathEnd && close > 0) {
+            "the batch protocol mark is broken: CucumberBatch.kt prints it, this script reads it — " +
+                "the two must stay in step"
+        }
+        val path = raw.substring(open + 1, pathEnd)
+        val length = raw.substring(pathEnd + 1, lengthEnd).toInt()
+        val bodyStart = lengthEnd + 1
+        check(bodyStart + length <= raw.length) {
+            "the batch printed a shorter output than it declared for ${File(path).name}: " +
+                "$length characters promised, ${raw.length - bodyStart} available"
+        }
+        val output = raw.substring(bodyStart, bodyStart + length)
+        // Cucumber раскрашивает вывод; в отчёт и в чек-лист коды не нужны.
+        outputs += File(path) to ansiCodes.replace(output, "")
+        cursor = close
+    }
+    check(outputs.size == targets.size) {
+        "the batch printed ${outputs.size} of ${targets.size} target outputs: " +
+            outputs.joinToString { it.first.name }
+    }
+    return outputs
 }
 
 /**
@@ -165,20 +214,19 @@ val acceptanceRun by tasks.registering {
         val failed = mutableListOf<String>()
         var undefinedSeen = false
 
-        featureTargets().forEach { target ->
-            val output = runCucumber(
-                target,
-                listOf(
-                    "--glue",
-                    "ru.stohastika.sklyanka.acceptance",
-                    "--tags",
-                    automaticTags,
-                    "--plugin",
-                    "progress",
-                    "--snippets",
-                    "camelcase",
-                ),
-            )
+        runCucumber(
+            featureTargets(),
+            listOf(
+                "--glue",
+                "ru.stohastika.sklyanka.acceptance",
+                "--tags",
+                automaticTags,
+                "--plugin",
+                "progress",
+                "--snippets",
+                "camelcase",
+            ),
+        ).forEach { (target, output) ->
             val label = targetLabel(target)
             reportDir.resolve("$label.txt").writeText(output)
 
@@ -292,19 +340,18 @@ val acceptanceChecklist by tasks.registering {
     doLast {
         val reportDir = acceptanceReports.get().asFile.also { it.mkdirs() }
         val checklist = StringBuilder("Manual acceptance check-list (@manual) over $featuresPath\n")
-        featureTargets().forEach { target ->
-            val output = runCucumber(
-                target,
-                listOf(
-                    "--glue",
-                    "ru.stohastika.sklyanka.acceptance",
-                    "--tags",
-                    "@manual and not $postponedTag",
-                    "--dry-run",
-                    "--plugin",
-                    "pretty",
-                ),
-            )
+        runCucumber(
+            featureTargets(),
+            listOf(
+                "--glue",
+                "ru.stohastika.sklyanka.acceptance",
+                "--tags",
+                "@manual and not $postponedTag",
+                "--dry-run",
+                "--plugin",
+                "pretty",
+            ),
+        ).forEach { (target, output) ->
             val scenarios = scenarioLine.findAll(output).map { it.groupValues[1].trim() }.toList()
             if (scenarios.isNotEmpty()) {
                 checklist.appendLine("  ${targetLabel(target)}:")
@@ -342,19 +389,18 @@ val acceptanceScreenList by tasks.registering {
         val listing = StringBuilder(
             "Scenarios executed by the screen stand on the JVM (@screen), not by this run\n",
         )
-        featureTargets().forEach { target ->
-            val output = runCucumber(
-                target,
-                listOf(
-                    "--glue",
-                    "ru.stohastika.sklyanka.acceptance",
-                    "--tags",
-                    "$screenTag and not $postponedTag",
-                    "--dry-run",
-                    "--plugin",
-                    "pretty",
-                ),
-            )
+        runCucumber(
+            featureTargets(),
+            listOf(
+                "--glue",
+                "ru.stohastika.sklyanka.acceptance",
+                "--tags",
+                "$screenTag and not $postponedTag",
+                "--dry-run",
+                "--plugin",
+                "pretty",
+            ),
+        ).forEach { (target, output) ->
             val scenarios = scenarioLine.findAll(output).map { it.groupValues[1].trim() }.toList()
             if (scenarios.isNotEmpty()) {
                 listing.appendLine("  ${targetLabel(target)}:")
@@ -388,19 +434,18 @@ val acceptanceDeviceList by tasks.registering {
         val listing = StringBuilder(
             "Scenarios checkable on a device only ($deviceTag), not by the JVM runs\n",
         )
-        featureTargets().forEach { target ->
-            val output = runCucumber(
-                target,
-                listOf(
-                    "--glue",
-                    "ru.stohastika.sklyanka.acceptance",
-                    "--tags",
-                    "$deviceTag and not $postponedTag",
-                    "--dry-run",
-                    "--plugin",
-                    "pretty",
-                ),
-            )
+        runCucumber(
+            featureTargets(),
+            listOf(
+                "--glue",
+                "ru.stohastika.sklyanka.acceptance",
+                "--tags",
+                "$deviceTag and not $postponedTag",
+                "--dry-run",
+                "--plugin",
+                "pretty",
+            ),
+        ).forEach { (target, output) ->
             val scenarios = scenarioLine.findAll(output).map { it.groupValues[1].trim() }.toList()
             if (scenarios.isNotEmpty()) {
                 listing.appendLine("  ${targetLabel(target)}:")
@@ -437,19 +482,18 @@ val acceptanceJourneyList by tasks.registering {
         val listing = StringBuilder(
             "Scenarios executed by the journeys on a device ($journeyTag), not by the JVM runs\n",
         )
-        featureTargets().forEach { target ->
-            val output = runCucumber(
-                target,
-                listOf(
-                    "--glue",
-                    "ru.stohastika.sklyanka.acceptance",
-                    "--tags",
-                    "$journeyTag and not $postponedTag",
-                    "--dry-run",
-                    "--plugin",
-                    "pretty",
-                ),
-            )
+        runCucumber(
+            featureTargets(),
+            listOf(
+                "--glue",
+                "ru.stohastika.sklyanka.acceptance",
+                "--tags",
+                "$journeyTag and not $postponedTag",
+                "--dry-run",
+                "--plugin",
+                "pretty",
+            ),
+        ).forEach { (target, output) ->
             val scenarios = scenarioLine.findAll(output).map { it.groupValues[1].trim() }.toList()
             if (scenarios.isNotEmpty()) {
                 listing.appendLine("  ${targetLabel(target)}:")
@@ -558,6 +602,16 @@ tasks.test {
 }
 
 val ansiCodes = Regex("\u001B\\[[;\\d]*m")
+
+/**
+ * Протокол обмена с `CucumberBatch`: аргумент-разделитель и отбивки блока цели.
+ *
+ * Значения обязаны совпадать с `CucumberBatch.kt`: там задача-исполнитель, здесь —
+ * читатель. Разъедутся — прогон упадёт разбором, а не покажет пустой отчёт.
+ */
+val batchTargets = "--sklyanka-targets"
+val batchOpen = '\u0001'
+val batchClose = '\u0002'
 
 /**
  * Тег сценариев, исполняемых экранным прогоном на JVM (SKL-24, ОВ-74).

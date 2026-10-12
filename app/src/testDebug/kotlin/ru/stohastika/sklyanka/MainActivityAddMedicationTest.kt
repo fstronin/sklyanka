@@ -2,14 +2,11 @@ package ru.stohastika.sklyanka
 
 import androidx.compose.runtime.mutableStateListOf
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.w3c.dom.Element
-import ru.stohastika.sklyanka.navigation.AddMedicationLaunch
 import ru.stohastika.sklyanka.navigation.MedsDestination
 import ru.stohastika.sklyanka.navigation.MedsStack
-import ru.stohastika.sklyanka.navigation.RootNavigation
 import java.io.File
 import javax.xml.parsers.DocumentBuilderFactory
 
@@ -19,8 +16,13 @@ import javax.xml.parsers.DocumentBuilderFactory
  * Полный запуск Activity в этом контейнере недоступен: граф Hilt поднимается только
  * на устройстве, а тестового приложения Hilt у модуля нет. Поэтому проверяется контракт
  * запуска ровно в тех местах, где он записан и где ошибка была бы видна: манифест
- * (`singleTask` — иначе ярлык поднял бы вторую копию корня), маршрут (`openFromLaunch`
- * кладёт форму поверх раздела «Лекарства») и стек раздела (закрытие формы ведёт в список).
+ * (`singleTask` — иначе ярлык поднял бы вторую копию корня) и стек раздела (закрытие
+ * формы ведёт в список).
+ *
+ * Маршрут запуска — «форма поверх раздела „Лекарства“» — здесь не проверяется: он
+ * принадлежит правилу `RootNavigation.openFromLaunch` и живёт одним объявлением
+ * в `AddMedicationLaunchTest` (там же его негативные случаи). Вторая копия того же
+ * утверждения ловила бы только свою опечатку.
  */
 class MainActivityAddMedicationTest {
 
@@ -40,16 +42,6 @@ class MainActivityAddMedicationTest {
     fun `the launcher activity is single task`() {
         assertEquals("singleTask", manifest.getAttribute("android:launchMode"))
         assertEquals("true", manifest.getAttribute("android:exported"))
-    }
-
-    @Test
-    fun `the launch opens the new medication form above the medications section`() {
-        val navigation = RootNavigation()
-
-        assertTrue(navigation.openFromLaunch(AddMedicationLaunch.ACTION))
-
-        assertEquals(MedsDestination.NewMedication, navigation.meds)
-        assertFalse(navigation.showsToday)
     }
 
     @Test

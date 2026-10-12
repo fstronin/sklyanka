@@ -41,6 +41,7 @@ import ru.stohastika.sklyanka.feature.reminder.DeliveryCheckController
 import ru.stohastika.sklyanka.feature.reminder.ReminderSettingsFixer
 import ru.stohastika.sklyanka.feature.reminder.ReminderSetupEntry
 import ru.stohastika.sklyanka.platform.AppForegroundTracker
+import ru.stohastika.sklyanka.platform.BackgroundWorkFailures
 import ru.stohastika.sklyanka.platform.environment.AndroidDeviceEnvironment
 import ru.stohastika.sklyanka.platform.notification.ReminderNotifier
 import ru.stohastika.sklyanka.platform.permission.SystemPermissionStateReader
@@ -77,7 +78,11 @@ object ReminderModule {
     @Provides
     @Singleton
     @ReminderScope
-    fun provideReminderScope(): CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    fun provideReminderScope(failures: BackgroundWorkFailures): CoroutineScope =
+        // Обработчик отказов — часть области, а не украшение: без него отказ работы
+        // приёмника уходит системному обработчику потока и завершает процесс
+        // (см. `BackgroundWorkFailures`).
+        CoroutineScope(SupervisorJob() + Dispatchers.IO + failures.forReminders())
 
     @Provides
     @Singleton

@@ -390,10 +390,19 @@ class MedicationFormSteps {
         assertEquals(submitted, draft)
     }
 
+    /**
+     * «Первое нарушенное правило» — голова списка нарушений, а не любое из них.
+     *
+     * Шаг привязан к своему сценарию (`SKL-09`, «Отказ в сохранении не теряет введённого»):
+     * из его «Допустим» следует ровно одно нарушение — два одинаковых времени приёма, —
+     * и проверка называет именно поле этого нарушения. Прежнее сравнение
+     * `violations.first().field` с самим собой не утверждало ничего и проходило при любом
+     * порядке нарушений.
+     */
     @Then("^экран показывает первое нарушенное правило$")
     fun theScreenShowsTheFirstBrokenRule() {
-        assertTrue(violations.isNotEmpty())
-        assertEquals(violations.first().field, violations.first().field)
+        assertTrue(violations.isNotEmpty(), "the form was expected to refuse the draft")
+        assertEquals(DraftField.TIMES, violations.first().field)
     }
 
     // --- Порог покупки и пресет срока (SKL-74, SKL-75) ----------------------------------------------

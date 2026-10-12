@@ -1,6 +1,5 @@
 package ru.stohastika.sklyanka.data.room
 
-import android.database.sqlite.SQLiteConstraintException
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -10,7 +9,6 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import ru.stohastika.sklyanka.data.assertRefused
 import ru.stohastika.sklyanka.domain.model.IntakeSource
 import ru.stohastika.sklyanka.domain.model.IntakeStatus
 import ru.stohastika.sklyanka.domain.model.ScheduleMode
@@ -127,18 +125,15 @@ class IntakeDaoTest {
         assertEquals(listOf(OWN_INTAKE), expired.map { it.id })
     }
 
-    @Test
-    fun anIntakeWithoutItsMedicationIsRejected() = runTest {
-        assertRefused<SQLiteConstraintException> {
-            db.intakes.insertAll(listOf(TestData.scheduledIntake(id = OWN_INTAKE, medicationId = MISSING_ID)))
-        }
-    }
+    // Ссылочная целостность здесь не проверяется: «приём без своего лекарства отвергнут» —
+    // правило внешних ключей, и его объявление одно — `IntegrityTest`, где к нему стоит
+    // реалистичная пара «профиль, лекарство». Вторая копия того же отказа на том же
+    // стенде отличалась только отсутствием профиля в подготовке.
 
     private companion object {
         const val OWN_INTAKE = "aaaaaaaa-0000-4000-8000-000000000001"
         const val SECOND_INTAKE = "aaaaaaaa-0000-4000-8000-000000000002"
         const val FOREIGN_INTAKE = "aaaaaaaa-0000-4000-8000-000000000003"
-        const val MISSING_ID = "ffffffff-0000-4000-8000-000000000000"
 
         const val DAY_START = "2026-09-25T00:00"
         const val NEXT_DAY_START = "2026-09-26T00:00"

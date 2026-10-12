@@ -2,7 +2,6 @@ package ru.stohastika.sklyanka.domain.profile
 
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import ru.stohastika.sklyanka.domain.intake.IntakeTestWorld
@@ -17,7 +16,11 @@ import java.time.LocalDateTime
  * Отметка в чужом профиле (ПР-12, ПРФ-14, ПРФ-22) — негативная часть приёмки.
  *
  * Проверяется то, ради чего задача существует: отметка попадает **в чужой профиль**
- * и несёт подпись того, кто её поставил; своя отметка подписи не получает.
+ * и несёт подпись того, кто её поставил. Правило «своя отметка подписи не получает» —
+ * вторая половина того же условия, но она принадлежит не этому файлу, а проверке
+ * отметки вообще: там же, где отметка в своём профиле и заводится
+ * (`MarkIntakeUseCaseTest`, «an intake of the own profile carries no signature»).
+ * Здесь она стояла второй копией того же утверждения на том же мире.
  */
 @DisplayName("A mark made in a foreign profile is stored there and signed by the owner")
 class ForeignIntakeMarkingTest {
@@ -35,16 +38,6 @@ class ForeignIntakeMarkingTest {
         val intake = world.stored()
         assertEquals(IntakeStatus.TAKEN, intake.status)
         assertEquals(Fixtures.PROFILE_ID, intake.actorProfileId)
-    }
-
-    @Test
-    fun `a mark in the own profile carries no actor`() = runTest {
-        world.pending()
-        world.moveTo(LocalDateTime.of(2026, 9, 25, 8, 5))
-
-        world.mark(MarkRequest(Fixtures.INTAKE_ID, MarkResult.TAKEN, IntakeSource.PHONE))
-
-        assertNull(world.stored().actorProfileId)
     }
 
     /** Осознанный пропуск в чужом профиле подписывается так же, как принятый приём. */

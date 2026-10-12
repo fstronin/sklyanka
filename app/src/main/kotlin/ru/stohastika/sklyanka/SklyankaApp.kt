@@ -15,6 +15,7 @@ import ru.stohastika.sklyanka.data.room.DatabaseUpgrade
 import ru.stohastika.sklyanka.domain.log.OperationLog
 import ru.stohastika.sklyanka.domain.reminder.RescheduleReason
 import ru.stohastika.sklyanka.platform.AppForegroundTracker
+import ru.stohastika.sklyanka.platform.BackgroundWorkFailures
 import ru.stohastika.sklyanka.platform.notification.ReminderChannels
 import ru.stohastika.sklyanka.reminder.DirectBootTraceDrain
 import ru.stohastika.sklyanka.reminder.ReminderLogRotationTrigger
@@ -120,7 +121,25 @@ class SklyankaApp : Application() {
     @Inject
     lateinit var databaseMaintenance: DatabaseMaintenance
 
-    private val startupScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    /**
+     * Отказы фоновой работы (П-1, Р-44): их обработчик входит в обе активные области —
+     * работу старта ниже и работу приёмников напоминаний (`ReminderModule.provideReminderScope`).
+     */
+    @Inject
+    lateinit var backgroundFailures: BackgroundWorkFailures
+
+    /**
+     * Область работы старта.
+     *
+     * `by lazy`, а не полем: обработчик отказов приходит инъекцией, а инъекция графа
+     * случается в `onCreate` — до неё поле было бы пустым. Обработчик обязателен по той же
+     * причине, по которой область вообще существует: у работы старта нет вызывающего,
+     * которому можно вернуть отказ, и без обработчика отказ завершает процесс
+     * ([BackgroundWorkFailures]).
+     */
+    private val startupScope: CoroutineScope by lazy {
+        CoroutineScope(SupervisorJob() + Dispatchers.IO + backgroundFailures.forStartup())
+    }
 
     override fun onCreate() {
         super.onCreate()
