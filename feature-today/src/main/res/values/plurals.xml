@@ -27,78 +27,78 @@
 
     <!-- «осталось 9 таблеток» — единица следует за формой выпуска. -->
     <plurals name="today_stock_left_tablets">
-        <item quantity="one">осталась %1$s таблетка</item>
-        <item quantity="few">осталось %1$s таблетки</item>
-        <item quantity="many">осталось %1$s таблеток</item>
-        <item quantity="other">осталось %1$s таблетки</item>
+        <item quantity="one">осталась %1$s&#160;таблетка</item>
+        <item quantity="few">осталось %1$s&#160;таблетки</item>
+        <item quantity="many">осталось %1$s&#160;таблеток</item>
+        <item quantity="other">осталось %1$s&#160;таблетки</item>
     </plurals>
     <plurals name="today_stock_left_capsules">
-        <item quantity="one">осталась %1$s капсула</item>
-        <item quantity="few">осталось %1$s капсулы</item>
-        <item quantity="many">осталось %1$s капсул</item>
-        <item quantity="other">осталось %1$s капсулы</item>
+        <item quantity="one">осталась %1$s&#160;капсула</item>
+        <item quantity="few">осталось %1$s&#160;капсулы</item>
+        <item quantity="many">осталось %1$s&#160;капсул</item>
+        <item quantity="other">осталось %1$s&#160;капсулы</item>
     </plurals>
     <plurals name="today_stock_left_millilitres">
-        <item quantity="one">остался %1$s мл</item>
-        <item quantity="few">осталось %1$s мл</item>
-        <item quantity="many">осталось %1$s мл</item>
-        <item quantity="other">осталось %1$s мл</item>
+        <item quantity="one">остался %1$s&#160;мл</item>
+        <item quantity="few">осталось %1$s&#160;мл</item>
+        <item quantity="many">осталось %1$s&#160;мл</item>
+        <item quantity="other">осталось %1$s&#160;мл</item>
     </plurals>
     <plurals name="today_stock_left_drops">
-        <item quantity="one">осталась %1$s капля</item>
-        <item quantity="few">осталось %1$s капли</item>
-        <item quantity="many">осталось %1$s капель</item>
-        <item quantity="other">осталось %1$s капли</item>
+        <item quantity="one">осталась %1$s&#160;капля</item>
+        <item quantity="few">осталось %1$s&#160;капли</item>
+        <item quantity="many">осталось %1$s&#160;капель</item>
+        <item quantity="other">осталось %1$s&#160;капли</item>
     </plurals>
     <plurals name="today_stock_left_sprays">
-        <item quantity="one">остался %1$s впрыск</item>
-        <item quantity="few">осталось %1$s впрыска</item>
-        <item quantity="many">осталось %1$s впрысков</item>
-        <item quantity="other">осталось %1$s впрыска</item>
+        <item quantity="one">остался %1$s&#160;впрыск</item>
+        <item quantity="few">осталось %1$s&#160;впрыска</item>
+        <item quantity="many">осталось %1$s&#160;впрысков</item>
+        <item quantity="other">осталось %1$s&#160;впрыска</item>
     </plurals>
     <plurals name="today_stock_left_injections">
-        <item quantity="one">осталась %1$s инъекция</item>
-        <item quantity="few">осталось %1$s инъекции</item>
-        <item quantity="many">осталось %1$s инъекций</item>
-        <item quantity="other">осталось %1$s инъекции</item>
+        <item quantity="one">осталась %1$s&#160;инъекция</item>
+        <item quantity="few">осталось %1$s&#160;инъекции</item>
+        <item quantity="many">осталось %1$s&#160;инъекций</item>
+        <item quantity="other">осталось %1$s&#160;инъекции</item>
     </plurals>
 
     <!-- Доза одного приёма: «1 таблетка», «2 таблетки», «1 капсула». -->
     <plurals name="today_dose_tablets">
-        <item quantity="one">%1$s таблетка</item>
-        <item quantity="few">%1$s таблетки</item>
-        <item quantity="many">%1$s таблеток</item>
-        <item quantity="other">%1$s таблетки</item>
+        <item quantity="one">%1$s&#160;таблетка</item>
+        <item quantity="few">%1$s&#160;таблетки</item>
+        <item quantity="many">%1$s&#160;таблеток</item>
+        <item quantity="other">%1$s&#160;таблетки</item>
     </plurals>
     <plurals name="today_dose_capsules">
-        <item quantity="one">%1$s капсула</item>
-        <item quantity="few">%1$s капсулы</item>
-        <item quantity="many">%1$s капсул</item>
-        <item quantity="other">%1$s капсулы</item>
+        <item quantity="one">%1$s&#160;капсула</item>
+        <item quantity="few">%1$s&#160;капсулы</item>
+        <item quantity="many">%1$s&#160;капсул</item>
+        <item quantity="other">%1$s&#160;капсулы</item>
     </plurals>
     <plurals name="today_dose_millilitres">
-        <item quantity="one">%1$s мл</item>
-        <item quantity="few">%1$s мл</item>
-        <item quantity="many">%1$s мл</item>
-        <item quantity="other">%1$s мл</item>
+        <item quantity="one">%1$s&#160;мл</item>
+        <item quantity="few">%1$s&#160;мл</item>
+        <item quantity="many">%1$s&#160;мл</item>
+        <item quantity="other">%1$s&#160;мл</item>
     </plurals>
     <plurals name="today_dose_drops">
-        <item quantity="one">%1$s капля</item>
-        <item quantity="few">%1$s капли</item>
-        <item quantity="many">%1$s капель</item>
-        <item quantity="other">%1$s капли</item>
+        <item quantity="one">%1$s&#160;капля</item>
+        <item quantity="few">%1$s&#160;капли</item>
+        <item quantity="many">%1$s&#160;капель</item>
+        <item quantity="other">%1$s&#160;капли</item>
     </plurals>
     <plurals name="today_dose_sprays">
-        <item quantity="one">%1$s впрыск</item>
-        <item quantity="few">%1$s впрыска</item>
-        <item quantity="many">%1$s впрысков</item>
-        <item quantity="other">%1$s впрыска</item>
+        <item quantity="one">%1$s&#160;впрыск</item>
+        <item quantity="few">%1$s&#160;впрыска</item>
+        <item quantity="many">%1$s&#160;впрысков</item>
+        <item quantity="other">%1$s&#160;впрыска</item>
     </plurals>
     <plurals name="today_dose_injections">
-        <item quantity="one">%1$s инъекция</item>
-        <item quantity="few">%1$s инъекции</item>
-        <item quantity="many">%1$s инъекций</item>
-        <item quantity="other">%1$s инъекции</item>
+        <item quantity="one">%1$s&#160;инъекция</item>
+        <item quantity="few">%1$s&#160;инъекции</item>
+        <item quantity="many">%1$s&#160;инъекций</item>
+        <item quantity="other">%1$s&#160;инъекции</item>
     </plurals>
 
     <!-- Подпись карточки «по потребности»: «Без расписания · не чаще 3 раз в сутки». -->
@@ -161,7 +161,7 @@
         <item quantity="other">%1$d приёма отмечены как пропущенные</item>
     </plurals>
 
-    <!-- Свёрнутый блок «по потребности» в плотном дне (docs/v2/10-behavior.md). -->
+    <!-- Свёрнутый блок «по потребности» в плотном дне (docs/norm/04-behavior.md). -->
     <plurals name="today_prn_collapsed">
         <item quantity="one">%1$d лекарство без расписания</item>
         <item quantity="few">%1$d лекарства без расписания</item>

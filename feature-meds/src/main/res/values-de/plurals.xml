@@ -12,28 +12,28 @@
     </plurals>
 
     <plurals name="stock_left_tablets">
-        <item quantity="one">noch %1$d Tablette</item>
-        <item quantity="other">noch %1$d Tabletten</item>
+        <item quantity="one">noch %1$d&#160;Tablette</item>
+        <item quantity="other">noch %1$d&#160;Tabletten</item>
     </plurals>
     <plurals name="stock_left_capsules">
-        <item quantity="one">noch %1$d Kapsel</item>
-        <item quantity="other">noch %1$d Kapseln</item>
+        <item quantity="one">noch %1$d&#160;Kapsel</item>
+        <item quantity="other">noch %1$d&#160;Kapseln</item>
     </plurals>
     <plurals name="stock_left_millilitres">
-        <item quantity="one">noch %1$d ml</item>
-        <item quantity="other">noch %1$d ml</item>
+        <item quantity="one">noch %1$d&#160;ml</item>
+        <item quantity="other">noch %1$d&#160;ml</item>
     </plurals>
     <plurals name="stock_left_drops">
-        <item quantity="one">noch %1$d Tropfen</item>
-        <item quantity="other">noch %1$d Tropfen</item>
+        <item quantity="one">noch %1$d&#160;Tropfen</item>
+        <item quantity="other">noch %1$d&#160;Tropfen</item>
     </plurals>
     <plurals name="stock_left_sprays">
-        <item quantity="one">noch %1$d Sprühstoß</item>
-        <item quantity="other">noch %1$d Sprühstöße</item>
+        <item quantity="one">noch %1$d&#160;Sprühstoß</item>
+        <item quantity="other">noch %1$d&#160;Sprühstöße</item>
     </plurals>
     <plurals name="stock_left_injections">
-        <item quantity="one">noch %1$d Injektion</item>
-        <item quantity="other">noch %1$d Injektionen</item>
+        <item quantity="one">noch %1$d&#160;Injektion</item>
+        <item quantity="other">noch %1$d&#160;Injektionen</item>
     </plurals>
 
     <plurals name="card_intakes_per_day">
@@ -42,53 +42,53 @@
     </plurals>
 
     <plurals name="card_dose_tablets">
-        <item quantity="one">%1$s Tablette</item>
-        <item quantity="other">%1$s Tabletten</item>
+        <item quantity="one">%1$s&#160;Tablette</item>
+        <item quantity="other">%1$s&#160;Tabletten</item>
     </plurals>
     <plurals name="card_dose_capsules">
-        <item quantity="one">%1$s Kapsel</item>
-        <item quantity="other">%1$s Kapseln</item>
+        <item quantity="one">%1$s&#160;Kapsel</item>
+        <item quantity="other">%1$s&#160;Kapseln</item>
     </plurals>
     <plurals name="card_dose_millilitres">
-        <item quantity="one">%1$s ml</item>
-        <item quantity="other">%1$s ml</item>
+        <item quantity="one">%1$s&#160;ml</item>
+        <item quantity="other">%1$s&#160;ml</item>
     </plurals>
     <plurals name="card_dose_drops">
-        <item quantity="one">%1$s Tropfen</item>
-        <item quantity="other">%1$s Tropfen</item>
+        <item quantity="one">%1$s&#160;Tropfen</item>
+        <item quantity="other">%1$s&#160;Tropfen</item>
     </plurals>
     <plurals name="card_dose_sprays">
-        <item quantity="one">%1$s Sprühstoß</item>
-        <item quantity="other">%1$s Sprühstöße</item>
+        <item quantity="one">%1$s&#160;Sprühstoß</item>
+        <item quantity="other">%1$s&#160;Sprühstöße</item>
     </plurals>
     <plurals name="card_dose_injections">
-        <item quantity="one">%1$s Injektion</item>
-        <item quantity="other">%1$s Injektionen</item>
+        <item quantity="one">%1$s&#160;Injektion</item>
+        <item quantity="other">%1$s&#160;Injektionen</item>
     </plurals>
 
     <plurals name="preview_dose_tablets">
-        <item quantity="one">%1$s Tablette</item>
-        <item quantity="other">%1$s Tabletten</item>
+        <item quantity="one">%1$s&#160;Tablette</item>
+        <item quantity="other">%1$s&#160;Tabletten</item>
     </plurals>
     <plurals name="preview_dose_capsules">
-        <item quantity="one">%1$s Kapsel</item>
-        <item quantity="other">%1$s Kapseln</item>
+        <item quantity="one">%1$s&#160;Kapsel</item>
+        <item quantity="other">%1$s&#160;Kapseln</item>
     </plurals>
     <plurals name="preview_dose_millilitres">
-        <item quantity="one">%1$s ml</item>
-        <item quantity="other">%1$s ml</item>
+        <item quantity="one">%1$s&#160;ml</item>
+        <item quantity="other">%1$s&#160;ml</item>
     </plurals>
     <plurals name="preview_dose_drops">
-        <item quantity="one">%1$s Tropfen</item>
-        <item quantity="other">%1$s Tropfen</item>
+        <item quantity="one">%1$s&#160;Tropfen</item>
+        <item quantity="other">%1$s&#160;Tropfen</item>
     </plurals>
     <plurals name="preview_dose_sprays">
-        <item quantity="one">%1$s Sprühstoß</item>
-        <item quantity="other">%1$s Sprühstöße</item>
+        <item quantity="one">%1$s&#160;Sprühstoß</item>
+        <item quantity="other">%1$s&#160;Sprühstöße</item>
     </plurals>
     <plurals name="preview_dose_injections">
-        <item quantity="one">%1$s Injektion</item>
-        <item quantity="other">%1$s Injektionen</item>
+        <item quantity="one">%1$s&#160;Injektion</item>
+        <item quantity="other">%1$s&#160;Injektionen</item>
     </plurals>
 
     <plurals name="card_course_days_left">
@@ -117,7 +117,7 @@
     </plurals>
 
     <!--
-      Das Wort der Dosiereinheit im Feld (12-design.md §5.3): die Zahl druckt das Feld
+      Das Wort der Dosiereinheit im Feld (docs/norm/06-design.md §5.3): die Zahl druckt das Feld
       selbst, die Ressource tragt nur das Wort. Ein leeres Feld zeigt den Namen der
       Einheit (die Form `one`).
     -->

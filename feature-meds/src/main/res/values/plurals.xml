@@ -85,40 +85,40 @@
 
     <!-- Доза одного приёма: «по 1 таблетке», «по 2 таблетки», «по 5 таблеток». -->
     <plurals name="card_dose_tablets">
-        <item quantity="one">по %1$s таблетке</item>
-        <item quantity="few">по %1$s таблетки</item>
-        <item quantity="many">по %1$s таблеток</item>
-        <item quantity="other">по %1$s таблетки</item>
+        <item quantity="one">по %1$s&#160;таблетке</item>
+        <item quantity="few">по %1$s&#160;таблетки</item>
+        <item quantity="many">по %1$s&#160;таблеток</item>
+        <item quantity="other">по %1$s&#160;таблетки</item>
     </plurals>
     <plurals name="card_dose_capsules">
-        <item quantity="one">по %1$s капсуле</item>
-        <item quantity="few">по %1$s капсулы</item>
-        <item quantity="many">по %1$s капсул</item>
-        <item quantity="other">по %1$s капсулы</item>
+        <item quantity="one">по %1$s&#160;капсуле</item>
+        <item quantity="few">по %1$s&#160;капсулы</item>
+        <item quantity="many">по %1$s&#160;капсул</item>
+        <item quantity="other">по %1$s&#160;капсулы</item>
     </plurals>
     <plurals name="card_dose_millilitres">
-        <item quantity="one">по %1$s мл</item>
-        <item quantity="few">по %1$s мл</item>
-        <item quantity="many">по %1$s мл</item>
-        <item quantity="other">по %1$s мл</item>
+        <item quantity="one">по %1$s&#160;мл</item>
+        <item quantity="few">по %1$s&#160;мл</item>
+        <item quantity="many">по %1$s&#160;мл</item>
+        <item quantity="other">по %1$s&#160;мл</item>
     </plurals>
     <plurals name="card_dose_drops">
-        <item quantity="one">по %1$s капле</item>
-        <item quantity="few">по %1$s капли</item>
-        <item quantity="many">по %1$s капель</item>
-        <item quantity="other">по %1$s капли</item>
+        <item quantity="one">по %1$s&#160;капле</item>
+        <item quantity="few">по %1$s&#160;капли</item>
+        <item quantity="many">по %1$s&#160;капель</item>
+        <item quantity="other">по %1$s&#160;капли</item>
     </plurals>
     <plurals name="card_dose_sprays">
-        <item quantity="one">по %1$s впрыску</item>
-        <item quantity="few">по %1$s впрыска</item>
-        <item quantity="many">по %1$s впрысков</item>
-        <item quantity="other">по %1$s впрыска</item>
+        <item quantity="one">по %1$s&#160;впрыску</item>
+        <item quantity="few">по %1$s&#160;впрыска</item>
+        <item quantity="many">по %1$s&#160;впрысков</item>
+        <item quantity="other">по %1$s&#160;впрыска</item>
     </plurals>
     <plurals name="card_dose_injections">
-        <item quantity="one">по %1$s инъекции</item>
-        <item quantity="few">по %1$s инъекции</item>
-        <item quantity="many">по %1$s инъекций</item>
-        <item quantity="other">по %1$s инъекции</item>
+        <item quantity="one">по %1$s&#160;инъекции</item>
+        <item quantity="few">по %1$s&#160;инъекции</item>
+        <item quantity="many">по %1$s&#160;инъекций</item>
+        <item quantity="other">по %1$s&#160;инъекции</item>
     </plurals>
 
     <!--
@@ -126,40 +126,40 @@
       в отличие от `card_dose_*` («по 2 таблетки»).
     -->
     <plurals name="preview_dose_tablets">
-        <item quantity="one">%1$s таблетка</item>
-        <item quantity="few">%1$s таблетки</item>
-        <item quantity="many">%1$s таблеток</item>
-        <item quantity="other">%1$s таблетки</item>
+        <item quantity="one">%1$s&#160;таблетка</item>
+        <item quantity="few">%1$s&#160;таблетки</item>
+        <item quantity="many">%1$s&#160;таблеток</item>
+        <item quantity="other">%1$s&#160;таблетки</item>
     </plurals>
     <plurals name="preview_dose_capsules">
-        <item quantity="one">%1$s капсула</item>
-        <item quantity="few">%1$s капсулы</item>
-        <item quantity="many">%1$s капсул</item>
-        <item quantity="other">%1$s капсулы</item>
+        <item quantity="one">%1$s&#160;капсула</item>
+        <item quantity="few">%1$s&#160;капсулы</item>
+        <item quantity="many">%1$s&#160;капсул</item>
+        <item quantity="other">%1$s&#160;капсулы</item>
     </plurals>
     <plurals name="preview_dose_millilitres">
-        <item quantity="one">%1$s мл</item>
-        <item quantity="few">%1$s мл</item>
-        <item quantity="many">%1$s мл</item>
-        <item quantity="other">%1$s мл</item>
+        <item quantity="one">%1$s&#160;мл</item>
+        <item quantity="few">%1$s&#160;мл</item>
+        <item quantity="many">%1$s&#160;мл</item>
+        <item quantity="other">%1$s&#160;мл</item>
     </plurals>
     <plurals name="preview_dose_drops">
-        <item quantity="one">%1$s капля</item>
-        <item quantity="few">%1$s капли</item>
-        <item quantity="many">%1$s капель</item>
-        <item quantity="other">%1$s капли</item>
+        <item quantity="one">%1$s&#160;капля</item>
+        <item quantity="few">%1$s&#160;капли</item>
+        <item quantity="many">%1$s&#160;капель</item>
+        <item quantity="other">%1$s&#160;капли</item>
     </plurals>
     <plurals name="preview_dose_sprays">
-        <item quantity="one">%1$s впрыск</item>
-        <item quantity="few">%1$s впрыска</item>
-        <item quantity="many">%1$s впрысков</item>
-        <item quantity="other">%1$s впрыска</item>
+        <item quantity="one">%1$s&#160;впрыск</item>
+        <item quantity="few">%1$s&#160;впрыска</item>
+        <item quantity="many">%1$s&#160;впрысков</item>
+        <item quantity="other">%1$s&#160;впрыска</item>
     </plurals>
     <plurals name="preview_dose_injections">
-        <item quantity="one">%1$s инъекция</item>
-        <item quantity="few">%1$s инъекции</item>
-        <item quantity="many">%1$s инъекций</item>
-        <item quantity="other">%1$s инъекции</item>
+        <item quantity="one">%1$s&#160;инъекция</item>
+        <item quantity="few">%1$s&#160;инъекции</item>
+        <item quantity="many">%1$s&#160;инъекций</item>
+        <item quantity="other">%1$s&#160;инъекции</item>
     </plurals>
 
     <!-- Остаток дней курса: «осталось 17 дней». -->
@@ -208,7 +208,7 @@
     </plurals>
 
     <!--
-      Слово единицы дозы в поле (12-design.md §5.3): число печатает само поле, а строка
+      Слово единицы дозы в поле (docs/norm/06-design.md §5.3): число печатает само поле, а строка
       несёт только слово и согласуется с набранным числом. Пустое поле показывает имя
       единицы — форму `one`. У дозовых семейств `few` и `other` одно слово: дробное число
       печатается количеством «2» (`pluralQuantityOf`), и поле не должно расходиться
