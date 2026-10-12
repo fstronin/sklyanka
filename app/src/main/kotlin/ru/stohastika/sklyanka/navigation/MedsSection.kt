@@ -30,8 +30,9 @@ import ru.stohastika.sklyanka.ui.motion.LayerMotion
  * зависят, и знание о том, что нажатие на карточку ведёт в карточку лекарства, а
  * сегмент «Архив» — в архив, принадлежит `app` (`docs/archive/tasks/SKL-10/TDD.md §8.2`).
  *
- * Библиотеки навигации здесь нет намеренно: переходов у раздела четыре, все внутри одной
- * Activity, и состояние стека выражается списком из четырёх значений. Граф на весь продукт
+ * Библиотеки навигации здесь нет намеренно: мест в разделе пять — список, архив, новая форма,
+ * карточка и правка, те же, что называет §5.1 (`docs/norm/04-behavior.md`), — и все они внутри
+ * одной Activity, поэтому состояние стека выражается списком значений. Граф на весь продукт
  * появится вместе с нижней панелью и переключением профиля (SKL-15).
  */
 @Composable
@@ -53,9 +54,12 @@ fun MedsSection(
         when (destination) {
             MedsDestination.List -> MedsRoute(
                 listViewModel = viewModels.list,
-                formViewModel = viewModels.form,
                 onOpenMedicationCard = { id -> stack.push(MedsDestination.Card(id)) },
                 onOpenArchive = { stack.push(MedsDestination.Archive) },
+                // Круглая кнопка списка поднимает форму **уровнем стека**, а не флагом
+                // маршрута (SKL-150): снятая системной «Назад», она оставляет человека
+                // в списке, а не выбрасывает из раздела на «Сегодня».
+                onOpenNewMedication = { stack.push(MedsDestination.NewMedication) },
                 onOpenToday = onOpenToday,
                 onOpenSettings = onOpenSettings,
                 modifier = modifier,
@@ -107,7 +111,13 @@ sealed interface MedsDestination {
 
     data object Archive : MedsDestination
 
-    /** Форма нового лекарства: вход с экрана «Сегодня» («Добавить лекарство», SKL-08). */
+    /**
+     * Форма нового лекарства: вход с экрана «Сегодня» («Добавить лекарство», SKL-08)
+     * и круглой кнопкой списка (SKL-150).
+     *
+     * Оба входа — один и тот же уровень стека: возврат с формы повторяет возврат,
+     * и человек в обоих случаях остаётся в разделе.
+     */
     data object NewMedication : MedsDestination
 
     data class Card(val medicationId: String) : MedsDestination

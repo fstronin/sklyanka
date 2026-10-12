@@ -14,7 +14,6 @@ import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -29,34 +28,34 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
 import ru.stohastika.sklyanka.domain.medication.SaveMedicationUseCase
-import ru.stohastika.sklyanka.domain.medication.UndoDeleteMedicationUseCase
 import ru.stohastika.sklyanka.domain.medication.ValidateMedicationDraft
-import ru.stohastika.sklyanka.domain.model.Profile
 import ru.stohastika.sklyanka.domain.schedule.IntakeGenerationPolicy
 import ru.stohastika.sklyanka.domain.schedule.MedicationPlanner
 import ru.stohastika.sklyanka.domain.schedule.PlanIntakesUseCase
 import ru.stohastika.sklyanka.domain.schedule.PlanScope
-import ru.stohastika.sklyanka.domain.undo.UndoableActionStore
+import ru.stohastika.sklyanka.feature.meds.form.MedicationFormRoute
 import ru.stohastika.sklyanka.feature.meds.form.MedicationFormViewModel
 import ru.stohastika.sklyanka.feature.meds.form.TAG_MEDICATION_FORM
 import ru.stohastika.sklyanka.feature.meds.form.TAG_NAME_FIELD
-import ru.stohastika.sklyanka.feature.meds.list.MedicationListViewModel
-import ru.stohastika.sklyanka.feature.meds.list.TAG_ADD_MEDICATION
-import ru.stohastika.sklyanka.feature.meds.list.TakePrnAction
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 
 /**
- * Поворот экрана сохраняет место человека и введённое (SKL-142, `10-behavior.md` §5.1).
+ * Поворот экрана не теряет ни форму, ни введённое в неё (SKL-142, `docs/norm/04-behavior.md` §5.1).
  *
  * Проверяется настоящее пересоздание активности с подменой конфигурации — не подмена
  * композиции стендом: `configurationChange` проводит активность по её жизненному циклу,
  * сохраняет состояние композиции и отдаёт его новой сборке. Так же ведёт себя телефон
  * при повороте.
  *
- * Дефект был в том, что открытость формы жила памятью композиции, а пересоздание её гасит:
- * человек посреди ввода возвращался в список. Введённое живёт в ViewModel — она пересоздание
- * переживает, — но безусловное открытие затирало черновик, поэтому форма открывается один
- * раз на заход.
+ * Стенд держит корнем активности саму [MedicationFormRoute]: где форма стоит в разделе —
+ * дело того, кто собирает маршруты (`app`, SKL-150), а здесь проверяется то, что принадлежит
+ * форме, — пересоздание не затирает черновик. Черновик живёт в ViewModel (она пересоздание
+ * переживает), но безусловное открытие затирало его, поэтому форма открывается один раз
+ * на заход.
+ *
+ * Место человека в разделе после поворота держит стек раздела в `app`: сохранение места
+ * проверяет `MedsStackSaverTest` (SKL-142), а форму, поднятую круглой кнопкой списка,
+ * `MedsFormFromListTest` (SKL-150).
  */
 @RunWith(AndroidJUnit4::class)
 @Config(qualifiers = "w390dp-h2400dp-mdpi")
@@ -71,17 +70,6 @@ class MedicationFormRotationTest {
     private val intakes = FakeIntakes()
     private val profiles = FakeProfiles()
     private val log = RecordingLog()
-    private val undoActions = UndoableActionStore(clock)
-
-    private val list = MedicationListViewModel(
-        activeProfile = activeProfile,
-        medications = medications,
-        intakes = intakes,
-        time = clock,
-        takePrn = TakePrnAction {},
-        undoDelete = UndoDeleteMedicationUseCase(medications, RecordingPlanner()),
-        undoActions = undoActions,
-    )
 
     private val form = MedicationFormViewModel(
         activeProfile = activeProfile,
@@ -122,14 +110,10 @@ class MedicationFormRotationTest {
 
     @Test
     fun theFormAndTheTypedNameSurviveRotation() {
-        profiles.put(
-            Profile(id = MedsTestData.PROFILE_ID, name = "owner", color = 0, isSelf = true, mirrorReminders = false),
-        )
-        MedsFormHost.factory = MedsFormFactory(list, form)
+        MedsFormHost.factory = MedsFormFactory(form)
         val controller = host()
         idle()
 
-        composeRule.onNodeWithTag(TAG_ADD_MEDICATION).performClick()
         waitForTag(TAG_MEDICATION_FORM)
         composeRule.onNode(
             hasSetTextAction() and hasAnyAncestor(hasTestTag(TAG_NAME_FIELD)),
@@ -179,14 +163,12 @@ class MedicationFormRotationTest {
 }
 
 /**
- * Хозяин экрана: раздел «Лекарства» с настоящими ViewModel активности.
+ * Хозяин экрана: форма лекарства с настоящей моделью активности.
  *
- * Модели приходят из ViewModelStore активности — тем же путём, каким они живут в продукте,
- * и потому пересоздание их переживает.
+ * Модель приходит из ViewModelStore активности — тем же путём, каким она живёт в продукте,
+ * и потому пересоздание её переживает.
  */
 class MedsFormHost : ComponentActivity() {
-
-    val list: MedicationListViewModel by viewModels { requireNotNull(factory) }
 
     val form: MedicationFormViewModel by viewModels { requireNotNull(factory) }
 
@@ -194,12 +176,7 @@ class MedsFormHost : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             SklyankaTheme {
-                MedsRoute(
-                    listViewModel = list,
-                    formViewModel = form,
-                    onOpenMedicationCard = {},
-                    onOpenArchive = {},
-                )
+                MedicationFormRoute(viewModel = form, medicationId = null, onDone = {})
             }
         }
     }
@@ -209,13 +186,11 @@ class MedsFormHost : ComponentActivity() {
     }
 }
 
-/** Фабрика стенда: собирает модели из того же мира, что и проверка. */
-class MedsFormFactory(private val list: MedicationListViewModel, private val form: MedicationFormViewModel) :
-    ViewModelProvider.Factory {
+/** Фабрика стенда: отдаёт модель из того же мира, что и проверка. */
+class MedsFormFactory(private val form: MedicationFormViewModel) : ViewModelProvider.Factory {
 
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T = when {
-        modelClass.isAssignableFrom(MedicationListViewModel::class.java) -> list as T
         modelClass.isAssignableFrom(MedicationFormViewModel::class.java) -> form as T
         else -> error("unexpected view model: ${modelClass.name}")
     }

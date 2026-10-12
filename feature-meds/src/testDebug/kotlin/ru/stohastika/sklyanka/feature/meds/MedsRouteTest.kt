@@ -1,47 +1,40 @@
 package ru.stohastika.sklyanka.feature.meds
 
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
-import ru.stohastika.sklyanka.domain.medication.SaveMedicationUseCase
 import ru.stohastika.sklyanka.domain.medication.UndoDeleteMedicationUseCase
-import ru.stohastika.sklyanka.domain.medication.ValidateMedicationDraft
-import ru.stohastika.sklyanka.domain.model.Profile
-import ru.stohastika.sklyanka.domain.repository.ActiveProfileRepository
-import ru.stohastika.sklyanka.domain.schedule.IntakeGenerationPolicy
-import ru.stohastika.sklyanka.domain.schedule.MedicationPlanner
-import ru.stohastika.sklyanka.domain.schedule.PlanIntakesUseCase
-import ru.stohastika.sklyanka.domain.schedule.PlanScope
 import ru.stohastika.sklyanka.domain.undo.UndoableActionStore
-import ru.stohastika.sklyanka.feature.meds.form.MedFormIntent
-import ru.stohastika.sklyanka.feature.meds.form.MedicationFormViewModel
 import ru.stohastika.sklyanka.feature.meds.form.TAG_MEDICATION_FORM
-import ru.stohastika.sklyanka.feature.meds.form.TAG_SAVE_BUTTON
 import ru.stohastika.sklyanka.feature.meds.list.MedicationListViewModel
 import ru.stohastika.sklyanka.feature.meds.list.TAG_ADD_MEDICATION
+import ru.stohastika.sklyanka.feature.meds.list.TAG_MEDICATION_LIST
 import ru.stohastika.sklyanka.feature.meds.list.TakePrnAction
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 
 /**
- * Раздел «Лекарства»: список и форма (SKL-57).
+ * Круглая кнопка списка поднимает форму наружу, а не открывает её здесь (SKL-150).
  *
- * Проверяет то, что видит человек: после сохранения первое нажатие «+» открывает форму,
- * и она остаётся открытой. Прогон на JVM (стенд SKL-24), потому что дефект — порядок
- * состояния, а не кадры: на эмуляторе он выглядит мерцанием, здесь — закрытой формой.
+ * Форма нового лекарства — место в стеке раздела (`docs/norm/04-behavior.md` §5.1: список,
+ * архив, новая форма, карточка, правка), и поднимает это место тот, кто собирает маршруты,
+ * то есть `app`. Пока открытость формы жила флагом этого маршрута, стек раздела оставался
+ * на списке, и системная «Назад» с формы уводила человека из раздела.
  *
- * Чтение активного профиля придержано защёлкой: на настоящем устройстве оно
- * асинхронно (DataStore), и окно между повторным открытием формы и приходом свежего
- * состояния — то место, где старое сохранение закрывало новую форму.
+ * Прежняя проверка этого файла держала защёлку на чтении активного профиля (SKL-57): форма
+ * жила флагом маршрута, и приход свежего состояния списка закрывал только что открытую форму.
+ * Формы здесь больше нет — её открытость принадлежит стеку раздела, и состояние списка на неё
+ * не влияет вовсе: класс дефекта исчез по построению, а не спрятан от проверки. Что осталось
+ * проверяемым на этом шве — что маршрут не заводит форму себе и передаёт намерение списка
+ * вызывающему: иначе форма вернулась бы флагом, и дефект вернулся бы вместе с ней.
  */
 @RunWith(AndroidJUnit4::class)
 @Config(qualifiers = "w390dp-h2400dp-mdpi")
@@ -51,35 +44,13 @@ class MedsRouteTest {
     val composeRule = createComposeRule()
 
     private val clock = MedsTestData.clock()
-    private val activeProfile = GatedActiveProfile(MedsTestData.PROFILE_ID)
+    private val activeProfile = FakeActiveProfile()
     private val medications = FakeMedications()
     private val intakes = FakeIntakes()
-    private val profiles = FakeProfiles()
-    private val log = RecordingLog()
     private val undoActions = UndoableActionStore(clock)
 
-    private val form = MedicationFormViewModel(
-        activeProfile = activeProfile,
-        medications = medications,
-        saveMedication = SaveMedicationUseCase(
-            validate = ValidateMedicationDraft(),
-            medications = medications,
-            planner = MedicationPlanner { medicationId, reason ->
-                PlanIntakesUseCase(
-                    profiles = profiles,
-                    medications = medications,
-                    intakes = intakes,
-                    time = clock,
-                    log = log,
-                    policy = IntakeGenerationPolicy(windowDepthDays = WINDOW_DEPTH_DAYS),
-                )(PlanScope.Medication(medicationId), reason)
-            },
-            transactor = DirectTransactor(),
-            log = log,
-            newId = { NEW_ID },
-        ),
-        time = clock,
-    )
+    /** Просьбы открыть форму, пришедшие вызывающему: их число и есть проверка. */
+    private var formRequests = 0
 
     private val list = MedicationListViewModel(
         activeProfile = activeProfile,
@@ -92,106 +63,27 @@ class MedsRouteTest {
     )
 
     private fun show() {
-        profiles.put(
-            Profile(
-                id = MedsTestData.PROFILE_ID,
-                name = "owner",
-                color = 0,
-                isSelf = true,
-                mirrorReminders = false,
-            ),
-        )
         composeRule.setContent {
             SklyankaTheme {
                 MedsRoute(
                     listViewModel = list,
-                    formViewModel = form,
                     onOpenMedicationCard = {},
                     onOpenArchive = {},
+                    onOpenNewMedication = { formRequests++ },
                 )
             }
         }
     }
 
     @Test
-    fun theFormOpensAgainRightAfterASave() {
+    fun theAddButtonAsksTheCallerForTheForm() {
         show()
 
-        openForm()
-        fillMinimalCourse()
-        composeRule.onNodeWithTag(TAG_SAVE_BUTTON).performClick()
-        composeRule.waitUntil(timeoutMillis = WAIT_MS) {
-            composeRule.onAllNodesWithTag(TAG_MEDICATION_FORM).fetchSemanticsNodes().isEmpty()
-        }
-
-        openForm()
-        composeRule.mainClock.advanceTimeBy(SETTLE_MS)
-
-        composeRule.onNodeWithTag(TAG_MEDICATION_FORM).assertIsDisplayed()
-    }
-
-    /**
-     * Нажатие «+» с придержанным чтением профиля.
-     *
-     * Защёлка отпускается только после того, как у старого состояния была возможность
-     * закрыть форму: на устройстве именно это и происходит — форма успевает уйти
-     * до прихода свежего состояния.
-     */
-    private fun openForm() {
-        activeProfile.hold()
         composeRule.onNodeWithTag(TAG_ADD_MEDICATION).performClick()
         composeRule.waitForIdle()
-        composeRule.mainClock.advanceTimeBy(SETTLE_MS)
-        composeRule.waitForIdle()
-        activeProfile.release()
-        composeRule.waitUntil(timeoutMillis = WAIT_MS) {
-            composeRule.onAllNodesWithTag(TAG_MEDICATION_FORM).fetchSemanticsNodes().isNotEmpty()
-        }
+
+        assertEquals("the add button must ask the route caller for the form", 1, formRequests)
+        composeRule.onNodeWithTag(TAG_MEDICATION_LIST).assertIsDisplayed()
+        composeRule.onAllNodesWithTag(TAG_MEDICATION_FORM).assertCountEquals(0)
     }
-
-    /** Минимально достаточный курс: название, доза и одно время. */
-    private fun fillMinimalCourse() {
-        composeRule.runOnUiThread {
-            form.onIntent(MedFormIntent.NameChanged("med-a"))
-            form.onIntent(MedFormIntent.DoseAmountChanged("2"))
-            form.onIntent(MedFormIntent.TimeAdded)
-        }
-        composeRule.waitForIdle()
-    }
-
-    private companion object {
-        const val NEW_ID = "55555555-5555-4555-8555-555555555555"
-        const val WINDOW_DEPTH_DAYS = 7
-        const val WAIT_MS = 5_000L
-        const val SETTLE_MS = 1_000L
-    }
-}
-
-/**
- * Активный профиль, чтение которого можно придержать.
- *
- * Пока защёлка не отпущена, `current()` не отвечает — ровно как настоящее хранилище,
- * которому нужно время. Поток идентификатора остаётся живым: список подписан на него,
- * и защёлка не должна его останавливать.
- */
-private class GatedActiveProfile(private val id: String) : ActiveProfileRepository {
-
-    override val activeProfileId: Flow<String> = MutableStateFlow(id)
-    private var gate: CompletableDeferred<Unit>? = null
-
-    fun hold() {
-        gate = CompletableDeferred()
-    }
-
-    fun release() {
-        gate?.complete(Unit)
-        gate = null
-    }
-
-    override suspend fun current(): String {
-        gate?.await()
-        return id
-    }
-
-    override suspend fun switchTo(profileId: String) = Unit
 }
