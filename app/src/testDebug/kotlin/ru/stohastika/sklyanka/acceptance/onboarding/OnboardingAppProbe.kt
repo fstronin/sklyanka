@@ -21,6 +21,7 @@ import ru.stohastika.sklyanka.domain.onboarding.OnboardingSource
 import ru.stohastika.sklyanka.domain.onboarding.PermissionStep
 import ru.stohastika.sklyanka.domain.onboarding.ReadPermissionChecklistUseCase
 import ru.stohastika.sklyanka.domain.onboarding.StepOpenResult
+import ru.stohastika.sklyanka.domain.onboarding.VendorProfile
 import ru.stohastika.sklyanka.domain.reminder.BuildReminderDiagnosticsUseCase
 import ru.stohastika.sklyanka.domain.reminder.ExportReminderJournalUseCase
 import ru.stohastika.sklyanka.domain.reminder.ReadReminderReliabilityUseCase
@@ -377,14 +378,19 @@ internal class AppRecordingNavigator : SystemSettingsNavigator {
         return StepOpenResult.OPENED
     }
 
-    override fun openAppStartupSettings(): StepOpenResult {
-        opened += "app-startup"
-        return appStartupResult
-    }
+    override fun openVendorStep(profile: VendorProfile, step: PermissionStep): StepOpenResult = when (step) {
+        PermissionStep.APP_STARTUP -> {
+            opened += "app-startup"
+            appStartupResult
+        }
 
-    override fun openBatterySavingSettings(): StepOpenResult {
-        opened += "battery-saving"
-        return batterySavingResult
+        PermissionStep.BATTERY_SAVING -> {
+            opened += "battery-saving"
+            batterySavingResult
+        }
+
+        // У закрепления в недавних системного экрана нет, и сюда оно не приходит.
+        else -> StepOpenResult.OPENED
     }
 
     fun clear() {

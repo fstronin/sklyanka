@@ -46,6 +46,25 @@ class ScenarioOnboarding :
     /** Прошивка сценария: по умолчанию эталонный Huawei. */
     var vendor: VendorProfile = VendorProfile.EMUI
 
+    /**
+     * Что платформа сообщает о прошивке: строки `Build` и наличие менеджера Huawei (SKL-112).
+     *
+     * Данность сценариев классификации: на JVM настоящего `Build.MANUFACTURER` взять неоткуда,
+     * и проверяется чистая функция классификатора, а не чтение системы.
+     */
+    var vendorFacts: VendorFacts? = null
+
+    /** Профиль, определённый классификатором: результат хода «приложение определяет профиль». */
+    var detectedVendor: VendorProfile? = null
+
+    /**
+     * Какое из двух прав точных будильников объявляет сборка (Р-59).
+     *
+     * Объявление — данность Предыстории, и шаг «Точные будильники» обязан следовать
+     * за ответом системы при любом из двух ответов (ПЛ-14, ПЛ-15, НАП-16).
+     */
+    var declaredExactAlarm: DeclaredExactAlarm = DeclaredExactAlarm.PRIMARY
+
     /** Записи журнала онбординга: короткие коды событий, без медицинских данных (НФТ-19). */
     val records: MutableList<String> = mutableListOf()
 
@@ -125,3 +144,14 @@ class ScenarioOnboarding :
         records += "revoked:${steps.joinToString(",")}"
     }
 }
+
+/** Факты `Build` и наличие системного менеджера — данность сценариев классификации (SKL-112). */
+data class VendorFacts(val manufacturer: String, val brand: String, val huaweiManagerPresent: Boolean)
+
+/**
+ * Какое из двух прав точных будильников объявлено сборкой (Р-59).
+ *
+ * Сценарии таблицы прогоняют шаг при обоих ответах: состояние шага обязано следовать
+ * за ответом системы, а не за этим объявлением (ПЛ-14, ПЛ-15, НАП-16).
+ */
+enum class DeclaredExactAlarm { PRIMARY, FALLBACK }

@@ -69,6 +69,11 @@ internal class FakePermissionRequestSupport(
 
     override fun canRequestFromCode(step: PermissionStep): Boolean = step in requestable
 
+    /** Платформенный ответ «можно спросить» — для проверок, что домен его не переоценивает. */
+    fun allowAskingFor(step: PermissionStep) {
+        requestable.add(step)
+    }
+
     /** Android 12 и старше: разрешения на уведомления не существует, запросить нечего. */
     fun beforeAndroid13() {
         requestable.remove(PermissionStep.NOTIFICATIONS)

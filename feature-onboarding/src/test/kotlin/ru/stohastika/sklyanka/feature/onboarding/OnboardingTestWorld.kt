@@ -136,6 +136,9 @@ internal class FakeNavigator(
 
     val opened: MutableList<String> = mutableListOf()
 
+    /** Какой профиль получил навигатор: шаг обязан вести в раздел своей прошивки. */
+    val openedProfiles: MutableList<VendorProfile> = mutableListOf()
+
     override fun openExactAlarmSettings(): StepOpenResult {
         opened += EXACT_ALARMS
         return StepOpenResult.OPENED
@@ -151,14 +154,22 @@ internal class FakeNavigator(
         return StepOpenResult.OPENED
     }
 
-    override fun openAppStartupSettings(): StepOpenResult {
-        opened += APP_STARTUP
-        return appStartupResult
-    }
+    override fun openVendorStep(profile: VendorProfile, step: PermissionStep): StepOpenResult {
+        openedProfiles += profile
+        return when (step) {
+            PermissionStep.APP_STARTUP -> {
+                opened += APP_STARTUP
+                appStartupResult
+            }
 
-    override fun openBatterySavingSettings(): StepOpenResult {
-        opened += BATTERY_SAVING
-        return batterySavingResult
+            PermissionStep.BATTERY_SAVING -> {
+                opened += BATTERY_SAVING
+                batterySavingResult
+            }
+
+            // У закрепления в недавних системного экрана нет, и сюда оно не приходит.
+            else -> StepOpenResult.OPENED
+        }
     }
 
     companion object {

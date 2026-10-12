@@ -2,6 +2,9 @@
 <resources>
     <string name="setup_title">Configurar la fiabilidad</string>
     <string name="setup_intro">En EMUI, el sistema descarga agresivamente las aplicaciones en segundo plano. Sin los ajustes de abajo, las tomas llegarán con retraso o no llegarán.</string>
+    <string name="setup_intro_xiaomi">En HyperOS o MIUI, el sistema descarga agresivamente las aplicaciones en segundo plano. Sin los ajustes de abajo, las tomas llegarán con retraso o no llegarán.</string>
+    <string name="setup_intro_samsung">En One UI, el sistema limita la actividad en segundo plano de las aplicaciones. Sin los ajustes de abajo, las tomas llegarán con retraso o no llegarán.</string>
+    <string name="setup_intro_android">Sin los permisos de abajo, las tomas llegarán con retraso o no llegarán.</string>
 
     <string name="setup_step_notifications">Notificaciones</string>
     <string name="setup_step_notifications_caption">Tarjeta de toma en la pantalla</string>
@@ -17,7 +20,12 @@
     <string name="setup_step_app_startup_caption">Ajustes → Batería → Inicio de aplicaciones → Sklyanka → Gestionar manualmente</string>
     <string name="setup_step_app_startup_action">Activa «Inicio automático», «Inicio secundario» y «Ejecutar en segundo plano»</string>
 
+    <string name="setup_step_autostart">Inicio automático</string>
+    <string name="setup_step_autostart_caption">Ajustes → Aplicaciones → Permisos → Inicio automático → Sklyanka</string>
+
     <string name="setup_step_battery_saving">Ahorro de energía</string>
+    <string name="setup_step_battery_saving_caption_xiaomi">Ajustes → Aplicaciones → Sklyanka → Ahorro de batería → Sin restricciones</string>
+    <string name="setup_step_battery_saving_caption_samsung">Ajustes → Cuidado del dispositivo → Batería → Límites de uso en segundo plano → Aplicaciones que no deben suspenderse</string>
 
     <string name="setup_step_recents_pin">Fijar en recientes</string>
     <string name="setup_step_recents_pin_caption">Abre la lista de aplicaciones recientes, desliza la tarjeta de «Sklyanka» hacia abajo y toca el candado que aparece</string>
@@ -27,6 +35,7 @@
     <string name="setup_unverifiable_recents_pin">La aplicación no puede comprobarlo: la lista de recientes no es visible para ella.</string>
 
     <string name="setup_manual_confirm_app_startup">He configurado el inicio de aplicaciones</string>
+    <string name="setup_manual_confirm_autostart">He configurado el inicio automático</string>
     <string name="setup_manual_confirm_battery_saving">He quitado las restricciones de ahorro de energía</string>
     <string name="setup_manual_confirm_recents_pin">Sklyanka está fijada en recientes</string>
     <string name="setup_manual_confirm_caption">Se registra bajo tu palabra: la aplicación no comprueba este ajuste</string>
@@ -35,6 +44,9 @@
 
     <string name="setup_fallback_app_startup">La sección del sistema no se abrió en este dispositivo. Ábrela manualmente: Ajustes → Batería → Inicio de aplicaciones → Sklyanka → Gestionar manualmente. Activa «Inicio automático», «Inicio secundario» y «Ejecutar en segundo plano».</string>
     <string name="setup_fallback_battery_saving">La sección del sistema no se abrió en este dispositivo. Ábrela manualmente: Ajustes → Batería → Sklyanka → quita las restricciones de ahorro de energía («No restringir»).</string>
+    <string name="setup_fallback_autostart">La sección del sistema no se abrió en este dispositivo. Ábrela manualmente: Ajustes → Aplicaciones → Permisos → Inicio automático → Sklyanka. Activa «Inicio automático». En MIUI, esto es Seguridad → Permisos → Inicio automático.</string>
+    <string name="setup_fallback_battery_saving_xiaomi">La sección del sistema no se abrió en este dispositivo. Ábrela manualmente: Ajustes → Aplicaciones → Sklyanka → Ahorro de batería → Sin restricciones. Si no hay «Ahorro de batería», elige «Sin restricciones» en la sección «Control de actividad».</string>
+    <string name="setup_fallback_battery_saving_samsung">La sección del sistema no se abrió en este dispositivo. Ábrela manualmente: Ajustes → Cuidado del dispositivo → Batería → Límites de uso en segundo plano → Aplicaciones que no deben suspenderse → añade «Sklyanka» a la lista.</string>
 
     <string name="onboarding_state_granted">Sí</string>
     <string name="setup_confirmed_by_user">Confirmado por ti</string>
@@ -55,12 +67,14 @@
     <string name="setup_revoked_notifications">El permiso de notificaciones se ha revocado en los ajustes del sistema. Mientras falte, los recordatorios no llegarán.</string>
     <string name="setup_revoked_exact_alarms">Se ha revocado el permiso de alarmas exactas. Los recordatorios llegarán con retraso.</string>
     <string name="setup_revoked_app_startup">Se ha quitado la confirmación de «Inicio de aplicaciones».</string>
+    <string name="setup_revoked_autostart">Se ha quitado la confirmación de «Inicio automático».</string>
     <string name="setup_revoked_battery_saving">Se ha quitado la confirmación de «Ahorro de energía».</string>
     <string name="setup_revoked_recents_pin">Se ha quitado la confirmación de fijar en recientes.</string>
 
     <string name="cd_onboarding_notifications">Notificaciones</string>
     <string name="cd_onboarding_exact_alarms">Alarmas exactas</string>
     <string name="cd_setup_app_startup">Inicio de aplicaciones</string>
+    <string name="cd_setup_autostart">Inicio automático</string>
     <string name="cd_setup_battery_saving">Ahorro de energía</string>
     <string name="cd_setup_recents_pin">Fijar en recientes</string>
     <string name="cd_onboarding_granted">Permiso concedido</string>

@@ -75,11 +75,36 @@ internal object PermissionsScreenFixtures {
         checklist = asDrawn().checklist?.copy(vendor = VendorProfile.GENERIC),
     )
 
+    /** Xiaomi: та же цепочка из пяти шагов, но автозапуск зовётся своим словом (SKL-112). */
+    fun xiaomi(): OnboardingUiState = state(
+        vendor = VendorProfile.XIAOMI,
+        notifications = grantedNotifications(permission = PermissionGrant.Denied(canAsk = true)),
+        exactAlarms = PermissionGrant.Denied(canAsk = false),
+    )
+
+    /** Samsung: четыре карточки — отдельного автозапуска у One UI в цепочке нет (SKL-112). */
+    fun samsung(): OnboardingUiState = state(
+        vendor = VendorProfile.SAMSUNG,
+        notifications = grantedNotifications(permission = PermissionGrant.Denied(canAsk = true)),
+        exactAlarms = PermissionGrant.Denied(canAsk = false),
+    )
+
+    /** Незнакомая прошивка: чужих вендорских слов на экране нет, остаются два общих шага. */
+    fun unknownFirmware(): OnboardingUiState = state(
+        vendor = VendorProfile.GENERIC,
+        notifications = grantedNotifications(permission = PermissionGrant.Denied(canAsk = true)),
+        exactAlarms = PermissionGrant.Denied(canAsk = false),
+    )
+
     /** Повторный вход из настроек: экран тот же, индикатора шагов нет. */
     fun fromSettings(): OnboardingUiState = asDrawn().copy(source = OnboardingSource.SETTINGS)
 
-    /** Прошивка, на которой системный раздел «Запуск приложений» не открылся. */
-    fun withInstructions(): OnboardingUiState = state()
+    /**
+     * Xiaomi, раздел автозапуска не открылся: запасная инструкция пунктами меню HyperOS/MIUI.
+     *
+     * Инструкция — своя у профиля: общий путь EMUI здесь был бы рассказом про чужое меню.
+     */
+    fun withInstructions(): OnboardingUiState = state(vendor = VendorProfile.XIAOMI)
         .copy(instructions = setOf(PermissionStep.APP_STARTUP))
 
     /** Вход из баннера перерыва: фокус на первом незакрытом шаге. */

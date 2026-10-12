@@ -10,7 +10,9 @@ import android.os.Build
 import android.provider.Settings
 import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
+import ru.stohastika.sklyanka.domain.onboarding.PermissionStep
 import ru.stohastika.sklyanka.domain.onboarding.StepOpenResult
+import ru.stohastika.sklyanka.domain.onboarding.VendorProfile
 import ru.stohastika.sklyanka.feature.onboarding.SystemSettingsNavigator
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -74,31 +76,17 @@ class AndroidSystemSettingsNavigator @Inject constructor(@ApplicationContext pri
     }
 
     /**
-     * Экран управления запуском приложений производителя (ПЛ-18).
+     * Вендорский шаг: раздел профиля и шага (ПЛ-18).
      *
-     * Перебор известных адресов: имя Activity в EMUI менялось между версиями прошивки,
+     * Перебор известных адресов этого профиля: имя Activity менялось между версиями прошивки,
      * и на части сборок экран не экспортирован вовсе. Ни один вендорский адрес не сработал —
-     * человек получает текстовую инструкцию, даже если открылся стандартный список
-     * энергосбережения: это не тот раздел, а инструкция — рабочий путь (критерий приёмки 6).
+     * человек получает текстовую инструкцию своей прошивки, даже если открылся стандартный
+     * список энергосбережения: это не тот раздел, а инструкция — рабочий путь (критерий
+     * приёмки 6). Пустой список адресов (закрепление в недавних, чужой профиль) — тот же
+     * запасной путь, а не попытка открыть чужой экран.
      */
-    override fun openAppStartupSettings(): StepOpenResult {
-        val opened = SystemScreenTargets.firstOpenable(SystemScreenTargets.APP_STARTUP) { target ->
-            start(componentIntent(target))
-        }
-        if (opened != null) return StepOpenResult.OPENED
-        openAndroidFallbacks()
-        return StepOpenResult.FALLBACK_TO_INSTRUCTIONS
-    }
-
-    /**
-     * Экран ограничений энергосбережения приложения (ПЛ-6).
-     *
-     * Как и у запуска приложений: `OPENED` — только если открылся вендорский раздел;
-     * стандартный список энергосбережения запасным путём не считается целевым экраном,
-     * потому что человеку нужна страница приложения, а не список всех приложений.
-     */
-    override fun openBatterySavingSettings(): StepOpenResult {
-        val opened = SystemScreenTargets.firstOpenable(SystemScreenTargets.BATTERY_SAVING) { target ->
+    override fun openVendorStep(profile: VendorProfile, step: PermissionStep): StepOpenResult {
+        val opened = SystemScreenTargets.firstOpenable(SystemScreenTargets.targets(profile, step)) { target ->
             start(componentIntent(target))
         }
         if (opened != null) return StepOpenResult.OPENED
@@ -156,7 +144,20 @@ class AndroidSystemSettingsNavigator @Inject constructor(@ApplicationContext pri
     private fun fullScreenIntentIntent(): Intent = Intent(FULL_SCREEN_INTENT_SETTINGS, appUri())
 
     private fun componentIntent(target: SystemScreenTarget): Intent =
-        Intent().setComponent(ComponentName(target.packageName, target.className))
+        Intent().setComponent(ComponentName(target.packageName, target.className)).apply {
+            // Некоторым вендорским экранам нужен пакет приложения: без него раздел
+            // открывается пустым (экран энергосбережения MIUI).
+            if (target.carriesAppIdentity) {
+                putExtra(EXTRA_PACKAGE_NAME, context.packageName)
+                putExtra(EXTRA_PACKAGE_LABEL, appLabel())
+            }
+        }
+
+    /** Имя приложения для чужого экрана: у MIUI оно подпись строки, а не идентификатор. */
+    private fun appLabel(): String = runCatching {
+        val info = context.packageManager.getApplicationInfo(context.packageName, 0)
+        context.packageManager.getApplicationLabel(info).toString()
+    }.getOrDefault(context.packageName)
 
     private fun appDetails(): Intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, appUri())
 
@@ -179,5 +180,9 @@ class AndroidSystemSettingsNavigator @Inject constructor(@ApplicationContext pri
         const val EXACT_ALARM_SETTINGS = "android.settings.REQUEST_SCHEDULE_EXACT_ALARM"
         const val NOTIFICATION_SETTINGS = "android.settings.APP_NOTIFICATION_SETTINGS"
         const val FULL_SCREEN_INTENT_SETTINGS = "android.settings.MANAGE_APP_USE_FULL_SCREEN_INTENT"
+
+        /** Ключи, которыми MIUI ждёт пакет приложения на экране ограничений энергосбережения. */
+        const val EXTRA_PACKAGE_NAME = "package_name"
+        const val EXTRA_PACKAGE_LABEL = "package_label"
     }
 }

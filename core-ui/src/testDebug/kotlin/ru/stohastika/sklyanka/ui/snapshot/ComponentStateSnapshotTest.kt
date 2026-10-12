@@ -66,7 +66,9 @@ class ComponentStateSnapshotTest {
 
     @Test
     fun intakeCardInEveryState() {
-        IntakeCardState.entries.forEach { state ->
+        // Состояние «принято» снимается ниже кадром «отмечено вами»: отдельный кадр был
+        // его побайтовой копией и снят решением Р-61 (SKL-112) — имя кадра несёт состояние.
+        IntakeCardState.entries.filter { it != IntakeCardState.Taken }.forEach { state ->
             capture("intake-card-${state.name.lowercase()}") {
                 IntakeCard(
                     state = state,
@@ -76,7 +78,9 @@ class ComponentStateSnapshotTest {
             }
         }
         // Шестое состояние таблицы §4.1: тот же приём, отмеченный из чужого профиля.
-        capture("intake-card-marked-by-you") {
+        // Имя несёт состояние карточки: кадр `intake-card-taken` был его побайтовой копией
+        // и снят решением Р-61 (SKL-112).
+        capture("intake-card-taken-marked-by-you") {
             IntakeCard(state = IntakeCardState.Taken, labels = cardLabels(), markedByYou = true)
         }
     }
@@ -224,7 +228,13 @@ class ComponentStateSnapshotTest {
             TAKEN,
             TOTAL,
         )
-        ProgressPurpose.entries.forEach { purpose ->
+        // «День», «Курс» и «Остаток» рисуются одинаково: назначение меняет цвет только
+        // у критического остатка. Кадр на каждое назначение был одним и тем же файлом
+        // восемь раз — решение Р-61 оставляет кадр на каждый различимый вид (SKL-112).
+        val distinctLooks = ProgressPurpose.entries.filter {
+            it == ProgressPurpose.Course || it == ProgressPurpose.StockCritical
+        }
+        distinctLooks.forEach { purpose ->
             capture("progress-${purpose.name.lowercase()}") {
                 SklyankaProgressBar(progress = PROGRESS, label = label, purpose = purpose)
             }

@@ -75,8 +75,15 @@ class ReadPermissionChecklistUseCaseTest {
         assertEquals(VendorProfile.EMUI, read().vendor)
         assertEquals(5, read().steps.size)
 
-        vendor.vendor = VendorProfile.GENERIC
+        vendor.vendor = VendorProfile.XIAOMI
+        assertEquals(VendorProfile.XIAOMI, read().vendor)
+        assertEquals(5, read().steps.size)
 
+        vendor.vendor = VendorProfile.SAMSUNG
+        assertEquals(VendorProfile.SAMSUNG, read().vendor)
+        assertEquals(4, read().steps.size)
+
+        vendor.vendor = VendorProfile.GENERIC
         assertEquals(VendorProfile.GENERIC, read().vendor)
         assertEquals(2, read().steps.size)
     }
@@ -89,6 +96,20 @@ class ReadPermissionChecklistUseCaseTest {
 
         // ПЛ-14: право выдают на экране особого доступа, системного диалога с отказом нет.
         assertFalse(denied.canAsk)
+        assertEquals(StepAction.OPEN_SYSTEM_SETTINGS, actionFor(PermissionStep.EXACT_ALARMS, denied))
+    }
+
+    @Test
+    fun `the exact-alarm step never turns into a dialog even if the platform said it could be asked`() = runTest {
+        // ПЛ-14 держится доменом, а не платформенной случайностью: даже если ответ платформы
+        // однажды скажет «можно спросить», шаг ведёт на экран особого доступа, а не в диалог,
+        // которого система для этого права не показывает.
+        requests.allowAskingFor(PermissionStep.EXACT_ALARMS)
+        permissions.states[ReminderPermission.EXACT_ALARMS] = PermissionState.DENIED
+
+        val denied = read().exactAlarms as PermissionGrant.Denied
+
+        assertTrue(denied.canAsk)
         assertEquals(StepAction.OPEN_SYSTEM_SETTINGS, actionFor(PermissionStep.EXACT_ALARMS, denied))
     }
 

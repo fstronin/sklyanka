@@ -99,15 +99,21 @@ enum class StepAction {
 fun actionFor(step: PermissionStep, state: StepState): StepAction? = when (step) {
     PermissionStep.APP_STARTUP, PermissionStep.BATTERY_SAVING -> StepAction.OPEN_VENDOR_STEP
     PermissionStep.RECENTS_PIN -> null
-    PermissionStep.EXACT_ALARMS -> permissionAction(state)
+    PermissionStep.EXACT_ALARMS -> exactAlarmAction(state)
     PermissionStep.NOTIFICATIONS -> notificationAction(state)
 }
 
-/** Действие шага-разрешения: диалог, пока система его показывает, иначе системный экран. */
-private fun permissionAction(state: StepState): StepAction? = when (state) {
+/**
+ * Действие шага «Точные будильники».
+ *
+ * Диалогом это право не запрашивается ни на одной версии Android (ПЛ-14): система выдаёт
+ * его только на своём экране особого доступа. Поэтому «допустимо ли спросить кодом» здесь
+ * не читается вовсе — шаг ведёт на системный экран, и платформенное значение не превратит
+ * его в запрос, которого система не покажет.
+ */
+private fun exactAlarmAction(state: StepState): StepAction? = when (state) {
     is PermissionGrant.Granted -> null
-    is PermissionGrant.Denied ->
-        if (state.canAsk) StepAction.REQUEST_PERMISSION else StepAction.OPEN_SYSTEM_SETTINGS
+    is PermissionGrant.Denied -> StepAction.OPEN_SYSTEM_SETTINGS
     is NotificationAccessState, is ManualStepState -> null
 }
 
@@ -123,5 +129,7 @@ private fun notificationAction(state: StepState): StepAction? = when (state) {
         state.permission is PermissionGrant.Denied && state.permission.canAsk -> StepAction.REQUEST_PERMISSION
         else -> StepAction.OPEN_SYSTEM_SETTINGS
     }
-    else -> permissionAction(state)
+    // Состояние другого типа у шага «Уведомления» — ошибка сборки цепочки, и действия
+    // у него нет: подставлять чужой путь к настройкам нельзя.
+    else -> null
 }

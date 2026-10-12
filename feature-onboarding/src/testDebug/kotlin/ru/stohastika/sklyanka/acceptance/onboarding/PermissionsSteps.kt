@@ -34,8 +34,13 @@ import ru.stohastika.sklyanka.domain.onboarding.OnboardingSource
 import ru.stohastika.sklyanka.domain.onboarding.PermissionChecklist
 import ru.stohastika.sklyanka.domain.onboarding.PermissionGrant
 import ru.stohastika.sklyanka.domain.onboarding.PermissionStep
+import ru.stohastika.sklyanka.domain.onboarding.StepAction
+import ru.stohastika.sklyanka.domain.onboarding.VendorProfile
+import ru.stohastika.sklyanka.domain.onboarding.VendorSteps
+import ru.stohastika.sklyanka.domain.onboarding.actionFor
 import ru.stohastika.sklyanka.domain.reminder.port.PermissionState
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPermission
+import ru.stohastika.sklyanka.feature.onboarding.OnboardingProfileTexts
 import ru.stohastika.sklyanka.feature.onboarding.OnboardingUiState
 import ru.stohastika.sklyanka.feature.onboarding.PermissionsActions
 import ru.stohastika.sklyanka.feature.onboarding.PermissionsScreen
@@ -56,6 +61,9 @@ import ru.stohastika.sklyanka.feature.onboarding.TAG_CONFIRM_APP_STARTUP
 import ru.stohastika.sklyanka.feature.onboarding.TAG_CONFIRM_BATTERY_SAVING
 import ru.stohastika.sklyanka.feature.onboarding.TAG_CONFIRM_RECENTS_PIN
 import ru.stohastika.sklyanka.feature.onboarding.TAG_DONE
+import ru.stohastika.sklyanka.feature.onboarding.TAG_GRANTED_MARK
+import ru.stohastika.sklyanka.feature.onboarding.TAG_HINT
+import ru.stohastika.sklyanka.feature.onboarding.TAG_INSTRUCTIONS
 import ru.stohastika.sklyanka.feature.onboarding.TAG_ISSUE
 import ru.stohastika.sklyanka.feature.onboarding.TAG_NEXT
 import ru.stohastika.sklyanka.feature.onboarding.TAG_PERMISSIONS_SCREEN
@@ -90,6 +98,15 @@ class PermissionsSteps(private val world: AcceptanceWorld) {
      * правды о том, какую карточку проверяют.
      */
     private var currentCard: String? = null
+
+    /**
+     * Вендорский шаг, о котором шла речь в последней проверке (SKL-112).
+     *
+     * Нужен шагам, чей текст называет шаг словами прошивки («инструкция называет пункты
+     * меню этой прошивки», «общего списка… не показывается»): сценарий называет шаг
+     * предыдущей строкой, и пересказ здесь был бы вторым источником правды.
+     */
+    private var currentStep: PermissionStep? = null
 
     // --- Открытие экрана -----------------------------------------------------------------------
 
@@ -153,11 +170,13 @@ class PermissionsSteps(private val world: AcceptanceWorld) {
         )
     }
 
-    @Когда("^он нажимает «Разрешить» и выдаёт разрешение в системном запросе$")
-    fun thePersonGrantsInTheSystemDialog() {
+    @Когда("^он нажимает «Разрешить» и выдаёт право на системном экране особого доступа$")
+    fun thePersonGrantsOnTheSpecialAccessScreen() {
+        // Приложение только приводит на экран особого доступа (ПЛ-14); карточка меняется
+        // по возвращении — перечитыванием ответа системы, а не ответом диалога.
         pressExactAlarms()
         world.system.grant(ReminderPermission.EXACT_ALARMS)
-        PermissionsStand.reportPermissionResult(world, PermissionStep.EXACT_ALARMS, granted = true)
+        PermissionsStand.model(world).refresh()
     }
 
     @Тогда("^карточка «Точные будильники» отмечена «Есть»$")
@@ -175,10 +194,10 @@ class PermissionsSteps(private val world: AcceptanceWorld) {
         assertScreenIsOpen()
     }
 
-    @Когда("^человек нажимает «Разрешить» и отказывает в системном запросе$")
-    fun thePersonRefusesInTheSystemDialog() {
+    @Когда("^человек нажимает «Разрешить» и не выдаёт право на системном экране$")
+    fun thePersonDoesNotGrantOnTheSpecialAccessScreen() {
         pressExactAlarms()
-        PermissionsStand.reportPermissionResult(world, PermissionStep.EXACT_ALARMS, granted = false)
+        PermissionsStand.model(world).refresh()
     }
 
     @Тогда("^карточка «Точные будильники» остаётся невыданной$")
@@ -330,9 +349,26 @@ class PermissionsSteps(private val world: AcceptanceWorld) {
         PermissionsStand.model(world).onManualConfirmed(PermissionStep.BATTERY_SAVING, true)
     }
 
-    @Когда("^он включает переключатель «Я настроил запуск приложений»$")
-    fun thePersonTurnsOnAppStartupSwitch() {
-        thePersonConfirmsAppStartup()
+    /**
+     * Переключатель вендорского шага по его подписи.
+     *
+     * Подпись называет сценарий, а не тег: слова переключателя берутся у профиля
+     * (`OnboardingProfileTexts.confirmLabel`), и «Я настроил автозапуск» на Xiaomi —
+     * тот же шаг, что «Я настроил запуск приложений» на EMUI.
+     */
+    @Когда("^он включает переключатель «([^»]+)»$")
+    fun thePersonTurnsOnTheSwitch(label: String) {
+        val (_, step) = vendorStepBy(label) { candidate, profile ->
+            string(OnboardingProfileTexts.confirmLabel(candidate, profile))
+        }
+        currentStep = step
+        ensureOpen()
+        val tag = confirmTagOf(cardTagOf(step))
+        assertTrue(
+            hasNode(hasTestTag(tag) and hasAnyDescendant(hasText(label))),
+            "the vendor step must carry the confirmation switch «$label» (НАП-20)",
+        )
+        toggleSwitch(tag)
     }
 
     @Когда("^он выключает тот же переключатель$")
@@ -379,9 +415,18 @@ class PermissionsSteps(private val world: AcceptanceWorld) {
         )
     }
 
-    @Тогда("^карточка «Запуск приложений» отмечена «Подтверждено вами»$")
-    fun theAppStartupCardIsMarkedConfirmed() {
-        theAppStartupCardIsConfirmedByUser()
+    @Тогда("^карточка «([^»]+)» отмечена «Подтверждено вами»$")
+    fun theVendorCardIsMarkedConfirmed(title: String) {
+        val (_, step) = vendorStepBy(title) { candidate, profile ->
+            string(OnboardingProfileTexts.title(candidate, profile))
+        }
+        assertTrue(
+            hasNode(
+                hasTestTag(cardTagOf(step)) and
+                    hasAnyDescendant(hasTestTag(TAG_CONFIRMED_MARK)),
+            ),
+            "the card «$title» must be marked «Подтверждено вами» (НАП-20)",
+        )
     }
 
     @Тогда("^карточка «Запуск приложений» снова показана невыполненной$")
@@ -523,12 +568,12 @@ class PermissionsSteps(private val world: AcceptanceWorld) {
         }
     }
 
-    @И("^плашек «Проверить это приложение не может» и переключателей EMUI на нём нет$")
+    @И("^плашек «Проверить это приложение не может» и переключателей вендорских шагов на нём нет$")
     fun theVendorPlaquesAndSwitchesAreAbsent() {
         assertTrue(noTag(TAG_UNVERIFIABLE), "no vendor plaque may be shown")
-        assertTrue(noTag(TAG_CONFIRM_APP_STARTUP), "no EMUI switch may be shown")
-        assertTrue(noTag(TAG_CONFIRM_BATTERY_SAVING), "no EMUI switch may be shown")
-        assertTrue(noTag(TAG_CONFIRM_RECENTS_PIN), "no EMUI switch may be shown")
+        assertTrue(noTag(TAG_CONFIRM_APP_STARTUP), "no vendor switch may be shown")
+        assertTrue(noTag(TAG_CONFIRM_BATTERY_SAVING), "no vendor switch may be shown")
+        assertTrue(noTag(TAG_CONFIRM_RECENTS_PIN), "no vendor switch may be shown")
     }
 
     @Тогда("^карточка «Уведомления» показывает строку-причину «([^»]+)»$")
@@ -622,6 +667,279 @@ class PermissionsSteps(private val world: AcceptanceWorld) {
         controls.forEach { assertTrue(noTag(it), "the control $it must be gone in the configured state") }
     }
 
+    // --- SKL-112: профиль прошивки, её слова и пересмотр разрешений ----------------------------
+
+    @Тогда("^карточки идут в порядке: (.+)$")
+    fun theCardsFollowTheProfileOrder(cards: String) {
+        val checklist = requireNotNull(PermissionsStand.state(world).checklist) { "the screen must be open" }
+        val profile = checklist.vendor
+        val expected = cardNamesOf(cards)
+        // Состав и порядок — из домена: сколько шагов у профиля и в каком порядке, решает
+        // `VendorSteps`, а экран рисует то, что дал домен.
+        val shown = checklist.steps.map { (step, _) -> string(OnboardingProfileTexts.title(step, profile)) }
+        assertEquals(expected, shown, "the profile's cards must follow the fixed order of НАП-19")
+        // И на экране они стоят тем же порядком: слова профиля совпадают, а положение —
+        // единственный способ проверить порядок, не пересказывая разметку.
+        val tops = checklist.steps.map { (step, _) -> topOf(cardTagOf(step)) }
+        assertEquals(tops.sorted(), tops, "the cards must stand in the fixed order of НАП-19")
+    }
+
+    @Тогда("^вендорские карточки профиля показаны невыполненными$")
+    fun theVendorCardsOfTheProfileAreUnresolved() {
+        val steps = vendorStepsOfThePhone()
+        assertTrue(steps.isNotEmpty(), "the scenario's profile must carry vendor steps")
+        steps.forEach { step ->
+            val card = cardTagOf(step)
+            assertTrue(hasTag(card), "the vendor card of $step must be on the screen")
+            assertVendorUnresolved(step, card)
+        }
+    }
+
+    @Но("^косвенный признак снятой оптимизации батареи ни одну из них не закрывает$")
+    fun theBatteryHintClosesNoVendorStep() {
+        assertTrue(hasTag(TAG_HINT), "the battery saving step must carry its indirect hint (НАП-20)")
+        assertTrue(showsText(string(R.string.setup_hint_battery)), "the hint is shown word for word (НАП-20)")
+        val checklist = requireNotNull(PermissionsStand.state(world).checklist) { "the screen must be open" }
+        vendorStepsOfThePhone().forEach { step ->
+            assertFalse(checklist.state(step).isResolved, "a hint never closes a vendor step (НАП-20)")
+        }
+    }
+
+    @Тогда("^у вендорского шага «([^»]+)» есть кнопка «Открыть настройки» и запасная инструкция$")
+    fun theVendorStepHasTheButtonAndTheFallback(title: String) {
+        val (profile, step) = vendorStepBy(title) { candidate, candidateProfile ->
+            string(OnboardingProfileTexts.title(candidate, candidateProfile))
+        }
+        currentStep = step
+        // Запасная инструкция показывается тем же путём, что при неудаче открытия: раздел
+        // профиля закрылся — приложение называет путь словами этой прошивки (НФТ-8).
+        // Экран открывается до подмены исхода: стенд сбрасывает переходы при входе в мир.
+        ensureOpen()
+        PermissionsStand.navigator.failFor(step)
+        pressStepAction(step)
+        assertTrue(
+            hasNode(
+                hasTestTag(actionTagOf(cardTagOf(step))) and
+                    hasAnyDescendant(hasText(string(R.string.setup_action_open_settings))),
+            ),
+            "the vendor step must keep offering «Открыть настройки» (НАП-20)",
+        )
+        assertTrue(
+            showsText(fallbackTextOf(step, profile)),
+            "the vendor step must show the fallback instruction of its own firmware",
+        )
+    }
+
+    @И("^инструкция называет пункты меню этой прошивки, а не EMUI$")
+    fun theInstructionNamesThisFirmware() {
+        val step = requireNotNull(currentStep) { "the scenario must name the step first" }
+        val profile = world.onboarding.vendor
+        val text = fallbackTextOf(step, profile)
+        assertTrue(showsText(text), "the instruction of this firmware must be shown")
+        // Чужая прошивка не рассказывается: текст отличается от инструкции каждого другого
+        // профиля — сравнение идёт теми же ресурсами, без литералов.
+        VendorProfile.entries.filter { it != profile }.forEach { other ->
+            OnboardingProfileTexts.fallback(step, other)?.let { otherRes ->
+                assertFalse(
+                    string(otherRes) == text,
+                    "the instruction of $other must not be shown as this firmware's (§профиль)",
+                )
+            }
+        }
+        OnboardingProfileTexts.caption(step, VendorProfile.EMUI)?.let { emuiPath ->
+            assertFalse(string(emuiPath) == text, "the general EMUI path must not stand in for this firmware's one")
+        }
+    }
+
+    @Допустим("^ни один системный раздел этой прошивки для шага «([^»]+)» не открывается$")
+    fun noVendorSectionOpens(stepTitle: String) {
+        val (_, step) = vendorStepBy(stepTitle) { candidate, candidateProfile ->
+            string(OnboardingProfileTexts.title(candidate, candidateProfile))
+        }
+        currentStep = step
+        // Экран открывается до подмены исхода: стенд сбрасывает записанные переходы
+        // при входе в новый мир сценария, и подменённый исход иначе был бы стёрт.
+        ensureOpen()
+        PermissionsStand.navigator.failFor(step)
+    }
+
+    @Когда("^на шаге «([^»]+)» человек нажимает «Открыть настройки»$")
+    fun thePersonPressesOpenOnTheStep(stepTitle: String) {
+        val (profile, step) = vendorStepBy(stepTitle) { candidate, candidateProfile ->
+            string(OnboardingProfileTexts.title(candidate, candidateProfile))
+        }
+        currentStep = step
+        ensureOpen()
+        pressStepAction(step)
+        assertEquals(
+            profile to step,
+            PermissionsStand.navigator.vendorCalls.lastOrNull(),
+            "the navigator must receive this phone's profile and this step, not a generic screen",
+        )
+    }
+
+    @Тогда("^он видит запасную инструкцию этой прошивки$")
+    fun theFallbackInstructionOfThisFirmwareIsShown() {
+        val step = requireNotNull(currentStep) { "the scenario must name the step first" }
+        assertTrue(hasTag(TAG_INSTRUCTIONS), "the fallback instruction must be on the screen")
+        assertTrue(
+            showsText(fallbackTextOf(step, world.onboarding.vendor)),
+            "the shown instruction must be the words of this firmware",
+        )
+    }
+
+    @И("^после возврата в приложение инструкция остаётся видимой$")
+    fun theInstructionStaysAfterReturning() {
+        // Возврат в приложение — это перечитывание состояния системы (`PermissionsActivity.onResume`).
+        val step = requireNotNull(currentStep) { "the scenario must name the step first" }
+        PermissionsStand.model(world).refresh()
+        assertTrue(hasTag(TAG_INSTRUCTIONS), "the instruction must survive the return (критерий 6)")
+        assertTrue(showsText(fallbackTextOf(step, world.onboarding.vendor)), "the same words must stay on the screen")
+    }
+
+    @И("^переключатель «([^»]+)» стоит ниже неё$")
+    fun theSwitchStandsBelowTheInstruction(label: String) {
+        val instructionTop = topOf(TAG_INSTRUCTIONS)
+        val switchTop = topOfText(label)
+        assertTrue(switchTop > instructionTop, "the confirmation switch «$label» must stand below the instruction")
+    }
+
+    @Но("^общего списка энергосбережения Android вместо раздела прошивки не показывается$")
+    fun noGenericAndroidBatteryListIsShown() {
+        val step = requireNotNull(currentStep) { "the scenario must name the step first" }
+        val profile = world.onboarding.vendor
+        // Приложение привело в раздел профиля (или ничего не открыло), а не в общий экран
+        // Android: открытого «успеха» нет ни в навигаторе, ни на экране — человеку названа
+        // инструкция его прошивки (НАП-19, «стандартный экран Android не выдаётся за вендорский»).
+        val openedNoGeneric = requireNotNull(PermissionsStand.navigator.vendorCalls.lastOrNull())
+        assertEquals(profile to step, openedNoGeneric, "no generic screen is opened")
+        assertEquals(
+            listOf(openConstantOf(step)),
+            PermissionsStand.navigator.opened,
+            "the app must not open a generic Android screen in place of the firmware's section",
+        )
+        assertTrue(hasTag(TAG_INSTRUCTIONS), "the firmware's own instruction stays on the screen")
+        assertTrue(noTag(TAG_ALL_CONFIGURED), "a failed open must not look like a passed step")
+    }
+
+    @Тогда("^у шага «Закрепление в недавних» есть инструкция и переключатель$")
+    fun theRecentsPinStepCarriesInstructionAndSwitch() {
+        val profile = world.onboarding.vendor
+        currentStep = PermissionStep.RECENTS_PIN
+        ensureOpen()
+        assertTrue(
+            showsText(string(R.string.setup_step_recents_pin_caption)),
+            "the recents pin must explain the gesture (НАП-20)",
+        )
+        val label = string(OnboardingProfileTexts.confirmLabel(PermissionStep.RECENTS_PIN, profile))
+        assertTrue(
+            hasNode(hasTestTag(TAG_CONFIRM_RECENTS_PIN) and hasAnyDescendant(hasText(label))),
+            "the recents pin must carry its confirmation switch",
+        )
+    }
+
+    @Но("^кнопки «Открыть настройки» у него нет$")
+    fun theRecentsPinHasNoOpenButton() {
+        assertTrue(noTag(TAG_ACTION_RECENTS_PIN), "the recents pin has no system screen to open (НАП-20)")
+    }
+
+    @Допустим("^система отвечает, что право на точные будильники (выдано|не выдано)$")
+    fun theSystemAnswersAboutExactAlarms(state: String) {
+        if (state == "выдано") {
+            world.system.grant(ReminderPermission.EXACT_ALARMS)
+        } else {
+            world.system.deny(ReminderPermission.EXACT_ALARMS)
+        }
+    }
+
+    @Тогда("^карточка «Точные будильники» без отметки$")
+    fun theExactAlarmsCardIsUnmarked() {
+        assertFalse(cardShowsGranted(TAG_CARD_EXACT_ALARMS), "a denied permission carries no «Есть» (НАП-16)")
+        assertTrue(
+            noTagOnCard(TAG_CARD_EXACT_ALARMS, TAG_GRANTED_MARK),
+            "a denied permission carries neither glyph nor word",
+        )
+        assertTrue(
+            PermissionsStand.state(world).checklist?.exactAlarms is PermissionGrant.Denied,
+            "the step follows the system's answer, not the manifest (§право)",
+        )
+    }
+
+    @И("^действие на ней (действия нет|«Разрешить» ведёт на экран особого доступа)$")
+    fun theExactAlarmsActionIs(action: String) {
+        val state = requireNotNull(PermissionsStand.state(world).checklist?.exactAlarms) { "the screen must be open" }
+        if (action == "действия нет") {
+            assertEquals(null, actionFor(PermissionStep.EXACT_ALARMS, state), "a granted step offers no action")
+            assertTrue(noTag(TAG_ACTION_EXACT_ALARMS), "a granted step carries no button")
+        } else {
+            assertEquals(
+                StepAction.OPEN_SYSTEM_SETTINGS,
+                actionFor(PermissionStep.EXACT_ALARMS, state),
+                "the exact alarm right is granted on the special access screen (ПЛ-14)",
+            )
+            assertTrue(
+                hasNode(
+                    hasTestTag(TAG_ACTION_EXACT_ALARMS) and
+                        hasAnyDescendant(hasText(string(R.string.setup_action_allow))),
+                ),
+                "the missing right must offer «Разрешить»",
+            )
+        }
+    }
+
+    @Когда("^(.+?) в (\\d{2}:\\d{2}) человек нажимает «Разрешить» на шаге «Точные будильники»$")
+    fun thePersonPressesAllowOnTheExactAlarmsStep(date: String, time: String) {
+        world.clock.moveTo(world.localMoment(date, time))
+        ensureOpen()
+        pressExactAlarms()
+    }
+
+    @Тогда("^открывается системный экран особого доступа «([^»]+)»$")
+    fun theSpecialAccessScreenOpens(label: String) {
+        assertEquals(
+            listOf(RecordingNavigator.EXACT_ALARMS),
+            PermissionsStand.navigator.opened,
+            "the action must lead to the «$label» special access screen and nothing else",
+        )
+    }
+
+    @И("^собственного диалога разрешения приложение не показывает$")
+    fun theAppShowsNoOwnPermissionDialog() {
+        assertTrue(
+            PermissionsStand.requested.isEmpty(),
+            "the app must not ask the exact alarm right with a dialog on any Android version (ПЛ-14)",
+        )
+    }
+
+    @И("^пока право не выдано, карточка остаётся без отметки$")
+    fun theCardStaysUnmarkedWhileNotGranted() {
+        assertFalse(cardShowsGranted(TAG_CARD_EXACT_ALARMS), "a refused right must stay missing")
+        assertTrue(hasTag(TAG_ACTION_EXACT_ALARMS), "the step must offer the action again")
+    }
+
+    @Когда("^он выдаёт право на системном экране и возвращается в приложение$")
+    fun thePersonGrantsOnTheSystemScreenAndReturns() {
+        world.system.grant(ReminderPermission.EXACT_ALARMS)
+        // Возврат — чтение системы заново, а не перезапуск экрана (НФТ-52).
+        PermissionsStand.model(world).refresh()
+    }
+
+    @Тогда("^карточка «Точные будильники» отмечена «Есть» без перезапуска приложения$")
+    fun theExactAlarmsCardIsGrantedWithoutRestart() {
+        assertCardGranted(TAG_CARD_EXACT_ALARMS)
+    }
+
+    @И("^право перечитано у системы, а не взято из сохранённого состояния$")
+    fun theRightIsRereadFromTheSystem() {
+        val granted = PermissionsStand.state(world).checklist?.exactAlarms
+        assertTrue(granted is PermissionGrant.Granted, "the state must be a fresh read of the system (НФТ-52)")
+        assertEquals(
+            world.clock.now(),
+            (granted as PermissionGrant.Granted).readAt,
+            "the read moment must be the current moment of the world, not a stored value",
+        )
+    }
+
     // --- Обвязка -------------------------------------------------------------------------------
 
     private fun openFirstLaunch() {
@@ -697,6 +1015,76 @@ class PermissionsSteps(private val world: AcceptanceWorld) {
     }
 
     private fun noTag(tag: String): Boolean = !hasTag(tag)
+
+    /** Названия карточек из строки документа: в кавычках-ёлочках, в порядке появления. */
+    private fun cardNamesOf(text: String): List<String> =
+        Regex("«([^»]+)»").findAll(text).map { it.groupValues[1] }.toList()
+
+    /** Вендорские шаги прошивки сценария: профиль — данность мира, а не экрана. */
+    private fun vendorStepsOfThePhone(): List<PermissionStep> = VendorSteps.of(world.onboarding.vendor)
+
+    /**
+     * Найти вендорский шаг прошивки сценария по его словам — названию карточки или подписи.
+     *
+     * Слова шага задаёт профиль, а не литерал шага: так один и тот же шаг находится и как
+     * «Автозапуск» на Xiaomi, и как «Запуск приложений» на EMUI (НАП-19).
+     */
+    private fun vendorStepBy(
+        name: String,
+        textOf: (PermissionStep, VendorProfile) -> String,
+    ): Pair<VendorProfile, PermissionStep> {
+        val profile = world.onboarding.vendor
+        val step = VendorSteps.of(profile).firstOrNull { candidate -> textOf(candidate, profile) == name }
+        return profile to requireNotNull(step) { "the profile $profile has no vendor step «$name»" }
+    }
+
+    /** Инструкция профиля по шагу — тем же ресурсом, что рисует экран. */
+    private fun fallbackTextOf(step: PermissionStep, profile: VendorProfile): String =
+        string(requireNotNull(OnboardingProfileTexts.fallback(step, profile)) { "the step $step has no fallback" })
+
+    private fun pressStepAction(step: PermissionStep) {
+        PermissionsStand.act(world) {
+            onNodeWithTag(actionTagOf(cardTagOf(step))).performScrollTo().performClick()
+        }
+    }
+
+    private fun cardTagOf(step: PermissionStep): String = when (step) {
+        PermissionStep.NOTIFICATIONS -> TAG_CARD_NOTIFICATIONS
+        PermissionStep.EXACT_ALARMS -> TAG_CARD_EXACT_ALARMS
+        PermissionStep.APP_STARTUP -> TAG_CARD_APP_STARTUP
+        PermissionStep.BATTERY_SAVING -> TAG_CARD_BATTERY_SAVING
+        PermissionStep.RECENTS_PIN -> TAG_CARD_RECENTS_PIN
+    }
+
+    /** Постоянная системного экрана шага в записи навигатора (SKL-112). */
+    private fun openConstantOf(step: PermissionStep): String = when (step) {
+        PermissionStep.APP_STARTUP -> RecordingNavigator.APP_STARTUP
+        PermissionStep.BATTERY_SAVING -> RecordingNavigator.BATTERY_SAVING
+        else -> error("$step has no vendor screen to open")
+    }
+
+    private fun topOf(tag: String): Float {
+        var top = 0f
+        PermissionsStand.ask(world) {
+            top = onNodeWithTag(tag, useUnmergedTree = true).fetchSemanticsNode().boundsInRoot.top
+        }
+        return top
+    }
+
+    private fun topOfText(text: String): Float {
+        var top = 0f
+        PermissionsStand.ask(world) {
+            top = onAllNodesWithText(text, useUnmergedTree = true)
+                .fetchSemanticsNodes()
+                .first()
+                .boundsInRoot
+                .top
+        }
+        return top
+    }
+
+    private fun noTagOnCard(cardTag: String, markTag: String): Boolean =
+        !hasNode(hasTestTag(cardTag) and hasAnyDescendant(hasTestTag(markTag)))
 
     private fun showsText(text: String): Boolean {
         var found = false

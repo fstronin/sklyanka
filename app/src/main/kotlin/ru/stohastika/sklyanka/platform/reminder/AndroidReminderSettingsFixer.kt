@@ -3,7 +3,9 @@ package ru.stohastika.sklyanka.platform.reminder
 import android.app.NotificationManager
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
+import ru.stohastika.sklyanka.domain.onboarding.PermissionStep
 import ru.stohastika.sklyanka.domain.onboarding.StepOpenResult
+import ru.stohastika.sklyanka.domain.onboarding.VendorProfileReader
 import ru.stohastika.sklyanka.domain.reminder.ReminderChannel
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPermission
 import ru.stohastika.sklyanka.feature.reminder.ReminderFixResult
@@ -28,6 +30,7 @@ import javax.inject.Singleton
 @Singleton
 class AndroidReminderSettingsFixer @Inject constructor(
     private val navigator: AndroidSystemSettingsNavigator,
+    private val vendor: VendorProfileReader,
     @ApplicationContext private val context: Context,
 ) : ReminderSettingsFixer {
 
@@ -50,7 +53,8 @@ class AndroidReminderSettingsFixer @Inject constructor(
             ReminderFixResult.OPENED
         }
 
-        ReminderPermission.AUTOSTART -> navigator.openAppStartupSettings().toFixResult()
+        ReminderPermission.AUTOSTART ->
+            navigator.openVendorStep(vendor.profile(), PermissionStep.APP_STARTUP).toFixResult()
 
         // Приёмник загрузки человеку исправлять нечего: состояние объявлено манифестом (ПЛ-9).
         ReminderPermission.BOOT_RECEIVER -> ReminderFixResult.NO_SCREEN

@@ -25,6 +25,7 @@ import ru.stohastika.sklyanka.domain.onboarding.OnboardingSource
 import ru.stohastika.sklyanka.domain.onboarding.PermissionStep
 import ru.stohastika.sklyanka.domain.onboarding.ReadPermissionChecklistUseCase
 import ru.stohastika.sklyanka.domain.onboarding.StepOpenResult
+import ru.stohastika.sklyanka.domain.onboarding.VendorProfile
 import ru.stohastika.sklyanka.feature.onboarding.OnboardingUiState
 import ru.stohastika.sklyanka.feature.onboarding.OnboardingViewModel
 import ru.stohastika.sklyanka.feature.onboarding.PermissionsActions
@@ -229,6 +230,14 @@ internal class RecordingNavigator : SystemSettingsNavigator {
 
     val opened: MutableList<String> = mutableListOf()
 
+    /**
+     * Вендорские переходы с профилем прошивки (SKL-112).
+     *
+     * Пара «профиль × шаг» — то, что экран обязан передать платформе: шаг на Xiaomi и шаг
+     * на Samsung ведут в разные разделы, и приёмка проверяет, что чужой профиль не подставлен.
+     */
+    val vendorCalls: MutableList<Pair<VendorProfile, PermissionStep>> = mutableListOf()
+
     /** Чем отвечает вендорский экран; запасной путь проверяется отдельным сценарием. */
     var appStartupResult: StepOpenResult = StepOpenResult.OPENED
     var batterySavingResult: StepOpenResult = StepOpenResult.OPENED
@@ -248,18 +257,36 @@ internal class RecordingNavigator : SystemSettingsNavigator {
         return StepOpenResult.OPENED
     }
 
-    override fun openAppStartupSettings(): StepOpenResult {
-        opened += APP_STARTUP
-        return appStartupResult
+    override fun openVendorStep(profile: VendorProfile, step: PermissionStep): StepOpenResult {
+        vendorCalls += profile to step
+        return when (step) {
+            PermissionStep.APP_STARTUP -> {
+                opened += APP_STARTUP
+                appStartupResult
+            }
+
+            PermissionStep.BATTERY_SAVING -> {
+                opened += BATTERY_SAVING
+                batterySavingResult
+            }
+
+            // У закрепления в недавних системного экрана нет, и сюда оно не приходит.
+            else -> StepOpenResult.OPENED
+        }
     }
 
-    override fun openBatterySavingSettings(): StepOpenResult {
-        opened += BATTERY_SAVING
-        return batterySavingResult
+    /** Ни один адрес профиля не разрешился: экран покажет инструкцию своей прошивки (SKL-112). */
+    fun failFor(step: PermissionStep) {
+        when (step) {
+            PermissionStep.APP_STARTUP -> appStartupResult = StepOpenResult.FALLBACK_TO_INSTRUCTIONS
+            PermissionStep.BATTERY_SAVING -> batterySavingResult = StepOpenResult.FALLBACK_TO_INSTRUCTIONS
+            else -> Unit
+        }
     }
 
     fun clear() {
         opened.clear()
+        vendorCalls.clear()
         appStartupResult = StepOpenResult.OPENED
         batterySavingResult = StepOpenResult.OPENED
     }

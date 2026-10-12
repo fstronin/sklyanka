@@ -9,9 +9,9 @@ package ru.stohastika.sklyanka.domain.onboarding
  * (`TDD.md §5.6`). Карта, собранная из шагов, отдаётся наружу [steps] — но собирает её
  * этот класс, а не экран.
  *
- * Состав шагов зависит от [vendor]: на Huawei показывается полная цепочка из пяти,
- * на остальных телефонах вендорских настроек нет и шагов остаётся два. Число шагов
- * не хранится константой: экран берёт его из [steps].
+ * Состав шагов зависит от [vendor]: у каждого профиля свой набор вендорских шагов
+ * ([VendorSteps.of]), а на незнакомой прошивке вендорских настроек нет и шагов остаётся
+ * два. Число шагов не хранится константой: экран берёт его из [steps].
  */
 data class PermissionChecklist(
     val vendor: VendorProfile,
@@ -26,11 +26,7 @@ data class PermissionChecklist(
     val steps: List<Pair<PermissionStep, StepState>> = buildList {
         add(PermissionStep.NOTIFICATIONS to notifications)
         add(PermissionStep.EXACT_ALARMS to exactAlarms)
-        if (vendor == VendorProfile.EMUI) {
-            add(PermissionStep.APP_STARTUP to appStartup)
-            add(PermissionStep.BATTERY_SAVING to batterySaving)
-            add(PermissionStep.RECENTS_PIN to recentsPin)
-        }
+        VendorSteps.of(vendor).forEach { add(it to state(it)) }
     }
 
     /** Состояние конкретного шага. */

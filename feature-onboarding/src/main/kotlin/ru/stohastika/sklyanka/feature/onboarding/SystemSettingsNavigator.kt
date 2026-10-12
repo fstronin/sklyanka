@@ -1,6 +1,8 @@
 package ru.stohastika.sklyanka.feature.onboarding
 
+import ru.stohastika.sklyanka.domain.onboarding.PermissionStep
 import ru.stohastika.sklyanka.domain.onboarding.StepOpenResult
+import ru.stohastika.sklyanka.domain.onboarding.VendorProfile
 
 /**
  * Переходы в системные настройки (`TDD.md §5.7`).
@@ -37,9 +39,13 @@ interface SystemSettingsNavigator {
     /** Экран права на полноэкранные уведомления — Android 14 и новее (ОВ-107). */
     fun openFullScreenIntentSettings(): StepOpenResult
 
-    /** Экран управления запуском приложений производителя (ПЛ-18). */
-    fun openAppStartupSettings(): StepOpenResult
-
-    /** Экран ограничений энергосбережения приложения (ПЛ-6). */
-    fun openBatterySavingSettings(): StepOpenResult
+    /**
+     * Вендорский шаг: раздел этой прошивки (ПЛ-18).
+     *
+     * Профиль и шаг — параметры, а не два метода на EMUI: адреса разделов различаются
+     * у каждой прошивки, и список «шаг × профиль» живёт в одном месте платформы, а не
+     * в порте экрана. Пустой список адресов (закрепление в недавних, шаг, которого у профиля
+     * нет) — законный исход: экран показывает запасную инструкцию профиля, а не чужой экран.
+     */
+    fun openVendorStep(profile: VendorProfile, step: PermissionStep): StepOpenResult
 }

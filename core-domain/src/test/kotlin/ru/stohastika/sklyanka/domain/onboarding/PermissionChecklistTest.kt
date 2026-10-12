@@ -50,7 +50,45 @@ class PermissionChecklistTest {
             listOf(PermissionStep.NOTIFICATIONS, PermissionStep.EXACT_ALARMS),
             chain.steps.map { it.first },
         )
-        assertEquals(2, chain.steps.size, "there are no vendor settings to show on a non-Huawei phone")
+        assertEquals(2, chain.steps.size, "an unknown firmware gets no vendor steps of someone else")
+    }
+
+    @Test
+    fun `on Xiaomi the chain carries the autostart step where EMUI carries the app-startup one`() {
+        val chain = checklist(vendor = VendorProfile.XIAOMI)
+
+        assertEquals(
+            listOf(
+                PermissionStep.NOTIFICATIONS,
+                PermissionStep.EXACT_ALARMS,
+                PermissionStep.APP_STARTUP,
+                PermissionStep.BATTERY_SAVING,
+                PermissionStep.RECENTS_PIN,
+            ),
+            chain.steps.map { it.first },
+        )
+    }
+
+    @Test
+    fun `on Samsung the chain skips the app-startup step the firmware has no screen for`() {
+        val chain = checklist(vendor = VendorProfile.SAMSUNG)
+
+        assertEquals(
+            listOf(
+                PermissionStep.NOTIFICATIONS,
+                PermissionStep.EXACT_ALARMS,
+                PermissionStep.BATTERY_SAVING,
+                PermissionStep.RECENTS_PIN,
+            ),
+            chain.steps.map { it.first },
+        )
+        // Два общих шага и два вендорских: цепочка закрыта только вместе с ними.
+        assertFalse(chain.allResolved)
+        assertEquals(2, chain.unresolvedCount)
+        assertEquals(
+            listOf(PermissionStep.BATTERY_SAVING, PermissionStep.RECENTS_PIN),
+            chain.unresolved,
+        )
     }
 
     @Test

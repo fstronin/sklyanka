@@ -2,6 +2,9 @@
 <resources>
     <string name="setup_title">Set up reliability</string>
     <string name="setup_intro">On EMUI, the system aggressively unloads background apps. Without the settings below, intakes will arrive late or not at all.</string>
+    <string name="setup_intro_xiaomi">On HyperOS or MIUI, the system aggressively unloads background apps. Without the settings below, intakes will arrive late or not at all.</string>
+    <string name="setup_intro_samsung">On One UI, the system limits background app activity. Without the settings below, intakes will arrive late or not at all.</string>
+    <string name="setup_intro_android">Without the permissions below, intakes will arrive late or not at all.</string>
 
     <string name="setup_step_notifications">Notifications</string>
     <string name="setup_step_notifications_caption">Intake card on the screen</string>
@@ -17,7 +20,12 @@
     <string name="setup_step_app_startup_caption">Settings → Battery → App launch → Sklyanka → Manage manually</string>
     <string name="setup_step_app_startup_action">Turn on “Auto-launch”, “Secondary launch” and “Run in background”</string>
 
+    <string name="setup_step_autostart">Autostart</string>
+    <string name="setup_step_autostart_caption">Settings → Apps → Permissions → Autostart → Sklyanka</string>
+
     <string name="setup_step_battery_saving">Power saving</string>
+    <string name="setup_step_battery_saving_caption_xiaomi">Settings → Apps → Sklyanka → Battery saver → No restrictions</string>
+    <string name="setup_step_battery_saving_caption_samsung">Settings → Device care → Battery → Background usage limits → Apps that won’t be put to sleep</string>
 
     <string name="setup_step_recents_pin">Pin in recents</string>
     <string name="setup_step_recents_pin_caption">Open the recent apps list, pull the “Sklyanka” card down and tap the lock that appears</string>
@@ -27,6 +35,7 @@
     <string name="setup_unverifiable_recents_pin">The app cannot check this: the recents list is not visible to it.</string>
 
     <string name="setup_manual_confirm_app_startup">I have set up app launch</string>
+    <string name="setup_manual_confirm_autostart">I have set up autostart</string>
     <string name="setup_manual_confirm_battery_saving">I have removed the power saving restrictions</string>
     <string name="setup_manual_confirm_recents_pin">Sklyanka is pinned in recents</string>
     <string name="setup_manual_confirm_caption">Recorded on your word: the app does not check this setting</string>
@@ -35,6 +44,9 @@
 
     <string name="setup_fallback_app_startup">The system section did not open on this device. Open it manually: Settings → Battery → App launch → Sklyanka → Manage manually. Turn on “Auto-launch”, “Secondary launch” and “Run in background”.</string>
     <string name="setup_fallback_battery_saving">The system section did not open on this device. Open it manually: Settings → Battery → Sklyanka → remove the power saving restrictions (“Do not restrict”).</string>
+    <string name="setup_fallback_autostart">The system section did not open on this device. Open it manually: Settings → Apps → Permissions → Autostart → Sklyanka. Turn on “Autostart”. On MIUI, this is Security → Permissions → Autostart.</string>
+    <string name="setup_fallback_battery_saving_xiaomi">The system section did not open on this device. Open it manually: Settings → Apps → Sklyanka → Battery saver → No restrictions. If there is no “Battery saver” item, choose “No restrictions” in the “Activity control” section.</string>
+    <string name="setup_fallback_battery_saving_samsung">The system section did not open on this device. Open it manually: Settings → Device care → Battery → Background usage limits → Apps that won’t be put to sleep → add “Sklyanka” to the list.</string>
 
     <string name="onboarding_state_granted">On</string>
     <string name="setup_confirmed_by_user">Confirmed by you</string>
@@ -55,12 +67,14 @@
     <string name="setup_revoked_notifications">Notification permission was revoked in system settings. While it is missing, reminders will not arrive.</string>
     <string name="setup_revoked_exact_alarms">Exact alarm permission was revoked. Reminders will arrive late.</string>
     <string name="setup_revoked_app_startup">The “App launch” confirmation was removed.</string>
+    <string name="setup_revoked_autostart">The “Autostart” confirmation was removed.</string>
     <string name="setup_revoked_battery_saving">The “Power saving” confirmation was removed.</string>
     <string name="setup_revoked_recents_pin">The recents pin confirmation was removed.</string>
 
     <string name="cd_onboarding_notifications">Notifications</string>
     <string name="cd_onboarding_exact_alarms">Exact alarms</string>
     <string name="cd_setup_app_startup">App launch</string>
+    <string name="cd_setup_autostart">Autostart</string>
     <string name="cd_setup_battery_saving">Power saving</string>
     <string name="cd_setup_recents_pin">Pin in recents</string>
     <string name="cd_onboarding_granted">Permission granted</string>

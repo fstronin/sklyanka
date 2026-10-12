@@ -2,6 +2,9 @@
 <resources>
     <string name="setup_title">Zuverlässigkeit einrichten</string>
     <string name="setup_intro">Unter EMUI entlädt das System Hintergrund-Apps aggressiv. Ohne die Einstellungen unten kommen die Einnahmen verspätet oder gar nicht an.</string>
+    <string name="setup_intro_xiaomi">Unter HyperOS oder MIUI entlädt das System Hintergrund-Apps aggressiv. Ohne die Einstellungen unten kommen die Einnahmen verspätet oder gar nicht an.</string>
+    <string name="setup_intro_samsung">Unter One UI schränkt das System die Hintergrundaktivität von Apps ein. Ohne die Einstellungen unten kommen die Einnahmen verspätet oder gar nicht an.</string>
+    <string name="setup_intro_android">Ohne die Berechtigungen unten kommen die Einnahmen verspätet oder gar nicht an.</string>
 
     <string name="setup_step_notifications">Benachrichtigungen</string>
     <string name="setup_step_notifications_caption">Einnahmekarte auf dem Bildschirm</string>
@@ -17,7 +20,12 @@
     <string name="setup_step_app_startup_caption">Einstellungen → Akku → App-Start → Sklyanka → Manuell verwalten</string>
     <string name="setup_step_app_startup_action">Aktivieren Sie „Autostart“, „Sekundärstart“ und „Im Hintergrund ausführen“</string>
 
+    <string name="setup_step_autostart">Autostart</string>
+    <string name="setup_step_autostart_caption">Einstellungen → Apps → Berechtigungen → Autostart → Sklyanka</string>
+
     <string name="setup_step_battery_saving">Energiesparen</string>
+    <string name="setup_step_battery_saving_caption_xiaomi">Einstellungen → Apps → Sklyanka → Akku sparen → Keine Einschränkungen</string>
+    <string name="setup_step_battery_saving_caption_samsung">Einstellungen → Gerätewartung → Akku → Grenzen der Hintergrundnutzung → Apps, die nicht in den Standby versetzt werden</string>
 
     <string name="setup_step_recents_pin">In „Zuletzt verwendet“ fixieren</string>
     <string name="setup_step_recents_pin_caption">Öffnen Sie die Liste der zuletzt verwendeten Apps, ziehen Sie die Karte „Sklyanka“ nach unten und tippen Sie auf das erscheinende Schloss</string>
@@ -27,6 +35,7 @@
     <string name="setup_unverifiable_recents_pin">Die App kann das nicht prüfen: Die Liste der zuletzt verwendeten Apps ist für sie nicht sichtbar.</string>
 
     <string name="setup_manual_confirm_app_startup">Ich habe den App-Start eingerichtet</string>
+    <string name="setup_manual_confirm_autostart">Ich habe den Autostart eingerichtet</string>
     <string name="setup_manual_confirm_battery_saving">Ich habe die Energiespar-Beschränkungen aufgehoben</string>
     <string name="setup_manual_confirm_recents_pin">Sklyanka ist in „Zuletzt verwendet“ fixiert</string>
     <string name="setup_manual_confirm_caption">Wird nach Ihrer Angabe erfasst: Die App prüft diese Einstellung nicht</string>
@@ -35,6 +44,9 @@
 
     <string name="setup_fallback_app_startup">Der Systembereich ließ sich auf diesem Gerät nicht öffnen. Öffnen Sie ihn manuell: Einstellungen → Akku → App-Start → Sklyanka → Manuell verwalten. Aktivieren Sie „Autostart“, „Sekundärstart“ und „Im Hintergrund ausführen“.</string>
     <string name="setup_fallback_battery_saving">Der Systembereich ließ sich auf diesem Gerät nicht öffnen. Öffnen Sie ihn manuell: Einstellungen → Akku → Sklyanka → heben Sie die Energiespar-Beschränkungen auf („Nicht einschränken“).</string>
+    <string name="setup_fallback_autostart">Der Systembereich ließ sich auf diesem Gerät nicht öffnen. Öffnen Sie ihn manuell: Einstellungen → Apps → Berechtigungen → Autostart → Sklyanka. Aktivieren Sie „Autostart“. Unter MIUI ist das Sicherheit → Berechtigungen → Autostart.</string>
+    <string name="setup_fallback_battery_saving_xiaomi">Der Systembereich ließ sich auf diesem Gerät nicht öffnen. Öffnen Sie ihn manuell: Einstellungen → Apps → Sklyanka → Akku sparen → Keine Einschränkungen. Wenn es „Akku sparen“ nicht gibt, wählen Sie „Keine Einschränkungen“ im Bereich „Aktivitätskontrolle“.</string>
+    <string name="setup_fallback_battery_saving_samsung">Der Systembereich ließ sich auf diesem Gerät nicht öffnen. Öffnen Sie ihn manuell: Einstellungen → Gerätewartung → Akku → Grenzen der Hintergrundnutzung → Apps, die nicht in den Standby versetzt werden → fügen Sie „Sklyanka“ zur Liste hinzu.</string>
 
     <string name="onboarding_state_granted">Ja</string>
     <string name="setup_confirmed_by_user">Von Ihnen bestätigt</string>
@@ -55,12 +67,14 @@
     <string name="setup_revoked_notifications">Die Benachrichtigungsberechtigung wurde in den Systemeinstellungen entzogen. Solange sie fehlt, kommen keine Erinnerungen an.</string>
     <string name="setup_revoked_exact_alarms">Die Berechtigung für exakte Alarme wurde entzogen. Erinnerungen kommen verspätet an.</string>
     <string name="setup_revoked_app_startup">Die Bestätigung für „App-Start“ wurde entfernt.</string>
+    <string name="setup_revoked_autostart">Die Bestätigung für „Autostart“ wurde entfernt.</string>
     <string name="setup_revoked_battery_saving">Die Bestätigung für „Energiesparen“ wurde entfernt.</string>
     <string name="setup_revoked_recents_pin">Die Bestätigung für die Fixierung in „Zuletzt verwendet“ wurde entfernt.</string>
 
     <string name="cd_onboarding_notifications">Benachrichtigungen</string>
     <string name="cd_onboarding_exact_alarms">Exakte Alarme</string>
     <string name="cd_setup_app_startup">App-Start</string>
+    <string name="cd_setup_autostart">Autostart</string>
     <string name="cd_setup_battery_saving">Energiesparen</string>
     <string name="cd_setup_recents_pin">In „Zuletzt verwendet“ fixieren</string>
     <string name="cd_onboarding_granted">Berechtigung erteilt</string>

@@ -35,6 +35,7 @@ import ru.stohastika.sklyanka.domain.onboarding.PermissionGrant
 import ru.stohastika.sklyanka.domain.onboarding.PermissionStep
 import ru.stohastika.sklyanka.domain.onboarding.StepAction
 import ru.stohastika.sklyanka.domain.onboarding.StepState
+import ru.stohastika.sklyanka.domain.onboarding.VendorProfile
 import ru.stohastika.sklyanka.domain.onboarding.actionFor
 import ru.stohastika.sklyanka.domain.reminder.ReminderWarning
 import ru.stohastika.sklyanka.ui.component.Banner
@@ -59,11 +60,14 @@ import java.time.format.DateTimeFormatter
 /**
  * Экран «Настроить надёжность» (НАП-19 … НАП-21, ОВ-106, ОВ-107).
  *
- * Развитие экрана разрешений EMUI, а не второй экран: на Huawei показываются пять шагов
- * (два разрешения Android и три настройки EMUI), на остальных телефонах — только два общих.
- * Состав и тексты — из `design/screens/Onboarding.dc.html` и `docs/norm/04-behavior.md`;
- * единственное объявленное отступление — подпись «Уведомлений» без слов «и на часах»
- * (`ADR-0009`, интеграция с часами отложена).
+ * Развитие экрана разрешений EMUI, а не второй экран: состав карточек задаёт профиль прошивки
+ * ([ru.stohastika.sklyanka.domain.onboarding.VendorSteps]) — у Huawei пять шагов (два
+ * разрешения Android и три настройки EMUI), у Xiaomi автозапуск вместо запуска приложений,
+ * у Samsung четыре, на незнакомой прошивке — только два общих. Слова — тоже профиля
+ * ([OnboardingProfileTexts]): строка чужой прошивки здесь была бы рассказом про меню,
+ * которого на телефоне нет. Состав и тексты — из `design/screens/Onboarding.dc.html`
+ * и `docs/norm/04-behavior.md`; единственное объявленное отступление — подпись «Уведомлений»
+ * без слов «и на часах» (`ADR-0009`, интеграция с часами отложена).
  *
  * Верхний блок неизменен на всех входах: заголовок «Настроить надёжность»; индикатор шагов
  * онбординга — только при первом запуске (критерий приёмки 13). Плашка над списком появляется,
@@ -114,6 +118,7 @@ fun PermissionsScreen(
                 StepCard(
                     step = step,
                     state = stepState,
+                    profile = state.checklist?.vendor,
                     configured = state.allConfigured,
                     instructions = state.instructions,
                     actions = actions,
@@ -158,7 +163,7 @@ private fun Heading(state: OnboardingUiState) {
             modifier = Modifier.testTag(TAG_TITLE),
         )
         Text(
-            text = stringResource(R.string.setup_intro),
+            text = stringResource(OnboardingProfileTexts.intro(state.checklist?.vendor)),
             style = SklyankaType.BodyDefault,
             color = colors.textMuted,
         )
@@ -217,6 +222,7 @@ private fun ConfiguredPlaque(
 private fun StepCard(
     step: PermissionStep,
     state: StepState,
+    profile: VendorProfile?,
     configured: Boolean,
     instructions: Set<PermissionStep>,
     actions: PermissionsActions,
@@ -236,13 +242,14 @@ private fun StepCard(
             .testTag(tagOf(step)),
         verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Medium),
     ) {
-        StepHeader(step, state)
+        StepHeader(step, state, profile)
         ExactAlarmsExplanation(step, state)
         NotificationIssue(state)
         if (state is ManualStepState) {
             VendorExtras(
                 step = step,
                 state = state,
+                profile = profile,
                 configured = configured,
                 instructions = instructions,
                 actions = actions,
@@ -255,18 +262,22 @@ private fun StepCard(
 
 /** Шапка карточки: значок, название, подписи и отметка состояния. */
 @Composable
-private fun StepHeader(step: PermissionStep, state: StepState) {
+private fun StepHeader(step: PermissionStep, state: StepState, profile: VendorProfile?) {
     val colors = SklyankaTheme.colors
     val resolved = state.isResolved
     StackingRow(
-        leading = { IconPlate(step, resolved) },
+        leading = { IconPlate(step, resolved, profile) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Hair)) {
-                Text(text = stringResource(titleOf(step)), style = SklyankaType.BodyDefaultStrong, color = colors.text)
-                captionOf(step)?.let { caption ->
+                Text(
+                    text = stringResource(OnboardingProfileTexts.title(step, profile)),
+                    style = SklyankaType.BodyDefaultStrong,
+                    color = colors.text,
+                )
+                OnboardingProfileTexts.caption(step, profile)?.let { caption ->
                     Text(text = stringResource(caption), style = SklyankaType.Caption, color = colors.textMuted)
                 }
-                stepExtraAction(step)?.let { extra ->
+                OnboardingProfileTexts.extraAction(step, profile)?.let { extra ->
                     Text(text = stringResource(extra), style = SklyankaType.Caption, color = colors.textMuted)
                 }
             }
@@ -337,6 +348,7 @@ private fun StepActionButton(step: PermissionStep, state: StepState, actions: Pe
 private fun VendorExtras(
     step: PermissionStep,
     state: ManualStepState,
+    profile: VendorProfile?,
     configured: Boolean,
     instructions: Set<PermissionStep>,
     actions: PermissionsActions,
@@ -359,23 +371,25 @@ private fun VendorExtras(
         state.hints.sortedBy(ManualStepHint::ordinal).forEach { hint -> HintRow(hint) }
         // Инструкция остаётся видимой после возврата, пока шаг не подтверждён (критерий 6).
         if (step in instructions) {
-            Text(
-                text = stringResource(fallbackOf(step)),
-                style = SklyankaType.Caption,
-                color = colors.text,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(colors.neutralSoft, SklyankaShapes.Medium)
-                    .padding(
-                        horizontal = SklyankaSizes.BannerPaddingHorizontal,
-                        vertical = SklyankaSizes.BannerPaddingVertical,
-                    )
-                    .testTag(TAG_INSTRUCTIONS),
-            )
+            OnboardingProfileTexts.fallback(step, profile)?.let { fallback ->
+                Text(
+                    text = stringResource(fallback),
+                    style = SklyankaType.Caption,
+                    color = colors.text,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(colors.neutralSoft, SklyankaShapes.Medium)
+                        .padding(
+                            horizontal = SklyankaSizes.BannerPaddingHorizontal,
+                            vertical = SklyankaSizes.BannerPaddingVertical,
+                        )
+                        .testTag(TAG_INSTRUCTIONS),
+                )
+            }
         }
         if (!configured) {
             SklyankaSwitchRow(
-                label = stringResource(confirmLabelOf(step)),
+                label = stringResource(OnboardingProfileTexts.confirmLabel(step, profile)),
                 caption = stringResource(R.string.setup_manual_confirm_caption),
                 checked = state.confirmedByUser,
                 onCheckedChange = { confirmed -> actions.onManualConfirmed(step, confirmed) },
@@ -409,7 +423,7 @@ private fun HintRow(hint: ManualStepHint) {
 
 /** Плашка значка: подкраска говорит о состоянии вторым каналом рядом с отметкой (НФТ-33). */
 @Composable
-private fun IconPlate(step: PermissionStep, resolved: Boolean) {
+private fun IconPlate(step: PermissionStep, resolved: Boolean, profile: VendorProfile?) {
     val colors = SklyankaTheme.colors
     Box(
         modifier = Modifier
@@ -418,7 +432,7 @@ private fun IconPlate(step: PermissionStep, resolved: Boolean) {
         contentAlignment = Alignment.Center,
     ) {
         val tint = if (resolved) colors.taken else colors.accent
-        val label = stringResource(glyphLabelOf(step))
+        val label = stringResource(OnboardingProfileTexts.glyphLabel(step, profile))
         val glyph = Modifier.semantics { contentDescription = label }
         when (step) {
             PermissionStep.NOTIFICATIONS -> BellGlyph(color = tint, modifier = glyph)
@@ -481,7 +495,7 @@ private fun ConfirmedMark() {
 private fun Revocations(state: OnboardingUiState) {
     state.revoked.forEach { step ->
         Banner(
-            text = stringResource(revokedTextOf(step)),
+            text = stringResource(OnboardingProfileTexts.revokedText(step, state.checklist?.vendor)),
             modifier = Modifier
                 .fillMaxWidth()
                 .testTag(TAG_REVOKED),
@@ -545,46 +559,11 @@ data class PermissionsActions(
     val onCheckDelivery: (() -> Unit)? = null,
 )
 
-private fun titleOf(step: PermissionStep): Int = when (step) {
-    PermissionStep.NOTIFICATIONS -> R.string.setup_step_notifications
-    PermissionStep.EXACT_ALARMS -> R.string.setup_step_exact_alarms
-    PermissionStep.APP_STARTUP -> R.string.setup_step_app_startup
-    PermissionStep.BATTERY_SAVING -> R.string.setup_step_battery_saving
-    PermissionStep.RECENTS_PIN -> R.string.setup_step_recents_pin
-}
-
-/** Подпись шага; у «Энергосбережения» её заменяет плашка непроверяемости из спецификации. */
-private fun captionOf(step: PermissionStep): Int? = when (step) {
-    PermissionStep.NOTIFICATIONS -> R.string.setup_step_notifications_caption
-    PermissionStep.EXACT_ALARMS -> R.string.setup_step_exact_alarms_caption
-    PermissionStep.APP_STARTUP -> R.string.setup_step_app_startup_caption
-    PermissionStep.BATTERY_SAVING -> null
-    PermissionStep.RECENTS_PIN -> R.string.setup_step_recents_pin_caption
-}
-
-/** Вторая строка шага «Запуск приложений»: что именно включить (ОВ-106). */
-private fun stepExtraAction(step: PermissionStep): Int? = when (step) {
-    PermissionStep.APP_STARTUP -> R.string.setup_step_app_startup_action
-    else -> null
-}
-
 private fun unverifiableOf(step: PermissionStep): Int = when (step) {
     PermissionStep.APP_STARTUP -> R.string.setup_unverifiable_app_startup
     PermissionStep.BATTERY_SAVING -> R.string.setup_unverifiable_battery_saving
     PermissionStep.RECENTS_PIN -> R.string.setup_unverifiable_recents_pin
     PermissionStep.NOTIFICATIONS, PermissionStep.EXACT_ALARMS -> R.string.setup_unverifiable_app_startup
-}
-
-private fun fallbackOf(step: PermissionStep): Int = when (step) {
-    PermissionStep.BATTERY_SAVING -> R.string.setup_fallback_battery_saving
-    else -> R.string.setup_fallback_app_startup
-}
-
-private fun confirmLabelOf(step: PermissionStep): Int = when (step) {
-    PermissionStep.APP_STARTUP -> R.string.setup_manual_confirm_app_startup
-    PermissionStep.BATTERY_SAVING -> R.string.setup_manual_confirm_battery_saving
-    PermissionStep.RECENTS_PIN -> R.string.setup_manual_confirm_recents_pin
-    PermissionStep.NOTIFICATIONS, PermissionStep.EXACT_ALARMS -> R.string.setup_manual_confirm_app_startup
 }
 
 private fun issueOf(issue: ReminderWarning): Int = when (issue) {
@@ -593,14 +572,6 @@ private fun issueOf(issue: ReminderWarning): Int = when (issue) {
     ReminderWarning.FULL_SCREEN_INTENT_OFF -> R.string.setup_issue_full_screen
     // Точные будильники и пара — причины баннера, у карточки «Уведомления» их быть не может.
     ReminderWarning.EXACT_ALARMS_OFF, ReminderWarning.BOTH_OFF -> R.string.setup_issue_notifications
-}
-
-private fun revokedTextOf(step: PermissionStep): Int = when (step) {
-    PermissionStep.NOTIFICATIONS -> R.string.setup_revoked_notifications
-    PermissionStep.EXACT_ALARMS -> R.string.setup_revoked_exact_alarms
-    PermissionStep.APP_STARTUP -> R.string.setup_revoked_app_startup
-    PermissionStep.BATTERY_SAVING -> R.string.setup_revoked_battery_saving
-    PermissionStep.RECENTS_PIN -> R.string.setup_revoked_recents_pin
 }
 
 /**
@@ -615,14 +586,6 @@ private fun actionLabelOf(step: PermissionStep, action: StepAction): Int = when 
     step == PermissionStep.EXACT_ALARMS && action == StepAction.OPEN_SYSTEM_SETTINGS -> R.string.setup_action_allow
     action == StepAction.REQUEST_PERMISSION -> R.string.setup_action_allow
     else -> R.string.setup_action_open_settings
-}
-
-private fun glyphLabelOf(step: PermissionStep): Int = when (step) {
-    PermissionStep.NOTIFICATIONS -> R.string.cd_onboarding_notifications
-    PermissionStep.EXACT_ALARMS -> R.string.cd_onboarding_exact_alarms
-    PermissionStep.APP_STARTUP -> R.string.cd_setup_app_startup
-    PermissionStep.BATTERY_SAVING -> R.string.cd_setup_battery_saving
-    PermissionStep.RECENTS_PIN -> R.string.cd_setup_recents_pin
 }
 
 private fun tagOf(step: PermissionStep): String = when (step) {

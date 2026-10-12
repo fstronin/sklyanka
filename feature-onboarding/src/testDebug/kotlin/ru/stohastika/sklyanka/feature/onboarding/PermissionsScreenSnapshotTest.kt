@@ -16,9 +16,13 @@ import java.time.ZoneId
  * Эталонные снимки экрана разрешений (SKL-24).
  *
  * Снимок на состояние, а не на устройство: состояний у цепочки конечное число, и каждое
- * из них — отдельная картинка в ревью. Снято пять: состояние макета, чистая установка,
- * пройденная цепочка, запасной путь с текстовой инструкцией и вход из настроек без
- * индикатора шагов.
+ * из них — отдельная картинка в ревью. Сняты: состояние макета, чистая установка,
+ * пройденная цепочка, запасной путь с текстовой инструкцией, вход из настроек без
+ * индикатора шагов и по кадру на профиль прошивки — Xiaomi, Samsung и общий Android (SKL-112).
+ *
+ * Профильные кадры рендерятся стендом: `Build.MANUFACTURER` на JVM неоткуда взять, и мир
+ * сценария ставит профиль сам. Живое устройство подтверждает названия пунктов меню —
+ * строки чек-листа SKL-110.
  *
  * Чего снимок НЕ доказывает: что на настоящем экране всё это помещается и читается —
  * это смотрят глазами на эталонном устройстве (`docs/archive/tasks/SKL-24/TDD.md §2.2`).
@@ -44,6 +48,23 @@ class PermissionsScreenSnapshotTest {
     @Test
     fun onAFirmwareWithoutTheSystemScreen() = capture("onboarding-instructions") {
         show(PermissionsScreenFixtures.withInstructions())
+    }
+
+    // --- Вендорские ветки: кадр на каждый профиль цепочки (SKL-112) ------------------------------
+
+    @Test
+    fun onXiaomiTheChainCarriesAutostartInsteadOfAppStartup() = capture("onboarding-xiaomi") {
+        show(PermissionsScreenFixtures.xiaomi())
+    }
+
+    @Test
+    fun onSamsungTheChainHasNoAutostartStep() = capture("onboarding-samsung") {
+        show(PermissionsScreenFixtures.samsung())
+    }
+
+    @Test
+    fun onAnUnknownFirmwareOnlyTheCommonStepsRemain() = capture("onboarding-android") {
+        show(PermissionsScreenFixtures.unknownFirmware())
     }
 
     @Test

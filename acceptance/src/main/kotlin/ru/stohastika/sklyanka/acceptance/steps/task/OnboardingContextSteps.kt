@@ -51,11 +51,6 @@ class OnboardingContextSteps(private val world: AcceptanceWorld) {
         world.onboarding.vendor = VendorProfile.EMUI
     }
 
-    @Допустим("^телефон человека — не Huawei, и системного менеджера Huawei на нём нет$")
-    fun thePhoneIsNotHuawei() {
-        world.onboarding.vendor = VendorProfile.GENERIC
-    }
-
     @Допустим("^разрешения выданы$")
     fun thePermissionsAreGranted() {
         theAndroidPermissionsAreGranted()

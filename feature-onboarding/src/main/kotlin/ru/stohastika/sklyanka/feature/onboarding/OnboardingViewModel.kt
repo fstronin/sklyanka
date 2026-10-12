@@ -139,12 +139,8 @@ class OnboardingViewModel @Inject constructor(
             }
 
             StepAction.OPEN_VENDOR_STEP -> {
-                val result = when (step) {
-                    PermissionStep.APP_STARTUP -> navigator.openAppStartupSettings()
-                    PermissionStep.BATTERY_SAVING -> navigator.openBatterySavingSettings()
-                    PermissionStep.RECENTS_PIN -> null
-                    PermissionStep.NOTIFICATIONS, PermissionStep.EXACT_ALARMS -> null
-                }
+                val profile = _state.value.checklist?.vendor
+                val result = profile?.let { navigator.openVendorStep(it, step) }
                 applyOpenResult(step, result)
                 false
             }

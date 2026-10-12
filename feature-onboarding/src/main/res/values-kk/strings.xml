@@ -2,6 +2,9 @@
 <resources>
     <string name="setup_title">Сенімділікті реттеу</string>
     <string name="setup_intro">EMUI жүйесі фондық қолданбаларды белсенді түрде түсіреді. Төмендегі параметрлерсіз қабылдаулар кешігіп немесе мүлде келмейді.</string>
+    <string name="setup_intro_xiaomi">HyperOS немесе MIUI жүйесі фондық қолданбаларды белсенді түрде түсіреді. Төмендегі параметрлерсіз қабылдаулар кешігіп немесе мүлде келмейді.</string>
+    <string name="setup_intro_samsung">One UI жүйесі қолданбалардың фондық жұмысын шектейді. Төмендегі параметрлерсіз қабылдаулар кешігіп немесе мүлде келмейді.</string>
+    <string name="setup_intro_android">Төмендегі рұқсаттарсыз қабылдаулар кешігіп немесе мүлде келмейді.</string>
 
     <string name="setup_step_notifications">Хабарламалар</string>
     <string name="setup_step_notifications_caption">Экрандағы қабылдау картасы</string>
@@ -17,7 +20,12 @@
     <string name="setup_step_app_startup_caption">Параметрлер → Батарея → Қолданбаларды іске қосу → Sklyanka → Қолмен басқару</string>
     <string name="setup_step_app_startup_action">«Автожүгірту», «Жанама жүгірту» және «Фонда жұмыс істеу» опцияларын қосыңыз</string>
 
+    <string name="setup_step_autostart">Автожүгірту</string>
+    <string name="setup_step_autostart_caption">Параметрлер → Қолданбалар → Рұқсаттар → Автожүгірту → Sklyanka</string>
+
     <string name="setup_step_battery_saving">Қуат үнемдеу</string>
+    <string name="setup_step_battery_saving_caption_xiaomi">Параметрлер → Қолданбалар → Sklyanka → Батареяны үнемдеу → Шектеусіз</string>
+    <string name="setup_step_battery_saving_caption_samsung">Параметрлер → Құрылғы күтімі → Батарея → Фондық пайдалану шектеулері → Ұйқыға жіберілмейтін қолданбалар</string>
 
     <string name="setup_step_recents_pin">Соңғыларда бекіту</string>
     <string name="setup_step_recents_pin_caption">Соңғы қолданбалар тізімін ашып, «Sklyanka» картасын төмен тартыңыз да, пайда болған құлыпты басыңыз</string>
@@ -27,6 +35,7 @@
     <string name="setup_unverifiable_recents_pin">Қолданба мұны тексере алмайды: соңғылар тізімі оған көрінбейді.</string>
 
     <string name="setup_manual_confirm_app_startup">Мен қолданбаларды іске қосуды реттедім</string>
+    <string name="setup_manual_confirm_autostart">Мен автожүгіртуді реттедім</string>
     <string name="setup_manual_confirm_battery_saving">Мен қуат үнемдеу шектеулерін алып тастадым</string>
     <string name="setup_manual_confirm_recents_pin">Sklyanka соңғыларда бекітілді</string>
     <string name="setup_manual_confirm_caption">Сіздің сөзіңізбен жазылады: қолданба бұл параметрді тексермейді</string>
@@ -35,6 +44,9 @@
 
     <string name="setup_fallback_app_startup">Бұл құрылғыда жүйелік бөлім ашылмады. Оны қолмен ашыңыз: Параметрлер → Батарея → Қолданбаларды іске қосу → Sklyanka → Қолмен басқару. «Автожүгірту», «Жанама жүгірту» және «Фонда жұмыс істеу» опцияларын қосыңыз.</string>
     <string name="setup_fallback_battery_saving">Бұл құрылғыда жүйелік бөлім ашылмады. Оны қолмен ашыңыз: Параметрлер → Батарея → Sklyanka → қуат үнемдеу шектеулерін алып тастаңыз («Шектемеу»).</string>
+    <string name="setup_fallback_autostart">Бұл құрылғыда жүйелік бөлім ашылмады. Оны қолмен ашыңыз: Параметрлер → Қолданбалар → Рұқсаттар → Автожүгірту → Sklyanka. «Автожүгірту» опциясын қосыңыз. MIUI жүйелерінде бұл Қауіпсіздік → Рұқсаттар → Автожүгірту.</string>
+    <string name="setup_fallback_battery_saving_xiaomi">Бұл құрылғыда жүйелік бөлім ашылмады. Оны қолмен ашыңыз: Параметрлер → Қолданбалар → Sklyanka → Батареяны үнемдеу → Шектеусіз. Егер «Батареяны үнемдеу» пункті жоқ болса, «Белсенділікті бақылау» бөлімінде «Шектеусіз» таңдаңыз.</string>
+    <string name="setup_fallback_battery_saving_samsung">Бұл құрылғыда жүйелік бөлім ашылмады. Оны қолмен ашыңыз: Параметрлер → Құрылғы күтімі → Батарея → Фондық пайдалану шектеулері → Ұйқыға жіберілмейтін қолданбалар → «Sklyanka» тізімге қосыңыз.</string>
 
     <string name="onboarding_state_granted">Бар</string>
     <string name="setup_confirmed_by_user">Сіз растадыңыз</string>
@@ -55,12 +67,14 @@
     <string name="setup_revoked_notifications">Хабарлама рұқсаты жүйелік параметрлерде қайтарып алынды. Ол болмағанша еске салғыштар келмейді.</string>
     <string name="setup_revoked_exact_alarms">Нақты будильник рұқсаты қайтарып алынды. Еске салғыштар кешігіп келеді.</string>
     <string name="setup_revoked_app_startup">«Қолданбаларды іске қосу» растауы алынды.</string>
+    <string name="setup_revoked_autostart">«Автожүгірту» растауы алынды.</string>
     <string name="setup_revoked_battery_saving">«Қуат үнемдеу» растауы алынды.</string>
     <string name="setup_revoked_recents_pin">Соңғыларда бекіту растауы алынды.</string>
 
     <string name="cd_onboarding_notifications">Хабарламалар</string>
     <string name="cd_onboarding_exact_alarms">Нақты будильниктер</string>
     <string name="cd_setup_app_startup">Қолданбаларды іске қосу</string>
+    <string name="cd_setup_autostart">Автожүгірту</string>
     <string name="cd_setup_battery_saving">Қуат үнемдеу</string>
     <string name="cd_setup_recents_pin">Соңғыларда бекіту</string>
     <string name="cd_onboarding_granted">Рұқсат берілді</string>

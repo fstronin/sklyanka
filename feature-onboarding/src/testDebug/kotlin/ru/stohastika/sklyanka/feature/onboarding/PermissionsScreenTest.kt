@@ -275,10 +275,12 @@ class PermissionsScreenTest {
     fun onAFirmwareWithoutTheSystemScreenThePersonSeesTheWrittenInstructions() {
         show(PermissionsScreenFixtures.withInstructions())
 
-        scrollTo(TAG_CARD_APP_STARTUP)
+        // К прокрутке — сам узел инструкции: карточка вендорского шага выше окна,
+        // и «карточка видна» ещё не значит, что виден её низ с инструкцией (SKL-112).
+        scrollTo(TAG_INSTRUCTIONS)
         compose.onNodeWithTag(TAG_INSTRUCTIONS, useUnmergedTree = true).assertIsDisplayed()
-        compose.onNodeWithText(text(R.string.setup_fallback_app_startup), useUnmergedTree = true).assertIsDisplayed()
-        assertTrue(text(R.string.setup_fallback_app_startup).contains("Настройки → Батарея"))
+        compose.onNodeWithText(text(R.string.setup_fallback_autostart), useUnmergedTree = true).assertIsDisplayed()
+        assertTrue(text(R.string.setup_fallback_autostart).contains("Настройки → Приложения"))
     }
 
     @Test
