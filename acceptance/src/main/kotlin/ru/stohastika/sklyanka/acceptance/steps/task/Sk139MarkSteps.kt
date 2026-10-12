@@ -156,7 +156,7 @@ class Sk139MarkSteps {
     }
 
     private companion object {
-        const val NORMATIVE_DOCUMENT = "docs/v2/12-design.md"
+        const val NORMATIVE_DOCUMENT = "docs/norm/06-design.md"
         const val MANIFEST = "app/src/main/AndroidManifest.xml"
         const val MARK_COLOURS = "app/src/main/res/values/colors.xml"
         const val MONOCHROME_LAYER = "app/src/main/res/drawable/ic_launcher_monochrome.xml"

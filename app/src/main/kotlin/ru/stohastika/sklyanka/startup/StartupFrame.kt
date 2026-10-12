@@ -19,7 +19,7 @@ sealed interface StartupFrame {
 
     /**
      * Заставка приложения: экран удержания от снятия системного кадра до готовности
-     * первого экрана показать своё содержимое (`docs/v2/10-behavior.md` «Заставка»).
+     * первого экрана показать своё содержимое (`docs/norm/04-behavior.md` «Заставка»).
      */
     data object AppSplash : StartupFrame
 

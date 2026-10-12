@@ -4,7 +4,7 @@ package ru.stohastika.sklyanka.platform.onboarding
  * Системный экран производителя, к которому ведёт вендорский шаг.
  *
  * Адресуется компонентом, а не действием: стандартного действия для этих экранов
- * в Android нет вовсе (`docs/v2/00-product.md` §6), и каждый производитель называет
+ * в Android нет вовсе (`docs/norm/01-product.md` §6), и каждый производитель называет
  * свою Activity по-своему.
  */
 data class SystemScreenTarget(val packageName: String, val className: String) {

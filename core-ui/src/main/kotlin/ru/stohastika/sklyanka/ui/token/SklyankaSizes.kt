@@ -4,7 +4,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
- * Габариты компонентов из `docs/v2/12-design.md` §3.3 и §4.
+ * Габариты компонентов из `docs/norm/06-design.md` §3.3 и §4.
  *
  * Зачем отдельный объект рядом с [SklyankaSpacing]. Отступ и габарит — разные вещи:
  * отступ берётся из девятишаговой шкалы, а высота кнопки, толщина рамки и размер

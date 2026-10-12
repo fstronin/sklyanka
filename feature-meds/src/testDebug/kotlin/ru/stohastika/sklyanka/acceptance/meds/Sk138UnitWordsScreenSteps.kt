@@ -13,7 +13,7 @@ import ru.stohastika.sklyanka.feature.meds.form.TAG_MEDICATION_PREVIEW
 import ru.stohastika.sklyanka.feature.meds.form.TAG_STOCK_UNIT
 
 /**
- * Экранные шаги приёмки слова единицы дозы в поле (SKL-138, норма `12-design.md` §5.3).
+ * Экранные шаги приёмки слова единицы дозы в поле (SKL-138, норма `docs/norm/06-design.md` §5.3).
  *
  * Сценарий называет число словом языка («2 таблетки»), а проверяется то, что человек видит:
  * подпись единицы в поле — суффикс, который обязан следовать за набранным числом. Подпись

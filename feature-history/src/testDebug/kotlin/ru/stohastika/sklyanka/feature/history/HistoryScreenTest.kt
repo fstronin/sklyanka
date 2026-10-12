@@ -299,7 +299,7 @@ class HistoryScreenTest {
      *
      * Плитки «принято вовремя» нет вовсе — мерить нечего (Р-33), а не прочерк. И ни одного
      * сообщения об ошибке: месяц без записей — это нормальное состояние, а не сбой
-     * (`docs/v2/10-behavior.md`, состояние «Данных за месяц нет»).
+     * (`docs/norm/04-behavior.md`, состояние «Данных за месяц нет»).
      */
     @Test
     fun anEmptyMonthShowsDashesAndHidesTheBreakdown() {

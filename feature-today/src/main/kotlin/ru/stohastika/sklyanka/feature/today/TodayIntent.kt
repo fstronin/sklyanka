@@ -14,7 +14,7 @@ import java.time.LocalTime
  */
 sealed interface TodayIntent {
 
-    /** «Принято» и круглая кнопка-галочка — одно и то же действие (`docs/v2/10-behavior.md`). */
+    /** «Принято» и круглая кнопка-галочка — одно и то же действие (`docs/norm/04-behavior.md`). */
     data class MarkTaken(val intakeId: String) : TodayIntent
 
     data class MarkSkipped(val intakeId: String) : TodayIntent

@@ -11,7 +11,7 @@ import java.time.ZoneId
  * Содержимое экрана «Архив»: две группы и общий счётчик.
  *
  * Группы — прямое следствие двух значений причины архивации, а не оформление
- * (`docs/v2/10-behavior.md` §5, ЭКР-8). [total] считает обе группы: счётчик
+ * (`docs/norm/04-behavior.md` §5, ЭКР-8). [total] считает обе группы: счётчик
  * «Архив · N» не различает причин.
  */
 data class ArchiveContent(val finished: List<ArchiveCard>, val manual: List<ArchiveCard>, val total: Int) {

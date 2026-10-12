@@ -12,7 +12,7 @@ import java.io.File
  *
  * Страж читает репозиторий, а не состояние приложения: закрытие находок — обещание
  * в документах, и проверяется оно там же, где дано. Один и тот же список задач обязан
- * быть назван тремя местами — строками реестра `PLAN.md` §4, условием MVP `PLAN.md` §3
+ * быть назван тремя местами — строками реестра `docs/plan.md` §4, условием MVP `docs/plan.md` §3
  * и сценариями этой задачи: иначе строка условия перестаёт быть проверяемой и
  * становится пожеланием.
  *
@@ -100,10 +100,10 @@ class FindingSteps {
     private fun text(relative: String): String = File(RepositoryLayout.root, relative).readText()
 
     private companion object {
-        const val PLAN = "PLAN.md"
+        const val PLAN = "docs/plan.md"
         const val FEATURE_FILE = "acceptance/src/main/resources/features/SKL-146.feature"
 
-        /** Находки походов SKL-140, сведённые в эту задачу (реестр `PLAN.md` §4). */
+        /** Находки походов SKL-140, сведённые в эту задачу (реестр `docs/plan.md` §4). */
         val FINDINGS: Set<Int> = (141..145).toSet()
 
         const val FIX_TASK_NUMBER = 146

@@ -40,7 +40,7 @@ import java.time.ZoneId
  * транзакция исходное состояние. Ровно так же здесь закреплено, чего инварианты не
  * делают: отметка живущего приёма законна и после правки курса, и после смены режима,
  * а «принять» по потребности фиксирует факт даже за границей курса — история человека
- * важнее формата (обоснование — `docs/v2/10-behavior.md` §1.4, SKL-107/TDD.md §2).
+ * важнее формата (обоснование — `docs/norm/04-behavior.md` §1.4, SKL-107/TDD.md §2).
  *
  * Прогон требует устройства или эмулятора; в контейнере сборки тест компилируется,
  * но не выполняется.
@@ -144,7 +144,7 @@ class IntakeIntegrityTest {
     @Test
     fun markingALivingIntakeAfterTheCourseDatesMovedCloserIsStillApplied() = runTest {
         // Даты курса подвинули после рождения приёма: ИНВ-15 судит рождение, не факт
-        // (`docs/v2/10-behavior.md` §1.4) — отметка законна и вне нового периода.
+        // (`docs/norm/04-behavior.md` §1.4) — отметка законна и вне нового периода.
         db.medications.upsert(TestData.medication(endDate = CLOSED_COURSE))
 
         val outcome = intakes.markAtomically(

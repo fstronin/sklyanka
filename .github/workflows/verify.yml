@@ -1,4 +1,4 @@
-# Обязательный гейт (Р-19, docs/v2/04-roadmap.md): единый проверочный прогон
+# Обязательный гейт (Р-19, docs/norm/03-roadmap.md): единый проверочный прогон
 # на каждый push и pull_request в main. Задача verifyAll собирается в
 # build-logic/convention (ProjectChecksConventionPlugin): сборка всех модулей,
 # статический анализ, проверки состава артефактов, все уровни тестов JVM и

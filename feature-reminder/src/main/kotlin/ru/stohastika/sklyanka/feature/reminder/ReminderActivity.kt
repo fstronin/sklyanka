@@ -59,7 +59,7 @@ class ReminderActivity : ComponentActivity() {
 
         setContent {
             // Тёмная среда — параметром темы, а не системной настройкой: тёмными бывают
-            // напоминание и знак, а не приложение целиком (docs/v2/12-design.md §5).
+            // напоминание и знак, а не приложение целиком (docs/norm/06-design.md §5).
             SklyankaTheme(dark = true) {
                 val state by viewModel.state.collectAsState()
                 ReminderCardHost(

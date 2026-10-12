@@ -159,7 +159,7 @@ private fun LaneHeader(group: TimeGroup) {
  *
  * Вид карточки приходит из домена, а не выводится по месту: «принято», «время
  * наступило», «время впереди» и «пропущено» — предметные состояния, и разметка их
- * не пересчитывает (`docs/v2/10-behavior.md`).
+ * не пересчитывает (`docs/norm/04-behavior.md`).
  */
 @Composable
 internal fun IntakeRow(item: IntakeItem, onIntent: (TodayIntent) -> Unit, modifier: Modifier = Modifier) {

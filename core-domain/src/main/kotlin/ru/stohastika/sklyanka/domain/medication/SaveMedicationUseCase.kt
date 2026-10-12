@@ -138,7 +138,7 @@ class SaveMedicationUseCase(
         /**
          * Поля курса именами колонок модели данных.
          *
-         * Имена, а не свойства Kotlin: журнал читают вместе с `docs/v2/10-behavior.md`,
+         * Имена, а не свойства Kotlin: журнал читают вместе с `docs/norm/04-behavior.md`,
          * и расхождение имён превращает разбор инцидента в перевод с одного словаря на другой.
          */
         val FIELDS: List<Pair<String, (Medication) -> Any?>> = listOf(

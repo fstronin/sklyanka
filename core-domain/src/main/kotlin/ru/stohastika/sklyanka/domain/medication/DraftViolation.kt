@@ -39,7 +39,7 @@ sealed interface DraftViolation {
     /** Поле, к которому относится отказ: по нему экран прокручивается к первому нарушению. */
     val field: DraftField
 
-    /** Название пусто после обрезки пробелов (`docs/v2/10-behavior.md` §3). */
+    /** Название пусто после обрезки пробелов (`docs/norm/04-behavior.md` §3). */
     data object NameEmpty : DraftViolation {
         override val field: DraftField get() = DraftField.NAME
     }

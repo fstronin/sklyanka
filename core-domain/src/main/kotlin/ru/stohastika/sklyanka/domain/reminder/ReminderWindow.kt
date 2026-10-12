@@ -10,7 +10,7 @@ import java.time.Instant
  * ограничивает их число на приложение, а каждое редактирование расписания требует снять
  * и переставить всё затронутое. Длинный горизонт даёт не надёжность, а тысячи поставленных
  * срабатываний и класс ошибок «осиротевший будильник от приёма, которого больше нет»
- * (`docs/v2/10-behavior.md` §2).
+ * (`docs/norm/04-behavior.md` §2).
  *
  * Границы — моменты (UTC), а не локальное время: будильник ставится на момент, и именно
  * поэтому смена часового пояса обязана пересобрать окно (НАП-11). Локальное время приёма
@@ -32,7 +32,7 @@ data class ReminderWindow(val from: Instant, val toInclusive: Instant) {
     operator fun contains(moment: Instant): Boolean = !moment.isBefore(from) && !moment.isAfter(toInclusive)
 
     companion object {
-        /** НАП-7: 48 часов. Обоснование размера — `docs/v2/10-behavior.md` §2. */
+        /** НАП-7: 48 часов. Обоснование размера — `docs/norm/04-behavior.md` §2. */
         val HORIZON: Duration = Duration.ofHours(48)
 
         fun startingAt(now: Instant): ReminderWindow = ReminderWindow(now, now.plus(HORIZON))

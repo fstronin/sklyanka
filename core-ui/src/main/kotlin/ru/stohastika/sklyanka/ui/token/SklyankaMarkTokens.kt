@@ -34,7 +34,7 @@ object SklyankaMarkTokens {
     /** Центр поля. */
     const val CENTER: Float = 100f
 
-    // --- Стеклянная отрисовка (docs/v2/12-design.md §7) ---
+    // --- Стеклянная отрисовка (docs/norm/06-design.md §7) ---
 
     /** Ободок — внешняя граница донца. */
     const val RIM_RADIUS: Float = 86f
@@ -165,7 +165,7 @@ object SklyankaMarkTokens {
  * записано числом (НФТ-47); экраны получают краску знака функциями токенов.
  *
  * Числа — из решения Р-57 (лист вариантов `docs/design-proposals/icon-variants.html`),
- * норма — `docs/v2/12-design.md` §2.4. Геометрия знака решением не тронута (SKL-21).
+ * норма — `docs/norm/06-design.md` §2.4. Геометрия знака решением не тронута (SKL-21).
  */
 object SklyankaMarkColors {
 

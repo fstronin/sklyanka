@@ -30,7 +30,7 @@ import java.io.File
  *    набора оставляет кадр и не пользуется запрещёнными приёмами.
  *
  * Сценарий SKL-00 про перечень экранов заказчика реализуется здесь же: карта экранов
- * `docs/v2/10-behavior.md` §5.1 — действующий норматив, на который ссылается реестр,
+ * `docs/norm/04-behavior.md` §5.1 — действующий норматив, на который ссылается реестр,
  * и проверять её отдельным списком значило бы держать два ответа на один вопрос.
  *
  * Разбор текста намеренно простой (строки и отметки «`»): стражи читают документы, которые
@@ -479,7 +479,7 @@ class JourneyHarnessSteps {
         const val MANIFEST = "app/src/main/AndroidManifest.xml"
         const val JOURNEY_DESIGN = "docs/tasks/SKL-140/TDD.md"
         const val SKL24_DESIGN = "docs/archive/tasks/SKL-24/TDD.md"
-        const val BEHAVIOR_DOC = "docs/v2/10-behavior.md"
+        const val BEHAVIOR_DOC = "docs/norm/04-behavior.md"
         const val ORIGINAL_SPEC = "design/SPEC-original.md"
         const val FEATURE_FILE = "acceptance/src/main/resources/features/SKL-140.feature"
         const val ACCEPTANCE_BUILD = "acceptance/build.gradle.kts"

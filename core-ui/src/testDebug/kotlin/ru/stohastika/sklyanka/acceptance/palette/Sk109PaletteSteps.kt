@@ -37,7 +37,7 @@ import java.io.File
  * правилом `RussianTextInCode` именно поэтому.
  *
  * Сценарии говорят о свойствах цвета, а не о значениях, и это не уловка: значения живут
- * в палитре и в нормативе (`docs/v2/12-design.md` §2.1, §6.1), и второй их экземпляр здесь
+ * в палитре и в нормативе (`docs/norm/06-design.md` §2.1, §6.1), и второй их экземпляр здесь
  * разошёлся бы с первым. Единственное исключение — норматив: Предыстория сверяет, что
  * значения, которыми пользуется код, названы документом.
  *
@@ -489,7 +489,7 @@ class Sk109PaletteSteps {
 
     private companion object {
         const val REPO_ROOT_PROPERTY = "sklyanka.repo.root"
-        const val NORMATIVE_DOCUMENT = "docs/v2/12-design.md"
+        const val NORMATIVE_DOCUMENT = "docs/norm/06-design.md"
         const val ICON_COLOURS = "app/src/main/res/values/colors.xml"
 
         /** Профиль, которым живёт «чужой» контекст сценариев: любая пара набора, кроме акцента. */

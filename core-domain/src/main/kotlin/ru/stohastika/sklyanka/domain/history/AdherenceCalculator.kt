@@ -28,7 +28,7 @@ import java.time.ZoneId
  *   с SKL-11: `OutcomeDenominator.UP_TO_ARCHIVING`).
  *
  * Порог низкой приверженности — параметр, а не константа по месту: «выделить лекарство
- * с низкой приверженностью» (`docs/v2/10-behavior.md`) числом не задано нигде.
+ * с низкой приверженностью» (`docs/norm/04-behavior.md`) числом не задано нигде.
  */
 class AdherenceCalculator(
     /**

@@ -19,7 +19,7 @@ import ru.stohastika.sklyanka.ui.token.SklyankaType
 import ru.stohastika.sklyanka.ui.token.flatMarkColor
 
 /**
- * Пустое состояние (`docs/v2/12-design.md` §4.8).
+ * Пустое состояние (`docs/norm/06-design.md` §4.8).
  *
  * Варианты — нет лекарств, пустой архив, пустая история, часы не подключены —
  * отличаются текстом и действием, а не устройством: заводить на каждый свой

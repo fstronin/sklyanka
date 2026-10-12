@@ -17,7 +17,7 @@
       SklyankaMarkColors (НФТ-47). Значения с прозрачностью записаны в #AARRGGBB — иначе
       остановку градиента не задать: android:fillAlpha к отдельному <item> не относится.
 
-      Источник — docs/v2/12-design.md §2.4 и макеты SklyankaMark.dc.html
+      Источник — docs/norm/06-design.md §2.4 и макеты SklyankaMark.dc.html
       и SklyankaIcon.dc.html. Значения — дубликат **палитры знака**
       (core-ui/.../token/SklyankaMarkTokens.kt, объект SklyankaMarkColors), а не палитры
       интерфейса: у знака своя холодная палитра, и она в роли интерфейса не входит (Р-56).

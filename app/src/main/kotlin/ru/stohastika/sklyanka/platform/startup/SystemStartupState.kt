@@ -47,7 +47,7 @@ class SystemStartupState @Inject constructor(@ApplicationContext private val con
      *
      * До Android 12 разрешения не существовало и будильник ставился всегда; с 12
      * его может не быть, и тогда напоминание придёт «когда-нибудь», что для
-     * «Склянки» отказ продукта, а не неудобство (`docs/v2/10-behavior.md`).
+     * «Склянки» отказ продукта, а не неудобство (`docs/norm/04-behavior.md`).
      */
     private fun exactAlarmsAllowed(): Boolean = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
         context.getSystemService(AlarmManager::class.java)?.canScheduleExactAlarms() ?: false

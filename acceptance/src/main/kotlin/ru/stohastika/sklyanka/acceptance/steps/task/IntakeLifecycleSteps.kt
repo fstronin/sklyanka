@@ -103,7 +103,7 @@ class IntakeLifecycleSteps(private val world: AcceptanceWorld) {
     @Given("^устройство было выключено с (.+?), (\\d{2}:\\d{2})$")
     fun theDeviceWasSwitchedOffAt(date: String, time: String) {
         // Выключенное устройство ничего не делает: ни один проход по просроченным приёмам
-        // в это время не выполняется (сценарий И-10 из docs/v2/10-behavior.md).
+        // в это время не выполняется (сценарий И-10 из docs/norm/04-behavior.md).
         world.clock.moveTo(moment(date, time))
     }
 
