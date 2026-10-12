@@ -1,6 +1,7 @@
 package ru.stohastika.sklyanka.feature.meds
 
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertCountEquals
@@ -36,11 +37,13 @@ import ru.stohastika.sklyanka.feature.meds.card.MedicationCardScreen
 import ru.stohastika.sklyanka.feature.meds.card.RefillUi
 import ru.stohastika.sklyanka.feature.meds.card.ScheduleBlockUi
 import ru.stohastika.sklyanka.feature.meds.card.TAG_ARCHIVE
+import ru.stohastika.sklyanka.feature.meds.card.TAG_CARD_SCROLL
 import ru.stohastika.sklyanka.feature.meds.card.TAG_COURSE_BAR
 import ru.stohastika.sklyanka.feature.meds.card.TAG_COURSE_BLOCK
 import ru.stohastika.sklyanka.feature.meds.card.TAG_LIMIT_BLOCK
 import ru.stohastika.sklyanka.feature.meds.card.TAG_REFILL
 import ru.stohastika.sklyanka.feature.meds.card.TAG_REFILL_CANCEL
+import ru.stohastika.sklyanka.feature.meds.card.TAG_REFILL_CONFIRM
 import ru.stohastika.sklyanka.feature.meds.card.TAG_REFILL_ROW
 import ru.stohastika.sklyanka.feature.meds.card.TAG_RESTORE
 import ru.stohastika.sklyanka.feature.meds.card.TAG_SCHEDULE_BLOCK
@@ -274,6 +277,45 @@ class MedicationCardScreenTest {
             .assertIsDisplayed()
     }
 
+    /**
+     * Отказ в строке пополнения не выносит ряд «Отмена/Сохранить» за нижнюю грань окна (V-39).
+     *
+     * Отказ «Остаток не может быть отрицательным» печатается под полем и потому растит строку:
+     * ряд действий уезжает вниз ровно на её высоту. На кадре враждебного похода «Сохранить»
+     * оказалась наполовину срезанной — прокрутка, доведённая до ряда при допустимом значении,
+     * за ростом не следовала. Здесь проверяется правило без кадра: экран доводит ряд до вида,
+     * и ряд остаётся целым.
+     *
+     * Стенд меряется телефонным окном (390×844 dp, `sklyanka.screen.tests`): карточка длиннее
+     * его, поэтому прокрутка тут настоящая. На стенде в несколько экранов высотой отказ не виден
+     * — там ряд не выходит за грань ни при каком значении.
+     */
+    @Test
+    fun theRefusalDoesNotLeaveTheRefillActionsBehindTheWindow() {
+        val refill = mutableStateOf(RefillUi(text = NEGATIVE_AMOUNT))
+        composeRule.setContent {
+            SklyankaTheme {
+                MedicationCardScreen(state = state(refill = refill.value), onIntent = {})
+            }
+        }
+        // Человек довёл ряд действий до вида и нажал «Сохранить»: кнопка стоит у самой нижней грани.
+        composeRule.onNodeWithTag(TAG_REFILL_CONFIRM, useUnmergedTree = true).performScrollTo()
+        composeRule.waitForIdle()
+
+        composeRule.runOnIdle { refill.value = refill.value.copy(invalid = true) }
+        composeRule.waitForIdle()
+
+        val edge = bottomOf(TAG_CARD_SCROLL)
+        assertTrue(
+            "ряд действий вынесен за нижнюю грань окна: низ ряда ${bottomOf(TAG_REFILL_ROW)} при грани $edge",
+            bottomOf(TAG_REFILL_ROW) <= edge,
+        )
+        assertTrue(
+            "«Сохранить» срезана нижней гранью окна: ${bottomOf(TAG_REFILL_CONFIRM)} при грани $edge",
+            bottomOf(TAG_REFILL_CONFIRM) <= edge,
+        )
+    }
+
     @Test
     fun stockAboveThePackageKeepsThePlainStockAndNoBar() {
         show(
@@ -427,6 +469,10 @@ class MedicationCardScreenTest {
         }
     }
 
+    /** Нижняя грань узла в координатах корня: по ней видно, срезан ли узел гранью окна (V-39). */
+    private fun bottomOf(tag: String): Float =
+        composeRule.onNodeWithTag(tag, useUnmergedTree = true).fetchSemanticsNode().boundsInRoot.bottom
+
     @Suppress("LongParameterList")
     private fun state(
         schedule: ScheduleBlockUi = ScheduleBlockUi.Scheduled(
@@ -502,6 +548,9 @@ class MedicationCardScreenTest {
 
     private companion object {
         const val MEDICATION_NAME = "med-a"
+
+        /** Отрицательное значение строки пополнения: названный отказ, остаток не тронут (V-39). */
+        const val NEGATIVE_AMOUNT = "-5"
         const val MORNING_TEXT = "08:00"
         const val EVENING_TEXT = "20:00"
         const val DAYS_LEFT = 17

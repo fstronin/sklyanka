@@ -32,6 +32,7 @@
     <string name="transfer_matches_title">Coincidencias</string>
     <string name="transfer_matches_hint">Estos medicamentos ya existen en el dispositivo. Se decide por cada uno por separado.</string>
     <string name="transfer_matches_empty">No hay coincidencias: todo lo del archivo se añadirá sin preguntas.</string>
+    <string name="transfer_match_subtitle">El nombre y la dosificación coinciden. Abajo están las diferencias: decida qué valores mantener.</string>
     <string name="transfer_match_dosage">%1$s, %2$s</string>
     <string name="transfer_match_dosage_value">%1$s %2$s</string>
     <string name="transfer_match_difference_times">Hora de toma: en el dispositivo %1$s, en el archivo %2$s</string>

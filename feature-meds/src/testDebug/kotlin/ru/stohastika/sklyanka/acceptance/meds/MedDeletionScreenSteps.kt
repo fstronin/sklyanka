@@ -86,7 +86,7 @@ class MedDeletionScreenSteps(private val world: AcceptanceWorld) {
         }
     }
 
-    @Тогда("^под кнопкой удаления стоит пояснение «([^»]+)»$")
+    @Тогда("^под кнопкой удаления стоит пояснение «(.+)»$")
     fun theHintIsShown(expected: String) {
         val hint = context.getString(R.string.card_delete_hint)
         assertEquals("the scenario must quote the resource", expected, hint)
@@ -143,7 +143,7 @@ class MedDeletionScreenSteps(private val world: AcceptanceWorld) {
         }
     }
 
-    @Тогда("^шторка спрашивает «([^»]+)»$")
+    @Тогда("^шторка спрашивает «(.+)»$")
     fun theSheetAsks(expected: String) {
         val name = MedsListStand.displayName(world, focusedMedication())
         val question = context.getString(R.string.card_delete_sheet_title, name)

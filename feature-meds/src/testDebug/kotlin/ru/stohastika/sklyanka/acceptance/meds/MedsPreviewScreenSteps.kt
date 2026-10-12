@@ -135,7 +135,12 @@ class MedsPreviewScreenSteps(private val world: AcceptanceWorld, private val for
         MedsFormStand.showDraft(world, state.draft)
         MedsFormStand.ask(world) { test ->
             val texts = MedsProbe.texts(test, TAG_MEDICATION_PREVIEW)
-            assertTrue("the preview caption must read «$caption»: $texts", caption in texts)
+            assertTrue(
+                "the preview caption must read «$caption»: $texts",
+                // Число и единица в подписи не разрываются неразрывным пробелом (SKL-59 TDD §2.2),
+                // а фраза сценария набрана обычными — сравниваем без него.
+                texts.any { it.replace('\u00A0', ' ') == caption.replace('\u00A0', ' ') },
+            )
         }
     }
 

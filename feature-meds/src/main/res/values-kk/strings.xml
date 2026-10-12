@@ -14,8 +14,8 @@
     <string name="meds_period_until">%1$s дейін</string>
     <string name="meds_last_intake">соңғы қабылдау — %1$s</string>
 
-    <string name="meds_empty_title">Әзірге ештеңе жоспарланбаған</string>
-    <string name="meds_empty_text">Дәрі қосыңыз — оның қабылдаулары осында сағат бойынша пайда болады.</string>
+    <string name="meds_empty_title">Әзірге дәрі жоқ</string>
+    <string name="meds_empty_text">Дәрі қосыңыз — ол тізімде пайда болады.</string>
     <string name="meds_empty_action">Дәрі қосу</string>
 
     <string name="cd_add_medication">Дәрі қосу</string>

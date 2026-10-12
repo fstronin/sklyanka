@@ -37,13 +37,15 @@ class TodayUnitTextTest {
 
     @Test
     fun everyDoseUnitIsPrintedWithItsOwnWord() {
+        // Число и его единица не разрываются: между ними неразрывный пробел (SKL-59 TDD §2.2,
+        // страж `LocalizationResourcesTest`), поэтому в ожидании стоит \u00A0, а не пробел.
         val lines = listOf(
-            MedicationForm.TABLET to DoseUnit.TABLET to "20 таблеток",
-            MedicationForm.CAPSULE to DoseUnit.CAPSULE to "20 капсул",
-            MedicationForm.SYRUP to DoseUnit.MILLILITRE to "20 мл",
-            MedicationForm.DROPS to DoseUnit.DROP to "20 капель",
-            MedicationForm.SPRAY to DoseUnit.SPRAY to "20 впрысков",
-            MedicationForm.INJECTION to DoseUnit.INJECTION to "20 инъекций",
+            MedicationForm.TABLET to DoseUnit.TABLET to "20\u00A0таблеток",
+            MedicationForm.CAPSULE to DoseUnit.CAPSULE to "20\u00A0капсул",
+            MedicationForm.SYRUP to DoseUnit.MILLILITRE to "20\u00A0мл",
+            MedicationForm.DROPS to DoseUnit.DROP to "20\u00A0капель",
+            MedicationForm.SPRAY to DoseUnit.SPRAY to "20\u00A0впрысков",
+            MedicationForm.INJECTION to DoseUnit.INJECTION to "20\u00A0инъекций",
         )
 
         composeRule.setContent {
@@ -70,7 +72,7 @@ class TodayUnitTextTest {
             }
         }
 
-        composeRule.onNodeWithText("20 таблеток · 250 мкг").assertExists()
+        composeRule.onNodeWithText("20\u00A0таблеток · 250 мкг").assertExists()
     }
 
     /**

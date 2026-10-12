@@ -10,40 +10,40 @@
 
     <!-- Доза одного приёма: «1 таблетка», «2 таблетки». -->
     <plurals name="reminder_dose_tablets">
-        <item quantity="one">%1$s таблетка</item>
-        <item quantity="few">%1$s таблетки</item>
-        <item quantity="many">%1$s таблеток</item>
-        <item quantity="other">%1$s таблетки</item>
+        <item quantity="one">%1$s&#160;таблетка</item>
+        <item quantity="few">%1$s&#160;таблетки</item>
+        <item quantity="many">%1$s&#160;таблеток</item>
+        <item quantity="other">%1$s&#160;таблетки</item>
     </plurals>
     <plurals name="reminder_dose_capsules">
-        <item quantity="one">%1$s капсула</item>
-        <item quantity="few">%1$s капсулы</item>
-        <item quantity="many">%1$s капсул</item>
-        <item quantity="other">%1$s капсулы</item>
+        <item quantity="one">%1$s&#160;капсула</item>
+        <item quantity="few">%1$s&#160;капсулы</item>
+        <item quantity="many">%1$s&#160;капсул</item>
+        <item quantity="other">%1$s&#160;капсулы</item>
     </plurals>
     <plurals name="reminder_dose_millilitres">
-        <item quantity="one">%1$s мл</item>
-        <item quantity="few">%1$s мл</item>
-        <item quantity="many">%1$s мл</item>
-        <item quantity="other">%1$s мл</item>
+        <item quantity="one">%1$s&#160;мл</item>
+        <item quantity="few">%1$s&#160;мл</item>
+        <item quantity="many">%1$s&#160;мл</item>
+        <item quantity="other">%1$s&#160;мл</item>
     </plurals>
     <plurals name="reminder_dose_drops">
-        <item quantity="one">%1$s капля</item>
-        <item quantity="few">%1$s капли</item>
-        <item quantity="many">%1$s капель</item>
-        <item quantity="other">%1$s капли</item>
+        <item quantity="one">%1$s&#160;капля</item>
+        <item quantity="few">%1$s&#160;капли</item>
+        <item quantity="many">%1$s&#160;капель</item>
+        <item quantity="other">%1$s&#160;капли</item>
     </plurals>
     <plurals name="reminder_dose_sprays">
-        <item quantity="one">%1$s впрыск</item>
-        <item quantity="few">%1$s впрыска</item>
-        <item quantity="many">%1$s впрысков</item>
-        <item quantity="other">%1$s впрыска</item>
+        <item quantity="one">%1$s&#160;впрыск</item>
+        <item quantity="few">%1$s&#160;впрыска</item>
+        <item quantity="many">%1$s&#160;впрысков</item>
+        <item quantity="other">%1$s&#160;впрыска</item>
     </plurals>
     <plurals name="reminder_dose_injections">
-        <item quantity="one">%1$s инъекция</item>
-        <item quantity="few">%1$s инъекции</item>
-        <item quantity="many">%1$s инъекций</item>
-        <item quantity="other">%1$s инъекции</item>
+        <item quantity="one">%1$s&#160;инъекция</item>
+        <item quantity="few">%1$s&#160;инъекции</item>
+        <item quantity="many">%1$s&#160;инъекций</item>
+        <item quantity="other">%1$s&#160;инъекции</item>
     </plurals>
 
 

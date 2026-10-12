@@ -35,6 +35,7 @@ import ru.stohastika.sklyanka.feature.meds.SegmentedControl
 import ru.stohastika.sklyanka.feature.meds.formatted
 import ru.stohastika.sklyanka.feature.meds.label
 import ru.stohastika.sklyanka.feature.meds.message
+import ru.stohastika.sklyanka.ui.modifier.dashedBorder
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaShapes
 import ru.stohastika.sklyanka.ui.token.SklyankaSizes
@@ -199,7 +200,7 @@ private fun AddTimeButton(onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .height(SklyankaSizes.SecondaryButtonHeight)
-            .border(SklyankaSizes.BorderThin, colors.lineInteractive, SklyankaShapes.Medium)
+            .dashedBorder(SklyankaSizes.BorderThin, colors.lineInteractive, SklyankaShapes.MediumRadius)
             .clickable(role = Role.Button, onClick = onClick)
             .testTag(TAG_ADD_TIME),
         contentAlignment = Alignment.Center,

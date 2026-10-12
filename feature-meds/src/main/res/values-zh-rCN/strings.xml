@@ -14,8 +14,8 @@
     <string name="meds_period_until">至 %1$s</string>
     <string name="meds_last_intake">上次服药 — %1$s</string>
 
-    <string name="meds_empty_title">还没有任何计划</string>
-    <string name="meds_empty_text">添加药物后，它的服药时间会按钟点显示在这里。</string>
+    <string name="meds_empty_title">还没有药物</string>
+    <string name="meds_empty_text">添加药物后，它会出现在列表中。</string>
     <string name="meds_empty_action">添加药物</string>
 
     <string name="cd_add_medication">添加药物</string>

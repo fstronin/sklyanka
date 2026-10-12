@@ -87,7 +87,7 @@ class ReminderScreenTest {
         compose.onNodeWithTag(TAG_OVERLINE).assertIsDisplayed()
         compose.onNodeWithText("14:00").assertIsDisplayed()
         compose.onNodeWithText("Магний B6").assertIsDisplayed()
-        compose.onNodeWithText("2 таблетки · 48 мг").assertIsDisplayed()
+        compose.onNodeWithText("2\u00A0таблетки · 48 мг").assertIsDisplayed()
     }
 
     /**
@@ -98,7 +98,7 @@ class ReminderScreenTest {
     fun theMilligramCodeIsShownInTheInterfaceLanguage() {
         show(state(rows = listOf(row(strengthUnit = "mg"))))
 
-        compose.onNodeWithText("2 таблетки · 48 мг").assertIsDisplayed()
+        compose.onNodeWithText("2\u00A0таблетки · 48 мг").assertIsDisplayed()
     }
 
     @Test

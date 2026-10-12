@@ -1,5 +1,6 @@
 package ru.stohastika.sklyanka.feature.settings.transfer
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -44,7 +45,13 @@ fun TransferSummaryScreen(
     modifier: Modifier = Modifier,
 ) {
     val colors = SklyankaTheme.colors
-    Column(modifier = modifier.fillMaxSize().navigationBarsPadding().testTag(TAG_SUMMARY)) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .background(colors.background)
+            .navigationBarsPadding()
+            .testTag(TAG_SUMMARY),
+    ) {
         ScreenHeader(
             labels = ScreenHeaderLabels(title = stringResource(R.string.transfer_summary_title)),
             kind = ScreenHeaderKind.Nested,
@@ -88,18 +95,24 @@ fun TransferSummaryScreen(
                     modifier = Modifier.testTag(TAG_OLD_FORMAT),
                 )
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Medium)) {
-                SecondaryButton(
-                    text = stringResource(R.string.transfer_summary_cancel),
-                    onClick = onCancel,
-                )
-                PrimaryButton(
-                    text = stringResource(R.string.transfer_summary_continue),
-                    onClick = onContinue,
-                    modifier = Modifier.testTag(TAG_SUMMARY_CONTINUE),
-                )
-            }
+            SummaryActions(onCancel = onCancel, onContinue = onContinue)
         }
+    }
+}
+
+/** Замыкающий ряд итога: тихая «Отмена» и главное «Продолжить». */
+@Composable
+private fun SummaryActions(onCancel: () -> Unit, onContinue: () -> Unit) {
+    Row(horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Medium)) {
+        SecondaryButton(
+            text = stringResource(R.string.transfer_summary_cancel),
+            onClick = onCancel,
+        )
+        PrimaryButton(
+            text = stringResource(R.string.transfer_summary_continue),
+            onClick = onContinue,
+            modifier = Modifier.testTag(TAG_SUMMARY_CONTINUE),
+        )
     }
 }
 

@@ -32,6 +32,7 @@
     <string name="transfer_matches_title">匹配项</string>
     <string name="transfer_matches_hint">这些药物已在此设备上。每个都单独决定。</string>
     <string name="transfer_matches_empty">没有匹配项——文件中的所有内容将直接添加。</string>
+    <string name="transfer_match_subtitle">名称和剂量一致。下方是差异——请决定保留哪些值。</string>
     <string name="transfer_match_dosage">%1$s，%2$s</string>
     <string name="transfer_match_dosage_value">%1$s %2$s</string>
     <string name="transfer_match_difference_times">服药时间：设备上 %1$s，文件中 %2$s</string>

@@ -102,7 +102,7 @@ class ReportPdfComposerTest {
     fun `a medication block carries the name the dose the schedule and its share`() {
         val text = content().documentText()
 
-        assertTrue("the dose must decline with its amount", text.contains("med-a · 1 таблетка · 50 мг · 08:00"))
+        assertTrue("the dose must decline with its amount", text.contains("med-a · 1\u00A0таблетка · 50 мг · 08:00"))
         assertTrue("the share must stand in the block: $text", text.contains(share(1, 4, 25)))
     }
 
@@ -120,7 +120,7 @@ class ReportPdfComposerTest {
         )
         val text = composer.compose(report(medication = drops), ZONE).documentText()
 
-        assertTrue("капли печатаются каплями: $text", text.contains("med-a · 20 капель"))
+        assertTrue("капли печатаются каплями: $text", text.contains("med-a · 20\u00A0капель"))
     }
 
     /**

@@ -54,8 +54,9 @@ import ru.stohastika.sklyanka.ui.R as UiR
  * 1. Поворот в середине ввода (см. [waitForFormAfterRotation]). Манифест не объявляет
  *    `configChanges` (`app/src/main/AndroidManifest.xml:149`), поворот пересоздаёт активность,
  *    а путь человека живёт в полях активности (`RootNavigation`, `MainActivity.kt:192`) и в
- *    памяти композиции (`formOpen`, `MedsRoute.kt:47`). Человек возвращается на «Сегодня»,
- *    заполненный черновик формы на экране не восстанавливается.
+ *    памяти композиции — в стеке раздела, где открытая форма теперь и стоит уровнем
+ *    (`MedsSection.kt`, SKL-150). Человек возвращается на «Сегодня», заполненный черновик
+ *    формы на экране не восстанавливается.
  * 2. Двойное нажатие «Сохранить» (шаг 3). Ни флага «идёт запись», ни идемпотентности черновика
  *    нет: `MedicationFormViewModel.kt:89` заводит запись на каждое нажатие, а черновик без
  *    идентификатора получает новый на каждую попытку (`SaveMedicationUseCase.kt:47,72`) —
@@ -92,12 +93,14 @@ class HostileMedicationFormTest : JourneyTest() {
         typeInto(TAG_DOSE_FIELD, DOSE)
         capture("form-half")
 
-        // 2. Системная «Назад» без сохранения: форма закрыта, лекарства не заведено.
+        // 2. Системная «Назад» без сохранения: человек возвращается в список «Лекарства» —
+        //    возврат с формы повторяет возврат и не выводит из раздела (§5.1), — форма закрыта,
+        //    лекарства не заведено. Кадр `after-back` обязан показывать список.
         pressBack()
-        waitUntil(SCREEN_TIMEOUT_MS, "закрытия формы системной «Назад»") { !exists(TAG_MEDICATION_FORM) }
+        waitUntil(SCREEN_TIMEOUT_MS, "возврата в список лекарств системной «Назад»") {
+            exists(TAG_MEDICATION_LIST) && !exists(TAG_MEDICATION_FORM)
+        }
         capture("after-back")
-        openMedications()
-        waitForTag(TAG_MEDICATION_LIST)
         assertEquals("an abandoned form must not create a row", 0, cardsWith(halfName))
         assertEquals("an abandoned form must not create a medication", 0, opLogCount(OpEvent.MEDICATION_CREATED))
 

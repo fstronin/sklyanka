@@ -12,53 +12,53 @@
     </plurals>
 
     <plurals name="today_stock_left_tablets">
-        <item quantity="one">queda %1$s comprimido</item>
-        <item quantity="other">quedan %1$s comprimidos</item>
+        <item quantity="one">queda %1$s&#160;comprimido</item>
+        <item quantity="other">quedan %1$s&#160;comprimidos</item>
     </plurals>
     <plurals name="today_stock_left_capsules">
-        <item quantity="one">queda %1$s cápsula</item>
-        <item quantity="other">quedan %1$s cápsulas</item>
+        <item quantity="one">queda %1$s&#160;cápsula</item>
+        <item quantity="other">quedan %1$s&#160;cápsulas</item>
     </plurals>
     <plurals name="today_stock_left_millilitres">
-        <item quantity="one">quedan %1$s ml</item>
-        <item quantity="other">quedan %1$s ml</item>
+        <item quantity="one">queda %1$s&#160;ml</item>
+        <item quantity="other">quedan %1$s&#160;ml</item>
     </plurals>
     <plurals name="today_stock_left_drops">
-        <item quantity="one">queda %1$s gota</item>
-        <item quantity="other">quedan %1$s gotas</item>
+        <item quantity="one">queda %1$s&#160;gota</item>
+        <item quantity="other">quedan %1$s&#160;gotas</item>
     </plurals>
     <plurals name="today_stock_left_sprays">
-        <item quantity="one">queda %1$s pulverización</item>
-        <item quantity="other">quedan %1$s pulverizaciones</item>
+        <item quantity="one">queda %1$s&#160;pulverización</item>
+        <item quantity="other">quedan %1$s&#160;pulverizaciones</item>
     </plurals>
     <plurals name="today_stock_left_injections">
-        <item quantity="one">queda %1$s inyección</item>
-        <item quantity="other">quedan %1$s inyecciones</item>
+        <item quantity="one">queda %1$s&#160;inyección</item>
+        <item quantity="other">quedan %1$s&#160;inyecciones</item>
     </plurals>
 
     <plurals name="today_dose_tablets">
-        <item quantity="one">%1$s comprimido</item>
-        <item quantity="other">%1$s comprimidos</item>
+        <item quantity="one">%1$s&#160;comprimido</item>
+        <item quantity="other">%1$s&#160;comprimidos</item>
     </plurals>
     <plurals name="today_dose_capsules">
-        <item quantity="one">%1$s cápsula</item>
-        <item quantity="other">%1$s cápsulas</item>
+        <item quantity="one">%1$s&#160;cápsula</item>
+        <item quantity="other">%1$s&#160;cápsulas</item>
     </plurals>
     <plurals name="today_dose_millilitres">
-        <item quantity="one">%1$s ml</item>
-        <item quantity="other">%1$s ml</item>
+        <item quantity="one">%1$s&#160;ml</item>
+        <item quantity="other">%1$s&#160;ml</item>
     </plurals>
     <plurals name="today_dose_drops">
-        <item quantity="one">%1$s gota</item>
-        <item quantity="other">%1$s gotas</item>
+        <item quantity="one">%1$s&#160;gota</item>
+        <item quantity="other">%1$s&#160;gotas</item>
     </plurals>
     <plurals name="today_dose_sprays">
-        <item quantity="one">%1$s pulverización</item>
-        <item quantity="other">%1$s pulverizaciones</item>
+        <item quantity="one">%1$s&#160;pulverización</item>
+        <item quantity="other">%1$s&#160;pulverizaciones</item>
     </plurals>
     <plurals name="today_dose_injections">
-        <item quantity="one">%1$s inyección</item>
-        <item quantity="other">%1$s inyecciones</item>
+        <item quantity="one">%1$s&#160;inyección</item>
+        <item quantity="other">%1$s&#160;inyecciones</item>
     </plurals>
 
     <plurals name="today_prn_subtitle">

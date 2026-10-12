@@ -1,6 +1,8 @@
 package ru.stohastika.sklyanka.feature.settings.transfer
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -10,6 +12,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -18,11 +21,13 @@ import ru.stohastika.sklyanka.feature.settings.R
 import ru.stohastika.sklyanka.ui.component.Banner
 import ru.stohastika.sklyanka.ui.component.BannerKind
 import ru.stohastika.sklyanka.ui.component.ButtonState
+import ru.stohastika.sklyanka.ui.component.PinnedHeaderBar
 import ru.stohastika.sklyanka.ui.component.PrimaryButton
 import ru.stohastika.sklyanka.ui.component.ScreenHeader
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderKind
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderLabels
 import ru.stohastika.sklyanka.ui.component.SecondaryButton
+import ru.stohastika.sklyanka.ui.component.rememberScreenHeaderState
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaSpacing
 import ru.stohastika.sklyanka.ui.token.SklyankaType
@@ -48,44 +53,81 @@ fun DataTransferScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val colors = SklyankaTheme.colors
-    Column(modifier = modifier.fillMaxSize().navigationBarsPadding().testTag(TAG_TRANSFER_SCREEN)) {
-        ScreenHeader(
-            labels = ScreenHeaderLabels(title = stringResource(R.string.transfer_title)),
+    val header = rememberScreenHeaderState()
+    val labels = ScreenHeaderLabels(title = stringResource(R.string.transfer_title))
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(SklyankaTheme.colors.background)
+            .testTag(TAG_TRANSFER_SCREEN),
+    ) {
+        Column(modifier = Modifier.fillMaxSize().navigationBarsPadding()) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Large),
+            ) {
+                // Крупный заголовок — контент и уезжает вместе с содержимым; возврат
+                // в сжатом состоянии рисует закреплённый ряд (§7).
+                ScreenHeader(
+                    labels = labels,
+                    kind = ScreenHeaderKind.Nested,
+                    pinning = header,
+                    onBack = onBack,
+                )
+                TransferContent(state = state, onIntent = onIntent, onSave = onSave, onPickFile = onPickFile)
+            }
+        }
+        // Ряд — слой над прокруткой: до порога его не видно, и места в потоке он не держит (§7).
+        PinnedHeaderBar(
+            labels = labels,
+            state = header,
+            modifier = Modifier.align(Alignment.TopCenter),
             kind = ScreenHeaderKind.Nested,
             onBack = onBack,
         )
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = SklyankaSpacing.Section)
-                .padding(bottom = SklyankaSpacing.Screen),
-            verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Large),
-        ) {
-            // Принцип продукта формулируется прямо, а не прячется в мелкий шрифт (ПЕР-35).
-            Text(
-                text = stringResource(R.string.transfer_principle),
-                style = SklyankaType.BodyDefault,
-                color = colors.textMuted,
-            )
+    }
+}
 
-            if (state.importDidNotHappen) {
-                Banner(text = stringResource(R.string.transfer_error_import_interrupted))
-            }
-            state.failure?.let { failure ->
-                FailureBanner(failure = failure, onDismiss = { onIntent(TransferIntent.DismissFailure) })
-            }
+/** Содержимое переноса: принцип, плашки отказа и две карточки под общим боковым полем. */
+@Composable
+private fun TransferContent(
+    state: TransferUiState,
+    onIntent: (TransferIntent) -> Unit,
+    onSave: () -> Unit,
+    onPickFile: () -> Unit,
+) {
+    val colors = SklyankaTheme.colors
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = SklyankaSpacing.Section)
+            .padding(bottom = SklyankaSpacing.Screen),
+        verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Large),
+    ) {
+        // Принцип продукта формулируется прямо, а не прячется в мелкий шрифт (ПЕР-35).
+        Text(
+            text = stringResource(R.string.transfer_principle),
+            style = SklyankaType.BodyDefault,
+            color = colors.textMuted,
+        )
 
-            ExportCard(state = state, onSave = onSave)
-            ImportCard(state = state, onIntent = onIntent, onPickFile = onPickFile)
-
-            // Разрешения и автозапуск принадлежат системе, а не файлу (ПЕР-24).
-            Banner(
-                text = stringResource(R.string.transfer_permissions_note),
-                kind = BannerKind.Neutral,
-            )
+        if (state.importDidNotHappen) {
+            Banner(text = stringResource(R.string.transfer_error_import_interrupted))
         }
+        state.failure?.let { failure ->
+            FailureBanner(failure = failure, onDismiss = { onIntent(TransferIntent.DismissFailure) })
+        }
+
+        ExportCard(state = state, onSave = onSave)
+        ImportCard(state = state, onIntent = onIntent, onPickFile = onPickFile)
+
+        // Разрешения и автозапуск принадлежат системе, а не файлу (ПЕР-24).
+        Banner(
+            text = stringResource(R.string.transfer_permissions_note),
+            kind = BannerKind.Neutral,
+        )
     }
 }
 

@@ -49,14 +49,17 @@ import ru.stohastika.sklyanka.ui.component.ButtonLabel
 import ru.stohastika.sklyanka.ui.component.CheckGlyph
 import ru.stohastika.sklyanka.ui.component.ChevronGlyph
 import ru.stohastika.sklyanka.ui.component.InfoGlyph
+import ru.stohastika.sklyanka.ui.component.PinnedHeaderBar
 import ru.stohastika.sklyanka.ui.component.QuietButton
 import ru.stohastika.sklyanka.ui.component.QuietButtonKind
 import ru.stohastika.sklyanka.ui.component.ScreenHeader
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderKind
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderLabels
+import ru.stohastika.sklyanka.ui.component.ScreenHeaderState
 import ru.stohastika.sklyanka.ui.component.SecondaryButton
 import ru.stohastika.sklyanka.ui.component.StackingRow
 import ru.stohastika.sklyanka.ui.component.WarningGlyph
+import ru.stohastika.sklyanka.ui.component.rememberScreenHeaderState
 import ru.stohastika.sklyanka.ui.locale.interfaceLocale
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaShapes
@@ -113,6 +116,8 @@ fun DiagnosticsScreen(
         )
         return
     }
+    val header = rememberScreenHeaderState()
+    val labels = ScreenHeaderLabels(title = stringResource(R.string.diagnostics_title))
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -121,24 +126,31 @@ fun DiagnosticsScreen(
             .navigationBarsPadding()
             .testTag(TAG_DIAGNOSTICS),
     ) {
-        ScreenHeader(
-            labels = ScreenHeaderLabels(title = stringResource(R.string.diagnostics_title)),
-            kind = ScreenHeaderKind.Nested,
-            onBack = onBack,
-        )
-        if (snapshot == null) return@Column
-        DiagnosticsList(
-            state = state,
-            snapshot = snapshot,
-            toLocal = toLocal,
-            onRestartSetup = onRestartSetup,
-            onFixPermission = onFixPermission,
-            onCheckDelivery = onCheckDelivery,
-            onCancelDeliveryCheck = onCancelDeliveryCheck,
-            onAcknowledgeDeliveryCheck = onAcknowledgeDeliveryCheck,
-            onFixDeliveryCheck = onFixDeliveryCheck,
-            onJournalExport = onJournalExport,
-        )
+        Box(modifier = Modifier.fillMaxSize()) {
+            DiagnosticsList(
+                state = state,
+                snapshot = snapshot,
+                labels = labels,
+                header = header,
+                onBack = onBack,
+                toLocal = toLocal,
+                onRestartSetup = onRestartSetup,
+                onFixPermission = onFixPermission,
+                onCheckDelivery = onCheckDelivery,
+                onCancelDeliveryCheck = onCancelDeliveryCheck,
+                onAcknowledgeDeliveryCheck = onAcknowledgeDeliveryCheck,
+                onFixDeliveryCheck = onFixDeliveryCheck,
+                onJournalExport = onJournalExport,
+            )
+            // Ряд — слой над прокруткой: до порога его не видно, и места в потоке он не держит (§7).
+            PinnedHeaderBar(
+                labels = labels,
+                state = header,
+                modifier = Modifier.align(Alignment.TopCenter),
+                kind = ScreenHeaderKind.Nested,
+                onBack = onBack,
+            )
+        }
     }
 }
 
@@ -152,7 +164,10 @@ fun DiagnosticsScreen(
 @Suppress("LongParameterList")
 private fun DiagnosticsList(
     state: DiagnosticsUiState,
-    snapshot: ReminderDiagnostics,
+    snapshot: ReminderDiagnostics?,
+    labels: ScreenHeaderLabels,
+    header: ScreenHeaderState,
+    onBack: () -> Unit,
     toLocal: (Instant) -> LocalDateTime,
     onRestartSetup: (() -> Unit)?,
     onFixPermission: (ReminderPermission) -> Unit,
@@ -163,35 +178,58 @@ private fun DiagnosticsList(
     onJournalExport: () -> Unit,
 ) {
     LazyColumn(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = SklyankaSpacing.Section),
+        modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Large),
     ) {
-        item { Verdict(snapshot, toLocal, onRestartSetup) }
+        // Крупный заголовок — контент и уезжает вместе с содержимым; возврат
+        // в сжатом состоянии рисует закреплённый ряд (§7).
         item {
-            Section(R.string.diagnostics_section_permissions) {
-                PermissionsCard(snapshot, state.fixFallback, onFixPermission, onRestartSetup)
+            ScreenHeader(
+                labels = labels,
+                kind = ScreenHeaderKind.Nested,
+                pinning = header,
+                onBack = onBack,
+            )
+        }
+        val shown = snapshot ?: return@LazyColumn
+        item {
+            Box(Modifier.padding(horizontal = SklyankaSpacing.Section)) {
+                Verdict(shown, toLocal, onRestartSetup)
             }
         }
         item {
-            Section(R.string.diagnostics_section_delivery) {
-                DeliveryCheckBlock(
-                    state = snapshot.deliveryCheck,
-                    acknowledged = snapshot.deliveryCheckAcknowledged,
-                    onCheckDelivery = onCheckDelivery,
-                    onCancelDeliveryCheck = onCancelDeliveryCheck,
-                    onAcknowledgeDeliveryCheck = onAcknowledgeDeliveryCheck,
-                    onFixDeliveryCheck = onFixDeliveryCheck,
-                )
+            Box(Modifier.padding(horizontal = SklyankaSpacing.Section)) {
+                Section(R.string.diagnostics_section_permissions) {
+                    PermissionsCard(shown, state.fixFallback, onFixPermission, onRestartSetup)
+                }
             }
         }
         item {
-            Section(R.string.diagnostics_section_reminders) {
-                RemindersSection(snapshot, toLocal, state.today)
+            Box(Modifier.padding(horizontal = SklyankaSpacing.Section)) {
+                Section(R.string.diagnostics_section_delivery) {
+                    DeliveryCheckBlock(
+                        state = shown.deliveryCheck,
+                        acknowledged = shown.deliveryCheckAcknowledged,
+                        onCheckDelivery = onCheckDelivery,
+                        onCancelDeliveryCheck = onCancelDeliveryCheck,
+                        onAcknowledgeDeliveryCheck = onAcknowledgeDeliveryCheck,
+                        onFixDeliveryCheck = onFixDeliveryCheck,
+                    )
+                }
             }
         }
-        item { JournalExportFooter(state, onJournalExport) }
+        item {
+            Box(Modifier.padding(horizontal = SklyankaSpacing.Section)) {
+                Section(R.string.diagnostics_section_reminders) {
+                    RemindersSection(shown, toLocal, state.today)
+                }
+            }
+        }
+        item {
+            Box(Modifier.padding(horizontal = SklyankaSpacing.Section)) {
+                JournalExportFooter(state, onJournalExport)
+            }
+        }
     }
 }
 

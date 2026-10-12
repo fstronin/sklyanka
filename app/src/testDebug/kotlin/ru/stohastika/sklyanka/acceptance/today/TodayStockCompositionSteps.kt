@@ -78,7 +78,13 @@ class TodayStockCompositionSteps(private val world: AcceptanceWorld) {
             val plates = test.onAllNodesWithTag(TAG_STOCK_BANNER, useUnmergedTree = true)
             plates.assertCountEquals(1)
             val texts = textsOf(plates.fetchSemanticsNodes().single())
-            assertTrue("the plate must read «$expected»: $texts", expected in texts)
+            // Число и единица в подписи не разрываются неразрывным пробелом (SKL-59 TDD §2.2),
+            // а фраза сценария набрана обычными — сравниваем без него.
+            val printed = texts.map { it.replace('\u00A0', ' ') }
+            assertTrue(
+                "the plate must read «$expected»: $texts",
+                expected.replace('\u00A0', ' ') in printed,
+            )
         }
     }
 

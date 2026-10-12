@@ -1,5 +1,6 @@
 package ru.stohastika.sklyanka.feature.settings.transfer
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -69,7 +70,14 @@ fun ReplaceConfirmScreen(
 ) {
     val colors = SklyankaTheme.colors
     val word = stringResource(R.string.transfer_replace_word)
-    Column(modifier = modifier.fillMaxSize().navigationBarsPadding().imePadding().testTag(TAG_REPLACE_CONFIRM)) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .background(colors.background)
+            .navigationBarsPadding()
+            .imePadding()
+            .testTag(TAG_REPLACE_CONFIRM),
+    ) {
         ScreenHeader(
             labels = ScreenHeaderLabels(title = stringResource(R.string.transfer_replace_title)),
             kind = ScreenHeaderKind.Nested,
@@ -83,18 +91,7 @@ fun ReplaceConfirmScreen(
                 text = stringResource(R.string.transfer_replace_warning),
                 modifier = Modifier.testTag(TAG_REPLACE_WARNING),
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Section)) {
-                CountsColumn(
-                    title = stringResource(R.string.transfer_replace_now),
-                    counts = device,
-                    modifier = Modifier.weight(1f).testTag(TAG_COUNTS_NOW),
-                )
-                CountsColumn(
-                    title = stringResource(R.string.transfer_replace_after),
-                    counts = file,
-                    modifier = Modifier.weight(1f).testTag(TAG_COUNTS_AFTER),
-                )
-            }
+            ReplaceCountsRow(device = device, file = file)
             // Человеку сказано, где лежит страховочная копия (ПЕР-16 п. 3, критерий 10).
             Text(
                 text = stringResource(R.string.transfer_replace_safety_copy, safetyCopyName),
@@ -120,6 +117,23 @@ fun ReplaceConfirmScreen(
                 confirmModifier = Modifier.fillMaxWidth().testTag(TAG_REPLACE_CONFIRM_ACTION),
             )
         }
+    }
+}
+
+/** Пара счётчиков «сейчас / после»: два столбца одной ширины (ПЕР-16). */
+@Composable
+private fun ReplaceCountsRow(device: TransferCounts, file: TransferCounts) {
+    Row(horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Section)) {
+        CountsColumn(
+            title = stringResource(R.string.transfer_replace_now),
+            counts = device,
+            modifier = Modifier.weight(1f).testTag(TAG_COUNTS_NOW),
+        )
+        CountsColumn(
+            title = stringResource(R.string.transfer_replace_after),
+            counts = file,
+            modifier = Modifier.weight(1f).testTag(TAG_COUNTS_AFTER),
+        )
     }
 }
 

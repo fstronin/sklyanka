@@ -32,6 +32,7 @@
     <string name="transfer_matches_title">Übereinstimmungen</string>
     <string name="transfer_matches_hint">Diese Medikamente gibt es bereits auf dem Gerät. Die Entscheidung wird für jedes einzeln getroffen.</string>
     <string name="transfer_matches_empty">Keine Übereinstimmungen — alles aus der Datei wird ohne Fragen hinzugefügt.</string>
+    <string name="transfer_match_subtitle">Name und Dosierung stimmen überein. Die Unterschiede stehen unten — entscheiden Sie, welche Werte bleiben.</string>
     <string name="transfer_match_dosage">%1$s, %2$s</string>
     <string name="transfer_match_dosage_value">%1$s %2$s</string>
     <string name="transfer_match_difference_times">Einnahmezeit: auf dem Gerät %1$s, in der Datei %2$s</string>

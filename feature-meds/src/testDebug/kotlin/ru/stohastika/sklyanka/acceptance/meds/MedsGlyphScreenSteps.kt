@@ -201,7 +201,10 @@ class MedsGlyphScreenSteps(private val world: AcceptanceWorld) {
         focused = medication
         MedsListStand.ask(world) { test ->
             val texts = MedsProbe.textsOf(test.onNode(card(medication), useUnmergedTree = true).fetchSemanticsNode())
-            assertTrue("the card of «$medication» must describe «$description»: $texts", description in texts)
+            assertTrue(
+                "the card of «$medication» must describe «$description»: $texts",
+                texts.any { sameText(it, description) },
+            )
         }
     }
 
@@ -422,7 +425,9 @@ class MedsGlyphScreenSteps(private val world: AcceptanceWorld) {
         assertTrue(
             "the reader must speak a description line: $description",
             description.any {
-                it.contains(MED_SEPARATOR)
+                // Разделитель строки описания отделён неразрывным пробелом (SKL-59 TDD §2.2,
+                // V-32) — сравниваем без него.
+                it.replace(NON_BREAKING_SPACE, ' ').contains(MED_SEPARATOR)
             },
         )
     }

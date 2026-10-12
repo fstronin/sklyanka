@@ -30,13 +30,14 @@ class ReminderUnitTextTest {
 
     @Test
     fun everyDoseUnitIsPrintedWithItsOwnWord() {
+        // Число и его единица не разрываются (SKL-59 TDD §2.2): в ожидании \u00A0, не пробел.
         val lines = listOf(
-            MedicationForm.TABLET to "2 таблетки",
-            MedicationForm.CAPSULE to "2 капсулы",
-            MedicationForm.SYRUP to "5 мл",
-            MedicationForm.DROPS to "3 капли",
-            MedicationForm.SPRAY to "2 впрыска",
-            MedicationForm.INJECTION to "2 инъекции",
+            MedicationForm.TABLET to "2\u00A0таблетки",
+            MedicationForm.CAPSULE to "2\u00A0капсулы",
+            MedicationForm.SYRUP to "5\u00A0мл",
+            MedicationForm.DROPS to "3\u00A0капли",
+            MedicationForm.SPRAY to "2\u00A0впрыска",
+            MedicationForm.INJECTION to "2\u00A0инъекции",
         )
         val amounts = listOf("2", "2", "5", "3", "2", "2")
 
@@ -59,7 +60,7 @@ class ReminderUnitTextTest {
             SklyankaTheme { Text(row(MedicationForm.TABLET, BigDecimal("2"), strengthUnit = "mcg").doseLine()) }
         }
 
-        composeRule.onNodeWithText("2 таблетки · 50 мкг").assertExists()
+        composeRule.onNodeWithText("2\u00A0таблетки · 50 мкг").assertExists()
     }
 
     /**

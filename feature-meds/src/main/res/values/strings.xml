@@ -30,9 +30,15 @@
     <string name="meds_period_until">до %1$s</string>
     <string name="meds_last_intake">последний приём — %1$s</string>
 
-    <!-- Пустой список активных: центральный блок из Empty.dc.html (docs/v2/10-behavior.md). -->
-    <string name="meds_empty_title">Пока ничего не запланировано</string>
-    <string name="meds_empty_text">Добавьте лекарство — и его приёмы появятся здесь по часам.</string>
+    <!--
+      Пустой список активных (ЭКР-3, §5.8 docs/norm/04-behavior.md): «список лекарств без активных».
+
+      Пустое состояние «Сегодня» рисует макет Empty.dc.html, а у списка своего кадра нет —
+      и слова «Сегодня» здесь обещали бы приёмы дня на списке лекарств (V-41). Формулировка
+      говорит о лекарствах: список показывает сами лекарства, а не приёмы.
+    -->
+    <string name="meds_empty_title">Лекарств пока нет</string>
+    <string name="meds_empty_text">Добавьте лекарство — оно появится в списке.</string>
     <string name="meds_empty_action">Добавить лекарство</string>
 
     <!-- Подписи для чтения с экрана (НФТ-30); формулировки — из aria-label макетов -->
@@ -228,7 +234,7 @@
     <string name="card_section_limit">Ограничение</string>
     <string name="card_restore">Вернуть</string>
     <string name="card_delete">Удалить</string>
-    <string name="card_delete_hint">Удалить можно, пока нет ни одной отметки „принято“</string>
+    <string name="card_delete_hint">Удалить можно, пока нет ни одной отметки «принято»</string>
     <string name="card_delete_sheet_title">Удалить «%1$s»?</string>
     <string name="card_delete_sheet_text">Лекарство исчезнет из списков и напоминаний. Сразу после удаления его можно вернуть кнопкой «Отменить».</string>
     <string name="meds_deleted_snackbar">%1$s — лекарство удалено</string>
@@ -264,7 +270,7 @@
     <string name="archive_restore">Вернуть</string>
     <string name="archive_history_banner">История приёмов сохраняется. Возврат из архива восстановит лекарство с прежним расписанием.</string>
 
-    <!-- Пустой архив: макета нет, docs/v2/10-behavior.md задаёт состояние словами. -->
+    <!-- Пустой архив: макета нет, docs/norm/04-behavior.md задаёт состояние словами. -->
     <string name="archive_empty_title">В архиве пока ничего нет</string>
     <string name="archive_empty_text">Законченные курсы попадут сюда из карточки лекарства. История приёмов при этом сохранится.</string>
 

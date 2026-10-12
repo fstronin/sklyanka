@@ -15,19 +15,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.Dp
 import ru.stohastika.sklyanka.domain.model.MedicationForm
 import ru.stohastika.sklyanka.domain.model.TabletShape
 import ru.stohastika.sklyanka.ui.R
+import ru.stohastika.sklyanka.ui.modifier.dashedBorder
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaShapes
 import ru.stohastika.sklyanka.ui.token.SklyankaSizes
@@ -271,31 +264,6 @@ private fun IntakeRow(
         modifier = modifier,
     )
 }
-
-/**
- * Пунктирная граница.
- *
- * `Modifier.border` пунктир не умеет, а блок «по потребности» отличается от
- * обычной карточки именно им: сплошная граница читалась бы как запланированный
- * приём, которого в расписании нет.
- */
-private fun Modifier.dashedBorder(width: Dp, color: Color, radius: Dp): Modifier = this.then(
-    Modifier.drawBehind {
-        val strokeWidth = width.toPx()
-        drawRoundRect(
-            color = color,
-            topLeft = Offset(strokeWidth / 2, strokeWidth / 2),
-            size = Size(size.width - strokeWidth, size.height - strokeWidth),
-            cornerRadius = CornerRadius(radius.toPx()),
-            style = Stroke(
-                width = strokeWidth,
-                pathEffect = PathEffect.dashPathEffect(
-                    floatArrayOf(SklyankaSizes.DashOn.toPx(), SklyankaSizes.DashOff.toPx()),
-                ),
-            ),
-        )
-    },
-)
 
 const val TAG_INTAKE_CARD = "intake_card"
 const val TAG_INTAKE_GLYPH = "intake_glyph"

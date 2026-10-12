@@ -2,6 +2,7 @@ package ru.stohastika.sklyanka.feature.settings.profile
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,6 +14,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -21,11 +23,13 @@ import ru.stohastika.sklyanka.feature.settings.transfer.dateAndTime
 import ru.stohastika.sklyanka.ui.component.Banner
 import ru.stohastika.sklyanka.ui.component.ButtonState
 import ru.stohastika.sklyanka.ui.component.ConfirmWordField
+import ru.stohastika.sklyanka.ui.component.PinnedHeaderBar
 import ru.stohastika.sklyanka.ui.component.PrimaryButton
 import ru.stohastika.sklyanka.ui.component.ScreenHeader
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderKind
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderLabels
 import ru.stohastika.sklyanka.ui.component.SecondaryButton
+import ru.stohastika.sklyanka.ui.component.rememberScreenHeaderState
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaSpacing
 import ru.stohastika.sklyanka.ui.token.SklyankaType
@@ -77,17 +81,49 @@ private fun ConfirmationStep(
     onSaveFile: () -> Unit,
     onDone: () -> Unit,
 ) {
-    val colors = SklyankaTheme.colors
+    val header = rememberScreenHeaderState()
+    val labels = ScreenHeaderLabels(title = stringResource(R.string.profile_delete_title))
     val word = stringResource(R.string.profile_delete_word)
-    ScreenHeader(
-        labels = ScreenHeaderLabels(title = stringResource(R.string.profile_delete_title)),
-        kind = ScreenHeaderKind.Nested,
-        onBack = onDone,
-    )
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Large),
+        ) {
+            // Крупный заголовок — контент и уезжает вместе с содержимым; возврат
+            // в сжатом состоянии рисует закреплённый ряд (§7).
+            ScreenHeader(
+                labels = labels,
+                kind = ScreenHeaderKind.Nested,
+                pinning = header,
+                onBack = onDone,
+            )
+            ConfirmationContent(state = state, onIntent = onIntent, onSaveFile = onSaveFile, word = word)
+        }
+        // Ряд — слой над прокруткой: до порога его не видно, и места в потоке он не держит (§7).
+        PinnedHeaderBar(
+            labels = labels,
+            state = header,
+            modifier = Modifier.align(Alignment.TopCenter),
+            kind = ScreenHeaderKind.Nested,
+            onBack = onDone,
+        )
+    }
+}
+
+/** Что теряется при удалении: числа, предупреждение, выгрузка и слово-подтверждение. */
+@Composable
+private fun ConfirmationContent(
+    state: DeleteProfileUiState,
+    onIntent: (DeleteProfileIntent) -> Unit,
+    onSaveFile: () -> Unit,
+    word: String,
+) {
+    val colors = SklyankaTheme.colors
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .verticalScroll(rememberScrollState())
             .padding(horizontal = SklyankaSpacing.Section)
             .padding(bottom = SklyankaSpacing.Screen),
         verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Large),

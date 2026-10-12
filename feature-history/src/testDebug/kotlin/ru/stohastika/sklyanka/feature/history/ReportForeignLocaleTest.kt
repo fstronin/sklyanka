@@ -66,7 +66,7 @@ class ReportForeignLocaleTest {
     fun `the report keeps the plural rules of the interface language`() {
         val text = composer.compose(report(), ZONE).documentText()
 
-        assertTrue("five tablets must take the Russian many form: $text", text.contains("5 таблеток"))
+        assertTrue("five tablets must take the Russian many form: $text", text.contains("5\u00A0таблеток"))
         assertFalse("no English plural rule may reach the doctor: $text", text.contains("5 таблетки"))
     }
 

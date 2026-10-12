@@ -162,7 +162,10 @@ class MedCardScreenSteps(private val world: AcceptanceWorld) {
     @Тогда("^в блоке «Расписание» показано «(.+)»$")
     fun theScheduleBlockShows(text: String) {
         MedCardStand.ask(world, focusedMedication()) { test ->
-            assertTrue(text in MedsProbe.texts(test, TAG_SCHEDULE_BLOCK))
+            // Число и единица в подписи не разрываются неразрывным пробелом (SKL-59 TDD §2.2),
+            // а фраза сценария набрана обычными — сравниваем без него.
+            val printed = MedsProbe.texts(test, TAG_SCHEDULE_BLOCK).map { it.replace('\u00A0', ' ') }
+            assertTrue("the schedule block must show «$text»: $printed", text.replace('\u00A0', ' ') in printed)
         }
     }
 

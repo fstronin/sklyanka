@@ -87,6 +87,40 @@ class LocalizationResourcesTest {
         }
     }
 
+    /**
+     * Число не отрывается от своей единицы нигде (SKL-59 §2.2, V-32).
+     *
+     * Пробел между числом и словом единицы неразрывный во **всех шести** каталогах —
+     * и в русском `values/`, и в пяти переводах: иначе «9» и «tablets» расходятся
+     * по строкам при переносе. Семейства перечислены списком, а не показанным
+     * примером: проверка ловит и семейство, которое забыли.
+     */
+    @Test
+    fun `number-unit plurals keep the number attached to its unit`() {
+        NUMBER_UNIT_PLURALS.forEach { (module, families) ->
+            declaredLanguages().forEach { language ->
+                assertUnitsAttached(module, qualifierFor(language), families)
+            }
+        }
+    }
+
+    private fun assertUnitsAttached(module: String, qualifier: String, families: List<String>) {
+        val localized = resourcesOf(module, qualifier)
+        families.forEach { family ->
+            val forms = localized.plurals[family]
+            assertTrue(forms != null, "missing plurals: $module $qualifier $family")
+            forms!!.forEach { (quantity, value) -> assertUnitAttached(module, qualifier, family, quantity, value) }
+        }
+    }
+
+    private fun assertUnitAttached(module: String, qualifier: String, family: String, quantity: String, value: String) {
+        val afterNumber = NUMBER_PLACEHOLDER.find(value)?.let { value.getOrNull(it.range.last + 1) }
+        assertTrue(
+            afterNumber == NON_BREAKING_SPACE,
+            "the number breaks from its unit: $module $qualifier $family/$quantity = «$value»",
+        )
+    }
+
     @Test
     fun `non-russian translations contain no russian text`() {
         modules().forEach { module ->
@@ -214,6 +248,10 @@ class LocalizationResourcesTest {
         return if (region == null) "values-${parts[0]}" else "values-${parts[0]}-r$region"
     }
 
+    /** Каталог языка: русский лежит в `values/`, остальные — в `values-XX` (ПМ-14). */
+    private fun qualifierFor(language: String): String =
+        if (language == RUSSIAN) BASE_QUALIFIER else qualifierOf(language)
+
     private fun requiredQuantities(language: String): Set<String> = when (language) {
         RUSSIAN -> setOf(ONE, FEW, MANY, OTHER)
         "en-US", "es", "de" -> setOf(ONE, OTHER)
@@ -257,6 +295,47 @@ class LocalizationResourcesTest {
 
         /** Подстановки: `%1$s`, `%2$d`, `%s` — с точностью до номера аргумента. */
         val PLACEHOLDER = Regex("""%(?:\d+\$)?[a-zA-Z]""")
+
+        /**
+         * Семейства «число + единица» по модулям (V-32): сразу за числом — слово единицы,
+         * и между ними неразрывный пробел, а не обычный.
+         */
+        val NUMBER_UNIT_PLURALS = mapOf(
+            "feature-meds" to listOf(
+                "stock_left_tablets", "stock_left_capsules", "stock_left_millilitres",
+                "stock_left_drops", "stock_left_sprays", "stock_left_injections",
+                "card_dose_tablets", "card_dose_capsules", "card_dose_millilitres",
+                "card_dose_drops", "card_dose_sprays", "card_dose_injections",
+                "preview_dose_tablets", "preview_dose_capsules", "preview_dose_millilitres",
+                "preview_dose_drops", "preview_dose_sprays", "preview_dose_injections",
+            ),
+            "feature-today" to listOf(
+                "today_stock_left_tablets", "today_stock_left_capsules", "today_stock_left_millilitres",
+                "today_stock_left_drops", "today_stock_left_sprays", "today_stock_left_injections",
+                "today_dose_tablets", "today_dose_capsules", "today_dose_millilitres",
+                "today_dose_drops", "today_dose_sprays", "today_dose_injections",
+            ),
+            "feature-reminder" to listOf(
+                "reminder_dose_tablets",
+                "reminder_dose_capsules",
+                "reminder_dose_millilitres",
+                "reminder_dose_drops",
+                "reminder_dose_sprays",
+                "reminder_dose_injections",
+            ),
+            "feature-history" to listOf(
+                "report_document_dose_tablets",
+                "report_document_dose_capsules",
+                "report_document_dose_millilitres",
+                "report_document_dose_drops",
+                "report_document_dose_sprays",
+                "report_document_dose_injections",
+            ),
+        )
+
+        /** Числовая подстановка: `%1$d`, `%1$s` — за ней обязана идти единица через «&#160;». */
+        val NUMBER_PLACEHOLDER = Regex("""%(?:\d+\$)?[ds]""")
+        const val NON_BREAKING_SPACE = '\u00A0'
         val SUPPORTED_LOCALE = Regex("""forLanguageTag\("([^"]+)"\)""")
         val DECLARED_LOCALES = Regex("""INTERFACE_LOCALES[^=]*=\s*linkedSetOf\(([^)]*)\)""")
 

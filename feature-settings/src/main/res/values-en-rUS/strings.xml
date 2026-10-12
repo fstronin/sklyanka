@@ -32,6 +32,7 @@
     <string name="transfer_matches_title">Matches</string>
     <string name="transfer_matches_hint">These medications already exist on the device. A decision is made for each one separately.</string>
     <string name="transfer_matches_empty">No matches — everything from the file will be added without questions.</string>
+    <string name="transfer_match_subtitle">The name and dosage match. Differences are below — decide which values to keep.</string>
     <string name="transfer_match_dosage">%1$s, %2$s</string>
     <string name="transfer_match_dosage_value">%1$s %2$s</string>
     <string name="transfer_match_difference_times">Intake time: on the device %1$s, in the file %2$s</string>

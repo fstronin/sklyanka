@@ -1,5 +1,6 @@
 package ru.stohastika.sklyanka.feature.settings.transfer
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -47,7 +48,13 @@ fun TransferReportScreen(
     modifier: Modifier = Modifier,
 ) {
     val colors = SklyankaTheme.colors
-    Column(modifier = modifier.fillMaxSize().navigationBarsPadding().testTag(TAG_REPORT)) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .background(colors.background)
+            .navigationBarsPadding()
+            .testTag(TAG_REPORT),
+    ) {
         ScreenHeader(
             labels = ScreenHeaderLabels(title = stringResource(R.string.transfer_report_title)),
             kind = ScreenHeaderKind.Nested,

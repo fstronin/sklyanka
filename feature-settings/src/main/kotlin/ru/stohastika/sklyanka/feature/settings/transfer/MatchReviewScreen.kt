@@ -1,5 +1,6 @@
 package ru.stohastika.sklyanka.feature.settings.transfer
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -53,7 +54,13 @@ fun MatchReviewScreen(
     modifier: Modifier = Modifier,
 ) {
     val colors = SklyankaTheme.colors
-    Column(modifier = modifier.fillMaxSize().navigationBarsPadding().testTag(TAG_MATCHES)) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .background(colors.background)
+            .navigationBarsPadding()
+            .testTag(TAG_MATCHES),
+    ) {
         ScreenHeader(
             labels = ScreenHeaderLabels(title = stringResource(R.string.transfer_matches_title)),
             kind = ScreenHeaderKind.Nested,
@@ -111,9 +118,16 @@ fun MatchReviewScreen(
 @Composable
 private fun MatchCard(match: MedicationMatch, decision: MatchDecision, onDecide: (MatchDecision) -> Unit) {
     val colors = SklyankaTheme.colors
+    // Дозировка записи необязательна (ПЕР-20): без неё заголовок — одно название, иначе
+    // разделитель повис бы в пустоте (V-42).
+    val dosage = strengthLabel(match)
     TransferCard(
-        title = stringResource(R.string.transfer_match_dosage, match.file.name, strengthLabel(match)),
-        subtitle = stringResource(R.string.transfer_matches_hint),
+        title = if (dosage.isEmpty()) {
+            match.file.name
+        } else {
+            stringResource(R.string.transfer_match_dosage, match.file.name, dosage)
+        },
+        subtitle = stringResource(R.string.transfer_match_subtitle),
         modifier = Modifier.testTag(matchTag(match.file.id)),
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Micro)) {

@@ -4,10 +4,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -176,6 +178,30 @@ class DataTransferScreenTest {
         composeRule.onNodeWithText(context.getString(R.string.transfer_decision_add_separately)).assertIsDisplayed()
         composeRule.onNodeWithText(context.getString(R.string.transfer_decision_do_not_load)).assertIsDisplayed()
         composeRule.onNodeWithTag(TAG_DROP_ALL).assertIsDisplayed()
+    }
+
+    @Test
+    fun aMatchWithoutStrengthIsTitledByTheNameAlone() {
+        val match = TransferScreenFixtures.match()
+        val withoutStrength = match.copy(file = match.file.copy(strength = null, strengthUnit = null))
+        showMatches(
+            TransferScreenFixtures.overview()
+                .copy(step = TransferStep.MATCHES, matches = listOf(withoutStrength)),
+        )
+
+        composeRule.onNodeWithText(match.file.name).assertIsDisplayed()
+        composeRule.onNodeWithText("${match.file.name},").assertDoesNotExist()
+    }
+
+    @Test
+    fun theCardSubtitleDoesNotRepeatTheScreenHint() {
+        val match = TransferScreenFixtures.match()
+        showMatches(TransferScreenFixtures.overview().copy(step = TransferStep.MATCHES, matches = listOf(match)))
+
+        composeRule.onNodeWithText(context.getString(R.string.transfer_match_subtitle)).assertIsDisplayed()
+        composeRule
+            .onAllNodesWithText(context.getString(R.string.transfer_matches_hint))
+            .assertCountEquals(1)
     }
 
     @Test

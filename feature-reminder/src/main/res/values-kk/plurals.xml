@@ -2,33 +2,33 @@
 <resources>
 
     <plurals name="reminder_dose_tablets">
-        <item quantity="one">%1$s таблетка</item>
-        <item quantity="other">%1$s таблетка</item>
+        <item quantity="one">%1$s&#160;таблетка</item>
+        <item quantity="other">%1$s&#160;таблетка</item>
     </plurals>
 
     <plurals name="reminder_dose_capsules">
-        <item quantity="one">%1$s капсула</item>
-        <item quantity="other">%1$s капсула</item>
+        <item quantity="one">%1$s&#160;капсула</item>
+        <item quantity="other">%1$s&#160;капсула</item>
     </plurals>
 
     <plurals name="reminder_dose_millilitres">
-        <item quantity="one">%1$s мл</item>
-        <item quantity="other">%1$s мл</item>
+        <item quantity="one">%1$s&#160;мл</item>
+        <item quantity="other">%1$s&#160;мл</item>
     </plurals>
 
     <plurals name="reminder_dose_drops">
-        <item quantity="one">%1$s тамшы</item>
-        <item quantity="other">%1$s тамшы</item>
+        <item quantity="one">%1$s&#160;тамшы</item>
+        <item quantity="other">%1$s&#160;тамшы</item>
     </plurals>
 
     <plurals name="reminder_dose_sprays">
-        <item quantity="one">%1$s бүрікпе</item>
-        <item quantity="other">%1$s бүрікпе</item>
+        <item quantity="one">%1$s&#160;бүрікпе</item>
+        <item quantity="other">%1$s&#160;бүрікпе</item>
     </plurals>
 
     <plurals name="reminder_dose_injections">
-        <item quantity="one">%1$s инъекция</item>
-        <item quantity="other">%1$s инъекция</item>
+        <item quantity="one">%1$s&#160;инъекция</item>
+        <item quantity="other">%1$s&#160;инъекция</item>
     </plurals>
 
 

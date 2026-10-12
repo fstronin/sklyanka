@@ -156,6 +156,10 @@ internal fun timesPhrase(times: List<LocalTime>): String {
  * «Ежедневно · 08:00 · с 12 марта · бессрочно» — строка расписания карточки списка (ОВ-94).
  *
  * Хвост — остаток либо период: одновременно они не показываются (ЭКР-4).
+ *
+ * Разделитель «·» не начинает строку (SKL-59 §2.2, V-32): пробел перед ним неразрывный.
+ * Правится собранная строка, а не сам разделитель: тем же `meds_separator` собирается
+ * описание карточки, где перенос по «·» допустим.
  */
 @Composable
 internal fun schedulePhrase(timesPerDay: Int, times: List<LocalTime>, trailing: TrailingLine): String {
@@ -164,8 +168,18 @@ internal fun schedulePhrase(timesPerDay: Int, times: List<LocalTime>, trailing: 
         frequencyLabel(timesPerDay),
         timesPhrase(times).takeIf { times.isNotEmpty() },
         trailingTextOf(trailing),
-    ).joinToString(separator)
+    ).joinToString(separator).middotStaysOnItsLine()
 }
+
+/**
+ * Пробел перед «·» становится неразрывным: знак переезжает на новую строку вместе с тем,
+ * что стоит слева, а не начинает её (V-32). Знак приходит и из разделителя, и из фразы
+ * периода («с 2 октября · бессрочно»), поэтому правится строка целиком.
+ */
+private fun String.middotStaysOnItsLine(): String = replace(BREAKABLE_MIDDOT, UNBREAKABLE_MIDDOT)
+
+private const val BREAKABLE_MIDDOT = " · "
+private const val UNBREAKABLE_MIDDOT = "\u00A0· "
 
 /** «осталось 9 таблеток», «с 12 марта · бессрочно» или «до 30 сентября». */
 @Composable

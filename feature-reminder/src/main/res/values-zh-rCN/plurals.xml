@@ -2,22 +2,22 @@
 <resources>
 
     <plurals name="reminder_dose_tablets">
-        <item quantity="other">%1$s 片</item>
+        <item quantity="other">%1$s&#160;片</item>
     </plurals>
     <plurals name="reminder_dose_capsules">
-        <item quantity="other">%1$s 粒</item>
+        <item quantity="other">%1$s&#160;粒</item>
     </plurals>
     <plurals name="reminder_dose_millilitres">
-        <item quantity="other">%1$s 毫升</item>
+        <item quantity="other">%1$s&#160;毫升</item>
     </plurals>
     <plurals name="reminder_dose_drops">
-        <item quantity="other">%1$s 滴</item>
+        <item quantity="other">%1$s&#160;滴</item>
     </plurals>
     <plurals name="reminder_dose_sprays">
-        <item quantity="other">%1$s 喷</item>
+        <item quantity="other">%1$s&#160;喷</item>
     </plurals>
     <plurals name="reminder_dose_injections">
-        <item quantity="other">%1$s 注射</item>
+        <item quantity="other">%1$s&#160;注射</item>
     </plurals>
 
 

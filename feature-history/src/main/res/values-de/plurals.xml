@@ -12,28 +12,28 @@
     </plurals>
 
     <plurals name="report_document_dose_tablets">
-        <item quantity="one">%1$s Tablette</item>
-        <item quantity="other">%1$s Tabletten</item>
+        <item quantity="one">%1$s&#160;Tablette</item>
+        <item quantity="other">%1$s&#160;Tabletten</item>
     </plurals>
     <plurals name="report_document_dose_capsules">
-        <item quantity="one">%1$s Kapsel</item>
-        <item quantity="other">%1$s Kapseln</item>
+        <item quantity="one">%1$s&#160;Kapsel</item>
+        <item quantity="other">%1$s&#160;Kapseln</item>
     </plurals>
     <plurals name="report_document_dose_millilitres">
-        <item quantity="one">%1$s ml</item>
-        <item quantity="other">%1$s ml</item>
+        <item quantity="one">%1$s&#160;ml</item>
+        <item quantity="other">%1$s&#160;ml</item>
     </plurals>
     <plurals name="report_document_dose_drops">
-        <item quantity="one">%1$s Tropfen</item>
-        <item quantity="other">%1$s Tropfen</item>
+        <item quantity="one">%1$s&#160;Tropfen</item>
+        <item quantity="other">%1$s&#160;Tropfen</item>
     </plurals>
     <plurals name="report_document_dose_sprays">
-        <item quantity="one">%1$s Sprühstoß</item>
-        <item quantity="other">%1$s Sprühstöße</item>
+        <item quantity="one">%1$s&#160;Sprühstoß</item>
+        <item quantity="other">%1$s&#160;Sprühstöße</item>
     </plurals>
     <plurals name="report_document_dose_injections">
-        <item quantity="one">%1$s Injektion</item>
-        <item quantity="other">%1$s Injektionen</item>
+        <item quantity="one">%1$s&#160;Injektion</item>
+        <item quantity="other">%1$s&#160;Injektionen</item>
     </plurals>
 
     <plurals name="cd_history_days_without_misses">

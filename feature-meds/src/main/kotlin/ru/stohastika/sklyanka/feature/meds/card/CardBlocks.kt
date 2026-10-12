@@ -13,6 +13,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -208,9 +210,18 @@ private fun courseTrailing(course: CourseProgress.Bounded): String = when {
  *
  * Предупреждение «хватит на N дней» и тревожный цвет появляются и исчезают вместе:
  * цветом одним статус не передаётся (НФТ-33).
+ *
+ * [onActionsBottom] вызывается при каждой раскладке ряда «Отмена/Сохранить» и отдаёт его
+ * нижнюю грань в координатах корня: отказ в строке пополнения растит её и выносит ряд за
+ * нижнюю грань окна, и экран по этой грани доводит ряд до вида (V-39).
  */
 @Composable
-internal fun StockBlock(state: MedCardUiState, onIntent: (MedCardIntent) -> Unit, modifier: Modifier = Modifier) {
+internal fun StockBlock(
+    state: MedCardUiState,
+    onIntent: (MedCardIntent) -> Unit,
+    onActionsBottom: (Float) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val panel = state.stock as? StockPanel.Visible ?: return
     val colors = SklyankaTheme.colors
     val fraction = panel.packageFraction
@@ -258,7 +269,7 @@ internal fun StockBlock(state: MedCardUiState, onIntent: (MedCardIntent) -> Unit
                 modifier = Modifier.testTag(TAG_STOCK_BAR),
             )
         }
-        state.refill?.let { refill -> RefillRow(refill, state.stockUnit, onIntent) }
+        state.refill?.let { refill -> RefillRow(refill, state.stockUnit, onIntent, onActionsBottom) }
     }
 }
 
@@ -273,9 +284,18 @@ internal fun StockBlock(state: MedCardUiState, onIntent: (MedCardIntent) -> Unit
  *
  * Размер упаковки строка не меняет: он свойство упаковки, а не остатка, и правится
  * только формой «Изменить».
+ *
+ * Отказ печатается под полем и потому растит строку: ряд действий уезжает вниз ровно на его
+ * высоту. О своём положении ряд сообщает [onActionsBottom] — экран по нему доводит ряд до вида,
+ * когда рост вынес его за нижнюю грань окна прокрутки (V-39).
  */
 @Composable
-private fun RefillRow(refill: RefillUi, unit: DoseUnit, onIntent: (MedCardIntent) -> Unit) {
+private fun RefillRow(
+    refill: RefillUi,
+    unit: DoseUnit,
+    onIntent: (MedCardIntent) -> Unit,
+    onActionsBottom: (Float) -> Unit,
+) {
     Column(
         modifier = Modifier.fillMaxWidth().testTag(TAG_REFILL_ROW),
         verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Small),
@@ -290,7 +310,9 @@ private fun RefillRow(refill: RefillUi, unit: DoseUnit, onIntent: (MedCardIntent
             modifier = Modifier.fillMaxWidth(),
         )
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .onGloballyPositioned { coordinates -> onActionsBottom(coordinates.boundsInRoot().bottom) },
             horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Small, Alignment.End),
             verticalAlignment = Alignment.CenterVertically,
         ) {

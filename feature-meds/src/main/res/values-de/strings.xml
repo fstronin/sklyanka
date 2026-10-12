@@ -14,8 +14,8 @@
     <string name="meds_period_until">bis %1$s</string>
     <string name="meds_last_intake">letzte Einnahme — %1$s</string>
 
-    <string name="meds_empty_title">Noch nichts geplant</string>
-    <string name="meds_empty_text">Fügen Sie ein Medikament hinzu — seine Einnahmen erscheinen hier nach der Uhr.</string>
+    <string name="meds_empty_title">Noch keine Medikamente</string>
+    <string name="meds_empty_text">Fügen Sie ein Medikament hinzu — es erscheint in der Liste.</string>
     <string name="meds_empty_action">Medikament hinzufügen</string>
 
     <string name="cd_add_medication">Medikament hinzufügen</string>

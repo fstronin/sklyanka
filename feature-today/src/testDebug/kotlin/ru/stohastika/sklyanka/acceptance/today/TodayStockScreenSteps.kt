@@ -39,7 +39,10 @@ class TodayStockScreenSteps(private val world: AcceptanceWorld) {
             // сценарий называет имя, шаг подставляет то, которым экран его называет.
             val (medication, rest) = text.split(NAME_SEPARATOR, limit = 2)
             val expected = "${TodayScreenProbe.displayName(world, medication)} — $rest"
-            assertTrue("the plate must read «$expected»: $texts", expected in texts)
+            // Фраза сценария набрана обычными пробелами, а экран печатает неразрывный
+            // между числом и единицей («9 таблеток», SKL-59 TDD §2.2) — сравниваем без него.
+            val printed = texts.map { it.replace('\u00A0', ' ') }
+            assertTrue("the plate must read «$expected»: $texts", expected.replace('\u00A0', ' ') in printed)
         }
     }
 
