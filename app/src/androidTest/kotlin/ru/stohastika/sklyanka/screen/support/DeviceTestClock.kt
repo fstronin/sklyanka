@@ -25,8 +25,16 @@ internal object DeviceTestClock {
 
     private val start: LocalDateTime = LocalDateTime.of(2026, 10, 3, 9, 1)
 
-    var source: FixedTimeSource = fixed(start)
-        private set
+    /**
+     * Часы проверок — **один и тот же объект** на весь прогон.
+     *
+     * `val`, а не `var`: в граф приложения уезжает именно этот экземпляр
+     * (`DeviceTestModules.provideTimeSource`), и подмена объекта в `reset()` оставляла бы
+     * приложение со старыми часами — поход «архивация и удаление» видел «пятницу, 2 октября»
+     * там, где проверка уже перешла на 3-е (SKL-147). Возврат к началу делает тот же
+     * объект: перевести его назад — операция значения, а не личности.
+     */
+    val source: FixedTimeSource = fixed(start)
 
     val today: LocalDate get() = source.today()
 
@@ -34,7 +42,7 @@ internal object DeviceTestClock {
     val scheduledAt: LocalDateTime get() = LocalDateTime.of(today, scheduledTime)
 
     fun reset() {
-        source = fixed(start)
+        source.advanceTo(start.atZone(zone).toInstant())
     }
 
     fun advanceTo(local: LocalDateTime) {

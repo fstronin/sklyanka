@@ -221,7 +221,13 @@ class ArchiveAndDeletionJourneyTest : JourneyTest() {
 
     /** Фаза мягкого удаления: слово-подтверждение, скрытость везде и след в журнале (ПМ-24). */
     private fun deleteTheSecondMedication() {
-        openMedications()
+        // Раздел открывается на своём месте: предыдущая фаза закончилась в архиве, и человек
+        // возвращается туда же (SKL-146 — место определяется последним экраном раздела).
+        // Поэтому шаг утверждает сохранённое место и сам называет переход к активным;
+        // ждать здесь список было бы проверкой сброса места, которого продукт не обещает.
+        clickMedsTab()
+        waitForTag(TAG_ARCHIVE_SCREEN)
+        openActiveMedications(activeCount = 2)
         deleteFromCard()
         capture("meds-deleted")
 

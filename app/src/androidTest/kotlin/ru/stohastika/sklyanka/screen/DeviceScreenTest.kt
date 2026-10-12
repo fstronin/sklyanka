@@ -182,13 +182,25 @@ abstract class DeviceScreenTest {
         waitUntil(ROOT_TIMEOUT_MS, "экрана «Сегодня» после пропуска") { exists(TAG_TODAY_SCREEN) }
     }
 
-    /** Открыть раздел «Лекарства» вкладкой нижней панели. */
-    protected fun openMedications() {
+    /**
+     * Нажать вкладку «Лекарства» нижней панели — без суждения о том, куда она ведёт.
+     *
+     * Раздел открывается на своём месте: если человек ушёл с архива, туда же и вернётся
+     * (`MedsStack`, SKL-146). Шаг, которому нужен именно список активных, обязан позвать
+     * [openMedications] или вернуться вкладкой сегмента — иначе он проверял бы не продукт,
+     * а своё предположение о сбросе места.
+     */
+    protected fun clickMedsTab() {
         val label = targetContext.getString(UiR.string.tab_meds)
         compose.onNode(
             hasContentDescription(label) and hasAnyAncestor(hasTestTag(TAG_BOTTOM_BAR)),
             useUnmergedTree = true,
         ).performClick()
+    }
+
+    /** Открыть раздел «Лекарства» вкладкой нижней панели и дождаться списка активных. */
+    protected fun openMedications() {
+        clickMedsTab()
         waitForTag(TAG_MEDICATION_LIST)
     }
 

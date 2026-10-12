@@ -135,12 +135,10 @@ abstract class JourneyTest : DeviceScreenTest() {
      * состоялся ли поворот, чтобы класс мог назвать пробел, а не покраснеть из-за образа.
      */
     protected fun rotateLandscapeOrNull(): Boolean {
-        val instrumentation = InstrumentationRegistry.getInstrumentation()
         val before = targetContext.resources.configuration.orientation
-        if (DeviceActivities.resumedActivity() == null) return false
-        instrumentation.runOnMainSync {
-            DeviceActivities.resumedActivity()?.requestedOrientation = Configuration.ORIENTATION_LANDSCAPE
-        }
+        // Поворот делает сам стенд: читать список активностей и менять ориентацию можно
+        // только с главного потока, и обе операции — один выход туда (SKL-149).
+        if (!DeviceActivities.rotateResumedToLandscape()) return false
         val changed = runCatching {
             compose.waitUntil(ROTATION_TIMEOUT_MS) {
                 targetContext.resources.configuration.orientation != before

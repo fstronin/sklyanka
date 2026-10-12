@@ -10,6 +10,7 @@ import androidx.compose.ui.test.hasAnyDescendant
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -148,7 +149,10 @@ class HostileMedicationFormTest : JourneyTest() {
         assertTrue("the time row must show a time, got «$shown»", shown.isNotBlank())
         scrollToAndClick(TAG_TIME_ROW)
         waitForTag(TAG_DATE_TIME_PICKER)
-        capture("time-picker")
+        // Кадр диалога берётся корнем диалога: у выбора времени своё окно, и корней
+        // в кадре два — снимок всего окна падает на «found 2 nodes that satisfy: (isRoot)»
+        // (SKL-148, тот же урок, что в SKL-24/105).
+        capture("time-picker", compose.onNode(isDialog()))
         cancelTimePicker()
         waitUntil(SCREEN_TIMEOUT_MS, "закрытия выбора времени отменой") { !exists(TAG_DATE_TIME_PICKER) }
         // 6. Поворот в середине ввода — последней пробой: образ может не менять ориентацию,

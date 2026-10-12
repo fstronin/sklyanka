@@ -3,6 +3,7 @@ package ru.stohastika.sklyanka.screen.support
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry
@@ -34,6 +35,29 @@ internal object DeviceActivities {
 
     /** Любая возобновлённая активность приложения: экраны-активности живут вне графа `MainActivity`. */
     fun resumedActivity(): Activity? = inStages(Stage.RESUMED).firstOrNull()
+
+    /**
+     * Повернуть возобновлённую активность в альбомную ориентацию.
+     *
+     * Собственный вход, а не `resumedActivity()?.requestedOrientation = …` у вызывающего:
+     * список активностей читается только с главного потока (`runOnMainSync`), и вызов
+     * изнутри уже главного потока роняет пробу — «This method can not be called from the main
+     * application thread» (SKL-149). Здесь и чтение, и поворот идут одним выходом на главный
+     * поток.
+     *
+     * @return была ли активность, которую можно повернуть
+     */
+    fun rotateResumedToLandscape(): Boolean {
+        var rotated = false
+        instrumentation.runOnMainSync {
+            val activity = ActivityLifecycleMonitorRegistry.getInstance()
+                .getActivitiesInStage(Stage.RESUMED)
+                .firstOrNull() ?: return@runOnMainSync
+            activity.requestedOrientation = Configuration.ORIENTATION_LANDSCAPE
+            rotated = true
+        }
+        return rotated
+    }
 
     fun resumed(): MainActivity? = resumedActivity() as? MainActivity
 
