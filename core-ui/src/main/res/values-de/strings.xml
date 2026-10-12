@@ -8,6 +8,7 @@
     <string name="action_skip">Überspringen</string>
     <string name="action_take">Einnehmen</string>
     <string name="action_cancel">Abbrechen</string>
+    <string name="action_back">Zurück</string>
     <string name="action_done">Fertig</string>
     <string name="confirm_word_label">Geben Sie das Wort „%1$s“ ein, um zu bestätigen</string>
     <string name="status_missed">Verpasst</string>

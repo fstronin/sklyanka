@@ -8,6 +8,7 @@
     <string name="action_skip">Omitir</string>
     <string name="action_take">Tomar</string>
     <string name="action_cancel">Cancelar</string>
+    <string name="action_back">Atrás</string>
     <string name="action_done">Hecho</string>
     <string name="confirm_word_label">Escribe la palabra «%1$s» para confirmar</string>
     <string name="status_missed">Omitida</string>

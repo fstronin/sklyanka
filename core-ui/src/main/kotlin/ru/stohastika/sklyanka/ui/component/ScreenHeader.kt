@@ -1,3 +1,8 @@
+// Файл собирает шапку экрана целиком: статичную, закреплённый ряд, общий блок и мелкие
+// переводчики подписей. «Слишком много функций» здесь означало бы дробление одной шапки
+// по файлам, а не связанность (SKL-104, SKL-112).
+@file:Suppress("TooManyFunctions")
+
 package ru.stohastika.sklyanka.ui.component
 
 import androidx.compose.foundation.background
@@ -30,10 +35,11 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
@@ -165,15 +171,12 @@ fun ScreenHeader(
     trailing: @Composable (() -> Unit)? = null,
     pinning: ScreenHeaderState? = null,
 ) {
-    val colors = SklyankaTheme.colors
-    val profileName = LocalProfileChrome.current.foreignName
-    val overline = labels.overline
-    val foreign = profileName != null
     if (pinning != null) {
         // Заголовок ушёл из композиции — он прокручен за верхнюю грань окна (§7): ряд обязан
         // показать компактный заголовок и после свитка, когда последнее измерение устарело.
         DisposableEffect(pinning) { onDispose { pinning.reportTitleScrolledAway() } }
     }
+    val foreign = LocalProfileChrome.current.foreignName != null
     // Вложенная шапка с действием разводит действие и заголовок по строкам:
     // так нарисованы макеты вложенных экранов (`DataTransfer.dc.html`, `History.dc.html`,
     // `MedCard.dc.html`). В одной строке заголовок «Перенос данных» не помещался рядом
@@ -183,7 +186,6 @@ fun ScreenHeader(
         onBack != null -> ({ BackAction(kind, onBack) })
         else -> null
     }
-    val nestedWithBack = kind == ScreenHeaderKind.Nested && actionRow != null
     // Верхний отступ берётся один раз на шапку: у закреплённого ряда он свой (2 dp), а шапка
     // под ним отделяется малым зазором — как ряд действия в развёрнутой шапке (§7). Иначе
     // крупный заголовок уезжал бы вниз на два отступа сразу. Поле урезается потолком суммы
@@ -193,12 +195,73 @@ fun ScreenHeader(
     // поле (§4: «30 dp, из них 6 dp — полоса»): без неё на вырезе сумма превысила бы потолок
     // на её высоту (находка ревью SKL-137).
     val stripe = if (foreign) SklyankaSizes.ProfileStripeHeight else SklyankaSpacing.None
-    val topPadding = headerTopPadding(screenTopInset(), basePadding, stripe)
-    // Шапка в прокрутке своего нижнего поля не несёт: она первый элемент прокрутки, и зазор
-    // до содержимого даёт её ритм (§7). Шапка вне прокрутки поле сохраняет — оно и есть
-    // воздух над нижней границей `line` у чужого профиля (находка прогона 09.10.2026: поле
-    // складывалось с ритмом).
-    val bottomPadding = if (pinning != null) SklyankaSpacing.None else SklyankaSizes.HeaderBottomPadding
+    ScreenHeaderBlock(
+        labels = labels,
+        kind = kind,
+        topPadding = headerTopPadding(screenTopInset(), basePadding, stripe),
+        // Шапка в прокрутке своего нижнего поля не несёт: она первый элемент прокрутки, и зазор
+        // до содержимого даёт её ритм (§7). Шапка вне прокрутки поле сохраняет — оно и есть
+        // воздух над нижней границей `line` у чужого профиля (находка прогона 09.10.2026: поле
+        // складывалось с ритмом).
+        bottomPadding = if (pinning != null) SklyankaSpacing.None else SklyankaSizes.HeaderBottomPadding,
+        leading = actionRow,
+        trailing = trailing,
+        title = null,
+        onTitleRowPlaced = pinning?.let { state -> { bottom -> state.reportCollapsibleBottom(bottom.toInt()) } },
+        titleMuted = false,
+        // Баннер чужого профиля виден всегда: он несворачиваем (ПРФ-13), а в развёрнутом
+        // состоянии он часть шапки. На пороге роль берёт ряд, и он ставит баннер туда же,
+        // где тот стоял под крупным заголовком, — рисует его ровно один из двоих (§7).
+        bannerVisible = pinning?.collapsed != true,
+        modifier = modifier,
+    )
+}
+
+/**
+ * Общий блок шапки: одна сборка на статичную [ScreenHeader] и на развёрнутую шапку
+ * каркаса [ScreenFrame] (§7.1, SKL-104).
+ *
+ * Двух сборок шапки быть не должно: вторая разошлась бы с первой на первой же правке —
+ * ровно та ошибка, из-за которой задача и существует. Публичный [ScreenHeader] сохраняет
+ * сигнатуру и поведение и приходит сюда со `title = null`, `onTitleRowPlaced = null`,
+ * `titleMuted = false`; каркас — со слотом крупного заголовка и своим порогом.
+ *
+ * Поля и фон считаются здесь, а не вызывающими: экран не должен иметь возможности
+ * нарисовать шапку без подкраски и надписи чужого профиля ([ProfileOverline], ПРФ-12).
+ *
+ * @param topPadding верхнее поле шапки: `HeaderTopPadding`/`HeaderTopPaddingProfile` вне
+ *   прокрутки либо `Hair` под постоянным рядом каркаса (§8.2).
+ * @param bottomPadding нижнее поле шапки: `HeaderBottomPadding` вне прокрутки, `None` —
+ *   у шапки первым блоком прокрутки (§8.3).
+ * @param leading возврат, когда он стоит в развёрнутой шапке (у корня и вложенного экрана
+ *   без постоянного ряда); блок сам решает, развести ли строку действия и заголовок (§7).
+ * @param title слот крупного заголовка; `null` — стандартная надпись [ScreenHeaderLabels.title].
+ * @param onTitleRowPlaced нижняя грань строки заголовка **в координатах окна**: по ней каркас
+ *   решает, сжата ли шапка (§4.9); у статичной шапки — измерение для закреплённого ряда (§7).
+ * @param titleMuted исключить крупный заголовок из дерева доступности: у каркаса его
+ *   повторяет компактный заголовок ряда, и название не должно читаться дважды (§4.3).
+ * @param bannerVisible рисует ли блок баннер чужого профиля: на пороге его берёт ряд (§7).
+ */
+@Suppress("LongParameterList")
+@Composable
+internal fun ScreenHeaderBlock(
+    labels: ScreenHeaderLabels,
+    kind: ScreenHeaderKind,
+    topPadding: Dp,
+    bottomPadding: Dp,
+    leading: (@Composable () -> Unit)?,
+    trailing: (@Composable () -> Unit)?,
+    title: (@Composable () -> Unit)?,
+    onTitleRowPlaced: ((Float) -> Unit)?,
+    titleMuted: Boolean,
+    bannerVisible: Boolean = true,
+    modifier: Modifier = Modifier,
+) {
+    val colors = SklyankaTheme.colors
+    val profileName = LocalProfileChrome.current.foreignName
+    val overline = labels.overline
+    val foreign = profileName != null
+    val nestedWithBack = kind == ScreenHeaderKind.Nested && leading != null
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -215,14 +278,11 @@ fun ScreenHeader(
         verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Large),
     ) {
         if (nestedWithBack) {
-            StackedHeaderRows(actionRow, trailing, labels, profileName, overline, pinning)
+            StackedHeaderRows(leading, trailing, labels, profileName, overline, title, onTitleRowPlaced, titleMuted)
         } else {
-            SingleHeaderRow(actionRow, trailing, labels, kind, profileName, overline, pinning)
+            SingleHeaderRow(leading, trailing, labels, kind, profileName, overline, title, onTitleRowPlaced, titleMuted)
         }
-        // Баннер чужого профиля виден всегда: он несворачиваем (ПРФ-13), а в развёрнутом
-        // состоянии он часть шапки. На пороге роль берёт ряд, и он ставит баннер туда же,
-        // где тот стоял под крупным заголовком, — рисует его ровно один из двоих (§7).
-        if (profileName != null && pinning?.collapsed != true) {
+        if (profileName != null && bannerVisible) {
             // Баннер стоит внутри подкрашенной шапки — так он нарисован в макете
             // `MainProfile.dc.html`. Действия у него нет: закрыть его нечем и незачем
             // (ПРФ-13). Вторая фраза называет последствие — куда попадёт отметка.
@@ -287,7 +347,7 @@ fun PinnedHeaderBar(
                 // Высота ряда стоит **до** полей: габарит 56 dp включает поля, и внутри
                 // остаётся ровно 44 dp под цели нажатия (§7). Обратный порядок прибавлял бы
                 // поля к габариту и ряд вырос бы до 68 dp.
-                .heightIn(min = SklyankaSizes.PinnedHeaderBar)
+                .heightIn(min = SklyankaSizes.HeaderCompactRowHeight)
                 .padding(
                     start = SklyankaSpacing.Section,
                     end = SklyankaSpacing.Section,
@@ -297,7 +357,7 @@ fun PinnedHeaderBar(
                 // Порог считается по нижней грани **полосы ряда**, а не всей закреплённой
                 // части: в чужом профиле ниже полосы стоит несворачиваемый баннер, и порог
                 // по всей части гас бы на высоту баннера позже (§7).
-                .onGloballyPositioned { state.reportBarBottom(it.boundsInRoot().bottom.toInt()) },
+                .onGloballyPositioned { state.reportBarBottom(it.boundsInWindow().bottom.toInt()) },
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Medium),
         ) {
@@ -453,12 +513,14 @@ private fun CompactHeaderTitle(title: String, collapsed: Boolean, modifier: Modi
 @Suppress("LongParameterList")
 @Composable
 private fun StackedHeaderRows(
-    actionRow: @Composable (() -> Unit)?,
+    leading: @Composable (() -> Unit)?,
     trailing: @Composable (() -> Unit)?,
     labels: ScreenHeaderLabels,
     profileName: String?,
     overline: String?,
-    pinning: ScreenHeaderState?,
+    title: (@Composable () -> Unit)?,
+    onTitleRowPlaced: ((Float) -> Unit)?,
+    titleMuted: Boolean,
 ) {
     // Верхний отступ берётся один раз на всю шапку: у блока заголовка повторного
     // `HeaderTopPadding` нет (ОВ-91).
@@ -468,7 +530,7 @@ private fun StackedHeaderRows(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Medium),
         ) {
-            actionRow?.invoke()
+            leading?.invoke()
             Box(modifier = Modifier.weight(1f))
             trailing?.invoke()
         }
@@ -477,7 +539,7 @@ private fun StackedHeaderRows(
             verticalAlignment = Alignment.Top,
             horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Medium),
         ) {
-            HeaderTitleColumn(labels, profileName, overline, pinning)
+            HeaderTitleColumn(labels, profileName, overline, title, onTitleRowPlaced, titleMuted)
         }
     }
 }
@@ -485,13 +547,15 @@ private fun StackedHeaderRows(
 @Suppress("LongParameterList")
 @Composable
 private fun SingleHeaderRow(
-    actionRow: @Composable (() -> Unit)?,
+    leading: @Composable (() -> Unit)?,
     trailing: @Composable (() -> Unit)?,
     labels: ScreenHeaderLabels,
     kind: ScreenHeaderKind,
     profileName: String?,
     overline: String?,
-    pinning: ScreenHeaderState?,
+    title: (@Composable () -> Unit)?,
+    onTitleRowPlaced: ((Float) -> Unit)?,
+    titleMuted: Boolean,
 ) {
     // Модальная строка — своя сетка слотов (Р-53), и собирается она общей частью: у неё нет
     // крупного заголовка, вопрос «помещается ли заголовок рядом с действием» (SKL-60) не стоит,
@@ -516,13 +580,13 @@ private fun SingleHeaderRow(
             }
             ModalHeaderRow(
                 title = labels.title,
-                leading = actionRow,
+                leading = leading,
                 trailing = trailing,
-                modifier = if (pinning == null) {
+                modifier = if (onTitleRowPlaced == null) {
                     Modifier
                 } else {
                     Modifier.onGloballyPositioned {
-                        pinning.reportCollapsibleBottom(it.boundsInRoot().bottom.toInt())
+                        onTitleRowPlaced(it.boundsInWindow().bottom)
                     }
                 },
             )
@@ -534,8 +598,8 @@ private fun SingleHeaderRow(
         verticalAlignment = Alignment.Top,
         horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Medium),
     ) {
-        if (kind != ScreenHeaderKind.Root) actionRow?.invoke()
-        HeaderTitleColumn(labels, profileName, overline, pinning)
+        if (kind != ScreenHeaderKind.Root) leading?.invoke()
+        HeaderTitleColumn(labels, profileName, overline, title, onTitleRowPlaced, titleMuted)
         trailing?.invoke()
     }
 }
@@ -600,17 +664,26 @@ private fun Modifier.modalActionSlot(start: Boolean): Modifier = offset(
 /**
  * Колонка заголовка шапки: надпись профиля либо надстрочник и сам заголовок.
  *
- * Вынесена из [ScreenHeader], чтобы функция шапки оставалась обозримой (detekt
+ * Вынесена из [ScreenHeaderBlock], чтобы функция блока оставалась обозримой (detekt
  * `LongMethod`): порядок строк и перенос заголовка при крупном шрифте не меняются.
- * Нижняя грань заголовка сообщается закреплённому ряду: по ней ряд решает, показывать ли
- * компактный заголовок (§7). Вид `Modal` сюда не приходит: у него своя строка ([ModalHeaderRow]).
+ * Нижняя грань строки заголовка сообщается наружу **в координатах окна**
+ * ([onTitleRowPlaced]): по ней каркас считает порог сжатия (§4.9), а закреплённый ряд —
+ * геометрию появления компактного заголовка (§7). Вид `Modal` сюда не приходит: у него
+ * своя строка ([ModalHeaderRow]).
+ *
+ * [titleMuted] снимает семантику крупного заголовка целиком: у каркаса то же название
+ * повторяет компактный заголовок ряда, и чтение с экрана не должно произносить его дважды
+ * (§4.3, критерий 16). Тег `TAG_SCREEN_TITLE` снимается вместе с ней — шаг приёмки ищет
+ * крупный заголовок по нему и после сжатия обязан его не находить.
  */
 @Composable
 private fun RowScope.HeaderTitleColumn(
     labels: ScreenHeaderLabels,
     profileName: String?,
     overline: String?,
-    pinning: ScreenHeaderState?,
+    title: (@Composable () -> Unit)?,
+    onTitleRowPlaced: ((Float) -> Unit)?,
+    titleMuted: Boolean,
 ) {
     val colors = SklyankaTheme.colors
     Column(
@@ -626,16 +699,23 @@ private fun RowScope.HeaderTitleColumn(
                 color = colors.textMuted,
             )
         }
-        Text(
-            text = labels.title,
-            style = SklyankaType.TitleScreen,
-            color = colors.text,
-            modifier = if (pinning == null) {
-                Modifier
+        Box(
+            modifier = Modifier
+                .then(
+                    if (onTitleRowPlaced == null) {
+                        Modifier
+                    } else {
+                        Modifier.onGloballyPositioned { onTitleRowPlaced(it.boundsInWindow().bottom) }
+                    },
+                )
+                .then(if (titleMuted) Modifier.clearAndSetSemantics { } else Modifier.testTag(TAG_SCREEN_TITLE)),
+        ) {
+            if (title != null) {
+                title()
             } else {
-                Modifier.onGloballyPositioned { pinning.reportCollapsibleBottom(it.boundsInRoot().bottom.toInt()) }
-            },
-        )
+                Text(text = labels.title, style = SklyankaType.TitleScreen, color = colors.text)
+            }
+        }
     }
 }
 
@@ -728,6 +808,37 @@ private fun BackAction(kind: ScreenHeaderKind, onBack: () -> Unit) {
 }
 
 /**
+ * Возврат каркаса экрана [ScreenFrame] (§9.5, ОВ-147).
+ *
+ * Вид возврата каркаса решением не переопределён: слот экрана ([leading]) компонуется
+ * дословно, а без слота каркас рисует тихую надпись «Назад» ([HeaderBackWord]) — ту же
+ * отрисовку, что зафиксировал драфт `TDD.md §9.5`. Шеврон ([BackChevronAction], `cd_back`)
+ * остаётся у статичной [ScreenHeader] и у экранов, которые несут свой слот `leading`.
+ *
+ * Модальная шапка в каркас не приходит (`require(kind != Modal)`, §6.1): её ведущее
+ * действие — слово самой поверхности, а не «Назад».
+ */
+internal fun headerBack(
+    kind: ScreenHeaderKind,
+    onBack: (() -> Unit)?,
+    leading: (@Composable () -> Unit)?,
+): (@Composable () -> Unit)? = when {
+    leading != null -> leading
+    onBack != null && kind != ScreenHeaderKind.Modal -> ({ HeaderBackWord(onBack) })
+    else -> null
+}
+
+/** Тихая надпись «Назад» — возврат каркаса без слота экрана (§9.5). */
+@Composable
+private fun HeaderBackWord(onBack: () -> Unit) {
+    QuietButton(
+        text = stringResource(R.string.action_back),
+        onClick = onBack,
+        kind = QuietButtonKind.Muted,
+    )
+}
+
+/**
  * Возврат — шеврон (§7, Р-30, V-7).
  *
  * Аффорданс возврата — глиф направления «влево» 22 dp в цели 44×44 dp, роль `text`:
@@ -785,6 +896,7 @@ private fun HeaderDivider() {
 private fun String.uppercased(): String = uppercase(interfaceLocale())
 
 const val TAG_SCREEN_HEADER = "screen_header"
+const val TAG_SCREEN_TITLE = "screen_title"
 const val TAG_PROFILE_LABEL = "profile_label"
 const val TAG_PINNED_HEADER_BAR = "pinned_header_bar"
 const val TAG_COMPACT_TITLE = "pinned_header_title"

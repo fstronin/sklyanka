@@ -291,7 +291,8 @@ class ScreenHeaderTest {
 
         val bar = composeRule.onNodeWithTag(TAG_PINNED_HEADER_BAR).fetchSemanticsNode()
         val height = with(composeRule.density) { bar.size.height.toDp() }
-        assertEquals("the pinned row must be exactly 56 dp but is $height", SklyankaSizes.PinnedHeaderBar, height)
+        val why = "the pinned row must be exactly 56 dp but is $height"
+        assertEquals(why, SklyankaSizes.HeaderCompactRowHeight, height)
     }
 
     @Test

@@ -8,6 +8,7 @@
     <string name="action_skip">跳过</string>
     <string name="action_take">服用</string>
     <string name="action_cancel">取消</string>
+    <string name="action_back">返回</string>
     <string name="action_done">完成</string>
     <string name="confirm_word_label">输入“%1$s”以确认</string>
     <string name="status_missed">漏服</string>

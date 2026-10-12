@@ -75,7 +75,7 @@ fun MedicationFormScreen(
     val anchors = remember { FormAnchors() }
     val header = rememberScreenHeaderState()
     val labels = ScreenHeaderLabels(title = titleOf(state))
-    val pinnedBarPx = with(LocalDensity.current) { SklyankaSizes.PinnedHeaderBar.roundToPx() }
+    val pinnedBarPx = with(LocalDensity.current) { SklyankaSizes.HeaderCompactRowHeight.roundToPx() }
 
     // Отказ без прокрутки к первому нарушению равносилен молчаливому отказу: сообщение
     // остаётся за пределами видимой области формы (критерий 27).

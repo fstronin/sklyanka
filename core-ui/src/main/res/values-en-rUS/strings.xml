@@ -8,6 +8,7 @@
     <string name="action_skip">Skip</string>
     <string name="action_take">Take</string>
     <string name="action_cancel">Cancel</string>
+    <string name="action_back">Back</string>
     <string name="action_done">Done</string>
     <string name="confirm_word_label">Type the word “%1$s” to confirm</string>
     <string name="status_missed">Missed</string>

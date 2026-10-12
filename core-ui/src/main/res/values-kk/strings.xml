@@ -8,6 +8,7 @@
     <string name="action_skip">Өткізіп жіберу</string>
     <string name="action_take">Қабылдау</string>
     <string name="action_cancel">Болдырмау</string>
+    <string name="action_back">Артқа</string>
     <string name="action_done">Дайын</string>
     <string name="confirm_word_label">Растау үшін «%1$s» сөзін енгізіңіз</string>
     <string name="status_missed">Өткізілді</string>
