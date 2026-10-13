@@ -1,0 +1,519 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Витрина «Склянка Про» — состояния</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&amp;family=Literata:opsz,wght@7..72,400;7..72,600&amp;display=swap">
+<style>
+/* Лист нарисован в палитре Р-20 «олива на бумаге» (§2.1 нормы): акцент #5F6F2E,
+   мягкий акцент #EBEEDA, фон #F8F6EF. Этой же правкой (Р-74, Р-75) к палитре
+   приведены и остальные макеты `design/screens/`: прежней тёплой терракоты
+   в них больше не встречается.
+   В комментариях — роль токена, которой соответствует значение. */
+body{margin:0;background:#F3EDE3;color:#241F1B;font-family:'Golos Text',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#5F6F2E;text-decoration:none}
+.preview-head{max-width:1226px;padding:36px 40px 8px}
+.preview-eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#5F564D;font-weight:600}
+.preview-head h1{margin:12px 0 12px;font-family:'Literata',Georgia,serif;font-size:36px;font-weight:600;letter-spacing:-.01em;line-height:1.15}
+.preview-head p{margin:0;font-size:16px;color:#241F1B;line-height:1.55}
+.sheet-grid{display:flex;flex-wrap:wrap;gap:28px;padding:28px 40px 60px;align-items:flex-start}
+.state{width:390px;margin:0}
+.state-label{font-size:13px;font-weight:600;color:#5F564D;margin-bottom:10px;letter-spacing:.02em}
+.phone{position:relative;width:390px;box-sizing:border-box;background:#F8F6EF;color:#241F1B;border:1px solid #E6DED2;border-radius:30px;overflow:hidden}
+.phone--sheet{height:1100px}
+.phone--store{height:1000px}
+.phone--period{height:620px}
+.phone--settings{height:600px}
+.phone--mark{height:620px}
+/* Фон под затемнением: фрагмент экрана, из точки выбора которого открылась шторка. */
+.backdrop{padding:30px 20px;display:flex;flex-direction:column;gap:14px}
+.backdrop .bd-title{font-family:'Literata',Georgia,serif;font-size:30px;font-weight:600;letter-spacing:-.01em}
+.backdrop .bd-card{height:56px;border-radius:18px;background:#FFFFFF;border:1px solid #EFE7DB}
+.backdrop .bd-card--tall{height:112px;border-radius:14px}
+/* Затемнение модального слоя — роль `scrim` (§2.3): #181712, доля 0,32. */
+.scrim{position:absolute;inset:0;background:rgba(24,23,18,.32)}
+/* Полотно шторки: `surface`, верхние углы `TopLarge` 16 dp (§2.1, §4). */
+.sheet{position:absolute;left:0;right:0;bottom:0;background:#FFFFFF;border-radius:16px 16px 0 0;display:flex;flex-direction:column}
+.sheet-head{display:flex;align-items:center;padding:14px 20px 12px;border-bottom:1px solid #EFE7DB}
+/* Модальная шапка — `BodyDefaultStrong` 15/600 (§5.9, §7): название у бокового поля 20 dp. */
+.sheet-title{font-size:15px;font-weight:600;line-height:1.45}
+.sheet-body{padding:8px 20px 14px;display:flex;flex-direction:column;gap:14px}
+/* Выгода: значок 20 dp в колонке, название `BodyDefaultStrong` 15/600, пример `Caption` 13/400. */
+.benefit{display:flex;align-items:flex-start;gap:12px;padding:12px 0}
+.benefit-glyph{width:20px;height:20px;flex-shrink:0;color:#8C8177;margin-top:2px}
+.benefit-glyph svg{display:block;width:20px;height:20px}
+.benefit-name{font-size:15px;font-weight:600;line-height:1.45}
+.benefit-example{font-size:13px;line-height:1.35;color:#5F564D;margin-top:2px}
+/* Разделитель строк выгод — 1 dp `lineOnSurface`, от колонки текста до конца строки. */
+.bdiv{height:1px;background:#EFE7DB;margin-left:32px}
+/* Карточки периодов (§5.9, Р-77 п. 1, Р-78 п. 1): две равные колонки, в каждой — верхняя полоса
+   одинаковой высоты и карточка под ней; полоса года — лента «Выгоднее» (`accent`, белое слово),
+   у месяца полоса пуста — поэтому имена и цены обеих карточек стоят на одной линии.
+   Содержимое карточки по центру по горизонтали и по верху по вертикали. */
+.periods{display:flex;gap:8px;align-items:stretch}
+.pcol{flex:1;min-width:0;display:flex;flex-direction:column}
+.ribbon{height:40px;display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:0 8px;background:#5F6F2E;color:#FFFFFF;font-size:13px;font-weight:600;line-height:1.35;border-radius:16px 16px 0 0;white-space:nowrap}
+.ribbon--empty{background:transparent}
+.pcard{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px;background:#FFFFFF;border:1px solid #EFE7DB;border-radius:16px;box-sizing:border-box}
+/* Карточка под лентой: верхние углы прямые — полоса и карточка читаются одной фигурой. */
+.pcard--under{border-radius:0 0 16px 16px}
+.pcard--on{background:#EBEEDA;border:1.5px solid #5F6F2E}
+.pcard-name{font-size:15px;font-weight:600;line-height:1.45}
+/* Цена — `Stat` (Literata 600, 26 sp): ступень не поднимается (Р-77 п. 4). */
+.price{font-family:'Literata',Georgia,serif;font-size:26px;font-weight:600;line-height:1;color:#241F1B}
+/* Плашки — во всю внутреннюю ширину карточки, поле по бокам 8 dp, текст одной строкой (§5.9):
+   переноса нет, длинную формулировку ловит замер по шести языкам, а не перенос. */
+.badge-soft{display:flex;align-items:center;justify-content:center;width:100%;box-sizing:border-box;border-radius:999px;background:#EBEEDA;color:#424724;font-size:13px;font-weight:600;line-height:1.35;padding:11px 8px;white-space:nowrap}
+/* Плашка «Год дешевле» — чип `InfoAccentSolid` (§5): акцентная заливка, белое слово. */
+.badge-solid{display:flex;align-items:center;justify-content:center;width:100%;box-sizing:border-box;border-radius:999px;background:#5F6F2E;color:#FFFFFF;font-size:13px;font-weight:600;line-height:1.35;padding:11px 8px;white-space:nowrap}
+/* Тихая строка «затем <цена>» — `Caption` 13/400 цветом `textMuted`. */
+.sub{font-size:13px;line-height:1.35;color:#5F564D;text-align:center}
+.sub--start{text-align:left}
+/* Тихие строки — `QuietButton` формы `Row`, подпись `LabelStrong` 14/600, цель не меньше 44 dp. */
+.quiet{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:44px;font-size:14px;font-weight:600;color:#5F6F2E;line-height:1.3}
+.quiet--muted{color:#5F564D}
+.chev{color:#B0A597;font-weight:400}
+/* Нижний неподвижный блок: две строки раскрытия, «Подробнее», «Условия и политика», действие. */
+.sheet-actions{padding:0 20px 24px;display:flex;flex-direction:column;gap:10px}
+.disclosure{display:flex;flex-direction:column;gap:4px}
+.disclosure div{font-size:13px;line-height:1.35;color:#5F564D}
+.btn{height:52px;border-radius:16px;font-family:inherit;font-size:16px;font-weight:600;display:flex;align-items:center;justify-content:center;width:100%;border:none;cursor:default}
+.btn--primary{background:#5F6F2E;color:#FFFFFF}
+.btn--disabled{background:#EDE3D6;color:#A79C90}
+/* Состояние активной подписки — `BodyStrong` 16/600 (§5.9). */
+.state-line{font-size:16px;font-weight:600;line-height:1.4}
+/* Блок цены активного состояния (§5.9, Р-80 п. 1): белая карточка на всю ширину, та же сборка,
+   что у карточек периодов; содержимое по центру — статус, цена, слова продления. */
+.price-card{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px;background:#FFFFFF;border:1px solid #EFE7DB;border-radius:16px;text-align:center}
+/* Слова продления — `CaptionStrong` 13/600 цветом `accent`: акцент несёт слово, а не цифра (Р-80 п. 2). */
+.renew{font-size:13px;font-weight:600;line-height:1.35;color:#5F6F2E}
+/* Строка «магазин недоступен» — `BodyDefault` 15/400 цветом `textMuted`. */
+.words{font-size:15px;line-height:1.45;color:#5F564D}
+/* Настройки: заголовок экрана `TitleScreen` 30/600, рубрика `Overline` 12/600. */
+.settings{padding:30px 20px 28px;display:flex;flex-direction:column;gap:18px}
+.title-screen{font-family:'Literata',Georgia,serif;font-size:30px;font-weight:600;letter-spacing:-.01em}
+.rubric{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#5F564D;padding-left:4px}
+.group{display:flex;flex-direction:column;gap:8px}
+.card{background:#FFFFFF;border:1px solid #EFE7DB;border-radius:18px;overflow:hidden}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px}
+.divider{height:1px;background:#EFE7DB;margin:0 16px}
+.row-label{font-size:15px;line-height:1.45}
+.row-sub{font-size:12px;color:#5F564D;line-height:1.45;margin-top:2px}
+/* Значение строки справа — `LabelStrong` 14/600 (§5.9, §3.2). */
+.row-value{font-size:14px;font-weight:600;line-height:1.3}
+.variant-note{font-size:13px;font-weight:600;color:#5F564D;margin-bottom:6px}
+.plate{display:flex;align-items:center;gap:13px;padding:16px;background:#F3EDE3;border-radius:18px}
+/* Метка «Про» — собранная композиция из токенов (§5.9, не компонент `Chip`): подложка
+   `accentSoft`, слово `CaptionStrong` 13/600 цветом `onAccentSoft`, искра `SparkGlyph` 14 sp
+   перед словом (зазор `Spacing.Micro` 4 dp, низ по базовой линии). Вертикальное поле —
+   `proMarkPadding` 7 dp (высота метки ≈ 32 dp, а не чиповые 44), боковое — `ChipPadding` 14 dp.
+   Не нажимается — цели нажатия не требует. */
+.pro-mark{display:inline-flex;align-items:baseline;gap:4px;border-radius:999px;background:#EBEEDA;color:#424724;font-size:13px;font-weight:600;line-height:1.35;padding:7px 14px;flex-shrink:0}
+.pro-mark svg{display:block;width:14px;height:14px;flex-shrink:0}
+.plate-note{background:#F3EDE3;border-radius:16px;padding:15px;font-size:13px;line-height:1.45;color:#5F564D}
+figcaption{max-width:390px;font-size:12px;color:#5F564D;margin-top:12px;line-height:1.5}
+</style>
+</helmet>
+<div class="preview-head">
+<div class="preview-eyebrow">Склянка · витрина «Склянка Про» · Р-67, Р-72, Р-73, Р-74, Р-75, Р-76, Р-77, Р-78, Р-79, Р-80</div>
+<h1>Витрина «Склянка Про»</h1>
+<p>Покупка подписки одной шторкой: четыре состояния, строка блока в настройках и метка «Про» — искра и слово на мягком акценте (норма §5.9). Выгода — короткое имя, значок и разделитель; период — карточка на поверхности, внутри неё цена с периодом, плашка пробного периода и залитый «Год дешевле», над годовой карточкой — лента «Выгоднее»; выбранная карточка — мягкий акцент и рамка 1,5 dp. Раскрытие магазина свёрнуто в две строки и разворачивается строкой «Подробнее» в этой же шторке. Период при открытии не выбран.</p>
+</div>
+<div class="sheet-grid">
+
+  <!-- ============ 1 · НЕ ОФОРМЛЕНА ============ -->
+  <figure class="state">
+    <div class="state-label">1 · Не оформлена</div>
+    <div class="phone phone--sheet">
+      <div class="backdrop">
+        <div class="bd-title">Новое лекарство</div>
+        <div class="bd-card"></div>
+        <div class="bd-card bd-card--tall"></div>
+        <div class="bd-card"></div>
+      </div>
+      <div class="scrim"></div>
+      <div class="sheet">
+        <div class="sheet-head"><div class="sheet-title">Склянка Про</div></div>
+        <div class="sheet-body">
+          <div>
+            <div class="benefit">
+              <span class="benefit-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="3"></rect><path d="M8 3v4M16 3v4M3.5 10h17"></path></svg></span>
+              <div>
+                <div class="benefit-name">Сложные расписания</div>
+                <div class="benefit-example">через день, циклы, ступенчатые схемы</div>
+              </div>
+            </div>
+            <div class="bdiv"></div>
+            <div class="benefit">
+              <span class="benefit-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="3.5" y="3.5" width="8" height="8" rx="2"></rect><rect x="14.5" y="3.5" width="6" height="4" rx="2"></rect><rect x="3.5" y="14.5" width="17" height="6" rx="2"></rect></svg></span>
+              <div><div class="benefit-name">Виджеты</div></div>
+            </div>
+            <div class="bdiv"></div>
+            <div class="benefit">
+              <span class="benefit-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3.5" width="14" height="17" rx="2.5"></rect><path d="M8.5 8.5h7M8.5 12h7M8.5 15.5h4"></path></svg></span>
+              <div><div class="benefit-name">Расширенный отчёт</div></div>
+            </div>
+            <div class="bdiv"></div>
+            <div class="benefit">
+              <span class="benefit-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3.5" y="3.5" width="17" height="17" rx="5"></rect><circle cx="12" cy="12" r="4"></circle></svg></span>
+              <div><div class="benefit-name">Акцент и иконки</div></div>
+            </div>
+            <div class="bdiv"></div>
+            <div class="benefit">
+              <span class="benefit-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5v10"></path><path d="m8 7.5 4-4 4 4"></path><path d="M5 13v5.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V13"></path></svg></span>
+              <div><div class="benefit-name">Экспорт истории</div></div>
+            </div>
+            <div class="bdiv"></div>
+            <div class="benefit">
+              <span class="benefit-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.5"></circle><path d="M4.5 20c0-3.8 3.4-6.3 7.5-6.3s7.5 2.5 7.5 6.3"></path></svg></span>
+              <div><div class="benefit-name">Больше профилей</div></div>
+            </div>
+          </div>
+          <div class="periods">
+            <div class="pcol">
+              <div class="ribbon ribbon--empty"></div>
+              <div class="pcard">
+                <div class="pcard-name">Месяц</div>
+                <div class="price">149 ₽ / мес</div>
+                <div class="badge-soft">7 дней бесплатно</div>
+                <div class="sub">затем 149 ₽ / мес</div>
+              </div>
+            </div>
+            <div class="pcol">
+              <div class="ribbon">Выгоднее</div>
+              <div class="pcard pcard--under">
+                <div class="pcard-name">Год</div>
+                <div class="price">990 ₽ / год</div>
+                <div class="badge-soft">7 дней бесплатно</div>
+                <div class="sub">затем 990 ₽ / год</div>
+                <div class="badge-solid">Год дешевле</div>
+              </div>
+            </div>
+          </div>
+          <div class="quiet">Восстановить покупку</div>
+        </div>
+        <div class="sheet-actions">
+          <div class="disclosure">
+            <div>Подписка продлевается автоматически</div>
+            <div>Продление — 990 ₽ / год, отмена в магазине</div>
+          </div>
+          <div class="quiet">Подробнее</div>
+          <div class="quiet quiet--muted">Условия и политика<span class="chev">›</span></div>
+          <button class="btn btn--disabled" type="button">Оформить</button>
+        </div>
+      </div>
+    </div>
+    <figcaption>Не оформлена: две карточки периодов, у года лента «Выгоднее» и залитая плашка, ни одна карточка не выбрана, кнопка покупки недоступна — норма §5.9, решения Р-67, Р-68, Р-72, Р-73, Р-75, Р-76, Р-77, Р-78.</figcaption>
+  </figure>
+
+  <!-- ============ 2 · АКТИВНА ============ -->
+  <figure class="state">
+    <div class="state-label">2 · Активна</div>
+    <div class="phone phone--sheet">
+      <div class="backdrop">
+        <div class="bd-title">Настройки</div>
+        <div class="bd-card"></div>
+        <div class="bd-card"></div>
+        <div class="bd-card"></div>
+      </div>
+      <div class="scrim"></div>
+      <div class="sheet">
+        <div class="sheet-head"><div class="sheet-title">Склянка Про</div></div>
+        <div class="sheet-body">
+          <div class="price-card">
+            <div class="state-line">Активна до 13 ноября 2026</div>
+            <div class="price">990 ₽ / год</div>
+            <div class="renew">Подписка продлевается автоматически</div>
+          </div>
+          <div>
+            <div class="benefit">
+              <span class="benefit-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="3"></rect><path d="M8 3v4M16 3v4M3.5 10h17"></path></svg></span>
+              <div><div class="benefit-name">Сложные расписания</div></div>
+            </div>
+            <div class="bdiv"></div>
+            <div class="benefit">
+              <span class="benefit-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="3.5" y="3.5" width="8" height="8" rx="2"></rect><rect x="14.5" y="3.5" width="6" height="4" rx="2"></rect><rect x="3.5" y="14.5" width="17" height="6" rx="2"></rect></svg></span>
+              <div><div class="benefit-name">Виджеты</div></div>
+            </div>
+            <div class="bdiv"></div>
+            <div class="benefit">
+              <span class="benefit-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3.5" width="14" height="17" rx="2.5"></rect><path d="M8.5 8.5h7M8.5 12h7M8.5 15.5h4"></path></svg></span>
+              <div><div class="benefit-name">Расширенный отчёт</div></div>
+            </div>
+            <div class="bdiv"></div>
+            <div class="benefit">
+              <span class="benefit-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3.5" y="3.5" width="17" height="17" rx="5"></rect><circle cx="12" cy="12" r="4"></circle></svg></span>
+              <div><div class="benefit-name">Акцент и иконки</div></div>
+            </div>
+            <div class="bdiv"></div>
+            <div class="benefit">
+              <span class="benefit-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5v10"></path><path d="m8 7.5 4-4 4 4"></path><path d="M5 13v5.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V13"></path></svg></span>
+              <div><div class="benefit-name">Экспорт истории</div></div>
+            </div>
+            <div class="bdiv"></div>
+            <div class="benefit">
+              <span class="benefit-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.5"></circle><path d="M4.5 20c0-3.8 3.4-6.3 7.5-6.3s7.5 2.5 7.5 6.3"></path></svg></span>
+              <div><div class="benefit-name">Больше профилей</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="sheet-actions">
+          <button class="btn btn--primary" type="button">Управление подпиской</button>
+          <div class="quiet">Отменить подписку<span class="chev">›</span></div>
+          <div class="quiet">Восстановить покупку</div>
+          <div class="quiet quiet--muted">Условия и политика<span class="chev">›</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption>Активна: белая карточка цены со статусом, ценой и словами продления, состав и управление ниже — норма §5.9, решения Р-67, Р-73, Р-75, Р-77, Р-80.</figcaption>
+  </figure>
+
+  <!-- ============ 3 · ПРОБНЫЙ ПЕРИОД ============ -->
+  <figure class="state">
+    <div class="state-label">3 · Дни пробного периода</div>
+    <div class="phone phone--sheet">
+      <div class="backdrop">
+        <div class="bd-title">История</div>
+        <div class="bd-card"></div>
+        <div class="bd-card"></div>
+        <div class="bd-card"></div>
+      </div>
+      <div class="scrim"></div>
+      <div class="sheet">
+        <div class="sheet-head"><div class="sheet-title">Склянка Про</div></div>
+        <div class="sheet-body">
+          <div class="price-card">
+            <div class="state-line">Пробный период до 20 октября 2026, затем 990 ₽ / год</div>
+            <div class="price">990 ₽ / год</div>
+            <div class="renew">Подписка продлевается автоматически</div>
+          </div>
+          <div>
+            <div class="benefit">
+              <span class="benefit-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="3"></rect><path d="M8 3v4M16 3v4M3.5 10h17"></path></svg></span>
+              <div><div class="benefit-name">Сложные расписания</div></div>
+            </div>
+            <div class="bdiv"></div>
+            <div class="benefit">
+              <span class="benefit-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="3.5" y="3.5" width="8" height="8" rx="2"></rect><rect x="14.5" y="3.5" width="6" height="4" rx="2"></rect><rect x="3.5" y="14.5" width="17" height="6" rx="2"></rect></svg></span>
+              <div><div class="benefit-name">Виджеты</div></div>
+            </div>
+            <div class="bdiv"></div>
+            <div class="benefit">
+              <span class="benefit-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3.5" width="14" height="17" rx="2.5"></rect><path d="M8.5 8.5h7M8.5 12h7M8.5 15.5h4"></path></svg></span>
+              <div><div class="benefit-name">Расширенный отчёт</div></div>
+            </div>
+            <div class="bdiv"></div>
+            <div class="benefit">
+              <span class="benefit-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3.5" y="3.5" width="17" height="17" rx="5"></rect><circle cx="12" cy="12" r="4"></circle></svg></span>
+              <div><div class="benefit-name">Акцент и иконки</div></div>
+            </div>
+            <div class="bdiv"></div>
+            <div class="benefit">
+              <span class="benefit-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5v10"></path><path d="m8 7.5 4-4 4 4"></path><path d="M5 13v5.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V13"></path></svg></span>
+              <div><div class="benefit-name">Экспорт истории</div></div>
+            </div>
+            <div class="bdiv"></div>
+            <div class="benefit">
+              <span class="benefit-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.5"></circle><path d="M4.5 20c0-3.8 3.4-6.3 7.5-6.3s7.5 2.5 7.5 6.3"></path></svg></span>
+              <div><div class="benefit-name">Больше профилей</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="sheet-actions">
+          <button class="btn btn--primary" type="button">Управление подпиской</button>
+          <div class="quiet">Отменить подписку<span class="chev">›</span></div>
+          <div class="quiet">Восстановить покупку</div>
+          <div class="quiet quiet--muted">Условия и политика<span class="chev">›</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption>Дни пробного периода: та же карточка цены, отличие только в первой строке статуса — норма §5.9, решения Р-72, Р-73, Р-75, Р-80.</figcaption>
+  </figure>
+
+  <!-- ============ 4 · МАГАЗИН НЕДОСТУПЕН ============ -->
+  <figure class="state">
+    <div class="state-label">4 · Магазин недоступен</div>
+    <div class="phone phone--store">
+      <div class="backdrop">
+        <div class="bd-title">Сегодня</div>
+        <div class="bd-card"></div>
+        <div class="bd-card bd-card--tall"></div>
+        <div class="bd-card"></div>
+      </div>
+      <div class="scrim"></div>
+      <div class="sheet">
+        <div class="sheet-head"><div class="sheet-title">Склянка Про</div></div>
+        <div class="sheet-body">
+          <div>
+            <div class="benefit">
+              <span class="benefit-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="3"></rect><path d="M8 3v4M16 3v4M3.5 10h17"></path></svg></span>
+              <div>
+                <div class="benefit-name">Сложные расписания</div>
+                <div class="benefit-example">через день, циклы, ступенчатые схемы</div>
+              </div>
+            </div>
+            <div class="bdiv"></div>
+            <div class="benefit">
+              <span class="benefit-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="3.5" y="3.5" width="8" height="8" rx="2"></rect><rect x="14.5" y="3.5" width="6" height="4" rx="2"></rect><rect x="3.5" y="14.5" width="17" height="6" rx="2"></rect></svg></span>
+              <div><div class="benefit-name">Виджеты</div></div>
+            </div>
+            <div class="bdiv"></div>
+            <div class="benefit">
+              <span class="benefit-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3.5" width="14" height="17" rx="2.5"></rect><path d="M8.5 8.5h7M8.5 12h7M8.5 15.5h4"></path></svg></span>
+              <div><div class="benefit-name">Расширенный отчёт</div></div>
+            </div>
+            <div class="bdiv"></div>
+            <div class="benefit">
+              <span class="benefit-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3.5" y="3.5" width="17" height="17" rx="5"></rect><circle cx="12" cy="12" r="4"></circle></svg></span>
+              <div><div class="benefit-name">Акцент и иконки</div></div>
+            </div>
+            <div class="bdiv"></div>
+            <div class="benefit">
+              <span class="benefit-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5v10"></path><path d="m8 7.5 4-4 4 4"></path><path d="M5 13v5.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V13"></path></svg></span>
+              <div><div class="benefit-name">Экспорт истории</div></div>
+            </div>
+            <div class="bdiv"></div>
+            <div class="benefit">
+              <span class="benefit-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.5"></circle><path d="M4.5 20c0-3.8 3.4-6.3 7.5-6.3s7.5 2.5 7.5 6.3"></path></svg></span>
+              <div><div class="benefit-name">Больше профилей</div></div>
+            </div>
+          </div>
+          <div class="words">Цены и покупка появятся, когда магазин будет доступен</div>
+          <div class="quiet">Восстановить покупку</div>
+        </div>
+        <div class="sheet-actions">
+          <div class="disclosure">
+            <div>Подписка продлевается автоматически</div>
+            <div>Продление — 990 ₽ / год, отмена в магазине</div>
+          </div>
+          <div class="quiet">Подробнее</div>
+          <div class="quiet quiet--muted">Условия и политика<span class="chev">›</span></div>
+          <button class="btn btn--disabled" type="button">Оформить</button>
+        </div>
+      </div>
+    </div>
+    <figcaption>Магазин недоступен: карточек периодов нет вовсе, причина словами, покупка недоступна — норма §5.9, решения Р-68, Р-77.</figcaption>
+  </figure>
+
+  <!-- ============ 5 · ВЫБРАННЫЙ ПЕРИОД (ФРАГМЕНТ) ============ -->
+  <figure class="state">
+    <div class="state-label">5 · Выбранный период — фрагмент</div>
+    <div class="phone phone--period">
+      <div class="scrim"></div>
+      <div class="sheet">
+        <div class="sheet-head"><div class="sheet-title">Склянка Про</div></div>
+        <div class="sheet-body">
+          <div class="periods">
+            <div class="pcol">
+              <div class="ribbon ribbon--empty"></div>
+              <div class="pcard">
+                <div class="pcard-name">Месяц</div>
+                <div class="price">149 ₽ / мес</div>
+                <div class="badge-soft">7 дней бесплатно</div>
+                <div class="sub">затем 149 ₽ / мес</div>
+              </div>
+            </div>
+            <div class="pcol">
+              <div class="ribbon">Выгоднее</div>
+              <div class="pcard pcard--under pcard--on">
+                <div class="pcard-name">Год</div>
+                <div class="price">990 ₽ / год</div>
+                <div class="badge-soft">7 дней бесплатно</div>
+                <div class="sub">затем 990 ₽ / год</div>
+                <div class="badge-solid">Год дешевле</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="sheet-actions">
+          <button class="btn btn--primary" type="button">Оформить</button>
+        </div>
+      </div>
+    </div>
+    <figcaption>Выбранный период: карточка года под лентой «Выгоднее» на мягком акценте с рамкой 1,5 dp, кнопка покупки доступна — норма §5.9, решения Р-75, Р-77, Р-78.</figcaption>
+  </figure>
+
+  <!-- ============ 6 · СТРОКА В НАСТРОЙКАХ ============ -->
+  <figure class="state">
+    <div class="state-label">6 · Строка блока «Склянка Про» в настройках</div>
+    <div class="phone phone--settings">
+      <div class="settings">
+        <div class="title-screen">Настройки</div>
+        <div class="group">
+          <div class="rubric">Данные</div>
+          <div class="card">
+            <div class="row"><div class="row-label">История приёмов</div><span class="chev">›</span></div>
+            <div class="divider"></div>
+            <div class="row"><div><div class="row-label">Перенос данных</div><div class="row-sub">Выгрузка и загрузка файлом, без облака</div></div><span class="chev">›</span></div>
+          </div>
+        </div>
+        <div class="group">
+          <div class="variant-note">вариант значения · не оформлена</div>
+          <div class="card">
+            <div class="row"><div class="row-label">Склянка Про</div><div style="display:flex;align-items:center;gap:10px"><span class="row-value">Не оформлена</span><span class="chev">›</span></div></div>
+          </div>
+        </div>
+        <div class="group">
+          <div class="variant-note">вариант значения · активна</div>
+          <div class="card">
+            <div class="row"><div class="row-label">Склянка Про</div><div style="display:flex;align-items:center;gap:10px"><span class="row-value">Активна до 13 ноября 2026</span><span class="chev">›</span></div></div>
+          </div>
+        </div>
+        <div class="plate">
+          <svg width="40" height="40" viewBox="0 0 200 200" fill="none" role="img" aria-label="Знак Склянка">
+            <circle cx="100" cy="100" r="86" stroke="#8C8177" stroke-width="9"></circle>
+            <circle cx="100" cy="100" r="50" stroke="#8C8177" stroke-width="7"></circle>
+            <circle cx="100" cy="100" r="15" fill="#8C8177"></circle>
+          </svg>
+          <div style="flex-grow:1;display:flex;flex-direction:column;gap:2px">
+            <div style="font-size:15px;font-weight:600">Склянка 1.0</div>
+            <div style="font-size:12px;color:#5F564D">Стохастика · не является медицинским изделием</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <figcaption>Строка блока «Склянка Про»: пятый блок настроек, два значения — норма §5.9, решение Р-67.</figcaption>
+  </figure>
+
+  <!-- ============ 7 · МЕТКА «ПРО» ============ -->
+  <figure class="state">
+    <div class="state-label">7 · Метка «Про»</div>
+    <div class="phone phone--mark">
+      <div class="settings">
+        <div class="group">
+          <div class="variant-note">метка отдельным элементом</div>
+          <div class="plate" style="justify-content:center"><span class="pro-mark"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l2.6 6.9 6.9 2.6-6.9 2.6L12 21.5l-2.6-6.9L2.5 12l6.9-2.6z"></path></svg>Про</span></div>
+          <div class="plate-note">Подложка accentSoft, слово CaptionStrong 13/600 цветом onAccentSoft, искра 14 sp перед словом (низ по базовой линии); вертикальное поле 7 dp — высота метки ≈ 32 dp, а не чиповые 44. Не нажимается — цели нажатия не требует (§6.2). Искра декоративна: чтению с экрана не объявляется, смысл несёт слово (§5.9).</div>
+        </div>
+        <div class="group">
+          <div class="variant-note">как читается рядом с подписью строки</div>
+          <div class="card">
+            <div class="row"><div style="display:flex;align-items:center;gap:10px;min-width:0"><span class="row-label">Экспорт истории</span><span class="pro-mark"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l2.6 6.9 6.9 2.6-6.9 2.6L12 21.5l-2.6-6.9L2.5 12l6.9-2.6z"></path></svg>Про</span></div><span class="chev">›</span></div>
+            <div class="divider"></div>
+            <div class="row"><div style="display:flex;align-items:center;gap:10px;min-width:0"><span class="row-label">Акцент и иконки</span><span class="pro-mark"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l2.6 6.9 6.9 2.6-6.9 2.6L12 21.5l-2.6-6.9L2.5 12l6.9-2.6z"></path></svg>Про</span></div><span class="chev">›</span></div>
+            <div class="divider"></div>
+            <div class="row"><div style="display:flex;align-items:center;gap:10px;min-width:0"><span class="row-label">Через день</span><span class="pro-mark"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l2.6 6.9 6.9 2.6-6.9 2.6L12 21.5l-2.6-6.9L2.5 12l6.9-2.6z"></path></svg>Про</span></div></div>
+          </div>
+        </div>
+        <div class="plate-note"><b>Метка — слово, а не замок</b> (Р-67 п. 5, П-7): элемент под ней нажимаем и открывает витрину.</div>
+      </div>
+    </div>
+    <figcaption>Метка «Про»: искра и слово в чипе вида InfoAccent на мягком акценте, слово по-прежнему не замок — норма §5.9, решения Р-67, Р-79.</figcaption>
+  </figure>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1306,"height":3380}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

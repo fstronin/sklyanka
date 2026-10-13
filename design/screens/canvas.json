@@ -207,6 +207,14 @@
       "h": 4200,
       "title": "Шапка экрана при прокрутке — состояния",
       "is_interactive": true
+    },
+    "Pro.dc.html": {
+      "x": 0,
+      "y": 12200,
+      "w": 1306,
+      "h": 3380,
+      "title": "Витрина «Склянка Про» — состояния",
+      "is_interactive": true
     }
   },
   "order": [
@@ -232,7 +240,8 @@
     "MainProfile.dc.html",
     "MainDense.dc.html",
     "Diagnostics.dc.html",
-    "HeaderScroll.dc.html"
+    "HeaderScroll.dc.html",
+    "Pro.dc.html"
   ],
   "notes": {
     "t1": {
@@ -262,6 +271,13 @@
       "text": "Проверка напоминаний — новый первый уровень",
       "kind": "title1",
       "maxW": 2980
+    },
+    "t5": {
+      "x": 0,
+      "y": 11870,
+      "text": "Витрина «Склянка Про» — покупка подписки",
+      "kind": "title1",
+      "maxW": 1306
     }
   },
   "designSystems": []
