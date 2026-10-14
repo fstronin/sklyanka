@@ -25,8 +25,8 @@ a{color:#5F6F2E;text-decoration:none}
 .state{width:390px;margin:0}
 .state-label{font-size:13px;font-weight:600;color:#5F564D;margin-bottom:10px;letter-spacing:.02em}
 .phone{position:relative;width:390px;box-sizing:border-box;background:#F8F6EF;color:#241F1B;border:1px solid #E6DED2;border-radius:30px;overflow:hidden}
-.phone--sheet{height:1100px}
-.phone--store{height:1000px}
+.phone--sheet{height:1000px}
+.phone--store{height:920px}
 .phone--period{height:620px}
 .phone--settings{height:600px}
 .phone--mark{height:620px}
@@ -66,14 +66,9 @@ a{color:#5F6F2E;text-decoration:none}
 .pcard-name{font-size:15px;font-weight:600;line-height:1.45}
 /* Цена — `Stat` (Literata 600, 26 sp): ступень не поднимается (Р-77 п. 4). */
 .price{font-family:'Literata',Georgia,serif;font-size:26px;font-weight:600;line-height:1;color:#241F1B}
-/* Плашки — во всю внутреннюю ширину карточки, поле по бокам 8 dp, текст одной строкой (§5.9):
-   переноса нет, длинную формулировку ловит замер по шести языкам, а не перенос. */
-.badge-soft{display:flex;align-items:center;justify-content:center;width:100%;box-sizing:border-box;border-radius:999px;background:#EBEEDA;color:#424724;font-size:13px;font-weight:600;line-height:1.35;padding:11px 8px;white-space:nowrap}
-/* Плашка «Год дешевле» — чип `InfoAccentSolid` (§5): акцентная заливка, белое слово. */
+/* Плашка «Год дешевле» — чип `InfoAccentSolid` (§5): акцентная заливка, белое слово. Во всю
+   внутреннюю ширину карточки, поле 8 dp, текст одной строкой (§5.9). */
 .badge-solid{display:flex;align-items:center;justify-content:center;width:100%;box-sizing:border-box;border-radius:999px;background:#5F6F2E;color:#FFFFFF;font-size:13px;font-weight:600;line-height:1.35;padding:11px 8px;white-space:nowrap}
-/* Тихая строка «затем <цена>» — `Caption` 13/400 цветом `textMuted`. */
-.sub{font-size:13px;line-height:1.35;color:#5F564D;text-align:center}
-.sub--start{text-align:left}
 /* Тихие строки — `QuietButton` формы `Row`, подпись `LabelStrong` 14/600, цель не меньше 44 dp. */
 .quiet{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:44px;font-size:14px;font-weight:600;color:#5F6F2E;line-height:1.3}
 .quiet--muted{color:#5F564D}
@@ -120,9 +115,9 @@ figcaption{max-width:390px;font-size:12px;color:#5F564D;margin-top:12px;line-hei
 </style>
 </helmet>
 <div class="preview-head">
-<div class="preview-eyebrow">Склянка · витрина «Склянка Про» · Р-67, Р-72, Р-73, Р-74, Р-75, Р-76, Р-77, Р-78, Р-79, Р-80</div>
+<div class="preview-eyebrow">Склянка · витрина «Склянка Про» · Р-67, Р-72, Р-73, Р-74, Р-75, Р-76, Р-77, Р-78, Р-79, Р-80, Р-82</div>
 <h1>Витрина «Склянка Про»</h1>
-<p>Покупка подписки одной шторкой: четыре состояния, строка блока в настройках и метка «Про» — искра и слово на мягком акценте (норма §5.9). Выгода — короткое имя, значок и разделитель; период — карточка на поверхности, внутри неё цена с периодом, плашка пробного периода и залитый «Год дешевле», над годовой карточкой — лента «Выгоднее»; выбранная карточка — мягкий акцент и рамка 1,5 dp. Раскрытие магазина свёрнуто в две строки и разворачивается строкой «Подробнее» в этой же шторке. Период при открытии не выбран.</p>
+<p>Покупка подписки одной шторкой: три состояния, выбранный период фрагментом, строка блока в настройках и метка «Про» — искра и слово на мягком акценте (норма §5.9). Выгода — короткое имя, значок и разделитель; период — карточка на поверхности, внутри неё цена с периодом и залитый «Год дешевле», над годовой карточкой — лента «Выгоднее»; выбранная карточка — мягкий акцент и рамка 1,5 dp. Раскрытие магазина свёрнуто в две строки и разворачивается строкой «Подробнее» в этой же шторке. Период при открытии не выбран.</p>
 </div>
 <div class="sheet-grid">
 
@@ -180,8 +175,6 @@ figcaption{max-width:390px;font-size:12px;color:#5F564D;margin-top:12px;line-hei
               <div class="pcard">
                 <div class="pcard-name">Месяц</div>
                 <div class="price">149 ₽ / мес</div>
-                <div class="badge-soft">7 дней бесплатно</div>
-                <div class="sub">затем 149 ₽ / мес</div>
               </div>
             </div>
             <div class="pcol">
@@ -189,8 +182,6 @@ figcaption{max-width:390px;font-size:12px;color:#5F564D;margin-top:12px;line-hei
               <div class="pcard pcard--under">
                 <div class="pcard-name">Год</div>
                 <div class="price">990 ₽ / год</div>
-                <div class="badge-soft">7 дней бесплатно</div>
-                <div class="sub">затем 990 ₽ / год</div>
                 <div class="badge-solid">Год дешевле</div>
               </div>
             </div>
@@ -273,71 +264,9 @@ figcaption{max-width:390px;font-size:12px;color:#5F564D;margin-top:12px;line-hei
     <figcaption>Активна: белая карточка цены со статусом, ценой и словами продления, состав и управление ниже — норма §5.9, решения Р-67, Р-73, Р-75, Р-77, Р-80.</figcaption>
   </figure>
 
-  <!-- ============ 3 · ПРОБНЫЙ ПЕРИОД ============ -->
+  <!-- ============ 3 · МАГАЗИН НЕДОСТУПЕН ============ -->
   <figure class="state">
-    <div class="state-label">3 · Дни пробного периода</div>
-    <div class="phone phone--sheet">
-      <div class="backdrop">
-        <div class="bd-title">История</div>
-        <div class="bd-card"></div>
-        <div class="bd-card"></div>
-        <div class="bd-card"></div>
-      </div>
-      <div class="scrim"></div>
-      <div class="sheet">
-        <div class="sheet-head"><div class="sheet-title">Склянка Про</div></div>
-        <div class="sheet-body">
-          <div class="price-card">
-            <div class="state-line">Пробный период до 20 октября 2026, затем 990 ₽ / год</div>
-            <div class="price">990 ₽ / год</div>
-            <div class="renew">Подписка продлевается автоматически</div>
-          </div>
-          <div>
-            <div class="benefit">
-              <span class="benefit-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="3"></rect><path d="M8 3v4M16 3v4M3.5 10h17"></path></svg></span>
-              <div><div class="benefit-name">Сложные расписания</div></div>
-            </div>
-            <div class="bdiv"></div>
-            <div class="benefit">
-              <span class="benefit-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="3.5" y="3.5" width="8" height="8" rx="2"></rect><rect x="14.5" y="3.5" width="6" height="4" rx="2"></rect><rect x="3.5" y="14.5" width="17" height="6" rx="2"></rect></svg></span>
-              <div><div class="benefit-name">Виджеты</div></div>
-            </div>
-            <div class="bdiv"></div>
-            <div class="benefit">
-              <span class="benefit-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3.5" width="14" height="17" rx="2.5"></rect><path d="M8.5 8.5h7M8.5 12h7M8.5 15.5h4"></path></svg></span>
-              <div><div class="benefit-name">Расширенный отчёт</div></div>
-            </div>
-            <div class="bdiv"></div>
-            <div class="benefit">
-              <span class="benefit-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3.5" y="3.5" width="17" height="17" rx="5"></rect><circle cx="12" cy="12" r="4"></circle></svg></span>
-              <div><div class="benefit-name">Акцент и иконки</div></div>
-            </div>
-            <div class="bdiv"></div>
-            <div class="benefit">
-              <span class="benefit-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5v10"></path><path d="m8 7.5 4-4 4 4"></path><path d="M5 13v5.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V13"></path></svg></span>
-              <div><div class="benefit-name">Экспорт истории</div></div>
-            </div>
-            <div class="bdiv"></div>
-            <div class="benefit">
-              <span class="benefit-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.5"></circle><path d="M4.5 20c0-3.8 3.4-6.3 7.5-6.3s7.5 2.5 7.5 6.3"></path></svg></span>
-              <div><div class="benefit-name">Больше профилей</div></div>
-            </div>
-          </div>
-        </div>
-        <div class="sheet-actions">
-          <button class="btn btn--primary" type="button">Управление подпиской</button>
-          <div class="quiet">Отменить подписку<span class="chev">›</span></div>
-          <div class="quiet">Восстановить покупку</div>
-          <div class="quiet quiet--muted">Условия и политика<span class="chev">›</span></div>
-        </div>
-      </div>
-    </div>
-    <figcaption>Дни пробного периода: та же карточка цены, отличие только в первой строке статуса — норма §5.9, решения Р-72, Р-73, Р-75, Р-80.</figcaption>
-  </figure>
-
-  <!-- ============ 4 · МАГАЗИН НЕДОСТУПЕН ============ -->
-  <figure class="state">
-    <div class="state-label">4 · Магазин недоступен</div>
+    <div class="state-label">3 · Магазин недоступен</div>
     <div class="phone phone--store">
       <div class="backdrop">
         <div class="bd-title">Сегодня</div>
@@ -400,9 +329,9 @@ figcaption{max-width:390px;font-size:12px;color:#5F564D;margin-top:12px;line-hei
     <figcaption>Магазин недоступен: карточек периодов нет вовсе, причина словами, покупка недоступна — норма §5.9, решения Р-68, Р-77.</figcaption>
   </figure>
 
-  <!-- ============ 5 · ВЫБРАННЫЙ ПЕРИОД (ФРАГМЕНТ) ============ -->
+  <!-- ============ 4 · ВЫБРАННЫЙ ПЕРИОД (ФРАГМЕНТ) ============ -->
   <figure class="state">
-    <div class="state-label">5 · Выбранный период — фрагмент</div>
+    <div class="state-label">4 · Выбранный период — фрагмент</div>
     <div class="phone phone--period">
       <div class="scrim"></div>
       <div class="sheet">
@@ -414,8 +343,6 @@ figcaption{max-width:390px;font-size:12px;color:#5F564D;margin-top:12px;line-hei
               <div class="pcard">
                 <div class="pcard-name">Месяц</div>
                 <div class="price">149 ₽ / мес</div>
-                <div class="badge-soft">7 дней бесплатно</div>
-                <div class="sub">затем 149 ₽ / мес</div>
               </div>
             </div>
             <div class="pcol">
@@ -423,8 +350,6 @@ figcaption{max-width:390px;font-size:12px;color:#5F564D;margin-top:12px;line-hei
               <div class="pcard pcard--under pcard--on">
                 <div class="pcard-name">Год</div>
                 <div class="price">990 ₽ / год</div>
-                <div class="badge-soft">7 дней бесплатно</div>
-                <div class="sub">затем 990 ₽ / год</div>
                 <div class="badge-solid">Год дешевле</div>
               </div>
             </div>
@@ -438,9 +363,9 @@ figcaption{max-width:390px;font-size:12px;color:#5F564D;margin-top:12px;line-hei
     <figcaption>Выбранный период: карточка года под лентой «Выгоднее» на мягком акценте с рамкой 1,5 dp, кнопка покупки доступна — норма §5.9, решения Р-75, Р-77, Р-78.</figcaption>
   </figure>
 
-  <!-- ============ 6 · СТРОКА В НАСТРОЙКАХ ============ -->
+  <!-- ============ 5 · СТРОКА В НАСТРОЙКАХ ============ -->
   <figure class="state">
-    <div class="state-label">6 · Строка блока «Склянка Про» в настройках</div>
+    <div class="state-label">5 · Строка блока «Склянка Про» в настройках</div>
     <div class="phone phone--settings">
       <div class="settings">
         <div class="title-screen">Настройки</div>
@@ -480,9 +405,9 @@ figcaption{max-width:390px;font-size:12px;color:#5F564D;margin-top:12px;line-hei
     <figcaption>Строка блока «Склянка Про»: пятый блок настроек, два значения — норма §5.9, решение Р-67.</figcaption>
   </figure>
 
-  <!-- ============ 7 · МЕТКА «ПРО» ============ -->
+  <!-- ============ 6 · МЕТКА «ПРО» ============ -->
   <figure class="state">
-    <div class="state-label">7 · Метка «Про»</div>
+    <div class="state-label">6 · Метка «Про»</div>
     <div class="phone phone--mark">
       <div class="settings">
         <div class="group">
@@ -508,7 +433,7 @@ figcaption{max-width:390px;font-size:12px;color:#5F564D;margin-top:12px;line-hei
 
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1306,"height":3380}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1306,"height":2160}}'>
 class Component extends DCLogic {
   renderVals() {
     return {};
