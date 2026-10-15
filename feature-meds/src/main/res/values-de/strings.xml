@@ -166,4 +166,33 @@
 
     <string name="date_pattern_day_month">d. MMMM</string>
     <string name="date_pattern_full">d. MMMM yyyy</string>
+    <string name="error_weekdays_missing">Wählen Sie mindestens einen Wochentag</string>
+    <string name="error_interval_too_small">Das Intervall beträgt mindestens zwei Tage</string>
+    <string name="error_interval_one_day">Ein Tag bedeutet einen täglichen Zeitplan</string>
+    <string name="error_cycle_zero">Die Zykluslänge darf nicht null sein</string>
+    <string name="error_stage_dose">Legen Sie die Dosis für jede Stufe fest</string>
+    <string name="error_stage_days">Legen Sie die Dauer jeder Stufe fest</string>
+    <string name="error_stage_beyond_course">Die Stufen reichen über das Kursende hinaus</string>
+
+    <!-- Schedule kinds and their parameters (docs/norm/06-design.md §5.10, §10). -->
+    <string name="form_label_schedule">Zeitplan</string>
+    <string name="schedule_kind_daily">Jeden Tag</string>
+    <string name="schedule_kind_weekdays">Nach Wochentagen</string>
+    <string name="schedule_kind_interval">Alle paar Tage</string>
+    <string name="schedule_kind_cycle">In Zyklen</string>
+    <string name="schedule_kind_steps">In Stufen</string>
+    <string name="form_label_weekdays">Wochentage</string>
+    <string name="form_weekdays_pro_note">Mehr als ein Tag</string>
+    <string name="form_interval_row">Intervall (Tage)</string>
+    <string name="form_schedule_count_from_start">Gezählt ab dem Kursbeginn</string>
+    <string name="form_cycle_on_row">Einnahmetage am Stück</string>
+    <string name="form_cycle_off_row">Pausentage</string>
+    <string name="form_stage_title">Stufe %1$d</string>
+    <string name="form_stage_add">Stufe hinzufügen</string>
+    <string name="form_stage_dose_note">Die Dosis wird durch die Stufen festgelegt</string>
+    <string name="form_stage_hint">Die Stufen laufen ab dem Kursbeginn nacheinander</string>
+    <string name="cd_stage_dose">Dosis der Stufe %1$d</string>
+    <string name="cd_stage_days">Dauer der Stufe %1$d</string>
+    <string name="cd_stage_delete">Stufe %1$d löschen</string>
+    <string name="form_save_blocked_pro">Komplexe Pläne gibt es mit Sklyanka Pro</string>
 </resources>

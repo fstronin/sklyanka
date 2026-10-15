@@ -8,7 +8,10 @@ import ru.stohastika.sklyanka.data.DataFixtures
 import ru.stohastika.sklyanka.data.room.entity.IntakeEntity
 import ru.stohastika.sklyanka.data.room.entity.ProfileEntity
 import ru.stohastika.sklyanka.domain.model.ScheduleMode
+import ru.stohastika.sklyanka.domain.model.ScheduleRule
+import ru.stohastika.sklyanka.domain.model.Stage
 import java.math.BigDecimal
+import java.time.DayOfWeek
 
 /**
  * Пара «модель → строка → модель».
@@ -141,5 +144,72 @@ class MapperTest {
         val entity = DataFixtures.takenIntake().toEntity(ScheduleMode.SCHEDULED).copy(source = "TABLET_PC")
 
         assertEquals(Decoded.UnknownEnum("source"), entity.decode())
+    }
+
+    // --- Вид расписания и снимок дозы (SKL-117, ПР-15, ПР-19) ------------------------------
+
+    @Test
+    fun everyScheduleKindSurvivesTheRoundTrip() {
+        everyScheduleKind().forEach { rule ->
+            val medication = DataFixtures.scheduledMedication().copy(schedule = rule)
+
+            val entity = medication.toEntity()
+
+            assertTrue("rule $rule", entity.decode() is Decoded.Value)
+            assertEquals("rule $rule", Decoded.Value(medication), entity.decode())
+        }
+    }
+
+    /** Старая строка без колонки вида читается как ежедневное расписание. */
+    @Test
+    fun aRowWithoutAScheduleRuleReadsAsADailyCourse() {
+        val medication = DataFixtures.scheduledMedication()
+        val entity = medication.toEntity().copy(scheduleRule = null)
+
+        assertNull(entity.scheduleRule)
+        assertEquals(Decoded.Value(medication.copy(schedule = ScheduleRule.Daily)), entity.decode())
+    }
+
+    /** Строка, написанная более новой сборкой, не роняет чтение курса. */
+    @Test
+    fun anUnknownScheduleRuleTextReadsAsADailyCourse() {
+        val entity = DataFixtures.scheduledMedication().toEntity().copy(scheduleRule = "hourly:3")
+
+        assertEquals(
+            Decoded.Value(DataFixtures.scheduledMedication().copy(schedule = ScheduleRule.Daily)),
+            entity.decode(),
+        )
+    }
+
+    @Test
+    fun aStagedIntakeKeepsItsDoseSnapshot() {
+        val intake = DataFixtures.pendingIntake().copy(doseAmount = BigDecimal("0.5"))
+
+        val entity = intake.toEntity(ScheduleMode.SCHEDULED)
+
+        assertEquals("0.5", entity.doseAmount)
+        assertEquals(Decoded.Value(intake), entity.decode())
+    }
+
+    /** Приём обычного курса снимка не несёт: доза берётся у лекарства. */
+    @Test
+    fun anIntakeWithoutASnapshotStaysWithoutOne() {
+        val intake = DataFixtures.pendingIntake()
+
+        val entity = intake.toEntity(ScheduleMode.SCHEDULED)
+
+        assertNull(entity.doseAmount)
+        assertEquals(Decoded.Value(intake), entity.decode())
+    }
+
+    private companion object {
+        @JvmStatic
+        fun everyScheduleKind(): List<ScheduleRule> = listOf(
+            ScheduleRule.Weekdays(setOf(DayOfWeek.MONDAY)),
+            ScheduleRule.Weekdays(setOf(DayOfWeek.TUESDAY, DayOfWeek.THURSDAY)),
+            ScheduleRule.EveryNDays(days = 2),
+            ScheduleRule.Cycles(onDays = 21, offDays = 7),
+            ScheduleRule.Staged(listOf(Stage(BigDecimal("0.5"), days = 7), Stage(BigDecimal.ONE, days = 24))),
+        )
     }
 }

@@ -145,4 +145,9 @@
         <item quantity="one">injection</item>
         <item quantity="other">injections</item>
     </plurals>
+
+    <plurals name="form_stage_days">
+        <item quantity="one">day</item>
+        <item quantity="other">days</item>
+    </plurals>
 </resources>

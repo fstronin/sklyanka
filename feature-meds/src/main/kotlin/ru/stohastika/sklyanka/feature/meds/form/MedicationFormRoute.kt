@@ -41,6 +41,13 @@ fun MedicationFormRoute(
     medicationId: String?,
     onDone: () -> Unit,
     modifier: Modifier = Modifier,
+    /**
+     * Открыть витрину «Про»: сложное расписание закрыто без подписки (ПР-20, ПР-21).
+     *
+     * Поверхность покупки одна на все точки входа (Р-67): форма не рисует шторку сама,
+     * а просит `app` открыть её с [ru.stohastika.sklyanka.domain.pro.ProPoint.MEDICATION_FORM].
+     */
+    onOpenPro: () -> Unit = {},
 ) {
     // Открытие — один раз на заход, а не на сборку композиции. Поворот пересобирает
     // композицию целиком, и безусловный `open()` затирал бы черновик человека: он живёт
@@ -66,6 +73,9 @@ fun MedicationFormRoute(
     // и перечитывать их отдельно не нужно. Событие не повторяется при новой подписке,
     // поэтому открытие формы после сохранения закрыться от него не может (SKL-57).
     LaunchedEffect(Unit) { viewModel.closed.collect { onDone() } }
+    // Нажатие «Сохранить» на закрытом сложном виде открывает витрину и не сохраняет
+    // лекарство (§5.10): сигнал поднимает форма, а поверхность покупки показывает `app`.
+    LaunchedEffect(Unit) { viewModel.showcase.collect { onOpenPro() } }
 
     val current = state ?: return
     MedicationFormScreen(

@@ -166,4 +166,33 @@
 
     <string name="date_pattern_day_month">MMMM d</string>
     <string name="date_pattern_full">MMMM d, yyyy</string>
+    <string name="error_weekdays_missing">Choose at least one weekday</string>
+    <string name="error_interval_too_small">The interval is at least two days</string>
+    <string name="error_interval_one_day">One day means an every-day schedule</string>
+    <string name="error_cycle_zero">The cycle length cannot be zero</string>
+    <string name="error_stage_dose">Set the dose for every step</string>
+    <string name="error_stage_days">Set the duration of every step</string>
+    <string name="error_stage_beyond_course">The steps go past the end of the course</string>
+
+    <!-- Schedule kinds and their parameters (docs/norm/06-design.md §5.10, §10). -->
+    <string name="form_label_schedule">Schedule</string>
+    <string name="schedule_kind_daily">Every day</string>
+    <string name="schedule_kind_weekdays">By weekdays</string>
+    <string name="schedule_kind_interval">Every few days</string>
+    <string name="schedule_kind_cycle">In cycles</string>
+    <string name="schedule_kind_steps">In steps</string>
+    <string name="form_label_weekdays">Weekdays</string>
+    <string name="form_weekdays_pro_note">More than one day</string>
+    <string name="form_interval_row">Interval (days)</string>
+    <string name="form_schedule_count_from_start">Counted from the course start date</string>
+    <string name="form_cycle_on_row">Days on in a row</string>
+    <string name="form_cycle_off_row">Days off</string>
+    <string name="form_stage_title">Step %1$d</string>
+    <string name="form_stage_add">Add a step</string>
+    <string name="form_stage_dose_note">The dose is set by the steps</string>
+    <string name="form_stage_hint">Steps run one after another from the course start date</string>
+    <string name="cd_stage_dose">Dose of step %1$d</string>
+    <string name="cd_stage_days">Duration of step %1$d</string>
+    <string name="cd_stage_delete">Delete step %1$d</string>
+    <string name="form_save_blocked_pro">Complex schedules come with Sklyanka Pro</string>
 </resources>

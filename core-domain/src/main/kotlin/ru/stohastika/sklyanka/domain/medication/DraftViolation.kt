@@ -14,6 +14,9 @@ enum class DraftField {
     DOSE,
     STRENGTH,
     TIMES,
+
+    /** Вид расписания и его параметры (`docs/norm/04-behavior.md` §1.5, ПР-15…ПР-19). */
+    SCHEDULE,
     MAX_PER_DAY,
     PERIOD,
     STOCK,
@@ -62,6 +65,59 @@ sealed interface DraftViolation {
     /** Режим «по расписанию» без единого времени приёма (ИНВ-6, ПР-8). */
     data object NoIntakeTimes : DraftViolation {
         override val field: DraftField get() = DraftField.TIMES
+    }
+
+    /**
+     * «По дням недели» без единого выбранного дня (ИНВ-23).
+     *
+     * Пустой набор — не «ежедневно», а недонастроенный вид: человек выбрал вид, но не
+     * сказал, в какие дни принимать, и сохранить такое расписание значит не напомнить
+     * ни разу.
+     */
+    data object ScheduleDaysEmpty : DraftViolation {
+        override val field: DraftField get() = DraftField.SCHEDULE
+    }
+
+    /** «Через N дней» с интервалом меньше двух дней (ИНВ-23, ПР-17). */
+    data object ScheduleIntervalTooShort : DraftViolation {
+        override val field: DraftField get() = DraftField.SCHEDULE
+    }
+
+    /** У цикла приёма или перерыва длина меньше одного дня (ИНВ-23, ПР-18). */
+    data object ScheduleCycleLengthNotPositive : DraftViolation {
+        override val field: DraftField get() = DraftField.SCHEDULE
+    }
+
+    /** Ступенчатое расписание без единого этапа (ИНВ-23). */
+    data object ScheduleStagesEmpty : DraftViolation {
+        override val field: DraftField get() = DraftField.SCHEDULE
+    }
+
+    /**
+     * Этап без дозы (ИНВ-24).
+     *
+     * Доза и длительность — два разных поля этапа и два разных слова человеку
+     * (`docs/norm/06-design.md` §10: `error_stage_dose`, `error_stage_days`): слитая
+     * подсказка «заполните этап» заставила бы человека сверять, что именно пропущено.
+     */
+    data object ScheduleStageDoseNotPositive : DraftViolation {
+        override val field: DraftField get() = DraftField.SCHEDULE
+    }
+
+    /** Этап без длительности или с длительностью меньше суток (ИНВ-24). */
+    data object ScheduleStageDaysNotPositive : DraftViolation {
+        override val field: DraftField get() = DraftField.SCHEDULE
+    }
+
+    /**
+     * Последний этап выходит за конец курса (ИНВ-24).
+     *
+     * Этапы идут подряд от даты начала, поэтому длительность последнего этапа — это и есть
+     * требование «курс не короче схемы»: назначение, которое не помещается в курс, скорее
+     * всего недонабрано или недопонято, и молча обрезать его по дате окончания нельзя.
+     */
+    data object ScheduleStagesBeyondCourse : DraftViolation {
+        override val field: DraftField get() = DraftField.SCHEDULE
     }
 
     /**

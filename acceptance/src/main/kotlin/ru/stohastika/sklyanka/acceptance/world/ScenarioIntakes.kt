@@ -180,12 +180,21 @@ class ScenarioIntakes(private val clock: ScenarioClock, private val medications:
     fun markTaken(name: String, moment: LocalDateTime) {
         val medication = medications.get(name)
         val existing = byId.values.firstOrNull { it.medicationId == medication.id && it.scheduledAt == moment }
-        val id = existing?.id ?: nextId()
+        // Отметка — переход статуса, а не новая запись: снимок дозы дня и прочие поля приёма
+        // остаются теми же, как и в продукте (`markIfPending` меняет статус, а не строку
+        // целиком). Иначе отметка стирала бы снимок дозы ступени, и «правка ступеней не
+        // переписывает отмеченное» (ПР-11) проверялось бы на записи, которой не бывает.
+        val known = existing ?: Intake(
+            id = nextId(),
+            medicationId = medication.id,
+            scheduledAt = moment,
+            status = IntakeStatus.PENDING,
+            actedAt = null,
+            source = null,
+            actorProfileId = null,
+        )
         store(
-            Intake(
-                id = id,
-                medicationId = medication.id,
-                scheduledAt = moment,
+            known.copy(
                 status = IntakeStatus.TAKEN,
                 actedAt = clock.momentOf(moment),
                 source = IntakeSource.PHONE,

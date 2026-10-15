@@ -1,5 +1,6 @@
 package ru.stohastika.sklyanka.domain.model
 
+import java.math.BigDecimal
 import java.time.Instant
 import java.time.LocalDateTime
 
@@ -21,6 +22,15 @@ data class Intake(
      * Намерение в терминах стенных часов; смена пояса его не переписывает (НФТ-34).
      */
     val scheduledAt: LocalDateTime,
+    /**
+     * Доза за этот приём, если она отличается от дозы лекарства (ПР-19, ИНВ-24).
+     *
+     * Это снимок, а не ссылка на этап: смена ступени не переписывает уже созданные приёмы
+     * и отметки, а списание остатка идёт на ту дозу, которую человек принял на самом деле.
+     * `null` — доза берётся у лекарства ([Medication.doseAmount]); так выглядят все приёмы
+     * ежедневного курса и все записи, рождённые до появления видов расписания.
+     */
+    val doseAmount: BigDecimal? = null,
     val status: IntakeStatus,
     /** Момент отметки в UTC. Факт, по которому разрешается гонка часов и телефона (ПР-3). */
     val actedAt: Instant?,

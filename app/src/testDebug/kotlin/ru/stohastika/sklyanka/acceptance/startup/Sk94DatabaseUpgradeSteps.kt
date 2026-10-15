@@ -29,6 +29,7 @@ import ru.stohastika.sklyanka.data.room.DatabaseUpgrade
 import ru.stohastika.sklyanka.data.room.DatabaseVersionReader
 import ru.stohastika.sklyanka.data.room.MigrationCopyBudget
 import ru.stohastika.sklyanka.data.room.MigrationCopyStore
+import ru.stohastika.sklyanka.data.room.SklyankaDatabase
 import ru.stohastika.sklyanka.data.room.databaseState
 import ru.stohastika.sklyanka.domain.time.FixedTimeSource
 import ru.stohastika.sklyanka.feature.today.TodayUiState
@@ -83,6 +84,17 @@ class Sk94DatabaseUpgradeSteps(@Suppress("UNUSED_PARAMETER") world: AcceptanceWo
     private var opened = false
 
     // --- Предыстория ---------------------------------------------------------------------------
+
+    /**
+     * База текущей версии — та, которой миграция не предстоит.
+     *
+     * Отдельный шаг, а не число в сценарии: иначе каждое добавление миграции ломало бы
+     * сценарий о её отсутствии (SKL-117 поднял версию схемы 9 → 10).
+     */
+    @Допустим("^на устройстве база текущей версии с записью приёма$")
+    fun theDatabaseHoldsAnIntakeOfTheCurrentVersion() {
+        theDatabaseHoldsAnIntake(SklyankaDatabase.VERSION)
+    }
 
     @Допустим("^на устройстве база версии (\\d+) с записью приёма$")
     fun theDatabaseHoldsAnIntake(version: Int) {

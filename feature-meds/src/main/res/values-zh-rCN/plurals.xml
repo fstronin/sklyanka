@@ -112,4 +112,8 @@
     <plurals name="field_unit_injections">
         <item quantity="other">注射</item>
     </plurals>
+
+    <plurals name="form_stage_days">
+        <item quantity="other">天</item>
+    </plurals>
 </resources>

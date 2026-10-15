@@ -2,18 +2,23 @@ package ru.stohastika.sklyanka.screen.journey
 
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasAnyDescendant
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isDialog
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
 import dagger.hilt.android.testing.HiltAndroidTest
 import org.junit.Assert.assertEquals
@@ -26,11 +31,16 @@ import ru.stohastika.sklyanka.feature.meds.form.TAG_DOSE_FIELD
 import ru.stohastika.sklyanka.feature.meds.form.TAG_MEDICATION_FORM
 import ru.stohastika.sklyanka.feature.meds.form.TAG_NAME_FIELD
 import ru.stohastika.sklyanka.feature.meds.form.TAG_SAVE_BUTTON
+import ru.stohastika.sklyanka.feature.meds.form.TAG_STAGE_ADD
+import ru.stohastika.sklyanka.feature.meds.form.TAG_STAGE_CARD
+import ru.stohastika.sklyanka.feature.meds.form.TAG_STAGE_DAYS
+import ru.stohastika.sklyanka.feature.meds.form.TAG_STAGE_DOSE
 import ru.stohastika.sklyanka.feature.meds.form.TAG_TIME_ROW
 import ru.stohastika.sklyanka.feature.meds.form.TAG_VIOLATION
 import ru.stohastika.sklyanka.feature.meds.list.TAG_ADD_MEDICATION
 import ru.stohastika.sklyanka.feature.meds.list.TAG_MEDICATION_CARD
 import ru.stohastika.sklyanka.feature.meds.list.TAG_MEDICATION_LIST
+import ru.stohastika.sklyanka.feature.pro.TAG_PRO_SHEET
 import ru.stohastika.sklyanka.screen.support.DeviceTestClock
 import ru.stohastika.sklyanka.test.R
 import ru.stohastika.sklyanka.ui.component.TAG_DATE_TIME_PICKER
@@ -47,20 +57,19 @@ import ru.stohastika.sklyanka.ui.R as UiR
  * а место человека и состояние данных: введённое цело, лекарство заведено ровно одно, отказ
  * назван и показан, строка времени не изменилась.
  *
- * **Две проверки этого похода нарочно жёсткие, и на сегодняшнем продукте они красные.**
- * Набор обязан показывать дефект, а не обходить его (TDD §8): понизить их до наблюдаемого
- * поведения значило бы закрепить дефект проверкой.
+ * **Две проверки этого похода нарочно жёсткие.** Набор утверждает норму, а не наблюдаемое
+ * поведение (TDD §8): понизить их до того, что видно сегодня, значило бы закрепить дефект
+ * проверкой. Обе закрыты в дереве (SKL-141, SKL-142): поворот держат сохранённый стек раздела
+ * (`MedsSection.kt`, `MedsStackSaver`) и признак «форма открыта один раз на заход»
+ * (`MedicationFormRoute.kt`), повторное нажатие — флаг «идёт запись» в состоянии формы
+ * (`MedFormUiState.saving`, `MedicationFormViewModel`). Зелены ли они на стенде, решает
+ * прогон на устройстве: этот файл прогонов не запускает.
  *
- * 1. Поворот в середине ввода (см. [waitForFormAfterRotation]). Манифест не объявляет
- *    `configChanges` (`app/src/main/AndroidManifest.xml:149`), поворот пересоздаёт активность,
- *    а путь человека живёт в полях активности (`RootNavigation`, `MainActivity.kt:192`) и в
- *    памяти композиции — в стеке раздела, где открытая форма теперь и стоит уровнем
- *    (`MedsSection.kt`, SKL-150). Человек возвращается на «Сегодня», заполненный черновик
- *    формы на экране не восстанавливается.
- * 2. Двойное нажатие «Сохранить» (шаг 3). Ни флага «идёт запись», ни идемпотентности черновика
- *    нет: `MedicationFormViewModel.kt:89` заводит запись на каждое нажатие, а черновик без
- *    идентификатора получает новый на каждую попытку (`SaveMedicationUseCase.kt:47,72`) —
- *    второе нажатие заводит второе лекарство.
+ * 1. Поворот в середине ввода (см. [waitForFormAfterRotation] и [theStagedFormSurvivesRotation]).
+ *    Манифест не объявляет `configChanges` (`app/src/main/AndroidManifest.xml`), поворот
+ *    пересоздаёт активность — и заполненное обязано пересоздание пережить: черновик живёт
+ *    в модели активности, а место человека — в сохранённом состоянии композиции.
+ * 2. Двойное нажатие «Сохранить» (шаг 3): нажатий два, а запись и план приёмов — одни.
  *
  * Название из одних пробелов форма считает пустым названием и до сохранения не доводит: кнопка
  * недоступна, а причина названа человеку словами (шаг 4). Поэтому «сохранение отклонено, названо
@@ -174,6 +183,135 @@ class HostileMedicationFormTest : JourneyTest() {
     }
 
     /**
+     * Поворот на форме со ступенями сохраняет заполненное (SKL-117 §5.9).
+     *
+     * Ступенчатый вид — самая длинная форма продукта: вид, у каждой из двух карточек этапа
+     * доза и длительность. Поворот пересоздаёт активность, и человек обязан вернуться к той же
+     * форме с тем же видом и теми же числами: потерянная карточка или цифра — это потерянное
+     * назначение врача, а не косметика. Сохранение здесь не проверяется намеренно: создание
+     * сложного вида платное (ПР-20), а подписку этот враждебный проход не поднимает —
+     * предмет пробы в том, что введённое переживает пересоздание, а не в записи курса.
+     */
+    @Test
+    fun theStagedFormSurvivesRotation() {
+        val name = testContext.getString(R.string.device_test_medication_name, ROTATION_NAME_SUFFIX)
+
+        launchApp()
+        awaitRoot()
+        openMedications()
+        click(TAG_ADD_MEDICATION)
+        waitForTag(TAG_MEDICATION_FORM)
+        typeInto(TAG_NAME_FIELD, name)
+        // Доза курса вводится до выбора вида: у ступенчатого вида её поле уступает место этапам.
+        typeInto(TAG_DOSE_FIELD, DOSE)
+        chooseScheduleKind(MedsR.string.schedule_kind_steps)
+        // Выбор платного вида — точка выбора платной функции (§5.10, Р-67 п. 3): витрина
+        // открывается тут же, до заполнения этапов. Человек закрывает её тапом
+        // по затемнению (Р-54) и продолжает набирать назначение — форма под шторкой цела.
+        waitForTag(TAG_PRO_SHEET)
+        dismissShowcase()
+        waitForTag(TAG_STAGE_CARD)
+        fillStages()
+        // Заполненное сверяется до поворота: иначе «потеряно поворотом» не отличить
+        // от «не набралось», и отказ пробы говорил бы не о том, что случилось.
+        assertStagesKept()
+        capture("stages-filled")
+
+        // Поворот — последняя проба: образ может не менять ориентацию (окно без дисплея),
+        // и тогда проба не имеет предмета; о пропуске говорит отчёт, а не молчание.
+        assumeTrue(
+            "стенд не меняет ориентацию: проба поворота не имеет предмета, дефект назван SKL-142",
+            rotateLandscapeOrNull(),
+        )
+        waitForFilledStages(name)
+        assertStagesKept()
+        capture("stages-landscape")
+
+        rotatePortrait()
+        waitForFilledStages(name)
+        assertStagesKept()
+        capture("stages-portrait")
+    }
+
+    /** Заполнить обе карточки этапов: первую — человеком, вторую — добавленную им же. */
+    private fun fillStages() {
+        typeIntoStage(TAG_STAGE_DOSE, FIRST_STAGE, FIRST_STAGE_DOSE)
+        typeIntoStage(TAG_STAGE_DAYS, FIRST_STAGE, FIRST_STAGE_DAYS)
+        scrollToAndClick(TAG_STAGE_ADD)
+        waitUntil(SCREEN_TIMEOUT_MS, "второй карточки этапа") { stageCards() == STAGES }
+        typeIntoStage(TAG_STAGE_DOSE, SECOND_STAGE, SECOND_STAGE_DOSE)
+        typeIntoStage(TAG_STAGE_DAYS, SECOND_STAGE, SECOND_STAGE_DAYS)
+    }
+
+    /**
+     * Заполненное в ступенях: вид, число карточек, дозы и длительности обеих.
+     *
+     * Числа сверяются по тексту полей, а не по значению в домене: предмет пробы — то, что
+     * человек набрал и видит на экране, и потеря любой цифры обязана быть видна.
+     */
+    private fun assertStagesKept() {
+        assertTrue(
+            "строка вида обязана остаться ступенчатой, а называет «${scheduleRowText()}»",
+            scheduleRowText().contains(ui(MedsR.string.schedule_kind_steps)),
+        )
+        assertEquals("карточек этапов — две", STAGES, stageCards())
+        assertEquals("доза первого этапа", FIRST_STAGE_DOSE, typedText(stageField(TAG_STAGE_DOSE, FIRST_STAGE)))
+        assertEquals(
+            "длительность первого этапа",
+            FIRST_STAGE_DAYS,
+            typedText(stageField(TAG_STAGE_DAYS, FIRST_STAGE)),
+        )
+        assertEquals("доза второго этапа", SECOND_STAGE_DOSE, typedText(stageField(TAG_STAGE_DOSE, SECOND_STAGE)))
+        assertEquals(
+            "длительность второго этапа",
+            SECOND_STAGE_DAYS,
+            typedText(stageField(TAG_STAGE_DAYS, SECOND_STAGE)),
+        )
+    }
+
+    /**
+     * Дождаться заполненной формы со ступенями после поворота — то же, что названо сценарием.
+     *
+     * Поворот пересоздаёт активность, и на миг композиции в процессе нет вовсе: чтение дерева
+     * в этот миг отказывает, а не отвечает «узла нет», поэтому условие ждёт через [runCatching].
+     */
+    private fun waitForFilledStages(name: String) {
+        waitUntil(SCREEN_TIMEOUT_MS, "заполненной формы со ступенями после поворота") {
+            runCatching {
+                exists(TAG_MEDICATION_FORM) &&
+                    typedText(TAG_NAME_FIELD) == name &&
+                    stageCards() == STAGES
+            }.getOrDefault(false)
+        }
+    }
+
+    /** Число карточек этапов на форме: потеря карточки — потерянная ступень назначения. */
+    private fun stageCards(): Int =
+        compose.onAllNodesWithTag(TAG_STAGE_CARD, useUnmergedTree = true).fetchSemanticsNodes().size
+
+    /**
+     * Поле этапа номером: у обеих карточек один тег, и различает их имя поля для чтения
+     * с экрана — «Доза этапа 1», «Длительность этапа 2».
+     */
+    private fun stageField(tag: String, number: Int): SemanticsNodeInteraction = compose.onNode(
+        hasSetTextAction() and hasAnyAncestor(
+            hasTestTag(tag) and hasContentDescription(stageFieldName(tag, number)),
+        ),
+        useUnmergedTree = true,
+    )
+
+    private fun typeIntoStage(tag: String, number: Int, value: String) {
+        stageField(tag, number).performScrollTo().performTextInput(value)
+        compose.waitForIdle()
+    }
+
+    /** Имя поля этапа для чтения с экрана: продукт называет номер этапа словами ресурса. */
+    private fun stageFieldName(tag: String, number: Int): String = targetContext.getString(
+        if (tag == TAG_STAGE_DOSE) MedsR.string.cd_stage_dose else MedsR.string.cd_stage_days,
+        number,
+    )
+
+    /**
      * Дождаться заполненной формы после поворота — то же, что названо сценарием.
      *
      * Поворот пересоздаёт активность, и на миг композиции в процессе нет вовсе: чтение дерева
@@ -200,10 +338,30 @@ class HostileMedicationFormTest : JourneyTest() {
     }
 
     /** Введённое в поле: у поля читается его редактируемый текст, а не подпись. */
-    private fun typedText(fieldTag: String): String = compose.onNode(
-        hasSetTextAction() and hasAnyAncestor(hasTestTag(fieldTag)),
-        useUnmergedTree = true,
-    ).fetchSemanticsNode().config.getOrNull(SemanticsProperties.EditableText)?.text.orEmpty()
+    private fun typedText(fieldTag: String): String = typedText(
+        compose.onNode(hasSetTextAction() and hasAnyAncestor(hasTestTag(fieldTag)), useUnmergedTree = true),
+    )
+
+    /**
+     * Закрыть витрину «Про» системным «Назад» — путь человека (Р-54).
+     *
+     * Три пути закрытия — «Назад», тап по затемнению и «Отмена» — зовут один обработчик шторки
+     * (`SklyankaBottomSheet`), и поход берёт тот, который не зависит от геометрии: тап по
+     * затемнению адресуется центром узла, а центр полноэкранного затемнения лежит под самой
+     * шторкой, и нажатие уходило бы в неё (проверено прогоном 16.10.2026: 15 с ожидания
+     * закрытия). Тем же путём закрывает витрину и поход «Витрина “Склянка Про”».
+     */
+    private fun dismissShowcase() {
+        pressBack()
+        waitUntil(SCREEN_TIMEOUT_MS, "закрытия витрины «Про»") { !exists(TAG_PRO_SHEET) }
+    }
+
+    /** Введённое в поле, найденное не по тегу: у ступеней тег общий, различает их имя поля. */
+    private fun typedText(node: SemanticsNodeInteraction): String = node.fetchSemanticsNode()
+        .config
+        .getOrNull(SemanticsProperties.EditableText)
+        ?.text
+        .orEmpty()
 
     /**
      * Показанное в строке времени.
@@ -254,6 +412,22 @@ class HostileMedicationFormTest : JourneyTest() {
 
         /** Название из одних пробелов: для формы это пустое название, а не имя лекарства. */
         const val SPACES = "   "
+
+        /** Кусок имени лекарства пробы поворота: имена стенда обязаны быть латиницей (НФТ-42). */
+        const val ROTATION_NAME_SUFFIX = "hostile-stages"
+
+        /** Номера этапов: первый приходит формой, второй человек добавляет сам. */
+        const val FIRST_STAGE = 1
+        const val SECOND_STAGE = 2
+
+        /** Сколько карточек этапов человек оставил на форме. */
+        const val STAGES = 2
+
+        /** Числа этапов: они и обязаны пережить поворот — по ним видна потеря введённого. */
+        const val FIRST_STAGE_DOSE = "1"
+        const val FIRST_STAGE_DAYS = "7"
+        const val SECOND_STAGE_DOSE = "2"
+        const val SECOND_STAGE_DAYS = "24"
 
         /** Время первой строки расписания: его даёт продукт — 08:00 (`DEFAULT_TIME`). */
         val MORNING: LocalTime = LocalTime.of(8, 0)

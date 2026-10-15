@@ -63,7 +63,16 @@ data class ReportMedicationRow(
     val medicationId: String,
     val name: String,
     val form: MedicationForm,
-    val doseAmount: BigDecimal,
+    /**
+     * Дозы приёмов, записанные за период, — по возрастанию и без повторов (ПР-19).
+     *
+     * У ступенчатого курса доза меняется от приёма к приёму, и одно число курса — доза
+     * **первого** этапа — сказало бы врачу неправду о принятом: в отчёте стоят те дозы,
+     * которыми приёмы прожиты и по которым списан остаток (SKL-117, критика F1).
+     * У ежедневного курса и у курса до появления видов расписания список — из одного
+     * элемента: дозы приёмов равны дозе лекарства.
+     */
+    val doses: List<BigDecimal>,
     val doseUnit: String,
     val strength: BigDecimal?,
     val strengthUnit: String?,

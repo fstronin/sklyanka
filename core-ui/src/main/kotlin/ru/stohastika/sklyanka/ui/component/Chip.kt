@@ -15,6 +15,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -33,12 +35,24 @@ import ru.stohastika.sklyanka.ui.token.SklyankaType
  * Выбранное состояние отличается не только цветом: рамка утолщается до 1,5 dp, а
  * подпись становится полужирной (НФТ-33).
  */
+@Suppress("LongParameterList")
 @Composable
 fun SklyankaChip(
     text: String,
     modifier: Modifier = Modifier,
     state: ChipState = ChipState.Unselected,
     shape: RoundedCornerShape = SklyankaShapes.Button,
+    /**
+     * Объявленная роль чипа (НФТ-30, §5.10). По умолчанию `RadioButton` — выбор одного
+     * значения из набора (порог покупки, пресет срока). Ряд дней недели выбирает несколько
+     * значений разом и объявляет `Role.Checkbox`; вид чипа и токены при этом не меняются.
+     */
+    role: Role = Role.RadioButton,
+    /**
+     * Полное имя для чтения с экрана, если подпись чипа сокращена: дни недели стоят короткой
+     * формой («Ср»), а читаются полной («среда», §5.10). `null` — читается сама подпись.
+     */
+    contentDescription: String? = null,
     onClick: (() -> Unit)? = null,
 ) {
     val colors = SklyankaTheme.colors
@@ -56,7 +70,7 @@ fun SklyankaChip(
                         // дефект 3). Фон и рамка и так нарисованы по форме — обрезка
                         // их не меняет, а нежимаемые чипы остаются без лишнего слоя.
                         .clip(shape)
-                        .clickable(role = Role.RadioButton, onClick = { onClick?.invoke() })
+                        .clickable(role = role, onClick = { onClick?.invoke() })
                         .defaultMinSize(minHeight = SklyankaSizes.ChipHeight)
                 } else {
                     Modifier
@@ -69,6 +83,7 @@ fun SklyankaChip(
             .semantics {
                 if (state != ChipState.Info) selected = state == ChipState.Selected
                 if (state == ChipState.Disabled) disabled()
+                if (contentDescription != null) this.contentDescription = contentDescription
             }
             .background(background, shape)
             .then(
@@ -82,6 +97,9 @@ fun SklyankaChip(
             text = text,
             style = if (state == ChipState.Selected) SklyankaType.CaptionStrong else SklyankaType.Caption,
             color = if (state == ChipState.Disabled) colors.textDisabled else colors.text,
+            // Полное имя заменяет сокращённую подпись в чтении с экрана целиком, а не
+            // читается вместе с ней (НФТ-30).
+            modifier = if (contentDescription == null) Modifier else Modifier.clearAndSetSemantics { },
         )
     }
 }

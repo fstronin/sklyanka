@@ -76,6 +76,18 @@ class Sk122ProSteps(private val world: AcceptanceWorld) {
         world.pro.refusesPurchase(ProStoreFailure.NETWORK)
     }
 
+    /**
+     * Магазин подтверждает покупку периода (SKL-117, F3).
+     *
+     * По умолчанию магазин мира ничего не подтверждает (SKL-122 §2): сценарий, который
+     * говорит, что человек купил, обязан назвать исход покупки, иначе «доступ появился»
+     * проверялось бы ответом, которого сценарий не называл.
+     */
+    @Допустим("^магазин подтверждает покупку периода «([^»]+)»$")
+    fun theStoreConfirmsThePurchaseOf(period: String) {
+        world.pro.confirmsPurchase(periodId(period), world.clock.today().plusMonths(1))
+    }
+
     @Допустим("^подписка «Склянка Про» не оформлена$")
     fun theSubscriptionIsNotPurchased() {
         world.pro.none()
@@ -552,6 +564,11 @@ class Sk122ProSteps(private val world: AcceptanceWorld) {
         assertFalse(world.pro.state.visible, "the showcase must not be shown in the medical scenario")
         val offenders = MEDICAL_MODULES
             .flatMap { module -> sourcesOf(module) }
+            // Форма лекарства — законный вход витрины (Р-67 п. 2, §5.10 нормы дизайна): строка
+            // вида с меткой «Про» и причина над кнопкой стоят там по норме, и лечебным сценарием
+            // (напоминание, отметка, критический остаток) форма не является — витрину она только
+            // зовёт. Остальные поверхности модуля остаются под стражем.
+            .filterNot { file -> file.path.replace(File.separatorChar, '/').contains(PRO_ENTRY_POINT) }
             .filter { file -> PRO_MARKERS.any { marker -> file.readText().contains(marker) } }
         assertTrue(
             offenders.isEmpty(),
@@ -586,13 +603,53 @@ class Sk122ProSteps(private val world: AcceptanceWorld) {
         val MEDICAL_MODULES = listOf("feature-today", "feature-reminder", "feature-meds")
 
         /**
+         * Форма лекарства внутри `feature-meds` — вход витрины, а не лечебная поверхность.
+         *
+         * Р-67 п. 2 делает форму лекарства точкой выбора платной функции, и §5.10 нормы дизайна
+         * ставит там строку вида с меткой «Про» и причину над кнопкой. Из-под стража снимается
+         * ровно каталог формы: остальные файлы модуля остаются под ним.
+         */
+        const val PRO_ENTRY_POINT = "feature/meds/form/"
+
+        /**
          * Признаки платного контура в исходниках.
          *
-         * Ключ ресурса, тег, компонент и модель — узкие признаки именно витрины: слово «Pro»
+         * Ключ ресурса, тег, компонент и модель — узкие признаки именно витрины: слово «Про»
          * само по себе встречается и в чужом контексте (акцентная тема знака), и широкий
-         * поиск ловил бы не то.
+         * поиск ловил бы не то. Ключ ресурса ищется с кавычкой (`name="pro_…` в XML) или
+         * через `R.string.`/`R.plurals.`: без этого под страж попадало бы чужое слово в имени
+         * ключа формы (`form_weekdays_pro_note`, §10).
+         *
+         * Ссылка на каталог из разметки (`@string/pro_…`, `@plurals/pro_…`) ищется отдельным
+         * признаком: без кавычки перед `pro_` её видит только он, а с кавычкой — только ключ
+         * ресурса `name="pro_…`. Это не украшение списка: сузив поиск до кавычек, страж
+         * перестал бы видеть ссылку в разметке лечебного модуля — то есть ровно то, ради чего
+         * он и заведён (ИИ-4, §9 монетизации).
+         *
+         * Модели и сценарии доступа (`ProStatus`, `ProBenefit`, `ProPoint`, `ProTexts`,
+         * `ProSubscription`, `ObserveProStatusUseCase`) стоят здесь потому, что читающий доступ
+         * лечебный экран — такое же обещание подписки, как нарисованная метка: учёт и напоминания
+         * от подписки не зависят (П-6, Р-22), и появление такого читателя в лечебном модуле
+         * обязано быть видно страху, а не только ревью.
          */
-        val PRO_MARKERS = listOf("pro_", "ProMark", "ProSheet", "ProNotice", "ProShowcase", "TAG_PRO_")
+        val PRO_MARKERS = listOf(
+            "\"pro_",
+            "@string/pro_",
+            "@plurals/pro_",
+            "R.string.pro_",
+            "R.plurals.pro_",
+            "ProMark",
+            "ProSheet",
+            "ProNotice",
+            "ProShowcase",
+            "TAG_PRO_",
+            "ProStatus",
+            "ProBenefit",
+            "ProPoint",
+            "ProTexts",
+            "ProSubscription",
+            "ObserveProStatus",
+        )
 
         /** Русский каталог `core-ui`: слова, которые сценарий называет вслух. */
         val CATALOG: Map<String, String> by lazy { parseCatalog() }

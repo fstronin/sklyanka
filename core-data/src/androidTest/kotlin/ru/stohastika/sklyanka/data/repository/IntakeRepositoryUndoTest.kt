@@ -179,9 +179,43 @@ class IntakeRepositoryUndoTest {
         actorProfileId = null,
     )
 
+    /**
+     * Отмена возвращает ровно списанное: у приёма ступенчатого курса это снимок его дня,
+     * а не текущая доза лекарства (ПР-19). Иначе смена ступени между отметкой и отменой
+     * положила бы в упаковку чужую дозу.
+     */
+    @Test
+    fun theUndoOfAStagedIntakeReturnsTheDoseOfItsOwnStage() = runTest {
+        db.medications.upsert(TestData.medication(doseAmount = "1"))
+        db.intakes.insertAll(
+            listOf(
+                // Время сдвинуто от посеянных приёмов: слот расписания уникален на момент (ИНВ-13).
+                TestData.scheduledIntake(
+                    id = STAGE_ID,
+                    scheduledAt = TestData.MORNING.plusMinutes(30),
+                    doseAmount = "0.5",
+                ),
+            ),
+        )
+        mark(STAGE_ID)
+        assertEquals("29.5", db.medications.getById(TestData.OWNER_MEDICATION_ID)?.stockLeft)
+
+        // Лекарство тем временем переведено на вторую ступень; остаток остаётся тем,
+        // каким его сделала отметка.
+        db.medications.upsert(TestData.medication(doseAmount = "2", stockLeft = "29.5"))
+
+        val outcome = intakes.undoAtomically(command(STAGE_ID))
+
+        assertEquals(UndoOutcome.Applied(undone = 1), outcome)
+        // Половина возвращается к половине: остаток снова тридцать, но записан он
+        // с той же точностью, что и списанное (склад дробей у хранения десятичный).
+        assertEquals("30.0", db.medications.getById(TestData.OWNER_MEDICATION_ID)?.stockLeft)
+    }
+
     private companion object {
         const val INTAKE_ID = "aaaaaaaa-0000-4000-8000-000000000001"
         const val SECOND_INTAKE_ID = "aaaaaaaa-0000-4000-8000-000000000002"
+        const val STAGE_ID = "aaaaaaaa-0000-4000-8000-00000000000c"
         const val MISSING_INTAKE_ID = "aaaaaaaa-0000-4000-8000-0000000000ff"
         const val RECENT_LIMIT = 50
         val MOMENT: Instant = Instant.parse("2026-09-25T05:05:00Z")

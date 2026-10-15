@@ -23,6 +23,8 @@ import ru.stohastika.sklyanka.domain.model.MedicationForm
 import ru.stohastika.sklyanka.domain.model.Profile
 import ru.stohastika.sklyanka.domain.model.ScheduleMode
 import ru.stohastika.sklyanka.domain.model.TabletShape
+import ru.stohastika.sklyanka.domain.pro.ProSubscription
+import ru.stohastika.sklyanka.domain.pro.ProSubscriptionCache
 import ru.stohastika.sklyanka.domain.repository.ActiveProfileRepository
 import ru.stohastika.sklyanka.domain.repository.IntakeRepository
 import ru.stohastika.sklyanka.domain.repository.MedicationRepository
@@ -233,11 +235,12 @@ internal class FakeIntakes : IntakeRepository {
 
     override suspend fun applyPlan(profileId: String, medicationId: String, diff: IntakePlanDiff): PlanApplyResult {
         stored.value = stored.value.filterNot { it.id in diff.toDelete }
-        val created = diff.toCreate.map { moment ->
+        val created = diff.toCreate.map { planned ->
             Intake(
-                id = "planned-$medicationId-$moment",
+                id = "planned-$medicationId-${planned.scheduledAt}",
                 medicationId = medicationId,
-                scheduledAt = moment,
+                scheduledAt = planned.scheduledAt,
+                doseAmount = planned.doseAmount,
                 status = IntakeStatus.PENDING,
                 actedAt = null,
                 source = null,
@@ -245,6 +248,17 @@ internal class FakeIntakes : IntakeRepository {
             )
         }
         put(*created.toTypedArray())
+        // Снимок дозы у ожидающих: та же правка, что делает `UPDATE … WHERE status = 'PENDING'`
+        // в хранилище (ПР-19, SKL-117 F7).
+        diff.toRefreshDose.forEach { refresh ->
+            stored.value = stored.value.map { intake ->
+                if (intake.id == refresh.intakeId && intake.isPending) {
+                    intake.copy(doseAmount = refresh.doseAmount)
+                } else {
+                    intake
+                }
+            }
+        }
         return PlanApplyResult(created = created.size, deleted = diff.toDelete.size)
     }
 
@@ -326,4 +340,24 @@ internal class RecordingLog : OperationLog {
     override suspend fun lastOccurredAt(event: OpEvent): Instant? = records.lastOrNull { it.event == event }?.at
 
     override suspend fun prune(keepDays: Long, keepRecords: Int) = Unit
+}
+
+/**
+ * Кэш подписки в памяти: доступ «Про» для гейта формы (Р-22, Р-28).
+ *
+ * Пустое значение — «подписки нет», как у первого запуска; [grant] выдаёт действующий доступ
+ * до названной даты.
+ */
+internal class FakeProCache(private var subscription: ProSubscription = ProSubscription.None) : ProSubscriptionCache {
+
+    override suspend fun read(): ProSubscription = subscription
+
+    override suspend fun write(subscription: ProSubscription) {
+        this.subscription = subscription
+    }
+
+    /** Действующий доступ до даты включительно. */
+    fun grant(until: LocalDate) {
+        subscription = ProSubscription.Active(productId = null, until = until)
+    }
 }

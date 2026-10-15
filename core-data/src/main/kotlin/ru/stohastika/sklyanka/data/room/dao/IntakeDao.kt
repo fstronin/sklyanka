@@ -154,6 +154,18 @@ interface IntakeDao {
     suspend fun deletePending(intakeIds: List<String>): Int
 
     /**
+     * Новый снимок дозы у ещё не отмеченного приёма (ПР-19).
+     *
+     * Правка ступеней меняет дозу приёма, но не момент: запись остаётся той же, вместе
+     * с будильником и адресом карточки (НАП-9), а меняется только снимок. Условие
+     * `status = 'PENDING'` стоит внутри самого UPDATE — отметка неприкосновенна
+     * (ПР-11): отмеченный приём списан по своей дозе, и переписывать её задним числом
+     * значило бы разойтись с остатком. `null` в `dose_amount` осмыслен: доза — у лекарства.
+     */
+    @Query("UPDATE intake SET dose_amount = :doseAmount WHERE id = :intakeId AND status = 'PENDING'")
+    suspend fun refreshPendingDose(intakeId: String, doseAmount: String?): Int
+
+    /**
      * Вставка пачкой с пропуском конфликтов.
      *
      * Повторная генерация того же приёма — ожидаемый ход событий, а не ошибка:

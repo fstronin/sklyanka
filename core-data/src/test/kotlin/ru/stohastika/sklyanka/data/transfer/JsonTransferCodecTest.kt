@@ -7,12 +7,16 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import ru.stohastika.sklyanka.domain.model.IntakeStatus
 import ru.stohastika.sklyanka.domain.model.MedicationForm
+import ru.stohastika.sklyanka.domain.model.ScheduleRule
+import ru.stohastika.sklyanka.domain.model.Stage
 import ru.stohastika.sklyanka.domain.time.FixedTimeSource
 import ru.stohastika.sklyanka.domain.transfer.ReminderSound
 import ru.stohastika.sklyanka.domain.transfer.TransferDecoded
 import ru.stohastika.sklyanka.domain.transfer.TransferFormat
 import ru.stohastika.sklyanka.domain.transfer.TransferNotice
 import ru.stohastika.sklyanka.domain.transfer.TransferRejectReason
+import java.math.BigDecimal
+import java.time.DayOfWeek
 import java.time.ZoneId
 
 /**
@@ -310,6 +314,76 @@ class JsonTransferCodecTest {
 
         val decoded = abroad.decode(text) as TransferDecoded.Loaded
         assertEquals(TransferFixtures.ACTED_AT, decoded.snapshot.intakes.first().actedAt)
+    }
+
+    // --- Вид расписания и снимок дозы (SKL-117, ПР-15…ПР-19) ------------------------------
+
+    /**
+     * Курс «по дням недели» переживает выгрузку и загрузку (критерий 1 приёмки SKL-117).
+     *
+     * Без новых полей перенос молча превратил бы недельный курс в ежедневный — это ложь
+     * о данных человека (П-7).
+     */
+    @Test
+    fun `a weekly course survives the round trip`() {
+        val weekly = TransferFixtures.active().copy(
+            schedule = ScheduleRule.Weekdays(setOf(DayOfWeek.MONDAY, DayOfWeek.WEDNESDAY, DayOfWeek.FRIDAY)),
+        )
+        val snapshot = TransferFixtures.snapshot().copy(medications = listOf(weekly))
+
+        val text = codec.encode(snapshot)
+
+        assertTrue("the file must name the schedule rule", text.contains("\"schedule_rule\": \"weekdays:MO,WE,FR\""))
+        val restored = (codec.decode(text) as TransferDecoded.Loaded).snapshot.medications.single()
+        assertEquals(weekly.schedule, restored.schedule)
+    }
+
+    /** Ступенчатый курс несёт и вид, и снимок дозы приёма: перенос не теряет дозу этапа. */
+    @Test
+    fun `a staged course and its intake dose survive the round trip`() {
+        val staged = TransferFixtures.active().copy(
+            schedule = ScheduleRule.Staged(listOf(Stage(BigDecimal("0.5"), 7), Stage(BigDecimal.ONE, 24))),
+        )
+        val dosed = TransferFixtures.taken().copy(doseAmount = BigDecimal("0.5"))
+        val snapshot = TransferFixtures.snapshot().copy(medications = listOf(staged), intakes = listOf(dosed))
+
+        val text = codec.encode(snapshot)
+        val restored = (codec.decode(text) as TransferDecoded.Loaded).snapshot
+
+        assertEquals(staged.schedule, restored.medications.single().schedule)
+        assertEquals(BigDecimal("0.5"), restored.intakes.single().doseAmount)
+    }
+
+    /**
+     * Файл прежней версии читается как прежде: ежедневное, доза лекарства (МГ-6, ПЕР-7).
+     *
+     * Обе новые колонки необязательны; сборка без них — ровно курс, заведённый до появления
+     * видов. Отсутствие поля не потеря и не повод для замечаний.
+     */
+    @Test
+    fun `a file of the previous version reads the schedule as daily and the dose as the medication's`() {
+        val stripped = codec.encode(TransferFixtures.snapshot())
+            .replace(Regex(",\\s*\"schedule_rule\": \"[^\"]*\""), "")
+            .replace(Regex(",\\s*\"dose_amount\": null"), "")
+
+        assertTrue("the scenario must really strip the fields", !stripped.contains("schedule_rule"))
+        assertTrue("the scenario must really strip the dose", !stripped.contains("\"dose_amount\": null"))
+        val decoded = codec.decode(stripped) as TransferDecoded.Loaded
+
+        assertTrue(decoded.snapshot.medications.all { it.schedule == ScheduleRule.Daily })
+        assertTrue(decoded.snapshot.intakes.all { it.doseAmount == null })
+        assertTrue("an old file needs no complaints: ${decoded.notices}", decoded.notices.isEmpty())
+    }
+
+    /** Непонятая строка вида — ежедневное, а не отказ загрузки: расписание не исчезает (МГ-6). */
+    @Test
+    fun `an unknown schedule rule is read as daily and does not break the load`() {
+        val text = codec.encode(TransferFixtures.snapshot())
+            .replace("\"schedule_rule\": \"daily\"", "\"schedule_rule\": \"every-monday-invented\"")
+
+        val decoded = codec.decode(text) as TransferDecoded.Loaded
+
+        assertTrue(decoded.snapshot.medications.all { it.schedule == ScheduleRule.Daily })
     }
 
     private fun rejectOf(text: String): TransferRejectReason =

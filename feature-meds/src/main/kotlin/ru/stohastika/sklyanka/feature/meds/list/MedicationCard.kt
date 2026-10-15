@@ -153,7 +153,7 @@ private fun TitleLine(card: MedicationCardUi) {
 @Composable
 private fun ScheduleLine(card: MedicationCardUi) {
     Text(
-        text = schedulePhrase(card.timesPerDay, card.times, card.trailingLine),
+        text = schedulePhrase(card.timesPerDay, card.times, card.trailingLine, card.scheduleKind),
         style = SklyankaType.CaptionSmall,
         color = SklyankaTheme.colors.textMuted,
         modifier = Modifier.testTag(TAG_TRAILING_LINE),

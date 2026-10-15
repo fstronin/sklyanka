@@ -7,7 +7,11 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
 import ru.stohastika.sklyanka.domain.model.ScheduleMode
+import ru.stohastika.sklyanka.domain.model.ScheduleRule
+import ru.stohastika.sklyanka.domain.model.Stage
 import ru.stohastika.sklyanka.domain.time.FixedTimeSource
+import java.math.BigDecimal
+import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -32,7 +36,26 @@ class ScheduleExpanderTest {
         mode: ScheduleMode = ScheduleMode.SCHEDULED,
         archivedAt: java.time.Instant? = null,
         deletedAt: java.time.Instant? = null,
-    ): List<LocalDateTime> = expander.expand(
+    ): List<LocalDateTime> = plan(
+        times = times,
+        startDate = startDate,
+        endDate = endDate,
+        mode = mode,
+        archivedAt = archivedAt,
+        deletedAt = deletedAt,
+    ).map { it.scheduledAt }
+
+    /** План целиком — вместе с дозой дня: она часть плана, а не производная отметки (ПР-19). */
+    @Suppress("LongParameterList")
+    private fun plan(
+        times: List<LocalTime> = listOf(Planning.MORNING),
+        startDate: LocalDate = Planning.TODAY,
+        endDate: LocalDate? = null,
+        mode: ScheduleMode = ScheduleMode.SCHEDULED,
+        archivedAt: java.time.Instant? = null,
+        deletedAt: java.time.Instant? = null,
+        schedule: ScheduleRule = ScheduleRule.Daily,
+    ): List<PlannedIntake> = expander.expand(
         Planning.medication(
             times = times,
             startDate = startDate,
@@ -40,6 +63,7 @@ class ScheduleExpanderTest {
             mode = mode,
             archivedAt = archivedAt,
             deletedAt = deletedAt,
+            schedule = schedule,
         ),
         Planning.window(clock.today()),
     )
@@ -306,7 +330,7 @@ class ScheduleExpanderTest {
         )
 
         assertEquals(21, moments.size)
-        assertEquals(3, moments.count { it.toLocalDate() == Planning.TODAY })
+        assertEquals(3, moments.count { it.scheduledAt.toLocalDate() == Planning.TODAY })
     }
 
     // --- Полночь, пояс, перевод часов ---------------------------------------------------
@@ -374,6 +398,211 @@ class ScheduleExpanderTest {
         val moments = expand(times = emptyList())
 
         assertTrue(moments.isEmpty())
+    }
+
+    // --- Вид расписания: какие дни и какая доза (ПР-15…ПР-19) ---------------------------
+
+    @Test
+    fun `weekdays produce intakes only on the chosen days of the week`() {
+        val plan = plan(
+            schedule = ScheduleRule.Weekdays(setOf(DayOfWeek.MONDAY, DayOfWeek.WEDNESDAY, DayOfWeek.FRIDAY)),
+        )
+
+        // Окно — пятница 25 сентября … четверг 1 октября: понедельник, среда и пятница
+        // дают три дня, а суббота, воскресенье и четверг приёмов не дают вовсе.
+        assertEquals(
+            listOf(Planning.TODAY, Planning.TODAY.plusDays(3), Planning.TODAY.plusDays(5)),
+            plan.map { it.scheduledAt.toLocalDate() },
+        )
+        assertTrue(plan.all { it.scheduledAt.toLocalTime() == Planning.MORNING })
+    }
+
+    @Test
+    fun `a single chosen day of the week is a base schedule and works the same way`() {
+        val plan = plan(schedule = ScheduleRule.Weekdays(setOf(DayOfWeek.WEDNESDAY)))
+
+        assertEquals(listOf(Planning.TODAY.plusDays(5)), plan.map { it.scheduledAt.toLocalDate() })
+    }
+
+    @Test
+    fun `an open ended weekdays course is capped by the window and not by the course`() {
+        val plan = plan(schedule = ScheduleRule.Weekdays(setOf(DayOfWeek.TUESDAY)), endDate = null)
+
+        assertEquals(listOf(Planning.TODAY.plusDays(4)), plan.map { it.scheduledAt.toLocalDate() })
+    }
+
+    @Test
+    fun `every second day counts from the course start and not from the window`() {
+        val plan = plan(schedule = ScheduleRule.EveryNDays(days = 2))
+
+        // 25, 27, 29 сентября и 1 октября — каждый второй день, начиная с дня начала курса.
+        assertEquals(
+            listOf(0, 2, 4, 6).map { offset -> Planning.TODAY.plusDays(offset.toLong()) },
+            plan.map { it.scheduledAt.toLocalDate() },
+        )
+    }
+
+    @Test
+    fun `a third day interval skips two days between intakes`() {
+        val plan = plan(schedule = ScheduleRule.EveryNDays(days = 3))
+
+        assertEquals(
+            listOf(0, 3, 6).map { offset -> Planning.TODAY.plusDays(offset.toLong()) },
+            plan.map { it.scheduledAt.toLocalDate() },
+        )
+    }
+
+    /**
+     * Курс начат раньше окна: «каждый второй день» привязан к дате начала, поэтому
+     * чётность дней внутри окна зависит от неё, а не от начала окна.
+     */
+    @Test
+    fun `the interval is counted from a course that started long before the window`() {
+        val plan = plan(
+            schedule = ScheduleRule.EveryNDays(days = 2),
+            startDate = Planning.TODAY.minusDays(1),
+        )
+
+        assertEquals(
+            listOf(1, 3, 5).map { offset -> Planning.TODAY.plusDays(offset.toLong()) },
+            plan.map { it.scheduledAt.toLocalDate() },
+        )
+    }
+
+    @Test
+    fun `an interval of a single day degenerates into the daily schedule`() {
+        val plan = plan(schedule = ScheduleRule.EveryNDays(days = 1), endDate = Planning.WINDOW_END)
+
+        assertEquals(Planning.DEPTH_DAYS, plan.size)
+        assertEquals(Planning.window().dates(), plan.map { it.scheduledAt.toLocalDate() })
+    }
+
+    @Test
+    fun `a cycle of twenty one days on and seven off skips the whole rest inside the window`() {
+        val plan = plan(
+            schedule = ScheduleRule.Cycles(onDays = 21, offDays = 7),
+            startDate = Planning.TODAY.minusDays(20),
+            endDate = null,
+        )
+
+        // Двадцатый день курса — последний день приёма в блоке: 21 день приёма кончается
+        // 25 сентября, а дальше до конца окна идёт перерыв.
+        assertEquals(listOf(Planning.TODAY), plan.map { it.scheduledAt.toLocalDate() })
+    }
+
+    @Test
+    fun `a two on two off cycle returns to intakes after the rest`() {
+        val plan = plan(
+            schedule = ScheduleRule.Cycles(onDays = 2, offDays = 2),
+            startDate = Planning.TODAY.minusDays(3),
+        )
+
+        assertEquals(
+            listOf(1, 2, 5, 6).map { offset -> Planning.TODAY.plusDays(offset.toLong()) },
+            plan.map { it.scheduledAt.toLocalDate() },
+        )
+    }
+
+    @Test
+    fun `a cycle started today begins with the intake block`() {
+        val plan = plan(schedule = ScheduleRule.Cycles(onDays = 2, offDays = 5), endDate = Planning.TODAY.plusDays(3))
+
+        assertEquals(
+            listOf(Planning.TODAY, Planning.TODAY.plusDays(1)),
+            plan.map { it.scheduledAt.toLocalDate() },
+        )
+    }
+
+    // --- Ступени: доза берётся из этапа, времена общие (ПР-19, ИНВ-24) --------------------
+
+    @Test
+    fun `stages give the dose of the stage the day falls into`() {
+        val plan = plan(
+            schedule = ScheduleRule.Staged(
+                stages = listOf(Stage(BigDecimal("0.5"), days = 7), Stage(BigDecimal.ONE, days = 24)),
+            ),
+            startDate = Planning.TODAY.minusDays(5),
+            endDate = null,
+        )
+
+        // Пятый и шестой дни курса — ещё первая ступень, седьмой и дальше — вторая.
+        val firstStage = plan.filter { it.scheduledAt.toLocalDate() < Planning.TODAY.plusDays(2) }
+        val secondStage = plan.filter { it.scheduledAt.toLocalDate() >= Planning.TODAY.plusDays(2) }
+
+        assertEquals(2, firstStage.size)
+        assertTrue(firstStage.all { it.doseAmount == BigDecimal("0.5") })
+        assertEquals(5, secondStage.size)
+        assertTrue(secondStage.all { it.doseAmount == BigDecimal.ONE })
+    }
+
+    @Test
+    fun `all stages share the same times of day`() {
+        val plan = plan(
+            times = listOf(Planning.MORNING, Planning.EVENING),
+            schedule = ScheduleRule.Staged(stages = listOf(Stage(BigDecimal.ONE, days = 7))),
+            endDate = Planning.TODAY.plusDays(1),
+        )
+
+        assertEquals(4, plan.size)
+        assertTrue(
+            plan.all {
+                it.scheduledAt.toLocalTime() == Planning.MORNING ||
+                    it.scheduledAt.toLocalTime() == Planning.EVENING
+            },
+        )
+        assertTrue(plan.all { it.doseAmount == BigDecimal.ONE })
+    }
+
+    @Test
+    fun `a day past the last stage keeps the last stage dose instead of losing the intake`() {
+        val plan = plan(
+            schedule = ScheduleRule.Staged(stages = listOf(Stage(BigDecimal.ONE, days = 2))),
+            startDate = Planning.TODAY,
+            endDate = Planning.TODAY.plusDays(3),
+        )
+
+        assertEquals(4, plan.size)
+        assertTrue(plan.all { it.doseAmount == BigDecimal.ONE })
+    }
+
+    @Test
+    fun `the course end cuts the last stage without stretching it`() {
+        val plan = plan(
+            schedule = ScheduleRule.Staged(
+                stages = listOf(Stage(BigDecimal("0.5"), days = 7), Stage(BigDecimal.ONE, days = 24)),
+            ),
+            startDate = Planning.TODAY,
+            endDate = Planning.TODAY.plusDays(2),
+        )
+
+        assertEquals(3, plan.size)
+        assertTrue(plan.all { it.doseAmount == BigDecimal("0.5") })
+    }
+
+    @Test
+    fun `the days of the course start that already passed are dropped for a complex schedule too`() {
+        clock.setLocal(Planning.TODAY.atTime(14, 30))
+
+        val plan = plan(
+            times = listOf(Planning.MORNING, Planning.EVENING),
+            schedule = ScheduleRule.Staged(stages = listOf(Stage(BigDecimal.ONE, days = 7))),
+            startDate = Planning.TODAY,
+            endDate = Planning.TODAY,
+        )
+
+        assertEquals(listOf(Planning.EVENING), plan.map { it.scheduledAt.toLocalTime() })
+    }
+
+    @Test
+    fun `a daily course carries no dose of its own`() {
+        assertTrue(plan(endDate = Planning.TODAY).all { it.doseAmount == null })
+    }
+
+    @Test
+    fun `a prn course has no schedule rule at all`() {
+        val plan = plan(mode = ScheduleMode.PRN, schedule = ScheduleRule.Weekdays(setOf(DayOfWeek.WEDNESDAY)))
+
+        assertTrue(plan.isEmpty())
     }
 
     private companion object {

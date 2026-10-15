@@ -61,13 +61,17 @@ object TestData {
         endDate: String? = null,
         archivedAt: Long? = null,
         archiveReason: ArchiveReason? = null,
+        /** Доза лекарства: у ступенчатого курса она не одна на весь курс (ПР-19). */
+        doseAmount: String = "1",
+        /** Вид расписания; `null` — ежедневное, как у всех курсов, заведённых раньше (SKL-117). */
+        scheduleRule: String? = null,
     ) = MedicationEntity(
         id = id,
         profileId = profileId,
         name = name,
         form = MedicationForm.TABLET.name,
         shape = null,
-        doseAmount = "1",
+        doseAmount = doseAmount,
         doseUnit = "unit",
         strength = null,
         strengthUnit = null,
@@ -77,6 +81,7 @@ object TestData {
         times = if (scheduleMode == ScheduleMode.SCHEDULED) "08:00" else "",
         startDate = SklyankaConverters.dateToText(COURSE_START),
         endDate = endDate,
+        scheduleRule = scheduleRule,
         stockLeft = stockLeft,
         packageSize = packageSize,
         stockThresholdDays = null,
@@ -92,10 +97,13 @@ object TestData {
         actedAt: Long? = null,
         source: String? = null,
         revokedAt: Long? = null,
+        /** Снимок дозы приёма; `null` — доза берётся у лекарства (ПР-19). */
+        doseAmount: String? = null,
     ) = IntakeEntity(
         id = id,
         medicationId = medicationId,
         scheduledAt = SklyankaConverters.dateTimeToText(scheduledAt),
+        doseAmount = doseAmount,
         scheduleSlot = IntakeEntity.SCHEDULE_SLOT,
         status = status.name,
         actedAt = actedAt,

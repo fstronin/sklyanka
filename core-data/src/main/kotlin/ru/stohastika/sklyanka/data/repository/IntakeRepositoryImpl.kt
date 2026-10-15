@@ -34,8 +34,10 @@ import ru.stohastika.sklyanka.domain.model.ScheduleMode
 import ru.stohastika.sklyanka.domain.repository.IntakeRepository
 import ru.stohastika.sklyanka.domain.schedule.IntakePlanDiff
 import ru.stohastika.sklyanka.domain.schedule.PlanApplyResult
+import ru.stohastika.sklyanka.domain.schedule.PlannedIntake
 import ru.stohastika.sklyanka.domain.stock.StockLedger
 import ru.stohastika.sklyanka.domain.time.TimeSource
+import java.math.BigDecimal
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -135,6 +137,11 @@ class IntakeRepositoryImpl @Inject constructor(
      * с 08:00 на 09:00 в обратном порядке упёрся бы в уникальный ключ, если бы новое время
      * совпало со снимаемым старым у соседней даты.
      *
+     * Обновление снимка дозы у ожидающих идёт последним: запись уже существует, момент
+     * у неё тот же, и меняется только доза ступени (ПР-19). Условие «ожидается» стоит
+     * внутри самого UPDATE (SKL-117, критика F7), поэтому отмеченный приём между чтением
+     * окна и записью остаётся неприкосновенным.
+     *
      * Журнал ведёт домен, а не этот метод: причина запуска и границы окна известны там,
      * и одна операция генерации обязана оставлять одну запись, а не две.
      */
@@ -149,7 +156,7 @@ class IntakeRepositoryImpl @Inject constructor(
                 ?: error("Plan refers to a medication with an unreadable enum: $medicationId")
 
             val deleted = if (diff.toDelete.isEmpty()) 0 else dao.deletePending(diff.toDelete)
-            val rows = diff.toCreate.map { moment -> pendingIntake(medicationId, moment) }
+            val rows = diff.toCreate.map { planned -> pendingIntake(medicationId, planned) }
             // Граница генерации: строка, рождённая расписанием, обязана лежать в
             // курсе (ИНВ-15) и ссылаться на своё лекарство; отказ здесь — баг
             // экспандера, а не данные человека (SKL-107).
@@ -161,6 +168,12 @@ class IntakeRepositoryImpl @Inject constructor(
             } else {
                 dao.insertAll(rows.map { it.toEntity(ScheduleMode.SCHEDULED) }).count { it != NOT_INSERTED }
             }
+            diff.toRefreshDose.forEach { refresh ->
+                dao.refreshPendingDose(
+                    intakeId = refresh.intakeId,
+                    doseAmount = SklyankaConverters.decimalToText(refresh.doseAmount),
+                )
+            }
             PlanApplyResult(created = created, deleted = deleted)
         }
 
@@ -168,12 +181,15 @@ class IntakeRepositoryImpl @Inject constructor(
      * Модель нового ожидающегося приёма.
      *
      * Слот проставит маппер: сюда попадают только приёмы, порождённые расписанием, и
-     * именно слот делает их уникальными на момент времени (ИНВ-13).
+     * именно слот делает их уникальными на момент времени (ИНВ-13). Доза едет с планом:
+     * у ступенчатого расписания она своя на каждый день, и пересчитывать её при отметке
+     * значило бы списывать остаток по сегодняшней ступени за вчерашний приём (ПР-19).
      */
-    private fun pendingIntake(medicationId: String, moment: LocalDateTime) = Intake(
+    private fun pendingIntake(medicationId: String, planned: PlannedIntake) = Intake(
         id = UUID.randomUUID().toString(),
         medicationId = medicationId,
-        scheduledAt = moment,
+        scheduledAt = planned.scheduledAt,
+        doseAmount = planned.doseAmount,
         status = IntakeStatus.PENDING,
         actedAt = null,
         source = null,
@@ -205,7 +221,14 @@ class IntakeRepositoryImpl @Inject constructor(
         }
 
         val intake = requireNotNull(dao.getById(intakeId))
-        if (status == IntakeStatus.TAKEN) applyStock(intake.medicationId, intake.id, StockEffect.DECREMENT)
+        if (status == IntakeStatus.TAKEN) {
+            applyStock(
+                medicationId = intake.medicationId,
+                intakeId = intake.id,
+                effect = StockEffect.DECREMENT,
+                doseSnapshot = SklyankaConverters.textToDecimal(intake.doseAmount),
+            )
+        }
         log.record(
             event = OpEvent.INTAKE_MARKED,
             medicationId = intake.medicationId,
@@ -310,7 +333,7 @@ class IntakeRepositoryImpl @Inject constructor(
                             detail = STALE_READ,
                         )
                     } else {
-                        applyStock(intake.medicationId, intake.id, decision.stock)
+                        applyStock(intake.medicationId, intake.id, decision.stock, intake.doseAmount)
                         log.record(
                             event = OpEvent.INTAKE_MARK_UNDONE,
                             // Профиль того, кто отменил; пусто означает, что отменил
@@ -358,7 +381,7 @@ class IntakeRepositoryImpl @Inject constructor(
                             detail = STALE_READ,
                         )
                     } else {
-                        applyStock(intake.medicationId, intake.id, decision.stock)
+                        applyStock(intake.medicationId, intake.id, decision.stock, intake.doseAmount)
                         log.record(
                             event = OpEvent.INTAKE_REVOKED,
                             profileId = command.actorProfileId,
@@ -431,7 +454,7 @@ class IntakeRepositoryImpl @Inject constructor(
         // Слот не проставляется: приём по потребности расписанию не подчиняется, и два
         // таких приёма в одну минуту законны (ИНВ-14).
         dao.insertAll(listOf(intake.toEntity(ScheduleMode.PRN)))
-        applyStock(medication.id, intake.id, StockEffect.DECREMENT)
+        applyStock(medication.id, intake.id, StockEffect.DECREMENT, intake.doseAmount)
         log.record(
             event = OpEvent.INTAKE_PRN_CREATED,
             profileId = command.actorProfileId ?: medication.profileId,
@@ -490,7 +513,7 @@ class IntakeRepositoryImpl @Inject constructor(
             return MarkOutcome.Ignored(current, IgnoreReason.ALREADY_MARKED)
         }
 
-        applyStock(current.medicationId, command.intakeId, decision.stock)
+        applyStock(current.medicationId, command.intakeId, decision.stock, decision.intake.doseAmount)
         log.record(
             event = if (decision.superseded) OpEvent.INTAKE_MARK_SUPERSEDED else OpEvent.INTAKE_MARKED,
             // Профиль того, кто отметил; пусто означает, что отметил владелец профиля
@@ -525,11 +548,24 @@ class IntakeRepositoryImpl @Inject constructor(
      * представляет 0,1 точно, а упаковка уменьшается шагами по половине таблетки сотни
      * раз подряд. Ниже нуля остаток не уходит (INV-8). Лекарство без учёта остатка
      * правилу не подчиняется (ПР-5).
+     *
+     * Доза берётся у приёма, если у него есть снимок (ступенчатое расписание, ПР-19),
+     * иначе у лекарства — как было до появления видов расписания. Возврат дозы при отмене
+     * обязан вернуть ровно то, что было списано, поэтому и он идёт по снимку: иначе смена
+     * ступени между отметкой и её отменой вернула бы упаковке чужую дозу.
      */
-    private suspend fun applyStock(medicationId: String, intakeId: String, effect: StockEffect) {
+    private suspend fun applyStock(
+        medicationId: String,
+        intakeId: String,
+        effect: StockEffect,
+        doseSnapshot: BigDecimal?,
+    ) {
         val medication = medications.getById(medicationId) ?: return
         val stock = SklyankaConverters.textToDecimal(medication.stockLeft)
-        val dose = requireNotNull(SklyankaConverters.textToDecimal(medication.doseAmount))
+        val dose = StockLedger.chargedDose(
+            intakeDose = doseSnapshot,
+            medicationDose = requireNotNull(SklyankaConverters.textToDecimal(medication.doseAmount)),
+        )
         // Арифметика — доменного правила, а не этого метода (SKL-12): второй экземпляр
         // правила списания рано или поздно разойдётся с первым, а остаток истории
         // не хранит и разойтись ему нельзя.

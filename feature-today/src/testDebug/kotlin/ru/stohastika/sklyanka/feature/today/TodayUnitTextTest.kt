@@ -11,9 +11,13 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import ru.stohastika.sklyanka.domain.medication.DoseUnit
 import ru.stohastika.sklyanka.domain.model.FoodRelation
+import ru.stohastika.sklyanka.domain.model.Intake
+import ru.stohastika.sklyanka.domain.model.IntakeStatus
 import ru.stohastika.sklyanka.domain.model.Medication
 import ru.stohastika.sklyanka.domain.model.MedicationForm
 import ru.stohastika.sklyanka.domain.model.ScheduleMode
+import ru.stohastika.sklyanka.domain.today.IntakeItem
+import ru.stohastika.sklyanka.domain.today.IntakePresentation
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import java.math.BigDecimal
 import java.time.LocalDate
@@ -93,6 +97,57 @@ class TodayUnitTextTest {
 
         composeRule.onNodeWithText("таблетки", substring = true).assertExists()
     }
+
+    /**
+     * Доза приёма — снимок этапа, а не доза курса (ПР-19, SKL-117 F1).
+     *
+     * У ступенчатого курса доза лекарства — доза **первого** этапа: подпись приёма, собранная
+     * по ней, называла бы человеку не ту дозу, которую он принимает и которую списывает остаток.
+     */
+    @Test
+    fun theIntakeCaptionNamesTheDoseOfItsOwnSnapshot() {
+        val item = IntakeItem(
+            intake = intake(dose = BigDecimal("1")),
+            medication = medication(MedicationForm.TABLET, DoseUnit.TABLET, dose = BigDecimal("0.5")),
+            presentation = IntakePresentation.UPCOMING,
+            markedAt = null,
+        )
+
+        composeRule.setContent {
+            SklyankaTheme { Text(item.doseCaption()) }
+        }
+
+        composeRule.onNodeWithText("1\u00A0таблетка", substring = true).assertExists()
+        composeRule.onNodeWithText("0,5", substring = true).assertDoesNotExist()
+    }
+
+    /** Приём без снимка называет дозу лекарства — как все приёмы до видов расписания. */
+    @Test
+    fun anIntakeWithoutASnapshotNamesTheDoseOfTheMedication() {
+        val item = IntakeItem(
+            intake = intake(dose = null),
+            medication = medication(MedicationForm.TABLET, DoseUnit.TABLET, dose = BigDecimal("20")),
+            presentation = IntakePresentation.UPCOMING,
+            markedAt = null,
+        )
+
+        composeRule.setContent {
+            SklyankaTheme { Text(item.doseCaption()) }
+        }
+
+        composeRule.onNodeWithText("20\u00A0таблеток", substring = true).assertExists()
+    }
+
+    private fun intake(dose: BigDecimal?) = Intake(
+        id = "intake-1",
+        medicationId = "med-1",
+        scheduledAt = LocalDate.of(2026, 10, 13).atTime(8, 0),
+        doseAmount = dose,
+        status = IntakeStatus.PENDING,
+        actedAt = null,
+        source = null,
+        actorProfileId = null,
+    )
 
     private fun medication(
         form: MedicationForm,

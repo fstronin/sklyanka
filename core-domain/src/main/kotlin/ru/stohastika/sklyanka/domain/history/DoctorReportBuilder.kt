@@ -4,6 +4,8 @@ import ru.stohastika.sklyanka.domain.medication.CourseOutcome
 import ru.stohastika.sklyanka.domain.model.Intake
 import ru.stohastika.sklyanka.domain.model.IntakeStatus
 import ru.stohastika.sklyanka.domain.model.Medication
+import ru.stohastika.sklyanka.domain.stock.StockLedger
+import java.math.BigDecimal
 import java.time.Instant
 import java.time.ZoneId
 
@@ -61,7 +63,7 @@ object DoctorReportBuilder {
         medicationId = medication.id,
         name = medication.name,
         form = medication.form,
-        doseAmount = medication.doseAmount,
+        doses = dosesOf(medication, intakes),
         doseUnit = medication.doseUnit,
         strength = medication.strength,
         strengthUnit = medication.strengthUnit,
@@ -79,4 +81,18 @@ object DoctorReportBuilder {
             .distinct()
             .sorted(),
     )
+
+    /**
+     * Дозы приёмов периода — по правилу «снимок, иначе доза лекарства» (ПР-19).
+     *
+     * Правило берётся у [StockLedger.chargedDose]: по нему же списан остаток, и второй
+     * его формулировки в отчёте быть не может — врач и упаковка обязаны называть одну
+     * и ту же дозу. Приёмов за период могло не быть вовсе (курс заведён, но дней ещё
+     * нет): тогда отчёт называет дозу лекарства, как называл её всегда.
+     */
+    private fun dosesOf(medication: Medication, intakes: List<Intake>): List<BigDecimal> = intakes
+        .map { intake -> StockLedger.chargedDose(intake.doseAmount, medication.doseAmount) }
+        .distinct()
+        .sorted()
+        .ifEmpty { listOf(medication.doseAmount) }
 }

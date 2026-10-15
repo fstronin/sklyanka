@@ -129,8 +129,51 @@ class IntakeMarkingTest {
         assertTrue("the log must not carry units", written.none { it.contains("unit") })
     }
 
+    /**
+     * Ступенчатый курс: этап меняет дозу за приём, и списание идёт по снимку приёма,
+     * а не по сегодняшней дозе лекарства (ПР-19, ИНВ-24).
+     */
+    @Test
+    fun aStagedIntakeSpendsTheDoseOfItsOwnStageAndNotOfTheMedication() = runTest {
+        db.medications.upsert(TestData.medication(doseAmount = "0.5", scheduleRule = "staged:0.5x7;1x24"))
+        db.intakes.insertAll(
+            listOf(
+                // Времена сдвинуты от посеянного приёма: слот расписания уникален на момент
+                // (ИНВ-13), и две строки в одну минуту в базу не попадут.
+                TestData.scheduledIntake(
+                    id = FIRST_STAGE_ID,
+                    scheduledAt = TestData.MORNING.plusMinutes(30),
+                    doseAmount = "0.5",
+                ),
+                TestData.scheduledIntake(
+                    id = SECOND_STAGE_ID,
+                    scheduledAt = TestData.LATE_EVENING,
+                    doseAmount = "1",
+                ),
+            ),
+        )
+
+        intakes.markIfPending(FIRST_STAGE_ID, IntakeStatus.TAKEN, IntakeSource.PHONE)
+        assertEquals("29.5", db.medications.getById(TestData.OWNER_MEDICATION_ID)?.stockLeft)
+
+        intakes.markIfPending(SECOND_STAGE_ID, IntakeStatus.TAKEN, IntakeSource.PHONE)
+        assertEquals("28.5", db.medications.getById(TestData.OWNER_MEDICATION_ID)?.stockLeft)
+    }
+
+    /** Обычный приём снимка не несёт: доза берётся у лекарства, как было до SKL-117. */
+    @Test
+    fun anIntakeWithoutASnapshotSpendsTheDoseOfTheMedication() = runTest {
+        db.medications.upsert(TestData.medication(doseAmount = "0.5"))
+
+        intakes.markIfPending(INTAKE_ID, IntakeStatus.TAKEN, IntakeSource.PHONE)
+
+        assertEquals("29.5", db.medications.getById(TestData.OWNER_MEDICATION_ID)?.stockLeft)
+    }
+
     private companion object {
         const val INTAKE_ID = "aaaaaaaa-0000-4000-8000-000000000001"
+        const val FIRST_STAGE_ID = "aaaaaaaa-0000-4000-8000-00000000000a"
+        const val SECOND_STAGE_ID = "aaaaaaaa-0000-4000-8000-00000000000b"
         const val RECENT_LIMIT = 50
         val MOMENT: Instant = Instant.parse("2026-09-25T05:05:00Z")
     }

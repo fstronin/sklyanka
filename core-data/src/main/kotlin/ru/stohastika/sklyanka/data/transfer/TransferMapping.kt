@@ -1,6 +1,7 @@
 package ru.stohastika.sklyanka.data.transfer
 
 import kotlinx.serialization.json.JsonPrimitive
+import ru.stohastika.sklyanka.data.room.SklyankaConverters
 import ru.stohastika.sklyanka.domain.medication.doseUnit
 import ru.stohastika.sklyanka.domain.model.ArchiveReason
 import ru.stohastika.sklyanka.domain.model.FoodRelation
@@ -67,6 +68,9 @@ internal class TransferMapping(private val zone: ZoneId) {
             scheduleMode = knownOr(dto.scheduleMode, ScheduleMode.SCHEDULED, FIELD_MODE, dto.id, notices),
             maxPerDay = dto.maxPerDay,
             times = dto.times.map { TransferValues.time(it, "medications.times") },
+            // Вид расписания читается тем же терпимым разбором, что и колонка базы: пустое,
+            // испорченное или чужое значение — ежедневное, а не отказ загрузки (МГ-6).
+            schedule = SklyankaConverters.textToScheduleRule(dto.scheduleRule),
             startDate = TransferValues.date(dto.startDate, "medications.start_date"),
             endDate = dto.endDate?.let { TransferValues.date(it, "medications.end_date") },
             stockLeft = TransferValues.decimal(dto.stockLeft, "medications.stock_left"),
@@ -86,6 +90,7 @@ internal class TransferMapping(private val zone: ZoneId) {
             id = dto.id,
             medicationId = dto.medicationId,
             scheduledAt = TransferValues.localDateTime(dto.scheduledAt, "intakes.scheduled_at"),
+            doseAmount = TransferValues.decimal(dto.doseAmount, "intakes.dose_amount"),
             status = status,
             actedAt = actedAt,
             source = source(dto.source, status, dto.id, notices),
@@ -139,6 +144,7 @@ internal class TransferMapping(private val zone: ZoneId) {
         scheduleMode = medication.scheduleMode.name,
         maxPerDay = medication.maxPerDay,
         times = medication.times.map { it.format(TransferValues.TIME) },
+        scheduleRule = SklyankaConverters.scheduleRuleToText(medication.schedule),
         startDate = medication.startDate.format(TransferValues.DATE),
         endDate = medication.endDate?.format(TransferValues.DATE),
         stockLeft = TransferValues.number(medication.stockLeft),
@@ -155,6 +161,7 @@ internal class TransferMapping(private val zone: ZoneId) {
         // Локальное время плюс смещение источника: читатель возьмёт локальную часть,
         // а смещение остаётся, чтобы файл читался человеком и другими инструментами (ПЕР-8).
         scheduledAt = intake.scheduledAt.atZone(zone).toOffsetDateTime().format(TransferValues.OFFSET),
+        doseAmount = TransferValues.number(intake.doseAmount),
         status = intake.status.name,
         actedAt = intake.actedAt?.let(::momentText),
         source = intake.source?.name,

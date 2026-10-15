@@ -26,6 +26,7 @@ import ru.stohastika.sklyanka.domain.schedule.IntakePlanDiff
 import ru.stohastika.sklyanka.domain.schedule.PlanIntakesUseCase
 import ru.stohastika.sklyanka.domain.schedule.PlanReason
 import ru.stohastika.sklyanka.domain.schedule.PlanScope
+import ru.stohastika.sklyanka.domain.schedule.PlannedIntake
 import ru.stohastika.sklyanka.domain.time.FixedTimeSource
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -68,8 +69,8 @@ class IntakePlanningTest {
         )
     }
 
-    private val morningsOfTheWindow: List<LocalDateTime> =
-        (0 until DEPTH_DAYS).map { TestData.TODAY.plusDays(it.toLong()).atTime(8, 0) }
+    private val morningsOfTheWindow: List<PlannedIntake> =
+        (0 until DEPTH_DAYS).map { PlannedIntake(TestData.TODAY.plusDays(it.toLong()).atTime(8, 0), doseAmount = null) }
 
     @Before
     fun fillProfileAndMedication() = runTest {

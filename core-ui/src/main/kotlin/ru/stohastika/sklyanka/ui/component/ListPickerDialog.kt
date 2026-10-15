@@ -7,10 +7,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -56,6 +58,14 @@ public fun <T> ListPickerDialog(
     onSelect: (T) -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
+    /**
+     * Площадка метки «Про» между подписью варианта и галочкой выбранного (§5.9, §5.10).
+     *
+     * Метка — свойство варианта, а не подписки: она стоит у платного варианта и тогда,
+     * когда подписка активна (Р-67 п. 5). Дизайн-система знает только место, состав
+     * метки приносит вызывающий (метка «Про» — `ProMark`).
+     */
+    mark: (@Composable (T) -> Unit)? = null,
 ) {
     val colors = SklyankaTheme.colors
     Dialog(
@@ -92,6 +102,7 @@ public fun <T> ListPickerDialog(
                             text = label(option),
                             selected = option == selected,
                             onClick = { onSelect(option) },
+                            mark = mark?.let { slot -> { slot(option) } },
                         )
                     }
                     Row(
@@ -116,7 +127,7 @@ public fun <T> ListPickerDialog(
 
 /** Строка варианта: ≥44 dp, выбранная — акцентом, начертанием 600 и галочкой. */
 @Composable
-private fun OptionRow(text: String, selected: Boolean, onClick: () -> Unit) {
+private fun OptionRow(text: String, selected: Boolean, onClick: () -> Unit, mark: (@Composable () -> Unit)? = null) {
     val colors = SklyankaTheme.colors
     val selectedLabel = stringResource(R.string.cd_list_picker_selected)
     Row(
@@ -128,14 +139,21 @@ private fun OptionRow(text: String, selected: Boolean, onClick: () -> Unit) {
             .padding(horizontal = SklyankaSpacing.Block, vertical = SklyankaSpacing.Medium)
             .testTag(TAG_LIST_PICKER_OPTION),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Text(
             text = text,
             style = if (selected) SklyankaType.BodyDefaultStrong else SklyankaType.BodyDefault,
             color = if (selected) colors.accent else colors.text,
+            modifier = Modifier.weight(1f),
         )
+        // Метка стоит между подписью и галочкой (§5.9, §5.10): у платного варианта
+        // человек узнаёт о плате до нажатия, а не после открытия витрины (П-7).
+        if (mark != null) {
+            Spacer(modifier = Modifier.width(SklyankaSpacing.Small))
+            mark()
+        }
         if (selected) {
+            Spacer(modifier = Modifier.width(SklyankaSpacing.Small))
             CheckGlyph(
                 color = colors.accent,
                 modifier = Modifier

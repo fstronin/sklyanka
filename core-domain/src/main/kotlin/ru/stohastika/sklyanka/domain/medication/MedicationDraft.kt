@@ -4,6 +4,7 @@ import ru.stohastika.sklyanka.domain.model.FoodRelation
 import ru.stohastika.sklyanka.domain.model.Medication
 import ru.stohastika.sklyanka.domain.model.MedicationForm
 import ru.stohastika.sklyanka.domain.model.ScheduleMode
+import ru.stohastika.sklyanka.domain.model.ScheduleRule
 import ru.stohastika.sklyanka.domain.model.TabletShape
 import java.math.BigDecimal
 import java.time.LocalDate
@@ -48,6 +49,21 @@ data class MedicationDraft(
     /** Ограничение «не чаще N раз в сутки»; применимо только к «по потребности» (ПР-7). */
     val maxPerDay: Int? = null,
     val times: List<LocalTime> = emptyList(),
+    /**
+     * Вид расписания — то, что человек выбрал в блоке вида (ПР-15).
+     *
+     * По умолчанию ежедневное: форма открывается на базовом виде, а сложный требует
+     * отдельного выбора и подписки (ПР-20).
+     */
+    val schedule: ScheduleRule = ScheduleRule.Daily,
+    /**
+     * Вид, с которым курс пришёл в форму: `null` — курс заводят впервые.
+     *
+     * Хранится потому, что решение о сложности вида — это решение о **переходе**
+     * (ПР-21): «сложное с самого начала» и «перевод базового курса на сложное» —
+     * разные случаи, и по одному лишь новому виду их не различить.
+     */
+    val originalSchedule: ScheduleRule? = null,
     val startDate: LocalDate,
     /** Пустое значение означает бессрочный приём (ПР-6), а не неполные данные. */
     val endDate: LocalDate? = null,
@@ -79,7 +95,7 @@ data class MedicationDraft(
         name = name.trim(),
         form = form,
         shape = shape,
-        doseAmount = requireNotNull(doseAmount) { "Dose amount must be validated before saving" },
+        doseAmount = requireNotNull(effectiveDoseAmount) { "Dose amount must be validated before saving" },
         doseUnit = doseUnit.code,
         strength = strength,
         strengthUnit = strengthUnit?.code,
@@ -87,6 +103,9 @@ data class MedicationDraft(
         scheduleMode = scheduleMode,
         maxPerDay = maxPerDay,
         times = times,
+        // У «по потребности» вида нет (ИНВ-25): собранный в форме вид не уезжает в запись,
+        // но и не теряется в черновике — вернётся при возвращении к «по расписанию» (§5.10).
+        schedule = effectiveSchedule,
         startDate = startDate,
         endDate = endDate,
         stockLeft = stockLeft,
@@ -128,6 +147,10 @@ data class MedicationDraft(
             scheduleMode = medication.scheduleMode,
             maxPerDay = medication.maxPerDay,
             times = medication.times,
+            schedule = medication.schedule,
+            // Исходный вид — тот же, что у курса: гейт «Про» решает по переходу, а не по
+            // одному новому виду (ПР-21).
+            originalSchedule = medication.schedule,
             startDate = medication.startDate,
             endDate = medication.endDate,
             stockLeft = medication.stockLeft,

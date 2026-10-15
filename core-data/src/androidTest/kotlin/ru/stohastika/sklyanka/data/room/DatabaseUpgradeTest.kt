@@ -82,7 +82,9 @@ class DatabaseUpgradeTest {
 
             val trace = records.first { it.event == OpEvent.MIGRATION_APPLIED }
             assertEquals("the version from", "8", trace.before)
-            assertEquals("the version to", "9", trace.after)
+            // Ожидаемая версия — не число по месту, а сама версия схемы этой сборки:
+            // иначе каждое добавление миграции ломало бы проверку следа (SKL-117).
+            assertEquals("the version to", SklyankaDatabase.VERSION.toString(), trace.after)
             assertTrue(
                 "the copy fact must be in the trace: ${trace.detail}",
                 trace.detail.orEmpty().contains("copy=yes"),

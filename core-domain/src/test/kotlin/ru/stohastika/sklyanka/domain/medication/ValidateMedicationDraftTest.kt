@@ -6,8 +6,12 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.ValueSource
+import ru.stohastika.sklyanka.domain.model.ScheduleRule
+import ru.stohastika.sklyanka.domain.model.Stage
 import java.math.BigDecimal
+import java.time.DayOfWeek
 import java.time.LocalDate
 
 /**
@@ -218,6 +222,172 @@ class ValidateMedicationDraftTest {
 
         assertFalse(DraftViolation.MaxPerDayMissing in scheduled)
         assertFalse(DraftViolation.NoIntakeTimes in asNeeded)
+    }
+
+    // --- Вид расписания (ИНВ-23…ИНВ-25, ПР-16…ПР-19) -------------------------------------
+
+    /**
+     * Таблица примеров приёмки `SKL-117.feature`, группа `@validation`: каждый случай
+     * настроен ровно одним способом и назван своим правилом.
+     */
+    @Test
+    fun `weekdays without a single chosen day are rejected`() {
+        val violations = validate(Drafts.valid().copy(schedule = ScheduleRule.Weekdays(emptySet())))
+
+        assertEquals(listOf(DraftViolation.ScheduleDaysEmpty), violations)
+        assertEquals(DraftField.SCHEDULE, violations.first().field)
+    }
+
+    @Test
+    fun `weekdays with one chosen day are a valid base schedule`() {
+        assertTrue(
+            validate(Drafts.valid().copy(schedule = ScheduleRule.Weekdays(setOf(DayOfWeek.WEDNESDAY)))).isEmpty(),
+        )
+    }
+
+    @Test
+    fun `weekdays with several chosen days are a valid complex schedule`() {
+        val rule = ScheduleRule.Weekdays(setOf(DayOfWeek.MONDAY, DayOfWeek.WEDNESDAY, DayOfWeek.FRIDAY))
+
+        assertTrue(validate(Drafts.valid().copy(schedule = rule)).isEmpty())
+        assertTrue(rule.isComplex)
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = [1, 0, -3])
+    fun `an interval shorter than two days is rejected`(interval: Int) {
+        val violations = validate(Drafts.valid().copy(schedule = ScheduleRule.EveryNDays(interval)))
+
+        assertEquals(listOf(DraftViolation.ScheduleIntervalTooShort), violations)
+        assertEquals(DraftField.SCHEDULE, violations.first().field)
+    }
+
+    @Test
+    fun `an interval of two days is valid`() {
+        assertTrue(validate(Drafts.valid().copy(schedule = ScheduleRule.EveryNDays(2))).isEmpty())
+    }
+
+    @ParameterizedTest
+    @CsvSource("0,7", "21,0", "0,0", "-1,7")
+    fun `a cycle without intake or without rest days is rejected`(onDays: Int, offDays: Int) {
+        val violations = validate(Drafts.valid().copy(schedule = ScheduleRule.Cycles(onDays, offDays)))
+
+        assertEquals(listOf(DraftViolation.ScheduleCycleLengthNotPositive), violations)
+        assertEquals(DraftField.SCHEDULE, violations.first().field)
+    }
+
+    @Test
+    fun `twenty one days on and seven off is a valid cycle`() {
+        assertTrue(validate(Drafts.valid().copy(schedule = ScheduleRule.Cycles(onDays = 21, offDays = 7))).isEmpty())
+    }
+
+    @Test
+    fun `stages without a single stage are rejected`() {
+        val violations = validate(Drafts.valid().copy(schedule = ScheduleRule.Staged(emptyList())))
+
+        assertEquals(listOf(DraftViolation.ScheduleStagesEmpty), violations)
+        assertEquals(DraftField.SCHEDULE, violations.first().field)
+    }
+
+    @Test
+    fun `a stage without a dose is rejected as a missing dose`() {
+        val stages = listOf(Stage(BigDecimal.ONE, days = 7), Stage(BigDecimal.ZERO, days = 24))
+
+        assertEquals(
+            listOf(DraftViolation.ScheduleStageDoseNotPositive),
+            validate(Drafts.valid().copy(schedule = ScheduleRule.Staged(stages))),
+        )
+    }
+
+    @Test
+    fun `a stage without days is rejected as a missing duration`() {
+        val stages = listOf(Stage(BigDecimal.ONE, days = 0))
+
+        assertEquals(
+            listOf(DraftViolation.ScheduleStageDaysNotPositive),
+            validate(Drafts.valid().copy(schedule = ScheduleRule.Staged(stages))),
+        )
+    }
+
+    @Test
+    fun `a stage missing both its dose and its duration is named twice`() {
+        // Доза и длительность — два разных поля этапа, и человеку о них говорят разными словами.
+        val stages = listOf(Stage(BigDecimal.ZERO, days = 0))
+
+        assertEquals(
+            listOf(DraftViolation.ScheduleStageDoseNotPositive, DraftViolation.ScheduleStageDaysNotPositive),
+            validate(Drafts.valid().copy(schedule = ScheduleRule.Staged(stages))),
+        )
+    }
+
+    @Test
+    fun `a last stage that goes beyond the course end is rejected`() {
+        val stages = listOf(Stage(BigDecimal("0.5"), days = 7), Stage(BigDecimal.ONE, days = 24))
+        // Курс на тридцать дней, схема на тридцать один: последний день схемы за концом курса.
+        val draft = Drafts.valid().copy(
+            schedule = ScheduleRule.Staged(stages),
+            endDate = Drafts.TODAY.plusDays(29),
+        )
+
+        assertEquals(listOf(DraftViolation.ScheduleStagesBeyondCourse), validate(draft))
+    }
+
+    @Test
+    fun `a last stage that ends exactly on the course end is valid`() {
+        val stages = listOf(Stage(BigDecimal("0.5"), days = 7), Stage(BigDecimal.ONE, days = 24))
+        val draft = Drafts.valid().copy(
+            schedule = ScheduleRule.Staged(stages),
+            endDate = Drafts.TODAY.plusDays(30),
+        )
+
+        assertTrue(validate(draft).isEmpty())
+    }
+
+    @Test
+    fun `stages of an open ended course are not compared with a course end`() {
+        val stages = listOf(Stage(BigDecimal.ONE, days = 365))
+
+        assertTrue(validate(Drafts.valid().copy(schedule = ScheduleRule.Staged(stages), endDate = null)).isEmpty())
+    }
+
+    @Test
+    fun `the schedule rule of an as needed course is not judged`() {
+        // Вида у «по потребности» нет (ПР-7): неприменимое значение в запись не уезжает
+        // (его снимает effectiveSchedule), и правило вида не зовёт человека к блоку,
+        // которого он не видит.
+        val draft = Drafts.validPrn().copy(schedule = ScheduleRule.Weekdays(emptySet()))
+
+        assertTrue(validate(draft.normalized()).isEmpty())
+    }
+
+    @Test
+    fun `normalizing an as needed course keeps the chosen schedule in the draft`() {
+        // §5.10: вид и его параметры сохраняются в черновике и возвращаются при возвращении
+        // к «по расписанию» — та же конвенция, что у связи с едой.
+        val normalized = Drafts.validPrn().copy(schedule = ScheduleRule.Cycles(21, 7)).normalized()
+
+        assertEquals(ScheduleRule.Cycles(21, 7), normalized.schedule)
+    }
+
+    @Test
+    fun `an as needed course never saves the chosen schedule into the record`() {
+        // Но в запись вид не уезжает: у курса «по потребности» вида нет (ИНВ-25, ПР-7).
+        val medication = Drafts.validPrn().copy(schedule = ScheduleRule.Cycles(21, 7)).normalized()
+            .toMedication(id = "med")
+
+        assertEquals(ScheduleRule.Daily, medication.schedule)
+    }
+
+    @Test
+    fun `the schedule block is reported before the times block`() {
+        // Блок вида расписания стоит в форме выше времён приёма, и экран прокручивается
+        // к первому нарушению списка.
+        val violations = validate(
+            Drafts.valid().copy(times = emptyList(), schedule = ScheduleRule.Weekdays(emptySet())),
+        )
+
+        assertEquals(DraftField.SCHEDULE, violations.first().field)
+        assertEquals(listOf(DraftField.SCHEDULE, DraftField.TIMES), violations.map { it.field })
     }
 
     private fun dose(value: String) = Drafts.valid().copy(doseAmount = BigDecimal(value))

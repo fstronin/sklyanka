@@ -186,6 +186,11 @@ internal class ReportPdfText(private val context: Context) {
     /**
      * «1 таблетка», «2 таблетки», «0,5 таблетки»: склонение по количеству,
      * формулировки карточки лекарства.
+     *
+     * Доз за период может быть несколько — ступенчатый курс меняет дозу от этапа
+     * к этапу (ПР-19), и отчёт называет их все по возрастанию: одно число курса сказало бы
+     * врачу неправду о принятом. Список идёт разделителем перечисления, как времена и даты
+     * в этом же документе: слова для него уже есть в шести каталогах (НФТ-42).
      */
     private fun dose(row: ReportMedicationRow): String {
         val unit = DoseUnit.ofCode(row.doseUnit) ?: row.form.doseUnit()
@@ -197,11 +202,9 @@ internal class ReportPdfText(private val context: Context) {
             DoseUnit.SPRAY -> R.plurals.report_document_dose_sprays
             DoseUnit.INJECTION -> R.plurals.report_document_dose_injections
         }
-        return context.resources.getQuantityString(
-            template,
-            pluralQuantityOf(row.doseAmount),
-            amount(row.doseAmount),
-        )
+        return row.doses.joinToString(context.getString(R.string.report_document_list_separator)) {
+            context.resources.getQuantityString(template, pluralQuantityOf(it), amount(it))
+        }
     }
 
     /**

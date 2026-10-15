@@ -557,8 +557,13 @@ class MainActivity : ComponentActivity() {
             // Шторка закрылась — строка блока в настройках обязана назвать новое состояние:
             // покупка и восстановление пишут кэш подписки, а `onResume` при закрытии шторки
             // не наступает, и без этого строка оставалась бы «Не оформлена» (SKL-122).
+            // Форма лекарства перечитывает доступ по той же причине: покупка в витрине,
+            // открытой из неё, обязана разблокировать сохранение, не теряя черновик.
             LaunchedEffect(showcaseVisible) {
-                if (!showcaseVisible) settings.refresh()
+                if (!showcaseVisible) {
+                    settings.refresh()
+                    medsForm.refreshProAccess()
+                }
             }
             // Пока витрина идёт или открыта, возврат принадлежит ей: иначе окно открытия
             // (магазин ещё не ответил) уводило бы на «Сегодня», и шторка всплывала бы поверх
@@ -624,6 +629,9 @@ class MainActivity : ComponentActivity() {
                         rootNavigation.openTab(RootTab.SETTINGS)
                     },
                     initial = layer.entry,
+                    // Форма лекарства — вторая точка входа витрины (SKL-117, Р-67 п. 2):
+                    // та же шторка, с пунктом-поводом «Сложные расписания».
+                    onOpenPro = { openPro(ProPoint.MEDICATION_FORM) },
                 )
 
                 RootLayer.Settings -> SettingsRoute(
@@ -668,10 +676,11 @@ class MainActivity : ComponentActivity() {
      * Открыть витрину «Про» из точки выбора платной функции (SKL-122, Р-67).
      *
      * Из настроек приходит с [ProPoint.SETTINGS]: там пункта-повода нет, и порядок выгод
-     * фиксированный. Точки 117–121 придут сюда же со своим местом и своим пунктом-поводом.
+     * фиксированный. Форма лекарства приходит с [ProPoint.MEDICATION_FORM] (SKL-117) —
+     * та же поверхность, с пунктом-поводом «Сложные расписания».
      */
-    private fun openPro() {
-        proShowcase.onIntent(ProShowcaseIntent.Open(ProPoint.SETTINGS))
+    private fun openPro(point: ProPoint = ProPoint.SETTINGS) {
+        proShowcase.onIntent(ProShowcaseIntent.Open(point))
     }
 
     private fun settingsNavigation(): SettingsNavigation = SettingsNavigation(
@@ -696,7 +705,7 @@ class MainActivity : ComponentActivity() {
         deleteProfile = { rootNavigation.openSection(SettingsDestination.DELETE_PROFILE) },
         // Строка блока «Склянка Про» открывает шторку витрины тем же жестом, каким её
         // открывает точка выбора платной функции (Р-67 п. 6): поверхность одна.
-        openPro = ::openPro,
+        openPro = { openPro() },
         openToday = { rootNavigation.openTab(RootTab.TODAY) },
         openMedications = { rootNavigation.openMeds(MedsDestination.List) },
     )

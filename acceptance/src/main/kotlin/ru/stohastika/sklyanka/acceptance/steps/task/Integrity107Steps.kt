@@ -14,6 +14,7 @@ import ru.stohastika.sklyanka.domain.model.IntakeStatus
 import ru.stohastika.sklyanka.domain.model.InvariantViolationException
 import ru.stohastika.sklyanka.domain.model.Invariants
 import ru.stohastika.sklyanka.domain.schedule.IntakePlanDiff
+import ru.stohastika.sklyanka.domain.schedule.PlannedIntake
 import ru.stohastika.sklyanka.domain.transfer.TransferRejectReason
 import ru.stohastika.sklyanka.domain.transfer.ValidateSnapshot
 import java.time.LocalTime
@@ -153,7 +154,11 @@ class Integrity107Steps(private val world: AcceptanceWorld) {
                     profileId = stored.profileId,
                     medicationId = stored.id,
                     diff = IntakePlanDiff(
-                        toCreate = listOf(world.localMoment(date, time)),
+                        // Доза дня плану не важна: строка рождается ежедневным курсом,
+                        // у которого снимка дозы нет.
+                        toCreate = listOf(
+                            PlannedIntake(scheduledAt = world.localMoment(date, time), doseAmount = null),
+                        ),
                         toDelete = emptyList(),
                         unchanged = 0,
                     ),

@@ -3,6 +3,7 @@ package ru.stohastika.sklyanka.domain.today
 import ru.stohastika.sklyanka.domain.medication.DoseUnit
 import ru.stohastika.sklyanka.domain.model.Intake
 import ru.stohastika.sklyanka.domain.model.Medication
+import ru.stohastika.sklyanka.domain.stock.StockLedger
 import ru.stohastika.sklyanka.domain.stock.StockWarning
 import java.math.BigDecimal
 import java.time.LocalDate
@@ -71,6 +72,16 @@ data class IntakeItem(
 ) {
     val id: String get() = intake.id
     val medicationId: String get() = medication.id
+
+    /**
+     * Доза этого приёма: снимок, если он есть, иначе доза лекарства (ПР-19, ИНВ-24).
+     *
+     * Правило одно на весь продукт и живёт в [StockLedger.chargedDose] — там же, где
+     * по нему списывается остаток. Второго его определения на экране быть не может:
+     * у ступенчатого курса доза лекарства — доза **первого** этапа, и второй расчёт
+     * однажды показал бы человеку одну дозу, а списал другую (SKL-117, критика F1).
+     */
+    val doseAmount: BigDecimal get() = StockLedger.chargedDose(intake.doseAmount, medication.doseAmount)
 
     /**
      * Отметку поставил владелец телефона в чужом профиле — подпись «отметили вы» (ПРФ-14).

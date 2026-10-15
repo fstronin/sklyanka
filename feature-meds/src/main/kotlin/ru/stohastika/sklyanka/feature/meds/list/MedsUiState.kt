@@ -5,6 +5,7 @@ import ru.stohastika.sklyanka.domain.medication.TrailingLine
 import ru.stohastika.sklyanka.domain.model.MedicationForm
 import ru.stohastika.sklyanka.domain.model.TabletShape
 import ru.stohastika.sklyanka.domain.undo.UndoableDeletion
+import ru.stohastika.sklyanka.feature.meds.form.ScheduleKind
 import java.time.LocalDate
 import java.time.LocalTime
 
@@ -54,6 +55,13 @@ data class MedicationCardUi(
     val timesPerDay: Int,
     /** Чипы времени в строке расписания: «08:00», «20:00». */
     val times: List<LocalTime>,
+    /**
+     * Вид расписания: у сложных видов в слоте частоты стоит его имя (§5.10, ПР-15).
+     *
+     * У ежедневного вида частота считается по числу приёмов; у остальных «Ежедневно»
+     * было бы неправдой, и слот называет вид.
+     */
+    val scheduleKind: ScheduleKind = ScheduleKind.DAILY,
     /** Остаток либо период приёма — одновременно они не показываются (ЭКР-4). */
     val trailingLine: TrailingLine,
     /** Заполнено только у лекарства «по потребности» (ЭКР-5). */

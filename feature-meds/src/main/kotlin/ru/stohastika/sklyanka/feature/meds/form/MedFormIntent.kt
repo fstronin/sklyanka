@@ -6,6 +6,7 @@ import ru.stohastika.sklyanka.domain.model.FoodRelation
 import ru.stohastika.sklyanka.domain.model.MedicationForm
 import ru.stohastika.sklyanka.domain.model.ScheduleMode
 import ru.stohastika.sklyanka.domain.model.TabletShape
+import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
 
@@ -40,6 +41,33 @@ sealed interface MedFormIntent {
     data class StrengthUnitChanged(val unit: StrengthUnit) : MedFormIntent
 
     data class ModeChanged(val mode: ScheduleMode) : MedFormIntent
+
+    /** Выбор вида расписания в строке вида (§5.10, ПР-15). */
+    data class ScheduleKindChanged(val kind: ScheduleKind) : MedFormIntent
+
+    /** День недели: выбор множественный, второй день и дальше — «Про» (ПР-16, Р-17, Р-24). */
+    data class WeekdayToggled(val day: DayOfWeek) : MedFormIntent
+
+    /** «Интервал, дней» (ПР-17): значение приходит текстом, как и остальные числа. */
+    data class IntervalChanged(val text: String) : MedFormIntent
+
+    /** «Дней приёма подряд» цикла (ПР-18). */
+    data class CycleOnChanged(val text: String) : MedFormIntent
+
+    /** «Дней перерыва» цикла (ПР-18). */
+    data class CycleOffChanged(val text: String) : MedFormIntent
+
+    /** Доза этапа: поле со словом единицы внутри, без видимой подписи (§5.10). */
+    data class StageDoseChanged(val index: Int, val text: String) : MedFormIntent
+
+    /** Длительность этапа в днях (`form_stage_days`, §5.10). */
+    data class StageDaysChanged(val index: Int, val text: String) : MedFormIntent
+
+    /** «Добавить этап»: список этапов растёт, число нормой не ограничено (ПР-19). */
+    data object StageAdded : MedFormIntent
+
+    /** Крест удаления этапа; у единственного этапа его нет — курс без этапов не собрать. */
+    data class StageRemoved(val index: Int) : MedFormIntent
 
     /** «Увеличить» и «Добавить время» — одно и то же действие над списком времён. */
     data object TimeAdded : MedFormIntent

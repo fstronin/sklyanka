@@ -166,4 +166,33 @@
 
     <string name="date_pattern_day_month">"d 'de' MMMM"</string>
     <string name="date_pattern_full">"d 'de' MMMM 'de' yyyy"</string>
+    <string name="error_weekdays_missing">Elige al menos un día de la semana</string>
+    <string name="error_interval_too_small">El intervalo debe ser de al menos dos días</string>
+    <string name="error_interval_one_day">Un día equivale a tomar todos los días</string>
+    <string name="error_cycle_zero">La duración del ciclo no puede ser cero</string>
+    <string name="error_stage_dose">Indica la dosis de cada etapa</string>
+    <string name="error_stage_days">Indica la duración de cada etapa</string>
+    <string name="error_stage_beyond_course">Las etapas superan el final del curso</string>
+
+    <!-- Schedule kinds and their parameters (docs/norm/06-design.md §5.10, §10). -->
+    <string name="form_label_schedule">Pauta</string>
+    <string name="schedule_kind_daily">Todos los días</string>
+    <string name="schedule_kind_weekdays">Por días de la semana</string>
+    <string name="schedule_kind_interval">Cada varios días</string>
+    <string name="schedule_kind_cycle">Por ciclos</string>
+    <string name="schedule_kind_steps">Por etapas</string>
+    <string name="form_label_weekdays">Días de la semana</string>
+    <string name="form_weekdays_pro_note">Más de un día</string>
+    <string name="form_interval_row">Intervalo (días)</string>
+    <string name="form_schedule_count_from_start">Se cuenta desde la fecha de inicio</string>
+    <string name="form_cycle_on_row">Días seguidos de toma</string>
+    <string name="form_cycle_off_row">Días de descanso</string>
+    <string name="form_stage_title">Etapa %1$d</string>
+    <string name="form_stage_add">Añadir etapa</string>
+    <string name="form_stage_dose_note">La dosis la determinan las etapas</string>
+    <string name="form_stage_hint">Las etapas van seguidas desde la fecha de inicio</string>
+    <string name="cd_stage_dose">Dosis de la etapa %1$d</string>
+    <string name="cd_stage_days">Duración de la etapa %1$d</string>
+    <string name="cd_stage_delete">Eliminar la etapa %1$d</string>
+    <string name="form_save_blocked_pro">Las pautas complejas son de Sklyanka Pro</string>
 </resources>

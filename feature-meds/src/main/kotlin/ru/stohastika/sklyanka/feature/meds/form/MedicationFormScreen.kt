@@ -164,6 +164,12 @@ private fun FormBlockColumn(
         TabletShapeBlock(state, onIntent, anchors)
         DoseBlock(state, onIntent, anchors)
         ModeBlock(state, onIntent, anchors)
+        // При «по потребности» блока расписания нет вовсе: вида у этого режима не бывает
+        // (ИНВ-25, ПР-7), и строка вида не показывается (§5.10). Собранный вид при этом
+        // остаётся в черновике и вернётся при возвращении к «по расписанию».
+        if (state.applicability.timesVisible) {
+            ScheduleKindBlock(state, onIntent, anchors)
+        }
         ScheduleBlock(state, onIntent, anchors, onPickTime)
         // «Связь с едой» существует только при «по расписанию» (ОВ-83): приём
         // «по потребности» ею не управляет, и решение дизайна предписывает блок
@@ -194,6 +200,14 @@ private fun SaveBar(state: MedFormUiState, onIntent: (MedFormIntent) -> Unit) {
     ) {
         if (!state.saveEnabled) {
             BlockHint(stringResource(R.string.form_save_blocked))
+        } else if (state.proReasonVisible) {
+            // Причина недоступной кнопки и платная причина вместе не показываются: пока
+            // не заполнено название, кнопка недоступна и называет своё, а сложный вид ждёт
+            // следующего шага (§5.10). Нажатие открывает витрину вместо сохранения.
+            BlockHint(
+                text = stringResource(R.string.form_save_blocked_pro),
+                modifier = Modifier.testTag(TAG_SAVE_BLOCKED_PRO),
+            )
         }
         PrimaryButton(
             text = when (state.mode) {
@@ -227,3 +241,6 @@ private fun titleOf(state: MedFormUiState): String = when (val mode = state.mode
 
 const val TAG_MEDICATION_FORM = "medication_form"
 const val TAG_SAVE_BUTTON = "form_save"
+
+/** Причина закрытого создания сложного расписания над кнопкой (§5.10, ПР-20). */
+const val TAG_SAVE_BLOCKED_PRO = "form_save_blocked_pro"

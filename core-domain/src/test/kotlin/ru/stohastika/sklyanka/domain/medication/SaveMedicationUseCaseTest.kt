@@ -12,6 +12,8 @@ import ru.stohastika.sklyanka.domain.Transactor
 import ru.stohastika.sklyanka.domain.log.OpEvent
 import ru.stohastika.sklyanka.domain.model.MedicationForm
 import ru.stohastika.sklyanka.domain.model.ScheduleMode
+import ru.stohastika.sklyanka.domain.model.ScheduleRule
+import ru.stohastika.sklyanka.domain.model.Stage
 import ru.stohastika.sklyanka.domain.model.TabletShape
 import ru.stohastika.sklyanka.domain.schedule.FakeIntakeRepository
 import ru.stohastika.sklyanka.domain.schedule.FakeMedicationRepository
@@ -25,6 +27,7 @@ import ru.stohastika.sklyanka.domain.schedule.PlanScope
 import ru.stohastika.sklyanka.domain.schedule.Planning
 import ru.stohastika.sklyanka.domain.schedule.RecordingOperationLog
 import java.math.BigDecimal
+import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
 
@@ -215,6 +218,73 @@ class SaveMedicationUseCaseTest {
         save(MedicationDraft.of(stored).copy(times = listOf(LocalTime.of(9, 0))))
 
         assertEquals("schedule_changed", log.records.single { it.event == OpEvent.MEDICATION_UPDATED }.detail)
+    }
+
+    // --- Вид расписания (SKL-117, ПР-15…ПР-19) ---------------------------------------------
+
+    @Test
+    fun `a saved weekly schedule is stored and produces intakes only on its days`() = runTest {
+        val rule = ScheduleRule.Weekdays(setOf(DayOfWeek.MONDAY, DayOfWeek.WEDNESDAY, DayOfWeek.FRIDAY))
+
+        save(Drafts.valid().copy(schedule = rule, times = listOf(Drafts.EVENING)))
+
+        assertEquals(rule, medications.stored.getValue(Drafts.NEW_ID).schedule)
+        // Сегодня пятница 25 сентября, вечерний приём ещё не прошёл: пятница, понедельник
+        // и среда — три приёма, а вторник и четверг не дают ни одного.
+        assertEquals(
+            listOf(Drafts.TODAY, Drafts.TODAY.plusDays(3), Drafts.TODAY.plusDays(5)),
+            intakes.of(Drafts.NEW_ID).map { it.scheduledAt.toLocalDate() },
+        )
+    }
+
+    @Test
+    fun `a saved staged schedule gives every intake the dose of its day`() = runTest {
+        save(
+            Drafts.valid().copy(
+                schedule = ScheduleRule.Staged(
+                    listOf(Stage(BigDecimal("0.5"), days = 1), Stage(BigDecimal.ONE, days = 30)),
+                ),
+                times = listOf(Drafts.EVENING),
+            ),
+        )
+
+        val born = intakes.of(Drafts.NEW_ID)
+        // Один приём в сутки: первая ступень — только первый день, дальше вторая.
+        assertEquals(Planning.DEPTH_DAYS, born.size)
+        assertEquals(
+            listOf(BigDecimal("0.5")) + List(Planning.DEPTH_DAYS - 1) { BigDecimal.ONE },
+            born.map { it.doseAmount },
+        )
+    }
+
+    @Test
+    fun `editing the schedule rule alone replans and is marked as a schedule change`() = runTest {
+        save(Drafts.valid().copy(times = listOf(Drafts.EVENING)))
+        val stored = medications.stored.getValue(Drafts.NEW_ID)
+        save(MedicationDraft.of(stored).copy(schedule = ScheduleRule.EveryNDays(days = 2)))
+
+        assertEquals(
+            listOf(Drafts.NEW_ID to PlanReason.MEDICATION_ADDED, Drafts.NEW_ID to PlanReason.MEDICATION_SAVED),
+            planReasons,
+        )
+        assertEquals("schedule_changed", log.records.single { it.event == OpEvent.MEDICATION_UPDATED }.detail)
+        // План пересобран: промежуточные дни ушли, остался каждый второй.
+        assertEquals(
+            listOf(0, 2, 4, 6).map { offset -> Drafts.TODAY.plusDays(offset.toLong()) },
+            intakes.of(Drafts.NEW_ID).map { it.scheduledAt.toLocalDate() },
+        )
+    }
+
+    @Test
+    fun `an edited draft carries the kind the course had and keeps it out of the stored record twice`() = runTest {
+        val rule = ScheduleRule.Cycles(onDays = 21, offDays = 7)
+        save(Drafts.valid().copy(schedule = rule))
+
+        val draft = MedicationDraft.of(medications.stored.getValue(Drafts.NEW_ID))
+
+        assertEquals(rule, draft.schedule)
+        assertEquals(rule, draft.originalSchedule)
+        assertNull(Drafts.valid().originalSchedule)
     }
 
     // --- Причина перепланирования ------------------------------------------------------------

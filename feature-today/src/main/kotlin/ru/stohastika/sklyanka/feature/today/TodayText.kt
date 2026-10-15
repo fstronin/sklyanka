@@ -109,18 +109,25 @@ internal fun StockNotice.text(): String = stringResource(
 /**
  * Подпись приёма под названием лекарства: «1 таблетка · 50 мкг · во время еды».
  *
+ * Доза берётся у **приёма**, а не у лекарства: у ступенчатого курса она своя на каждый
+ * день ([IntakeItem.doseAmount]), и экран обязан называть ту же дозу, которую списывает
+ * остаток (ПР-19, SKL-117).
+ *
  * Части собираются списком и соединяются разделителем из ресурсов: порядок задан
  * макетом, а необязательные части (дозировка, связь с едой) выпадают, не оставляя
  * висящей точки.
  */
 @Composable
-internal fun IntakeItem.doseCaption(): String = medication.doseCaption()
+internal fun IntakeItem.doseCaption(): String = medication.doseCaption(doseAmount)
 
 @Composable
-internal fun Medication.doseCaption(): String {
+internal fun Medication.doseCaption(): String = doseCaption(doseAmount)
+
+@Composable
+private fun Medication.doseCaption(amount: BigDecimal): String {
     val separator = stringResource(R.string.today_separator)
     val parts = buildList {
-        add(doseLabel(doseAmount, DoseUnit.ofCode(doseUnit) ?: form.doseUnit()))
+        add(doseLabel(amount, DoseUnit.ofCode(doseUnit) ?: form.doseUnit()))
         strength?.let { value ->
             add(stringResource(R.string.today_strength, value.plain(), strengthUnitText(strengthUnit)))
         }

@@ -27,6 +27,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import ru.stohastika.sklyanka.domain.medication.DraftField
 import ru.stohastika.sklyanka.domain.medication.StrengthUnit
+import ru.stohastika.sklyanka.domain.medication.effectiveDoseAmount
 import ru.stohastika.sklyanka.domain.model.MedicationForm
 import ru.stohastika.sklyanka.domain.model.TabletShape
 import ru.stohastika.sklyanka.feature.meds.ChoiceTile
@@ -108,7 +109,9 @@ internal fun NameBlock(state: MedFormUiState, onIntent: (MedFormIntent) -> Unit,
 @Composable
 internal fun PreviewBlock(state: MedFormUiState) {
     val draft = state.draft
-    val dose = draft.doseAmount?.let { amount -> previewDoseLabel(amount, state.applicability.doseUnit) }
+    // Доза курса у ступенчатого вида — доза первого этапа (§5.10): превью обновляется
+    // вместе с черновиком (ОВ-94) и показывает то же число, что уйдёт в карточку.
+    val dose = draft.effectiveDoseAmount?.let { amount -> previewDoseLabel(amount, state.applicability.doseUnit) }
     val strength = draft.strength?.let { amount ->
         draft.strengthUnit?.let { unit ->
             "${amount.stripTrailingZeros().toPlainString()} ${strengthUnitLabel(unit.code)}"
@@ -224,18 +227,22 @@ internal fun DoseBlock(state: MedFormUiState, onIntent: (MedFormIntent) -> Unit,
     val strengthLabel = stringResource(R.string.cd_strength)
     val unitLabel = stringResource(R.string.form_label_strength_unit)
     var unitPickerOpen by remember { mutableStateOf(false) }
-    FormBlock(stringResource(R.string.form_label_dose), DraftField.DOSE, anchors) {
-        SklyankaTextField(
-            value = state.inputs.doseAmount,
-            onValueChange = { onIntent(MedFormIntent.DoseAmountChanged(it)) },
-            unitLabel = state.applicability.doseUnit.fieldWord(state.draft.doseAmount),
-            numeric = true,
-            errorText = state.violationOf(DraftField.DOSE)?.message(),
-            modifier = Modifier
-                .fillMaxWidth()
-                .semantics { contentDescription = amountLabel }
-                .testTag(TAG_DOSE_FIELD),
-        )
+    // У ступенчатого вида поле «Доза на один приём» не показывается вовсе: дозу несут
+    // этапы (§5.3, §5.10). Поле «Дозировка препарата» остаётся — это свойство препарата.
+    if (state.dosePerIntakeVisible) {
+        FormBlock(stringResource(R.string.form_label_dose), DraftField.DOSE, anchors) {
+            SklyankaTextField(
+                value = state.inputs.doseAmount,
+                onValueChange = { onIntent(MedFormIntent.DoseAmountChanged(it)) },
+                unitLabel = state.applicability.doseUnit.fieldWord(state.draft.doseAmount),
+                numeric = true,
+                errorText = state.violationOf(DraftField.DOSE)?.message(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .semantics { contentDescription = amountLabel }
+                    .testTag(TAG_DOSE_FIELD),
+            )
+        }
     }
     FormBlock(stringResource(R.string.form_label_strength), DraftField.STRENGTH, anchors) {
         SklyankaTextField(

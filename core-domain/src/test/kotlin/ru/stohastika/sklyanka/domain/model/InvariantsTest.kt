@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import java.math.BigDecimal
+import java.time.DayOfWeek
 import java.time.Instant
 import java.time.ZoneId
 
@@ -302,5 +303,103 @@ class InvariantsTest {
             listOf("INV-10"),
             Invariants.writeViolations(Fixtures.takenIntake().copy(source = null), ScheduleMode.SCHEDULED),
         )
+    }
+
+    // --- SKL-117: вид расписания (ИНВ-23…ИНВ-25) -------------------------------------------
+
+    @Test
+    fun `a weekdays schedule without days breaks INV-23`() {
+        val medication = Fixtures.scheduledMedication().copy(schedule = ScheduleRule.Weekdays(emptySet()))
+
+        assertEquals(listOf("INV-23"), Invariants.violations(medication))
+    }
+
+    @Test
+    fun `a weekdays schedule with one day or with several is valid`() {
+        val one = Fixtures.scheduledMedication().copy(schedule = ScheduleRule.Weekdays(setOf(DayOfWeek.MONDAY)))
+        val several = Fixtures.scheduledMedication()
+            .copy(schedule = ScheduleRule.Weekdays(setOf(DayOfWeek.MONDAY, DayOfWeek.FRIDAY)))
+
+        assertTrue(Invariants.violations(one).isEmpty())
+        assertTrue(Invariants.violations(several).isEmpty())
+    }
+
+    @Test
+    fun `an interval shorter than two days breaks INV-23`() {
+        val medication = Fixtures.scheduledMedication().copy(schedule = ScheduleRule.EveryNDays(1))
+
+        assertEquals(listOf("INV-23"), Invariants.violations(medication))
+        assertTrue(
+            Invariants.violations(Fixtures.scheduledMedication().copy(schedule = ScheduleRule.EveryNDays(3))).isEmpty(),
+        )
+    }
+
+    @Test
+    fun `a cycle without intake or without rest days breaks INV-23`() {
+        val noIntake = Fixtures.scheduledMedication().copy(schedule = ScheduleRule.Cycles(onDays = 0, offDays = 7))
+        val noRest = Fixtures.scheduledMedication().copy(schedule = ScheduleRule.Cycles(onDays = 21, offDays = 0))
+
+        assertEquals(listOf("INV-23"), Invariants.violations(noIntake))
+        assertEquals(listOf("INV-23"), Invariants.violations(noRest))
+        assertTrue(
+            Invariants.violations(Fixtures.scheduledMedication().copy(schedule = ScheduleRule.Cycles(21, 7))).isEmpty(),
+        )
+    }
+
+    @Test
+    fun `a staged schedule without stages breaks INV-23`() {
+        val medication = Fixtures.scheduledMedication().copy(schedule = ScheduleRule.Staged(emptyList()))
+
+        assertEquals(listOf("INV-23"), Invariants.violations(medication))
+    }
+
+    @Test
+    fun `a stage without a dose or without days breaks INV-24`() {
+        val withoutDose = Fixtures.scheduledMedication()
+            .copy(schedule = ScheduleRule.Staged(listOf(Stage(BigDecimal.ZERO, days = 7))))
+        val withoutDays = Fixtures.scheduledMedication()
+            .copy(schedule = ScheduleRule.Staged(listOf(Stage(BigDecimal.ONE, days = 0))))
+
+        assertEquals(listOf("INV-24"), Invariants.violations(withoutDose))
+        assertEquals(listOf("INV-24"), Invariants.violations(withoutDays))
+    }
+
+    @Test
+    fun `stages that end after the course break INV-24`() {
+        val stages = listOf(Stage(BigDecimal("0.5"), days = 7), Stage(BigDecimal.ONE, days = 24))
+        // Курс на тридцать дней, схема на тридцать один: последний день схемы за концом курса.
+        val medication = Fixtures.scheduledMedication().copy(
+            schedule = ScheduleRule.Staged(stages),
+            endDate = Fixtures.START_DATE.plusDays(29),
+        )
+
+        assertEquals(listOf("INV-24"), Invariants.violations(medication))
+    }
+
+    @Test
+    fun `stages that end exactly on the course end are valid`() {
+        val stages = listOf(Stage(BigDecimal("0.5"), days = 7), Stage(BigDecimal.ONE, days = 24))
+        val medication = Fixtures.scheduledMedication().copy(
+            schedule = ScheduleRule.Staged(stages),
+            endDate = Fixtures.START_DATE.plusDays(30),
+        )
+
+        assertTrue(Invariants.violations(medication).isEmpty())
+    }
+
+    @Test
+    fun `stages of an open ended course are valid`() {
+        val medication = Fixtures.scheduledMedication()
+            .copy(schedule = ScheduleRule.Staged(listOf(Stage(BigDecimal.ONE, days = 365))), endDate = null)
+
+        assertTrue(Invariants.violations(medication).isEmpty())
+    }
+
+    @Test
+    fun `a prn course with a schedule rule breaks INV-25`() {
+        val medication = Fixtures.prnMedication().copy(schedule = ScheduleRule.Weekdays(setOf(DayOfWeek.MONDAY)))
+
+        assertEquals(listOf("INV-25"), Invariants.violations(medication))
+        assertTrue(Invariants.violations(Fixtures.prnMedication()).isEmpty())
     }
 }

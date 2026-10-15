@@ -144,4 +144,9 @@
         <item quantity="one">инъекция</item>
         <item quantity="other">инъекция</item>
     </plurals>
+
+    <plurals name="form_stage_days">
+        <item quantity="one">күн</item>
+        <item quantity="other">күн</item>
+    </plurals>
 </resources>

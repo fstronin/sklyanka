@@ -32,6 +32,7 @@ object Invariants {
         if (medication.name.isBlank()) add(MEDICATION_NAME_BLANK)
         if (medication.doseAmount <= BigDecimal.ZERO) add("INV-4")
         if ((medication.strength == null) != (medication.strengthUnit == null)) add("INV-5")
+        addAll(modeViolations(medication))
         addAll(scheduleViolations(medication))
         if (medication.endDate != null && medication.endDate < medication.startDate) add("INV-7")
         if (medication.stockLeft != null && medication.stockLeft < BigDecimal.ZERO) add("INV-8")
@@ -130,7 +131,7 @@ object Invariants {
      * Ноль вместо «неприменимо» здесь запрещён (ПР-7, ПР-8): пустой список времён у курса
      * по расписанию означал бы курс, который никогда не напомнит о себе.
      */
-    private fun scheduleViolations(medication: Medication): List<String> = buildList {
+    private fun modeViolations(medication: Medication): List<String> = buildList {
         when (medication.scheduleMode) {
             ScheduleMode.SCHEDULED -> {
                 if (medication.times.isEmpty() || medication.times.distinct().size != medication.times.size) {
@@ -143,6 +144,63 @@ object Invariants {
                 if (medication.times.isNotEmpty()) add("INV-6")
                 if (medication.maxPerDay != null && medication.maxPerDay <= 0) add("INV-17")
             }
+        }
+    }
+
+    /**
+     * ИНВ-23…ИНВ-25: вид расписания заполнен своими параметрами (ПР-15…ПР-19).
+     *
+     * Проверка стоит рядом с [modeViolations] намеренно: обе отвечают на вопрос «заполнены
+     * ли поля расписания так, как требует выбранный способ приёма», и разводить их по
+     * разным местам значило бы однажды поправить одну и забыть другую.
+     *
+     * Этапы проверяются целиком, а не по одному: «идут подряд от даты начала» — свойство
+     * всего списка, и его нарушение видно только на сумме длительностей.
+     */
+    private fun scheduleViolations(medication: Medication): List<String> = buildList {
+        val rule = medication.schedule
+        // ИНВ-25: у «по потребности» вида расписания нет (ПР-7) — приёмы рождаются
+        // по нажатию, и правило вида у такого курса не значит ничего.
+        if (medication.scheduleMode == ScheduleMode.PRN) {
+            if (rule != ScheduleRule.Daily) add("INV-25")
+            return@buildList
+        }
+        addAll(ruleViolations(rule, medication))
+    }
+
+    /** Параметры вида по его букве: чем именно не заполнен выбранный вид (ИНВ-23…ИНВ-24). */
+    private fun ruleViolations(rule: ScheduleRule, medication: Medication): List<String> = when (rule) {
+        ScheduleRule.Daily -> emptyList()
+        is ScheduleRule.Weekdays -> if (rule.days.isEmpty()) listOf("INV-23") else emptyList()
+        is ScheduleRule.EveryNDays -> if (rule.days < MIN_INTERVAL_DAYS) listOf("INV-23") else emptyList()
+        is ScheduleRule.Cycles -> if (rule.onDays < MIN_CYCLE_DAYS || rule.offDays < MIN_CYCLE_DAYS) {
+            listOf("INV-23")
+        } else {
+            emptyList()
+        }
+
+        is ScheduleRule.Staged -> stagedViolations(rule, medication)
+    }
+
+    /**
+     * Этапы ступенчатого вида: непусты, у каждого доза и длительность, список не выходит
+     * за конец курса (ИНВ-23, ИНВ-24).
+     *
+     * Список проверяется целиком, а не по одному этапу: «идут подряд от даты начала» —
+     * свойство всего списка, и его нарушение видно только на сумме длительностей.
+     */
+    private fun stagedViolations(rule: ScheduleRule.Staged, medication: Medication): List<String> = buildList {
+        if (rule.stages.isEmpty()) {
+            add("INV-23")
+            return@buildList
+        }
+        rule.stages.forEach { stage ->
+            if (stage.doseAmount <= BigDecimal.ZERO || stage.days < MIN_STAGE_DAYS) add("INV-24")
+        }
+        val end = medication.endDate
+        val totalDays = rule.stages.sumOf { stage -> maxOf(stage.days, 0).toLong() }
+        if (end != null && totalDays > 0 && medication.startDate.plusDays(totalDays - 1).isAfter(end)) {
+            add("INV-24")
         }
     }
 
@@ -165,4 +223,13 @@ object Invariants {
     private const val PROFILE_NAME_BLANK = "PROFILE-NAME-BLANK"
     private const val MEDICATION_NAME_BLANK = "MEDICATION-NAME-BLANK"
     private const val INTAKE_FOREIGN_MEDICATION = "INTAKE-FOREIGN-MEDICATION"
+
+    /** ПР-17: «через N дней» начинается с двух — «через каждый день» уже ежедневное. */
+    private const val MIN_INTERVAL_DAYS = 2
+
+    /** ПР-18: и приём, и перерыв в цикле длятся хотя бы сутки. */
+    private const val MIN_CYCLE_DAYS = 1
+
+    /** ИНВ-24: этап длится хотя бы сутки. */
+    private const val MIN_STAGE_DAYS = 1
 }

@@ -8,6 +8,7 @@ import ru.stohastika.sklyanka.domain.model.IntakeStatus
 import ru.stohastika.sklyanka.domain.model.Medication
 import ru.stohastika.sklyanka.domain.model.MedicationForm
 import ru.stohastika.sklyanka.domain.model.ScheduleMode
+import ru.stohastika.sklyanka.domain.model.ScheduleRule
 import ru.stohastika.sklyanka.domain.time.FixedTimeSource
 import java.math.BigDecimal
 import java.time.Instant
@@ -59,6 +60,8 @@ internal object Planning {
         archivedAt: Instant? = null,
         /** Мягко удалённое лекарство (ПР-14): с `archivedAt` не сочетается (ИНВ-21). */
         deletedAt: Instant? = null,
+        /** Вид расписания (ПР-15); по умолчанию ежедневное — как у всех старых курсов. */
+        schedule: ScheduleRule = ScheduleRule.Daily,
     ) = Medication(
         id = id,
         profileId = profileId,
@@ -73,6 +76,7 @@ internal object Planning {
         scheduleMode = mode,
         maxPerDay = if (mode == ScheduleMode.PRN) PRN_MAX_PER_DAY else null,
         times = if (mode == ScheduleMode.SCHEDULED) times else emptyList(),
+        schedule = schedule,
         startDate = startDate,
         endDate = endDate,
         stockLeft = null,

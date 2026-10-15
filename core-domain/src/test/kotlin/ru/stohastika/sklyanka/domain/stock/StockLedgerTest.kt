@@ -93,6 +93,32 @@ class StockLedgerTest {
         assertEquals(StockEffect.NONE, StockLedger.effectOf(IntakeStatus.PENDING))
     }
 
+    // --- Доза списания: снимок приёма или доза лекарства (SKL-117, ПР-19) -----------------
+
+    @Test
+    fun `an intake without its own dose spends the dose of the medication`() {
+        assertEquals(DOSE, StockLedger.chargedDose(intakeDose = null, medicationDose = DOSE))
+    }
+
+    @Test
+    fun `an intake of a staged course spends the dose of its own stage`() {
+        val half = BigDecimal("0.5")
+
+        assertEquals(half, StockLedger.chargedDose(intakeDose = half, medicationDose = BigDecimal("2")))
+    }
+
+    @Test
+    fun `two stages of the same medication spend different amounts`() {
+        val half = BigDecimal("0.5")
+        val whole = BigDecimal.ONE
+
+        val firstWeek = StockLedger.apply(stock("30"), StockLedger.chargedDose(half, whole), StockEffect.DECREMENT)
+        val secondStage = StockLedger.apply(stock("30"), StockLedger.chargedDose(whole, whole), StockEffect.DECREMENT)
+
+        assertEquals(BigDecimal("29.5"), firstWeek?.after)
+        assertEquals(BigDecimal("29"), secondStage?.after)
+    }
+
     private fun stock(value: String) = BigDecimal(value)
 
     private companion object {

@@ -82,6 +82,17 @@ internal data class MedicationDto(
     @SerialName("max_per_day") val maxPerDay: Int? = null,
     /** Расписание внутри лекарства (ПЕР-11): `HH:mm`, пустой список у курса по потребности. */
     val times: List<String> = emptyList(),
+    /**
+     * Вид расписания (ПР-15…ПР-19), канонической строкой хранения
+     * ([ru.stohastika.sklyanka.data.room.SklyankaConverters.scheduleRuleToText]).
+     *
+     * Необязательное поле: версию формата оно не поднимает (ПЕР-7), потому что старая
+     * сборка читает файл с ним как прежде, а новая читает файл без него — `null` значит
+     * «ежедневное», ровно как у курса, заведённого до появления видов. Пустая строка или
+     * непонятое значение тоже читаются как ежедневное ([SklyankaConverters.textToScheduleRule],
+     * МГ-6): расписание не имеет права исчезнуть из-за формата.
+     */
+    @SerialName("schedule_rule") val scheduleRule: String? = null,
     @SerialName("start_date") val startDate: String,
     @SerialName("end_date") val endDate: String? = null,
     @SerialName("stock_left") val stockLeft: JsonElement? = null,
@@ -118,6 +129,15 @@ internal data class IntakeDto(
     /** Локальные дата и время со смещением источника; смещение при чтении отбрасывается (ПЕР-8). */
     @SerialName("scheduled_at") val scheduledAt: String,
     val status: String,
+    /**
+     * Снимок дозы этого приёма у ступенчатого курса (ПР-19, ИНВ-24).
+     *
+     * Необязательное поле по конвенции ПЕР-7: версию формата не поднимает. `null` —
+     * доза берётся у лекарства; так выглядят ежедневные курсы и все записи, рождённые
+     * до появления видов. Без этого поля перенос молча потерял бы дозы ступеней —
+     * ложь о данных человека (П-7).
+     */
+    @SerialName("dose_amount") val doseAmount: JsonElement? = null,
     @SerialName("acted_at") val actedAt: String? = null,
     val source: String? = null,
     @SerialName("actor_profile_id") val actorProfileId: String? = null,

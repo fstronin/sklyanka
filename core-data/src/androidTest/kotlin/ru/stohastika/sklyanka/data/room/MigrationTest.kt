@@ -19,7 +19,9 @@ import org.junit.runner.RunWith
  * упаковки у лекарства (SKL-34, ОВ-45); версия 6 — таблица отложенных срабатываний
  * (SKL-35, ОВ-75); версия 7 — момент мягкого удаления лекарства (SKL-99, ПМ-24);
  * версия 8 вырезала часовой шов обратно (Р-3, SKL-106): обе колонки часового шва уходят,
- * таблицы перестраиваются.
+ * таблицы перестраиваются; версия 9 добавила приёму признак снятия записи «по потребности»
+ * (Р-46, SKL-127); версия 10 добавила лекарству вид расписания, а приёму — дозу за приём
+ * (SKL-117, ПР-15, ПР-19).
  * Тест доказывает заодно, что экспорт схемы действительно работает: без файлов
  * в `core-data/schemas` помощник не смог бы создать базу предыдущей версии.
  *
@@ -325,6 +327,46 @@ class MigrationTest {
                 cursor.moveToFirst()
                 assertEquals("no medication row may be lost (MG-2)", 1, cursor.getInt(0))
             }
+        }
+    }
+
+    /**
+     * Версия 9 → 10 на реальной базе с данными (МГ-3, SKL-117).
+     *
+     * Обе колонки приходят пустыми, и пустое значение осмысленно: `schedule_rule` `NULL`
+     * читается как ежедневное расписание, `dose_amount` `NULL` — как «доза берётся
+     * у лекарства». Ничего не пересчитывается: строка лекарства, её времена и приём
+     * прошлого остаются ровно теми же (критерий приёмки 8).
+     */
+    @Test
+    fun theScheduleRuleAndTheDoseSnapshotArriveWithoutTouchingAnyRow() {
+        helper.createDatabase(TEST_DB, 9).use { old ->
+            old.execSQL(INSERT_PROFILE)
+            old.execSQL(INSERT_MEDICATION)
+            old.execSQL(INSERT_INTAKE)
+        }
+
+        val migrated = helper.runMigrationsAndValidate(
+            TEST_DB,
+            SklyankaDatabase.VERSION,
+            true,
+            SklyankaMigrations.MIGRATION_9_10,
+        )
+
+        migrated.use { db ->
+            db.query("SELECT `times`, `schedule_rule` FROM `medication` WHERE `id` = 'medication-1'")
+                .use { cursor ->
+                    assertTrue("the medication row must survive the migration", cursor.moveToFirst())
+                    assertEquals("the times must stay untouched", "08:00", cursor.getString(0))
+                    assertTrue("an old course reads as an every-day schedule", cursor.isNull(1))
+                }
+            db.query("SELECT `status`, `scheduled_at`, `dose_amount` FROM `intake` WHERE `id` = 'intake-1'")
+                .use { cursor ->
+                    assertTrue("the intake row must survive the migration", cursor.moveToFirst())
+                    assertEquals("the status must stay untouched", "PENDING", cursor.getString(0))
+                    assertEquals("the moment must stay untouched", "2026-09-12T08:00", cursor.getString(1))
+                    assertTrue("an old intake takes the dose of its medication", cursor.isNull(2))
+                }
         }
     }
 

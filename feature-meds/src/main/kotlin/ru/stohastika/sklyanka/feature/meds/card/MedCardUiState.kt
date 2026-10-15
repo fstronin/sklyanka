@@ -7,6 +7,7 @@ import ru.stohastika.sklyanka.domain.medication.MedicationSubtitle
 import ru.stohastika.sklyanka.domain.medication.WeekAdherenceStrip
 import ru.stohastika.sklyanka.domain.model.MedicationForm
 import ru.stohastika.sklyanka.domain.stock.StockPanel
+import ru.stohastika.sklyanka.feature.meds.form.ScheduleKind
 import java.math.BigDecimal
 import java.time.LocalTime
 
@@ -71,6 +72,11 @@ sealed interface ScheduleBlockUi {
         val doseAmount: BigDecimal,
         val doseUnit: DoseUnit,
         val times: List<LocalTime>,
+        /**
+         * Вид расписания: у сложных видов в слоте частоты стоит его имя (§5.10, 5.6).
+         * У ежедневного вида частота считается по числу приёмов.
+         */
+        val scheduleKind: ScheduleKind = ScheduleKind.DAILY,
     ) : ScheduleBlockUi
 
     /** «не чаще 3 раз в сутки» — вместо блока расписания (ПР-7). */

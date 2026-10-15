@@ -110,10 +110,22 @@ internal class FakeIntakeRepository(
         // Удаление только ожидающихся — то же условие, что стоит внутри DELETE в SQL:
         // между чтением окна и записью помещается отметка с часов.
         val deleted = diff.toDelete.count { id -> stored[id]?.isPending == true && stored.remove(id) != null }
-        val created = diff.toCreate.count { moment ->
-            val clash = stored.values.any { it.medicationId == medicationId && it.scheduledAt == moment }
-            if (!clash) put(Planning.pending(moment, "generated-${sequence++}", medicationId))
+        val created = diff.toCreate.count { planned ->
+            val clash = stored.values.any { it.medicationId == medicationId && it.scheduledAt == planned.scheduledAt }
+            if (!clash) {
+                put(
+                    Planning.pending(planned.scheduledAt, "generated-${sequence++}", medicationId)
+                        .copy(doseAmount = planned.doseAmount),
+                )
+            }
             !clash
+        }
+        // Снимок дозы у ожидающих обновляется тем же условием, что в UPDATE: отметка
+        // неприкосновенна (ПР-11, SKL-117 F7).
+        diff.toRefreshDose.forEach { refresh ->
+            stored[refresh.intakeId]?.takeIf { it.isPending }?.let { intake ->
+                stored[refresh.intakeId] = intake.copy(doseAmount = refresh.doseAmount)
+            }
         }
         return PlanApplyResult(created = created, deleted = deleted)
     }

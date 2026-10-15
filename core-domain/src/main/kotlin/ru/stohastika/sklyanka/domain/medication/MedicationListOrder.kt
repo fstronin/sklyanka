@@ -2,6 +2,8 @@ package ru.stohastika.sklyanka.domain.medication
 
 import ru.stohastika.sklyanka.domain.model.Medication
 import ru.stohastika.sklyanka.domain.model.ScheduleMode
+import ru.stohastika.sklyanka.domain.model.ScheduleRule
+import java.time.LocalDate
 import java.time.LocalDateTime
 
 /**
@@ -35,21 +37,48 @@ object MedicationListOrder {
             medication.times.isNotEmpty()
         if (!producesIntakes || !hasNextDay) return null
 
-        val times = medication.times.distinct().sorted()
-        // Двух суток достаточно: времена приёма лежат внутри суток, поэтому ближайшее
-        // будущее время — сегодня или завтра.
-        return sequence {
-            for (offset in 0L..1L) {
-                val day = firstDay.plusDays(offset)
-                if (end != null && day.isAfter(end)) break
-                for (time in times) {
-                    val moment = day.atTime(time)
-                    // Время ровно `now` остаётся ближайшим: приём назначен на текущую минуту.
-                    if (!moment.isBefore(now)) yield(moment)
-                }
-            }
-        }.minOrNull()
+        // Дней просмотра хватает на один полный период вида: если сегодня приём есть, но его
+        // время уже прошло, следующий приём — не раньше чем через период. У курса «по средам»
+        // это и значит, что список не назовёт ближайшим приём другого дня.
+        val horizon = minOf(firstDay.plusDays(medication.schedule.periodDays()), end ?: LocalDate.MAX)
+        return firstMoment(firstDay, horizon, medication, now)
     }
+
+    /** Первый приём вида на отрезке дней, не раньше [now]; `null` — приёма на нём нет. */
+    private fun firstMoment(
+        from: LocalDate,
+        horizon: LocalDate,
+        medication: Medication,
+        now: LocalDateTime,
+    ): LocalDateTime? {
+        val rule = medication.schedule
+        val times = medication.times.distinct().sorted()
+        var day = from
+        while (!day.isAfter(horizon)) {
+            if (rule.includes(day, medication.startDate)) {
+                val moment = times.map { time -> day.atTime(time) }.firstOrNull { it >= now }
+                if (moment != null) return moment
+            }
+            day = day.plusDays(1)
+        }
+        return null
+    }
+
+    /**
+     * Длина периода вида в сутках: сколько дней достаточно посмотреть, чтобы найти
+     * ближайший приём. День недели повторяется раз в неделю, интервал — раз в N дней,
+     * цикл — раз в N + M; ежедневное и ступенчатое порождают приём каждый день.
+     */
+    private fun ScheduleRule.periodDays(): Long = when (this) {
+        ScheduleRule.Daily -> 1L
+        is ScheduleRule.Weekdays -> DAYS_IN_WEEK
+        is ScheduleRule.EveryNDays -> maxOf(days.toLong(), 1L)
+        is ScheduleRule.Cycles -> maxOf(onDays.toLong() + offDays.toLong(), 1L)
+        is ScheduleRule.Staged -> 1L
+    }
+
+    /** Неделя — период вида «по дням недели»: дальше искать приём нечего. */
+    private const val DAYS_IN_WEEK = 7L
 
     /**
      * Активные лекарства в порядке «что ближе — то выше» (ПМ-15 п. 1).

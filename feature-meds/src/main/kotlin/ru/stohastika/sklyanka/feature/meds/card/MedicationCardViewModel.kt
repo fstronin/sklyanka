@@ -34,6 +34,7 @@ import ru.stohastika.sklyanka.domain.stock.StockPanel
 import ru.stohastika.sklyanka.domain.time.TimeSource
 import ru.stohastika.sklyanka.domain.undo.UndoableActionStore
 import ru.stohastika.sklyanka.feature.meds.amountOf
+import ru.stohastika.sklyanka.feature.meds.form.ScheduleKind
 import java.math.BigDecimal
 import javax.inject.Inject
 
@@ -149,6 +150,7 @@ class MedicationCardViewModel @Inject constructor(
                 doseAmount = medication.doseAmount,
                 doseUnit = DoseUnit.ofCode(medication.doseUnit) ?: medication.form.doseUnit(),
                 times = medication.times.sorted(),
+                scheduleKind = ScheduleKind.of(medication.schedule),
             )
         } else {
             ScheduleBlockUi.AsNeeded(maxPerDay = medication.maxPerDay ?: 0)

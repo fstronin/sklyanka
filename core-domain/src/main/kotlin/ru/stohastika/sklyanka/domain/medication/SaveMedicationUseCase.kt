@@ -133,7 +133,15 @@ class SaveMedicationUseCase(
          *
          * Доза входит по таблице НАП-11 наравне с временами и границами курса.
          */
-        val SCHEDULE_FIELDS = setOf("times", "start_date", "end_date", "schedule_mode", "max_per_day", "dose_amount")
+        val SCHEDULE_FIELDS = setOf(
+            "times",
+            "schedule_rule",
+            "start_date",
+            "end_date",
+            "schedule_mode",
+            "max_per_day",
+            "dose_amount",
+        )
 
         /**
          * Поля курса именами колонок модели данных.
@@ -153,6 +161,7 @@ class SaveMedicationUseCase(
             "schedule_mode" to { it.scheduleMode },
             "max_per_day" to { it.maxPerDay },
             "times" to { it.times },
+            "schedule_rule" to { it.schedule },
             "start_date" to { it.startDate },
             "end_date" to { it.endDate },
             "stock_left" to { it.stockLeft },

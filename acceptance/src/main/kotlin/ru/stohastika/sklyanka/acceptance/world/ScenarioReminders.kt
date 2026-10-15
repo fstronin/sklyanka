@@ -44,6 +44,7 @@ import ru.stohastika.sklyanka.domain.reminder.port.ReminderPlanSource
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderSettingKey
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderSettings
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderSettingsValues
+import ru.stohastika.sklyanka.domain.stock.StockLedger
 import java.time.Instant
 import java.time.LocalDateTime
 
@@ -421,13 +422,19 @@ class ScenarioReminders(
         override suspend fun card(slot: ReminderSlot): ReminderCard? {
             val profile = profiles.byId(slot.profileId) ?: return null
             val items = pendingInSlot(slot).mapNotNull { row ->
-                medications.byId(row.medicationId)?.let { medication ->
+                val intake = intakes.get(row.intakeId)
+                val medication = medications.byId(row.medicationId)
+                if (intake == null || medication == null) {
+                    null
+                } else {
                     ReminderCardItem(
                         intakeId = row.intakeId,
                         medicationId = medication.id,
                         medicationName = medication.name,
                         form = medication.form,
-                        doseAmount = medication.doseAmount,
+                        // Доза приёма — снимок, если он есть, иначе доза лекарства (ПР-19):
+                        // то же правило, что в `ReminderDataSource` (SKL-117, критика F1).
+                        doseAmount = StockLedger.chargedDose(intake.doseAmount, medication.doseAmount),
                         doseUnit = medication.form.doseUnit().code,
                         strength = medication.strength,
                         strengthUnit = medication.strengthUnit,

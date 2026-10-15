@@ -84,8 +84,6 @@ object MedicationListRules {
         }
     }
 
-    /** Суточный расход: доза на приём, умноженная на число приёмов в сутки. */
-    private fun dailyConsumption(medication: Medication): BigDecimal? = medication.times
-        .takeIf { medication.scheduleMode == ScheduleMode.SCHEDULED && it.isNotEmpty() }
-        ?.let { times -> medication.doseAmount.multiply(BigDecimal(times.size)) }
+    /** Суточный расход: по виду расписания — тем же правилом, что у прогноза запаса (ПР-13). */
+    private fun dailyConsumption(medication: Medication): BigDecimal? = MedicationDailyUse.of(medication)
 }

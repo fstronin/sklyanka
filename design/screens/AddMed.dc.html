@@ -10,11 +10,81 @@
 <helmet>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&amp;family=Literata:opsz,wght@7..72,400;7..72,600&amp;display=swap">
 <style>
+/* Макет формы лекарства и состояний блока «Расписание» (§5.10 нормы `docs/norm/06-design.md`).
+   Палитра — Р-20 «олива на бумаге»: фон #F8F6EF, поверхность #FFFFFF, акцент #5F6F2E,
+   мягкий акцент #EBEEDA. В комментариях — роль токена, которой соответствует значение. */
 body{margin:0;font-family:'Golos Text',system-ui,sans-serif;background:#F8F6EF;-webkit-font-smoothing:antialiased}
 a{color:#5F6F2E;text-decoration:none}a:hover{color:#8F3E23}
+
+/* --- Блок расписания (§5.10) --- */
+/* Строка вида — `SectionCard` (§5) с одной строкой: подпись `BodyDefault` 15/400,
+   значение `BodyDefaultStrong` 15/600, шеврон вниз 14 dp (`FieldUnitChevron`) цвета `iconFaint`. */
+.sched-row{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:50px;box-sizing:border-box;padding:14px 16px;background:#FFFFFF;border:1px solid #E6DED2;border-radius:16px}
+.sched-row .label{font-size:15px;line-height:1.45;color:#241F1B}
+.sched-row .value{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:600;line-height:1.45;color:#241F1B}
+.chev-down{display:block;width:14px;height:14px;color:#B0A597}
+/* Надстрочник блока — `Overline` 12/600 `textMuted`. */
+.rubric{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#5F564D}
+/* Ряд дней — `FlowRow`, зазор `Spacing.Micro` 4 dp: 7 × 44 + 6 × 4 = 332 dp в 350 dp. */
+.chips{display:flex;flex-wrap:wrap;gap:4px}
+/* Чип — `SklyankaChip` высоты `ChipHeight` 44 dp (§4.2): невыбранный `surface` с рамкой `line`,
+   выбранный — `accentSoft` с рамкой 1,5 dp `accent` и подписью 600; акцентная рамка приходит
+   из пропа `accent` по месту, как у остальных выбранных элементов макета. */
+.chip{flex:1 1 44px;min-width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:#FFFFFF;border:1px solid #E6DED2;border-radius:13px;font-size:13px;line-height:1.35;color:#241F1B}
+.chip--on{background:#EBEEDA;border:1.5px solid #5F6F2E;font-weight:600}
+/* Строка границы: метка «Про» и подпись — вместе читаются «Про — больше одного дня». */
+.pro-line{display:flex;align-items:center;gap:8px}
+/* Метка «Про» — собранная композиция из токенов (§5.9, Р-79): подложка `accentSoft`, слово
+   `CaptionStrong` 13/600 цветом `onAccentSoft`, искра 14 sp перед словом, поле 7 × 14 dp.
+   Не нажимается — цели нажатия не требует. */
+.pro-mark{display:inline-flex;align-items:baseline;gap:4px;border-radius:999px;background:#EBEEDA;color:#424724;font-size:13px;font-weight:600;line-height:1.35;padding:7px 14px;flex-shrink:0}
+.pro-mark svg{display:block;width:14px;height:14px;flex-shrink:0}
+/* Пояснение под блоком — `CaptionSmall` 12/400 `textMuted`. */
+.hint{font-size:12px;line-height:1.45;color:#5F564D}
+/* Строка «подпись — числовое поле»: та же сборка, что строки остатка (§5.3): подпись
+   `BodyDefault` 15/400, поле `SklyankaNumberField` ширины `StockField` 54 dp. */
+.num-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;background:#FFFFFF}
+.num-row:first-child{border-radius:16px 16px 0 0}
+.num-row:last-child{border-radius:0 0 16px 16px}
+.num-row .label{font-size:15px;line-height:1.45;color:#241F1B;padding-right:8px}
+.num-field{width:54px;height:42px;box-sizing:border-box;background:#F8F6EF;border:1px solid #E6DED2;border-radius:12px;font-size:16px;font-weight:600;color:#241F1B;text-align:center;line-height:40px}
+.sched-card{background:#FFFFFF;border:1px solid #E6DED2;border-radius:16px;overflow:hidden}
+.sched-divider{height:1px;background:#EFE7DB;margin:0 16px}
+/* Карточка этапа — сборка строки времени: `surface`, рамка 1 dp `line`, радиус `Medium`. */
+.stage{background:#FFFFFF;border:1px solid #E6DED2;border-radius:14px;padding:8px 14px 14px}
+.stage-head{display:flex;align-items:center;justify-content:space-between;min-height:44px}
+.stage-title{font-size:15px;font-weight:600;line-height:1.45}
+.stage-fields{display:flex;gap:12px}
+/* Поля этапа — `SklyankaTextField` числом, слово единицы внутри поля, как у поля дозы (§5.3). */
+.stage-field{flex:1;min-width:0;height:50px;box-sizing:border-box;padding:0 14px;background:#FFFFFF;border:1px solid #E6DED2;border-radius:14px;display:flex;align-items:center;gap:8px;font-size:16px;font-weight:600;color:#241F1B}
+.stage-field .unit{font-size:13px;font-weight:400;color:#5F564D;white-space:nowrap}
+/* «Добавить этап» — та же сборка, что «Добавить время»: пунктир `lineInteractive`, `Label` 14/500 `accent`. */
+.add-btn{height:44px;box-sizing:border-box;border:1px dashed #D9CDBD;background:transparent;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:500;color:#5F6F2E}
+/* Состояние без подписки: причина над кнопкой — `CaptionSmall` `textMuted`. */
+.save-bar{display:flex;flex-direction:column;gap:8px;padding:14px 20px 26px;background:#F8F6EF}
+.btn-save{width:100%;height:54px;border:none;border-radius:16px;background:#5F6F2E;color:#FFFFFF;font-family:inherit;font-size:16px;font-weight:600;cursor:pointer}
+
+/* --- Лист состояний --- */
+.sheet-head{font-size:13px;font-weight:600;color:#5F564D;letter-spacing:.02em;padding:34px 20px 6px}
+.state{width:390px;box-sizing:border-box;padding:0 20px 0}
+.state-label{font-size:13px;font-weight:600;color:#5F564D;margin-bottom:10px}
+.state-body{background:#F8F6EF;display:flex;flex-direction:column;gap:10px}
+figcaption{max-width:390px;font-size:12px;color:#5F564D;margin:12px 0 30px;line-height:1.5}
+/* Диалог выбора вида — `ListPickerDialog` (§5): оболочка `surface`, радиус `Large`, затемнение `scrim`. */
+.dialog-wrap{position:relative;background:#F8F6EF;border-radius:18px;overflow:hidden}
+.dialog-scrim{position:absolute;inset:0;background:rgba(24,23,18,.32)}
+.dialog{margin:0 24px;background:#FFFFFF;border:1px solid #EFE7DB;border-radius:16px;padding:16px 0 6px;display:flex;flex-direction:column;gap:8px;position:relative}
+.dialog-title{font-size:15px;font-weight:600;line-height:1.45;padding:0 16px 4px}
+.dialog-opt{display:flex;align-items:center;gap:10px;min-height:44px;box-sizing:border-box;padding:12px 16px;font-size:15px;line-height:1.45;color:#241F1B}
+.dialog-opt--on{color:#5F6F2E;font-weight:600}
+.dialog-opt .grow{flex:1}
+.dialog-divider{height:1px;background:#EFE7DB;margin:0 16px}
+.dialog-cancel{display:flex;justify-content:flex-end;padding:2px 16px 8px;font-size:15px;font-weight:500;color:#5F564D}
 </style>
 </helmet>
-<div style="width: 390px; height: 1660px; box-sizing: border-box; background: #F8F6EF; color: #241F1B; display: flex; flex-direction: column; overflow: hidden">
+
+<!-- ===== Экран формы ===== -->
+<div style="width: 390px; height: 1810px; box-sizing: border-box; background: #F8F6EF; color: #241F1B; display: flex; flex-direction: column; overflow: hidden">
 
 <div style="padding: 30px 20px 16px">
 <!-- Форма — экран второго уровня без возврата (Р-54): действия в шапке нет, выход — системный «Назад»,
@@ -84,7 +154,8 @@ a{color:#5F6F2E;text-decoration:none}a:hover{color:#8F3E23}
 <div style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #5F564D">Доза на один приём</div>
 <div style="width: 120px; display: flex; align-items: center; height: 50px; box-sizing: border-box; padding: 0 14px; background: #FFFFFF; border: 1px solid #E6DED2; border-radius: 14px; gap: 8px">
 <input id="dose-count" type="text" value="2" aria-label="Доза на один приём" style="width: 100%; border: none; outline: none; background: transparent; font-family: inherit; font-size: 16px; font-weight: 600; color: #241F1B">
-<span style="font-size: 14px; color: #5F564D; white-space: nowrap">шт</span>
+<!-- Единица дозы — слово, согласованное с числом (§5.3): «шт» в продукте нет (Р-45). -->
+<span style="font-size: 13px; color: #5F564D; white-space: nowrap">таблетки</span>
 </div>
 </div>
 
@@ -92,11 +163,30 @@ a{color:#5F6F2E;text-decoration:none}a:hover{color:#8F3E23}
 <div style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #5F564D">Дозировка препарата</div>
 <div style="width: 120px; display: flex; align-items: center; height: 50px; box-sizing: border-box; padding: 0 14px; background: #FFFFFF; border: 1px solid #E6DED2; border-radius: 14px; gap: 8px">
 <input id="dose-strength" type="text" value="48" aria-label="Дозировка препарата" style="width: 100%; border: none; outline: none; background: transparent; font-family: inherit; font-size: 16px; color: #241F1B">
-<span style="font-size: 14px; color: #5F564D; white-space: nowrap">мг</span>
+<span style="font-size: 13px; color: #5F564D; white-space: nowrap">мг</span>
 </div>
 <div style="font-size: 12px; color: #5F564D; line-height: 1.45">Необязательно. Сколько действующего вещества в одной единице — в карточке видно, в расчётах не участвует.</div>
 </div>
 
+<!-- «Режим приёма» стоит выше расписания: именно режим решает, нужны ли время и вид (Д-2). -->
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #5F564D">Режим приёма</div>
+<div style="display: flex; padding: 4px; background: #EFE7DB; border-radius: 13px; gap: 4px">
+<button type="button" style="flex-grow: 1; height: 40px; border: none; border-radius: 10px; background: #FFFFFF; color: #241F1B; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer">По расписанию</button>
+<button type="button" style="flex-grow: 1; height: 40px; border: none; border-radius: 10px; background: transparent; color: #5F564D; font-family: inherit; font-size: 14px; font-weight: 500; cursor: pointer">По потребности</button>
+</div>
+<div style="font-size: 12px; color: #5F564D; line-height: 1.45; padding-left: 2px">По потребности — без напоминаний: приём отмечается вручную, когда понадобилось.</div>
+</div>
+
+<!-- Расписание (§5.10): строка вида — по умолчанию «Каждый день»; у ежедневного вида параметров нет,
+     поэтому под строкой сразу идут неизменённые «Приёмов в сутки» и «Время приёма». -->
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div class="sched-row">
+<span class="label">Расписание</span>
+<span class="value">Каждый день
+<svg class="chev-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9.5 12 15.5 18 9.5"></path></svg>
+</span>
+</div>
 <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px; background: #FFFFFF; border: 1px solid #E6DED2; border-radius: 16px">
 <div style="display: flex; flex-direction: column; gap: 2px">
 <div style="font-size: 15px; font-weight: 600">Приёмов в сутки</div>
@@ -110,6 +200,7 @@ a{color:#5F6F2E;text-decoration:none}a:hover{color:#8F3E23}
 <button type="button" aria-label="Увеличить" style="width: 44px; height: 44px; border: 1px solid #E6DED2; background: #F8F6EF; border-radius: 999px; display: flex; align-items: center; justify-content: center; cursor: pointer">
 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5F564D" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
 </button>
+</div>
 </div>
 </div>
 
@@ -132,15 +223,6 @@ a{color:#5F6F2E;text-decoration:none}a:hover{color:#8F3E23}
 </div>
 <button type="button" style="height: 46px; border: 1px dashed #D9CDBD; background: transparent; border-radius: 14px; font-family: inherit; font-size: 14px; font-weight: 500; color: {{accent}}; cursor: pointer">Добавить время</button>
 </div>
-</div>
-
-<div style="display: flex; flex-direction: column; gap: 10px">
-<div style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #5F564D">Режим приёма</div>
-<div style="display: flex; padding: 4px; background: #EFE7DB; border-radius: 13px; gap: 4px">
-<button type="button" style="flex-grow: 1; height: 40px; border: none; border-radius: 10px; background: #FFFFFF; color: #241F1B; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer">По расписанию</button>
-<button type="button" style="flex-grow: 1; height: 40px; border: none; border-radius: 10px; background: transparent; color: #5F564D; font-family: inherit; font-size: 14px; font-weight: 500; cursor: pointer">По потребности</button>
-</div>
-<div style="font-size: 12px; color: #5F564D; line-height: 1.45; padding-left: 2px">По потребности — без напоминаний: приём отмечается вручную, когда понадобилось.</div>
 </div>
 
 <div style="display: flex; flex-direction: column; gap: 10px">
@@ -206,8 +288,207 @@ a{color:#5F6F2E;text-decoration:none}a:hover{color:#8F3E23}
 </div>
 
 </div>
+
+<!-- ===== Лист состояний блока «Расписание» (§5.10, SKL-117) =====
+     Ежедневное (по умолчанию) — на экране формы выше: строка вида говорит «Каждый день»,
+     других параметров у блока нет. Ниже — четыре сложных вида, список видов и платная граница. -->
+<div class="sheet-head">Состояния блока «Расписание» (SKL-117, §5.10 нормы)</div>
+
+<div class="state">
+<div class="state-label">По дням недели</div>
+<div class="state-body">
+<div class="sched-row">
+<span class="label">Расписание</span>
+<span class="value">По дням недели
+<svg class="chev-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9.5 12 15.5 18 9.5"></path></svg>
+</span>
+</div>
+<div class="rubric">Дни недели</div>
+<div class="chips">
+<span class="chip chip--on" style="border-color:{{accent}}">Пн</span><span class="chip">Вт</span><span class="chip chip--on" style="border-color:{{accent}}">Ср</span><span class="chip">Чт</span><span class="chip chip--on" style="border-color:{{accent}}">Пт</span><span class="chip">Сб</span><span class="chip">Вс</span>
+</div>
+<div class="pro-line">
+<span class="pro-mark"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.6l1.5 6.3 4.9-4.3-4.3 4.9 6.3 1.5-6.3 1.5 4.3 4.9-4.9-4.3L12 21.4l-1.5-6.3-4.9 4.3 4.3-4.9L3.6 13l6.3-1.5-4.3-4.9 4.9 4.3z"></path></svg>Про</span>
+<span class="hint">Больше одного дня</span>
+</div>
+</div>
+<figcaption>Один день недели — база (Р-24), два и более — «Про» (ПР-16). Метка стоит у дней, а не в строке вида: она отмечает то место, где начинается платная часть вида. Дни выбираются чипами (44 dp, зазор 4 dp — семь целей в 350 dp), выбор множественный, приглушения нет: второй день выбирается так же, как первый (П-7, §5.10).</figcaption>
+</div>
+
+<div class="state">
+<div class="state-label">Через несколько дней</div>
+<div class="state-body">
+<div class="sched-row">
+<span class="label">Расписание</span>
+<span class="value">Через несколько дней
+<svg class="chev-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9.5 12 15.5 18 9.5"></path></svg>
+</span>
+</div>
+<div class="sched-card">
+<div class="num-row">
+<span class="label">Интервал, дней</span>
+<span class="num-field">3</span>
+</div>
+</div>
+<div class="hint">Отсчёт от даты начала курса</div>
+</div>
+<figcaption>Строка «Интервал, дней» собрана как строка остатка: подпись, числовое поле 54 dp. Значение меньше двух не отсекается контролом, а называется словами — «Интервал не меньше двух дней», а один день предлагает базовый вид: «Один день — это ежедневное расписание» (ПР-17, §5.10).</figcaption>
+</div>
+
+<div class="state">
+<div class="state-label">Циклами</div>
+<div class="state-body">
+<div class="sched-row">
+<span class="label">Расписание</span>
+<span class="value">Циклами
+<svg class="chev-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9.5 12 15.5 18 9.5"></path></svg>
+</span>
+</div>
+<div class="sched-card">
+<div class="num-row">
+<span class="label">Дней приёма подряд</span>
+<span class="num-field">21</span>
+</div>
+<div class="sched-divider"></div>
+<div class="num-row">
+<span class="label">Дней перерыва</span>
+<span class="num-field">7</span>
+</div>
+</div>
+<div class="hint">Отсчёт от даты начала курса</div>
+</div>
+<figcaption>Длины цикла — два числа; слова единицы в строках нет: единицу называет сама подпись («Дней…»). В дни перерыва приёмов и напоминаний нет, цикл повторяется до конца курса (ПР-18). Нулевая длина — отказ словами (ИНВ-23).</figcaption>
+</div>
+
+<div class="state">
+<div class="state-label">По этапам</div>
+<div class="state-body">
+<div class="sched-row">
+<span class="label">Расписание</span>
+<span class="value">По этапам
+<svg class="chev-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9.5 12 15.5 18 9.5"></path></svg>
+</span>
+</div>
+<div class="stage">
+<div class="stage-head">
+<span class="stage-title">Этап 1</span>
+<button type="button" aria-label="Удалить этап 1" style="width: 34px; height: 34px; border: none; background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer">
+<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#B0A597" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"></path></svg>
+</button>
+</div>
+<div class="stage-fields">
+<div class="stage-field">2<span class="unit">таблетки</span></div>
+<div class="stage-field">7<span class="unit">дней</span></div>
+</div>
+</div>
+<div class="stage">
+<div class="stage-head">
+<span class="stage-title">Этап 2</span>
+<button type="button" aria-label="Удалить этап 2" style="width: 34px; height: 34px; border: none; background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer">
+<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#B0A597" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"></path></svg>
+</button>
+</div>
+<div class="stage-fields">
+<div class="stage-field">1<span class="unit">таблетка</span></div>
+<div class="stage-field">14<span class="unit">дней</span></div>
+</div>
+</div>
+<div class="add-btn" style="color:{{accent}}">Добавить этап</div>
+<div class="hint">Доза приёма задаётся этапами</div>
+<div class="hint">Этапы идут подряд от даты начала курса</div>
+</div>
+<figcaption>Этап — доза за приём и длительность; поля называют себя словами единиц внутри, как поле дозы (§5.3). Крест удаления есть у этапа, когда этапов два и больше: последний не удаляется — курс без этапов не собрать (ИНВ-23). Блок «Доза на один приём» выше не показывается: дозу курса несёт первый этап (§5.3, ИНВ-24), второй источник одного числа был бы дефектом.</figcaption>
+</div>
+
+<div class="state">
+<div class="state-label">Список видов (диалог строки «Расписание»)</div>
+<div class="dialog-wrap" style="padding:26px 0">
+<div class="dialog-scrim"></div>
+<div class="dialog">
+<div class="dialog-title">Расписание</div>
+<div class="dialog-opt dialog-opt--on">Каждый день<span class="grow"></span>
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5F6F2E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 10 17.5 19 7"></path></svg>
+</div>
+<div class="dialog-divider"></div>
+<div class="dialog-opt">По дням недели</div>
+<div class="dialog-divider"></div>
+<div class="dialog-opt">Через несколько дней
+<span class="pro-mark"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.6l1.5 6.3 4.9-4.3-4.3 4.9 6.3 1.5-6.3 1.5 4.3 4.9-4.9-4.3L12 21.4l-1.5-6.3-4.9 4.3 4.3-4.9L3.6 13l6.3-1.5-4.3-4.9 4.9 4.3z"></path></svg>Про</span>
+</div>
+<div class="dialog-divider"></div>
+<div class="dialog-opt">Циклами
+<span class="pro-mark"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.6l1.5 6.3 4.9-4.3-4.3 4.9 6.3 1.5-6.3 1.5 4.3 4.9-4.9-4.3L12 21.4l-1.5-6.3-4.9 4.3 4.3-4.9L3.6 13l6.3-1.5-4.3-4.9 4.9 4.3z"></path></svg>Про</span>
+</div>
+<div class="dialog-divider"></div>
+<div class="dialog-opt">По этапам
+<span class="pro-mark"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.6l1.5 6.3 4.9-4.3-4.3 4.9 6.3 1.5-6.3 1.5 4.3 4.9-4.9-4.3L12 21.4l-1.5-6.3-4.9 4.3 4.3-4.9L3.6 13l6.3-1.5-4.3-4.9 4.9 4.3z"></path></svg>Про</span>
+</div>
+<div class="dialog-cancel">Отмена</div>
+</div>
+</div>
+<figcaption>Порядок списка — порядок нормы (ПР-15), а не цены: список не сортируется по платности, иначе порядок читался бы подсовыванием (П-7). Метка «Про» стоит сразу за подписью платного варианта, до галочки выбранного, и видна до нажатия (Р-67 п. 5, Р-79). У «По дням недели» метки нет: один день недели — база (Р-24).</figcaption>
+</div>
+
+<div class="state">
+<div class="state-label">Без подписки: сохранение не проходит</div>
+<div class="state-body">
+<div class="sched-row">
+<span class="label">Расписание</span>
+<span class="value">Циклами
+<svg class="chev-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9.5 12 15.5 18 9.5"></path></svg>
+</span>
+</div>
+<div class="sched-card">
+<div class="num-row">
+<span class="label">Дней приёма подряд</span>
+<span class="num-field">21</span>
+</div>
+<div class="sched-divider"></div>
+<div class="num-row">
+<span class="label">Дней перерыва</span>
+<span class="num-field">7</span>
+</div>
+</div>
+</div>
+<div class="save-bar" style="padding-left:0;padding-right:0">
+<div class="hint">Сложное расписание — в подписке «Склянка Про»</div>
+<button type="button" class="btn-save" style="background:{{accent}}">Сохранить лекарство</button>
+</div>
+<figcaption>Вид выбирается, параметры видны и правятся — закрыто только завершение создания (ПР-20). Кнопка не приглушается: недоступное действие говорит «нельзя», а правда — «можно, по подписке» (П-7, Р-79); причина названа словами над кнопкой, а нажатие открывает витрину с пунктом-поводом «Сложные расписания» первым (Р-67 пп. 2–3). Правка уже заведённого сложного курса разрешена целиком — причины нет и сохранение проходит (Р-28, §5.10).</figcaption>
+</div>
+
+<div class="state">
+<div class="state-label">По потребности: вида нет</div>
+<div class="state-body">
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div class="rubric">Режим приёма</div>
+<div style="display: flex; padding: 4px; background: #EFE7DB; border-radius: 13px; gap: 4px">
+<button type="button" style="flex-grow: 1; height: 40px; border: none; border-radius: 10px; background: transparent; color: #5F564D; font-family: inherit; font-size: 14px; font-weight: 500; cursor: pointer">По расписанию</button>
+<button type="button" style="flex-grow: 1; height: 40px; border: none; border-radius: 10px; background: #FFFFFF; color: #241F1B; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer">По потребности</button>
+</div>
+<div style="font-size: 12px; color: #5F564D; line-height: 1.45; padding-left: 2px">По потребности — без напоминаний: приём отмечается вручную, когда понадобилось.</div>
+</div>
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px; background: #FFFFFF; border: 1px solid #E6DED2; border-radius: 16px">
+<div style="display: flex; flex-direction: column; gap: 2px">
+<div style="font-size: 15px; font-weight: 600">Не чаще, раз в сутки</div>
+<div style="font-size: 12px; color: #5F564D">Приём отмечается вручную</div>
+</div>
+<div style="display: flex; align-items: center; gap: 12px">
+<button type="button" aria-label="Уменьшить" style="width: 44px; height: 44px; border: 1px solid #E6DED2; background: #F8F6EF; border-radius: 999px; display: flex; align-items: center; justify-content: center; cursor: pointer">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5F564D" stroke-width="2.2" stroke-linecap="round"><path d="M5 12h14"></path></svg>
+</button>
+<div style="min-width: 22px; text-align: center; font-size: 18px; font-weight: 600">3</div>
+<button type="button" aria-label="Увеличить" style="width: 44px; height: 44px; border: 1px solid #E6DED2; background: #F8F6EF; border-radius: 999px; display: flex; align-items: center; justify-content: center; cursor: pointer">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5F564D" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+</button>
+</div>
+</div>
+</div>
+<figcaption>У «по потребности» вида расписания нет вовсе: строка вида и времена не показываются, а счётчик суток меняет смысл и подпись (ИНВ-25, ПР-7) — это существующее состояние формы, блок расписания его не трогает. Выбранный вид и его параметры при переключении не сбрасываются и возвращаются вместе с режимом «по расписанию».</figcaption>
+</div>
+
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#5F6F2E","options":["#5F6F2E","#8F3E23","#1F5F6B","#3C5014","#6B4A6B"]},"$preview":{"width":390,"height":1660}}'>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#5F6F2E","options":["#5F6F2E","#8F3E23","#1F5F6B","#3C5014","#6B4A6B"]},"$preview":{"width":390,"height":1810}}'>
 class Component extends DCLogic {
   renderVals() {
     return { accent: this.props.accent ?? '#5F6F2E' };

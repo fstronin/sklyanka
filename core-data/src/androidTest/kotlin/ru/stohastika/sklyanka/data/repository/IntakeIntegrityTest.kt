@@ -26,6 +26,7 @@ import ru.stohastika.sklyanka.domain.model.IntakeStatus
 import ru.stohastika.sklyanka.domain.model.InvariantViolationException
 import ru.stohastika.sklyanka.domain.model.ScheduleMode
 import ru.stohastika.sklyanka.domain.schedule.IntakePlanDiff
+import ru.stohastika.sklyanka.domain.schedule.PlannedIntake
 import ru.stohastika.sklyanka.domain.time.FixedTimeSource
 import java.time.Instant
 import java.time.LocalDateTime
@@ -236,7 +237,7 @@ class IntakeIntegrityTest {
             profileId = TestData.OWNER_ID,
             medicationId = TestData.OWNER_MEDICATION_ID,
             diff = IntakePlanDiff(
-                toCreate = listOf(LocalDateTime.of(2026, 9, 26, 20, 0)),
+                toCreate = listOf(PlannedIntake(LocalDateTime.of(2026, 9, 26, 20, 0), doseAmount = null)),
                 toDelete = emptyList(),
                 unchanged = 0,
             ),
@@ -254,7 +255,7 @@ class IntakeIntegrityTest {
                 profileId = TestData.OWNER_ID,
                 medicationId = TestData.OWNER_MEDICATION_ID,
                 diff = IntakePlanDiff(
-                    toCreate = listOf(LocalDateTime.of(2026, 10, 5, 8, 0)),
+                    toCreate = listOf(PlannedIntake(LocalDateTime.of(2026, 10, 5, 8, 0), doseAmount = null)),
                     toDelete = emptyList(),
                     unchanged = 0,
                 ),

@@ -166,4 +166,33 @@
 
     <string name="date_pattern_day_month">M月d日</string>
     <string name="date_pattern_full">yyyy年M月d日</string>
+    <string name="error_weekdays_missing">请至少选择一天</string>
+    <string name="error_interval_too_small">间隔至少为两天</string>
+    <string name="error_interval_one_day">一天即每天服药</string>
+    <string name="error_cycle_zero">周期天数不能为零</string>
+    <string name="error_stage_dose">请为每个阶段填写剂量</string>
+    <string name="error_stage_days">请为每个阶段填写时长</string>
+    <string name="error_stage_beyond_course">各阶段超出疗程结束日</string>
+
+    <!-- Schedule kinds and their parameters (docs/norm/06-design.md §5.10, §10). -->
+    <string name="form_label_schedule">服药计划</string>
+    <string name="schedule_kind_daily">每天</string>
+    <string name="schedule_kind_weekdays">按星期几</string>
+    <string name="schedule_kind_interval">每隔几天</string>
+    <string name="schedule_kind_cycle">周期服药</string>
+    <string name="schedule_kind_steps">阶梯服药</string>
+    <string name="form_label_weekdays">星期</string>
+    <string name="form_weekdays_pro_note">一天以上</string>
+    <string name="form_interval_row">间隔（天）</string>
+    <string name="form_schedule_count_from_start">从疗程开始日算起</string>
+    <string name="form_cycle_on_row">连续服药天数</string>
+    <string name="form_cycle_off_row">停药天数</string>
+    <string name="form_stage_title">第 %1$d 阶段</string>
+    <string name="form_stage_add">添加阶段</string>
+    <string name="form_stage_dose_note">剂量由各阶段决定</string>
+    <string name="form_stage_hint">各阶段从疗程开始日依次进行</string>
+    <string name="cd_stage_dose">第 %1$d 阶段剂量</string>
+    <string name="cd_stage_days">第 %1$d 阶段时长</string>
+    <string name="cd_stage_delete">删除第 %1$d 阶段</string>
+    <string name="form_save_blocked_pro">复杂服药计划需订阅 Sklyanka Pro</string>
 </resources>

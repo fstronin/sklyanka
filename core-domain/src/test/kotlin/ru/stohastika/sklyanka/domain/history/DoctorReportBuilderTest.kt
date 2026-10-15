@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import ru.stohastika.sklyanka.domain.model.IntakeStatus
+import java.math.BigDecimal
 import java.time.LocalDate
 
 /**
@@ -118,6 +119,41 @@ class DoctorReportBuilderTest {
         assertEquals(0, empty.takenTotal)
         assertEquals(0, empty.plannedTotal)
         assertEquals(0, empty.takenPercent)
+    }
+
+    /**
+     * Отчёт называет дозы приёмов, а не одно число курса (ПР-19, SKL-117 F1).
+     *
+     * Ступенчатый курс меняет дозу от этапа к этапу, и доза лекарства — доза **первого**
+     * этапа: напечатанная одна, она сказала бы врачу неправду о принятом.
+     */
+    @Test
+    fun `the report names the doses the intakes were lived with`() {
+        val slice = Months.slice(
+            intakes = listOf(
+                Months.intake(LocalDate.of(2026, 9, 1).atTime(Months.MORNING), IntakeStatus.TAKEN)
+                    .copy(doseAmount = BigDecimal("0.5")),
+                Months.intake(LocalDate.of(2026, 9, 2).atTime(Months.MORNING), IntakeStatus.TAKEN)
+                    .copy(doseAmount = BigDecimal("0.5")),
+                Months.intake(LocalDate.of(2026, 9, 3).atTime(Months.MORNING), IntakeStatus.TAKEN)
+                    .copy(doseAmount = BigDecimal.ONE),
+            ),
+            medications = listOf(Months.medication()),
+        )
+        val period = AdherenceCalculator(OnTimeRule.TwoHours).of(slice, Months.WINDOW, Months.TODAY, Months.ZONE)
+
+        val report = DoctorReportBuilder.build(
+            period = period,
+            slice = slice,
+            profileName = PROFILE_NAME,
+            generatedAt = Months.instant(Months.TODAY.atTime(10, 0)),
+            zone = Months.ZONE,
+        )
+
+        val doses = report.medications.single().doses
+        assertEquals(2, doses.size, "the doses must be distinct: $doses")
+        assertEquals(0, BigDecimal("0.5").compareTo(doses[0]))
+        assertEquals(0, BigDecimal.ONE.compareTo(doses[1]))
     }
 
     private fun build(): DoctorReport {

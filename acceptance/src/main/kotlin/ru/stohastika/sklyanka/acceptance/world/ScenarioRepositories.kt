@@ -237,11 +237,13 @@ class ScenarioRepositories(
             }
             // Граница генерации та же, что у Room: рождённая строка проверяется полной
             // тройкой пары, включая курс (ИНВ-15, SKL-107).
-            val rows = diff.toCreate.map { moment ->
+            val rows = diff.toCreate.map { planned ->
                 Intake(
                     id = intakes.nextId(),
                     medicationId = medicationId,
-                    scheduledAt = moment,
+                    scheduledAt = planned.scheduledAt,
+                    // Снимок дозы едет с планом: у ступенчатого курса она своя у каждого дня (ПР-19).
+                    doseAmount = planned.doseAmount,
                     status = IntakeStatus.PENDING,
                     actedAt = null,
                     source = null,
@@ -255,6 +257,13 @@ class ScenarioRepositories(
                 }
                 if (absent) intakes.store(intake)
                 absent
+            }
+            // Снимок дозы у ожидающих: та же правка и то же условие, что в `UPDATE …
+            // WHERE status = 'PENDING'` настоящего хранилища (ПР-19, SKL-117 F7).
+            diff.toRefreshDose.forEach { refresh ->
+                intakes.get(refresh.intakeId)?.takeIf { it.isPending }?.let { current ->
+                    intakes.store(current.copy(doseAmount = refresh.doseAmount))
+                }
             }
             return PlanApplyResult(created = created, deleted = deleted)
         }

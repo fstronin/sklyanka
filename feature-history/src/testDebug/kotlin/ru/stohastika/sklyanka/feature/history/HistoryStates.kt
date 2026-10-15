@@ -185,7 +185,7 @@ internal object HistoryStates {
         medicationId = id,
         name = id,
         form = MedicationForm.TABLET,
-        doseAmount = BigDecimal.ONE,
+        doses = listOf(BigDecimal.ONE),
         doseUnit = "tablet",
         strength = null,
         strengthUnit = null,

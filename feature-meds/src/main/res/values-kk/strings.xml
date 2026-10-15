@@ -166,4 +166,33 @@
 
     <string name="date_pattern_day_month">d MMMM</string>
     <string name="date_pattern_full">d MMMM yyyy</string>
+    <string name="error_weekdays_missing">Кемінде бір апта күнін таңдаңыз</string>
+    <string name="error_interval_too_small">Аралық кемінде екі күн</string>
+    <string name="error_interval_one_day">Бір күн — күнделікті кесте</string>
+    <string name="error_cycle_zero">Цикл ұзақтығы нөлге тең болмайды</string>
+    <string name="error_stage_dose">Әр кезең үшін қабылдау дозасын көрсетіңіз</string>
+    <string name="error_stage_days">Әр кезеңнің ұзақтығын көрсетіңіз</string>
+    <string name="error_stage_beyond_course">Кезеңдер курс соңынан асып кетеді</string>
+
+    <!-- Schedule kinds and their parameters (docs/norm/06-design.md §5.10, §10). -->
+    <string name="form_label_schedule">Кесте</string>
+    <string name="schedule_kind_daily">Күн сайын</string>
+    <string name="schedule_kind_weekdays">Апта күндері бойынша</string>
+    <string name="schedule_kind_interval">Бірнеше күн сайын</string>
+    <string name="schedule_kind_cycle">Циклдармен</string>
+    <string name="schedule_kind_steps">Кезеңдермен</string>
+    <string name="form_label_weekdays">Апта күндері</string>
+    <string name="form_weekdays_pro_note">Бір күннен көп</string>
+    <string name="form_interval_row">Аралық (күн)</string>
+    <string name="form_schedule_count_from_start">Курс басталған күннен саналады</string>
+    <string name="form_cycle_on_row">Қатарынан қабылдау күндері</string>
+    <string name="form_cycle_off_row">Үзіліс күндері</string>
+    <string name="form_stage_title">%1$d-кезең</string>
+    <string name="form_stage_add">Кезең қосу</string>
+    <string name="form_stage_dose_note">Доза кезеңдермен беріледі</string>
+    <string name="form_stage_hint">Кезеңдер курс басынан қатарынан жүреді</string>
+    <string name="cd_stage_dose">%1$d-кезең дозасы</string>
+    <string name="cd_stage_days">%1$d-кезең ұзақтығы</string>
+    <string name="cd_stage_delete">%1$d-кезеңді жою</string>
+    <string name="form_save_blocked_pro">Күрделі кестелер — Sklyanka Pro жазылымында</string>
 </resources>

@@ -295,4 +295,39 @@
     <string name="date_pattern_weekday_short" translatable="false">EEE</string>
     <string name="date_pattern_weekday_full" translatable="false">EEEE</string>
     <string name="time_pattern" translatable="false">HH:mm</string>
+    <string name="error_weekdays_missing">Выберите хотя бы один день недели</string>
+    <string name="error_interval_too_small">Интервал не меньше двух дней</string>
+    <string name="error_interval_one_day">Один день — это ежедневное расписание</string>
+    <string name="error_cycle_zero">Длина цикла не может быть нулевой</string>
+    <string name="error_stage_dose">Задайте дозу приёма для каждого этапа</string>
+    <string name="error_stage_days">Задайте длительность каждого этапа</string>
+    <string name="error_stage_beyond_course">Этапы выходят за конец курса</string>
+
+    <!--
+      ===== Вид расписания (docs/norm/06-design.md §5.10, §10) =====
+
+      Пять видов: «Каждый день» по умолчанию и четыре сложных (ПР-15…ПР-19). Формулировки —
+      дословно из нормы дизайна. Числовых подписей в коде нет: «N» из «через N дней» норма
+      не печатает, а длина цикла и длительность этапа печатаются языком (НФТ-42/44).
+    -->
+    <string name="form_label_schedule">Расписание</string>
+    <string name="schedule_kind_daily">Каждый день</string>
+    <string name="schedule_kind_weekdays">По дням недели</string>
+    <string name="schedule_kind_interval">Через несколько дней</string>
+    <string name="schedule_kind_cycle">Циклами</string>
+    <string name="schedule_kind_steps">По этапам</string>
+    <string name="form_label_weekdays">Дни недели</string>
+    <string name="form_weekdays_pro_note">Больше одного дня</string>
+    <string name="form_interval_row">Интервал, дней</string>
+    <string name="form_schedule_count_from_start">Отсчёт от даты начала курса</string>
+    <string name="form_cycle_on_row">Дней приёма подряд</string>
+    <string name="form_cycle_off_row">Дней перерыва</string>
+    <string name="form_stage_title">Этап %1$d</string>
+    <string name="form_stage_add">Добавить этап</string>
+    <string name="form_stage_dose_note">Доза приёма задаётся этапами</string>
+    <string name="form_stage_hint">Этапы идут подряд от даты начала курса</string>
+    <string name="cd_stage_dose">Доза этапа %1$d</string>
+    <string name="cd_stage_days">Длительность этапа %1$d</string>
+    <string name="cd_stage_delete">Удалить этап %1$d</string>
+    <string name="form_save_blocked_pro">Сложное расписание — в подписке «Склянка Про»</string>
 </resources>

@@ -3,12 +3,15 @@ package ru.stohastika.sklyanka.screen.journey
 import android.content.res.Configuration
 import androidx.activity.ComponentActivity
 import androidx.annotation.StringRes
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasAnyDescendant
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.test.platform.app.InstrumentationRegistry
@@ -16,6 +19,8 @@ import ru.stohastika.sklyanka.domain.log.OpEvent
 import ru.stohastika.sklyanka.domain.log.OpLogRecord
 import ru.stohastika.sklyanka.domain.model.Intake
 import ru.stohastika.sklyanka.feature.meds.card.TAG_MEDICATION_CARD_SCREEN
+import ru.stohastika.sklyanka.feature.meds.form.TAG_SCHEDULE_PICKER
+import ru.stohastika.sklyanka.feature.meds.form.TAG_SCHEDULE_ROW
 import ru.stohastika.sklyanka.feature.meds.list.TAG_MEDICATION_CARD
 import ru.stohastika.sklyanka.feature.meds.list.TAG_MEDICATION_LIST
 import ru.stohastika.sklyanka.feature.today.TAG_TODAY_SCREEN
@@ -25,6 +30,7 @@ import ru.stohastika.sklyanka.screen.support.DeviceJourneyStorage
 import ru.stohastika.sklyanka.screen.support.DeviceTestClock
 import ru.stohastika.sklyanka.screen.support.DeviceTestSeed
 import ru.stohastika.sklyanka.ui.component.TAG_BOTTOM_BAR
+import ru.stohastika.sklyanka.ui.component.TAG_LIST_PICKER_OPTION
 import java.time.Instant
 import java.time.LocalDate
 import ru.stohastika.sklyanka.ui.R as UiR
@@ -96,6 +102,32 @@ abstract class JourneyTest : DeviceScreenTest() {
         ).performClick()
         waitForTag(TAG_MEDICATION_CARD_SCREEN)
     }
+
+    /**
+     * Выбрать вид расписания строкой — путь человека: строка вида → список пяти видов →
+     * название вида (SKL-117, §5.10).
+     *
+     * Список — диалог выбора значения (`ListPickerDialog`), и вариант адресуется той же
+     * подписью, которую читает человек: строка списка сливает свою подпись, поэтому
+     * ищется она слитым деревом.
+     */
+    protected fun chooseScheduleKind(@StringRes labelRes: Int) {
+        scrollToAndClick(TAG_SCHEDULE_ROW)
+        waitForTag(TAG_SCHEDULE_PICKER)
+        compose.onNode(hasTestTag(TAG_LIST_PICKER_OPTION) and hasText(ui(labelRes))).performClick()
+        waitUntil(SCREEN_TIMEOUT_MS, "закрытия списка видов расписания") { !exists(TAG_SCHEDULE_PICKER) }
+    }
+
+    /**
+     * Что говорит строка вида расписания: подписи строки слиты — так её читает человек
+     * и программа чтения, а не разметка строки.
+     */
+    protected fun scheduleRowText(): String = compose.onNodeWithTag(TAG_SCHEDULE_ROW)
+        .fetchSemanticsNode()
+        .config
+        .getOrNull(SemanticsProperties.Text)
+        .orEmpty()
+        .joinToString(" ") { it.text }
 
     /**
      * Системная «Назад» — тем же путём, каким она приходит человеку: через диспетчер

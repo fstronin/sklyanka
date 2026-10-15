@@ -61,6 +61,16 @@ skl_adb -s "$serial" shell settings put system screen_off_timeout 2147483647 >/d
 skl_adb -s "$serial" shell wm dismiss-keyguard >/dev/null 2>&1 || true
 skl_adb -s "$serial" shell settings put secure show_ime_with_hard_keyboard 0 >/dev/null 2>&1 || true
 
+# Обстановка образа возвращается в исходную до первой проверки (SKL-117).
+#
+# Фаза «чужая локаль» ставит системе fr-FR и масштаб шрифта с потолка, а снимает их
+# в конце прогона. Прерванный прогон (Ctrl-C, потолок времени, отказ задачи) до снятия
+# не доходит, а данные образа между прогонами сохраняются намеренно (И-1, И-10) — значит
+# следующая прогонка начиналась бы с французского интерфейса, и все проверки, называющие
+# русские слова, падали бы таймаутом. Обстановка выглядела бы дефектом продукта, а причина
+# была бы в оставленном состоянии образа: чинится это здесь, а не разбором каждого отказа.
+"$SKL_DIR/restore-stand.sh" "$api" "$serial"
+
 # Часы образа выставляются под управляемые часы похода: без этого платформенные пути судят
 # по часам образа, а домен — по управляемым, и поход «Проверка напоминаний» видел опоздание
 # с отрицательным числом минут, а будильники стенда выглядели для системы прошлым (TDD §10).
@@ -68,8 +78,15 @@ skl_adb -s "$serial" shell settings put global auto_time 0 >/dev/null 2>&1 || tr
 skl_adb -s "$serial" shell settings put global auto_time_zone 0 >/dev/null 2>&1 || true
 skl_adb -s "$serial" shell cmd alarm set-timezone "$SKL_JOURNEY_TIMEZONE" >/dev/null 2>&1 ||
     skl_adb -s "$serial" shell setprop persist.sys.timezone "$SKL_JOURNEY_TIMEZONE" >/dev/null 2>&1 || true
-skl_adb -s "$serial" shell date "$SKL_JOURNEY_CLOCK" >/dev/null 2>&1 ||
+# Часы ставит root: на образе (userdebug) оболочка без прав `date` не меняет, и фаза выживания
+# видит ожидающий приём просроченным — то есть обстановка выглядит дефектом продукта (SKL-117,
+# прогон 16.10.2026). Права просим ровно здесь; отказ не глушим, а называем словами.
+skl_adb -s "$serial" root >/dev/null 2>&1 || true
+skl_adb -s "$serial" wait-for-device >/dev/null 2>&1 || true
+skl_adb -s "$serial" shell cmd alarm set-timezone "$SKL_JOURNEY_TIMEZONE" >/dev/null 2>&1 || true
+if ! skl_adb -s "$serial" shell date "$SKL_JOURNEY_CLOCK" >/dev/null 2>&1; then
     skl_warn "часы образа выставить не удалось: пути, судящие по часам платформы, разойдутся с доменом"
+fi
 skl_log "часы образа: $(skl_adb -s "$serial" shell date | tr -d '\r')"
 
 # Журнал устройства за прогон: гасится в любом исходе — стек упавшего похода живёт только там.

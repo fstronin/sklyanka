@@ -20,9 +20,11 @@ import ru.stohastika.sklyanka.domain.medication.TrailingLine
 import ru.stohastika.sklyanka.domain.model.FoodRelation
 import ru.stohastika.sklyanka.domain.model.MedicationForm
 import ru.stohastika.sklyanka.domain.model.TabletShape
+import ru.stohastika.sklyanka.feature.meds.form.ScheduleKind
 import ru.stohastika.sklyanka.ui.locale.interfaceLocale
 import ru.stohastika.sklyanka.ui.text.pluralQuantityOf
 import java.math.BigDecimal
+import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -162,14 +164,26 @@ internal fun timesPhrase(times: List<LocalTime>): String {
  * описание карточки, где перенос по «·» допустим.
  */
 @Composable
-internal fun schedulePhrase(timesPerDay: Int, times: List<LocalTime>, trailing: TrailingLine): String {
+internal fun schedulePhrase(
+    timesPerDay: Int,
+    times: List<LocalTime>,
+    trailing: TrailingLine,
+    scheduleKind: ScheduleKind = ScheduleKind.DAILY,
+): String {
     val separator = stringResource(R.string.meds_separator)
     return listOfNotNull(
-        frequencyLabel(timesPerDay),
+        // У сложных видов частота — имя вида (§5.10, 5.6): «Ежедневно» у курса «по средам»
+        // было бы неправдой, а «По дням недели · 08:00 · …» читается верно.
+        scheduleKind.scheduleFrequencyLabel(timesPerDay),
         timesPhrase(times).takeIf { times.isNotEmpty() },
         trailingTextOf(trailing),
     ).joinToString(separator).middotStaysOnItsLine()
 }
+
+/** Слот частоты: имя вида у сложного вида, счёт приёмов у ежедневного (5.6). */
+@Composable
+internal fun ScheduleKind.scheduleFrequencyLabel(timesPerDay: Int): String =
+    if (this == ScheduleKind.DAILY) frequencyLabel(timesPerDay) else label()
 
 /**
  * Пробел перед «·» становится неразрывным: знак переезжает на новую строку вместе с тем,
@@ -316,11 +330,78 @@ internal fun DraftViolation.message(): String = when (this) {
     DraftViolation.MaxPerDayNotPositive -> stringResource(R.string.error_max_per_day_not_positive)
     DraftViolation.StockNegative -> stringResource(R.string.error_stock_negative)
     DraftViolation.PackageSizeNotPositive -> stringResource(R.string.error_package_size_not_positive)
+    // Отказы вида расписания — своя таблица: их восемь, и вместе с общими правилами один
+    // `when` вышел бы за порог читаемости. Перечень здесь исчерпывающий, поэтому новый
+    // отказ по-прежнему не пройдёт мимо компилятора.
+    DraftViolation.ScheduleDaysEmpty,
+    DraftViolation.ScheduleIntervalTooShort,
+    DraftViolation.ScheduleCycleLengthNotPositive,
+    DraftViolation.ScheduleStagesEmpty,
+    DraftViolation.ScheduleStageDoseNotPositive,
+    DraftViolation.ScheduleStageDaysNotPositive,
+    DraftViolation.ScheduleStagesBeyondCourse,
+    -> scheduleMessage()
+}
+
+/** Слова отказов вида расписания и его параметров (§5.10, §10). */
+@Composable
+private fun DraftViolation.scheduleMessage(): String = when (this) {
+    DraftViolation.ScheduleDaysEmpty -> stringResource(R.string.error_weekdays_missing)
+    DraftViolation.ScheduleIntervalTooShort -> stringResource(R.string.error_interval_too_small)
+    DraftViolation.ScheduleCycleLengthNotPositive -> stringResource(R.string.error_cycle_zero)
+    // Пустой список этапов — тот же отказ по смыслу: дозы этапов не заданы, потому что
+    // этапов нет; отдельного слова норма дизайна для него не заводит (§10).
+    DraftViolation.ScheduleStagesEmpty -> stringResource(R.string.error_stage_dose)
+    DraftViolation.ScheduleStageDoseNotPositive -> stringResource(R.string.error_stage_dose)
+    DraftViolation.ScheduleStageDaysNotPositive -> stringResource(R.string.error_stage_days)
+    DraftViolation.ScheduleStagesBeyondCourse -> stringResource(R.string.error_stage_beyond_course)
+    else -> error("not a schedule violation: $this")
 }
 
 /** «08:00». */
 @Composable
 internal fun LocalTime.formatted(): String = format(formatter(R.string.time_pattern))
+
+/**
+ * Короткое имя дня недели для подписи чипа: «Пн», «Ср» (§5.10).
+ *
+ * Имя берётся у форматтера интерфейса, а не из ресурса: семь дней недели в шести локалях
+ * платформа уже сокращает и склоняет сама, а семь комплектов в каталогах разошлись бы
+ * с календарём и недельной полосой.
+ */
+@Composable
+internal fun DayOfWeek.shortWeekdayName(): String = weekdayName(R.string.date_pattern_weekday_short)
+
+/** Полное имя дня недели — имя чипа для чтения с экрана: «понедельник» (§5.10). */
+@Composable
+internal fun DayOfWeek.fullWeekdayName(): String = weekdayName(R.string.date_pattern_weekday_full)
+
+/** Имя дня недели форматером интерфейса; день берётся из недели-образца. */
+@Composable
+private fun DayOfWeek.weekdayName(pattern: Int): String {
+    val text = stringResource(pattern)
+    val configuration = LocalConfiguration.current
+    return remember(text, configuration, this) {
+        DateTimeFormatter.ofPattern(text, configuration.locales[0]).format(referenceWeekday(this))
+    }
+}
+
+/** Понедельник недели-образца: 1 января 2024 года — понедельник. */
+private val REFERENCE_WEEK: LocalDate = LocalDate.of(2024, 1, 1)
+
+private fun referenceWeekday(day: DayOfWeek): LocalDate = REFERENCE_WEEK.plusDays((day.value - 1).toLong())
+
+/**
+ * Слово длительности этапа (`form_stage_days`, §5.10).
+ *
+ * Форма — по набранному числу; в пустом поле печатается имя единицы, как у поля дозы:
+ * «1 день», «3 дня», «день» без числа.
+ */
+@Composable
+internal fun stageDaysWord(days: Int?): String = pluralStringResource(
+    R.plurals.form_stage_days,
+    days?.let { pluralQuantityOf(BigDecimal.valueOf(it.toLong())) } ?: UNIT_NAME_QUANTITY,
+)
 
 /** «12 марта» — месяц в родительном падеже даёт сам форматтер локали. */
 @Composable

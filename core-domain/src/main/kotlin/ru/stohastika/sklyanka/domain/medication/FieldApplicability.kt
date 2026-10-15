@@ -1,6 +1,8 @@
 package ru.stohastika.sklyanka.domain.medication
 
 import ru.stohastika.sklyanka.domain.model.ScheduleMode
+import ru.stohastika.sklyanka.domain.model.ScheduleRule
+import java.math.BigDecimal
 
 /**
  * Какие блоки формы существуют при текущем черновике (`TDD.md §5.2`).
@@ -58,3 +60,42 @@ fun MedicationDraft.normalized(): MedicationDraft = copy(
     times = if (scheduleMode == ScheduleMode.SCHEDULED) times else emptyList(),
     maxPerDay = if (scheduleMode == ScheduleMode.PRN) maxPerDay else null,
 )
+// Вид расписания здесь не трогается намеренно: при переключении на «по потребности» он
+// **сохраняется** в черновике и возвращается при возвращении к «по расписанию» — та же
+// конвенция, что у связи с едой (§5.10). В запись вид не уезжает: у курса «по потребности»
+// вида нет (ИНВ-25, ПР-7), и сохранить Daily вместо него даёт [effectiveSchedule].
+
+/**
+ * Вид расписания, который уйдёт в запись.
+ *
+ * У курса «по потребности» вида нет вовсе (ИНВ-25, ПР-7): приёмы рождаются по нажатию,
+ * и вид у такого курса не значит ничего. Неприменимое значение **сбрасывается здесь**,
+ * а не в [normalized], чтобы собранное назначение переживало переключение режима в форме.
+ */
+val MedicationDraft.effectiveSchedule: ScheduleRule
+    get() = if (scheduleMode == ScheduleMode.SCHEDULED) schedule else ScheduleRule.Daily
+
+/**
+ * Доза, которая уйдёт в запись и участвует в проверках.
+ *
+ * У ступенчатого вида дозу несёт этап (ПР-19, ИНВ-24), и поле «Доза на один приём»
+ * не показывается вовсе (§5.10): доза курса — доза **первого** этапа. Её печатает
+ * превью, ею считается списание, и ею же проверяется ИНВ-4 — отдельного поля, которое
+ * человек не видит, быть не может. У остальных видов это введённая человеком доза.
+ */
+val MedicationDraft.effectiveDoseAmount: BigDecimal?
+    get() = when {
+        scheduleMode == ScheduleMode.SCHEDULED && schedule is ScheduleRule.Staged ->
+            (schedule as ScheduleRule.Staged).stages.firstOrNull()?.doseAmount
+
+        else -> doseAmount
+    }
+
+/**
+ * Показывается ли поле «Доза на один приём» (§5.3, §5.10).
+ *
+ * У ступенчатого вида на «по расписанию» поле уступает место этапам; у «по потребности»
+ * вид не действует (ИНВ-25), и доза нужна всегда.
+ */
+val MedicationDraft.dosePerIntakeVisible: Boolean
+    get() = !(scheduleMode == ScheduleMode.SCHEDULED && schedule is ScheduleRule.Staged)

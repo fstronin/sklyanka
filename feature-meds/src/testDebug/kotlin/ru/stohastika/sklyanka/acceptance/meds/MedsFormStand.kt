@@ -17,12 +17,15 @@ import ru.stohastika.sklyanka.domain.medication.MedicationDraft
 import ru.stohastika.sklyanka.domain.medication.StrengthUnit
 import ru.stohastika.sklyanka.domain.medication.normalized
 import ru.stohastika.sklyanka.domain.model.Medication
+import ru.stohastika.sklyanka.domain.model.ScheduleRule
+import ru.stohastika.sklyanka.domain.model.Stage
 import ru.stohastika.sklyanka.domain.stock.StockThresholds
 import ru.stohastika.sklyanka.feature.meds.form.FormInputs
 import ru.stohastika.sklyanka.feature.meds.form.FormMode
 import ru.stohastika.sklyanka.feature.meds.form.MedFormIntent
 import ru.stohastika.sklyanka.feature.meds.form.MedFormUiState
 import ru.stohastika.sklyanka.feature.meds.form.MedicationFormScreen
+import ru.stohastika.sklyanka.feature.meds.form.ScheduleKind
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import java.math.BigDecimal
 import java.time.LocalTime
@@ -56,6 +59,18 @@ internal object MedsFormStand {
         if (current != null) return current
         val draft = MedicationDraft.new(profileId(world), world.clock.today()).copy(times = times)
         return MedFormUiState.of(draft.normalized(), FormMode.Create, FormInputs()).also { state = it }
+    }
+
+    /**
+     * Открыта ли форма в этом сценарии (SKL-117, §5.7).
+     *
+     * Экранный шаг решает по этому признаку, подтягивать ли стенд к доменному черновику:
+     * класс шагов создаётся лениво, и первый экранный шаг может идти после того, как
+     * общий шаг уже заполнил черновик. Второе подтягивание стёрло бы правки человека.
+     */
+    fun isOpen(world: AcceptanceWorld): Boolean {
+        resetIfNewWorld(world)
+        return state != null
     }
 
     /**
@@ -215,6 +230,86 @@ internal object MedsFormStand {
             is MedFormIntent.StrengthUnitChanged -> current.with(draft.copy(strengthUnit = intent.unit))
 
             is MedFormIntent.ModeChanged -> current.with(draft.copy(scheduleMode = intent.mode))
+
+            // Вид расписания и его параметры (§5.10): отображение то же, что в
+            // `MedicationFormViewModel.reduceSchedule`, — разметка, а не правило продукта.
+            is MedFormIntent.ScheduleKindChanged -> {
+                val prepared = if (intent.kind == ScheduleKind.STAGES && inputs.stageDoses.isEmpty()) {
+                    inputs.copy(stageDoses = listOf(""), stageDays = listOf(""))
+                } else {
+                    inputs
+                }
+                current.with(
+                    draft = draft.copy(schedule = ruleOf(intent.kind, draft.schedule, prepared)),
+                    inputs = prepared,
+                    scheduleKind = intent.kind,
+                )
+            }
+
+            is MedFormIntent.WeekdayToggled -> {
+                val days = (draft.schedule as? ScheduleRule.Weekdays)?.days.orEmpty()
+                val next = if (intent.day in days) days - intent.day else days + intent.day
+                current.with(draft.copy(schedule = ScheduleRule.Weekdays(next)), scheduleKind = ScheduleKind.WEEKDAYS)
+            }
+
+            is MedFormIntent.IntervalChanged -> current.with(
+                draft = draft.copy(schedule = intervalRuleOf(intent.text)),
+                inputs = inputs.copy(interval = intent.text),
+                scheduleKind = ScheduleKind.INTERVAL,
+            )
+
+            is MedFormIntent.CycleOnChanged -> current.with(
+                draft = draft.copy(schedule = cyclesRuleOf(intent.text, inputs.cycleOff)),
+                inputs = inputs.copy(cycleOn = intent.text),
+                scheduleKind = ScheduleKind.CYCLES,
+            )
+
+            is MedFormIntent.CycleOffChanged -> current.with(
+                draft = draft.copy(schedule = cyclesRuleOf(inputs.cycleOn, intent.text)),
+                inputs = inputs.copy(cycleOff = intent.text),
+                scheduleKind = ScheduleKind.CYCLES,
+            )
+
+            is MedFormIntent.StageDoseChanged -> {
+                val next = inputs.stageDoses.replaceAt(intent.index, intent.text)
+                current.with(
+                    draft = draft.copy(schedule = stagesRuleOf(next, inputs.stageDays)),
+                    inputs = inputs.copy(stageDoses = next),
+                    scheduleKind = ScheduleKind.STAGES,
+                )
+            }
+
+            is MedFormIntent.StageDaysChanged -> {
+                val next = inputs.stageDays.replaceAt(intent.index, intent.text)
+                current.with(
+                    draft = draft.copy(schedule = stagesRuleOf(inputs.stageDoses, next)),
+                    inputs = inputs.copy(stageDays = next),
+                    scheduleKind = ScheduleKind.STAGES,
+                )
+            }
+
+            MedFormIntent.StageAdded -> {
+                val doses = inputs.stageDoses + ""
+                val days = inputs.stageDays + ""
+                current.with(
+                    draft = draft.copy(schedule = stagesRuleOf(doses, days)),
+                    inputs = inputs.copy(stageDoses = doses, stageDays = days),
+                    scheduleKind = ScheduleKind.STAGES,
+                )
+            }
+
+            is MedFormIntent.StageRemoved -> if (inputs.stageDoses.size <= 1) {
+                current
+            } else {
+                val doses = inputs.stageDoses.filterIndexed { index, _ -> index != intent.index }
+                val days = inputs.stageDays.filterIndexed { index, _ -> index != intent.index }
+                current.with(
+                    draft = draft.copy(schedule = stagesRuleOf(doses, days)),
+                    inputs = inputs.copy(stageDoses = doses, stageDays = days),
+                    scheduleKind = ScheduleKind.STAGES,
+                )
+            }
+
             MedFormIntent.TimeAdded -> current.with(draft.copy(times = draft.times + nextTime(draft.times)))
             MedFormIntent.TimeRemovedFromEnd -> current.with(draft.copy(times = draft.times.dropLast(1)))
             is MedFormIntent.TimeRemoved ->
@@ -262,8 +357,44 @@ internal object MedsFormStand {
         }
     }
 
-    private fun MedFormUiState.with(draft: MedicationDraft, inputs: FormInputs = this.inputs): MedFormUiState =
-        MedFormUiState.of(draft.normalized(), mode, inputs)
+    private fun MedFormUiState.with(
+        draft: MedicationDraft,
+        inputs: FormInputs = this.inputs,
+        scheduleKind: ScheduleKind = this.scheduleKind,
+    ): MedFormUiState = MedFormUiState.of(draft.normalized(), mode, inputs, scheduleKind)
+
+    /** Правило вида из выбранного вида и набранных чисел — как в ViewModel. */
+    private fun ruleOf(kind: ScheduleKind, current: ScheduleRule, inputs: FormInputs): ScheduleRule = when (kind) {
+        ScheduleKind.DAILY -> ScheduleRule.Daily
+        ScheduleKind.WEEKDAYS -> ScheduleRule.Weekdays((current as? ScheduleRule.Weekdays)?.days.orEmpty())
+        ScheduleKind.INTERVAL -> intervalRuleOf(inputs.interval)
+        ScheduleKind.CYCLES -> cyclesRuleOf(inputs.cycleOn, inputs.cycleOff)
+        ScheduleKind.STAGES -> stagesRuleOf(inputs.stageDoses, inputs.stageDays)
+    }
+
+    private fun intervalRuleOf(text: String): ScheduleRule {
+        val days = text.trim().toIntOrNull()
+        return when {
+            days == null -> ScheduleRule.EveryNDays(0)
+            days <= 1 -> ScheduleRule.Daily
+            else -> ScheduleRule.EveryNDays(days)
+        }
+    }
+
+    private fun cyclesRuleOf(on: String, off: String): ScheduleRule =
+        ScheduleRule.Cycles(onDays = on.trim().toIntOrNull() ?: 0, offDays = off.trim().toIntOrNull() ?: 0)
+
+    private fun stagesRuleOf(doses: List<String>, days: List<String>): ScheduleRule = ScheduleRule.Staged(
+        doses.indices.map { index ->
+            Stage(
+                doseAmount = decimalOf(doses[index]) ?: BigDecimal.ZERO,
+                days = days.getOrNull(index)?.trim()?.toIntOrNull() ?: 0,
+            )
+        },
+    )
+
+    private fun List<String>.replaceAt(index: Int, text: String): List<String> =
+        mapIndexed { position, value -> if (position == index) text else value }
 
     private fun resetIfNewWorld(world: AcceptanceWorld) {
         if (lastWorld !== world) {

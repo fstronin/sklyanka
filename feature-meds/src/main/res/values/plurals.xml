@@ -250,4 +250,12 @@
         <item quantity="many">инъекций</item>
         <item quantity="other">инъекции</item>
     </plurals>
+
+    <!-- Слово длительности этапа (§5.10): форма по набранному числу, в пустом поле — имя единицы. -->
+    <plurals name="form_stage_days">
+        <item quantity="one">день</item>
+        <item quantity="few">дня</item>
+        <item quantity="many">дней</item>
+        <item quantity="other">дня</item>
+    </plurals>
 </resources>

@@ -30,6 +30,7 @@ import ru.stohastika.sklyanka.domain.time.TimeSource
 import ru.stohastika.sklyanka.domain.undo.UndoableAction
 import ru.stohastika.sklyanka.domain.undo.UndoableActionStore
 import ru.stohastika.sklyanka.domain.undo.UndoableDeletion
+import ru.stohastika.sklyanka.feature.meds.form.ScheduleKind
 import java.time.Duration
 import java.time.LocalDate
 import javax.inject.Inject
@@ -169,6 +170,7 @@ class MedicationListViewModel @Inject constructor(
         strengthUnit = medication.strengthUnit,
         timesPerDay = medication.times.size,
         times = medication.times.sorted(),
+        scheduleKind = ScheduleKind.of(medication.schedule),
         trailingLine = MedicationListRules.trailingLineOf(medication),
         asNeeded = asNeededOf(medication, history),
     )

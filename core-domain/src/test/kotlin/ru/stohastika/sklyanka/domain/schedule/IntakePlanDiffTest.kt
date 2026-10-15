@@ -1,11 +1,13 @@
 package ru.stohastika.sklyanka.domain.schedule
 
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import ru.stohastika.sklyanka.domain.model.IntakeStatus
 import ru.stohastika.sklyanka.domain.time.FixedTimeSource
+import java.math.BigDecimal
 import java.time.LocalTime
 
 /**
@@ -20,11 +22,11 @@ class IntakePlanDiffTest {
     private val clock: FixedTimeSource = Planning.clock()
     private val differ = IntakePlanDiffer(clock)
 
-    private val morningsOfTheWeek = Planning.window().dates().map { it.atTime(Planning.MORNING) }
+    private val morningsOfTheWeek = Planning.window().dates().map { PlannedIntake(it.atTime(Planning.MORNING), null) }
 
     @Test
     fun `a repeated run over untouched data changes nothing`() {
-        val existing = morningsOfTheWeek.map { Planning.pending(it) }
+        val existing = morningsOfTheWeek.map { Planning.pending(it.scheduledAt) }
 
         val diff = differ.diff(morningsOfTheWeek, existing)
 
@@ -43,7 +45,7 @@ class IntakePlanDiffTest {
 
     @Test
     fun `the tail of the window is filled without touching what is already there`() {
-        val existing = morningsOfTheWeek.dropLast(1).map { Planning.pending(it) }
+        val existing = morningsOfTheWeek.dropLast(1).map { Planning.pending(it.scheduledAt) }
 
         val diff = differ.diff(morningsOfTheWeek, existing)
 
@@ -80,7 +82,7 @@ class IntakePlanDiffTest {
     fun `a moment already held by a marked intake is not created a second time`() {
         val taken = Planning.taken(Planning.TODAY.atTime(Planning.MORNING))
 
-        val diff = differ.diff(listOf(taken.scheduledAt), listOf(taken))
+        val diff = differ.diff(listOf(PlannedIntake(taken.scheduledAt, null)), listOf(taken))
 
         assertTrue(diff.toCreate.isEmpty())
         assertEquals(1, diff.unchanged)
@@ -130,21 +132,94 @@ class IntakePlanDiffTest {
                 Planning.pending(date.atTime(Planning.EVENING), id = "evening-$date"),
             )
         }
-        val planned = Planning.window().dates().flatMap { listOf(it.atTime(moved), it.atTime(Planning.EVENING)) }
+        val planned = Planning.window().dates().flatMap { date ->
+            listOf(PlannedIntake(date.atTime(moved), null), PlannedIntake(date.atTime(Planning.EVENING), null))
+        }
 
         val diff = differ.diff(planned, existing)
 
         assertEquals(Planning.DEPTH_DAYS, diff.toCreate.size)
-        assertTrue(diff.toCreate.all { it.toLocalTime() == moved })
+        assertTrue(diff.toCreate.all { it.scheduledAt.toLocalTime() == moved })
         assertEquals(Planning.DEPTH_DAYS, diff.toDelete.size)
         assertTrue(diff.toDelete.all { it.startsWith("morning-") })
         // Вечерние записи остаются теми же самыми — вместе со своими будильниками (НАП-9).
         assertEquals(Planning.DEPTH_DAYS, diff.unchanged)
     }
 
+    /**
+     * Сравнение идёт по моменту и только по нему: доза дня — свойство плана, а не причина
+     * пересоздавать запись. Иначе смена ступени переписывала бы уже отмеченные приёмы,
+     * и история показывала бы не ту дозу, которую человек принял (ПР-19).
+     *
+     * Снимок дозы у **ожидающего** приёма при этом обновляется (SKL-117, F7): запись та же,
+     * будильник тот же, меняется только доза. Отмеченный приём не трогается никогда —
+     * на нём стоит списание остатка.
+     */
+    @Test
+    fun `a dose of the plan refreshes the pending intake and never recreates the moment`() {
+        val moment = Planning.TODAY.atTime(Planning.MORNING)
+        val planned = listOf(PlannedIntake(moment, BigDecimal("0.5")))
+        val existing = listOf(Planning.pending(moment))
+
+        val diff = differ.diff(planned, existing)
+
+        assertTrue(diff.toCreate.isEmpty())
+        assertTrue(diff.toDelete.isEmpty())
+        assertEquals(1, diff.unchanged)
+        assertEquals(existing.single().id, diff.toRefreshDose.single().intakeId)
+        assertEquals(0, BigDecimal("0.5").compareTo(requireNotNull(diff.toRefreshDose.single().doseAmount)))
+    }
+
+    /** Повторный запуск на уже обновлённом снимке не трогает ничего (НАП-9). */
+    @Test
+    fun `a repeated run over the refreshed dose changes nothing`() {
+        val moment = Planning.TODAY.atTime(Planning.MORNING)
+        val planned = listOf(PlannedIntake(moment, BigDecimal("0.5")))
+        val existing = listOf(Planning.pending(moment).copy(doseAmount = BigDecimal("0.5")))
+
+        val diff = differ.diff(planned, existing)
+
+        assertTrue(diff.isEmpty)
+        assertTrue(diff.toRefreshDose.isEmpty())
+    }
+
+    /** План без дозы у ступенчатого курса сняли: снимок очищается, доза снова у лекарства. */
+    @Test
+    fun `a plan without a dose clears the snapshot of the pending intake`() {
+        val moment = Planning.TODAY.atTime(Planning.MORNING)
+        val existing = listOf(Planning.pending(moment).copy(doseAmount = BigDecimal("0.5")))
+
+        val diff = differ.diff(listOf(PlannedIntake(moment, null)), existing)
+
+        assertEquals(1, diff.toRefreshDose.size)
+        assertNull(diff.toRefreshDose.single().doseAmount)
+    }
+
+    /** Отмеченный приём сохраняет дозу, которой принят: списание уже прошло по ней (ПР-11). */
+    @Test
+    fun `a marked intake keeps the dose it was taken with`() {
+        val moment = Planning.TODAY.atTime(Planning.MORNING)
+        val taken = Planning.taken(moment).copy(doseAmount = BigDecimal("1"))
+
+        val diff = differ.diff(listOf(PlannedIntake(moment, BigDecimal("0.5"))), listOf(taken))
+
+        assertTrue(diff.toRefreshDose.isEmpty())
+        assertTrue(diff.toCreate.isEmpty())
+    }
+
+    /** Создаваемый приём несёт дозу дня вместе с моментом: снимок рождается здесь. */
+    @Test
+    fun `a created intake carries the dose of its day`() {
+        val half = BigDecimal("0.5")
+
+        val diff = differ.diff(listOf(PlannedIntake(Planning.TODAY.atTime(Planning.MORNING), half)), emptyList())
+
+        assertEquals(listOf(half), diff.toCreate.map { it.doseAmount })
+    }
+
     @Test
     fun `shortening the course removes only what fell out of it`() {
-        val existing = morningsOfTheWeek.map { Planning.pending(it, id = "at-$it") }
+        val existing = morningsOfTheWeek.map { Planning.pending(it.scheduledAt, id = "at-${it.scheduledAt}") }
         val shortened = morningsOfTheWeek.take(3)
 
         val diff = differ.diff(shortened, existing)

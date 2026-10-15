@@ -11,6 +11,7 @@ import ru.stohastika.sklyanka.domain.medication.MedicationSubtitle
 import ru.stohastika.sklyanka.domain.model.FoodRelation
 import ru.stohastika.sklyanka.feature.meds.R
 import ru.stohastika.sklyanka.feature.meds.dayAndMonth
+import ru.stohastika.sklyanka.feature.meds.form.ScheduleKind
 import ru.stohastika.sklyanka.feature.meds.formAndShapeLabel
 import ru.stohastika.sklyanka.feature.meds.strengthUnitLabel
 import ru.stohastika.sklyanka.ui.component.AdherenceDay
@@ -55,13 +56,18 @@ private fun FoodRelation.cardLabel(): String? = when (this) {
     FoodRelation.AFTER_MEAL -> stringResource(R.string.card_food_after)
 }
 
-/** «2 приёма в сутки · по 2 таблетки». */
+/** «2 приёма в сутки · по 2 таблетки»; у сложных видов частота — имя вида (§5.10, 5.6). */
 @Composable
 internal fun ScheduleBlockUi.Scheduled.summary(): String {
     val separator = stringResource(R.string.meds_separator)
     // Склонение карточки («2 приёма в сутки»), а не строки списка («2 раза в сутки»):
     // в макете `MedCard.dc.html` и спеке частота названа приёмами. Найдено экранной приёмкой.
-    val frequency = pluralStringResource(R.plurals.card_intakes_per_day, timesPerDay, timesPerDay)
+    // У сложного вида слот частоты называет вид: «По дням недели» вместо неправды «Ежедневно».
+    val frequency = if (scheduleKind == ScheduleKind.DAILY) {
+        pluralStringResource(R.plurals.card_intakes_per_day, timesPerDay, timesPerDay)
+    } else {
+        scheduleKind.label()
+    }
     return listOf(frequency, doseText(doseAmount, doseUnit)).joinToString(separator)
 }
 

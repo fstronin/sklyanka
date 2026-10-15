@@ -14,6 +14,7 @@ import ru.stohastika.sklyanka.domain.reminder.port.ReminderCardSource
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPlanSource
 import ru.stohastika.sklyanka.domain.repository.MedicationRepository
 import ru.stohastika.sklyanka.domain.repository.ProfileRepository
+import ru.stohastika.sklyanka.domain.stock.StockLedger
 import java.time.LocalDateTime
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -42,23 +43,39 @@ class ReminderDataSource @Inject constructor(
 
     override suspend fun intake(intakeId: String): ReminderIntake? = dao.candidate(intakeId)?.let(::toDomain)
 
-    override suspend fun pendingInSlot(slot: ReminderSlot): List<ReminderIntake> = dao
+    override suspend fun pendingInSlot(slot: ReminderSlot): List<ReminderIntake> =
+        pendingRows(slot).mapNotNull(::toDomain)
+
+    /**
+     * Строки слота, которые ещё ждут отметки: источник и для планировщика, и для карточки.
+     *
+     * Отбор — тот же для обоих: карточка удалённого лекарства не собирается вовсе (ПР-14),
+     * отметка снимает приём со слота (НАП-36). Незнакомое значение статуса отбрасывается,
+     * как и в [toDomain]: запись из файла переноса или от более новой сборки не имеет права
+     * уронить карточку (МГ-6).
+     */
+    private suspend fun pendingRows(slot: ReminderSlot): List<ReminderCandidateRow> = dao
         .slot(profileId = slot.profileId, scheduledAt = SklyankaConverters.dateTimeToText(slot.scheduledAt))
-        .mapNotNull(::toDomain)
-        // Карточка удалённого лекарства не собирается вовсе (ПР-14): напоминать о нём
-        // нечего, а старая запись приёма могла остаться в прошлом окне.
-        .filter { it.status == IntakeStatus.PENDING && !it.medicationDeleted }
+        .filter { row ->
+            row.deletedAt == null && SklyankaConverters.textToEnum<IntakeStatus>(row.status) == IntakeStatus.PENDING
+        }
 
     override suspend fun card(slot: ReminderSlot): ReminderCard? {
         val profile = profiles.get(slot.profileId) ?: return null
-        val items = pendingInSlot(slot).mapNotNull { row ->
+        val items = pendingRows(slot).mapNotNull { row ->
             medications.get(row.medicationId)?.let { medication ->
                 ReminderCardItem(
                     intakeId = row.intakeId,
                     medicationId = medication.id,
                     medicationName = medication.name,
                     form = medication.form,
-                    doseAmount = medication.doseAmount,
+                    // Доза приёма — снимок, если он есть, иначе доза лекарства (ПР-19):
+                    // у ступенчатого курса карточка обязана назвать ту же дозу, которую
+                    // спишет отметка, — правило одно на весь продукт (SKL-117, критика F1).
+                    doseAmount = StockLedger.chargedDose(
+                        intakeDose = SklyankaConverters.textToDecimal(row.doseAmount),
+                        medicationDose = medication.doseAmount,
+                    ),
                     doseUnit = medication.form.doseUnit().code,
                     strength = medication.strength,
                     strengthUnit = medication.strengthUnit,

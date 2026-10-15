@@ -60,4 +60,14 @@ object StockLedger {
     /** То же правило в терминах исхода приёма — как его формулирует ПР-5. */
     fun applyIntakeResult(stockLeft: BigDecimal?, doseAmount: BigDecimal, result: IntakeStatus): StockChange? =
         apply(stockLeft, doseAmount, effectOf(result))
+
+    /**
+     * На какую дозу списывается (или возвращается) остаток при отметке (ПР-5, ПР-19).
+     *
+     * Доза приёма, если она есть, иначе доза лекарства. Снимок нужен ступенчатому
+     * расписанию: этап меняет дозу за приём, и списание по текущей дозе лекарства
+     * списывало бы не то, что человек принял, — а после смены ступени ещё и задним
+     * числом. У всех остальных видов снимка нет, и правило сводится к прежнему.
+     */
+    fun chargedDose(intakeDose: BigDecimal?, medicationDose: BigDecimal): BigDecimal = intakeDose ?: medicationDose
 }

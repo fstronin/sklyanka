@@ -157,6 +157,28 @@ object SklyankaMigrations {
         }
     }
 
+    /**
+     * Версия 9 → 10: у курса появляется вид расписания, у приёма — доза за приём
+     * (SKL-117, ПР-15, ПР-19).
+     *
+     * Два `ALTER TABLE … ADD COLUMN` — та же манера, что у `deleted_at` и `revoked_at`:
+     * таблицы не перестраиваются, индексы, внешние ключи и уникальность
+     * (`medication_id`, `scheduled_at`, `schedule_slot`) остаются на месте, ни одна строка
+     * не переписывается (МГ-2).
+     *
+     * **Обе колонки — `NULL`, и это осмысленное значение, а не «данных нет»**: `schedule_rule`
+     * `NULL` читается как ежедневное расписание, `dose_amount` `NULL` — как «доза берётся
+     * у лекарства». Поэтому же у миграции нет пересчёта: приёмы и отметки прошлого
+     * не пересобираются, и курс, заведённый до обновления, продолжает идти ровно как шёл
+     * (критерий приёмки 8).
+     */
+    val MIGRATION_9_10 = object : Migration(9, 10) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE `medication` ADD COLUMN `schedule_rule` TEXT")
+            db.execSQL("ALTER TABLE `intake` ADD COLUMN `dose_amount` TEXT")
+        }
+    }
+
     /** Все миграции по порядку. Room выбирает путь сам; пропусков в цепочке быть не должно. */
     val ALL: Array<Migration> = arrayOf(
         MIGRATION_1_2,
@@ -167,6 +189,7 @@ object SklyankaMigrations {
         MIGRATION_6_7,
         MIGRATION_7_8,
         MIGRATION_8_9,
+        MIGRATION_9_10,
     )
 
     /**

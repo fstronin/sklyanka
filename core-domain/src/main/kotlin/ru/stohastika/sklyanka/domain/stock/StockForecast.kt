@@ -1,7 +1,7 @@
 package ru.stohastika.sklyanka.domain.stock
 
+import ru.stohastika.sklyanka.domain.medication.MedicationDailyUse
 import ru.stohastika.sklyanka.domain.model.Medication
-import ru.stohastika.sklyanka.domain.model.ScheduleMode
 import java.math.BigDecimal
 
 /**
@@ -44,17 +44,18 @@ sealed interface StockForecast {
         }
 
         /**
-         * Суточный расход по расписанию: число приёмов в сутки на дозу одного приёма.
+         * Суточный расход по расписанию — правилом расхода, а не второй формулой.
+         *
+         * Число дней и порог покупки считаются одним и тем же расходом
+         * ([ru.stohastika.sklyanka.domain.medication.MedicationDailyUse]): у недельного курса,
+         * циклов и ступеней он не равен «доза × число времён», и второй расчёт здесь
+         * объявлял бы «пора покупать» не тогда, когда упаковка кончается (SKL-117, критика F2).
          *
          * `null` означает «неизвестен»: приём по потребности (ОВ-39) и вырожденное
          * расписание без единого времени приёма. Делить на такой расход нечем, и число
          * дней в этих случаях не существует, а не равно бесконечности.
          */
-        fun dailyUse(medication: Medication): BigDecimal? {
-            // Приём по потребности приравнивается к расписанию без времён: делить не на что.
-            val perDay = medication.times.size.takeIf { medication.scheduleMode == ScheduleMode.SCHEDULED } ?: 0
-            return (medication.doseAmount * BigDecimal(perDay)).takeIf { it > BigDecimal.ZERO }
-        }
+        fun dailyUse(medication: Medication): BigDecimal? = MedicationDailyUse.of(medication)
 
         /** Остаток бессрочного курса с крошечной дозой в Int не влезает; предел — не ошибка данных. */
         private val MAX_DAYS = BigDecimal(Int.MAX_VALUE)

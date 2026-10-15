@@ -9,7 +9,10 @@ import ru.stohastika.sklyanka.domain.model.FoodRelation
 import ru.stohastika.sklyanka.domain.model.Medication
 import ru.stohastika.sklyanka.domain.model.MedicationForm
 import ru.stohastika.sklyanka.domain.model.ScheduleMode
+import ru.stohastika.sklyanka.domain.model.ScheduleRule
+import ru.stohastika.sklyanka.domain.model.Stage
 import java.math.BigDecimal
+import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -122,6 +125,96 @@ class MedicationListOrderTest {
         assertNull(MedicationListOrder.nextIntakeAt(scheduled(times = emptyList()), NOW))
     }
 
+    // --- Вид расписания (ПР-15…ПР-19) ---------------------------------------------------
+
+    /**
+     * У курса «по средам» список не имеет права назвать ближайшим приём другого дня.
+     *
+     * Среда 14 октября 2026, 10:00: приём среды в 08:00 уже прошёл, следующий — пятница.
+     */
+    @Test
+    fun `a weekly course mid week names the next chosen day`() {
+        val medication = scheduled(
+            times = listOf(MORNING),
+            startDate = LocalDate.of(2026, 10, 5),
+            schedule = ScheduleRule.Weekdays(
+                setOf(DayOfWeek.MONDAY, DayOfWeek.WEDNESDAY, DayOfWeek.FRIDAY),
+            ),
+        )
+
+        assertEquals(
+            LocalDate.of(2026, 10, 16).atTime(MORNING),
+            MedicationListOrder.nextIntakeAt(medication, LocalDate.of(2026, 10, 14).atTime(10, 0)),
+        )
+    }
+
+    /** В выбранный день недели непрошедшее время остаётся ближайшим, как у ежедневного курса. */
+    @Test
+    fun `a weekly course on a chosen day with a later time stays today`() {
+        val medication = scheduled(
+            times = listOf(EVENING),
+            startDate = LocalDate.of(2026, 10, 5),
+            schedule = ScheduleRule.Weekdays(setOf(DayOfWeek.WEDNESDAY)),
+        )
+
+        assertEquals(
+            LocalDate.of(2026, 10, 14).atTime(EVENING),
+            MedicationListOrder.nextIntakeAt(medication, LocalDate.of(2026, 10, 14).atTime(10, 0)),
+        )
+    }
+
+    /** Курс «через день»: приёмы 13, 15, 17… — в промежуточные дни ближайшего нет. */
+    @Test
+    fun `an every other day course skips the intermediate day`() {
+        val medication = scheduled(
+            times = listOf(MORNING),
+            startDate = LocalDate.of(2026, 10, 13),
+            schedule = ScheduleRule.EveryNDays(days = 2),
+        )
+
+        val now = LocalDate.of(2026, 10, 14).atTime(10, 0)
+
+        assertEquals(LocalDate.of(2026, 10, 15).atTime(MORNING), MedicationListOrder.nextIntakeAt(medication, now))
+    }
+
+    /** Ступенчатый курс порождает приём каждый день: вид меняет дозу, а не дни. */
+    @Test
+    fun `a staged course keeps the daily next intake`() {
+        val medication = scheduled(
+            times = listOf(MORNING),
+            schedule = ScheduleRule.Staged(listOf(Stage(BigDecimal("0.5"), 7), Stage(BigDecimal.ONE, 24))),
+        )
+
+        assertEquals(TOMORROW.atTime(MORNING), MedicationListOrder.nextIntakeAt(medication, NOW))
+    }
+
+    /** В перерыве цикла ближайший приём — начало следующего блока приёма. */
+    @Test
+    fun `a course in cycles names the first day of the next on block`() {
+        // Начало 5 октября, 21 день приёма: 5–25 октября, перерыв 26 октября — 1 ноября.
+        val medication = scheduled(
+            times = listOf(MORNING),
+            startDate = LocalDate.of(2026, 10, 5),
+            schedule = ScheduleRule.Cycles(onDays = 21, offDays = 7),
+        )
+
+        val now = LocalDate.of(2026, 10, 27).atTime(10, 0)
+
+        assertEquals(LocalDate.of(2026, 11, 2).atTime(MORNING), MedicationListOrder.nextIntakeAt(medication, now))
+    }
+
+    /** Курс «по дням недели» без выбранных дней не называет ближайшего приёма вовсе. */
+    @Test
+    fun `a weekly course without chosen days has no next intake`() {
+        val medication = scheduled(
+            times = listOf(MORNING),
+            startDate = LocalDate.of(2026, 10, 5),
+            schedule = ScheduleRule.Weekdays(emptySet()),
+        )
+
+        assertNull(MedicationListOrder.nextIntakeAt(medication, NOW))
+    }
+
     // --- Порядок ------------------------------------------------------------------------
 
     @Test
@@ -209,6 +302,7 @@ class MedicationListOrderTest {
             times: List<LocalTime> = listOf(MORNING),
             startDate: LocalDate = LocalDate.of(2026, 3, 12),
             endDate: LocalDate? = null,
+            schedule: ScheduleRule = ScheduleRule.Daily,
         ) = Medication(
             id = id,
             profileId = Drafts.PROFILE_ID,
@@ -223,6 +317,7 @@ class MedicationListOrderTest {
             scheduleMode = ScheduleMode.SCHEDULED,
             maxPerDay = null,
             times = times,
+            schedule = schedule,
             startDate = startDate,
             endDate = endDate,
             stockLeft = null,
