@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Акцентные темы, тёмная среда и варианты иконки — состояния</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&amp;family=Literata:opsz,wght@7..72,400;7..72,600&amp;display=swap">
+<style>
+.preview-eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#5F564D;font-weight:600}
+.preview-head h1{margin:12px 0 12px;font-family:'Literata',Georgia,serif;font-size:36px;font-weight:600;letter-spacing:-.01em;line-height:1.15}
+.preview-head p{margin:0;font-size:16px;line-height:1.55;max-width:1180px}
+.sheet-grid{display:grid;grid-template-columns:repeat(4,390px);gap:28px;padding:24px 40px 40px;align-items:start;box-sizing:border-box}
+.state{margin:0;display:flex;flex-direction:column;gap:10px}
+.state-label{font-size:13px;font-weight:600;color:#5F564D;letter-spacing:.02em}
+.phone{position:relative;width:390px;box-sizing:border-box;background:#F8F6EF;color:#241F1B;border:1px solid #E6DED2;border-radius:30px;overflow:hidden;height:844px;display:flex;flex-direction:column}
+.phone--dark{background:#181712;color:#F8F6EF;border-color:#4A4139}
+.head{padding:30px 20px 14px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.overline{font-size:12px;font-weight:400;letter-spacing:.08em;text-transform:uppercase;color:#5F564D}
+.phone--dark .overline{color:#C9BFB1}
+.title-screen{font-family:'Literata',Georgia,serif;font-size:30px;font-weight:600;letter-spacing:-.01em;margin:2px 0 0}
+.avatar{height:44px;width:44px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;background:#E2EEF0;color:#1F5F6B;border:1px solid #D9CDBD;box-sizing:border-box}
+.phone--dark .avatar{background:#2F4347;color:#96B2B4;border-color:#5C5148}
+.body{flex-grow:1;padding:6px 20px 0;display:flex;flex-direction:column;gap:16px;overflow:hidden}
+.rubric{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#5F564D;padding-left:4px;margin-bottom:8px}
+.phone--dark .rubric{color:#C9BFB1}
+.card{background:#FFFFFF;border:1px solid #EFE7DB;border-radius:18px;overflow:hidden}
+.phone--dark .card{background:#342D26;border-color:#453C34}
+.row{display:flex;align-items:center;gap:12px;padding:14px 16px;min-height:44px;box-sizing:border-box}
+.row-main{display:flex;align-items:center;gap:10px;flex-grow:1;min-width:0}
+.row-label{font-size:15px;line-height:1.45}
+.row-value{font-size:14px;font-weight:600;line-height:1.3;margin-left:auto;white-space:nowrap}
+.chev{display:block;width:15px;height:15px;flex-shrink:0}
+.divider{height:1px;background:#EFE7DB;margin:0 16px}
+.phone--dark .divider{background:#453C34}
+.pro-mark{display:inline-flex;align-items:baseline;gap:4px;border-radius:999px;background:#EBEEDA;color:#424724;font-size:13px;font-weight:600;line-height:1.35;padding:7px 14px;flex-shrink:0}
+.phone--dark .pro-mark{background:#DEE4C3;color:#424724}
+.pro-mark svg{display:block;width:14px;height:14px;flex-shrink:0}
+.note{font-size:12px;line-height:1.45;color:#5F564D}
+.phone--dark .note{color:#C9BFB1}
+/* Кнопка темы и чип: акцентные роли подставляются инлайном — на листе их четыре. */
+.btn{height:52px;border-radius:16px;font-family:inherit;font-size:16px;font-weight:600;display:flex;align-items:center;justify-content:center;width:100%;border:none;cursor:default}
+.chip{display:inline-flex;align-items:center;height:44px;padding:0 14px;box-sizing:border-box;border-radius:999px;font-size:14px;font-weight:500}
+.bar{display:flex;border-top:1px solid #E6DED2;background:#FFFFFF;padding:8px 12px 24px}
+.phone--dark .bar{background:#342D26;border-color:#4A4139}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;font-weight:500;color:#5F564D}
+.phone--dark .tab{color:#C9BFB1}
+.dot{width:22px;height:22px;border-radius:999px}
+/* Список выбора: та же сборка, что у `ListPickerDialog` (§5). */
+.scrim{position:absolute;inset:0;background:rgba(24,23,18,.32)}
+.dialog{position:absolute;left:24px;right:24px;top:180px;background:#FFFFFF;border:1px solid #EFE7DB;border-radius:16px;padding:14px 0;box-sizing:border-box}
+.phone--dark .dialog{background:#342D26;border-color:#453C34}
+.dialog-title{font-size:15px;font-weight:600;line-height:1.45;padding:0 16px 10px}
+.opt{display:flex;align-items:center;gap:12px;padding:12px 16px;min-height:44px;box-sizing:border-box}
+.opt span.opt-name{font-size:15px;line-height:1.45;flex-grow:1}
+.opt--on span.opt-name{font-weight:600;color:#5F6F2E}
+.sample{width:40px;height:40px;border-radius:999px;flex-shrink:0;box-sizing:border-box}
+.sample--icon{width:40px;height:40px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.sample--icon svg{display:block;width:26px;height:26px}
+.check{display:block;width:18px;height:18px;flex-shrink:0}
+/* Плита виджета: объявленная ступень `WidgetStandard` 340×176. */
+.plate{width:340px;box-sizing:border-box;background:#FFFFFF;border:1px solid #EFE7DB;border-radius:18px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.plate--dark{background:#342D26;border-color:#453C34;color:#F8F6EF}
+.plate-subj{font-size:15px;font-weight:600;line-height:1.45}
+.plate-count{font-size:12px;font-weight:400;line-height:1.45;color:#5F564D}
+.plate--dark .plate-count{color:#C9BFB1}
+.plate-row{display:flex;align-items:center;gap:12px;padding-top:8px;border-top:1px solid #EFE7DB}
+.plate--dark .plate-row{border-color:#453C34}
+.plate-time{font-size:14px;font-weight:600;min-width:44px}
+.plate-name{font-size:15px;font-weight:600;flex-grow:1}
+.plate-dose{font-size:13px;font-weight:400;color:#5F564D}
+.plate--dark .plate-dose{color:#C9BFB1}
+.mark{width:44px;height:44px;border-radius:999px;box-sizing:border-box;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.mark svg{display:block;width:18px;height:18px}
+figcaption{font-size:12px;line-height:1.5;color:#5F564D}
+</style>
+</helmet>
+<div class="preview-head">
+<div class="preview-eyebrow">Склянка · темы, тёмная среда и иконки · Р-31, Р-23, Р-20 · §2.2, §2.4, §2.5, §5.17, §9</div>
+<h1>Акцентные темы, тёмная среда и варианты иконки</h1>
+<p>Блок «Оформление» и два диалога выбора, «Сегодня» под двумя платными темами, тёмная среда интерфейса и плита виджета в ней. Тема меняет только семью акцента — фон, текст, роли исхода и палитра знака остаются «оливой на бумаге» (Р-20 не переписывается); в чужом профиле семья акцента целиком принадлежит профилю, и тема на неё не влияет. Тёмная среда — функция базы и следует за системной настройкой; своего тумблера у неё нет.</p>
+</div>
+<div class="sheet-grid">
+
+  <!-- ============ 1 · БЛОК «ОФОРМЛЕНИЕ» ============ -->
+  <figure class="state">
+    <div class="state-label">1 · Настройки: блок «Оформление»</div>
+    <div class="phone">
+      <div class="head"><h1 class="title-screen">Настройки</h1></div>
+      <div class="body">
+        <div>
+          <div class="rubric">Система</div>
+          <div class="card">
+            <div class="row"><span class="row-main"><span class="row-label">Разрешения и автозапуск</span></span><span class="row-value">Одно не выдано</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="#B0A597" stroke-width="2" stroke-linecap="round"><path d="m9 5 7 7-7 7"></path></svg></div>
+          </div>
+        </div>
+        <div>
+          <div class="rubric">Оформление</div>
+          <div class="card">
+            <div class="row">
+              <span class="row-main"><span class="row-label">Акцентная тема</span><span class="pro-mark"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l2.6 6.9 6.9 2.6-6.9 2.6L12 21.5l-2.6-6.9L2.5 12l6.9-2.6z"></path></svg>Про</span></span>
+              <span class="row-value">Олива</span>
+              <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="#B0A597" stroke-width="2" stroke-linecap="round"><path d="m9 5 7 7-7 7"></path></svg>
+            </div>
+            <div class="divider"></div>
+            <div class="row">
+              <span class="row-main"><span class="row-label">Иконка приложения</span><span class="pro-mark"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l2.6 6.9 6.9 2.6-6.9 2.6L12 21.5l-2.6-6.9L2.5 12l6.9-2.6z"></path></svg>Про</span></span>
+              <span class="row-value">Ледяная</span>
+              <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="#B0A597" stroke-width="2" stroke-linecap="round"><path d="m9 5 7 7-7 7"></path></svg>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="rubric">Данные</div>
+          <div class="card">
+            <div class="row"><span class="row-main"><span class="row-label">История приёмов</span></span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="#B0A597" stroke-width="2" stroke-linecap="round"><path d="m9 5 7 7-7 7"></path></svg></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <figcaption>Блок стоит между «Системой» и «Данными»: оформление принадлежит приложению, а не данным, и под строку «Склянка Про» ему не место — та отвечает за подписку. Обе строки несут метку «Про» сразу за подписью (§5.9); значение — имя темы и имя варианта иконки, то есть то, что человек выбрал.</figcaption>
+  </figure>
+
+  <!-- ============ 2 · ДИАЛОГ ВЫБОРА ТЕМЫ ============ -->
+  <figure class="state">
+    <div class="state-label">2 · Диалог выбора темы</div>
+    <div class="phone">
+      <div class="head"><h1 class="title-screen">Настройки</h1></div>
+      <div class="body">
+        <div>
+          <div class="rubric">Оформление</div>
+          <div class="card">
+            <div class="row"><span class="row-main"><span class="row-label">Акцентная тема</span><span class="pro-mark"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l2.6 6.9 6.9 2.6-6.9 2.6L12 21.5l-2.6-6.9L2.5 12l6.9-2.6z"></path></svg>Про</span></span><span class="row-value">Олива</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="#B0A597" stroke-width="2" stroke-linecap="round"><path d="m9 5 7 7-7 7"></path></svg></div>
+          </div>
+        </div>
+      </div>
+      <div class="scrim"></div>
+      <div class="dialog">
+        <div class="dialog-title">Акцентная тема</div>
+        <div class="opt opt--on">
+          <span class="sample" style="background:#5F6F2E"></span>
+          <span class="opt-name">Олива</span>
+          <svg class="check" viewBox="0 0 24 24" fill="none" stroke="#5F6F2E" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg>
+        </div>
+        <div class="opt">
+          <span class="sample" style="background:#3E4FA8"></span>
+          <span class="opt-name">Индиго</span>
+          <span class="pro-mark"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l2.6 6.9 6.9 2.6-6.9 2.6L12 21.5l-2.6-6.9L2.5 12l6.9-2.6z"></path></svg>Про</span>
+        </div>
+        <div class="opt">
+          <span class="sample" style="background:#1E5533"></span>
+          <span class="opt-name">Хвоя</span>
+          <span class="pro-mark"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l2.6 6.9 6.9 2.6-6.9 2.6L12 21.5l-2.6-6.9L2.5 12l6.9-2.6z"></path></svg>Про</span>
+        </div>
+        <div class="opt">
+          <span class="sample" style="background:#6E3A72"></span>
+          <span class="opt-name">Аметист</span>
+          <span class="pro-mark"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l2.6 6.9 6.9 2.6-6.9 2.6L12 21.5l-2.6-6.9L2.5 12l6.9-2.6z"></path></svg>Про</span>
+        </div>
+      </div>
+    </div>
+    <figcaption>Четыре строки, в каждой — образец цвета `IconPlate` 40 dp слева, имя, у выбранной галочка и семантика `selected`; у трёх платных — метка «Про» сразу за именем. «Олива» идёт первой, метки не несёт и доступна всегда: это тема базы (Р-20), и метка у неё продавала бы бесплатное (Р-71). Образец — та же форма, что образец цвета в мастере профиля (§5.13); имя образца для чтения с экрана — имя темы.</figcaption>
+  </figure>
+
+  <!-- ============ 3 · ДИАЛОГ ВЫБОРА ИКОНКИ ============ -->
+  <figure class="state">
+    <div class="state-label">3 · Диалог выбора иконки</div>
+    <div class="phone">
+      <div class="head"><h1 class="title-screen">Настройки</h1></div>
+      <div class="body">
+        <div>
+          <div class="rubric">Оформление</div>
+          <div class="card">
+            <div class="row"><span class="row-main"><span class="row-label">Иконка приложения</span><span class="pro-mark"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l2.6 6.9 6.9 2.6-6.9 2.6L12 21.5l-2.6-6.9L2.5 12l6.9-2.6z"></path></svg>Про</span></span><span class="row-value">Ледяная</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="#B0A597" stroke-width="2" stroke-linecap="round"><path d="m9 5 7 7-7 7"></path></svg></div>
+          </div>
+        </div>
+      </div>
+      <div class="scrim"></div>
+      <div class="dialog">
+        <div class="dialog-title">Иконка приложения</div>
+        <div class="opt opt--on">
+          <span class="sample--icon" style="background:#E7F0F4">
+            <svg viewBox="0 0 200 200" fill="none"><circle cx="100" cy="100" r="86" stroke="#0B2831" stroke-opacity="0.55" stroke-width="9"></circle><circle cx="100" cy="100" r="47" stroke="#0B2831" stroke-opacity="0.35" stroke-width="6"></circle><path d="M25.1 86.8A76 76 0 0 1 86.8 25.1L88.4 34A67 67 0 0 0 34 88.4Z" fill="#0B2831" fill-opacity="0.9"></path><circle cx="100" cy="100" r="14" fill="#0B2831" fill-opacity="0.8"></circle></svg>
+          </span>
+          <span class="opt-name">Ледяная</span>
+          <svg class="check" viewBox="0 0 24 24" fill="none" stroke="#5F6F2E" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg>
+        </div>
+        <div class="opt">
+          <span class="sample--icon" style="background:#EFE7DB">
+            <svg viewBox="0 0 200 200" fill="none"><circle cx="100" cy="100" r="86" stroke="#241F1B" stroke-opacity="0.55" stroke-width="9"></circle><circle cx="100" cy="100" r="47" stroke="#241F1B" stroke-opacity="0.35" stroke-width="6"></circle><path d="M25.1 86.8A76 76 0 0 1 86.8 25.1L88.4 34A67 67 0 0 0 34 88.4Z" fill="#241F1B" fill-opacity="0.9"></path><circle cx="100" cy="100" r="14" fill="#241F1B" fill-opacity="0.8"></circle></svg>
+          </span>
+          <span class="opt-name">Тёплая</span>
+          <span class="pro-mark"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l2.6 6.9 6.9 2.6-6.9 2.6L12 21.5l-2.6-6.9L2.5 12l6.9-2.6z"></path></svg>Про</span>
+        </div>
+      </div>
+    </div>
+    <figcaption>Слева — миниатюра иконки 40 dp: плитка варианта со знаком, тот же приём, что превью лекарства (§5.10). Иконку выбирают глазами, и подпись «Тёплая» без картинки заставляла бы представлять её самому. «Ледяная» — базовый вариант (Р-56) и метки не несёт; имя в лончере у обоих вариантов одно — «Склянка» (В-120-2).</figcaption>
+  </figure>
+
+  <!-- ============ 4 · «СЕГОДНЯ» ПОД ТЕМОЙ «ИНДИГО» ============ -->
+  <figure class="state">
+    <div class="state-label">4 · «Сегодня» под темой «Индиго» (доступ активен)</div>
+    <div class="phone">
+      <div class="head">
+        <div><div class="overline">16 октября 2026</div><h1 class="title-screen">Сегодня</h1></div>
+        <span class="avatar">Я</span>
+      </div>
+      <div class="body">
+        <div class="card" style="padding:16px">
+          <div style="display:flex;gap:10px;align-items:baseline"><span style="font-family:'Literata',Georgia,serif;font-size:26px;font-weight:600">09:12</span><span style="font-size:13px;font-weight:600;color:#3E4FA8">Сейчас</span></div>
+          <div style="font-size:15px;font-weight:600;margin-top:6px">Магний B6</div>
+          <div style="font-size:13px;color:#5F564D">1 таблетка · каждый день</div>
+        </div>
+        <div class="card" style="padding:16px">
+          <div style="display:flex;gap:10px;align-items:baseline"><span style="font-family:'Literata',Georgia,serif;font-size:26px;font-weight:600">20:00</span></div>
+          <div style="font-size:15px;font-weight:600;margin-top:6px">Аспирин</div>
+          <div style="font-size:13px;color:#5F564D">1 таблетка · каждый день</div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <span class="chip" style="background:#D9DCEB;border:1.5px solid #3E4FA8;font-weight:600">Утро</span>
+          <span class="chip" style="border:1px solid #D9CDBD">Вечер</span>
+        </div>
+      </div>
+      <div style="padding:0 20px 16px"><button class="btn" type="button" style="background:#3E4FA8;color:#FFFFFF">Отметить приём</button></div>
+      <div class="bar">
+        <span class="tab" style="color:#3E4FA8;font-weight:600"><span class="dot" style="background:#3E4FA8;opacity:.18"></span>Сегодня</span>
+        <span class="tab"><span class="dot" style="background:#E6DED2"></span>Лекарства</span>
+        <span class="tab"><span class="dot" style="background:#E6DED2"></span>Настройки</span>
+      </div>
+    </div>
+    <figcaption>Тема меняет акцент и его семью — и ничего больше: фон «олива на бумаге» (Р-20), поверхность, текст, линии и роли исхода общие (§2.1). Заливка кнопки, активная вкладка, выбранный чип и слово «Сейчас» — акцент темы; мягкая подложка чипа — её же подложка (0,55 к белой поверхности, §9).</figcaption>
+  </figure>
+
+  <!-- ============ 5 · «СЕГОДНЯ» ПОД ТЕМОЙ «АМЕТИСТ» ============ -->
+  <figure class="state">
+    <div class="state-label">5 · Та же «Сегодня» под темой «Аметист»</div>
+    <div class="phone">
+      <div class="head">
+        <div><div class="overline">16 октября 2026</div><h1 class="title-screen">Сегодня</h1></div>
+        <span class="avatar">Я</span>
+      </div>
+      <div class="body">
+        <div class="card" style="padding:16px">
+          <div style="display:flex;gap:10px;align-items:baseline"><span style="font-family:'Literata',Georgia,serif;font-size:26px;font-weight:600">09:12</span><span style="font-size:13px;font-weight:600;color:#6E3A72">Сейчас</span></div>
+          <div style="font-size:15px;font-weight:600;margin-top:6px">Магний B6</div>
+          <div style="font-size:13px;color:#5F564D">1 таблетка · каждый день</div>
+        </div>
+        <div class="card" style="padding:16px">
+          <div style="display:flex;gap:10px;align-items:baseline"><span style="font-family:'Literata',Georgia,serif;font-size:26px;font-weight:600">20:00</span></div>
+          <div style="font-size:15px;font-weight:600;margin-top:6px">Аспирин</div>
+          <div style="font-size:13px;color:#5F564D">1 таблетка · каждый день</div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <span class="chip" style="background:#ECD9ED;border:1.5px solid #6E3A72;font-weight:600">Утро</span>
+          <span class="chip" style="border:1px solid #D9CDBD">Вечер</span>
+        </div>
+      </div>
+      <div style="padding:0 20px 16px"><button class="btn" type="button" style="background:#6E3A72;color:#FFFFFF">Отметить приём</button></div>
+      <div class="bar">
+        <span class="tab" style="color:#6E3A72;font-weight:600"><span class="dot" style="background:#6E3A72;opacity:.18"></span>Сегодня</span>
+        <span class="tab"><span class="dot" style="background:#E6DED2"></span>Лекарства</span>
+        <span class="tab"><span class="dot" style="background:#E6DED2"></span>Настройки</span>
+      </div>
+    </div>
+    <figcaption>Два состояния рядом — и видно, что «Аметист» отличается от «Индиго» на глаз, а не только числом: оттенки разведены по кругу (230° и 296°). Числа контраста обеих тем — в §2.5; самая тесная пара набора — базовая «Олива» (5,11), и она выше AA.</figcaption>
+  </figure>
+
+  <!-- ============ 6 · ТЁМНАЯ СРЕДА: «СЕГОДНЯ» ============ -->
+  <figure class="state">
+    <div class="state-label">6 · Тёмная среда: «Сегодня» (системная тема тёмная)</div>
+    <div class="phone phone--dark">
+      <div class="head">
+        <div><div class="overline">16 октября 2026</div><h1 class="title-screen">Сегодня</h1></div>
+        <span class="avatar">Я</span>
+      </div>
+      <div class="body">
+        <div class="card" style="padding:16px">
+          <div style="display:flex;gap:10px;align-items:baseline"><span style="font-family:'Literata',Georgia,serif;font-size:26px;font-weight:600">09:12</span><span style="font-size:13px;font-weight:600;color:#B5C47A">Сейчас</span></div>
+          <div style="font-size:15px;font-weight:600;margin-top:6px">Магний B6</div>
+          <div class="note">1 таблетка · каждый день</div>
+        </div>
+        <div class="card" style="padding:16px">
+          <div style="font-family:'Literata',Georgia,serif;font-size:26px;font-weight:600">20:00</div>
+          <div style="font-size:15px;font-weight:600;margin-top:6px">Аспирин</div>
+          <div class="note">1 таблетка · каждый день</div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <span class="chip" style="background:#DEE4C3;border:1.5px solid #B5C47A;color:#424724;font-weight:600">Утро</span>
+          <span class="chip" style="border:1px solid #5C5148;color:#C9BFB1">Вечер</span>
+        </div>
+      </div>
+      <div style="padding:0 20px 16px"><button class="btn" type="button" style="background:#B5C47A;color:#181712">Отметить приём</button></div>
+      <div class="bar">
+        <span class="tab" style="color:#B5C47A;font-weight:600"><span class="dot" style="background:#B5C47A;opacity:.28"></span>Сегодня</span>
+        <span class="tab"><span class="dot" style="background:#4A4139"></span>Лекарства</span>
+        <span class="tab"><span class="dot" style="background:#4A4139"></span>Настройки</span>
+      </div>
+    </div>
+    <figcaption>Среда интерфейса следует за системной настройкой (Р-23, SKL-120): фон тёмная олива `#181712`, поверхность `#342D26`, текст и линии — тёмные роли §9. Подпись акцентной кнопки — фон среды (9,52), мягкая подложка чипа — светлая `#DEE4C3`, выбранная тема «Олива». Тёмных экранов выбора нет: тумблера в настройках не заводится.</figcaption>
+  </figure>
+
+  <!-- ============ 7 · ТЁМНАЯ СРЕДА: НАСТРОЙКИ И МЕТКИ ============ -->
+  <figure class="state">
+    <div class="state-label">7 · Тёмная среда: настройки, плашки и метки «Про»</div>
+    <div class="phone phone--dark">
+      <div class="head"><h1 class="title-screen">Настройки</h1></div>
+      <div class="body">
+        <div>
+          <div class="rubric">Профили</div>
+          <div class="card">
+            <div class="row">
+              <span style="width:40px;height:40px;border-radius:999px;background:#2F4347;color:#96B2B4;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600">Я</span>
+              <span class="row-main"><span class="row-label">Мои лекарства</span></span>
+              <span class="row-value" style="color:#B5C47A">Изменить</span>
+              <svg class="check" viewBox="0 0 24 24" fill="none" stroke="#96B2B4" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg>
+            </div>
+            <div class="divider"></div>
+            <div class="row">
+              <span style="width:40px;height:40px;border-radius:999px;background:#8F3E23;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600">М</span>
+              <span class="row-main"><span class="row-label">Мама</span></span>
+              <span class="row-value" style="color:#B5C47A">Изменить</span>
+              <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="#7C7266" stroke-width="2" stroke-linecap="round"><path d="m9 5 7 7-7 7"></path></svg>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="rubric">Оформление</div>
+          <div class="card">
+            <div class="row">
+              <span class="row-main"><span class="row-label">Акцентная тема</span><span class="pro-mark"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l2.6 6.9 6.9 2.6-6.9 2.6L12 21.5l-2.6-6.9L2.5 12l6.9-2.6z"></path></svg>Про</span></span>
+              <span class="row-value">Хвоя</span>
+              <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="#7C7266" stroke-width="2" stroke-linecap="round"><path d="m9 5 7 7-7 7"></path></svg>
+            </div>
+            <div class="divider"></div>
+            <div class="row">
+              <span class="row-main"><span class="row-label">Иконка приложения</span><span class="pro-mark"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l2.6 6.9 6.9 2.6-6.9 2.6L12 21.5l-2.6-6.9L2.5 12l6.9-2.6z"></path></svg>Про</span></span>
+              <span class="row-value">Тёплая</span>
+              <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="#7C7266" stroke-width="2" stroke-linecap="round"><path d="m9 5 7 7-7 7"></path></svg>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="bar">
+        <span class="tab"><span class="dot" style="background:#4A4139"></span>Сегодня</span>
+        <span class="tab"><span class="dot" style="background:#4A4139"></span>Лекарства</span>
+        <span class="tab" style="color:#B5C47A;font-weight:600"><span class="dot" style="background:#B5C47A;opacity:.28"></span>Настройки</span>
+      </div>
+    </div>
+    <figcaption>Метка «Про» в тёмной среде не перекрашивается в тёмное: её подложка — `accentSoft`, то есть светлая плашка `#DEE4C3`, а слово — `onAccentSoft` `#424724` (8,24 в светлой, 7,41 в тёмной). Плашки мягких ролей в тёмной среде читаются тонированными серыми: цвет несут глиф и подпись, а не плашка (§9, НФТ-33). Отметка активного профиля и аватар следуют за `taken` (§9).</figcaption>
+  </figure>
+
+  <!-- ============ 8 · ПЛИТА ВИДЖЕТА В ТЁМНОЙ СРЕДЕ ============ -->
+  <figure class="state">
+    <div class="state-label">8 · Плита виджета в тёмной среде (`WidgetStandard` 340×176)</div>
+    <div style="width:390px;box-sizing:border-box;background:#181712;border:1px solid #4A4139;border-radius:24px;padding:24px;display:flex;flex-direction:column;gap:16px">
+      <div class="plate plate--dark">
+        <div>
+          <div class="plate-subj">Сегодня</div>
+          <div class="plate-count">Принято 2 из 5 приёмов</div>
+        </div>
+        <div class="plate-row">
+          <span class="plate-time">09:12</span>
+          <span><span class="plate-name" style="display:block">Магний B6</span><span class="plate-dose">1 таблетка</span></span>
+          <span class="mark" style="background:#B5C47A"><svg viewBox="0 0 24 24" fill="none" stroke="#181712" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></span>
+        </div>
+        <div class="plate-row">
+          <span class="plate-time">20:00</span>
+          <span><span class="plate-name" style="display:block">Аспирин</span><span class="plate-dose">1 таблетка</span></span>
+          <span class="mark" style="background:#342D26;border:1.5px solid #5C5148"><svg viewBox="0 0 24 24" fill="none" stroke="#A79C90" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></span>
+        </div>
+      </div>
+      <div class="plate">
+        <div>
+          <div class="plate-subj">Сегодня</div>
+          <div class="plate-count">Принято 2 из 5 приёмов</div>
+        </div>
+        <div class="plate-row">
+          <span class="plate-time">09:12</span>
+          <span><span class="plate-name" style="display:block">Магний B6</span><span class="plate-dose">1 таблетка</span></span>
+          <span class="mark" style="background:#5F6F2E"><svg viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></span>
+        </div>
+      </div>
+    </div>
+    <figcaption>Прежняя оговорка §5.11 «плита светлая в любой среде» была границей, а не решением: SKL-120 её снимает, и плита читает те же роли среды, что экраны — на тёмных обоях светлая плита слепила бы. Габариты ступени, строки `WidgetRow` 48 dp и арифметика из §5.11 не меняются — меняются краски; залитая кнопка отметки остаётся единственной заливкой плиты, в тёмной среде — акцентом темы.</figcaption>
+  </figure>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#5F6F2E","options":["#5F6F2E","#3E4FA8","#1E5533","#6E3A72"]},"$preview":{"width":1724,"height":2120}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { accent: this.props.accent ?? '#5F6F2E' };
+  }
+}
+</script>
+</body>
+</html>

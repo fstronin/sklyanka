@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Экран настройки виджета — состояния</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&amp;family=Literata:opsz,wght@7..72,400;7..72,600&amp;display=swap">
+<style>
+/* Лист нарисован в палитре Р-20 «олива на бумаге» (§2.1 нормы); в чужом профиле — палитра
+   профиля «Мама» (Terracotta #8F3E23): полоса, подкраска шапки, надпись и акцент (§2.2, ПРФ-12).
+   В комментариях — роль токена, которой соответствует значение. */
+body{margin:0;background:#F3EDE3;color:#241F1B;font-family:'Golos Text',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#5F6F2E;text-decoration:none}
+.preview-head{max-width:1724px;padding:36px 40px 8px}
+.preview-eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#5F564D;font-weight:600}
+.preview-head h1{margin:12px 0 12px;font-family:'Literata',Georgia,serif;font-size:36px;font-weight:600;letter-spacing:-.01em;line-height:1.15}
+.preview-head p{margin:0;font-size:16px;line-height:1.55}
+.sheet-grid{display:grid;grid-template-columns:repeat(4,390px);gap:28px;padding:24px 40px 60px;align-items:start;box-sizing:border-box}
+.state{margin:0;display:flex;flex-direction:column;gap:10px}
+.state-label{font-size:13px;font-weight:600;color:#5F564D;letter-spacing:.02em}
+.phone{position:relative;width:390px;box-sizing:border-box;background:#F8F6EF;color:#241F1B;border:1px solid #E6DED2;border-radius:30px;overflow:hidden;height:844px;display:flex;flex-direction:column}
+.phone--profile{background:#EBE0D7;border-color:#E0D3C6}
+.stripe{position:absolute;left:0;right:0;top:0;height:6px;background:#8F3E23}
+/* Шапка — крупный заголовок без действий (Р-54): `TitleScreen` 30/600, поле 30 сверху, 20 по бокам. */
+.head{padding:30px 20px 14px;display:flex;flex-direction:column;gap:6px}
+.phone--profile .head{padding-top:24px}
+.overline{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#8F3E23}
+.title-screen{font-family:'Literata',Georgia,serif;font-size:30px;font-weight:600;letter-spacing:-.01em;margin:0}
+.hint{font-size:15px;line-height:1.45;color:#5F564D}
+/* Баннер чужого профиля — `BannerKind.Profile`: подложка `accentSoft`, слово `onAccentSoft`. */
+.banner{display:flex;align-items:center;gap:10px;padding:11px 14px;background:#EBEEDA;border-radius:14px;margin-top:4px}
+.banner div{font-size:13px;line-height:1.35;color:#424724}
+.body{flex-grow:1;padding:6px 20px 0;display:flex;flex-direction:column;gap:18px;overflow:hidden}
+.rubric{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#5F564D;padding-left:4px;margin-bottom:8px}
+.card{background:#FFFFFF;border:1px solid #EFE7DB;border-radius:18px;overflow:hidden}
+/* Строка списка: подпись `BodyDefault` 15/400, значение `LabelStrong` 14/600, шеврон `iconFaint`. */
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;min-height:44px;box-sizing:border-box}
+.row--sel .row-label{font-weight:600;color:#5F6F2E}
+/* В чужом профиле акцент — цвет профиля, и выбранная строка с галочкой несут его (§2.2, ПРФ-12). */
+.phone--profile .row--sel .row-label{color:#8F3E23}
+.phone--profile .check{stroke:#8F3E23}
+.row-main{display:flex;align-items:center;gap:10px;min-width:0}
+.row-label{font-size:15px;line-height:1.45}
+.row-tail{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.row-value{font-size:14px;font-weight:600;line-height:1.3}
+.row-value--none{color:#5F564D}
+.row-note{font-size:12px;line-height:1.45;color:#5F564D;text-align:right;max-width:180px}
+.divider{height:1px;background:#EFE7DB;margin:0 16px}
+.chev{color:#B0A597;font-size:16px;line-height:1}
+/* Метка «Про» — собранная композиция из токенов (§5.9): подложка `accentSoft`, слово
+   `CaptionStrong` 13/600 цветом `onAccentSoft`, искра `SparkGlyph` 14 sp перед словом. */
+.pro-mark{display:inline-flex;align-items:baseline;gap:4px;border-radius:999px;background:#EBEEDA;color:#424724;font-size:13px;font-weight:600;line-height:1.35;padding:7px 14px;flex-shrink:0}
+.pro-mark svg{display:block;width:14px;height:14px;flex-shrink:0}
+.check{display:block;width:18px;height:18px;stroke:#5F6F2E}
+/* Панель действия (§4.1): на `background`, без тени; слова причины — `BodyDefault` 15/400 `textMuted`. */
+.actions{padding:14px 20px 24px;display:flex;flex-direction:column;gap:10px}
+.words{font-size:15px;line-height:1.45;color:#5F564D}
+.btn{height:52px;border-radius:16px;font-family:inherit;font-size:16px;font-weight:600;display:flex;align-items:center;justify-content:center;width:100%;border:none;cursor:default}
+.btn--primary{background:#5F6F2E;color:#FFFFFF}
+.btn--disabled{background:#EDE3D6;color:#A79C90}
+/* Диалог выбора из списка (§5, `ListPickerDialog`): `surface`, рамка 1 dp, радиус `Large`. */
+.dialog-wrap{position:absolute;inset:0;background:rgba(24,23,18,.32);display:flex;align-items:center;justify-content:center;padding:24px}
+.dialog{width:100%;background:#FFFFFF;border:1px solid #EFE7DB;border-radius:16px;padding:16px 0}
+.dialog-title{font-size:15px;font-weight:600;line-height:1.45;padding:0 16px 12px}
+.opt{display:flex;align-items:center;gap:10px;padding:12px 16px;min-height:44px;box-sizing:border-box}
+.opt span{font-size:15px;line-height:1.45;flex-grow:1}
+.opt--sel span{font-weight:600;color:#5F6F2E}
+/* Фрагмент витрины (§5.9): полотно `surface`, верхние углы `TopLarge`, шапка `BodyDefaultStrong`. */
+.sheet{position:absolute;left:0;right:0;bottom:0;background:#FFFFFF;border-radius:16px 16px 0 0;display:flex;flex-direction:column}
+.sheet-head{display:flex;align-items:center;padding:14px 20px 12px;border-bottom:1px solid #EFE7DB}
+.sheet-title{font-size:15px;font-weight:600;line-height:1.45}
+.sheet-body{padding:8px 20px 20px;display:flex;flex-direction:column;gap:14px}
+.benefit{display:flex;align-items:flex-start;gap:12px;padding:12px 0}
+.benefit-glyph{width:20px;height:20px;flex-shrink:0;color:#8C8177;margin-top:2px}
+.benefit-glyph svg{display:block;width:20px;height:20px}
+.benefit-name{font-size:15px;font-weight:600;line-height:1.45}
+.bdiv{height:1px;background:#EFE7DB;margin-left:32px}
+figcaption{font-size:12px;line-height:1.5;color:#5F564D}
+</style>
+</helmet>
+<div class="preview-head">
+<div class="preview-eyebrow">Склянка · экран настройки виджета · Р-32, Р-54, Р-67, Р-79, ПР-23, ПР-24, ПРФ-13</div>
+<h1>Экран настройки виджета</h1>
+<p>Конфигурационная активность прошивки: выбор типа и — для «по лекарству» — лекарства активного профиля, и та же точка закрывает установку без подписки. Шапка — крупный заголовок без действий (Р-54), выход один, системный «Назад», и он же отмена: виджет не появляется. Каждый тип несёт метку «Про», выбранная строка отличена начертанием, акцентом и галочкой, а витрина открывается из единственного места — нижнего блока: три строки типов открывали бы её трижды (норма §5.12).</p>
+</div>
+<div class="sheet-grid">
+
+  <!-- ============ 1 · С ПОДПИСКОЙ, ТИП «СЕГОДНЯ» ============ -->
+  <figure class="state">
+    <div class="state-label">1 · Подписка активна, выбран «Сегодня»</div>
+    <div class="phone">
+      <div class="head">
+        <h1 class="title-screen">Виджет</h1>
+        <div class="hint">Виджет показывает приёмы активного профиля</div>
+      </div>
+      <div class="body">
+        <div>
+          <div class="rubric">Тип виджета</div>
+          <div class="card">
+            <div class="row row--sel">
+              <div class="row-main"><span class="row-label">Сегодня</span><span class="pro-mark"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l2.6 6.9 6.9 2.6-6.9 2.6L12 21.5l-2.6-6.9L2.5 12l6.9-2.6z"></path></svg>Про</span></div>
+              <div class="row-tail"><svg class="check" viewBox="0 0 24 24" fill="none" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></div>
+            </div>
+            <div class="divider"></div>
+            <div class="row">
+              <div class="row-main"><span class="row-label">Неделя</span><span class="pro-mark"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l2.6 6.9 6.9 2.6-6.9 2.6L12 21.5l-2.6-6.9L2.5 12l6.9-2.6z"></path></svg>Про</span></div>
+            </div>
+            <div class="divider"></div>
+            <div class="row">
+              <div class="row-main"><span class="row-label">По лекарству</span><span class="pro-mark"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l2.6 6.9 6.9 2.6-6.9 2.6L12 21.5l-2.6-6.9L2.5 12l6.9-2.6z"></path></svg>Про</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn btn--primary" type="button">Добавить виджет</button>
+      </div>
+    </div>
+    <figcaption>Тип выбран — строка набрана 600, окрашена акцентом и несёт галочку: три различия сразу (§6.4), та же сборка, что у строки `ListPickerDialog` (§5.10). Карточки лекарства нет — она принадлежит только «по лекарству».</figcaption>
+  </figure>
+
+  <!-- ============ 2 · «ПО ЛЕКАРСТВУ», ЛЕКАРСТВО НЕ ВЫБРАНО ============ -->
+  <figure class="state">
+    <div class="state-label">2 · «По лекарству», лекарство не выбрано</div>
+    <div class="phone">
+      <div class="head">
+        <h1 class="title-screen">Виджет</h1>
+        <div class="hint">Виджет показывает приёмы активного профиля</div>
+      </div>
+      <div class="body">
+        <div>
+          <div class="rubric">Тип виджета</div>
+          <div class="card">
+            <div class="row">
+              <div class="row-main"><span class="row-label">Сегодня</span><span class="pro-mark"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l2.6 6.9 6.9 2.6-6.9 2.6L12 21.5l-2.6-6.9L2.5 12l6.9-2.6z"></path></svg>Про</span></div>
+            </div>
+            <div class="divider"></div>
+            <div class="row">
+              <div class="row-main"><span class="row-label">Неделя</span><span class="pro-mark"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l2.6 6.9 6.9 2.6-6.9 2.6L12 21.5l-2.6-6.9L2.5 12l6.9-2.6z"></path></svg>Про</span></div>
+            </div>
+            <div class="divider"></div>
+            <div class="row row--sel">
+              <div class="row-main"><span class="row-label">По лекарству</span><span class="pro-mark"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l2.6 6.9 6.9 2.6-6.9 2.6L12 21.5l-2.6-6.9L2.5 12l6.9-2.6z"></path></svg>Про</span></div>
+              <div class="row-tail"><svg class="check" viewBox="0 0 24 24" fill="none" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="row">
+            <div class="row-main"><span class="row-label">Лекарство</span></div>
+            <div class="row-tail"><span class="row-value row-value--none">Не выбрано</span><span class="chev">›</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn btn--disabled" type="button">Добавить виджет</button>
+      </div>
+    </div>
+    <figcaption>Незаконченный выбор: строка ждёт значения, кнопка недоступна — причина видна в самой строке, и словами над кнопкой она не дублируется (§5.12). Карточка лекарства появляется только у этого типа.</figcaption>
+  </figure>
+
+  <!-- ============ 3 · «ПО ЛЕКАРСТВУ», ЛЕКАРСТВО ВЫБРАНО ============ -->
+  <figure class="state">
+    <div class="state-label">3 · «По лекарству», лекарство выбрано</div>
+    <div class="phone">
+      <div class="head">
+        <h1 class="title-screen">Виджет</h1>
+        <div class="hint">Виджет показывает приёмы активного профиля</div>
+      </div>
+      <div class="body">
+        <div>
+          <div class="rubric">Тип виджета</div>
+          <div class="card">
+            <div class="row">
+              <div class="row-main"><span class="row-label">Сегодня</span><span class="pro-mark"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l2.6 6.9 6.9 2.6-6.9 2.6L12 21.5l-2.6-6.9L2.5 12l6.9-2.6z"></path></svg>Про</span></div>
+            </div>
+            <div class="divider"></div>
+            <div class="row">
+              <div class="row-main"><span class="row-label">Неделя</span><span class="pro-mark"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l2.6 6.9 6.9 2.6-6.9 2.6L12 21.5l-2.6-6.9L2.5 12l6.9-2.6z"></path></svg>Про</span></div>
+            </div>
+            <div class="divider"></div>
+            <div class="row row--sel">
+              <div class="row-main"><span class="row-label">По лекарству</span><span class="pro-mark"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l2.6 6.9 6.9 2.6-6.9 2.6L12 21.5l-2.6-6.9L2.5 12l6.9-2.6z"></path></svg>Про</span></div>
+              <div class="row-tail"><svg class="check" viewBox="0 0 24 24" fill="none" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="row">
+            <div class="row-main"><span class="row-label">Лекарство</span></div>
+            <div class="row-tail"><span class="row-value">Магний B6</span><span class="chev">›</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn btn--primary" type="button">Добавить виджет</button>
+      </div>
+    </div>
+    <figcaption>Выбор закончен — кнопка завершает установку. Значение строки — имя лекарства активного профиля; порядок списка тот же, что в списке лекарств, архивные курсы в него не входят (§5.12).</figcaption>
+  </figure>
+
+  <!-- ============ 4 · БЕЗ ПОДПИСКИ ============ -->
+  <figure class="state">
+    <div class="state-label">4 · Подписки нет — слова причины</div>
+    <div class="phone">
+      <div class="head">
+        <h1 class="title-screen">Виджет</h1>
+        <div class="hint">Виджет показывает приёмы активного профиля</div>
+      </div>
+      <div class="body">
+        <div>
+          <div class="rubric">Тип виджета</div>
+          <div class="card">
+            <div class="row">
+              <div class="row-main"><span class="row-label">Сегодня</span><span class="pro-mark"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l2.6 6.9 6.9 2.6-6.9 2.6L12 21.5l-2.6-6.9L2.5 12l6.9-2.6z"></path></svg>Про</span></div>
+            </div>
+            <div class="divider"></div>
+            <div class="row">
+              <div class="row-main"><span class="row-label">Неделя</span><span class="pro-mark"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l2.6 6.9 6.9 2.6-6.9 2.6L12 21.5l-2.6-6.9L2.5 12l6.9-2.6z"></path></svg>Про</span></div>
+            </div>
+            <div class="divider"></div>
+            <div class="row">
+              <div class="row-main"><span class="row-label">По лекарству</span><span class="pro-mark"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l2.6 6.9 6.9 2.6-6.9 2.6L12 21.5l-2.6-6.9L2.5 12l6.9-2.6z"></path></svg>Про</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="actions">
+        <div class="words">Виджеты — в подписке «Склянка Про»</div>
+        <button class="btn btn--primary" type="button">Добавить виджет</button>
+      </div>
+    </div>
+    <figcaption>Кнопка не переведена в недоступность по платной причине: «нельзя» говорит неправду, а правда — «можно, по подписке» (П-7, §5.10). Нажатие открывает витрину вместо завершения; метки «Про» стоят у строк типов — плата видна до нажатия (Р-67 п. 5, Р-79).</figcaption>
+  </figure>
+
+  <!-- ============ 5 · ВИТРИНА ОТКРЫТА ============ -->
+  <figure class="state">
+    <div class="state-label">5 · Витрина открыта — пункт-повод «Виджеты» первым</div>
+    <div class="phone">
+      <div class="head">
+        <h1 class="title-screen">Виджет</h1>
+        <div class="hint">Виджет показывает приёмы активного профиля</div>
+      </div>
+      <div class="body">
+        <div>
+          <div class="rubric">Тип виджета</div>
+          <div class="card">
+            <div class="row">
+              <div class="row-main"><span class="row-label">Сегодня</span><span class="pro-mark"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l2.6 6.9 6.9 2.6-6.9 2.6L12 21.5l-2.6-6.9L2.5 12l6.9-2.6z"></path></svg>Про</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="dialog-wrap">
+        <div class="sheet">
+          <div class="sheet-head"><div class="sheet-title">Склянка Про</div></div>
+          <div class="sheet-body">
+            <div>
+              <div class="benefit">
+                <span class="benefit-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="3.5" y="3.5" width="8" height="8" rx="2"></rect><rect x="14.5" y="3.5" width="6" height="4" rx="2"></rect><rect x="3.5" y="14.5" width="17" height="6" rx="2"></rect></svg></span>
+                <div><div class="benefit-name">Виджеты</div></div>
+              </div>
+              <div class="bdiv"></div>
+              <div class="benefit">
+                <span class="benefit-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="3"></rect><path d="M8 3v4M16 3v4M3.5 10h17"></path></svg></span>
+                <div><div class="benefit-name">Сложные расписания</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <figcaption>Витрина — та же шторка (§5.9), и пункт-повод идёт первым: витрину открыла платная функция, виджеты (Р-67 пп. 1–2). Вернувшись с появившейся подпиской, тот же экран завершает установку — второго входа не требуется (§5.12).</figcaption>
+  </figure>
+
+  <!-- ============ 6 · ВЫБОР ЛЕКАРСТВА ============ -->
+  <figure class="state">
+    <div class="state-label">6 · Выбор лекарства — диалог списка</div>
+    <div class="phone">
+      <div class="head">
+        <h1 class="title-screen">Виджет</h1>
+        <div class="hint">Виджет показывает приёмы активного профиля</div>
+      </div>
+      <div class="body">
+        <div>
+          <div class="rubric">Тип виджета</div>
+          <div class="card">
+            <div class="row row--sel">
+              <div class="row-main"><span class="row-label">По лекарству</span><span class="pro-mark"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l2.6 6.9 6.9 2.6-6.9 2.6L12 21.5l-2.6-6.9L2.5 12l6.9-2.6z"></path></svg>Про</span></div>
+              <div class="row-tail"><svg class="check" viewBox="0 0 24 24" fill="none" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="row">
+            <div class="row-main"><span class="row-label">Лекарство</span></div>
+            <div class="row-tail"><span class="row-value">Магний B6</span><span class="chev">›</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="dialog-wrap">
+        <div class="dialog">
+          <div class="dialog-title">Лекарство</div>
+          <div class="opt opt--sel"><span>Магний B6</span><svg class="check" viewBox="0 0 24 24" fill="none" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></div>
+          <div class="divider"></div>
+          <div class="opt"><span>Эутирокс</span></div>
+          <div class="divider"></div>
+          <div class="opt"><span>Лозартан</span></div>
+          <div class="divider"></div>
+          <div class="opt"><span>Витамин D3</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption>Диалог — существующий `ListPickerDialog` (§5): заголовок называет предмет, строки ≥44 dp, выбор применяется сразу и закрывает диалог, выбранная строка отличена начертанием, акцентом и галочкой. Список — лекарства активного профиля.</figcaption>
+  </figure>
+
+  <!-- ============ 7 · У ПРОФИЛЯ НЕТ ЛЕКАРСТВ ============ -->
+  <figure class="state">
+    <div class="state-label">7 · У профиля нет лекарств</div>
+    <div class="phone">
+      <div class="head">
+        <h1 class="title-screen">Виджет</h1>
+        <div class="hint">Виджет показывает приёмы активного профиля</div>
+      </div>
+      <div class="body">
+        <div>
+          <div class="rubric">Тип виджета</div>
+          <div class="card">
+            <div class="row row--sel">
+              <div class="row-main"><span class="row-label">По лекарству</span><span class="pro-mark"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l2.6 6.9 6.9 2.6-6.9 2.6L12 21.5l-2.6-6.9L2.5 12l6.9-2.6z"></path></svg>Про</span></div>
+              <div class="row-tail"><svg class="check" viewBox="0 0 24 24" fill="none" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="row">
+            <div class="row-main"><span class="row-label">Лекарство</span></div>
+            <div class="row-tail"><span class="row-note">У профиля пока нет лекарств</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn btn--disabled" type="button">Добавить виджет</button>
+      </div>
+    </div>
+    <figcaption>Значения нет и нажимаемости нет: вместо него — пояснение, а не пустой диалог и не сломанная нажимаемая строка (П-7). Кнопка недоступна, пока выбирать не из чего.</figcaption>
+  </figure>
+
+  <!-- ============ 8 · ЧУЖОЙ ПРОФИЛЬ ============ -->
+  <figure class="state">
+    <div class="state-label">8 · Чужой профиль — признаки профиля (ПРФ-13)</div>
+    <div class="phone phone--profile">
+      <div class="stripe"></div>
+      <div class="head">
+        <div class="overline">Профиль · Мама</div>
+        <h1 class="title-screen">Виджет</h1>
+        <div class="hint">Виджет показывает приёмы активного профиля</div>
+        <div class="banner">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#8F3E23" stroke-width="1.8" stroke-linecap="round" style="flex-shrink:0"><circle cx="12" cy="8" r="3.5"></circle><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6"></path></svg>
+          <div>Это не ваши приёмы. Отметки сохранятся в профиль «Мама».</div>
+        </div>
+      </div>
+      <div class="body">
+        <div>
+          <div class="rubric">Тип виджета</div>
+          <div class="card">
+            <div class="row row--sel">
+              <div class="row-main"><span class="row-label">Неделя</span><span class="pro-mark"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l2.6 6.9 6.9 2.6-6.9 2.6L12 21.5l-2.6-6.9L2.5 12l6.9-2.6z"></path></svg>Про</span></div>
+              <div class="row-tail"><svg class="check" viewBox="0 0 24 24" fill="none" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></div>
+            </div>
+            <div class="divider"></div>
+            <div class="row">
+              <div class="row-main"><span class="row-label">Сегодня</span><span class="pro-mark"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l2.6 6.9 6.9 2.6-6.9 2.6L12 21.5l-2.6-6.9L2.5 12l6.9-2.6z"></path></svg>Про</span></div>
+            </div>
+            <div class="divider"></div>
+            <div class="row">
+              <div class="row-main"><span class="row-label">По лекарству</span><span class="pro-mark"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l2.6 6.9 6.9 2.6-6.9 2.6L12 21.5l-2.6-6.9L2.5 12l6.9-2.6z"></path></svg>Про</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn btn--primary" type="button">Добавить виджет</button>
+      </div>
+    </div>
+    <figcaption>Признаки профиля экран по месту не рисует: полосу, подкраску и надпись дают `ProfileChrome` и `ProfileIndication`, а баннер несворачиваем и не отключается отдельно от надписи (§5.1 п. 3, ПРФ-13). Лекарство выбирается из активного профиля, и человек видит, из чьего.</figcaption>
+  </figure>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#5F6F2E","options":["#5F6F2E","#8F3E23","#1F5F6B","#3C5014","#6B4A6B"]},"$preview":{"width":1724,"height":2280}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { accent: this.props.accent ?? '#5F6F2E' };
+  }
+}
+</script>
+</body>
+</html>

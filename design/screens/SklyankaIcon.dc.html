@@ -2,22 +2,29 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<title>Иконка — тёмная и светлая</title>
+<title>Иконка — холодный и тёплый варианты</title>
 <script src="./support.js"></script>
 </head>
 <body>
 <x-dc>
 <helmet>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600&amp;display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600&amp;family=Literata:opsz,wght@7..72,400;7..72,600&amp;display=swap">
 <style>
 body{margin:0;font-family:'Golos Text',system-ui,sans-serif;background:#F8F6EF;-webkit-font-smoothing:antialiased}
 a{color:#5F6F2E;text-decoration:none}a:hover{color:#8F3E23}
+.wrap{width:460px;box-sizing:border-box;background:#F8F6EF;padding:24px;display:flex;flex-direction:column;gap:20px}
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#5F564D}
+.row{display:flex;align-items:center;justify-content:center;gap:32px}
+.row--small{justify-content:flex-start;gap:24px}
+.foot{font-size:12px;line-height:1.5;color:#5F564D}
 </style>
 </helmet>
-<div style="width: 460px; height: 460px; box-sizing: border-box; background: #F8F6EF; display: flex; align-items: center; justify-content: center; gap: 32px">
+<div class="wrap">
+<div class="eyebrow">Холодный вариант — базовый (Р-56, Р-57)</div>
+<div class="row">
 
 <div style="width: 180px; height: 180px; border-radius: 48px; background: #111A1E; display: flex; align-items: center; justify-content: center; overflow: hidden">
-<svg width="150" height="150" viewBox="0 0 200 200" fill="none" role="img" aria-label="Иконка на тёмном фоне">
+<svg width="150" height="150" viewBox="0 0 200 200" fill="none" role="img" aria-label="Холодная иконка на тёмной плите">
 <defs>
 <radialGradient id="gbD" cx="34%" cy="28%" r="78%">
 <stop offset="0%" stop-color="#C4F0F7" stop-opacity="0.24"></stop>
@@ -25,8 +32,8 @@ a{color:#5F6F2E;text-decoration:none}a:hover{color:#8F3E23}
 <stop offset="100%" stop-color="#C4F0F7" stop-opacity="0.015"></stop>
 </radialGradient>
 <radialGradient id="caD" cx="50%" cy="50%" r="50%">
-<stop offset="0%" stop-color="{{accent}}" stop-opacity="0.62"></stop>
-<stop offset="100%" stop-color="{{accent}}" stop-opacity="0"></stop>
+<stop offset="0%" stop-color="#A86A22" stop-opacity="0.62"></stop>
+<stop offset="100%" stop-color="#A86A22" stop-opacity="0"></stop>
 </radialGradient>
 <linearGradient id="rlD" x1="18%" y1="8%" x2="86%" y2="94%">
 <stop offset="0%" stop-color="#C4F0F7" stop-opacity="0.85"></stop>
@@ -41,13 +48,13 @@ a{color:#5F6F2E;text-decoration:none}a:hover{color:#8F3E23}
 <circle cx="100" cy="100" r="47" stroke="#C4F0F7" stroke-opacity="0.26" stroke-width="2"></circle>
 <circle cx="100" cy="100" r="28" stroke="#C4F0F7" stroke-opacity="0.5" stroke-width="2.5"></circle>
 <path d="M25.1 86.8A76 76 0 0 1 86.8 25.1L88.4 34A67 67 0 0 0 34 88.4Z" fill="#C4F0F7" fill-opacity="0.82"></path>
-<path d="M180.8 129.4A86 86 0 0 1 114.9 184.7" stroke="{{accent}}" stroke-width="4.5" stroke-linecap="round"></path>
+<path d="M180.8 129.4A86 86 0 0 1 114.9 184.7" stroke="#A86A22" stroke-width="4.5" stroke-linecap="round"></path>
 <circle cx="100" cy="100" r="8" fill="#C4F0F7" fill-opacity="0.92"></circle>
 </svg>
 </div>
 
 <div style="width: 180px; height: 180px; border-radius: 48px; background: #E7F0F4; display: flex; align-items: center; justify-content: center; overflow: hidden">
-<svg width="150" height="150" viewBox="0 0 200 200" fill="none" role="img" aria-label="Иконка на светлом фоне">
+<svg width="150" height="150" viewBox="0 0 200 200" fill="none" role="img" aria-label="Холодная иконка на светлой плите">
 <defs>
 <radialGradient id="gbL" cx="34%" cy="28%" r="78%">
 <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.95"></stop>
@@ -55,8 +62,8 @@ a{color:#5F6F2E;text-decoration:none}a:hover{color:#8F3E23}
 <stop offset="100%" stop-color="#0B2831" stop-opacity="0.06"></stop>
 </radialGradient>
 <radialGradient id="caL" cx="50%" cy="50%" r="50%">
-<stop offset="0%" stop-color="{{accent}}" stop-opacity="0.55"></stop>
-<stop offset="100%" stop-color="{{accent}}" stop-opacity="0"></stop>
+<stop offset="0%" stop-color="#A86A22" stop-opacity="0.55"></stop>
+<stop offset="100%" stop-color="#A86A22" stop-opacity="0"></stop>
 </radialGradient>
 <linearGradient id="rlL" x1="18%" y1="8%" x2="86%" y2="94%">
 <stop offset="0%" stop-color="#0B2831" stop-opacity="0.16"></stop>
@@ -71,17 +78,93 @@ a{color:#5F6F2E;text-decoration:none}a:hover{color:#8F3E23}
 <circle cx="100" cy="100" r="47" stroke="#0B2831" stroke-opacity="0.2" stroke-width="2"></circle>
 <circle cx="100" cy="100" r="28" stroke="#0B2831" stroke-opacity="0.42" stroke-width="2.5"></circle>
 <path d="M25.1 86.8A76 76 0 0 1 86.8 25.1L88.4 34A67 67 0 0 0 34 88.4Z" fill="#FFFFFF" fill-opacity="0.95"></path>
-<path d="M180.8 129.4A86 86 0 0 1 114.9 184.7" stroke="{{accent}}" stroke-width="4.5" stroke-linecap="round"></path>
+<path d="M180.8 129.4A86 86 0 0 1 114.9 184.7" stroke="#A86A22" stroke-width="4.5" stroke-linecap="round"></path>
 <circle cx="100" cy="100" r="8" fill="#0B2831" fill-opacity="0.72"></circle>
 </svg>
 </div>
+</div>
 
+<div class="eyebrow">Тёплый вариант — «Про» (§2.4, SKL-120)</div>
+<div class="row">
+<div style="width: 180px; height: 180px; border-radius: 48px; background: #181712; display: flex; align-items: center; justify-content: center; overflow: hidden">
+<svg width="150" height="150" viewBox="0 0 200 200" fill="none" role="img" aria-label="Тёплая иконка на тёмной плите">
+<defs>
+<radialGradient id="wbD" cx="34%" cy="28%" r="78%">
+<stop offset="0%" stop-color="#F8F6EF" stop-opacity="0.24"></stop>
+<stop offset="52%" stop-color="#F8F6EF" stop-opacity="0.07"></stop>
+<stop offset="100%" stop-color="#F8F6EF" stop-opacity="0.015"></stop>
+</radialGradient>
+<radialGradient id="wcaD" cx="50%" cy="50%" r="50%">
+<stop offset="0%" stop-color="#B5C47A" stop-opacity="0.62"></stop>
+<stop offset="100%" stop-color="#B5C47A" stop-opacity="0"></stop>
+</radialGradient>
+<linearGradient id="wrlD" x1="18%" y1="8%" x2="86%" y2="94%">
+<stop offset="0%" stop-color="#F8F6EF" stop-opacity="0.85"></stop>
+<stop offset="46%" stop-color="#F8F6EF" stop-opacity="0.16"></stop>
+<stop offset="100%" stop-color="#F8F6EF" stop-opacity="0.42"></stop>
+</linearGradient>
+</defs>
+<ellipse cx="100" cy="163" rx="58" ry="19" fill="url(#wcaD)"></ellipse>
+<circle cx="100" cy="100" r="86" fill="url(#wbD)"></circle>
+<circle cx="100" cy="100" r="86" stroke="url(#wrlD)" stroke-width="3.5"></circle>
+<circle cx="100" cy="100" r="66" stroke="#F8F6EF" stroke-opacity="0.13" stroke-width="7"></circle>
+<circle cx="100" cy="100" r="47" stroke="#F8F6EF" stroke-opacity="0.26" stroke-width="2"></circle>
+<circle cx="100" cy="100" r="28" stroke="#F8F6EF" stroke-opacity="0.5" stroke-width="2.5"></circle>
+<path d="M25.1 86.8A76 76 0 0 1 86.8 25.1L88.4 34A67 67 0 0 0 34 88.4Z" fill="#F8F6EF" fill-opacity="0.82"></path>
+<path d="M180.8 129.4A86 86 0 0 1 114.9 184.7" stroke="#B5C47A" stroke-width="4.5" stroke-linecap="round"></path>
+<circle cx="100" cy="100" r="8" fill="#F8F6EF" fill-opacity="0.92"></circle>
+</svg>
+</div>
+
+<div style="width: 180px; height: 180px; border-radius: 48px; background: #EFE7DB; display: flex; align-items: center; justify-content: center; overflow: hidden">
+<svg width="150" height="150" viewBox="0 0 200 200" fill="none" role="img" aria-label="Тёплая иконка на светлой плите">
+<defs>
+<radialGradient id="wbL" cx="34%" cy="28%" r="78%">
+<stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.95"></stop>
+<stop offset="58%" stop-color="#FFFFFF" stop-opacity="0.35"></stop>
+<stop offset="100%" stop-color="#241F1B" stop-opacity="0.06"></stop>
+</radialGradient>
+<radialGradient id="wcaL" cx="50%" cy="50%" r="50%">
+<stop offset="0%" stop-color="#B5C47A" stop-opacity="0.55"></stop>
+<stop offset="100%" stop-color="#B5C47A" stop-opacity="0"></stop>
+</radialGradient>
+<linearGradient id="wrlL" x1="18%" y1="8%" x2="86%" y2="94%">
+<stop offset="0%" stop-color="#241F1B" stop-opacity="0.16"></stop>
+<stop offset="46%" stop-color="#241F1B" stop-opacity="0.5"></stop>
+<stop offset="100%" stop-color="#241F1B" stop-opacity="0.22"></stop>
+</linearGradient>
+</defs>
+<ellipse cx="100" cy="163" rx="58" ry="19" fill="url(#wcaL)"></ellipse>
+<circle cx="100" cy="100" r="86" fill="url(#wbL)"></circle>
+<circle cx="100" cy="100" r="86" stroke="url(#wrlL)" stroke-width="3.5"></circle>
+<circle cx="100" cy="100" r="66" stroke="#241F1B" stroke-opacity="0.09" stroke-width="7"></circle>
+<circle cx="100" cy="100" r="47" stroke="#241F1B" stroke-opacity="0.2" stroke-width="2"></circle>
+<circle cx="100" cy="100" r="28" stroke="#241F1B" stroke-opacity="0.42" stroke-width="2.5"></circle>
+<path d="M25.1 86.8A76 76 0 0 1 86.8 25.1L88.4 34A67 67 0 0 0 34 88.4Z" fill="#FFFFFF" fill-opacity="0.95"></path>
+<path d="M180.8 129.4A86 86 0 0 1 114.9 184.7" stroke="#B5C47A" stroke-width="4.5" stroke-linecap="round"></path>
+<circle cx="100" cy="100" r="8" fill="#241F1B" fill-opacity="0.72"></circle>
+</svg>
+</div>
+</div>
+
+<div class="eyebrow">48 dp — как в списке приложений</div>
+<div class="row row--small">
+<div style="width:48px;height:48px;border-radius:13px;background:#E7F0F4;display:flex;align-items:center;justify-content:center;overflow:hidden">
+<svg width="40" height="40" viewBox="0 0 200 200" fill="none" role="img" aria-label="Холодная иконка 48 dp"><circle cx="100" cy="100" r="86" stroke="#0B2831" stroke-opacity="0.55" stroke-width="9"></circle><circle cx="100" cy="100" r="28" stroke="#0B2831" stroke-opacity="0.42" stroke-width="6"></circle><path d="M25.1 86.8A76 76 0 0 1 86.8 25.1L88.4 34A67 67 0 0 0 34 88.4Z" fill="#0B2831" fill-opacity="0.9"></path><circle cx="100" cy="100" r="9" fill="#0B2831" fill-opacity="0.8"></circle></svg>
+</div>
+<div style="width:48px;height:48px;border-radius:13px;background:#EFE7DB;display:flex;align-items:center;justify-content:center;overflow:hidden">
+<svg width="40" height="40" viewBox="0 0 200 200" fill="none" role="img" aria-label="Тёплая иконка 48 dp"><circle cx="100" cy="100" r="86" stroke="#241F1B" stroke-opacity="0.55" stroke-width="9"></circle><circle cx="100" cy="100" r="28" stroke="#241F1B" stroke-opacity="0.42" stroke-width="6"></circle><path d="M25.1 86.8A76 76 0 0 1 86.8 25.1L88.4 34A67 67 0 0 0 34 88.4Z" fill="#241F1B" fill-opacity="0.9"></path><circle cx="100" cy="100" r="9" fill="#241F1B" fill-opacity="0.8"></circle></svg>
+</div>
+<span class="foot" style="max-width:300px">Слева — холодная (базовая), справа — тёплая («Про»). Геометрия, слои и альфы одни и те же: разные только краски и плитка (§2.4).</span>
+</div>
+
+<div class="foot">Плитка у варианта своя в светлой и тёмной среде: холодная <span style="font-family:ui-monospace,monospace">#E7F0F4</span> · <span style="font-family:ui-monospace,monospace">#111A1E</span>, тёплая <span style="font-family:ui-monospace,monospace">#EFE7DB</span> · <span style="font-family:ui-monospace,monospace">#181712</span>. Монохромный слой у обоих вариантов общий: силуэт от красок не зависит, цвета ему назначает система. Имя в лончере одно — «Склянка»: вариант меняет иконку, а не название (В-120-2).</div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#A86A22","options":["#A86A22","#2E8296","#C79A3B","#8E6BA8"]},"$preview":{"width":460,"height":460}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":460,"height":880}}'>
 class Component extends DCLogic {
   renderVals() {
-    return { accent: this.props.accent ?? '#A86A22' };
+    return {};
   }
 }
 </script>

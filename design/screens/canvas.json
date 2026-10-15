@@ -74,8 +74,8 @@
       "x": 540,
       "y": 2000,
       "w": 460,
-      "h": 460,
-      "title": "Иконка — тёмная и светлая",
+      "h": 880,
+      "title": "Иконка — холодный и тёплый варианты",
       "radius": 24
     },
     "SklyankaLockup.dc.html": {
@@ -215,6 +215,46 @@
       "h": 2160,
       "title": "Витрина «Склянка Про» — состояния",
       "is_interactive": true
+    },
+    "Widgets.dc.html": {
+      "x": 0,
+      "y": 14700,
+      "w": 1604,
+      "h": 1820,
+      "title": "Виджеты домашнего экрана — состояния",
+      "is_interactive": true
+    },
+    "WidgetSetup.dc.html": {
+      "x": 1700,
+      "y": 14700,
+      "w": 1724,
+      "h": 2280,
+      "title": "Экран настройки виджета — состояния",
+      "is_interactive": true
+    },
+    "Profiles.dc.html": {
+      "x": 0,
+      "y": 17200,
+      "w": 1724,
+      "h": 4180,
+      "title": "Профили: добавление и правка — состояния",
+      "is_interactive": true
+    },
+    "Report.dc.html": {
+      "x": 0,
+      "y": 21700,
+      "w": 1724,
+      "h": 3480,
+      "title": "Отчёт врачу и экспорт истории — состояния",
+      "is_interactive": true
+    },
+    "Themes.dc.html": {
+      "x": 0,
+      "y": 25600,
+      "w": 1724,
+      "h": 2120,
+      "title": "Акцентные темы, тёмная среда и варианты иконки — состояния",
+      "is_interactive": true
     }
   },
   "order": [
@@ -241,7 +281,12 @@
     "MainDense.dc.html",
     "Diagnostics.dc.html",
     "HeaderScroll.dc.html",
-    "Pro.dc.html"
+    "Pro.dc.html",
+    "Widgets.dc.html",
+    "WidgetSetup.dc.html",
+    "Profiles.dc.html",
+    "Report.dc.html",
+    "Themes.dc.html"
   ],
   "notes": {
     "t1": {
@@ -278,6 +323,34 @@
       "text": "Витрина «Склянка Про» — покупка подписки",
       "kind": "title1",
       "maxW": 1306
+    },
+    "t6": {
+      "x": 0,
+      "y": 14390,
+      "text": "Виджеты домашнего экрана и экран настройки",
+      "kind": "title1",
+      "maxW": 3424
+    },
+    "t7": {
+      "x": 0,
+      "y": 16890,
+      "text": "Профили сверх двух — строка, мастер и правка",
+      "kind": "title1",
+      "maxW": 1724
+    },
+    "t8": {
+      "x": 0,
+      "y": 21390,
+      "text": "Отчёт врачу и экспорт истории — «Про» дополняет, а не отнимает",
+      "kind": "title1",
+      "maxW": 1724
+    },
+    "t9": {
+      "x": 0,
+      "y": 25290,
+      "text": "Акцентные темы, тёмная среда и варианты иконки",
+      "kind": "title1",
+      "maxW": 1724
     }
   },
   "designSystems": []

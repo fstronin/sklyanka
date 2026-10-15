@@ -1,0 +1,599 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Профили: добавление и правка — состояния</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&amp;family=Literata:opsz,wght@7..72,400;7..72,600&amp;display=swap">
+<style>
+.preview-eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#5F564D;font-weight:600}
+.preview-head h1{margin:12px 0 12px;font-family:'Literata',Georgia,serif;font-size:36px;font-weight:600;letter-spacing:-.01em;line-height:1.15}
+.preview-head p{margin:0;font-size:16px;line-height:1.55;max-width:1180px}
+.sheet-grid{display:grid;grid-template-columns:repeat(4,390px);gap:28px;padding:24px 40px 60px;align-items:start;box-sizing:border-box}
+.state{margin:0;display:flex;flex-direction:column;gap:10px}
+.state-label{font-size:13px;font-weight:600;color:#5F564D;letter-spacing:.02em}
+.phone{position:relative;width:390px;box-sizing:border-box;background:#F8F6EF;color:#241F1B;border:1px solid #E6DED2;border-radius:30px;overflow:hidden;height:844px;display:flex;flex-direction:column}
+.phone--profile{background:#EBE0D7;border-color:#E0D3C6}
+.stripe{position:absolute;left:0;right:0;top:0;height:6px;background:#8F3E23}
+/* Шапка настроек — крупный заголовок; у мастера и правки та же шапка без действий (Р-54). */
+.head{padding:30px 20px 14px;display:flex;flex-direction:column;gap:6px}
+.phone--profile .head{padding-top:24px}
+.title-screen{font-family:'Literata',Georgia,serif;font-size:30px;font-weight:600;letter-spacing:-.01em;margin:0}
+.overline{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#8F3E23}
+.banner{display:flex;align-items:center;gap:10px;padding:11px 14px;background:#EFE4E0;border-radius:14px;margin-top:4px}
+.banner div{font-size:13px;line-height:1.35;color:#5A2E1F}
+.body{flex-grow:1;padding:6px 20px 0;display:flex;flex-direction:column;gap:18px;overflow:hidden}
+.rubric{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#5F564D;padding-left:4px;margin-bottom:8px}
+.card{background:#FFFFFF;border:1px solid #EFE7DB;border-radius:18px;overflow:hidden}
+.row{display:flex;align-items:center;gap:12px;padding:14px 16px;min-height:44px;box-sizing:border-box}
+.row-main{display:flex;align-items:center;gap:10px;flex-grow:1;min-width:0}
+.row-main--stacked{flex-direction:column;align-items:flex-start;gap:2px}
+.row-label{font-size:15px;line-height:1.45}
+.row-label--strong{font-weight:600}
+.row-sub{font-size:12px;line-height:1.45;color:#5F564D}
+.row-tail{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.divider{height:1px;background:#EFE7DB;margin:0 16px}
+.avatar{width:40px;height:40px;flex-shrink:0;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600}
+.avatar--self{background:#E2EEF0;color:#1F5F6B}
+.avatar--terracotta{background:#8F3E23;color:#FFFFFF}
+.avatar--teal{background:#1F5F6B;color:#FFFFFF}
+.avatar--olive{background:#3C5014;color:#FFFFFF}
+.avatar--plum{background:#6B4A6B;color:#FFFFFF}
+.check{display:block;width:18px;height:18px;flex-shrink:0}
+.chev{display:block;width:15px;height:15px;flex-shrink:0}
+/* Тихая строка в строке профиля (§5.14): подпись 14/600, цель не меньше 44 dp. */
+.quiet{font-size:14px;font-weight:600;color:#5F6F2E;white-space:nowrap;padding:13px 4px;box-sizing:border-box}
+.phone--profile .quiet{color:#8F3E23}
+/* Строка «Добавить профиль» (§5.13): плюс в пунктирном кружке `IconPlate` 40 dp, подпись 15/500 акцентом. */
+.plus{width:40px;height:40px;flex-shrink:0;border-radius:999px;border:1px dashed #D9CDBD;box-sizing:border-box;display:flex;align-items:center;justify-content:center}
+.plus svg{display:block;width:16px;height:16px}
+.add-label{font-size:15px;font-weight:500;line-height:1.45;color:#5F6F2E;white-space:nowrap}
+.phone--profile .add-label{color:#8F3E23}
+.pro-mark{display:inline-flex;align-items:baseline;gap:4px;border-radius:999px;background:#EBEEDA;color:#424724;font-size:13px;font-weight:600;line-height:1.35;padding:7px 14px;flex-shrink:0}
+.pro-mark svg{display:block;width:14px;height:14px;flex-shrink:0}
+.note{font-size:12px;line-height:1.45;color:#5F564D}
+/* Поле имени — `SklyankaTextField`: 50 dp, радиус `Medium`, подложка `surface`, рамка `line`. */
+.field{height:50px;box-sizing:border-box;padding:0 14px;background:#FFFFFF;border:1px solid #E6DED2;border-radius:14px;font-size:16px;line-height:48px;color:#241F1B}
+.field--empty{color:#5F564D}
+/* Образец цвета (§5.13): кружок `IconPlate` 40 dp в цели 44 dp; выбранный — кольцо акцента и белая галочка. */
+.swatches{display:flex;gap:8px}
+.swatch{width:44px;height:44px;display:flex;align-items:center;justify-content:center}
+.dot{width:40px;height:40px;border-radius:999px;display:flex;align-items:center;justify-content:center;box-sizing:border-box}
+.dot--on{box-shadow:0 0 0 2px #5F6F2E}
+.phone--profile .dot--on{box-shadow:0 0 0 2px #8F3E23}
+.dot svg{display:block;width:18px;height:18px}
+/* Вопрос о дублировании — `SklyankaSwitchRow` в карточке-группе. */
+.switch-row{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;min-height:44px;box-sizing:border-box}
+.switch-text{display:flex;flex-direction:column;gap:4px;flex-grow:1;min-width:0}
+.switch-label{font-size:15px;line-height:1.45}
+.switch-hint{font-size:12px;line-height:1.45;color:#5F564D}
+.switch{width:52px;height:32px;flex-shrink:0;border-radius:999px;padding:3px;display:flex;box-sizing:border-box;background:#5F6F2E;justify-content:flex-end}
+.phone--profile .switch{background:#8F3E23}
+.knob{width:26px;height:26px;border-radius:999px;background:#FFFFFF;display:block}
+/* Панель действия (§4.1): на `background`, без тени; слова причины — 15/400 `textMuted`. */
+.actions{padding:14px 20px 24px;display:flex;flex-direction:column;gap:10px}
+.words{font-size:15px;line-height:1.45;color:#5F564D}
+.btn{height:52px;border-radius:16px;font-family:inherit;font-size:16px;font-weight:600;display:flex;align-items:center;justify-content:center;width:100%;border:none;cursor:default;box-sizing:border-box;padding:0 12px;text-align:center}
+.btn--primary{background:#5F6F2E;color:#FFFFFF}
+.phone--profile .btn--primary{background:#8F3E23}
+.btn--disabled{background:#EDE3D6;color:#A79C90}
+/* Фрагмент витрины (§5.9): затемнение `scrim` и полотно `surface`, верхние углы `TopLarge`. */
+.scrim{position:absolute;inset:0;background:rgba(24,23,18,.32)}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:#FFFFFF;border-radius:16px 16px 0 0;display:flex;flex-direction:column}
+.sheet-head{display:flex;align-items:center;padding:14px 20px 12px;border-bottom:1px solid #EFE7DB}
+.sheet-title{font-size:15px;font-weight:600;line-height:1.45}
+.sheet-body{padding:8px 20px 20px;display:flex;flex-direction:column;gap:14px}
+.benefit{display:flex;align-items:flex-start;gap:12px;padding:12px 0}
+.benefit-glyph{width:20px;height:20px;flex-shrink:0;color:#8C8177;margin-top:2px}
+.benefit-glyph svg{display:block;width:20px;height:20px}
+.benefit-name{font-size:15px;font-weight:600;line-height:1.45}
+.bdiv{height:1px;background:#EFE7DB;margin-left:32px}
+figcaption{font-size:12px;line-height:1.5;color:#5F564D}
+</style>
+</helmet>
+<div class="preview-head">
+<div class="preview-eyebrow">Склянка · профили: строка, мастер и правка · ПРФ-9, ПРФ-26, ПРФ-27, ПРФ-32…ПРФ-34 · Р-29, Р-84 · §2.2, §5.9, §5.13–§5.14</div>
+<h1>Профили: добавление и правка</h1>
+<p>Строка «Добавить профиль» в блоке «Профили» (четыре состояния), мастер «Новый профиль» (пять состояний) и экран «Профиль» — правка (три состояния). Набор цветов профиля закрыт и полон: пять цветов на пять профилей (§2.2, ПРФ-32), поэтому выбор цвета в мастере — из пяти образцов, а не из четырёх. Метка «Про» принадлежит платному исходу: она стоит на строке только тогда, когда следующее создание платное; при пределе пяти её нет — предел не продаётся, и витрина не открывается (Р-84, ПРФ-34, П-7).</p>
+</div>
+<div class="sheet-grid">
+
+  <!-- ============ 1 · ОДИН ПРОФИЛЬ ============ -->
+  <figure class="state">
+    <div class="state-label">1 · Один профиль — добавление бесплатно</div>
+    <div class="phone">
+      <div class="head"><h1 class="title-screen">Настройки</h1></div>
+      <div class="body">
+        <div>
+          <div class="rubric">Профили</div>
+          <div class="card">
+            <div class="row">
+              <span class="avatar avatar--self">Я</span>
+              <span class="row-main"><span class="row-label row-label--strong">Мои лекарства</span></span>
+              <span class="row-tail"><span class="quiet">Изменить</span><svg class="check" viewBox="0 0 24 24" fill="none" stroke="#1F5F6B" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></span>
+            </div>
+            <div class="divider"></div>
+            <div class="row">
+              <span class="plus"><svg viewBox="0 0 24 24" fill="none" stroke="#8C8177" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></span>
+              <span class="row-main"><span class="add-label">Добавить профиль</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <figcaption>Строка стоит последней в списке профилей и перед строкой удаления: разрушительная строка остаётся последней в разделе (ОВ-7). Ни метки, ни причины здесь нет — второй профиль база (ПРФ-33). Правка стоит в той же строке отдельной целью: тап по самой строке по-прежнему переключает профиль (ПРФ-19), а слово справа ведёт в «Профиль».</figcaption>
+  </figure>
+
+  <!-- ============ 2 · ДВА ПРОФИЛЯ БЕЗ ДОСТУПА ============ -->
+  <figure class="state">
+    <div class="state-label">2 · Два профиля без доступа — метка «Про»</div>
+    <div class="phone">
+      <div class="head"><h1 class="title-screen">Настройки</h1></div>
+      <div class="body">
+        <div>
+          <div class="rubric">Профили</div>
+          <div class="card">
+            <div class="row">
+              <span class="avatar avatar--self">Я</span>
+              <span class="row-main"><span class="row-label row-label--strong">Мои лекарства</span></span>
+              <span class="row-tail"><span class="quiet">Изменить</span><svg class="check" viewBox="0 0 24 24" fill="none" stroke="#1F5F6B" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></span>
+            </div>
+            <div class="divider"></div>
+            <div class="row">
+              <span class="avatar avatar--terracotta">М</span>
+              <span class="row-main row-main--stacked"><span class="row-label">Мама</span><span class="row-sub">4 лекарства · напоминания дублируются мне</span></span>
+              <span class="row-tail"><span class="quiet">Изменить</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="#B0A597" stroke-width="2" stroke-linecap="round"><path d="m9 5 7 7-7 7"></path></svg></span>
+            </div>
+            <div class="divider"></div>
+            <div class="row">
+              <span class="plus"><svg viewBox="0 0 24 24" fill="none" stroke="#8C8177" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></span>
+              <span class="row-main"><span class="add-label">Добавить профиль</span><span class="pro-mark"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l2.6 6.9 6.9 2.6-6.9 2.6L12 21.5l-2.6-6.9L2.5 12l6.9-2.6z"></path></svg>Про</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <figcaption>Метка стоит сразу за подписью строки и только здесь: заведённых профилей два и активного доступа нет — следующее создание платное (Р-84 п. 3, §5.9). Нажатие ведёт в мастер, а не в витрину: покупку открывает кнопка мастера (§5.13), и второй точки у профилей нет.</figcaption>
+  </figure>
+
+  <!-- ============ 3 · ДОСТУП АКТИВЕН ============ -->
+  <figure class="state">
+    <div class="state-label">3 · Три профиля, доступ активен — метки нет</div>
+    <div class="phone">
+      <div class="head"><h1 class="title-screen">Настройки</h1></div>
+      <div class="body">
+        <div>
+          <div class="rubric">Профили</div>
+          <div class="card">
+            <div class="row">
+              <span class="avatar avatar--self">Я</span>
+              <span class="row-main"><span class="row-label row-label--strong">Мои лекарства</span></span>
+              <span class="row-tail"><span class="quiet">Изменить</span><svg class="check" viewBox="0 0 24 24" fill="none" stroke="#1F5F6B" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></span>
+            </div>
+            <div class="divider"></div>
+            <div class="row">
+              <span class="avatar avatar--terracotta">М</span>
+              <span class="row-main row-main--stacked"><span class="row-label">Мама</span><span class="row-sub">4 лекарства · напоминания дублируются мне</span></span>
+              <span class="row-tail"><span class="quiet">Изменить</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="#B0A597" stroke-width="2" stroke-linecap="round"><path d="m9 5 7 7-7 7"></path></svg></span>
+            </div>
+            <div class="divider"></div>
+            <div class="row">
+              <span class="avatar avatar--teal">Б</span>
+              <span class="row-main row-main--stacked"><span class="row-label">Бабушка</span><span class="row-sub">2 лекарства</span></span>
+              <span class="row-tail"><span class="quiet">Изменить</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="#B0A597" stroke-width="2" stroke-linecap="round"><path d="m9 5 7 7-7 7"></path></svg></span>
+            </div>
+            <div class="divider"></div>
+            <div class="row">
+              <span class="plus"><svg viewBox="0 0 24 24" fill="none" stroke="#8C8177" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></span>
+              <span class="row-main"><span class="add-label">Добавить профиль</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <figcaption>Доступ есть — метки нет: норма не продаёт то, что уже открыто (Р-71, П-7). Метка принадлежит платному исходу, а не строке: при активном доступе следующий профиль не платный, и слово «Про» здесь было бы продажей бесплатного (Р-67 п. 5).</figcaption>
+  </figure>
+
+  <!-- ============ 4 · ПРЕДЕЛ ПЯТИ ============ -->
+  <figure class="state">
+    <div class="state-label">4 · Пять профилей — предел: причина в строке</div>
+    <div class="phone">
+      <div class="head"><h1 class="title-screen">Настройки</h1></div>
+      <div class="body">
+        <div>
+          <div class="rubric">Профили</div>
+          <div class="card">
+            <div class="row">
+              <span class="avatar avatar--self">Я</span>
+              <span class="row-main"><span class="row-label">Мои лекарства</span></span>
+              <span class="row-tail"><span class="quiet">Изменить</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="#B0A597" stroke-width="2" stroke-linecap="round"><path d="m9 5 7 7-7 7"></path></svg></span>
+            </div>
+            <div class="divider"></div>
+            <div class="row">
+              <span class="avatar avatar--terracotta">М</span>
+              <span class="row-main row-main--stacked"><span class="row-label row-label--strong">Мама</span><span class="row-sub">4 лекарства · напоминания дублируются мне</span></span>
+              <span class="row-tail"><span class="quiet">Изменить</span><svg class="check" viewBox="0 0 24 24" fill="none" stroke="#1F5F6B" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></span>
+            </div>
+            <div class="divider"></div>
+            <div class="row">
+              <span class="avatar avatar--teal">Б</span>
+              <span class="row-main row-main--stacked"><span class="row-label">Бабушка</span><span class="row-sub">2 лекарства</span></span>
+              <span class="row-tail"><span class="quiet">Изменить</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="#B0A597" stroke-width="2" stroke-linecap="round"><path d="m9 5 7 7-7 7"></path></svg></span>
+            </div>
+            <div class="divider"></div>
+            <div class="row">
+              <span class="avatar avatar--olive">Д</span>
+              <span class="row-main row-main--stacked"><span class="row-label">Дедушка</span><span class="row-sub">1 лекарство</span></span>
+              <span class="row-tail"><span class="quiet">Изменить</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="#B0A597" stroke-width="2" stroke-linecap="round"><path d="m9 5 7 7-7 7"></path></svg></span>
+            </div>
+            <div class="divider"></div>
+            <div class="row">
+              <span class="avatar avatar--plum">Н</span>
+              <span class="row-main row-main--stacked"><span class="row-label">Нина</span><span class="row-sub">3 лекарства · напоминания дублируются мне</span></span>
+              <span class="row-tail"><span class="quiet">Изменить</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="#B0A597" stroke-width="2" stroke-linecap="round"><path d="m9 5 7 7-7 7"></path></svg></span>
+            </div>
+            <div class="divider"></div>
+            <div class="row">
+              <span class="plus"><svg viewBox="0 0 24 24" fill="none" stroke="#8C8177" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></span>
+              <span class="row-main row-main--stacked"><span class="add-label">Добавить профиль</span><span class="note">Профилей не больше пяти</span></span>
+            </div>
+            <div class="divider"></div>
+            <div class="row">
+              <span class="row-label">Удалить профиль «Мама»</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <figcaption>При пяти профилях добавление закрыто при любой подписке: причина названа словами прямо в строке — до нажатия (ПРФ-34), а метки «Про» нет, потому что предел не продаётся. Строка остаётся на месте и ведёт в мастер: там причина стоит над кнопкой, кнопка недоступна и витрина не открывается (§5.13). Строка удаления — по-прежнему последняя в разделе и только у активного чужого профиля (ОВ-7).</figcaption>
+  </figure>
+
+  <!-- ============ 5 · МАСТЕР ============ -->
+  <figure class="state">
+    <div class="state-label">5 · Мастер: имя, цвет, дублирование</div>
+    <div class="phone">
+      <div class="head"><h1 class="title-screen">Новый профиль</h1></div>
+      <div class="body">
+        <div>
+          <div class="rubric">Имя профиля</div>
+          <div class="field">Мама</div>
+        </div>
+        <div>
+          <div class="rubric">Цвет профиля</div>
+          <div class="swatches">
+            <span class="swatch"><span class="dot dot--on" style="background:#8F3E23"><svg viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></span></span>
+            <span class="swatch"><span class="dot" style="background:#1F5F6B"></span></span>
+            <span class="swatch"><span class="dot" style="background:#3C5014"></span></span>
+            <span class="swatch"><span class="dot" style="background:#6B4A6B"></span></span>
+            <span class="swatch"><span class="dot" style="background:#4555B1"></span></span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="switch-row">
+            <span class="switch-text">
+              <span class="switch-label">Дублировать напоминания</span>
+              <span class="switch-hint">Напоминания о приёмах этого профиля будут приходить на этот телефон</span>
+            </span>
+            <span class="switch"><span class="knob"></span></span>
+          </div>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn btn--primary" type="button">Добавить профиль</button>
+      </div>
+    </div>
+    <figcaption>Форма мастера — имя, цвет из закрытого набора (§2.2) и вопрос о дублировании с объяснением: зеркалирование включено по умолчанию (Р-29, ПРФ-9). Цвет по умолчанию — первый свободный цвет набора; выбранный отличён не только цветом: кольцом акцента и белой галочкой (§6.4, НФТ-33). Созданный профиль не становится активным сам (ПРФ-18).</figcaption>
+  </figure>
+
+  <!-- ============ 6 · ПУСТОЕ ИМЯ ============ -->
+  <figure class="state">
+    <div class="state-label">6 · Мастер: пустое имя</div>
+    <div class="phone">
+      <div class="head"><h1 class="title-screen">Новый профиль</h1></div>
+      <div class="body">
+        <div>
+          <div class="rubric">Имя профиля</div>
+          <div class="field field--empty"></div>
+        </div>
+        <div>
+          <div class="rubric">Цвет профиля</div>
+          <div class="swatches">
+            <span class="swatch"><span class="dot dot--on" style="background:#8F3E23"><svg viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></span></span>
+            <span class="swatch"><span class="dot" style="background:#1F5F6B"></span></span>
+            <span class="swatch"><span class="dot" style="background:#3C5014"></span></span>
+            <span class="swatch"><span class="dot" style="background:#6B4A6B"></span></span>
+            <span class="swatch"><span class="dot" style="background:#4555B1"></span></span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="switch-row">
+            <span class="switch-text">
+              <span class="switch-label">Дублировать напоминания</span>
+              <span class="switch-hint">Напоминания о приёмах этого профиля будут приходить на этот телефон</span>
+            </span>
+            <span class="switch"><span class="knob"></span></span>
+          </div>
+        </div>
+      </div>
+      <div class="actions">
+        <div class="words">Укажите имя профиля</div>
+        <button class="btn btn--disabled" type="button">Добавить профиль</button>
+      </div>
+    </div>
+    <figcaption>Пустое имя — единственная причина недоступности кнопки, и кнопка не молчит: причина названа строкой над ней (`profile_blocked_name`), как у формы лекарства (§5.10, §5.3). Цвет выбран и переключатель стоит — они кнопку не закрывают.</figcaption>
+  </figure>
+
+  <!-- ============ 7 · ПЛАТНАЯ ГРАНИЦА ============ -->
+  <figure class="state">
+    <div class="state-label">7 · Мастер: без доступа — платная граница</div>
+    <div class="phone">
+      <div class="head"><h1 class="title-screen">Новый профиль</h1></div>
+      <div class="body">
+        <div>
+          <div class="rubric">Имя профиля</div>
+          <div class="field">Мама</div>
+        </div>
+        <div>
+          <div class="rubric">Цвет профиля</div>
+          <div class="swatches">
+            <span class="swatch"><span class="dot dot--on" style="background:#8F3E23"><svg viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></span></span>
+            <span class="swatch"><span class="dot" style="background:#1F5F6B"></span></span>
+            <span class="swatch"><span class="dot" style="background:#3C5014"></span></span>
+            <span class="swatch"><span class="dot" style="background:#6B4A6B"></span></span>
+            <span class="swatch"><span class="dot" style="background:#4555B1"></span></span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="switch-row">
+            <span class="switch-text">
+              <span class="switch-label">Дублировать напоминания</span>
+              <span class="switch-hint">Напоминания о приёмах этого профиля будут приходить на этот телефон</span>
+            </span>
+            <span class="switch"><span class="knob"></span></span>
+          </div>
+        </div>
+      </div>
+      <div class="actions">
+        <div class="words">Больше двух профилей — в подписке «Склянка Про»</div>
+        <button class="btn btn--primary" type="button">Добавить профиль</button>
+      </div>
+    </div>
+    <figcaption>Кнопка не переводится в недоступность по платной причине: недоступное действие говорит «нельзя», а правда — «можно, по подписке» (П-7). Нажатие открывает витрину, и первым в ней идёт пункт-повод «Больше профилей» (Р-84 п. 2, Р-67 п. 2); вернувшись с доступом, человек остаётся в этом же мастере с заполненной формой.</figcaption>
+  </figure>
+
+  <!-- ============ 8 · ПРЕДЕЛ В МАСТЕРЕ ============ -->
+  <figure class="state">
+    <div class="state-label">8 · Мастер: пять профилей — предел</div>
+    <div class="phone">
+      <div class="head"><h1 class="title-screen">Новый профиль</h1></div>
+      <div class="body">
+        <div>
+          <div class="rubric">Имя профиля</div>
+          <div class="field">Мама</div>
+        </div>
+        <div>
+          <div class="rubric">Цвет профиля</div>
+          <div class="swatches">
+            <span class="swatch"><span class="dot dot--on" style="background:#8F3E23"><svg viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></span></span>
+            <span class="swatch"><span class="dot" style="background:#1F5F6B"></span></span>
+            <span class="swatch"><span class="dot" style="background:#3C5014"></span></span>
+            <span class="swatch"><span class="dot" style="background:#6B4A6B"></span></span>
+            <span class="swatch"><span class="dot" style="background:#4555B1"></span></span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="switch-row">
+            <span class="switch-text">
+              <span class="switch-label">Дублировать напоминания</span>
+              <span class="switch-hint">Напоминания о приёмах этого профиля будут приходить на этот телефон</span>
+            </span>
+            <span class="switch"><span class="knob"></span></span>
+          </div>
+        </div>
+      </div>
+      <div class="actions">
+        <div class="words">Профилей не больше пяти</div>
+        <button class="btn btn--disabled" type="button">Добавить профиль</button>
+      </div>
+    </div>
+    <figcaption>Предел — отдельное правило и не продаётся: кнопка недоступна, причина названа словами, и витрина не открывается — даже когда активного доступа нет (ПРФ-34, П-7). Ту же причину человек уже прочитал в строке настроек — до нажатия (§5.13); форма при этом настраивается целиком, отказом она не подменяется.</figcaption>
+  </figure>
+
+  <!-- ============ 9 · ПРАВКА ЧУЖОГО ПРОФИЛЯ ============ -->
+  <figure class="state">
+    <div class="state-label">9 · Экран «Профиль»: правка чужого профиля</div>
+    <div class="phone">
+      <div class="head"><h1 class="title-screen">Профиль</h1></div>
+      <div class="body">
+        <div>
+          <div class="rubric">Имя профиля</div>
+          <div class="field">Мама</div>
+        </div>
+        <div>
+          <div class="rubric">Цвет профиля</div>
+          <div class="swatches">
+            <span class="swatch"><span class="dot dot--on" style="background:#8F3E23"><svg viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></span></span>
+            <span class="swatch"><span class="dot" style="background:#1F5F6B"></span></span>
+            <span class="swatch"><span class="dot" style="background:#3C5014"></span></span>
+            <span class="swatch"><span class="dot" style="background:#6B4A6B"></span></span>
+            <span class="swatch"><span class="dot" style="background:#4555B1"></span></span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="switch-row">
+            <span class="switch-text">
+              <span class="switch-label">Дублировать напоминания</span>
+              <span class="switch-hint">Напоминания о приёмах этого профиля будут приходить на этот телефон</span>
+            </span>
+            <span class="switch"><span class="knob"></span></span>
+          </div>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn btn--primary" type="button">Сохранить</button>
+      </div>
+    </div>
+    <figcaption>Та же форма, что у мастера (§5.13): отличаются только слова — заголовок «Профиль», кнопка «Сохранить» — и заполненные поля. Зеркалирование у чужого профиля правится, а его переключение — событие перепланирования (ПРФ-6); имя уходит в отчёт врачу и файл переноса (ПРФ-27).</figcaption>
+  </figure>
+
+  <!-- ============ 10 · ПРАВКА ВЛАДЕЛЬЦА ============ -->
+  <figure class="state">
+    <div class="state-label">10 · Экран «Профиль»: правка владельца</div>
+    <div class="phone">
+      <div class="head"><h1 class="title-screen">Профиль</h1></div>
+      <div class="body">
+        <div>
+          <div class="rubric">Имя профиля</div>
+          <div class="field">Я</div>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn btn--primary" type="button">Сохранить</button>
+      </div>
+    </div>
+    <figcaption>У владельца — только имя. Флага дублирования нет: его напоминания планируются всегда и флаг для него смысла не имеет (ПРФ-26). Блока цвета нет потому, что цвет владельца не показывается нигде — акцент владельца и есть основной акцент приложения (ПРФ-16), и выбор без следствия был бы управлением без следствия (П-7). Имя правится: оно уходит в отчёт врачу и файл переноса (ПРФ-27).</figcaption>
+  </figure>
+
+  <!-- ============ 11 · ПРАВКА В ЧУЖОМ ПРОФИЛЕ ============ -->
+  <figure class="state">
+    <div class="state-label">11 · Экран «Профиль» в чужом профиле — признаки (ПРФ-13)</div>
+    <div class="phone phone--profile">
+      <div class="stripe"></div>
+      <div class="head">
+        <div class="overline">Профиль · Мама</div>
+        <h1 class="title-screen">Профиль</h1>
+        <div class="banner">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#8F3E23" stroke-width="1.8" stroke-linecap="round" style="flex-shrink:0"><circle cx="12" cy="8" r="3.5"></circle><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6"></path></svg>
+          <div>Это не ваши приёмы. Отметки сохранятся в профиль «Мама».</div>
+        </div>
+      </div>
+      <div class="body">
+        <div>
+          <div class="rubric">Имя профиля</div>
+          <div class="field">Мама</div>
+        </div>
+        <div>
+          <div class="rubric">Цвет профиля</div>
+          <div class="swatches">
+            <span class="swatch"><span class="dot dot--on" style="background:#8F3E23"><svg viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></span></span>
+            <span class="swatch"><span class="dot" style="background:#1F5F6B"></span></span>
+            <span class="swatch"><span class="dot" style="background:#3C5014"></span></span>
+            <span class="swatch"><span class="dot" style="background:#6B4A6B"></span></span>
+            <span class="swatch"><span class="dot" style="background:#4555B1"></span></span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="switch-row">
+            <span class="switch-text">
+              <span class="switch-label">Дублировать напоминания</span>
+              <span class="switch-hint">Напоминания о приёмах этого профиля будут приходить на этот телефон</span>
+            </span>
+            <span class="switch"><span class="knob"></span></span>
+          </div>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn btn--primary" type="button">Сохранить</button>
+      </div>
+    </div>
+    <figcaption>Признаки чужого профиля экран по месту не рисует: полосу 6 dp, подкраску фона и шапки, надпись «Профиль · Имя» и несворачиваемый баннер дают `ProfileChrome` и `ProfileIndication` (§5.1 п. 3, ПРФ-13). Роли темы несут и цвет профиля: кольцо выбранного образца и кнопка окрашены в него (§2.2, ПРФ-12) — сохранив цвет, человек меняет оформление всего приложения сразу.</figcaption>
+  </figure>
+
+  <!-- ============ 12 · ВИТРИНА ИЗ МАСТЕРА ============ -->
+  <figure class="state">
+    <div class="state-label">12 · Мастер: витрина открыта — пункт-повод первым</div>
+    <div class="phone">
+      <div class="head"><h1 class="title-screen">Новый профиль</h1></div>
+      <div class="body">
+        <div>
+          <div class="rubric">Имя профиля</div>
+          <div class="field">Мама</div>
+        </div>
+        <div>
+          <div class="rubric">Цвет профиля</div>
+          <div class="swatches">
+            <span class="swatch"><span class="dot dot--on" style="background:#8F3E23"><svg viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></span></span>
+            <span class="swatch"><span class="dot" style="background:#1F5F6B"></span></span>
+            <span class="swatch"><span class="dot" style="background:#3C5014"></span></span>
+            <span class="swatch"><span class="dot" style="background:#6B4A6B"></span></span>
+            <span class="swatch"><span class="dot" style="background:#4555B1"></span></span>
+          </div>
+        </div>
+      </div>
+      <div class="scrim"></div>
+      <div class="sheet">
+        <div class="sheet-head"><span class="sheet-title">Склянка Про</span></div>
+        <div class="sheet-body">
+          <div class="benefit">
+            <span class="benefit-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.5"></circle><path d="M4.5 20c0-3.8 3.4-6.3 7.5-6.3s7.5 2.5 7.5 6.3"></path></svg></span>
+            <div><div class="benefit-name">Больше профилей</div></div>
+          </div>
+          <div class="bdiv"></div>
+          <div class="benefit">
+            <span class="benefit-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="3"></rect><path d="M8 3v4M16 3v4M3.5 10h17"></path></svg></span>
+            <div><div class="benefit-name">Сложные расписания</div></div>
+          </div>
+          <div class="bdiv"></div>
+          <div class="benefit">
+            <span class="benefit-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="3.5" y="3.5" width="8" height="8" rx="2"></rect><rect x="14.5" y="3.5" width="6" height="4" rx="2"></rect><rect x="3.5" y="14.5" width="17" height="6" rx="2"></rect></svg></span>
+            <div><div class="benefit-name">Виджеты</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <figcaption>Витрина — та же шторка §5.9 и единственная поверхность покупки; пункт-повод «Больше профилей» идёт первым и назван словами места (Р-84 п. 2, Р-67 п. 2). Строки примера у него нет: пример состава заведён только для сложных расписаний (§5.9). Точка открытия у профилей одна — кнопка мастера; строка настроек витрину не открывает (§5.13).</figcaption>
+  </figure>
+
+  <!-- ============ 13 · КРУПНЫЙ ШРИФТ ============ -->
+  <figure class="state">
+    <div class="state-label">13 · Мастер при масштабе шрифта 200 %</div>
+    <div class="phone">
+      <div class="head" style="padding:30px 20px 14px"><h1 class="title-screen" style="font-size:60px;line-height:1.15">Новый профиль</h1></div>
+      <div class="body" style="gap:24px">
+        <div>
+          <div class="rubric" style="font-size:24px;letter-spacing:.04em;margin-bottom:12px">Имя профиля</div>
+          <div class="field" style="height:72px;font-size:32px;line-height:70px">Мама</div>
+        </div>
+        <div>
+          <div class="rubric" style="font-size:24px;letter-spacing:.04em;margin-bottom:12px">Цвет профиля</div>
+          <div class="swatches">
+            <span class="swatch"><span class="dot dot--on" style="background:#8F3E23"><svg viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></span></span>
+            <span class="swatch"><span class="dot" style="background:#1F5F6B"></span></span>
+            <span class="swatch"><span class="dot" style="background:#3C5014"></span></span>
+            <span class="swatch"><span class="dot" style="background:#6B4A6B"></span></span>
+            <span class="swatch"><span class="dot" style="background:#4555B1"></span></span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="switch-row" style="padding:20px 16px;gap:16px">
+            <span class="switch-text" style="gap:8px">
+              <span class="switch-label" style="font-size:30px;line-height:1.3">Дублировать напоминания</span>
+              <span class="switch-hint" style="font-size:24px;line-height:1.45">Напоминания о приёмах этого профиля будут приходить на этот телефон</span>
+            </span>
+            <span class="switch"><span class="knob"></span></span>
+          </div>
+        </div>
+      </div>
+      <div class="actions" style="padding:16px 20px 24px;gap:14px">
+        <div class="words" style="font-size:30px;line-height:1.4">Больше двух профилей — в подписке «Склянка Про»</div>
+        <button class="btn btn--primary" type="button" style="font-size:32px;height:64px">Добавить профиль</button>
+      </div>
+    </div>
+    <figcaption>Ступени шкалы растут, габариты — нет: образцы цвета остаются 5 × 44 dp и не сжимаются, переключатель 52 × 32 dp тоже, а поле имени и карточка дублирования растут по высоте. Заголовок, пояснение и причина переносятся, подпись кнопки «Добавить профиль» остаётся одной строкой (самая длинная локаль — немецкая «Profil hinzufügen»); тело прокручивается, кнопка остаётся на панели, обрезки нет (§6.3).</figcaption>
+  </figure>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#5F6F2E","options":["#5F6F2E","#8F3E23","#1F5F6B","#3C5014","#6B4A6B","#4555B1"]},"$preview":{"width":1724,"height":4180}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { accent: this.props.accent ?? '#5F6F2E' };
+  }
+}
+</script>
+</body>
+</html>

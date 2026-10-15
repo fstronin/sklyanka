@@ -1,0 +1,528 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Отчёт врачу и экспорт истории — состояния</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&amp;family=Literata:opsz,wght@7..72,400;7..72,600&amp;display=swap">
+<style>
+.preview-eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#5F564D;font-weight:600}
+.preview-head h1{margin:12px 0 12px;font-family:'Literata',Georgia,serif;font-size:36px;font-weight:600;letter-spacing:-.01em;line-height:1.15}
+.preview-head p{margin:0;font-size:16px;line-height:1.55;max-width:1180px}
+.sheet-grid{display:grid;grid-template-columns:repeat(4,390px);gap:28px;padding:24px 40px 40px;align-items:start;box-sizing:border-box}
+.state{margin:0;display:flex;flex-direction:column;gap:10px}
+.state-label{font-size:13px;font-weight:600;color:#5F564D;letter-spacing:.02em}
+.phone{position:relative;width:390px;box-sizing:border-box;background:#F8F6EF;color:#241F1B;border:1px solid #E6DED2;border-radius:30px;overflow:hidden;height:844px;display:flex;flex-direction:column}
+/* Экран истории — фон под затемнением: содержимое шторки рисуется поверх него. */
+.screen{flex-grow:1;display:flex;flex-direction:column}
+.screen-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:30px 20px 14px}
+.title-screen{font-family:'Literata',Georgia,serif;font-size:30px;font-weight:600;letter-spacing:-.01em;margin:0}
+.quiet-action{font-size:13px;font-weight:500;color:#241F1B;border:1px solid #D9CDBD;border-radius:11px;padding:8px 14px;white-space:nowrap}
+.tiles{display:flex;gap:10px;padding:6px 20px 14px}
+.tile{flex:1;background:#FFFFFF;border:1px solid #EFE7DB;border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:4px}
+.tile b{font-family:'Literata',Georgia,serif;font-size:26px;font-weight:600;line-height:1}
+.tile span{font-size:11px;font-weight:500;color:#5F564D}
+.screen-card{margin:0 20px;background:#FFFFFF;border:1px solid #EFE7DB;border-radius:18px;padding:14px 16px;font-size:15px;color:#5F564D}
+/* Затемнение модального слоя — роль `scrim` (§2.3): одна доля 0,32 на все слои. */
+.scrim{position:absolute;inset:0;background:rgba(24,23,18,.32)}
+/* Полотно шторки: `surface`, верхние углы `TopLarge`, шапка и действия закреплены. */
+.sheet{position:absolute;left:0;right:0;bottom:0;background:#FFFFFF;border-radius:16px 16px 0 0;display:flex;flex-direction:column;max-height:844px}
+.sheet--full{top:0;border-radius:0}
+.sheet-head{display:flex;align-items:center;gap:12px;padding:14px 20px 12px;border-bottom:1px solid #E6DED2}
+.sheet-lead{font-size:15px;line-height:1.45;color:#5F564D}
+.sheet-lead--accent{font-weight:600;color:#5F6F2E}
+.sheet-title{font-size:15px;font-weight:600;line-height:1.45}
+.sheet-body{flex-grow:1;padding:16px 20px 0;display:flex;flex-direction:column;gap:16px;overflow:hidden}
+/* Чипы периода (§4.2, §5.10): высота 44 dp, выбранный — подложка `accentSoft` и рамка 1,5 dp. */
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;height:44px;padding:0 14px;box-sizing:border-box;border-radius:999px;border:1px solid #D9CDBD;font-size:14px;font-weight:500;line-height:1.3}
+.chip--on{background:#EBEEDA;border:1.5px solid #5F6F2E;font-weight:600}
+.card{background:#FFFFFF;border:1px solid #EFE7DB;border-radius:18px;overflow:hidden}
+.rubric{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#5F564D;padding-left:4px;margin-bottom:8px}
+/* Строка выбора состава: та же сборка, что у типов виджета (§5.12) и строк списка (§5.10). */
+.opt{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;min-height:44px;box-sizing:border-box}
+.opt-text{display:flex;flex-direction:column;gap:2px;min-width:0}
+.opt-name-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.opt-name{font-size:15px;line-height:1.45}
+.opt--on .opt-name{font-weight:600;color:#5F6F2E}
+.opt-note{font-size:12px;line-height:1.45;color:#5F564D}
+.check{display:block;width:18px;height:18px;stroke:#5F6F2E;flex-shrink:0}
+.divider{height:1px;background:#EFE7DB;margin:0 16px}
+/* Метка «Про» — собранная композиция из токенов (§5.9). */
+.pro-mark{display:inline-flex;align-items:baseline;gap:4px;border-radius:999px;background:#EBEEDA;color:#424724;font-size:13px;font-weight:600;line-height:1.35;padding:7px 14px;flex-shrink:0}
+.pro-mark svg{display:block;width:14px;height:14px;flex-shrink:0}
+/* Карточка состава: подпись `Caption` 13/400 `textMuted`, значение `BodyDefaultStrong` 15/600 справа. */
+.crow{display:flex;align-items:center;gap:12px;padding:14px 16px}
+.clabel{font-size:13px;line-height:1.35;color:#5F564D}
+.cvalue{font-size:15px;font-weight:600;line-height:1.45;text-align:right;flex-grow:1;min-width:0}
+.cdiv{height:1px;background:#EFE7DB;margin:0 16px}
+.note{font-size:13px;line-height:1.35;color:#5F564D}
+.actions{padding:16px 20px 24px;display:flex;gap:12px}
+.btn{height:52px;border-radius:16px;font-family:inherit;font-size:16px;font-weight:600;display:flex;align-items:center;justify-content:center;flex:1;border:none;cursor:default;box-sizing:border-box;padding:0 12px;text-align:center}
+.btn--primary{background:#5F6F2E;color:#FFFFFF}
+.btn--secondary{background:transparent;border:1px solid #D9CDBD;color:#241F1B}
+.btn--wide{flex:none;width:100%}
+/* Баннер исхода: `BannerKind.Warning` — подложка `accentSoft`, глиф `warning`, слово `onAccentSoft`. */
+.banner{display:flex;align-items:center;gap:10px;padding:11px 14px;background:#EBEEDA;border-radius:14px}
+.banner div{font-size:13px;line-height:1.35;color:#424724}
+/* Успех заменяет содержимое шторки целиком: заголовок `Subtitle`, подпись, галочка 72 dp. */
+.success{flex-grow:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:24px 20px}
+.success-title{font-family:'Literata',Georgia,serif;font-size:23px;font-weight:600;line-height:1.25;text-align:center}
+.success-sub{font-size:15px;line-height:1.45;color:#5F564D;text-align:center}
+.success-mark{width:72px;height:72px;stroke:#1F5F6B;margin-top:16px}
+/* Фрагмент витрины (§5.9): полотно `surface`, шапка `BodyDefaultStrong`, выгоды со значками. */
+.benefit{display:flex;align-items:flex-start;gap:12px;padding:12px 0}
+.benefit-glyph{width:20px;height:20px;flex-shrink:0;color:#8C8177;margin-top:2px}
+.benefit-glyph svg{display:block;width:20px;height:20px}
+.benefit-name{font-size:15px;font-weight:600;line-height:1.45}
+.bdiv{height:1px;background:#EFE7DB;margin-left:32px}
+figcaption{font-size:12px;line-height:1.5;color:#5F564D}
+/* ---- Страницы документа: A4 595 × 842 pt, поля 51/51/45 pt, кегли документа 20/12/11/10/8 pt ---- */
+.page-row{display:flex;gap:28px;padding:0 40px 60px;align-items:flex-start}
+.page-figure{margin:0;display:flex;flex-direction:column;gap:10px;width:595pt}
+.page{width:595pt;height:842pt;box-sizing:border-box;background:#FFFFFF;color:#241F1B;padding:51pt;position:relative;box-shadow:0 1px 4px rgba(36,31,27,.14)}
+.page-title{font-family:'Literata',Georgia,serif;font-size:20pt;font-weight:600;line-height:1.35;margin:0}
+.page-subtitle{font-size:12pt;font-weight:600;line-height:1.35;margin-top:1pt}
+.page-meta{font-size:10pt;line-height:1.35;color:#5F564D}
+.rule-accent{height:.7pt;background:#5F6F2E;margin-top:9pt}
+.rule-line{height:.7pt;background:#E6DED2;margin:8pt 0}
+.sec{font-size:11pt;font-weight:600;line-height:1.35;color:#5F564D;margin-top:14pt}
+.pline{font-size:10pt;line-height:1.35;display:flex;align-items:baseline;gap:8pt}
+.pline .val{font-family:'Literata',Georgia,serif;font-size:12pt;font-weight:600;margin-left:4pt}
+.pline .right{font-size:10pt;margin-left:auto;white-space:nowrap;padding-left:8pt}
+.pline--muted{color:#5F564D}
+.pblock{margin-top:10pt}
+.page-foot{position:absolute;left:51pt;right:51pt;bottom:45pt;display:flex;justify-content:space-between;font-size:8pt;color:#5F564D;line-height:1.35}
+</style>
+</helmet>
+<div class="preview-head">
+<div class="preview-eyebrow">Склянка · отчёт врачу и экспорт истории · Р-21, Р-33, Р-35, Р-36, Р-85, Р-22, П-7 · §5.9, §5.15–§5.16</div>
+<h1>Отчёт врачу и экспорт истории</h1>
+<p>Выбор состава в шторке отчёта (два состояния), шторка экспорта истории с исходами и крупным шрифтом и две страницы расширенного документа. Базовый отчёт не меняется (Р-36): «Про» добавляет разделы — сравнение периодов, динамику по месяцам и паттерн пропусков, — а разбивка по лекарствам остаётся в базовом составе. Метка «Про» стоит у расширенного состава и на строке «Экспорт истории»; без доступа нажатие открывает витрину, а выбранным остаётся то, что напечатают.</p>
+</div>
+<div class="sheet-grid">
+
+  <!-- ============ 1 · ШТОРКА ОТЧЁТА, БАЗОВЫЙ СОСТАВ ============ -->
+  <figure class="state">
+    <div class="state-label">1 · Шторка отчёта: выбран «Базовый» (по умолчанию)</div>
+    <div class="phone">
+      <div class="screen">
+        <div class="screen-head">
+          <h1 class="title-screen">История</h1>
+          <span class="quiet-action">Отчёт врачу</span>
+        </div>
+        <div class="tiles">
+          <div class="tile"><b>91 %</b><span>принято вовремя</span></div>
+          <div class="tile"><b>74</b><span>дней без пропусков</span></div>
+          <div class="tile"><b>12</b><span>пропусков за месяц</span></div>
+        </div>
+        <div class="screen-card">По лекарствам</div>
+      </div>
+      <div class="scrim"></div>
+      <div class="sheet">
+        <div class="sheet-head"><span class="sheet-lead">Отмена</span><span class="sheet-title">Отчёт врачу</span></div>
+        <div class="sheet-body">
+          <div class="chips">
+            <span class="chip chip--on">Этот месяц</span>
+            <span class="chip">Прошлый месяц</span>
+            <span class="chip">Последние 3 месяца</span>
+            <span class="chip">Другой период</span>
+          </div>
+          <div>
+            <div class="rubric">Состав отчёта</div>
+            <div class="card">
+              <div class="opt opt--on">
+                <div class="opt-text">
+                  <div class="opt-name">Базовый</div>
+                  <div class="opt-note">Сводка и разбивка по лекарствам</div>
+                </div>
+                <svg class="check" viewBox="0 0 24 24" fill="none" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg>
+              </div>
+              <div class="divider"></div>
+              <div class="opt">
+                <div class="opt-text">
+                  <div class="opt-name-row"><span class="opt-name">Расширенный</span><span class="pro-mark"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l2.6 6.9 6.9 2.6-6.9 2.6L12 21.5l-2.6-6.9L2.5 12l6.9-2.6z"></path></svg>Про</span></div>
+                  <div class="opt-note">Сравнение периодов, динамика по месяцам, паттерн пропусков</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="crow"><span class="clabel">Профиль</span><span class="cvalue">Я</span></div>
+            <div class="cdiv"></div>
+            <div class="crow"><span class="clabel">Период</span><span class="cvalue">1 — 31 октября 2026</span></div>
+            <div class="cdiv"></div>
+            <div class="crow"><span class="clabel">Принято</span><span class="cvalue">44 из 48 приёмов</span></div>
+            <div class="cdiv"></div>
+            <div class="crow"><span class="clabel">Формат</span><span class="cvalue">PDF</span></div>
+          </div>
+          <div class="note">Отчёт содержит медицинские данные и передаётся в открытом виде.</div>
+        </div>
+        <div class="actions">
+          <button class="btn btn--primary" type="button">Передать</button>
+          <button class="btn btn--secondary" type="button">Сохранить</button>
+        </div>
+      </div>
+    </div>
+    <figcaption>Блок выбора стоит над карточкой состава: состав выбирают раньше, чем смотрят на итог. «Базовый» выбран по умолчанию и метки не несёт — норма не продаёт бесплатное (Р-71, П-7); «Расширенный» несёт метку «Про» и пояснение состава, чтобы человек знал, что войдёт в документ, до нажатия.</figcaption>
+  </figure>
+
+  <!-- ============ 2 · ШТОРКА ОТЧЁТА, РАСШИРЕННЫЙ СОСТАВ ============ -->
+  <figure class="state">
+    <div class="state-label">2 · Шторка отчёта: выбран «Расширенный» (доступ активен)</div>
+    <div class="phone">
+      <div class="screen">
+        <div class="screen-head">
+          <h1 class="title-screen">История</h1>
+          <span class="quiet-action">Отчёт врачу</span>
+        </div>
+        <div class="tiles">
+          <div class="tile"><b>88 %</b><span>принято вовремя</span></div>
+          <div class="tile"><b>74</b><span>дней без пропусков</span></div>
+          <div class="tile"><b>12</b><span>пропусков за месяц</span></div>
+        </div>
+        <div class="screen-card">По лекарствам</div>
+      </div>
+      <div class="scrim"></div>
+      <div class="sheet">
+        <div class="sheet-head"><span class="sheet-lead">Отмена</span><span class="sheet-title">Отчёт врачу</span></div>
+        <div class="sheet-body">
+          <div class="chips">
+            <span class="chip">Этот месяц</span>
+            <span class="chip">Прошлый месяц</span>
+            <span class="chip chip--on">Последние 3 месяца</span>
+            <span class="chip">Другой период</span>
+          </div>
+          <div>
+            <div class="rubric">Состав отчёта</div>
+            <div class="card">
+              <div class="opt">
+                <div class="opt-text">
+                  <div class="opt-name">Базовый</div>
+                  <div class="opt-note">Сводка и разбивка по лекарствам</div>
+                </div>
+              </div>
+              <div class="divider"></div>
+              <div class="opt opt--on">
+                <div class="opt-text">
+                  <div class="opt-name-row"><span class="opt-name">Расширенный</span><span class="pro-mark"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l2.6 6.9 6.9 2.6-6.9 2.6L12 21.5l-2.6-6.9L2.5 12l6.9-2.6z"></path></svg>Про</span></div>
+                  <div class="opt-note">Сравнение периодов, динамика по месяцам, паттерн пропусков</div>
+                </div>
+                <svg class="check" viewBox="0 0 24 24" fill="none" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="crow"><span class="clabel">Профиль</span><span class="cvalue">Я</span></div>
+            <div class="cdiv"></div>
+            <div class="crow"><span class="clabel">Период</span><span class="cvalue">1 августа — 31 октября 2026</span></div>
+            <div class="cdiv"></div>
+            <div class="crow"><span class="clabel">Принято</span><span class="cvalue">126 из 138 приёмов</span></div>
+            <div class="cdiv"></div>
+            <div class="crow"><span class="clabel">Формат</span><span class="cvalue">PDF</span></div>
+          </div>
+          <div class="note">Отчёт содержит медицинские данные и передаётся в открытом виде.</div>
+        </div>
+        <div class="actions">
+          <button class="btn btn--primary" type="button">Передать</button>
+          <button class="btn btn--secondary" type="button">Сохранить</button>
+        </div>
+      </div>
+    </div>
+    <figcaption>Выбранный состав отличён не только цветом (§6.4): начертанием 600, акцентом и галочкой. Смена пресета периода выбор не сбрасывает — период и состав две независимые настройки одного документа. Без доступа нажатие расширенной строки оставило бы отмеченным «Базовый» и открыло витрину (Р-85 п. 1); повторное нажатие после оформления доступа выбирает расширенный состав.</figcaption>
+  </figure>
+
+  <!-- ============ 3 · ВИТРИНА ИЗ ШТОРКИ ОТЧЁТА ============ -->
+  <figure class="state">
+    <div class="state-label">3 · Без доступа: витрина из выбора состава</div>
+    <div class="phone">
+      <div class="screen">
+        <div class="screen-head">
+          <h1 class="title-screen">История</h1>
+          <span class="quiet-action">Отчёт врачу</span>
+        </div>
+        <div class="tiles">
+          <div class="tile"><b>91 %</b><span>принято вовремя</span></div>
+          <div class="tile"><b>74</b><span>дней без пропусков</span></div>
+          <div class="tile"><b>12</b><span>пропусков за месяц</span></div>
+        </div>
+      </div>
+      <div class="scrim"></div>
+      <div class="sheet">
+        <div class="sheet-head"><span class="sheet-title">Склянка Про</span></div>
+        <div class="sheet-body" style="padding-bottom:20px">
+          <div class="benefit">
+            <span class="benefit-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3.5" width="14" height="17" rx="2.5"></rect><path d="M8.5 8.5h7M8.5 12h7M8.5 15.5h4"></path></svg></span>
+            <div><div class="benefit-name">Расширенный отчёт врачу</div></div>
+          </div>
+          <div class="bdiv"></div>
+          <div class="benefit">
+            <span class="benefit-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5v10"></path><path d="m8 7.5 4-4 4 4"></path><path d="M5 13v5.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V13"></path></svg></span>
+            <div><div class="benefit-name">Экспорт истории</div></div>
+          </div>
+          <div class="bdiv"></div>
+          <div class="benefit">
+            <span class="benefit-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="3"></rect><path d="M8 3v4M16 3v4M3.5 10h17"></path></svg></span>
+            <div><div class="benefit-name">Сложные расписания</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <figcaption>Витрина — та же шторка §5.9 и единственная поверхность покупки; пункт-повод «Расширенный отчёт врачу» идёт первым и назван словами места (Р-85 п. 1, Р-67 п. 2). Строка примера есть только у сложных расписаний — у остальных выгод её нет (§5.9). Базовый состав при этом формируется как прежде.</figcaption>
+  </figure>
+
+  <!-- ============ 4 · ШТОРКА ЭКСПОРТА ============ -->
+  <figure class="state">
+    <div class="state-label">4 · Шторка экспорта истории</div>
+    <div class="phone">
+      <div class="screen">
+        <div class="screen-head">
+          <h1 class="title-screen">Настройки</h1>
+        </div>
+        <div class="screen-card" style="display:flex;flex-direction:column;gap:2px">
+          <div style="font-size:15px;color:#241F1B">Экспорт истории</div>
+          <div style="font-size:12px">CSV, открывается в Excel</div>
+        </div>
+      </div>
+      <div class="scrim"></div>
+      <div class="sheet">
+        <div class="sheet-head"><span class="sheet-lead">Отмена</span><span class="sheet-title">Экспорт истории</span></div>
+        <div class="sheet-body">
+          <div class="chips">
+            <span class="chip chip--on">Этот месяц</span>
+            <span class="chip">Прошлый месяц</span>
+            <span class="chip">Последние 3 месяца</span>
+            <span class="chip">Другой период</span>
+          </div>
+          <div class="card">
+            <div class="crow"><span class="clabel">Профиль</span><span class="cvalue">Я</span></div>
+            <div class="cdiv"></div>
+            <div class="crow"><span class="clabel">Период</span><span class="cvalue">1 — 31 октября 2026</span></div>
+            <div class="cdiv"></div>
+            <div class="crow"><span class="clabel">Записей</span><span class="cvalue">44</span></div>
+            <div class="cdiv"></div>
+            <div class="crow"><span class="clabel">Формат</span><span class="cvalue">CSV</span></div>
+          </div>
+          <div class="note">Файл содержит медицинские данные и передаётся в открытом виде.</div>
+        </div>
+        <div class="actions">
+          <button class="btn btn--primary" type="button">Передать</button>
+          <button class="btn btn--secondary" type="button">Сохранить</button>
+        </div>
+      </div>
+    </div>
+    <figcaption>Шторка — та же сборка, что у отчёта (Р-53, §5.9): та же шапка, те же четыре пресета периода и те же границы «Другого периода», та же карточка состава (вместо «Принято» — «Записей»), то же тихое пояснение и те же действия. Второго набора пресетов и второго формата нет; выбора состава у экспорта нет — файл один.</figcaption>
+  </figure>
+
+  <!-- ============ 5 · ЭКСПОРТ: УСПЕХ ============ -->
+  <figure class="state">
+    <div class="state-label">5 · Экспорт: исход «Файл сформирован»</div>
+    <div class="phone">
+      <div class="screen">
+        <div class="screen-head"><h1 class="title-screen">Настройки</h1></div>
+        <div class="screen-card" style="display:flex;flex-direction:column;gap:2px">
+          <div style="font-size:15px;color:#241F1B">Экспорт истории</div>
+          <div style="font-size:12px">CSV, открывается в Excel</div>
+        </div>
+      </div>
+      <div class="scrim"></div>
+      <div class="sheet">
+        <div class="sheet-head"><span class="sheet-title">Экспорт истории</span><span class="sheet-lead sheet-lead--accent" style="margin-left:auto">Готово</span></div>
+        <div class="success">
+          <div class="success-title">Файл сформирован</div>
+          <div class="success-sub">Передан</div>
+          <svg class="success-mark" viewBox="0 0 24 24" fill="none" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg>
+        </div>
+      </div>
+    </div>
+    <figcaption>Успех заменяет содержимое шторки целиком, как у отчёта: заголовок `Subtitle` 23/600, подпись 15/400 `textMuted`, галочка 72 dp (`BottomSheetSuccessMark`) ролью `taken` — она декоративна, исход называют слова. Ведущий слот шапки пустеет, «Готово» встаёт в замыкающий: выход успеха не читается отменой (Р-53). «Передан» значит «отдан системному обмену» и доставку не обещает (П-7).</figcaption>
+  </figure>
+
+  <!-- ============ 6 · ЭКСПОРТ: НЕТ МЕСТА ============ -->
+  <figure class="state">
+    <div class="state-label">6 · Экспорт: «Места недостаточно»</div>
+    <div class="phone">
+      <div class="screen">
+        <div class="screen-head"><h1 class="title-screen">Настройки</h1></div>
+        <div class="screen-card" style="display:flex;flex-direction:column;gap:2px">
+          <div style="font-size:15px;color:#241F1B">Экспорт истории</div>
+          <div style="font-size:12px">CSV, открывается в Excel</div>
+        </div>
+      </div>
+      <div class="scrim"></div>
+      <div class="sheet">
+        <div class="sheet-head"><span class="sheet-lead">Отмена</span><span class="sheet-title">Экспорт истории</span></div>
+        <div class="sheet-body">
+          <div class="banner">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#8F3E23" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M12 4.5 3 20h18z"></path><path d="M12 10v4.5"></path><path d="M12 17.4v.1"></path></svg>
+            <div>Места недостаточно. Файл не сохранён</div>
+          </div>
+          <div class="chips">
+            <span class="chip chip--on">Этот месяц</span>
+            <span class="chip">Прошлый месяц</span>
+            <span class="chip">Последние 3 месяца</span>
+            <span class="chip">Другой период</span>
+          </div>
+          <div class="card">
+            <div class="crow"><span class="clabel">Профиль</span><span class="cvalue">Я</span></div>
+            <div class="cdiv"></div>
+            <div class="crow"><span class="clabel">Период</span><span class="cvalue">1 — 31 октября 2026</span></div>
+            <div class="cdiv"></div>
+            <div class="crow"><span class="clabel">Записей</span><span class="cvalue">44</span></div>
+            <div class="cdiv"></div>
+            <div class="crow"><span class="clabel">Формат</span><span class="cvalue">CSV</span></div>
+          </div>
+          <div class="note">Файл содержит медицинские данные и передаётся в открытом виде.</div>
+        </div>
+        <div class="actions">
+          <button class="btn btn--primary" type="button">Передать</button>
+          <button class="btn btn--secondary" type="button">Сохранить</button>
+        </div>
+      </div>
+    </div>
+    <figcaption>Ошибка названа словами и встаёт первым элементом: свободное место проверяется до записи, поэтому успеха не бывает (П-7). Содержимое шторки остаётся, повтор возможен сразу; баннер — `BannerKind.Warning` (подложка `accentSoft`, глиф `warning`), вида «опасность» у баннера нет (§5).</figcaption>
+  </figure>
+
+  <!-- ============ 7 · ЭКСПОРТ: ПУСТОЙ ПЕРИОД ============ -->
+  <figure class="state">
+    <div class="state-label">7 · Экспорт: в периоде нет записей</div>
+    <div class="phone">
+      <div class="screen">
+        <div class="screen-head"><h1 class="title-screen">Настройки</h1></div>
+        <div class="screen-card" style="display:flex;flex-direction:column;gap:2px">
+          <div style="font-size:15px;color:#241F1B">Экспорт истории</div>
+          <div style="font-size:12px">CSV, открывается в Excel</div>
+        </div>
+      </div>
+      <div class="scrim"></div>
+      <div class="sheet">
+        <div class="sheet-head"><span class="sheet-lead">Отмена</span><span class="sheet-title">Экспорт истории</span></div>
+        <div class="sheet-body">
+          <div class="chips">
+            <span class="chip">Этот месяц</span>
+            <span class="chip chip--on">Прошлый месяц</span>
+            <span class="chip">Последние 3 месяца</span>
+            <span class="chip">Другой период</span>
+          </div>
+          <div class="card">
+            <div class="crow"><span class="clabel">Профиль</span><span class="cvalue">Я</span></div>
+            <div class="cdiv"></div>
+            <div class="crow"><span class="clabel">Период</span><span class="cvalue">1 — 30 сентября 2026</span></div>
+            <div class="cdiv"></div>
+            <div class="crow" style="padding:14px 16px"><span class="cvalue" style="text-align:left">За период нет ни одной записи о приёме</span></div>
+            <div class="cdiv"></div>
+            <div class="crow"><span class="clabel">Формат</span><span class="cvalue">CSV</span></div>
+          </div>
+          <div class="note">Файл содержит медицинские данные и передаётся в открытом виде.</div>
+        </div>
+        <div class="actions">
+          <button class="btn btn--primary" type="button">Передать</button>
+          <button class="btn btn--secondary" type="button">Сохранить</button>
+        </div>
+      </div>
+    </div>
+    <figcaption>Нуля в строке «Записей» нет: при пустом периоде на её месте стоит фраза — так же, как в карточке отчёта (ревизия 33-B, Р-33). Файл при этом формируется с шапкой и без строк: шапка называет профиль и период, и это честный ответ «записей нет».</figcaption>
+  </figure>
+
+  <!-- ============ 8 · ЭКСПОРТ: КРУПНЫЙ ШРИФТ ============ -->
+  <figure class="state">
+    <div class="state-label">8 · Экспорт при масштабе шрифта 200 %</div>
+    <div class="phone">
+      <div class="sheet sheet--full">
+        <div class="sheet-head" style="padding:20px 20px 16px"><span class="sheet-lead" style="font-size:30px">Отмена</span><span class="sheet-title" style="font-size:30px">Экспорт истории</span></div>
+        <div class="sheet-body" style="gap:24px;padding-top:24px">
+          <div class="chips" style="gap:12px">
+            <span class="chip chip--on" style="height:60px;font-size:28px;padding:0 20px">Этот месяц</span>
+            <span class="chip" style="height:60px;font-size:28px;padding:0 20px">Прошлый месяц</span>
+            <span class="chip" style="height:60px;font-size:28px;padding:0 20px">Последние 3 месяца</span>
+          </div>
+          <div class="card">
+            <div class="crow" style="padding:20px 16px"><span class="clabel" style="font-size:26px">Профиль</span><span class="cvalue" style="font-size:30px">Я</span></div>
+            <div class="cdiv"></div>
+            <div class="crow" style="padding:20px 16px"><span class="clabel" style="font-size:26px">Период</span><span class="cvalue" style="font-size:30px">1 — 31 октября 2026</span></div>
+            <div class="cdiv"></div>
+            <div class="crow" style="padding:20px 16px"><span class="clabel" style="font-size:26px">Записей</span><span class="cvalue" style="font-size:30px">44</span></div>
+            <div class="cdiv"></div>
+            <div class="crow" style="padding:20px 16px"><span class="clabel" style="font-size:26px">Формат</span><span class="cvalue" style="font-size:30px">CSV</span></div>
+          </div>
+          <div class="note" style="font-size:26px">Файл содержит медицинские данные и передаётся в открытом виде.</div>
+        </div>
+        <div class="actions" style="flex-direction:column;padding:20px 20px 24px;gap:16px">
+          <button class="btn btn--primary btn--wide" type="button" style="height:96px;font-size:32px">Передать</button>
+          <button class="btn btn--secondary btn--wide" type="button" style="height:96px;font-size:32px">Сохранить</button>
+        </div>
+      </div>
+    </div>
+    <figcaption>Ступени шкалы растут, габариты — нет: чипы растут по подписи и остаются не ниже 44 dp, ряды карточки растут по высоте, пояснение переносится, а действия по нехватке ширины складываются в столбик (§5.1, §6.3). Тело прокручивается, действия остаются видимыми; обрезки нет — четвёртый чип периода уходит на вторую строку и достижим прокруткой.</figcaption>
+  </figure>
+
+</div>
+
+<div class="page-row">
+  <figure class="page-figure">
+    <div class="state-label">9 · Расширенный документ, страница 1 — базовый состав</div>
+    <div class="page">
+      <h2 class="page-title">Отчёт о приёме лекарств</h2>
+      <div class="page-subtitle">Склянка · профиль «Я»</div>
+      <div class="page-meta">Период: 1 августа — 31 октября 2026</div>
+      <div class="page-meta">Сформирован: 16 октября 2026, 09:12</div>
+      <div class="rule-accent"></div>
+      <div class="sec">СВОДКА</div>
+      <div class="pline"><span>Принято:<span class="val">126 из 138 приёмов (91 %)</span></span></div>
+      <div class="pline"><span>Принято вовремя:<span class="val">88 %</span></span></div>
+      <div class="pline"><span>Дней без пропусков:<span class="val">74</span></span></div>
+      <div class="pline"><span>Пропусков за период:<span class="val">12</span></span></div>
+      <div class="rule-line"></div>
+      <div class="sec" style="margin-top:0">ПО ЛЕКАРСТВАМ</div>
+      <div class="pblock">
+        <div class="pline"><span>Магний B6 · 1 таблетка · каждый день · 08:00</span><span class="right">67 из 69 (97 %)</span></div>
+        <div class="pline pline--muted"><span>с 1 сентября 2026, бессрочно · Пропуски: 5, 12 октября; из них 1 отмечен человеком, 1 — без отметки</span></div>
+      </div>
+      <div class="pblock">
+        <div class="pline"><span>Аспирин · 1 таблетка · каждый день · 20:00</span><span class="right">59 из 69 (86 %)</span></div>
+        <div class="pline pline--muted"><span>с 1 сентября 2026, бессрочно · Пропуски: 2, 9 сентября, 3, 7, 10, 14, 17, 21, 24, 28 октября; из них 3 отмечены человеком, 7 — без отметки</span></div>
+      </div>
+      <div class="page-foot"><span>Не является медицинским документом</span><span>Склянка · стр. 1</span></div>
+    </div>
+    <figcaption>Базовая страница не меняется (Р-36): тот же состав, та же шапка, тот же шрифт и кегли, оговорка и подпись страницы в колонтитуле. Шапка — только на первой странице; акцентная линия 0,7 pt под шапкой одна на документ, разделители — `line`.</figcaption>
+  </figure>
+
+  <figure class="page-figure">
+    <div class="state-label">10 · Расширенный документ, страница 2 — разделы «Про»</div>
+    <div class="page">
+      <div class="sec" style="margin-top:0">СРАВНЕНИЕ ПЕРИОДОВ</div>
+      <div class="pline pline--muted"><span>Период: 1 августа — 31 октября 2026</span></div>
+      <div class="pline pline--muted"><span>Предыдущий период: 1 мая — 31 июля 2026</span></div>
+      <div class="pline"><span>Принято:<span class="val">126 из 138 приёмов (91 %)</span></span><span class="right">119 из 138 приёмов (86 %)</span></div>
+      <div class="pline"><span>Принято вовремя:<span class="val">88 %</span></span><span class="right">84 %</span></div>
+      <div class="pline"><span>Дней без пропусков:<span class="val">74</span></span><span class="right">69</span></div>
+      <div class="pline"><span>Пропусков за период:<span class="val">12</span></span><span class="right">19</span></div>
+      <div class="sec">ДИНАМИКА ПО МЕСЯЦАМ</div>
+      <div class="pline pline--muted"><span>Период: 1 августа — 31 октября 2026</span></div>
+      <div class="pline"><span>август 2026<span class="val">88 %</span></span><span class="right">41 из 47</span></div>
+      <div class="pline"><span>сентябрь 2026<span class="val">92 %</span></span><span class="right">44 из 48</span></div>
+      <div class="pline"><span>октябрь 2026<span class="val">95 %</span></span><span class="right">41 из 43</span></div>
+      <div class="sec">ПАТТЕРН ПРОПУСКОВ</div>
+      <div class="pline pline--muted"><span>Период: 1 августа — 31 октября 2026</span></div>
+      <div class="pline"><span>Чаще всего пропускается вечерний приём в 20:00.</span></div>
+      <div class="pline pline--muted"><span>Пропусков в это время: 8 из 12 за период</span></div>
+      <div class="pline pline--muted"><span>Пропуски: 3, 7, 10, 14, 17, 21, 24, 28 октября; из них 3 отмечены человеком, 5 — без отметки</span></div>
+      <div class="page-foot"><span>Не является медицинским документом</span><span>Склянка · стр. 2</span></div>
+    </div>
+    <figcaption>Первый «Про»-раздел начинает новую страницу: страницы базового документа не сдвигаются, и страж «базовый не меняется» видит те же страницы. Разделы — теми же ролями и кеглями (заголовок 11/600 `textMuted`, мета 10/400 `textMuted`, текст 10/400, числа Literata 600 12 pt), без полос и графиков; каждую колонку правых чисел называет строка «Предыдущий период» — других чисел в разделе нет. Каждый раздел начинается строкой «Период»: лист печатают и пересылают постранично.</figcaption>
+  </figure>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#5F6F2E","options":["#5F6F2E","#8F3E23","#1F5F6B","#3C5014","#6B4A6B","#4555B1"]},"$preview":{"width":1724,"height":3480}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { accent: this.props.accent ?? '#5F6F2E' };
+  }
+}
+</script>
+</body>
+</html>

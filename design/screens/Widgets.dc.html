@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Виджеты домашнего экрана — состояния</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&amp;family=Literata:opsz,wght@7..72,400;7..72,600&amp;display=swap">
+<style>
+/* Лист нарисован в палитре Р-20 «олива на бумаге» (§2.1 нормы): плита виджета — `surface`,
+   рамка `lineOnSurface`, акцент #5F6F2E, в чужом профиле акцент — цвет профиля (§2.2, ПРФ-12).
+   В комментариях — роль токена, которой соответствует значение. */
+body{margin:0;background:#F3EDE3;color:#241F1B;font-family:'Golos Text',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#5F6F2E;text-decoration:none}
+.preview-head{max-width:1604px;padding:36px 40px 8px}
+.preview-eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#5F564D;font-weight:600}
+.preview-head h1{margin:12px 0 12px;font-family:'Literata',Georgia,serif;font-size:36px;font-weight:600;letter-spacing:-.01em;line-height:1.15}
+.preview-head p{margin:0;font-size:16px;line-height:1.55}
+.sheet-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:28px;padding:24px 40px 60px;align-items:start;max-width:1604px;box-sizing:border-box}
+.state{margin:0;display:flex;flex-direction:column;gap:10px}
+.state-label{font-size:13px;font-weight:600;color:#5F564D;letter-spacing:.02em}
+/* Плита — `surface`, рамка 1 dp `lineOnSurface`, радиус `Card` 18 dp (§5.11); поле `Large` 14 dp
+   по бокам и `Medium` 12 dp по вертикали. Габариты — ступени `SklyankaSizes` (§4). */
+.w{position:relative;box-sizing:border-box;background:#FFFFFF;border:1px solid #EFE7DB;border-radius:18px;padding:12px 14px;display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
+.w--foreign{padding-top:6px}
+.stripe{position:absolute;left:0;right:0;top:0;height:6px;background:#8F3E23;border-radius:18px 18px 0 0}
+/* Шапка называет предмет: `BodyDefaultStrong` 15/600; счётчик — своей строкой `CaptionSmall` 12/400. */
+.head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;height:22px}
+.subj{font-size:15px;font-weight:600;line-height:1.45;color:#241F1B;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Надпись профиля — `Overline` 12/600 цветом `accent` (в чужом профиле — цвет профиля, §7, ПР-24). */
+.prof{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#8F3E23;white-space:nowrap;flex-shrink:0}
+.counter{font-size:12px;line-height:1.35;color:#5F564D;margin-top:4px;height:18px}
+.rows{display:flex;flex-direction:column;margin-top:8px}
+/* Строка приёма `WidgetRow` 48 dp: колонка времени, текст, кнопка отметки 44 dp (§5.11). */
+.row{display:flex;align-items:center;gap:12px;height:48px;min-height:48px;box-sizing:border-box}
+.row + .row{border-top:1px solid #EFE7DB}
+.tcol{width:50px;flex-shrink:0;display:flex;flex-direction:column;justify-content:center}
+.time{font-size:14px;font-weight:600;line-height:1.3}
+.now{font-size:13px;font-weight:600;line-height:1.3;color:#5F6F2E}
+.now--profile{color:#8F3E23}
+.text{flex-grow:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.med{font-size:15px;font-weight:600;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#241F1B}
+.med--muted{color:#5F564D}
+.dose{font-size:13px;line-height:1.35;color:#5F564D}
+/* Круглая кнопка отметки: 44 dp, рамка 1,5 dp `lineInteractive`, галочка `textTertiary` (§5.6). */
+.mark{width:44px;height:44px;flex-shrink:0;border-radius:999px;border:1.5px solid #D9CDBD;background:#FFFFFF;display:flex;align-items:center;justify-content:center;box-sizing:border-box}
+.mark svg{width:18px;height:18px;display:block;stroke:#8C8177}
+.mark--filled{background:#5F6F2E;border-color:#5F6F2E}
+.mark--filled svg{stroke:#FFFFFF}
+.mark--profile{background:#8F3E23;border-color:#8F3E23}
+.mark--profile svg{stroke:#FFFFFF}
+.missed{font-size:13px;font-weight:600;color:#5F564D;flex-shrink:0}
+.line{font-size:15px;line-height:1.45;color:#5F564D;margin-top:8px}
+/* Полоса недели — словарь §5.2 без второй редакции: метка 11 sp, кружок `AdherenceDay` 26 dp. */
+.week{display:flex;gap:8px;margin-top:8px}
+.day{display:flex;flex-direction:column;align-items:center;gap:8px;width:26px}
+.dlabel{font-size:11px;font-weight:500;line-height:1.3;color:#5F564D}
+.dlabel--today{font-size:11px;font-weight:600;color:#241F1B}
+.dot{width:26px;height:26px;border-radius:999px;box-sizing:border-box}
+.dot--taken{background:#1F5F6B}
+.dot--partial{background:#6E9FA8}
+.dot--missed{background:#C9BFB1}
+.dot--today{border:2px solid #C9BFB1}
+.dot--empty{width:10px;height:10px;background:#DCD1C2;margin:8px 0}
+figcaption{font-size:12px;line-height:1.5;color:#5F564D}
+.note{background:#FFFFFF;border:1px solid #EFE7DB;border-radius:18px;padding:14px;font-size:13px;line-height:1.55;color:#5F564D}
+.note b{color:#241F1B}
+.swatch{display:inline-block;width:10px;height:10px;border-radius:999px;vertical-align:0;margin-right:4px}
+</style>
+</helmet>
+<div class="preview-head">
+<div class="preview-eyebrow">Склянка · виджеты домашнего экрана · Р-34, Р-32, ПР-22, ПР-23, ПР-24, ПРФ-12</div>
+<h1>Виджеты домашнего экрана</h1>
+<p>Три типа — «Сегодня» с быстрой отметкой, «Неделя», «По лекарству» — плитой на <code>surface</code>: шапка называет предмет, счётчик называет число словами, строка приёма несёт время, имя, дозу и круглую кнопку отметки, а состояние приёма названо словом («Сейчас», «Пропущено»). Плита — отзывчивая: три объявленные ступени у «Сегодня» и «по лекарству», две у «недели», и другой ширины у виджета не бывает. В чужом профиле плита несёт полосу 6 dp и надпись «Профиль · Имя», а акцент приходит ролями темы — залитая кнопка подкрашивается цветом профиля. Метки «Про» на самой плите нет: виджет — уже открытая платная зона, и после истечения подписки он продолжает работать (норма §5.11).</p>
+</div>
+<div class="sheet-grid">
+
+  <!-- ============ 1 · «СЕГОДНЯ», КОМПАКТ ============ -->
+  <figure class="state">
+    <div class="state-label">1 · «Сегодня» — компакт 250×104 (≈3×1)</div>
+    <div class="w" style="width:250px;height:104px">
+      <div class="head"><div class="subj">Сегодня</div></div>
+      <div class="rows">
+        <div class="row">
+          <div class="tcol"><div class="time">14:00</div><div class="now">Сейчас</div></div>
+          <div class="text"><div class="med">Магний B6</div><div class="dose">2 таблетки</div></div>
+          <div class="mark mark--filled"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></div>
+        </div>
+      </div>
+    </div>
+    <figcaption>Компактная ступень: шапка и одна строка. Счётчика нет — одна строка содержания важнее. Ширина посчитана: колонка времени 50 + 12 + текст 96 + 12 + цель 44 = 214 ≤ 222 (норма §5.11).</figcaption>
+  </figure>
+
+  <!-- ============ 2 · «СЕГОДНЯ», ОБЫЧНЫЙ ============ -->
+  <figure class="state">
+    <div class="state-label">2 · «Сегодня» — обычный 340×176 (≈4×2)</div>
+    <div class="w" style="width:340px;height:176px">
+      <div class="head"><div class="subj">Сегодня</div></div>
+      <div class="counter">Принято 1 из 4 приёмов</div>
+      <div class="rows">
+        <div class="row">
+          <div class="tcol"><div class="time">14:00</div><div class="now">Сейчас</div></div>
+          <div class="text"><div class="med">Магний B6</div><div class="dose">2 таблетки</div></div>
+          <div class="mark mark--filled"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></div>
+        </div>
+        <div class="row">
+          <div class="tcol"><div class="time">21:00</div></div>
+          <div class="text"><div class="med">Лозартан</div><div class="dose">1 таблетка</div></div>
+          <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></div>
+        </div>
+      </div>
+    </div>
+    <figcaption>Обычная ступень: шапка, счётчик и две строки. Счётчик — `intakes_taken_of_total` (§5.2): «Принято 1 из 4 приёмов» — то же число словами, что у полосы дня в приложении. Наступивший приём отличён словом «Сейчас» и залитой кнопкой, а не одной заливкой (§6.4).</figcaption>
+  </figure>
+
+  <!-- ============ 3 · «СЕГОДНЯ», ПРОСТОРНЫЙ ============ -->
+  <figure class="state">
+    <div class="state-label">3 · «Сегодня» — просторный 340×320 (≈4×4)</div>
+    <div class="w" style="width:340px;height:320px">
+      <div class="head"><div class="subj">Сегодня</div></div>
+      <div class="counter">Принято 2 из 7 приёмов</div>
+      <div class="rows">
+        <div class="row">
+          <div class="tcol"><div class="time">08:00</div></div>
+          <div class="text"><div class="med">Эутирокс</div><div class="dose">1 таблетка · 50 мкг</div></div>
+          <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></div>
+        </div>
+        <div class="row">
+          <div class="tcol"><div class="time">09:00</div></div>
+          <div class="text"><div class="med">Витамин D3</div><div class="dose">1 капсула · 2000 МЕ</div></div>
+          <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></div>
+        </div>
+        <div class="row">
+          <div class="tcol"><div class="time">14:00</div><div class="now">Сейчас</div></div>
+          <div class="text"><div class="med">Магний B6</div><div class="dose">2 таблетки</div></div>
+          <div class="mark mark--filled"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></div>
+        </div>
+        <div class="row">
+          <div class="tcol"><div class="time">21:00</div></div>
+          <div class="text"><div class="med">Лозартан</div><div class="dose">1 таблетка · 50 мг</div></div>
+          <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></div>
+        </div>
+        <div class="row">
+          <div class="tcol"><div class="time">22:00</div></div>
+          <div class="text"><div class="med">Назонекс</div><div class="dose">2 впрыска в каждый носовой ход</div></div>
+          <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></div>
+        </div>
+      </div>
+    </div>
+    <figcaption>Просторная ступень: до пяти строк. Принятые приёмы строк не занимают — их число называет счётчик; строки идут по времени, наступившие и будущие выше прошедших без отметки (норма §5.11).</figcaption>
+  </figure>
+
+  <!-- ============ 4 · ЧУЖОЙ ПРОФИЛЬ ============ -->
+  <figure class="state">
+    <div class="state-label">4 · «Сегодня» — чужой профиль (ПР-24)</div>
+    <div class="w w--foreign" style="width:340px;height:176px">
+      <div class="stripe"></div>
+      <div class="head"><div class="subj">Сегодня</div><div class="prof">Профиль · Мама</div></div>
+      <div class="counter">Принято 0 из 2 приёмов</div>
+      <div class="rows">
+        <div class="row">
+          <div class="tcol"><div class="time">08:00</div></div>
+          <div class="text"><div class="med">Эутирокс</div><div class="dose">1 таблетка · 50 мкг</div></div>
+          <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></div>
+        </div>
+        <div class="row">
+          <div class="tcol"><div class="time">14:00</div><div class="now now--profile">Сейчас</div></div>
+          <div class="text"><div class="med">Магний B6</div><div class="dose">2 таблетки</div></div>
+          <div class="mark mark--profile"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></div>
+        </div>
+      </div>
+    </div>
+    <figcaption>Индикация профиля: полоса 6 dp по верхней грани, надпись «Профиль · Имя» прописными цветом профиля и подмена акцента — слово «Сейчас» и залитая кнопка тоже несут цвет профиля (§2.2, ПРФ-12). Слов «чужой» и «подопечный» на плите нет (ПР-24); у владельца индикации нет вовсе. Верхнее поле содержимого при полосе — 6 dp, поэтому высота ступени от профиля не меняется.</figcaption>
+  </figure>
+
+  <!-- ============ 5 · ПУСТОЙ ДЕНЬ ============ -->
+  <figure class="state">
+    <div class="state-label">5 · Пустой день</div>
+    <div class="w" style="width:340px;height:176px">
+      <div class="head"><div class="subj">Сегодня</div></div>
+      <div class="line">На сегодня приёмов нет</div>
+    </div>
+    <figcaption>Приёмы бывают, сегодня их нет: состояние названо словами состояния ОВ-34. Счётчика нет — «0 из 0» система не показывает (§5.2).</figcaption>
+  </figure>
+
+  <!-- ============ 6 · ПУСТОЙ ПРОФИЛЬ ============ -->
+  <figure class="state">
+    <div class="state-label">6 · Пустой профиль</div>
+    <div class="w" style="width:340px;height:176px">
+      <div class="head"><div class="subj">Сегодня</div></div>
+      <div class="line">Пока ничего не запланировано</div>
+    </div>
+    <figcaption>Лекарств у профиля нет вовсе — слова пустого состояния «Сегодня». Два состояния не слиты в одно: «сегодня нет приёмов» и «нет лекарств» говорят разное, и виджет не выдаёт одно за другое.</figcaption>
+  </figure>
+
+  <!-- ============ 7 · ВСЁ ОТМЕЧЕНО ============ -->
+  <figure class="state">
+    <div class="state-label">7 · Всё отмечено</div>
+    <div class="w" style="width:340px;height:176px">
+      <div class="head"><div class="subj">Сегодня</div></div>
+      <div class="counter">Принято 5 из 5 приёмов</div>
+      <div class="rows"></div>
+      <div class="line" style="margin-top:0">Всё отмечено</div>
+    </div>
+    <figcaption>Строк нет — все приёмы дня отмечены. Счётчик называет число словами, фраза закрывает состояние: это и есть «принято» без снэкбара — снэкбар система за экранную форму подтверждения не берёт (§5.1, п. 6).</figcaption>
+  </figure>
+
+  <!-- ============ 8 · ЕСТЬ ПРОПУЩЕННОЕ ============ -->
+  <figure class="state">
+    <div class="state-label">8 · Есть пропущенное</div>
+    <div class="w" style="width:340px;height:176px">
+      <div class="head"><div class="subj">Сегодня</div></div>
+      <div class="counter">Принято 1 из 3 приёмов</div>
+      <div class="rows">
+        <div class="row">
+          <div class="tcol"><div class="time">14:00</div><div class="now">Сейчас</div></div>
+          <div class="text"><div class="med">Магний B6</div><div class="dose">2 таблетки</div></div>
+          <div class="mark mark--filled"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></div>
+        </div>
+        <div class="row">
+          <div class="tcol"><div class="time">08:00</div></div>
+          <div class="text"><div class="med med--muted">Эутирокс</div><div class="dose">1 таблетка · 50 мкг</div></div>
+          <div class="missed">Пропущено</div>
+        </div>
+      </div>
+    </div>
+    <figcaption>Прошедшее без отметки названо словом `status_missed` и приглушено, кнопки у него нет — как у карточки `Missed` в приложении (§5.6). Такая строка стоит ниже наступивших и будущих: пропущенное не вытесняет то, что ещё можно отметить.</figcaption>
+  </figure>
+
+  <!-- ============ 9 · «НЕДЕЛЯ», КОМПАКТ ============ -->
+  <figure class="state">
+    <div class="state-label">9 · «Неделя» — компакт 340×104 (≈4×1)</div>
+    <div class="w" style="width:340px;height:104px">
+      <div class="head"><div class="subj">Неделя</div></div>
+      <div class="week">
+        <div class="day"><div class="dlabel">Сб</div><div class="dot dot--taken"></div></div>
+        <div class="day"><div class="dlabel">Вс</div><div class="dot dot--partial"></div></div>
+        <div class="day"><div class="dlabel">Пн</div><div class="dot dot--taken"></div></div>
+        <div class="day"><div class="dlabel">Вт</div><div class="dot dot--taken"></div></div>
+        <div class="day"><div class="dlabel">Ср</div><div class="dot dot--missed"></div></div>
+        <div class="day"><div class="dlabel">Чт</div><div class="dot dot--taken"></div></div>
+        <div class="day"><div class="dlabel dlabel--today">Пт</div><div class="dot dot--today"></div></div>
+      </div>
+    </div>
+    <figcaption>Полоса — словарь §5.2 без второй редакции: метка дня 11 sp, кружок 26 dp, состояния те же. Узкой ступени у «недели» нет: семь кружков с зазорами 8 dp — 230 dp, с полями 258 &gt; 250.</figcaption>
+  </figure>
+
+  <!-- ============ 10 · «НЕДЕЛЯ», ОБЫЧНЫЙ ============ -->
+  <figure class="state">
+    <div class="state-label">10 · «Неделя» — обычный 340×128 (≈4×2)</div>
+    <div class="w" style="width:340px;height:128px">
+      <div class="head"><div class="subj">Неделя</div></div>
+      <div class="counter">Принято 12 из 14 приёмов</div>
+      <div class="week">
+        <div class="day"><div class="dlabel">Сб</div><div class="dot dot--taken"></div></div>
+        <div class="day"><div class="dlabel">Вс</div><div class="dot dot--taken"></div></div>
+        <div class="day"><div class="dlabel">Пн</div><div class="dot dot--taken"></div></div>
+        <div class="day"><div class="dlabel">Вт</div><div class="dot dot--partial"></div></div>
+        <div class="day"><div class="dlabel">Ср</div><div class="dot dot--taken"></div></div>
+        <div class="day"><div class="dlabel">Чт</div><div class="dot dot--empty"></div></div>
+        <div class="day"><div class="dlabel dlabel--today">Пт</div><div class="dot dot--today"></div></div>
+      </div>
+    </div>
+    <figcaption>Счётчик недели: числитель — только завершившиеся сутки (ЭКР-6), знаменатель — приёмы всех семи дней; поэтому утром счётчик не показывает провала, которого нет. День без приёмов — точка 10 dp ролью `switchOff`.</figcaption>
+  </figure>
+
+  <!-- ============ 11 · ПУСТАЯ НЕДЕЛЯ ============ -->
+  <figure class="state">
+    <div class="state-label">11 · Пустая неделя</div>
+    <div class="w" style="width:340px;height:128px">
+      <div class="head"><div class="subj">Неделя</div></div>
+      <div class="line">Приёмов пока нет</div>
+    </div>
+    <figcaption>Завершённых дней с приёмами нет — полосы нет вовсе: кружок «сегодня» без соседей отвечает на вопрос, которого блок не задаёт, а легенда без марок не объясняет ничего (§5.2, V-1). Плита остаётся объявленного размера: ступень задаёт хост.</figcaption>
+  </figure>
+
+  <!-- ============ 12 · СОСТОЯНИЯ ДНЯ ПОЛОСЫ ============ -->
+  <figure class="state">
+    <div class="state-label">12 · Пять состояний дня (словарь §5.2)</div>
+    <div class="w" style="width:340px;height:176px">
+      <div class="head"><div class="subj">Полоса недели — состояния дня</div></div>
+      <div class="week" style="margin-top:12px">
+        <div class="day"><div class="dot dot--taken"></div><div class="dlabel">Принято</div></div>
+        <div class="day"><div class="dot dot--partial"></div><div class="dlabel">Частично</div></div>
+        <div class="day"><div class="dot dot--missed"></div><div class="dlabel">Пропуск</div></div>
+        <div class="day"><div class="dot dot--today"></div><div class="dlabel">Сегодня</div></div>
+        <div class="day"><div class="dot dot--empty"></div><div class="dlabel">Пусто</div></div>
+      </div>
+      <div class="note" style="margin-top:12px;padding:11px 12px">Форма кружка — второй носитель смысла помимо цвета: залитый, полый, точка. Точка значит «приёмов не было» и «до начала истории» — различие называет только подпись для чтения с экрана (`widget_day_state_none`, `widget_day_state_before_history`).</div>
+    </div>
+    <figcaption>Виджет не заводит второго размера кружка и второго набора состояний: человек, видевший блок в карточке лекарства, узнаёт полосу на домашнем экране. Легенды у полосы в виджете нет — три её элемента не помещаются в ступень при крупном шрифте (§5.11).</figcaption>
+  </figure>
+
+  <!-- ============ 13 · «ПО ЛЕКАРСТВУ», КОМПАКТ ============ -->
+  <figure class="state">
+    <div class="state-label">13 · «По лекарству» — компакт 250×104</div>
+    <div class="w" style="width:250px;height:104px">
+      <div class="head"><div class="subj">Магний B6</div></div>
+      <div class="rows">
+        <div class="row">
+          <div class="tcol"><div class="time">14:00</div><div class="now">Сейчас</div></div>
+          <div class="text"><div class="med">Магний B6</div><div class="dose">2 таблетки</div></div>
+          <div class="mark mark--filled"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></div>
+        </div>
+      </div>
+    </div>
+    <figcaption>Шапка называет лекарство, а не тип: тип называют строка настройки и системный список виджетов. Длинное имя усекается одной строкой — то же единственное исключение, что в списке лекарств (§6.3).</figcaption>
+  </figure>
+
+  <!-- ============ 14 · «ПО ЛЕКАРСТВУ», ОБЫЧНЫЙ ============ -->
+  <figure class="state">
+    <div class="state-label">14 · «По лекарству» — обычный 340×176</div>
+    <div class="w" style="width:340px;height:176px">
+      <div class="head"><div class="subj">Магний B6</div></div>
+      <div class="counter">Принято 1 из 2 приёмов</div>
+      <div class="rows">
+        <div class="row">
+          <div class="tcol"><div class="time">14:00</div><div class="now">Сейчас</div></div>
+          <div class="text"><div class="med">Магний B6</div><div class="dose">2 таблетки</div></div>
+          <div class="mark mark--filled"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></div>
+        </div>
+        <div class="row">
+          <div class="tcol"><div class="time">21:00</div></div>
+          <div class="text"><div class="med">Магний B6</div><div class="dose">2 таблетки</div></div>
+          <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg></div>
+        </div>
+      </div>
+    </div>
+    <figcaption>Счётчик считает приёмы одного лекарства за сегодня и говорит их словами — как день в приложении. Отметка — та же, что кнопка приложения: тот же сценарий, источник `PHONE`, та же идемпотентность и то же окно (ПР-22).</figcaption>
+  </figure>
+
+  <!-- ============ 15 · «ПО ЛЕКАРСТВУ», ПУСТОЙ ДЕНЬ ============ -->
+  <figure class="state">
+    <div class="state-label">15 · «По лекарству» — пустой день</div>
+    <div class="w" style="width:340px;height:176px">
+      <div class="head"><div class="subj">Магний B6</div></div>
+      <div class="line">На сегодня приёмов нет</div>
+    </div>
+    <figcaption>Расписание этого лекарства сегодня дня не задело (например, приём через день): лекарство названо в шапке, день — словами. Тихое состояние, а не пустота-поломка (критерий SKL-118 п. 8).</figcaption>
+  </figure>
+
+  <!-- ============ 16 · ЗАМЕТКИ ============ -->
+  <figure class="state">
+    <div class="state-label">16 · Что решено по плите</div>
+    <div class="note">
+      <b>Размеры.</b> Ступени объявлены набором `SizeMode.Responsive`: «Сегодня» и «по лекарству» —
+      250×104, 340×176, 340×320; «неделя» — 340×104 и 340×128. Числа выведены из содержимого:
+      строка 48, шапка 22, счётчик 18, полоса 50, поля 12 и 14 (§5.11).
+    </div>
+    <div class="note">
+      <b>Отметка.</b> Круглая кнопка 44 dp: контурная у приёма впереди, залитая у наступившего.
+      Нажатие переводит строку в «принято» — она уходит из списка, счётчик растёт; когда непринятых
+      не остаётся, плита говорит «Всё отмечено». Снэкбара нет, отмены из виджета нет.
+    </div>
+    <div class="note">
+      <b>«Про» на плите не ставится.</b> Виджет — уже открытая платная зона (§5.9), а после
+      истечения подписки он продолжает показывать день и принимать отметки (ПР-23, Р-32): ни метки,
+      ни приглушения, ни состояния недоступности. Метки стоят у строк типов на экране настройки
+      (`design/screens/WidgetSetup.dc.html`).
+    </div>
+    <div class="note">
+      <b>Поверхность — цель.</b> Нажатие на плиту вне кнопок отметки открывает приложение:
+      «Сегодня» — на «Сегодня», «Неделя» — в «Историю», «По лекарству» — в карточку своего
+      лекарства; доступное имя — `cd_widget_open`.
+    </div>
+    <figcaption>Тёмной среды у плиты нет: виджет рисуется светлыми ролями в любой среде (§9), тёмная среда виджетов — SKL-120. Приёмы «по потребности» в виджет не входят (§5.11).</figcaption>
+  </figure>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#5F6F2E","options":["#5F6F2E","#8F3E23","#1F5F6B","#3C5014","#6B4A6B"]},"$preview":{"width":1600,"height":1820}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { accent: this.props.accent ?? '#5F6F2E' };
+  }
+}
+</script>
+</body>
+</html>
