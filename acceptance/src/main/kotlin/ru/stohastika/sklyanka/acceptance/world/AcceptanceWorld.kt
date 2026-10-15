@@ -69,6 +69,14 @@ class AcceptanceWorld {
 
     val log = ScenarioLog(clock)
 
+    /**
+     * Платный контур «Склянка Про»: магазин, кэш состояния и шторка витрины (SKL-122).
+     *
+     * Мир подставляет магазин портом, а правила исполняет настоящий `ProSheetSession`:
+     * сценарии проверяют продукт, а не его пересказ (`docs/tasks/SKL-122/TDD.md` §2).
+     */
+    val pro = ScenarioPro(clock, log)
+
     /** Репозитории поверх состояния: под ними гоняются настоящие доменные сценарии. */
     val repositories = ScenarioRepositories(profiles, medications, intakes, clock, log)
 

@@ -361,8 +361,8 @@ class ScreenStandSteps {
             assertTrue(rules.contains(permission), "the contour rules must still forbid $permission")
         }
         assertTrue(
-            rules.contains(ANALYTICS_PERMISSION),
-            "the contour rules must require $ANALYTICS_PERMISSION",
+            rules.contains(NETWORK_PERMISSION),
+            "the contour rules must require $NETWORK_PERMISSION",
         )
     }
 
@@ -680,7 +680,9 @@ class ScreenStandSteps {
             "android.permission.ACCESS_NETWORK_STATE",
             "android.permission.ACCESS_WIFI_STATE",
         )
-        const val ANALYTICS_PERMISSION = "android.permission.INTERNET"
+
+        /** Разрешение платного контура: сеть в артефакте бывает только с ним (SKL-122). */
+        const val NETWORK_PERMISSION = "android.permission.INTERNET"
         val FORBIDDEN_GROUPS = listOf(
             "com.google.android.gms",
             "com.google.firebase",

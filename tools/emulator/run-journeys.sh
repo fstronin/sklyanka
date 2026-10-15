@@ -121,7 +121,10 @@ run_phase() {
     local log_file="$results/tests-journey-$label.log"
     local status=0
     : >"$log_file"
-    skl_log "запуск «$label»; лог: $log_file"
+    # Скобки у имени обязательны: в локали, где bash считает многобайтовый «»
+    # частью имени переменной, "$label»" разбирается как переменная «label»» и падает
+    # под `set -u`. Тот же разбор ломал прогон группы целиком (SKL-122).
+    skl_log "запуск «${label}»; лог: $log_file"
     skl_gradle "$api" ":app:connectedDebugAndroidTest" \
         ${1+"$@"} \
         "-Pandroid.testInstrumentationRunnerArguments.$SKL_JOURNEY_STORAGE_ARGUMENT" \

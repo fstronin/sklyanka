@@ -621,12 +621,12 @@ class ReminderScheduleSteps(private val world: AcceptanceWorld) {
     /**
      * Журнал не покидает устройство — утверждение о сборке, а не о настроении.
      *
-     * Сеть в продукте есть, но только аналитическим контуром (ПЛ-3, НФТ-15, ПМ-19,
-     * SKL-82): `INTERNET` объявлен единственным сетевым разрешением, до согласия SDK
-     * не активируется, а журнал наружу не уходит ни при каких условиях (НФТ-19).
-     * Та же проверка, что у настроек (`SettingsContextSteps.theAppNeverReachesTheNetwork`)
-     * и истории: запрещены только разрешения состояния сети. Копия здесь потому,
-     * что строка сценария другая, а правило сборки одно.
+     * Сеть в продукте есть, но только у платного контура покупок (ПЛ-3, НФТ-15,
+     * `ADR-0010`, SKL-122): `INTERNET` объявляет единственный модуль — контур, а журнал
+     * наружу не уходит ни при каких условиях (НФТ-19). Та же проверка, что у настроек
+     * (`SettingsContextSteps.theAppNeverReachesTheNetwork`) и истории: запрещены только
+     * разрешения состояния сети, и они же снимаются из чужих манифестов. Копия здесь
+     * потому, что строка сценария другая, а правило сборки одно.
      */
     @Тогда("^ни одна запись журнала не передаётся за пределы устройства$")
     fun theJournalNeverLeavesTheDevice() {
@@ -642,8 +642,9 @@ class ReminderScheduleSteps(private val world: AcceptanceWorld) {
             )
         }
         assertFalse(
-            declarations.any { it.contains(ANALYTICS_PERMISSION) },
-            "the application manifest must not declare $ANALYTICS_PERMISSION (ПМ-31: релиз без сети)",
+            declarations.any { it.contains(NETWORK_PERMISSION) },
+            "the app manifest must not declare $NETWORK_PERMISSION — only the contour may (ADR-0010)",
+
         )
     }
 
@@ -732,7 +733,9 @@ class ReminderScheduleSteps(private val world: AcceptanceWorld) {
         const val MANIFEST = "app/src/main/AndroidManifest.xml"
         const val USES_PERMISSION = "<uses-permission[^>]*>"
         const val REMOVE_DIRECTIVE = "tools:node=\"remove\""
-        const val ANALYTICS_PERMISSION = "android.permission.INTERNET"
+
+        /** Разрешение платного контура: сеть в артефакте бывает только с ним (SKL-122). */
+        const val NETWORK_PERMISSION = "android.permission.INTERNET"
 
         val FORBIDDEN_NETWORK_PERMISSIONS = listOf(
             "android.permission.ACCESS_NETWORK_STATE",
