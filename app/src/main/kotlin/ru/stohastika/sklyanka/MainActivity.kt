@@ -3,7 +3,6 @@ package ru.stohastika.sklyanka
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.BackHandler
@@ -21,7 +20,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.core.net.toUri
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
@@ -66,6 +64,7 @@ import ru.stohastika.sklyanka.navigation.LocalModalSurfaceOpen
 import ru.stohastika.sklyanka.navigation.MedsDestination
 import ru.stohastika.sklyanka.navigation.MedsSection
 import ru.stohastika.sklyanka.navigation.MedsViewModels
+import ru.stohastika.sklyanka.navigation.PolicyPage
 import ru.stohastika.sklyanka.navigation.RootLayer
 import ru.stohastika.sklyanka.navigation.RootNavigation
 import ru.stohastika.sklyanka.navigation.RootNavigationViewModel
@@ -74,6 +73,7 @@ import ru.stohastika.sklyanka.navigation.SettingsDestination
 import ru.stohastika.sklyanka.navigation.SettingsSection
 import ru.stohastika.sklyanka.navigation.SettingsViewModels
 import ru.stohastika.sklyanka.navigation.UndoReturn
+import ru.stohastika.sklyanka.navigation.WidgetLaunch
 import ru.stohastika.sklyanka.navigation.layer
 import ru.stohastika.sklyanka.platform.startup.StartupRouter
 import ru.stohastika.sklyanka.reminder.DeliveryCheckAnnouncer
@@ -90,7 +90,6 @@ import ru.stohastika.sklyanka.ui.profile.ProfileChromeState
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import javax.inject.Inject
 import android.graphics.Color as AndroidColor
-import ru.stohastika.sklyanka.feature.settings.R as FeatureSettingsR
 
 /**
  * Единственная Activity приложения.
@@ -117,9 +116,6 @@ import ru.stohastika.sklyanka.feature.settings.R as FeatureSettingsR
  * Собственной паузы у заставки нет: дольше она живёт только если дольше поднимается
  * то, что и так нужно первому экрану.
  */
-/** Метка журнала системных переходов этого экрана. */
-private const val TAG = "SklyankaMain"
-
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
@@ -272,7 +268,13 @@ class MainActivity : ComponentActivity() {
         // человека важнее самопоказа онбординга, поэтому форма кладётся в стек раздела
         // до первой композиции. Живое окно удаления (SKL-99, ОВ-124) сильнее ярлыка —
         // человек остаётся на экране с окном.
-        val addMedicationRequested = rootNavigation.openFromLaunch(intent?.action, undoActions.live())
+        val addMedicationRequested = rootNavigation.openFromLaunch(
+            action = intent?.action,
+            liveAction = undoActions.live(),
+            // Плита виджета называет место, куда ведёт нажатие (SKL-118, §5.11):
+            // для «по лекарству» это ещё и идентификатор своего лекарства.
+            medicationId = intent?.getStringExtra(WidgetLaunch.EXTRA_MEDICATION_ID),
+        )
 
         val block = DatabaseBlock.of(databaseUpgrade.state())
 
@@ -400,7 +402,11 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         // Окно удаления сильнее ярлыка и здесь: форма не ложится поверх окна (SKL-99).
-        rootNavigation.openFromLaunch(intent.action, undoActions.live())
+        rootNavigation.openFromLaunch(
+            action = intent.action,
+            liveAction = undoActions.live(),
+            medicationId = intent.getStringExtra(WidgetLaunch.EXTRA_MEDICATION_ID),
+        )
     }
 
     /**
@@ -650,26 +656,11 @@ class MainActivity : ComponentActivity() {
     /**
      * Открыть «Условия и политика» шторки витрины (SKL-122, ОВ-123).
      *
-     * Строка ведёт в документ, а не в магазин (`docs/norm/06-design.md` §5.9): адрес берётся
-     * из того же ресурса, что и в настройках, и открывается системным браузером. Пока адрес
-     * — плейсхолдер заказчика (Р-49), и это названный долг, а не подмена документа покупкой.
+     * Открывает тот, кто собирает маршруты, — `app`: у экрана нет ни браузера, ни адреса
+     * (§5.9, ADR-0007). Одна точка на весь продукт — [PolicyPage].
      */
     private fun openPolicy() {
-        val intent = Intent(
-            Intent.ACTION_VIEW,
-            getString(FeatureSettingsR.string.settings_policy_url).toUri(),
-        )
-        // Устройство без браузера — обычный исход на урезанной прошивке, а не сбой приложения:
-        // проверка обработчика и перехват отказа, как в AndroidSystemSettingsNavigator
-        // (SKL-46). Словами об этом поверхность покупки молчит осознанно — долг назван
-        // в `TDD.md` §13: слов для этого случая в норме §10 нет.
-        if (intent.resolveActivity(packageManager) == null) {
-            Log.i(TAG, "no application can show the policy page")
-            return
-        }
-        runCatching { startActivity(intent) }.onFailure { error ->
-            Log.i(TAG, "no application can show the policy page", error)
-        }
+        PolicyPage.open(this)
     }
 
     /**

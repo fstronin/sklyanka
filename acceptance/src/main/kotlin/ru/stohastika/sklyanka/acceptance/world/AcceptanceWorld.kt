@@ -102,6 +102,9 @@ class AcceptanceWorld {
      */
     val system = ScenarioSystemState()
 
+    /** Виджеты домашнего экрана и их гейт (SKL-118). */
+    val widgets = ScenarioWidgets()
+
     /** Сценарий отказа: ручная проверка напоминаний не может завершиться (SKL-79). */
     var failReminderCheck: Boolean = false
 

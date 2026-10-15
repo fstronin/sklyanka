@@ -126,6 +126,9 @@ dependencies {
     // которому разрешена сеть (SKL-122, ADR-0010 п. 1–2). Модуль подключён, чтобы граф Hilt
     // и гейт состава артефакта проверялись на сборке, а не на устройстве.
     implementation(project(":billing-appgallery"))
+    // Виджеты домашнего экрана (SKL-118): провайдеры и экран настройки приезжают слиянием
+    // манифеста модуля, а обновление виджетов по событиям — точками графа в app.
+    implementation(project(":feature-widgets"))
 
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.androidx.core.ktx)

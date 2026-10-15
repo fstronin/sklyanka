@@ -116,6 +116,62 @@
         <item quantity="other">осталось %1$d таблетки</item>
     </plurals>
 
+    <!--
+      Доза приёма и дозировка препарата (§5.11). Формат живёт в дизайн-системе, а не на
+      экране «Сегодня»: ту же подпись несёт строка приёма в Glance-виджете, и вторая
+      редакция разошлась бы с первой (см. `DoseText`).
+    -->
+    <plurals name="dose_tablets">
+        <item quantity="one">%1$s&#160;таблетка</item>
+        <item quantity="few">%1$s&#160;таблетки</item>
+        <item quantity="many">%1$s&#160;таблеток</item>
+        <item quantity="other">%1$s&#160;таблетки</item>
+    </plurals>
+    <plurals name="dose_capsules">
+        <item quantity="one">%1$s&#160;капсула</item>
+        <item quantity="few">%1$s&#160;капсулы</item>
+        <item quantity="many">%1$s&#160;капсул</item>
+        <item quantity="other">%1$s&#160;капсулы</item>
+    </plurals>
+    <plurals name="dose_millilitres">
+        <item quantity="one">%1$s&#160;мл</item>
+        <item quantity="few">%1$s&#160;мл</item>
+        <item quantity="many">%1$s&#160;мл</item>
+        <item quantity="other">%1$s&#160;мл</item>
+    </plurals>
+    <plurals name="dose_drops">
+        <item quantity="one">%1$s&#160;капля</item>
+        <item quantity="few">%1$s&#160;капли</item>
+        <item quantity="many">%1$s&#160;капель</item>
+        <item quantity="other">%1$s&#160;капли</item>
+    </plurals>
+    <plurals name="dose_sprays">
+        <item quantity="one">%1$s&#160;впрыск</item>
+        <item quantity="few">%1$s&#160;впрыска</item>
+        <item quantity="many">%1$s&#160;впрысков</item>
+        <item quantity="other">%1$s&#160;впрыска</item>
+    </plurals>
+    <plurals name="dose_injections">
+        <item quantity="one">%1$s&#160;инъекция</item>
+        <item quantity="few">%1$s&#160;инъекции</item>
+        <item quantity="many">%1$s&#160;инъекций</item>
+        <item quantity="other">%1$s&#160;инъекции</item>
+    </plurals>
+
+    <!-- Разделитель подписи приёма: «1 таблетка · 50 мкг · во время еды». -->
+    <string name="dose_separator">" · "</string>
+
+    <!-- «50 мкг»: дозировка и её единица; единица — слово языка из закрытого списка (Р-45). -->
+    <string name="dose_strength">%1$s %2$s</string>
+
+    <!-- Единица дозировки — закрытый список из шести значений (Р-45); незнакомый код печатается как есть (МГ-6). -->
+    <string name="strength_unit_milligram">мг</string>
+    <string name="strength_unit_microgram">мкг</string>
+    <string name="strength_unit_gram">г</string>
+    <string name="strength_unit_millilitre">мл</string>
+    <string name="strength_unit_international_unit">МЕ</string>
+    <string name="strength_unit_percent">%</string>
+
     <!-- Заглушки превью и каталога компонентов -->
     <string name="preview_date">Пятница, 25 сентября</string>
     <string name="preview_screen_title">Сегодня</string>

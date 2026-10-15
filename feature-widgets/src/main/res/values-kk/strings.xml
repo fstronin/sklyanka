@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_type_today">Бүгін</string>
+    <string name="widget_type_week">Апта</string>
+    <string name="widget_type_medication">Дәрі бойынша</string>
+    <string name="widget_now">Қазір</string>
+    <string name="widget_day_done">Барлығы белгіленді</string>
+    <string name="widget_day_empty">Бүгінге қабылдау жоқ</string>
+    <string name="widget_no_medications">Әзірге ештеңе жоспарланбаған</string>
+    <string name="widget_week_empty">Әзірге қабылдау жоқ</string>
+
+    <string name="cd_widget_open">Қолданбада ашу</string>
+    <string name="cd_widget_day">%1$s, %2$s</string>
+
+    <string name="widget_day_state_taken">барлығы қабылданды</string>
+    <string name="widget_day_state_partial">ішінара</string>
+    <string name="widget_day_state_missed">өткізілді</string>
+    <string name="widget_day_state_none">қабылдау болмады</string>
+    <string name="widget_day_state_before_history">тарих басталғанға дейін</string>
+    <string name="widget_day_state_today">бүгін, қабылдау әлі келмеді</string>
+
+    <string name="widget_setup_title">Виджет</string>
+    <string name="widget_setup_hint">Виджет белсенді бейіннің қабылдауларын көрсетеді</string>
+    <string name="widget_section_type">Виджет түрі</string>
+    <string name="widget_medication_row">Дәрі</string>
+    <string name="widget_medication_none">Таңдалмаған</string>
+    <string name="widget_medication_empty">Бейінде әзірге дәрі жоқ</string>
+    <string name="widget_action_add">Виджет қосу</string>
+    <string name="widget_pro_required">Виджеттер — Sklyanka Pro жазылымында</string>
+</resources>

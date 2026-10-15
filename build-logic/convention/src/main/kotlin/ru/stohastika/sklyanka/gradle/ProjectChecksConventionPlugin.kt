@@ -143,6 +143,9 @@ class ProjectChecksConventionPlugin : Plugin<Project> {
             // и походы обязаны хотя бы компилироваться этим же прогоном.
             ":feature-pro",
             ":billing-appgallery",
+            // Виджеты домашнего экрана (SKL-118): провайдеры и экран настройки виджета
+            // проверяются устройством, и их инструментальный набор обязан компилироваться.
+            ":feature-widgets",
         )
         val PROJECT_RULES = listOf(
             "HardcodedDesignToken",

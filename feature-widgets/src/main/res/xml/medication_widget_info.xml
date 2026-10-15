@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Виджет «По лекарству» (SKL-118): приёмы одного лекарства активного профиля.
+
+  Размеры — те же ступени, что у «Сегодня» (§5.11): 250×104, 340×176, 340×320; здесь —
+  нижняя ступень и ячейка по умолчанию (≈3×1). Какое лекарство показывать, решает экран
+  настройки: он же выбирает тип и служит точкой гейта «Про» (Р-32, ПР-23). Обновление —
+  по событиям плюс суточной страховкой платформы, как у остальных двух типов.
+-->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+  android:configure="ru.stohastika.sklyanka.feature.widgets.config.WidgetConfigActivity"
+  android:label="@string/widget_type_medication"
+  android:initialLayout="@layout/glance_default_loading_layout"
+  android:minHeight="104dp"
+  android:minWidth="250dp"
+  android:resizeMode="none"
+  android:targetCellHeight="1"
+  android:targetCellWidth="3"
+  android:updatePeriodMillis="86400000"
+  android:widgetCategory="home_screen" />

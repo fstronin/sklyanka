@@ -1,9 +1,11 @@
 package ru.stohastika.sklyanka.di
 
+import android.content.Context
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -40,6 +42,7 @@ import ru.stohastika.sklyanka.feature.onboarding.PermissionsActivity
 import ru.stohastika.sklyanka.feature.reminder.DeliveryCheckController
 import ru.stohastika.sklyanka.feature.reminder.ReminderSettingsFixer
 import ru.stohastika.sklyanka.feature.reminder.ReminderSetupEntry
+import ru.stohastika.sklyanka.feature.widgets.glance.WidgetUpdates
 import ru.stohastika.sklyanka.platform.AppForegroundTracker
 import ru.stohastika.sklyanka.platform.BackgroundWorkFailures
 import ru.stohastika.sklyanka.platform.environment.AndroidDeviceEnvironment
@@ -174,8 +177,15 @@ object ReminderModule {
      */
     @Provides
     @Singleton
-    fun provideMarkSideEffects(dismiss: DismissReminderUseCase): MarkSideEffects =
-        MarkSideEffects { intakeId -> dismiss(intakeId) }
+    fun provideMarkSideEffects(
+        dismiss: DismissReminderUseCase,
+        @ApplicationContext context: Context,
+    ): MarkSideEffects = MarkSideEffects { intakeId ->
+        dismiss(intakeId)
+        // Отметка из приложения — событие и для плиты (ПР-22, П-7): виджет обязан показать
+        // тот же день, что и приложение, а не тот, что был до нажатия.
+        WidgetUpdates.updateAll(context)
+    }
 
     @Provides
     @Singleton

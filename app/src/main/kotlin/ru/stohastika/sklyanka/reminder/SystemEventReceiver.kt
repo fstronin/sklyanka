@@ -9,6 +9,7 @@ import kotlinx.coroutines.launch
 import ru.stohastika.sklyanka.data.room.databaseStateOf
 import ru.stohastika.sklyanka.di.ReminderEntryPoint
 import ru.stohastika.sklyanka.domain.reminder.RescheduleReason
+import ru.stohastika.sklyanka.feature.widgets.glance.WidgetUpdates
 
 /**
  * Системные события, после которых будильников больше нет (НАП-11).
@@ -44,6 +45,9 @@ class SystemEventReceiver : BroadcastReceiver() {
         graph.reminderScope().launch {
             try {
                 ReminderWork.enqueueReschedule(context, reason).await()
+                // Смена пояса и перевод часов меняют то, какие сутки сейчас (НФТ-34/37):
+                // плита обязана перерисоваться тем же событием, что и план будильников.
+                WidgetUpdates.updateAll(context)
             } finally {
                 pending.finish()
             }

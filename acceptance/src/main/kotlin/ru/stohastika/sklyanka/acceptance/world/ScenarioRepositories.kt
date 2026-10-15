@@ -295,6 +295,19 @@ class ScenarioRepositories(
                     Invariants.requireValid(Invariants.markingViolations(decision.intake, medication))
                     intakes.store(decision.intake)
                     applyStock(decision.intake.medicationId, decision.stock)
+                    // След отметки пишет хранилище, а не сценарий отметки: в продукте это
+                    // делает транзакция `core-data`, и мир обязан писать его тем же журналом —
+                    // иначе приёмка проверяла бы свой пересказ вместо записи продукта (ПР-12,
+                    // НФТ-19: в записи идентификаторы, а не названия).
+                    log.record(
+                        event = OpEvent.INTAKE_MARKED,
+                        profileId = command.actorProfileId,
+                        medicationId = decision.intake.medicationId,
+                        intakeId = decision.intake.id,
+                        before = current.status.name,
+                        after = decision.intake.status.name,
+                        source = command.source.name,
+                    )
                     if (decision.superseded) {
                         MarkOutcome.Superseded(decision.intake, current)
                     } else {

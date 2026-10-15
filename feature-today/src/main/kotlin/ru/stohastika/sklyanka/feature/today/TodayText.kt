@@ -3,11 +3,11 @@ package ru.stohastika.sklyanka.feature.today
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import ru.stohastika.sklyanka.domain.intake.MarkResult
 import ru.stohastika.sklyanka.domain.medication.DoseUnit
-import ru.stohastika.sklyanka.domain.medication.StrengthUnit
 import ru.stohastika.sklyanka.domain.medication.doseUnit
 import ru.stohastika.sklyanka.domain.model.FoodRelation
 import ru.stohastika.sklyanka.domain.model.Medication
@@ -16,6 +16,7 @@ import ru.stohastika.sklyanka.domain.today.GroupLabelForm
 import ru.stohastika.sklyanka.domain.today.IntakeItem
 import ru.stohastika.sklyanka.domain.today.PartOfDay
 import ru.stohastika.sklyanka.domain.today.StockNotice
+import ru.stohastika.sklyanka.ui.text.DoseText
 import ru.stohastika.sklyanka.ui.text.pluralQuantityOf
 import java.math.BigDecimal
 import java.time.LocalDate
@@ -118,63 +119,32 @@ internal fun StockNotice.text(): String = stringResource(
  * висящей точки.
  */
 @Composable
-internal fun IntakeItem.doseCaption(): String = medication.doseCaption(doseAmount)
+internal fun IntakeItem.doseCaption(): String = doseCaption(medication, doseAmount)
 
 @Composable
-internal fun Medication.doseCaption(): String = doseCaption(doseAmount)
-
-@Composable
-private fun Medication.doseCaption(amount: BigDecimal): String {
-    val separator = stringResource(R.string.today_separator)
-    val parts = buildList {
-        add(doseLabel(amount, DoseUnit.ofCode(doseUnit) ?: form.doseUnit()))
-        strength?.let { value ->
-            add(stringResource(R.string.today_strength, value.plain(), strengthUnitText(strengthUnit)))
-        }
-        foodRelation.label()?.let(::add)
-    }
-    return parts.joinToString(separator)
-}
+internal fun Medication.doseCaption(): String = doseCaption(this, doseAmount)
 
 /**
- * Единица дозировки словом языка из закрытого списка (Р-45); незнакомый код — как есть.
- *
- * Код приходит из записи: своя форма пишет код закрытого списка, чужая единица — из файла
- * переноса данных или из более старой версии, и подменять её своей нельзя (МГ-6).
+ * Доза и дозировка — общим форматером дизайн-системы ([DoseText]); связь с едой дописывается
+ * здесь, потому что она принадлежит экрану «Сегодня», а не формату дозы (§5.11).
  */
 @Composable
-private fun strengthUnitText(code: String?): String {
-    if (code == null) return ""
-    return StrengthUnit.ofCode(code)?.label() ?: code
+private fun doseCaption(medication: Medication, amount: BigDecimal): String {
+    val resources = LocalContext.current.resources
+    val parts = buildList {
+        add(
+            DoseText.line(
+                resources = resources,
+                amount = amount,
+                unit = DoseUnit.ofCode(medication.doseUnit) ?: medication.form.doseUnit(),
+                strength = medication.strength,
+                strengthUnit = medication.strengthUnit,
+            ),
+        )
+        medication.foodRelation.label()?.let(::add)
+    }
+    return parts.joinToString(resources.getString(ru.stohastika.sklyanka.ui.R.string.dose_separator))
 }
-
-/** Слово единицы дозировки из закрытого списка (Р-45). */
-@Composable
-private fun StrengthUnit.label(): String = stringResource(
-    when (this) {
-        StrengthUnit.MILLIGRAM -> R.string.strength_unit_milligram
-        StrengthUnit.MICROGRAM -> R.string.strength_unit_microgram
-        StrengthUnit.GRAM -> R.string.strength_unit_gram
-        StrengthUnit.MILLILITRE -> R.string.strength_unit_millilitre
-        StrengthUnit.INTERNATIONAL_UNIT -> R.string.strength_unit_international_unit
-        StrengthUnit.PERCENT -> R.string.strength_unit_percent
-    },
-)
-
-/** «1 таблетка», «2 таблетки», «0,5 таблетки» — количество для формы слова даёт `pluralQuantityOf`. */
-@Composable
-private fun doseLabel(amount: BigDecimal, unit: DoseUnit): String = pluralStringResource(
-    when (unit) {
-        DoseUnit.TABLET -> R.plurals.today_dose_tablets
-        DoseUnit.CAPSULE -> R.plurals.today_dose_capsules
-        DoseUnit.MILLILITRE -> R.plurals.today_dose_millilitres
-        DoseUnit.DROP -> R.plurals.today_dose_drops
-        DoseUnit.SPRAY -> R.plurals.today_dose_sprays
-        DoseUnit.INJECTION -> R.plurals.today_dose_injections
-    },
-    pluralQuantityOf(amount),
-    amount.plain(),
-)
 
 /** «осталось 9 таблеток» — склонение зависит и от числа, и от единицы. */
 @Composable

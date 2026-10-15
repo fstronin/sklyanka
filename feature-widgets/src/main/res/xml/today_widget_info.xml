@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Виджет «Сегодня» (SKL-118): приёмы дня активного профиля и отметка одним нажатием.
+
+  Размеры — ступени нормы дизайна (`docs/norm/06-design.md` §4, §5.11): набор отзывчивых
+  ступеней объявляет сама плита (`SizeMode.Responsive` — 250×104, 340×176, 340×320),
+  а здесь стоят нижняя ступень и ячейка лончера, к которой виджет ставится по умолчанию
+  (≈3×1). Ступеней вполширины у «Сегодня» нет: строка приёма в половину ширины не
+  помещается, и имя лекарства обрезалось бы в каждой строке.
+
+  updatePeriodMillis — суточная страховка: виджет перерисовывается по событиям
+  (отметка, полночь, смена профиля, правка лекарства), а раз в сутки платформа
+  спрашивает его сама. Опрос часов и сети в виджете не заводится (П-6, Р-4).
+
+  initialLayout — разметка Glance до первой отрисовки: без неё система показывает
+  пустое место на месте виджета.
+
+  configure — экран настройки: он же точка гейта «Про» (Р-32, ПР-23). Пока он не вернул
+  «готово», виджета на домашнем экране не появляется.
+-->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+  android:configure="ru.stohastika.sklyanka.feature.widgets.config.WidgetConfigActivity"
+  android:label="@string/widget_type_today"
+  android:initialLayout="@layout/glance_default_loading_layout"
+  android:minHeight="104dp"
+  android:minWidth="250dp"
+  android:resizeMode="none"
+  android:targetCellHeight="1"
+  android:targetCellWidth="3"
+  android:updatePeriodMillis="86400000"
+  android:widgetCategory="home_screen" />

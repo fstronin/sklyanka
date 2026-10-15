@@ -9,6 +9,7 @@ import kotlinx.coroutines.CoroutineScope
 import ru.stohastika.sklyanka.domain.reminder.HandleFiredDeliveryCheckUseCase
 import ru.stohastika.sklyanka.domain.reminder.HandleFiredReminderUseCase
 import ru.stohastika.sklyanka.domain.reminder.SweepAtDayBoundaryUseCase
+import ru.stohastika.sklyanka.feature.widgets.glance.WidgetRefresher
 import ru.stohastika.sklyanka.reminder.ReminderPlanningTrigger
 
 /**
@@ -32,6 +33,9 @@ interface ReminderEntryPoint {
     fun reminderPlanning(): ReminderPlanningTrigger
 
     fun sweepAtDayBoundary(): SweepAtDayBoundaryUseCase
+
+    /** Перерисовка плит по событию (SKL-118, ПР-1, П-7): шов вместо статического объекта. */
+    fun widgetRefresher(): WidgetRefresher
 
     @ReminderScope
     fun reminderScope(): CoroutineScope

@@ -27,7 +27,14 @@ class DayBoundaryWorker(context: Context, parameters: WorkerParameters) : Corout
             return Result.success()
         }
         return try {
-            ReminderEntryPoint.of(applicationContext).sweepAtDayBoundary()()
+            val graph = ReminderEntryPoint.of(applicationContext)
+            // Полуночный проход и перерисовка — одно действие: полночь меняет и день плиты,
+            // и состояние вчерашних приёмов (ПР-1, П-7), и без второго плита показывала бы
+            // вчерашние строки с живой кнопкой, а нажатие по ним молча отбивалось бы.
+            DayBoundaryPass(
+                sweep = { graph.sweepAtDayBoundary()() },
+                refresh = { graph.widgetRefresher().refreshAll() },
+            ).run()
             Result.success()
         } catch (error: Exception) {
             // Тот же довод, что в RescheduleWorker: причина отказа базы неперечислима, а цена —

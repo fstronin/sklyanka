@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_type_today">今天</string>
+    <string name="widget_type_week">一周</string>
+    <string name="widget_type_medication">按药品</string>
+    <string name="widget_now">现在</string>
+    <string name="widget_day_done">已全部标记</string>
+    <string name="widget_day_empty">今天没有服药</string>
+    <string name="widget_no_medications">还没有任何计划</string>
+    <string name="widget_week_empty">暂无服药</string>
+
+    <string name="cd_widget_open">在应用中打开</string>
+    <string name="cd_widget_day">%1$s，%2$s</string>
+
+    <string name="widget_day_state_taken">全部已服用</string>
+    <string name="widget_day_state_partial">部分服用</string>
+    <string name="widget_day_state_missed">漏服</string>
+    <string name="widget_day_state_none">没有服药</string>
+    <string name="widget_day_state_before_history">在开始记录历史之前</string>
+    <string name="widget_day_state_today">今天，服药时间还未到</string>
+
+    <string name="widget_setup_title">小组件</string>
+    <string name="widget_setup_hint">小组件显示当前档案的服药</string>
+    <string name="widget_section_type">小组件类型</string>
+    <string name="widget_medication_row">药品</string>
+    <string name="widget_medication_none">未选择</string>
+    <string name="widget_medication_empty">档案中暂无药品</string>
+    <string name="widget_action_add">添加小组件</string>
+    <string name="widget_pro_required">小组件需订阅 Sklyanka Pro</string>
+</resources>

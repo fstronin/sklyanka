@@ -22,6 +22,43 @@ class RootNavigationTest {
     }
 
     @Test
+    fun `the plate of today closes an open card of a medication`() {
+        val navigation = RootNavigation()
+        navigation.openMeds(MedsDestination.Card("med-1"))
+
+        navigation.openFromLaunch(WidgetLaunch.OPEN_TODAY)
+
+        assertTrue("the plate must open today, not a card on top of it", navigation.showsToday)
+    }
+
+    @Test
+    fun `the plate of a medication closes an open section`() {
+        val navigation = RootNavigation()
+        navigation.openSection(SettingsDestination.TRANSFER)
+
+        navigation.openFromLaunch(WidgetLaunch.OPEN_MEDICATION, medicationId = "med-9")
+
+        assertEquals(
+            "the plate must open its own medication, not a section above it",
+            MedsDestination.Card("med-9"),
+            navigation.meds,
+        )
+        assertNull("the section must close: a layer wins over the tab", navigation.section)
+    }
+
+    @Test
+    fun `the plate of the week closes both layers and opens the history`() {
+        val navigation = RootNavigation()
+        navigation.openMeds(MedsDestination.List)
+        navigation.openSection(SettingsDestination.HISTORY)
+
+        navigation.openFromLaunch(WidgetLaunch.OPEN_HISTORY)
+
+        assertTrue("the plate must lead to the history", navigation.layer() is RootLayer.HistoryFromToday)
+        assertNull(navigation.meds)
+    }
+
+    @Test
     fun `an open medication card wins over the tab`() {
         val navigation = RootNavigation()
 

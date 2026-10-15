@@ -65,20 +65,6 @@
 
     <string name="today_now">Сейчас</string>
 
-    <!-- Разделитель подписи приёма: «1 таблетка · 50 мкг · во время еды». -->
-    <string name="today_separator">" · "</string>
-
-    <!-- «50 мкг»: дозировка и её единица; единица — слово языка из закрытого списка (Р-45). -->
-    <string name="today_strength">%1$s %2$s</string>
-
-    <!-- Единица дозировки — закрытый список из шести значений (Р-45), незнакомый код печатается как есть (МГ-6). -->
-    <string name="strength_unit_milligram">мг</string>
-    <string name="strength_unit_microgram">мкг</string>
-    <string name="strength_unit_gram">г</string>
-    <string name="strength_unit_millilitre">мл</string>
-    <string name="strength_unit_international_unit">МЕ</string>
-    <string name="strength_unit_percent">%</string>
-
     <string name="today_food_before">до еды</string>
     <string name="today_food_with">во время еды</string>
     <string name="today_food_after">после еды</string>

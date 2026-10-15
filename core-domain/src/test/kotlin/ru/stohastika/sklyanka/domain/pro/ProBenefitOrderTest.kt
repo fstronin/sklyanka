@@ -34,6 +34,15 @@ class ProBenefitOrderTest {
     }
 
     @Test
+    fun `from the widget setup the widgets come first and are listed once`() {
+        val order = ProPoint.WIDGETS.benefitOrder()
+
+        assertEquals(ProBenefit.WIDGETS, order.first())
+        assertEquals(ProBenefit.entries.size, order.size)
+        assertEquals(order.distinct(), order)
+    }
+
+    @Test
     fun `the contextual benefit is listed once`() {
         val order = ProPoint.MEDICATION_FORM.benefitOrder()
 

@@ -36,31 +36,6 @@
         <item quantity="other">%1$s&#160;инъекция қалды</item>
     </plurals>
 
-    <plurals name="today_dose_tablets">
-        <item quantity="one">%1$s&#160;таблетка</item>
-        <item quantity="other">%1$s&#160;таблетка</item>
-    </plurals>
-    <plurals name="today_dose_capsules">
-        <item quantity="one">%1$s&#160;капсула</item>
-        <item quantity="other">%1$s&#160;капсула</item>
-    </plurals>
-    <plurals name="today_dose_millilitres">
-        <item quantity="one">%1$s&#160;мл</item>
-        <item quantity="other">%1$s&#160;мл</item>
-    </plurals>
-    <plurals name="today_dose_drops">
-        <item quantity="one">%1$s&#160;тамшы</item>
-        <item quantity="other">%1$s&#160;тамшы</item>
-    </plurals>
-    <plurals name="today_dose_sprays">
-        <item quantity="one">%1$s&#160;бүрікпе</item>
-        <item quantity="other">%1$s&#160;бүрікпе</item>
-    </plurals>
-    <plurals name="today_dose_injections">
-        <item quantity="one">%1$s&#160;инъекция</item>
-        <item quantity="other">%1$s&#160;инъекция</item>
-    </plurals>
-
     <plurals name="today_prn_subtitle">
         <item quantity="one">Кестесіз · тәулігіне %1$d реттен көп емес</item>
         <item quantity="other">Кестесіз · тәулігіне %1$d реттен көп емес</item>

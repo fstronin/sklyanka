@@ -63,44 +63,6 @@
         <item quantity="other">осталось %1$s&#160;инъекции</item>
     </plurals>
 
-    <!-- Доза одного приёма: «1 таблетка», «2 таблетки», «1 капсула». -->
-    <plurals name="today_dose_tablets">
-        <item quantity="one">%1$s&#160;таблетка</item>
-        <item quantity="few">%1$s&#160;таблетки</item>
-        <item quantity="many">%1$s&#160;таблеток</item>
-        <item quantity="other">%1$s&#160;таблетки</item>
-    </plurals>
-    <plurals name="today_dose_capsules">
-        <item quantity="one">%1$s&#160;капсула</item>
-        <item quantity="few">%1$s&#160;капсулы</item>
-        <item quantity="many">%1$s&#160;капсул</item>
-        <item quantity="other">%1$s&#160;капсулы</item>
-    </plurals>
-    <plurals name="today_dose_millilitres">
-        <item quantity="one">%1$s&#160;мл</item>
-        <item quantity="few">%1$s&#160;мл</item>
-        <item quantity="many">%1$s&#160;мл</item>
-        <item quantity="other">%1$s&#160;мл</item>
-    </plurals>
-    <plurals name="today_dose_drops">
-        <item quantity="one">%1$s&#160;капля</item>
-        <item quantity="few">%1$s&#160;капли</item>
-        <item quantity="many">%1$s&#160;капель</item>
-        <item quantity="other">%1$s&#160;капли</item>
-    </plurals>
-    <plurals name="today_dose_sprays">
-        <item quantity="one">%1$s&#160;впрыск</item>
-        <item quantity="few">%1$s&#160;впрыска</item>
-        <item quantity="many">%1$s&#160;впрысков</item>
-        <item quantity="other">%1$s&#160;впрыска</item>
-    </plurals>
-    <plurals name="today_dose_injections">
-        <item quantity="one">%1$s&#160;инъекция</item>
-        <item quantity="few">%1$s&#160;инъекции</item>
-        <item quantity="many">%1$s&#160;инъекций</item>
-        <item quantity="other">%1$s&#160;инъекции</item>
-    </plurals>
-
     <!-- Подпись карточки «по потребности»: «Без расписания · не чаще 3 раз в сутки». -->
     <plurals name="today_prn_subtitle">
         <item quantity="one">Без расписания · не чаще %1$d раза в сутки</item>

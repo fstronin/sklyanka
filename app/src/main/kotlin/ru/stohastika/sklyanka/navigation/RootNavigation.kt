@@ -68,12 +68,57 @@ class RootNavigation {
      *
      * @return `true`, если действие было ярлыком и форма открыта.
      */
-    fun openFromLaunch(action: String?, liveAction: UndoableAction? = null): Boolean {
+    fun openFromLaunch(action: String?, liveAction: UndoableAction? = null, medicationId: String? = null): Boolean {
         // Живое окно удаления сильнее ярлыка (SKL-99, ОВ-124): пока человек может вернуть
         // лекарство кнопкой «Отменить», форма поверх окна лишила бы его этой возможности.
         val opensTheForm = AddMedicationLaunch.matches(action) && liveAction !is UndoableDeletion
         if (opensTheForm) openMeds(MedsDestination.NewMedication)
-        return opensTheForm
+        // Вход с плиты виджета (SKL-118, §5.11): место на экране называет содержимое плиты.
+        // Живое окно удаления и здесь сильнее: оно относится к тому, что человек только что
+        // сделал, и уводить его на «Историю» под ним значило бы отнять возврат.
+        if (opensTheForm || liveAction is UndoableDeletion) return opensTheForm
+        return openFromWidget(action, medicationId)
+    }
+
+    /**
+     * Открыть место, названное плитой виджета.
+     *
+     * @return `true`, если действие пришло с плиты и маршрут выбран.
+     */
+    private fun openFromWidget(action: String?, medicationId: String?): Boolean = when (action) {
+        WidgetLaunch.OPEN_TODAY -> {
+            // Нажатие на плиту ведёт в приложение, а не «в приложение поверх открытого
+            // экрана»: слой выбирается по приоритету выше вкладки, и без сброса карточка
+            // лекарства или раздел перекрыли бы переход (ADR-0007).
+            openToday()
+            true
+        }
+
+        WidgetLaunch.OPEN_HISTORY -> {
+            resetToRoot()
+            openHistory()
+            true
+        }
+
+        WidgetLaunch.OPEN_MEDICATION ->
+            medicationId
+                ?.takeIf { it.isNotBlank() }
+                ?.let { id ->
+                    resetToRoot()
+                    openMeds(MedsDestination.Card(id))
+                    true
+                }
+                ?: false
+
+        else -> false
+    }
+
+    /** Снять верхние слои: вкладка остаётся, раздел, раздел лекарств и история закрываются. */
+    private fun resetToRoot() {
+        rootMotion = LayerMotion.Crossfade
+        section = null
+        meds = null
+        historyFromToday = false
     }
 
     fun leaveMeds() {

@@ -25,6 +25,7 @@ import ru.stohastika.sklyanka.reminder.ReminderPlanningTrigger
 import ru.stohastika.sklyanka.startup.StartupSeed
 import ru.stohastika.sklyanka.ui.locale.withInterfaceLocale
 import ru.stohastika.sklyanka.ui.token.ProfilePalette
+import ru.stohastika.sklyanka.widget.WidgetRefresh
 import javax.inject.Inject
 
 /**
@@ -51,6 +52,15 @@ class SklyankaApp : Application() {
 
     @Inject
     lateinit var operationLog: OperationLog
+
+    /**
+     * Перерисовка виджетов по событиям продукта (SKL-118).
+     *
+     * Слежение живёт ровно столько, сколько живёт процесс: плита на домашнем экране — часть
+     * продукта, и её данные обязаны меняться вместе с данными профиля (ПР-24, П-7).
+     */
+    @Inject
+    lateinit var widgetRefresh: WidgetRefresh
 
     /**
      * Генерация приёмов и постановка будильников в одном порядке (SKL-06, SKL-13).
@@ -174,6 +184,10 @@ class SklyankaApp : Application() {
         // и подрезка журнала молча писали бы в базу, которой эта сборка работать не может.
         // Каналы уведомлений выше уже созданы: ими сообщают о причине.
         if (databaseUpgrade.state() != DatabaseState.Ready) return
+
+        // Виджеты следуют за активным профилем и его лекарствами: смена профиля, правка
+        // курса и перенос данных перерисовывают плиту сами, без открытия приложения.
+        widgetRefresh.start(startupScope)
         startupScope.launch {
             // Первым делом — след миграции и проверки целостности (`ADR-0012` п. 4): факт
             // перехода схемы обязан быть записан раньше любой другой работы, иначе

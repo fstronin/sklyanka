@@ -26,19 +26,7 @@
 
     <string name="today_now">Қазір</string>
 
-    <string name="today_separator">" · "</string>
-
-    <string name="today_strength">%1$s %2$s</string>
-
-    <!-- Единица дозировки — закрытый список из шести значений (Р-45), незнакомый код печатается как есть (МГ-6). -->
-    <string name="strength_unit_milligram">мг</string>
-    <string name="strength_unit_microgram">мкг</string>
-    <string name="strength_unit_gram">г</string>
-    <string name="strength_unit_millilitre">мл</string>
-    <string name="strength_unit_international_unit">ХБ</string>
-    <string name="strength_unit_percent">%</string>
-
-    <string name="today_food_before">тамаққа дейін</string>
+    <string name="today_food_before">тамақтан бұрын</string>
     <string name="today_food_with">тамақ кезінде</string>
     <string name="today_food_after">тамақтан кейін</string>
 

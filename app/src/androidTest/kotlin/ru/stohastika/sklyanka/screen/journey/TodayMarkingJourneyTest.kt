@@ -326,7 +326,7 @@ class TodayMarkingJourneyTest : JourneyTest() {
 
     /** «1 таблетка» — словами продукта: доза записи и подпись дня читаются из одних ресурсов. */
     private val doseLabel: String
-        get() = targetContext.resources.getQuantityString(TodayR.plurals.today_dose_tablets, DOSE_UNITS, DOSE)
+        get() = targetContext.resources.getQuantityString(UiR.plurals.dose_tablets, DOSE_UNITS, DOSE)
 
     /** «Магний B6 — приём отмечен как пропущенный»: снэкбар говорит то же, что карточка. */
     private val skipNotice: String

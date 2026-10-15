@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Виджеты домашнего экрана (SKL-118, Р-34): три провайдера и экран настройки.
+
+  Провайдеры объявлены здесь, а не в манифесте приложения: виджет без своей разметки
+  не существует, и держать его объявление вдали от неё — верный способ получить
+  на домашнем экране пустой прямоугольник. Манифест приложения получает их слиянием.
+
+  exported="false" у всех трёх: виджет ставит сам человек со своего домашнего экрана,
+  снаружи присылать обновление некому. Настройку виджета (android:configure) открывает
+  система, поэтому единственная открытая компонента модуля — активность настройки.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+  <application>
+
+    <!-- «Сегодня» — приёмы дня активного профиля с быстрой отметкой (ПР-22). -->
+    <receiver
+      android:name="ru.stohastika.sklyanka.feature.widgets.receiver.TodayWidgetReceiver"
+      android:exported="false"
+      android:label="@string/widget_type_today">
+      <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+      </intent-filter>
+      <meta-data
+        android:name="android.appwidget.provider"
+        android:resource="@xml/today_widget_info" />
+    </receiver>
+
+    <!-- Неделя — семь дней с числом плановых и отмеченных приёмов. -->
+    <receiver
+      android:name="ru.stohastika.sklyanka.feature.widgets.receiver.WeekWidgetReceiver"
+      android:exported="false"
+      android:label="@string/widget_type_week">
+      <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+      </intent-filter>
+      <meta-data
+        android:name="android.appwidget.provider"
+        android:resource="@xml/week_widget_info" />
+    </receiver>
+
+    <!-- По лекарству — приёмы одного лекарства активного профиля. -->
+    <receiver
+      android:name="ru.stohastika.sklyanka.feature.widgets.receiver.MedicationWidgetReceiver"
+      android:exported="false"
+      android:label="@string/widget_type_medication">
+      <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+      </intent-filter>
+      <meta-data
+        android:name="android.appwidget.provider"
+        android:resource="@xml/medication_widget_info" />
+    </receiver>
+
+    <!--
+      Экран настройки виджета (Р-32): выбор типа и лекарства для «по лекарству» и,
+      что важнее, точка гейта «Про». Платформа показывает его при добавлении виджета
+      и не добавляет виджет, если активность вернула отмену.
+
+      Экспортирована: запускает её система, а не приложение. Фильтра намерений нет —
+      прямого входа в неё из продукта не существует (как у DiagnosticsActivity).
+    -->
+    <activity
+      android:name="ru.stohastika.sklyanka.feature.widgets.config.WidgetConfigActivity"
+      android:exported="true" />
+  </application>
+</manifest>

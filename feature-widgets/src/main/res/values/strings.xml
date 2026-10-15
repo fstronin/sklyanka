@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Тексты виджетов домашнего экрана и экрана их настройки.
+
+  Формулировки — дословно из таблицы §10 нормы `docs/norm/06-design.md`.
+  Русского текста в Kotlin-коде нет (НФТ-42), наборы идут во все шесть
+  каталогов модуля (Р-2).
+-->
+<resources>
+
+    <!-- ===== Типы виджетов и состояния дня ===== -->
+
+    <string name="widget_type_today">Сегодня</string>
+    <string name="widget_type_week">Неделя</string>
+    <string name="widget_type_medication">По лекарству</string>
+    <string name="widget_now">Сейчас</string>
+    <string name="widget_day_done">Всё отмечено</string>
+    <string name="widget_day_empty">На сегодня приёмов нет</string>
+    <string name="widget_no_medications">Пока ничего не запланировано</string>
+    <string name="widget_week_empty">Приёмов пока нет</string>
+
+    <!-- ===== Доступные имена и подпись дня ===== -->
+
+    <string name="cd_widget_open">Открыть в приложении</string>
+    <!-- %1$s — дата от форматтера, %2$s — слово состояния -->
+    <string name="cd_widget_day">%1$s, %2$s</string>
+
+    <string name="widget_day_state_taken">всё принято</string>
+    <string name="widget_day_state_partial">частично</string>
+    <string name="widget_day_state_missed">пропуск</string>
+    <string name="widget_day_state_none">приёмов не было</string>
+    <string name="widget_day_state_before_history">до начала ведения истории</string>
+    <string name="widget_day_state_today">сегодня, приём ещё не наступил</string>
+
+    <!-- ===== Экран настройки виджета ===== -->
+
+    <string name="widget_setup_title">Виджет</string>
+    <string name="widget_setup_hint">Виджет показывает приёмы активного профиля</string>
+    <string name="widget_section_type">Тип виджета</string>
+    <string name="widget_medication_row">Лекарство</string>
+    <string name="widget_medication_none">Не выбрано</string>
+    <string name="widget_medication_empty">У профиля пока нет лекарств</string>
+    <string name="widget_action_add">Добавить виджет</string>
+    <string name="widget_pro_required">Виджеты — в подписке «Склянка Про»</string>
+</resources>

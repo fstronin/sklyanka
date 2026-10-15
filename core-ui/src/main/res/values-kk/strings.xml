@@ -57,6 +57,40 @@
         <item quantity="other">%1$d таблетка қалды</item>
     </plurals>
 
+    <plurals name="dose_tablets">
+        <item quantity="one">%1$s&#160;таблетка</item>
+        <item quantity="other">%1$s&#160;таблетка</item>
+    </plurals>
+    <plurals name="dose_capsules">
+        <item quantity="one">%1$s&#160;капсула</item>
+        <item quantity="other">%1$s&#160;капсула</item>
+    </plurals>
+    <plurals name="dose_millilitres">
+        <item quantity="one">%1$s&#160;мл</item>
+        <item quantity="other">%1$s&#160;мл</item>
+    </plurals>
+    <plurals name="dose_drops">
+        <item quantity="one">%1$s&#160;тамшы</item>
+        <item quantity="other">%1$s&#160;тамшы</item>
+    </plurals>
+    <plurals name="dose_sprays">
+        <item quantity="one">%1$s&#160;бүрікпе</item>
+        <item quantity="other">%1$s&#160;бүрікпе</item>
+    </plurals>
+    <plurals name="dose_injections">
+        <item quantity="one">%1$s&#160;инъекция</item>
+        <item quantity="other">%1$s&#160;инъекция</item>
+    </plurals>
+
+    <string name="dose_separator">" · "</string>
+    <string name="dose_strength">%1$s %2$s</string>
+    <string name="strength_unit_milligram">мг</string>
+    <string name="strength_unit_microgram">мкг</string>
+    <string name="strength_unit_gram">г</string>
+    <string name="strength_unit_millilitre">мл</string>
+    <string name="strength_unit_international_unit">ХБ</string>
+    <string name="strength_unit_percent">%</string>
+
     <string name="preview_date">Жұма, 25 қыркүйек</string>
     <string name="preview_screen_title">Бүгін</string>
     <string name="preview_section_title">Кесте</string>

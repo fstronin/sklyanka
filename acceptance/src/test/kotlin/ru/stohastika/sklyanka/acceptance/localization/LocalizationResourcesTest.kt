@@ -310,10 +310,22 @@ class LocalizationResourcesTest {
                 "preview_dose_drops", "preview_dose_sprays", "preview_dose_injections",
             ),
             "feature-today" to listOf(
-                "today_stock_left_tablets", "today_stock_left_capsules", "today_stock_left_millilitres",
-                "today_stock_left_drops", "today_stock_left_sprays", "today_stock_left_injections",
-                "today_dose_tablets", "today_dose_capsules", "today_dose_millilitres",
-                "today_dose_drops", "today_dose_sprays", "today_dose_injections",
+                "today_stock_left_tablets",
+                "today_stock_left_capsules",
+                "today_stock_left_millilitres",
+                "today_stock_left_drops",
+                "today_stock_left_sprays",
+                "today_stock_left_injections",
+            ),
+            // Доза переехала в дизайн-систему (SKL-118): подпись строки виджета и экрана
+            // «Сегодня» — одна сборка `DoseText`, и семейства живут там же, где читаются.
+            "core-ui" to listOf(
+                "dose_tablets",
+                "dose_capsules",
+                "dose_millilitres",
+                "dose_drops",
+                "dose_sprays",
+                "dose_injections",
             ),
             "feature-reminder" to listOf(
                 "reminder_dose_tablets",

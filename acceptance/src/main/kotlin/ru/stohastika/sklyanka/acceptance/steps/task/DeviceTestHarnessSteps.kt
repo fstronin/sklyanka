@@ -708,6 +708,13 @@ class DeviceTestHarnessSteps {
             "app/src/main/kotlin/ru/stohastika/sklyanka/reminder/DirectBootReceiver.kt",
             "app/src/main/kotlin/ru/stohastika/sklyanka/reminder/SystemEventReceiver.kt",
             "app/src/main/kotlin/ru/stohastika/sklyanka/reminder/AlarmReceiver.kt",
+            // Провайдеры виджетов (SKL-118): обновление плиты приходит от платформы, а проход
+            // по просроченным приёмам берёт граф — в процессе без приложения продукта его нет,
+            // и приёмник обязан это пережить, а не уронить процесс (SKL-97).
+            "feature-widgets/src/main/kotlin/ru/stohastika/sklyanka/feature/widgets/receiver/TodayWidgetReceiver.kt",
+            "feature-widgets/src/main/kotlin/ru/stohastika/sklyanka/feature/widgets/receiver/WeekWidgetReceiver.kt",
+            "feature-widgets/src/main/kotlin/ru/stohastika/sklyanka/feature/widgets/" +
+                "receiver/MedicationWidgetReceiver.kt",
         )
         val DOMAIN_RULES = listOf(
             "ru/stohastika/sklyanka/domain/schedule/ScheduleExpander.kt",

@@ -57,6 +57,40 @@
         <item quantity="other">quedan %1$d comprimidos</item>
     </plurals>
 
+    <plurals name="dose_tablets">
+        <item quantity="one">%1$s&#160;comprimido</item>
+        <item quantity="other">%1$s&#160;comprimidos</item>
+    </plurals>
+    <plurals name="dose_capsules">
+        <item quantity="one">%1$s&#160;cápsula</item>
+        <item quantity="other">%1$s&#160;cápsulas</item>
+    </plurals>
+    <plurals name="dose_millilitres">
+        <item quantity="one">%1$s&#160;ml</item>
+        <item quantity="other">%1$s&#160;ml</item>
+    </plurals>
+    <plurals name="dose_drops">
+        <item quantity="one">%1$s&#160;gota</item>
+        <item quantity="other">%1$s&#160;gotas</item>
+    </plurals>
+    <plurals name="dose_sprays">
+        <item quantity="one">%1$s&#160;pulverización</item>
+        <item quantity="other">%1$s&#160;pulverizaciones</item>
+    </plurals>
+    <plurals name="dose_injections">
+        <item quantity="one">%1$s&#160;inyección</item>
+        <item quantity="other">%1$s&#160;inyecciones</item>
+    </plurals>
+
+    <string name="dose_separator">" · "</string>
+    <string name="dose_strength">%1$s %2$s</string>
+    <string name="strength_unit_milligram">mg</string>
+    <string name="strength_unit_microgram">mcg</string>
+    <string name="strength_unit_gram">g</string>
+    <string name="strength_unit_millilitre">ml</string>
+    <string name="strength_unit_international_unit">UI</string>
+    <string name="strength_unit_percent">%</string>
+
     <string name="preview_date">Viernes, 25 de septiembre</string>
     <string name="preview_screen_title">Hoy</string>
     <string name="preview_section_title">Horario</string>

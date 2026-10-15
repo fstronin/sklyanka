@@ -1,6 +1,7 @@
 package ru.stohastika.sklyanka.ui.token
 
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -239,6 +240,38 @@ object SklyankaSizes {
      * закрашенный светлым, и «сегодня» перестаёт отличаться от «пропущено» (ЭКР-6).
      */
     val AdherenceRing: Dp = 2.dp
+
+    // --- Виджеты домашнего экрана (§4, §5.11; SKL-118) ---
+
+    /**
+     * Строка приёма на плите виджета и её части.
+     *
+     * Габариты ступеней — объявленный размер поверхности, а не потолок вёрстки: набор
+     * ступеней виджет называет платформе (`SizeMode.Responsive`), хост сводит плиту
+     * к ближайшей, и «примерно триста на четыре» в разметке не подбирается. Суммы
+     * ступеней посчитаны из содержимого и записаны в §5.11: шапка 22, счётчик 18,
+     * строка 48, полоса 50 — ни одна ступень не меньше суммы.
+     */
+    val WidgetRow: Dp = 48.dp
+    val WidgetHeader: Dp = 22.dp
+    val WidgetCounter: Dp = 18.dp
+    val WidgetWeekStrip: Dp = 50.dp
+
+    /** Колонка времени в строке приёма: не меньше и растёт по содержимому (§5.11, §6.3). */
+    val WidgetTimeColumn: Dp = 50.dp
+
+    /** Ступени плит «Сегодня» и «По лекарству»: компакт, обычный, просторный (§5.11). */
+    val WidgetCompact: DpSize = DpSize(250.dp, 104.dp)
+    val WidgetStandard: DpSize = DpSize(340.dp, 176.dp)
+    val WidgetRoomy: DpSize = DpSize(340.dp, 320.dp)
+
+    /** Ступени «Недели»: полосе и счётчику третьей высоты взять неоткуда (§5.11). */
+    val WidgetWeekCompact: DpSize = DpSize(340.dp, 104.dp)
+    val WidgetWeekStandard: DpSize = DpSize(340.dp, 128.dp)
+
+    /** Поля плиты виджета: `Large` по бокам и `Medium` по вертикали (§5.11). */
+    val WidgetPlatePaddingHorizontal: Dp = 14.dp
+    val WidgetPlatePaddingVertical: Dp = 12.dp
 
     // --- Календарь месяца на экране истории (SKL-18, макет History.dc.html) ---
 

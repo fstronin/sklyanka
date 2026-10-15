@@ -28,25 +28,6 @@
         <item quantity="other">剩余 %1$s&#160;注射</item>
     </plurals>
 
-    <plurals name="today_dose_tablets">
-        <item quantity="other">%1$s&#160;片</item>
-    </plurals>
-    <plurals name="today_dose_capsules">
-        <item quantity="other">%1$s&#160;粒</item>
-    </plurals>
-    <plurals name="today_dose_millilitres">
-        <item quantity="other">%1$s&#160;毫升</item>
-    </plurals>
-    <plurals name="today_dose_drops">
-        <item quantity="other">%1$s&#160;滴</item>
-    </plurals>
-    <plurals name="today_dose_sprays">
-        <item quantity="other">%1$s&#160;喷</item>
-    </plurals>
-    <plurals name="today_dose_injections">
-        <item quantity="other">%1$s&#160;注射</item>
-    </plurals>
-
     <plurals name="today_prn_subtitle">
         <item quantity="other">无日程 · 每天不超过 %1$d 次</item>
     </plurals>

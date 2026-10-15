@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_type_today">Hoy</string>
+    <string name="widget_type_week">Semana</string>
+    <string name="widget_type_medication">Por medicamento</string>
+    <string name="widget_now">Ahora</string>
+    <string name="widget_day_done">Todo marcado</string>
+    <string name="widget_day_empty">No hay tomas para hoy</string>
+    <string name="widget_no_medications">Aún no hay nada programado</string>
+    <string name="widget_week_empty">Aún no hay tomas</string>
+
+    <string name="cd_widget_open">Abrir en la aplicación</string>
+    <string name="cd_widget_day">%1$s, %2$s</string>
+
+    <string name="widget_day_state_taken">todo tomado</string>
+    <string name="widget_day_state_partial">parcial</string>
+    <string name="widget_day_state_missed">omitida</string>
+    <string name="widget_day_state_none">no hubo tomas</string>
+    <string name="widget_day_state_before_history">antes del inicio del historial</string>
+    <string name="widget_day_state_today">hoy, la toma aún no ha llegado</string>
+
+    <string name="widget_setup_title">Widget</string>
+    <string name="widget_setup_hint">El widget muestra las tomas del perfil activo</string>
+    <string name="widget_section_type">Tipo de widget</string>
+    <string name="widget_medication_row">Medicamento</string>
+    <string name="widget_medication_none">Sin seleccionar</string>
+    <string name="widget_medication_empty">El perfil aún no tiene medicamentos</string>
+    <string name="widget_action_add">Añadir widget</string>
+    <string name="widget_pro_required">Los widgets son de Sklyanka Pro</string>
+</resources>

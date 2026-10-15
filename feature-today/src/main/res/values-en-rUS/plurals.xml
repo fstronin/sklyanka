@@ -36,31 +36,6 @@
         <item quantity="other">%1$s&#160;injections left</item>
     </plurals>
 
-    <plurals name="today_dose_tablets">
-        <item quantity="one">%1$s&#160;tablet</item>
-        <item quantity="other">%1$s&#160;tablets</item>
-    </plurals>
-    <plurals name="today_dose_capsules">
-        <item quantity="one">%1$s&#160;capsule</item>
-        <item quantity="other">%1$s&#160;capsules</item>
-    </plurals>
-    <plurals name="today_dose_millilitres">
-        <item quantity="one">%1$s&#160;ml</item>
-        <item quantity="other">%1$s&#160;ml</item>
-    </plurals>
-    <plurals name="today_dose_drops">
-        <item quantity="one">%1$s&#160;drop</item>
-        <item quantity="other">%1$s&#160;drops</item>
-    </plurals>
-    <plurals name="today_dose_sprays">
-        <item quantity="one">%1$s&#160;spray</item>
-        <item quantity="other">%1$s&#160;sprays</item>
-    </plurals>
-    <plurals name="today_dose_injections">
-        <item quantity="one">%1$s&#160;injection</item>
-        <item quantity="other">%1$s&#160;injections</item>
-    </plurals>
-
     <plurals name="today_prn_subtitle">
         <item quantity="one">No schedule · no more than %1$d time a day</item>
         <item quantity="other">No schedule · no more than %1$d times a day</item>

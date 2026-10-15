@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Виджет «Неделя» (SKL-118): семь дней с числом плановых и отмеченных приёмов.
+
+  Размеры — ступени нормы дизайна (§4, §5.11): у «недели» их две — 340×104 (шапка и полоса)
+  и 340×128 (шапка, счётчик, полоса); третьей нет, потому что добавить к полосе и счётчику
+  нечего, а пустой высоты система не объявляет. Здесь стоят нижняя ступень и ячейка лончера
+  по умолчанию (≈4×1). Остальное — как у «Сегодня»: суточная страховка обновления, разметка
+  до первой отрисовки и экран настройки как точка гейта (Р-32, ПР-23).
+-->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+  android:configure="ru.stohastika.sklyanka.feature.widgets.config.WidgetConfigActivity"
+  android:label="@string/widget_type_week"
+  android:initialLayout="@layout/glance_default_loading_layout"
+  android:minHeight="104dp"
+  android:minWidth="340dp"
+  android:resizeMode="none"
+  android:targetCellHeight="1"
+  android:targetCellWidth="4"
+  android:updatePeriodMillis="86400000"
+  android:widgetCategory="home_screen" />

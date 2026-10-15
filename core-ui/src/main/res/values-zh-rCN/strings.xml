@@ -55,6 +55,34 @@
         <item quantity="other">剩余 %1$d 片</item>
     </plurals>
 
+    <plurals name="dose_tablets">
+        <item quantity="other">%1$s&#160;片</item>
+    </plurals>
+    <plurals name="dose_capsules">
+        <item quantity="other">%1$s&#160;粒</item>
+    </plurals>
+    <plurals name="dose_millilitres">
+        <item quantity="other">%1$s&#160;毫升</item>
+    </plurals>
+    <plurals name="dose_drops">
+        <item quantity="other">%1$s&#160;滴</item>
+    </plurals>
+    <plurals name="dose_sprays">
+        <item quantity="other">%1$s&#160;喷</item>
+    </plurals>
+    <plurals name="dose_injections">
+        <item quantity="other">%1$s&#160;注射</item>
+    </plurals>
+
+    <string name="dose_separator">" · "</string>
+    <string name="dose_strength">%1$s %2$s</string>
+    <string name="strength_unit_milligram">毫克</string>
+    <string name="strength_unit_microgram">微克</string>
+    <string name="strength_unit_gram">克</string>
+    <string name="strength_unit_millilitre">毫升</string>
+    <string name="strength_unit_international_unit">国际单位</string>
+    <string name="strength_unit_percent">%</string>
+
     <string name="preview_date">9月25日星期五</string>
     <string name="preview_screen_title">今天</string>
     <string name="preview_section_title">日程</string>

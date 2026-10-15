@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_type_today">Heute</string>
+    <string name="widget_type_week">Woche</string>
+    <string name="widget_type_medication">Nach Medikament</string>
+    <string name="widget_now">Jetzt</string>
+    <string name="widget_day_done">Alles markiert</string>
+    <string name="widget_day_empty">Für heute keine Einnahmen</string>
+    <string name="widget_no_medications">Noch nichts geplant</string>
+    <string name="widget_week_empty">Noch keine Einnahmen</string>
+
+    <string name="cd_widget_open">In der App öffnen</string>
+    <string name="cd_widget_day">%1$s, %2$s</string>
+
+    <string name="widget_day_state_taken">alles eingenommen</string>
+    <string name="widget_day_state_partial">teilweise</string>
+    <string name="widget_day_state_missed">ausgelassen</string>
+    <string name="widget_day_state_none">keine Einnahmen</string>
+    <string name="widget_day_state_before_history">vor Beginn des Verlaufs</string>
+    <string name="widget_day_state_today">heute, die Einnahme steht noch aus</string>
+
+    <string name="widget_setup_title">Widget</string>
+    <string name="widget_setup_hint">Das Widget zeigt die Einnahmen des aktiven Profils</string>
+    <string name="widget_section_type">Widget-Typ</string>
+    <string name="widget_medication_row">Medikament</string>
+    <string name="widget_medication_none">Nicht ausgewählt</string>
+    <string name="widget_medication_empty">Das Profil hat noch keine Medikamente</string>
+    <string name="widget_action_add">Widget hinzufügen</string>
+    <string name="widget_pro_required">Widgets gibt es mit Sklyanka Pro</string>
+</resources>

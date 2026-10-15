@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Галочка кнопки отметки на плите виджета (§5.11, «MarkButtonGlyph» 18 dp, штрих 2,2).
+
+  Отдельный вектор, а не глиф дизайн-системы: `CheckGlyph` из core-ui нарисован
+  Compose-холстом, а у Glance холста нет — разметка виджета живёт в RemoteViews.
+  Геометрия и штрих взяты из макета виджетов (`design/screens/Widgets.dc.html`),
+  а не пересчитаны из холста: это рисунок этой поверхности, а не второй размер
+  того же знака.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+  android:width="24dp"
+  android:height="24dp"
+  android:viewportWidth="24"
+  android:viewportHeight="24">
+  <path
+    android:pathData="M4,12.5 L9.5,18 L20,6.5"
+    android:strokeColor="#FFFFFFFF"
+    android:strokeWidth="2.2"
+    android:strokeLineCap="round"
+    android:strokeLineJoin="round" />
+</vector>
