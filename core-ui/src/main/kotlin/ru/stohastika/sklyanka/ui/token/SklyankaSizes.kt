@@ -1,7 +1,9 @@
 package ru.stohastika.sklyanka.ui.token
 
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 /**
  * Габариты компонентов из `docs/norm/06-design.md` §3.3 и §4.
@@ -61,6 +63,24 @@ object SklyankaSizes {
     /** Высота чипа-кнопки — не меньше цели нажатия (§4.2). */
     val ChipHeight: Dp = 44.dp
     val ChipPadding: Dp = 14.dp
+
+    /**
+     * Метка «Про» (§5.9, Р-79).
+     *
+     * Вертикальное поле 7 dp даёт высоту ≈32 dp, то есть меньше чиповой намеренно: нажатия
+     * у метки нет, цель нажатия у элемента одна — сама строка, поэтому [ChipHeight] и НФТ-29
+     * к метке не применяются. Поле не растёт вместе со шрифтом: высота метки растёт словом,
+     * а не отступом (Р-79 п. 2).
+     */
+    val ProMarkPadding: Dp = 7.dp
+
+    /**
+     * Искра метки — сторона **от подписи**, а не от габарита (§5.9).
+     *
+     * 14 sp при слове 13 sp: при масштабе шрифта 200 % слово растёт до 26 sp, и искра растёт
+     * за ним, оставаясь ему парой. Поэтому токен в sp, а не в dp.
+     */
+    val ProMarkSpark: TextUnit = 14.sp
 
     /** Поле ввода (§4.4): обычное и компактное числовое. */
     val FieldHeight: Dp = 50.dp

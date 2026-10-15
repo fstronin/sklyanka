@@ -35,6 +35,9 @@ fun SettingsRoute(viewModel: SettingsViewModel, navigation: SettingsNavigation, 
                 // Политику открывает браузер системным действием: своего просмотрщика
                 // в приложении нет (ОВ-123).
                 SettingsIntent.OpenPolicy -> uriHandler.openUri(policyUrl)
+                // Строка блока «Склянка Про» ведёт в ту же шторку, что и точки выбора
+                // платных функций (Р-67 п. 6): поверхность покупки хостит `app`.
+                SettingsIntent.OpenPro -> navigation.openPro()
                 SettingsIntent.OpenToday -> navigation.openToday()
                 SettingsIntent.OpenMedications -> navigation.openMedications()
                 else -> viewModel.onIntent(intent)
@@ -79,6 +82,14 @@ data class SettingsNavigation(
     val openDiagnostics: () -> Unit = {},
     val openHistory: () -> Unit = {},
     val openDataTransfer: () -> Unit = {},
+    /**
+     * Строка блока «Склянка Про» → витрина подписки (SKL-122, Р-67 п. 6).
+     *
+     * Шторку открывает тот, кто собирает маршруты, то есть `app`: поверхность покупки одна
+     * на все точки входа (Р-67), и второй её экземпляр в модуле настроек был бы второй
+     * поверхностью.
+     */
+    val openPro: () -> Unit = {},
     val openToday: () -> Unit = {},
     val openMedications: () -> Unit = {},
 )

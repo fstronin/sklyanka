@@ -157,4 +157,57 @@
     <string name="catalog_profile_stripe">Полоса профиля</string>
     <string name="catalog_mark">Знак и его варианты</string>
     <string name="catalog_lockup">Логотип с названием</string>
+
+    <!--
+      Витрина «Склянки Про» (SKL-122).
+
+      Строки нормы — `docs/norm/06-design.md` §10 (Р-70 п. 3): формулировки выгод, периодов,
+      ленты и плашки выгоды, действий, раскрытия магазина, состояний и метки. Формулировок
+      отказа магазина норма не заводила и оставляла их «вместе с прочими словами магазина»
+      (§5.9) — они написаны здесь и переведены во все шесть каталогов сразу (Р-2).
+
+      Ни одна из этих строк не несёт числа цены: `%1$s` — готовая строка магазина (Р-68 п. 3),
+      и в каталогах она не повторяется. Шаблон даты — для платформенного форматтера с локалью
+      интерфейса (НФТ-43а), а не для склейки строки.
+    -->
+    <string name="pro_sheet_title">Склянка Про</string>
+    <string name="pro_benefit_schedules_short">Сложные расписания</string>
+    <string name="pro_benefit_schedules_example">через день, циклы, ступенчатые схемы</string>
+    <string name="pro_benefit_widgets_short">Виджеты</string>
+    <string name="pro_benefit_report_short">Расширенный отчёт</string>
+    <string name="pro_benefit_accent_short">Акцент и иконки</string>
+    <string name="pro_benefit_export_short">Экспорт истории</string>
+    <string name="pro_benefit_profiles_short">Больше профилей</string>
+    <string name="pro_period_month">Месяц</string>
+    <string name="pro_period_year">Год</string>
+    <string name="pro_period_month_short">мес</string>
+    <string name="pro_period_year_short">год</string>
+    <string name="pro_year_ribbon">Выгоднее</string>
+    <string name="pro_year_cheaper">Год дешевле</string>
+    <string name="pro_action_buy">Оформить</string>
+    <string name="pro_action_restore">Восстановить покупку</string>
+    <string name="pro_action_manage">Управление подпиской</string>
+    <string name="pro_action_cancel">Отменить подписку</string>
+    <string name="pro_terms_row">Условия и политика</string>
+    <string name="pro_renew_auto">Подписка продлевается автоматически</string>
+    <string name="pro_renew_terms_short">Продление — %1$s, отмена в магазине</string>
+    <string name="pro_renew_price">Продление — %1$s</string>
+    <string name="pro_renew_charge">Списание в день продления; за 5 дней придёт уведомление</string>
+    <string name="pro_renew_cancel">Отменить можно в разделе подписок магазина</string>
+    <string name="pro_disclosure_more">Подробнее</string>
+    <string name="pro_state_active_until">Активна до %1$s</string>
+    <string name="pro_state_inactive">Не оформлена</string>
+    <string name="pro_store_unavailable">Цены и покупка появятся, когда магазин будет доступен</string>
+    <string name="pro_mark">Про</string>
+    <string name="pro_purchase_confirming">Покупка не отклонена — состояние уточняется. Попробуйте восстановить покупку позже</string>
+    <string name="pro_restore_not_active">Магазин знает о подписке, но она не действует. Проверьте раздел подписок магазина</string>
+    <string name="pro_manage_failed">Экран подписок магазина не открылся — подписка не отменена. Попробуйте ещё раз</string>
+    <string name="pro_purchase_failed_network">Нет связи — покупка не прошла. Попробуйте позже</string>
+    <string name="pro_purchase_failed_unavailable">Магазин недоступен на этом устройстве — покупка не прошла</string>
+    <string name="pro_purchase_failed_declined">Магазин отклонил покупку. Деньги не списаны</string>
+    <string name="pro_purchase_failed_product">Этого товара сейчас нет в магазине</string>
+    <string name="pro_purchase_failed_store">Магазин ответил ошибкой — покупка не прошла</string>
+    <string name="pro_restore_failed">Восстановить покупку не удалось. Попробуйте позже</string>
+    <string name="pro_restore_nothing_found">Покупок в магазине не нашлось</string>
+    <string name="pro_date_pattern">d MMMM yyyy</string>
 </resources>

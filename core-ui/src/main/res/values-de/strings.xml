@@ -96,4 +96,48 @@
     <string name="catalog_profile_stripe">Profilstreifen</string>
     <string name="catalog_mark">Das Zeichen und seine Varianten</string>
     <string name="catalog_lockup">Logoschriftzug</string>
+
+    <!-- Die Pro-Schau (SKL-122): Zeichenketten aus docs/norm/06-design.md §10 samt der
+         Ablehnungsworte, die die Norm der Aufgabe überließ. %1$s ist die fertige Preisangabe
+         des Stores. -->
+    <string name="pro_sheet_title">Sklyanka Pro</string>
+    <string name="pro_benefit_schedules_short">Komplexe Pläne</string>
+    <string name="pro_benefit_schedules_example">jeden zweiten Tag, Zyklen, stufenweise Schemata</string>
+    <string name="pro_benefit_widgets_short">Widgets</string>
+    <string name="pro_benefit_report_short">Erweiterter Bericht</string>
+    <string name="pro_benefit_accent_short">Akzent und Icons</string>
+    <string name="pro_benefit_export_short">Verlaufsexport</string>
+    <string name="pro_benefit_profiles_short">Mehr Profile</string>
+    <string name="pro_period_month">Monat</string>
+    <string name="pro_period_year">Jahr</string>
+    <string name="pro_period_month_short">Mon.</string>
+    <string name="pro_period_year_short">Jahr</string>
+    <string name="pro_year_ribbon">Günstiger</string>
+    <string name="pro_year_cheaper">Jahr günstiger</string>
+    <string name="pro_action_buy">Abschließen</string>
+    <string name="pro_action_restore">Kauf wiederherstellen</string>
+    <string name="pro_action_manage">Abo verwalten</string>
+    <string name="pro_action_cancel">Abo kündigen</string>
+    <string name="pro_terms_row">Bedingungen und Richtlinie</string>
+    <string name="pro_renew_auto">Das Abo verlängert sich automatisch</string>
+    <string name="pro_renew_terms_short">Verlängerung — %1$s, Kündigung im Store</string>
+    <string name="pro_renew_price">Verlängerung — %1$s</string>
+    <string name="pro_renew_charge">Abbuchung am Verlängerungstag; 5 Tage vorher kommt eine Mitteilung</string>
+    <string name="pro_renew_cancel">Kündbar im Abo-Bereich des Stores</string>
+    <string name="pro_disclosure_more">Mehr</string>
+    <string name="pro_state_active_until">Aktiv bis %1$s</string>
+    <string name="pro_state_inactive">Nicht abonniert</string>
+    <string name="pro_store_unavailable">Preise und Kauf erscheinen, sobald der Store verfügbar ist</string>
+    <string name="pro_mark">Pro</string>
+    <string name="pro_purchase_confirming">Der Store hat den Kauf nicht abgelehnt — der Status wird noch geprüft. Stellen Sie den Kauf später wieder her</string>
+    <string name="pro_restore_not_active">Der Store kennt das Abo, aber es ist nicht aktiv. Prüfen Sie den Abo-Bereich des Stores</string>
+    <string name="pro_manage_failed">Der Abo-Bereich des Stores wurde nicht geöffnet — das Abo wurde nicht gekündigt. Versuchen Sie es noch einmal</string>
+    <string name="pro_purchase_failed_network">Keine Verbindung — der Kauf kam nicht zustande. Versuchen Sie es später</string>
+    <string name="pro_purchase_failed_unavailable">Der Store ist auf diesem Gerät nicht verfügbar — der Kauf kam nicht zustande</string>
+    <string name="pro_purchase_failed_declined">Der Store hat den Kauf abgelehnt. Es wurde nichts abgebucht</string>
+    <string name="pro_purchase_failed_product">Dieses Produkt ist derzeit nicht im Store erhältlich</string>
+    <string name="pro_purchase_failed_store">Der Store meldete einen Fehler — der Kauf kam nicht zustande</string>
+    <string name="pro_restore_failed">Der Kauf konnte nicht wiederhergestellt werden. Versuchen Sie es später</string>
+    <string name="pro_restore_nothing_found">Im Store wurden keine Käufe gefunden</string>
+    <string name="pro_date_pattern">d. MMMM yyyy</string>
 </resources>

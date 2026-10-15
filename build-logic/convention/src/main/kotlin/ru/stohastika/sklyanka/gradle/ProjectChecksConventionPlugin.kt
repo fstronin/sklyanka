@@ -139,6 +139,10 @@ class ProjectChecksConventionPlugin : Plugin<Project> {
             ":feature-onboarding",
             ":feature-history",
             ":feature-settings",
+            // Витрина «Про» и платный контур (SKL-122): их инструментальные наборы
+            // и походы обязаны хотя бы компилироваться этим же прогоном.
+            ":feature-pro",
+            ":billing-appgallery",
         )
         val PROJECT_RULES = listOf(
             "HardcodedDesignToken",

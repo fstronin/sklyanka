@@ -3,20 +3,25 @@ package ru.stohastika.sklyanka
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.core.net.toUri
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
@@ -24,6 +29,9 @@ import kotlinx.coroutines.launch
 import ru.stohastika.sklyanka.data.room.DatabaseUpgrade
 import ru.stohastika.sklyanka.domain.onboarding.OnboardingSource
 import ru.stohastika.sklyanka.domain.onboarding.ShouldShowOnboardingUseCase
+import ru.stohastika.sklyanka.domain.pro.ProPoint
+import ru.stohastika.sklyanka.domain.pro.ProSubscriptionRefreshDueUseCase
+import ru.stohastika.sklyanka.domain.pro.RefreshProSubscriptionUseCase
 import ru.stohastika.sklyanka.domain.profile.ProfileContextProvider
 import ru.stohastika.sklyanka.domain.time.TimeSource
 import ru.stohastika.sklyanka.domain.undo.UndoableActionStore
@@ -37,6 +45,9 @@ import ru.stohastika.sklyanka.feature.onboarding.OnboardingViewModel
 import ru.stohastika.sklyanka.feature.onboarding.PermissionsActivity
 import ru.stohastika.sklyanka.feature.onboarding.PermissionsRoute
 import ru.stohastika.sklyanka.feature.onboarding.SystemSettingsNavigator
+import ru.stohastika.sklyanka.feature.pro.ProShowcaseIntent
+import ru.stohastika.sklyanka.feature.pro.ProShowcaseRoute
+import ru.stohastika.sklyanka.feature.pro.ProShowcaseViewModel
 import ru.stohastika.sklyanka.feature.reminder.DeliveryCheckNotice
 import ru.stohastika.sklyanka.feature.reminder.DiagnosticsActivity
 import ru.stohastika.sklyanka.feature.reminder.ReminderOutageNotice
@@ -51,6 +62,7 @@ import ru.stohastika.sklyanka.feature.today.TodayUiState
 import ru.stohastika.sklyanka.feature.today.TodayViewModel
 import ru.stohastika.sklyanka.navigation.HistoryOrigin
 import ru.stohastika.sklyanka.navigation.HistorySection
+import ru.stohastika.sklyanka.navigation.LocalModalSurfaceOpen
 import ru.stohastika.sklyanka.navigation.MedsDestination
 import ru.stohastika.sklyanka.navigation.MedsSection
 import ru.stohastika.sklyanka.navigation.MedsViewModels
@@ -78,6 +90,7 @@ import ru.stohastika.sklyanka.ui.profile.ProfileChromeState
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import javax.inject.Inject
 import android.graphics.Color as AndroidColor
+import ru.stohastika.sklyanka.feature.settings.R as FeatureSettingsR
 
 /**
  * Единственная Activity приложения.
@@ -104,6 +117,9 @@ import android.graphics.Color as AndroidColor
  * Собственной паузы у заставки нет: дольше она живёт только если дольше поднимается
  * то, что и так нужно первому экрану.
  */
+/** Метка журнала системных переходов этого экрана. */
+private const val TAG = "SklyankaMain"
+
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
@@ -214,6 +230,29 @@ class MainActivity : ComponentActivity() {
     private val medCard: MedicationCardViewModel by viewModels()
     private val archive: ArchiveViewModel by viewModels()
     private val settings: SettingsViewModel by viewModels()
+
+    /**
+     * Состояние витрины «Про» (SKL-122).
+     *
+     * Отдельный `ViewModel` у поверхности покупки, а не поле настроек: шторку открывают
+     * несколько точек входа (Р-67), и её состояние не должно зависеть от того, открыт ли
+     * сейчас экран настроек.
+     */
+    /**
+     * Проверка подписки «Про» и условие «пора переспросить» (SKL-122, Р-68 п. 7).
+     *
+     * Проверка идёт при запуске процесса; возвращение в приложение повторяет её, только если
+     * в кэше лежит просроченная запись — иначе платящий человек, чью подписку магазин молча
+     * продлил, увидел бы витрину вместо управления подпиской. Пустой кэш магазин не дёргает:
+     * учёт работает без сети (П-6).
+     */
+    @Inject
+    lateinit var refreshProSubscription: RefreshProSubscriptionUseCase
+
+    @Inject
+    lateinit var proRefreshDue: ProSubscriptionRefreshDueUseCase
+
+    private val proShowcase: ProShowcaseViewModel by viewModels()
     private val history: HistoryViewModel by viewModels()
     private val transfer: DataTransferViewModel by viewModels()
     private val deleteProfile: DeleteProfileViewModel by viewModels()
@@ -454,6 +493,12 @@ class MainActivity : ComponentActivity() {
         // или отзыв разрешения в системных настройках обязаны отразиться без перезапуска
         // (НФТ-52). Минутный такт делает то же, пока экран открыт.
         today.refresh()
+        // Подписка «Про» (SKL-122): магазин мог молча продлить её, пока процесс жил, —
+        // тогда просроченная запись в кэше отнимала бы доступ у платящего человека. Спрашиваем
+        // только в этом случае (см. `proRefreshDue`), и отказ проверки ничего не меняет (П-6).
+        lifecycleScope.launch {
+            if (proRefreshDue()) refreshProSubscription()
+        }
     }
 
     /**
@@ -496,6 +541,42 @@ class MainActivity : ComponentActivity() {
      */
     @Composable
     private fun Root(onOpenPermissions: () -> Unit) {
+        // Шторка витрины «Про» живёт поверх корня, а не внутри слоя навигации: поверхность
+        // покупки одна на все точки входа (Р-67), и она не должна уезжать вместе с экраном,
+        // из которого её открыли. Внутри слоя её пришлось бы заводить каждой точке входа.
+        //
+        // Модальная поверхность поверх корня забирает возврат себе (`TDD.md §8`): пока
+        // витрина открыта, экранные обработчики возврата выключены — иначе первое же
+        // нажатие «Назад» уводило бы на «Сегодня», оставив шторку висеть поверх чужого
+        // экрана. Порядок регистрации обработчиков у Compose один — «кто позже», — а слои
+        // навигации пересобираются при каждом переходе, и полагаться на него нельзя.
+        Box(modifier = Modifier.fillMaxSize()) {
+            val showcaseOpen by proShowcase.state.collectAsState()
+            val showcaseVisible = showcaseOpen.visible
+            val showcaseOpening = showcaseOpen.opening
+            // Шторка закрылась — строка блока в настройках обязана назвать новое состояние:
+            // покупка и восстановление пишут кэш подписки, а `onResume` при закрытии шторки
+            // не наступает, и без этого строка оставалась бы «Не оформлена» (SKL-122).
+            LaunchedEffect(showcaseVisible) {
+                if (!showcaseVisible) settings.refresh()
+            }
+            // Пока витрина идёт или открыта, возврат принадлежит ей: иначе окно открытия
+            // (магазин ещё не ответил) уводило бы на «Сегодня», и шторка всплывала бы поверх
+            // чужого экрана. Признак видят все экранные обработчики возврата
+            // (см. `LocalModalSurfaceOpen`), а в самом окне возврат закрывает витрину.
+            BackHandler(enabled = showcaseOpening) {
+                proShowcase.onIntent(ProShowcaseIntent.Dismiss)
+            }
+            CompositionLocalProvider(LocalModalSurfaceOpen provides (showcaseVisible || showcaseOpening)) {
+                Layers(onOpenPermissions = onOpenPermissions)
+            }
+            ProShowcaseRoute(viewModel = proShowcase, onOpenPolicy = ::openPolicy)
+        }
+    }
+
+    /** Слои навигации одного корня: чем человек ходит по продукту. */
+    @Composable
+    private fun Layers(onOpenPermissions: () -> Unit) {
         AnimatedLayer(
             layer = rootNavigation.layer(),
             motion = rootNavigation.rootMotion,
@@ -506,7 +587,9 @@ class MainActivity : ComponentActivity() {
             // (`docs/norm/04-behavior.md` §5.1). На «Сегодня» обработчика нет: там
             // приложение завершается штатно. Вложенные экраны ставят свой обработчик выше
             // и перехватывают нажатие раньше — этот срабатывает только на корне вкладки.
-            BackHandler(enabled = layer == RootLayer.Settings) { rootNavigation.openToday() }
+            BackHandler(enabled = layer == RootLayer.Settings && !LocalModalSurfaceOpen.current) {
+                rootNavigation.openToday()
+            }
             when (layer) {
                 // История, открытая с «Сегодня» (ОВ-84, SKL-31): тот же второй уровень, что
                 // из настроек, но место входа — строка прогресса дня. Ветка стоит рядом
@@ -556,6 +639,41 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /**
+     * Открыть «Условия и политика» шторки витрины (SKL-122, ОВ-123).
+     *
+     * Строка ведёт в документ, а не в магазин (`docs/norm/06-design.md` §5.9): адрес берётся
+     * из того же ресурса, что и в настройках, и открывается системным браузером. Пока адрес
+     * — плейсхолдер заказчика (Р-49), и это названный долг, а не подмена документа покупкой.
+     */
+    private fun openPolicy() {
+        val intent = Intent(
+            Intent.ACTION_VIEW,
+            getString(FeatureSettingsR.string.settings_policy_url).toUri(),
+        )
+        // Устройство без браузера — обычный исход на урезанной прошивке, а не сбой приложения:
+        // проверка обработчика и перехват отказа, как в AndroidSystemSettingsNavigator
+        // (SKL-46). Словами об этом поверхность покупки молчит осознанно — долг назван
+        // в `TDD.md` §13: слов для этого случая в норме §10 нет.
+        if (intent.resolveActivity(packageManager) == null) {
+            Log.i(TAG, "no application can show the policy page")
+            return
+        }
+        runCatching { startActivity(intent) }.onFailure { error ->
+            Log.i(TAG, "no application can show the policy page", error)
+        }
+    }
+
+    /**
+     * Открыть витрину «Про» из точки выбора платной функции (SKL-122, Р-67).
+     *
+     * Из настроек приходит с [ProPoint.SETTINGS]: там пункта-повода нет, и порядок выгод
+     * фиксированный. Точки 117–121 придут сюда же со своим местом и своим пунктом-поводом.
+     */
+    private fun openPro() {
+        proShowcase.onIntent(ProShowcaseIntent.Open(ProPoint.SETTINGS))
+    }
+
     private fun settingsNavigation(): SettingsNavigation = SettingsNavigation(
         // Строки «Добавить профиль» на экране нет: мастера создания профиля не существует,
         // а «будет доступно в ближайшем обновлении» — обещание функции, которой нет (П-7,
@@ -576,6 +694,9 @@ class MainActivity : ComponentActivity() {
         // Строка появляется только у активного чужого профиля, и «Готово»
         // возвращает в настройки — туда, откуда человек пришёл.
         deleteProfile = { rootNavigation.openSection(SettingsDestination.DELETE_PROFILE) },
+        // Строка блока «Склянка Про» открывает шторку витрины тем же жестом, каким её
+        // открывает точка выбора платной функции (Р-67 п. 6): поверхность одна.
+        openPro = ::openPro,
         openToday = { rootNavigation.openTab(RootTab.TODAY) },
         openMedications = { rootNavigation.openMeds(MedsDestination.List) },
     )

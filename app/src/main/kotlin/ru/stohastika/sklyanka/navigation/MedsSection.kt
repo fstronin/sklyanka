@@ -48,7 +48,7 @@ fun MedsSection(
     val stack = rememberMedsStack(initial)
     // Системная кнопка «Назад» обязана вести туда же, куда стрелка на экране: иначе
     // человек, закрывший карточку кнопкой телефона, оказывается вне раздела.
-    BackHandler(enabled = true) { if (!stack.pop()) onLeaveSection() }
+    BackHandler(enabled = !LocalModalSurfaceOpen.current) { if (!stack.pop()) onLeaveSection() }
 
     AnimatedLayer(layer = stack.current, motion = stack.motion) { destination ->
         when (destination) {

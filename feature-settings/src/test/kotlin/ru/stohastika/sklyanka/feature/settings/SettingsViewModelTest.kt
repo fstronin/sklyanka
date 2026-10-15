@@ -14,12 +14,17 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import ru.stohastika.sklyanka.domain.pro.ObserveProStatusUseCase
+import ru.stohastika.sklyanka.domain.pro.ProSubscription
+import ru.stohastika.sklyanka.domain.pro.ProSubscriptionCache
 import ru.stohastika.sklyanka.domain.profile.SwitchProfileUseCase
 import ru.stohastika.sklyanka.domain.profile.SwitchReason
 import ru.stohastika.sklyanka.domain.reminder.port.PermissionState
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPermission
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderSettingsValues
+import ru.stohastika.sklyanka.domain.time.FixedTimeSource
 import ru.stohastika.sklyanka.domain.transfer.AppStamp
+import java.time.Instant
 
 /**
  * Сборка состояния экрана «Настройки» (`TDD.md §4`).
@@ -261,7 +266,18 @@ class SettingsViewModelTest {
             permissions = permissions,
         ),
         stamp = AppStamp(versionName = VERSION, versionCode = VERSION_CODE),
+        // Подписки в этом сценарии нет: строка блока «Склянка Про» показывает «Не оформлена»,
+        // и её значение не мешает проверкам списка профилей и настроек (SKL-122).
+        proStatus = ObserveProStatusUseCase(cache = NoSubscription(), time = FixedTimeSource(Instant.EPOCH)),
     )
+
+    /** Кэш без ответа магазина: подписку не проверяли — строке нечего показывать, кроме «Не оформлена». */
+    private class NoSubscription : ProSubscriptionCache {
+
+        override suspend fun read(): ProSubscription? = null
+
+        override suspend fun write(subscription: ProSubscription) = Unit
+    }
 
     private companion object {
         const val SELF_MEDICATIONS = 2

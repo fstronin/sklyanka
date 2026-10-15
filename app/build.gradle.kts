@@ -49,6 +49,31 @@ fun resolveAgconnectServicesDir(): File? {
     return rootProject.file(raw)
 }
 
+/**
+ * Один файл конфигурации вендора как источник assets.
+ *
+ * Задача копирует **только** `agconnect-services.json`: содержимое его каталога в артефакт
+ * не попадает. Соседние файлы называются в журнале сборки вслух — если человек положил
+ * конфигурацию в папку с ключами, он узнает об этом до выпуска, а не после (SKL-122).
+ */
+val vendorAssets: TaskProvider<Copy>? = agconnectServicesFile
+    ?.takeIf { it.isFile }
+    ?.let { config ->
+        val strays = agconnectServicesDir?.listFiles()
+            ?.filter { it.name != config.name }
+            ?: emptyList()
+        if (strays.isNotEmpty()) {
+            logger.lifecycle(
+                "vendor config dir has ${strays.size} other file(s); they will NOT ship in the APK: " +
+                    strays.joinToString { it.name },
+            )
+        }
+        tasks.register<Copy>("vendorAssets") {
+            from(config)
+            into(layout.buildDirectory.dir("vendor-assets"))
+        }
+    }
+
 if (agconnectServicesFile?.isFile != true) {
     logger.lifecycle(
         "vendor config is absent: kept for the billing contour only " +
@@ -69,9 +94,11 @@ android {
     }
     sourceSets {
         getByName("main") {
-            // Каталог вендора становится assets только когда файл действительно есть:
-            // пустой srcDir ломал бы сборку на чистой машине.
-            agconnectServicesDir?.takeIf { agconnectServicesFile?.isFile == true }?.let { assets.srcDir(it) }
+            // В assets едет ровно файл конфигурации: каталог утащил бы в публикуемый APK
+            // всё, что лежит рядом с ним, — включая ключ подписи, если конфигурация лежит
+            // в папке с ключами (SKL-122, критика F12). Поэтому файл сначала копируется
+            // в отдельный каталог сборки, а в assets объявляется уже он.
+            vendorAssets?.let { assets.srcDir(it) }
         }
     }
 }
@@ -93,6 +120,12 @@ dependencies {
     implementation(project(":feature-history"))
     // Экран разрешений EMUI (SKL-14).
     implementation(project(":feature-onboarding"))
+    // Витрина «Склянки Про»: одна модальная поверхность покупки (SKL-122, Р-67).
+    implementation(project(":feature-pro"))
+    // Платный сетевой контур: реализация порта магазина и единственное место сборки,
+    // которому разрешена сеть (SKL-122, ADR-0010 п. 1–2). Модуль подключён, чтобы граф Hilt
+    // и гейт состава артефакта проверялись на сборке, а не на устройстве.
+    implementation(project(":billing-appgallery"))
 
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.androidx.core.ktx)

@@ -46,6 +46,14 @@ sealed interface SettingsIntent {
     /** «Политика конфиденциальности» — системный переход в браузер (ОВ-123). */
     data object OpenPolicy : SettingsIntent
 
+    /**
+     * Строка блока «Склянка Про» — открыть витрину (SKL-122, Р-67 п. 6).
+     *
+     * Шторку хостит `app`, а не настройки: поверхность покупки одна на все точки входа,
+     * и заводить её копию в модуле настроек значило бы получить вторую поверхность (Р-67).
+     */
+    data object OpenPro : SettingsIntent
+
     data object OpenToday : SettingsIntent
 
     data object OpenMedications : SettingsIntent

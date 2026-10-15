@@ -50,6 +50,11 @@ include(":feature-reminder")
 include(":feature-onboarding")
 include(":feature-history")
 include(":feature-settings")
+// Витрина «Склянки Про» (SKL-122): одна модальная поверхность покупки (Р-67).
+include(":feature-pro")
+// Платный контур: реализация порта магазина поверх AppGallery IAP (ADR-0010 п. 2).
+// Единственный модуль, объявляющий `INTERNET` (ADR-0010 п. 1).
+include(":billing-appgallery")
 include(":core-ui")
 include(":core-data")
 include(":core-domain")

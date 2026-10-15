@@ -69,7 +69,7 @@ fun SettingsSection(
         )
 
         SettingsDestination.TRANSFER -> {
-            BackHandler(enabled = true) { onLeave() }
+            BackHandler(enabled = !LocalModalSurfaceOpen.current) { onLeave() }
             DataTransferRoute(
                 viewModel = viewModels.transfer,
                 // «После загрузки откроется тот же экран настройки» (ПЕР-31): разрешения
@@ -81,7 +81,7 @@ fun SettingsSection(
         }
 
         SettingsDestination.DELETE_PROFILE -> {
-            BackHandler(enabled = true) { onLeave() }
+            BackHandler(enabled = !LocalModalSurfaceOpen.current) { onLeave() }
             DeleteProfileRoute(
                 viewModel = viewModels.deleteProfile,
                 onLeave = onLeave,

@@ -10,7 +10,7 @@ import org.gradle.kotlin.dsl.register
 
 /**
  * Проверки, которые нельзя сделать по исходникам, — только по собранному приложению
- * (TDD §5.5). Регистрируются на каждый включённый вариант; отладочный вариант
+ * (TDD §5.4). Регистрируются на каждый включённый вариант; отладочный вариант
  * входит в общий прогон check, релизный — в сборку релиза.
  */
 class ArtifactChecksConventionPlugin : Plugin<Project> {
@@ -22,12 +22,35 @@ class ArtifactChecksConventionPlugin : Plugin<Project> {
 
                 val manifestCheck = tasks.register<VerifyMergedManifestTask>("verifyManifest$suffix") {
                     group = VERIFICATION_GROUP
-                    description = "Checks the merged manifest of the $suffix artifact: " +
-                        "no network permissions (INTERNET and network state are forbidden), " +
-                        "package name and minSdk (PLATFORM-1..3, NFR-15/38, PM-31)."
+                    description = "Checks the merged manifest of the $suffix artifact: network " +
+                        "permissions only together with the paid contour and only from it, network " +
+                        "state forbidden always, package name and minSdk (PLATFORM-1..3, NFR-15/38, " +
+                        "ADR-0010 §1/§5)."
                     mergedManifest.set(variant.artifacts.get(SingleArtifact.MERGED_MANIFEST))
                     expectedPackageName.set(ProjectDefaults.APPLICATION_ID)
                     expectedMinSdk.set(ProjectDefaults.MIN_SDK)
+                    contourManifest.set(
+                        rootProject.layout.projectDirectory.file(
+                            "${AnalyticsContourRules.PAID_CONTOUR_MODULE}/src/main/AndroidManifest.xml",
+                        ),
+                    )
+                    moduleManifests.from(
+                        provider {
+                            rootProject.allprojects.flatMap { project ->
+                                project.file("src")
+                                    .walkTopDown()
+                                    .filter { it.isFile && it.name == "AndroidManifest.xml" }
+                                    .toList()
+                            }
+                        },
+                    )
+                    paidContourPresent.set(
+                        provider {
+                            variant.runtimeConfiguration.incoming.resolutionResult.allComponents.any {
+                                it.id.displayName.startsWith("project ${AnalyticsContourRules.PAID_CONTOUR_PROJECT}")
+                            }
+                        },
+                    )
                     report.set(layout.buildDirectory.file("reports/composition/manifest-${variant.name}.txt"))
                 }
 
@@ -36,8 +59,9 @@ class ArtifactChecksConventionPlugin : Plugin<Project> {
                     tasks.register<VerifyDependencyCompositionTask>("verifyDependencies$suffix") {
                         group = VERIFICATION_GROUP
                         description = "Checks that the $suffix runtime classpath carries no Google " +
-                            "Play Services, Firebase, ads or third-party analytics; no network " +
-                            "dependency rides outside the contour white list (PLATFORM-4, NFR-15/16/39, PM-31)."
+                            "Play Services, Firebase, ads or third-party analytics; no vendor " +
+                            "dependency rides outside the contour white list, and the contour " +
+                            "client is present (PLATFORM-4, NFR-15/16/39, ADR-0010 §5)."
                         coordinates.set(
                             provider {
                                 runtimeConfiguration.incoming.resolutionResult.allComponents
@@ -53,7 +77,7 @@ class ArtifactChecksConventionPlugin : Plugin<Project> {
                     }
 
                 // Проверка состава — часть сборки варианта, а не отдельный ритуал,
-                // про который вспоминают перед выпуском (TDD §5.5).
+                // про который вспоминают перед выпуском (TDD §5.4).
                 tasks.matching { it.name == "assemble$suffix" }.configureEach {
                     dependsOn(manifestCheck, dependencyCheck)
                 }

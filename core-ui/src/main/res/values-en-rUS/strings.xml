@@ -96,4 +96,47 @@
     <string name="catalog_profile_stripe">Profile stripe</string>
     <string name="catalog_mark">The mark and its variants</string>
     <string name="catalog_lockup">Lockup with the name</string>
+
+    <!-- The Pro showcase (SKL-122): strings of docs/norm/06-design.md §10, plus the store
+         refusal wordings the norm left to the task. %1$s is the store\'s ready price string. -->
+    <string name="pro_sheet_title">Sklyanka Pro</string>
+    <string name="pro_benefit_schedules_short">Complex schedules</string>
+    <string name="pro_benefit_schedules_example">every other day, cycles, stepped schemes</string>
+    <string name="pro_benefit_widgets_short">Widgets</string>
+    <string name="pro_benefit_report_short">Extended report</string>
+    <string name="pro_benefit_accent_short">Accent and icons</string>
+    <string name="pro_benefit_export_short">History export</string>
+    <string name="pro_benefit_profiles_short">More profiles</string>
+    <string name="pro_period_month">Month</string>
+    <string name="pro_period_year">Year</string>
+    <string name="pro_period_month_short">mo</string>
+    <string name="pro_period_year_short">yr</string>
+    <string name="pro_year_ribbon">Better value</string>
+    <string name="pro_year_cheaper">Yearly cheaper</string>
+    <string name="pro_action_buy">Subscribe</string>
+    <string name="pro_action_restore">Restore purchase</string>
+    <string name="pro_action_manage">Manage subscription</string>
+    <string name="pro_action_cancel">Cancel subscription</string>
+    <string name="pro_terms_row">Terms and policy</string>
+    <string name="pro_renew_auto">The subscription renews automatically</string>
+    <string name="pro_renew_terms_short">Renewal — %1$s, cancel in the store</string>
+    <string name="pro_renew_price">Renewal — %1$s</string>
+    <string name="pro_renew_charge">Charged on the renewal day; a notice comes 5 days before</string>
+    <string name="pro_renew_cancel">You can cancel in the store\'s subscriptions section</string>
+    <string name="pro_disclosure_more">Details</string>
+    <string name="pro_state_active_until">Active until %1$s</string>
+    <string name="pro_state_inactive">Not subscribed</string>
+    <string name="pro_store_unavailable">Prices and purchase will appear when the store is available</string>
+    <string name="pro_mark">Pro</string>
+    <string name="pro_purchase_confirming">The store has not declined the purchase — its state is being verified. Try restoring the purchase later</string>
+    <string name="pro_restore_not_active">The store knows about the subscription, but it is not active. Check the store\'s subscriptions section</string>
+    <string name="pro_manage_failed">The store\'s subscriptions screen did not open — the subscription was not cancelled. Try again</string>
+    <string name="pro_purchase_failed_network">No connection — the purchase did not go through. Try again later</string>
+    <string name="pro_purchase_failed_unavailable">The store is unavailable on this device — the purchase did not go through</string>
+    <string name="pro_purchase_failed_declined">The store declined the purchase. You were not charged</string>
+    <string name="pro_purchase_failed_product">This product is not available in the store right now</string>
+    <string name="pro_purchase_failed_store">The store returned an error — the purchase did not go through</string>
+    <string name="pro_restore_failed">The purchase could not be restored. Try again later</string>
+    <string name="pro_restore_nothing_found">No purchases were found in the store</string>
+    <string name="pro_date_pattern">MMMM d, yyyy</string>
 </resources>

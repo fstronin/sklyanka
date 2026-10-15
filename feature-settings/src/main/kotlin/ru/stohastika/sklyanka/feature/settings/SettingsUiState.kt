@@ -1,5 +1,7 @@
 package ru.stohastika.sklyanka.feature.settings
 
+import ru.stohastika.sklyanka.domain.pro.ProStatus
+import ru.stohastika.sklyanka.domain.pro.ProSubscription
 import ru.stohastika.sklyanka.domain.reminder.port.PermissionState
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPermission
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderSettingsValues
@@ -38,6 +40,15 @@ data class SettingsUiState(
     val permissions: PermissionsSummary = PermissionsSummary(),
     /** Версия приложения — та, что собрана, а не та, что нарисована в макете. */
     val version: String = "",
+    /**
+     * Состояние подписки «Склянка Про» для строки блока (SKL-122, Р-67 п. 6).
+     *
+     * Читается из кэша последнего ответа магазина по `SettingsViewModel.refresh` — при показе
+     * экрана, при возвращении в приложение и при закрытии шторки витрины: после покупки или
+     * восстановления человек возвращается на этот же экран, не покидая приложения, и строка
+     * обязана назвать новое состояние, а не то, что было на момент открытия (`ADR-0015`, SKL-122).
+     */
+    val pro: ProStatus = ProStatus(ProSubscription.None),
 )
 
 /**

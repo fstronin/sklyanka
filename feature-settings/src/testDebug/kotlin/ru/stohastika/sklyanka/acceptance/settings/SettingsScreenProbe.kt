@@ -120,6 +120,8 @@ internal object SettingsScreenProbe {
             permissions = world.system,
         ),
         stamp = APP_STAMP,
+        // Состояние подписки — тот же сценарий мира, что и у продукта (SKL-122).
+        proStatus = world.pro.statusUseCase,
     )
 
     /** Забыть подменённый главный диспетчер: стенд не должен влиять на соседние тесты. */

@@ -52,6 +52,6 @@ fun HistorySection(
     modifier: Modifier = Modifier,
 ) {
     val leave = { onLeave(origin) }
-    BackHandler(enabled = true) { leave() }
+    BackHandler(enabled = !LocalModalSurfaceOpen.current) { leave() }
     HistoryRoute(viewModel = viewModel, onBack = leave, modifier = modifier)
 }

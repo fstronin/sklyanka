@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import ru.stohastika.sklyanka.domain.model.Profile
+import ru.stohastika.sklyanka.domain.pro.ObserveProStatusUseCase
 import ru.stohastika.sklyanka.domain.profile.ProfileContextProvider
 import ru.stohastika.sklyanka.domain.profile.SwitchProfileUseCase
 import ru.stohastika.sklyanka.domain.profile.SwitchReason
@@ -59,6 +60,14 @@ class SettingsViewModel @Inject constructor(
      * не должно, иначе экран и файл однажды назовут разные числа.
      */
     stamp: AppStamp,
+    /**
+     * Состояние подписки «Склянка Про» (SKL-122) — из кэша последнего ответа магазина.
+     *
+     * Читается по [refresh], а не потоком: кэш меняется действиями человека (покупка,
+     * восстановление, проверка при запуске), и подписка на хранилище дала бы строке
+     * значение, которого магазин уже не говорит (Р-68 п. 7).
+     */
+    private val proStatus: ObserveProStatusUseCase,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(SettingsUiState(version = stamp.versionName))
@@ -82,6 +91,9 @@ class SettingsViewModel @Inject constructor(
             _state.value = _state.value.copy(
                 reminders = snapshot.reminders,
                 permissions = snapshot.permissions,
+                // Состояние подписки — тем же заходом и по той же причине: магазин мог
+                // ответить, пока человек был в нём (покупка, восстановление, отмена).
+                pro = proStatus(),
             )
         }
     }

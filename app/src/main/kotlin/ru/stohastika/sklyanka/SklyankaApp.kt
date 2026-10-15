@@ -13,6 +13,7 @@ import ru.stohastika.sklyanka.data.room.DatabaseMaintenance
 import ru.stohastika.sklyanka.data.room.DatabaseState
 import ru.stohastika.sklyanka.data.room.DatabaseUpgrade
 import ru.stohastika.sklyanka.domain.log.OperationLog
+import ru.stohastika.sklyanka.domain.pro.RefreshProSubscriptionUseCase
 import ru.stohastika.sklyanka.domain.reminder.RescheduleReason
 import ru.stohastika.sklyanka.platform.AppForegroundTracker
 import ru.stohastika.sklyanka.platform.BackgroundWorkFailures
@@ -129,6 +130,17 @@ class SklyankaApp : Application() {
     lateinit var backgroundFailures: BackgroundWorkFailures
 
     /**
+     * Проверка подписки «Про» при запуске с сетью (SKL-122, `ADR-0015` п. 1).
+     *
+     * Стоит последней в плановом старте и не задерживает ничего: надёжность напоминания —
+     * обещание продукта, и проверка чужого сервиса не имеет права встать между человеком
+     * и приёмом лекарства (Р-7, П-6). Отказ проверки ничего не отменяет: доступ остаётся
+     * по кэшу, срока давности у него нет (Р-68 п. 7).
+     */
+    @Inject
+    lateinit var refreshProSubscription: RefreshProSubscriptionUseCase
+
+    /**
      * Область работы старта.
      *
      * `by lazy`, а не полем: обработчик отказов приходит инъекцией, а инъекция графа
@@ -194,6 +206,10 @@ class SklyankaApp : Application() {
             outageAnnouncer.refresh()
             operationLog.prune(LogRetention.KEEP_DAYS, LogRetention.KEEP_RECORDS)
             reminderLogRotation.schedule()
+            // Последней: проверка подписки — плановый вопрос к магазину, и она не должна
+            // ни задерживать планирование напоминаний, ни ронять старт своим отказом.
+            // Проверить не удалось — кэш остаётся как был, и доступ сохраняется (П-6).
+            refreshProSubscription()
         }
     }
 

@@ -88,6 +88,9 @@ internal object SettingsRemindersStand {
             permissions = world.system,
         ),
         stamp = AppStamp(versionName = "1.0", versionCode = 1),
+        // Состояние подписки «Про» — тем же сценарием мира, что у продукта (SKL-122):
+        // стенд собирает настоящую модель настроек, и строка блока получает своё значение.
+        proStatus = world.pro.statusUseCase,
     )
 
     /** Забыть подменённый главный диспетчер: стенд не должен влиять на соседние тесты. */

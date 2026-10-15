@@ -55,6 +55,14 @@ kotlinpoet = "1.18.1"
 # SKL-106). Репозиторий вендора и конфигурация agconnect сохранены для биллингового
 # контура «Склянки Про» (Р-37, Р-38, SKL-122): его координаты вносятся в каталог вместе
 # с задачей биллинга.
+#
+# Клиент магазина AppGallery (SKL-122). Единственная вендорская координата продукта;
+# её замыкание (base → ui, stats, device, log, baselegacyapi, availableupdate; hmf:tasks)
+# внесено в белый список состава артефакта осознанно (`AnalyticsContourRules`).
+# Названные следствия: `com.huawei.hms:stats` — телеметрия вендорского клиента, не наша
+# аналитика (Р-4); замыкание объявляет `ACCESS_NETWORK_STATE`, и оно снимается манифестом
+# app (`tools:node="remove"`) — запрет НФТ-15 не ослабляется.
+huaweiIap = "6.16.6.305"
 
 [libraries]
 # --- Домен: чистый Kotlin, без Android ---
@@ -100,6 +108,13 @@ room-testing = { module = "androidx.room:room-testing", version.ref = "room" }
 
 # --- Постоянные настройки: активный профиль переживает перезапуск (ПРФ-17, ПРФ-18) ---
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
+
+# --- Платный контур «Склянки Про» (SKL-122) ---
+#
+# Клиент AppGallery IAP. Подключается только модулем контура `billing-appgallery`:
+# зависимость от вендора закрыта портом `ProStore`, и ядро о ней не знает (ADR-0010 п. 2).
+# Репозитория двери открыты только для групп `com.huawei.*` (settings.gradle.kts).
+huawei-iap = { module = "com.huawei.hms:iap", version.ref = "huaweiIap" }
 
 # --- Фоновая работа: задача перепланирования будильников (SKL-13, НАП-13) ---
 #

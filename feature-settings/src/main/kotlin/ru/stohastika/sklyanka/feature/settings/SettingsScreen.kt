@@ -22,6 +22,8 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import ru.stohastika.sklyanka.domain.pro.ProNotice
+import ru.stohastika.sklyanka.domain.pro.ProStatus
 import ru.stohastika.sklyanka.domain.reminder.SnoozeIntervals
 import ru.stohastika.sklyanka.ui.component.BottomBar
 import ru.stohastika.sklyanka.ui.component.BottomBarTab
@@ -35,6 +37,8 @@ import ru.stohastika.sklyanka.ui.component.SklyankaSwitchRow
 import ru.stohastika.sklyanka.ui.component.rememberScreenHeaderState
 import ru.stohastika.sklyanka.ui.locale.interfaceLocale
 import ru.stohastika.sklyanka.ui.modifier.minTouchTarget
+import ru.stohastika.sklyanka.ui.text.proDate
+import ru.stohastika.sklyanka.ui.text.proText
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.MarkEnvironment
 import ru.stohastika.sklyanka.ui.token.ProfilePalette
@@ -85,6 +89,7 @@ fun SettingsScreen(state: SettingsUiState, onIntent: (SettingsIntent) -> Unit, m
                 remindersBlock(state, onIntent)
                 systemBlock(state, onIntent)
                 dataBlock(onIntent)
+                proBlock(state, onIntent)
                 item {
                     AboutPlate(state.version, modifier = Modifier.padding(horizontal = SklyankaSpacing.Section))
                 }
@@ -344,6 +349,45 @@ private fun LazyListScope.dataBlock(onIntent: (SettingsIntent) -> Unit) {
 }
 
 /**
+ * Блок «Склянка Про» — пятый блок настроек, после «Данных» и перед плашкой «О приложении»
+ * (Р-67 п. 6, SKL-122).
+ *
+ * Рубрики у блока нет, и это не упущение: прописная «СКЛЯНКА ПРО» над строкой «Склянка Про»
+ * повторила бы подпись дважды, а макет даёт блок карточкой без рубрики
+ * (`design/screens/Pro.dc.html`, фигура 5).
+ *
+ * Метки «Про» на строке тоже нет: её называют сами слова «Склянка Про» (Р-67 п. 5) — метка
+ * ставится там, где нужен признак платности у элемента, название которого о цене не говорит.
+ */
+private fun LazyListScope.proBlock(state: SettingsUiState, onIntent: (SettingsIntent) -> Unit) {
+    item {
+        Box(modifier = Modifier.padding(horizontal = SklyankaSpacing.Section)) {
+            SettingsCard {
+                SettingsRow(
+                    title = proText(ProNotice.SHEET_TITLE),
+                    value = proRowValue(state.pro),
+                    onClick = { onIntent(SettingsIntent.OpenPro) },
+                    modifier = Modifier.testTag(TAG_PRO_ROW),
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Значение строки блока: «Не оформлена» либо «Активна до <дата>».
+ *
+ * Дата подставляется платформенным форматтером с локалью интерфейса (НФТ-43а), а не склейкой
+ * строк: в шести языках дата стоит в разных местах предложения, и порядок слов задаёт язык,
+ * а не код.
+ */
+@Composable
+private fun proRowValue(pro: ProStatus): String {
+    val until = pro.until ?: return proText(pro.notice)
+    return proText(pro.notice, proDate(until))
+}
+
+/**
  * Плашка «О приложении».
  *
  * Формулировка «не является медицинским изделием» стоит здесь и видна сразу: ни нажатия,
@@ -422,3 +466,11 @@ internal const val TAG_HISTORY_ROW = "settings_history_row"
 internal const val TAG_TRANSFER_ROW = "settings_transfer_row"
 
 internal const val TAG_POLICY_ROW = "settings_policy_row"
+
+/**
+ * Строка блока «Склянка Про» (SKL-122, Р-67 п. 6).
+ *
+ * Отдельный тег, а не тег строки политики: по нему поход и экранный стенд находят вход
+ * в витрину, и он же называет поверхность в реестре `docs/tasks/SKL-140/TDD.md` §7.
+ */
+internal const val TAG_PRO_ROW = "settings_pro_row"
