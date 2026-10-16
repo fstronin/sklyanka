@@ -5,7 +5,6 @@ import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
-import androidx.compose.ui.test.click
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasAnyDescendant
 import androidx.compose.ui.test.hasContentDescription
@@ -19,7 +18,6 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
-import androidx.compose.ui.test.performTouchInput
 import dagger.hilt.android.testing.HiltAndroidTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -120,7 +118,7 @@ class HostileMedicationFormTest : JourneyTest() {
         typeInto(TAG_DOSE_FIELD, DOSE)
         scrollToAndClick(TAG_ADD_TIME)
         waitForTag(TAG_TIME_ROW)
-        doublePress(TAG_SAVE_BUTTON)
+        doublePressByTag(TAG_SAVE_BUTTON)
         waitUntil(SCREEN_TIMEOUT_MS, "закрытия формы после сохранения") { !exists(TAG_MEDICATION_FORM) }
         waitForTag(TAG_MEDICATION_LIST)
         scrollListTo(savedName)
@@ -324,20 +322,8 @@ class HostileMedicationFormTest : JourneyTest() {
     }
 
     /**
-     * Двойное нажатие, как его делает человек: две точки подряд, без простоя между ними.
-     *
-     * Ожидание простоя между нажатиями мерило бы не двойное нажатие, а скорость закрытия формы,
-     * и отказ проверки говорил бы не о том, что человек сделал.
+     * Введённое в поле: у поля читается его редактируемый текст, а не подпись.
      */
-    private fun doublePress(tag: String) {
-        compose.onNodeWithTag(tag, useUnmergedTree = true).performTouchInput {
-            click()
-            click()
-        }
-        compose.waitForIdle()
-    }
-
-    /** Введённое в поле: у поля читается его редактируемый текст, а не подпись. */
     private fun typedText(fieldTag: String): String = typedText(
         compose.onNode(hasSetTextAction() and hasAnyAncestor(hasTestTag(fieldTag)), useUnmergedTree = true),
     )

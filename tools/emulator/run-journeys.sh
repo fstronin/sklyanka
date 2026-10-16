@@ -55,12 +55,6 @@ serial="$(skl_serial "$api")"
 results="$(skl_results_dir "$api")"
 mkdir -p "$results"
 
-# Видимому окну нужен живой экран: поход идёт минуты, и прогон не должен упереться в шторку.
-skl_adb -s "$serial" shell svc power stayon true >/dev/null 2>&1 || true
-skl_adb -s "$serial" shell settings put system screen_off_timeout 2147483647 >/dev/null 2>&1 || true
-skl_adb -s "$serial" shell wm dismiss-keyguard >/dev/null 2>&1 || true
-skl_adb -s "$serial" shell settings put secure show_ime_with_hard_keyboard 0 >/dev/null 2>&1 || true
-
 # Обстановка образа возвращается в исходную до первой проверки (SKL-117).
 #
 # Фаза «чужая локаль» ставит системе fr-FR и масштаб шрифта с потолка, а снимает их
@@ -69,7 +63,18 @@ skl_adb -s "$serial" shell settings put secure show_ime_with_hard_keyboard 0 >/d
 # следующая прогонка начиналась бы с французского интерфейса, и все проверки, называющие
 # русские слова, падали бы таймаутом. Обстановка выглядела бы дефектом продукта, а причина
 # была бы в оставленном состоянии образа: чинится это здесь, а не разбором каждого отказа.
+#
+# Шаг идёт ПЕРВЫМ, до пробуждения экрана и часов: записанную локаль платформа применяет
+# только при загрузке, и возврат оставшейся чужой локали — это перезагрузка образа
+# (`restore-stand.sh`). После неё экран снова гаснет, а часы образа сбрасываются на часы
+# машины, поэтому за ставками пробуждения и часов шаг стоять не может.
 "$SKL_DIR/restore-stand.sh" "$api" "$serial"
+
+# Видимому окну нужен живой экран: поход идёт минуты, и прогон не должен упереться в шторку.
+skl_adb -s "$serial" shell svc power stayon true >/dev/null 2>&1 || true
+skl_adb -s "$serial" shell settings put system screen_off_timeout 2147483647 >/dev/null 2>&1 || true
+skl_adb -s "$serial" shell wm dismiss-keyguard >/dev/null 2>&1 || true
+skl_adb -s "$serial" shell settings put secure show_ime_with_hard_keyboard 0 >/dev/null 2>&1 || true
 
 # Часы образа выставляются под управляемые часы похода: без этого платформенные пути судят
 # по часам образа, а домен — по управляемым, и поход «Проверка напоминаний» видел опоздание
@@ -197,13 +202,21 @@ else
     # языков, и необъявленная локаль приложения отбрасывается платформой — фаза «чужая локаль»
     # проверяла бы русскую. `cmd locale set-system-locales` есть не на всех образах, поэтому
     # пишется сама настройка (то же место, куда пишет команда), а отказ не глушится.
-    if ! skl_adb -s "$serial" shell settings put system system_locales "$SKL_JOURNEY_UNKNOWN_LOCALE" >/dev/null 2>&1; then
+    #
+    # Записанную локаль платформа применяет только при следующей загрузке (SKL-119, 16.10.2026,
+    # `HostileLocaleAndFontScaleTest`: «запись настройки `system_locales` применяется только при
+    # следующей загрузке — проверено на API 35»), поэтому сама фаза идёт под той локалью, что
+    # стоит на образе: класс и утверждает то, что видно при любой локали, — один объявленный язык
+    # на всех экранах и подписи, не режущиеся на потолке масштаба. Здесь локаль записывается
+    # как обстановка фазы; возврат её — строками ниже, а за по-настоящему чужую локаль образа
+    # отвечает `restore-stand.sh` (он же чинит оставшуюся запись перед следующим прогоном).
+    if ! skl_write_system_locale "$serial" "$SKL_JOURNEY_UNKNOWN_LOCALE"; then
         skl_warn "системную локаль $SKL_JOURNEY_UNKNOWN_LOCALE выставить не удалось: фаза обстановки проверит то, что есть"
     fi
     run_phase setting "-Pandroid.testInstrumentationRunnerArguments.class=$SKL_JOURNEY_SETTING_CLASSES" ||
         keep_first_status $?
     skl_adb -s "$serial" shell settings put system font_scale "$SKL_JOURNEY_FONT_SCALE_DEFAULT" >/dev/null 2>&1 || true
-    skl_adb -s "$serial" shell settings put system system_locales "$SKL_JOURNEY_DEFAULT_LOCALE" >/dev/null 2>&1 || true
+    skl_write_system_locale "$serial" "$SKL_JOURNEY_DEFAULT_LOCALE"
 fi
 
 stop_logcat

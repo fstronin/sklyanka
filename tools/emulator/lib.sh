@@ -120,6 +120,61 @@ skl_platform_line() {
     echo "Android $release (API $sdk), образ $build"
 }
 
+# --- Обстановка образа: системная локаль ---------------------------------------
+
+# Действующая системная локаль образа в виде `ru-RU`; пустая строка — образ
+# конфигурацию не сообщил.
+#
+# Читается КОНФИГУРАЦИЯ, а не настройка `system_locales`: запись настройки платформа
+# применяет только при следующей загрузке (SKL-119, 16.10.2026: проверено на API 35 и
+# повторено опытом — `settings put` в любую сторону конфигурацию не меняет), поэтому
+# настройка говорит о намерении, а человек и проверки видят конфигурацию. Проверка по
+# одной настройке пропускала бы образ, оставшийся в чужой локали прошлого прогона:
+# настройка уже возвращена, а интерфейс приложения и ожидания проверок — французские.
+skl_system_locale() {
+    local serial="$1" config
+    config="$(skl_adb -s "$serial" shell am get-config 2>/dev/null | tr -d '\r' |
+        sed -n 's/^config: //p' | head -n 1)"
+    [[ -n "$config" ]] || return 0
+    # `mcc310-mnc260-ru-rRU-ldltr-…`: язык и страна стоят сразу за mcc и mnc.
+    printf '%s\n' "$config" | awk -F- '
+        {
+            start = 0
+            for (i = 1; i <= NF; i++) {
+                if ($i ~ /^mnc[0-9]+$/) { start = i + 1; break }
+                if ($i ~ /^mcc[0-9]+$/) { start = i + 1 }
+            }
+            if (start == 0 || $start !~ /^[a-z][a-z][a-z]?$/) { print ""; exit }
+            locale = $start
+            if ($(start + 1) ~ /^r[A-Z][A-Z]$/) { locale = locale "-" substr($(start + 1), 2) }
+            print locale
+        }'
+}
+
+# Записать системную локаль образа.
+#
+# Пишется и настройка (то место, куда пишет сама платформа), и свойство `persist.sys.locale`
+# (хранилище системной локали до API 33): образов в матрице три, и читает каждый своё.
+# Запись применяется при следующей загрузке — см. [skl_system_locale]. Ненулевой код
+# возврата — запись не легла; применять её тогда нечего, и решает это вызывающий.
+skl_write_system_locale() {
+    local serial="$1" locale="$2" status=0
+    skl_adb -s "$serial" shell settings put system system_locales "$locale" >/dev/null 2>&1 || status=1
+    skl_adb -s "$serial" shell setprop persist.sys.locale "$locale" >/dev/null 2>&1 || true
+    return "$status"
+}
+
+# Перезагрузить образ и дождаться готовности: единственный способ применить записанную
+# системную локаль ([skl_system_locale]) и заодно единственный способ вернуть её назад.
+skl_reboot_image() {
+    local api="$1" serial
+    serial="$(skl_serial "$api")"
+    skl_log "перезагрузка $serial: записанная локаль применяется при загрузке"
+    skl_adb -s "$serial" reboot >/dev/null 2>&1 || skl_die "перезагрузить $serial не удалось"
+    skl_adb -s "$serial" wait-for-device >/dev/null 2>&1 || true
+    skl_wait_boot "$api" || skl_die "$serial не загрузился после перезагрузки"
+}
+
 # Root на образе AOSP разрешён и нужен испытаниям: смена пояса, перевод часов,
 # чтение базы приложения. На образе с Google APIs его нет — ещё одна причина
 # держать матрицу без GMS.

@@ -5,6 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.annotation.StringRes
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.click
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasAnyDescendant
 import androidx.compose.ui.test.hasContentDescription
@@ -14,6 +15,7 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performTouchInput
 import androidx.test.platform.app.InstrumentationRegistry
 import ru.stohastika.sklyanka.domain.log.OpEvent
 import ru.stohastika.sklyanka.domain.log.OpLogRecord
@@ -128,6 +130,29 @@ abstract class JourneyTest : DeviceScreenTest() {
         .getOrNull(SemanticsProperties.Text)
         .orEmpty()
         .joinToString(" ") { it.text }
+
+    /**
+     * Двойное нажатие, как его делает человек: две точки подряд, без простоя между ними.
+     *
+     * Ожидание простоя между нажатиями мерило бы не двойное нажатие, а скорость закрытия
+     * экрана, и отказ говорил бы не о том, что сделал человек. По той же причине нажатие идёт
+     * **одним** обращением к узлу: два `performClick` подряд — это два обращения, и между ними
+     * экран успевает смениться, если первое нажатие уже сделало своё дело (SKL-119, прогон
+     * 16.10.2026: «Заменить всё» успела показать отчёт, и второе обращение не нашло кнопки —
+     * проверка падала на скорости стенда, а не на продукте).
+     *
+     * Годится там, где кнопка переживает первое нажатие: занятая («Сохранить лекарство»,
+     * «Заменить всё»). Действие, которое первым нажатием снимается с экрана, так нажимать
+     * нельзя: второе нажатие пришлось бы в то, что встало на его место, — у таких действий
+     * есть свой приём рядом с проверкой (`HostileDeleteSheetTest.clickTwice`).
+     */
+    protected fun doublePressByTag(tag: String) {
+        compose.onNodeWithTag(tag, useUnmergedTree = true).performTouchInput {
+            click()
+            click()
+        }
+        compose.waitForIdle()
+    }
 
     /**
      * Системная «Назад» — тем же путём, каким она приходит человеку: через диспетчер

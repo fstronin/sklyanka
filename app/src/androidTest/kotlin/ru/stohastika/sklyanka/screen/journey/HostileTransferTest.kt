@@ -202,13 +202,14 @@ class HostileTransferTest : JourneyTest() {
         setWord(stringOf(SettingsR.string.transfer_replace_word))
         waitUntil(SCREEN_TIMEOUT_MS, "the confirm action after the right word") { confirmIsEnabled() }
         val appliedBefore = opLogCount(OpEvent.TRANSFER_APPLIED)
-        // Человек подтверждает замену дважды подряд по той же точке: второе нажатие
-        // не имеет права применить загрузку ещё раз — иначе необратимое действие
-        // выполняется дважды, а человек видел одно подтверждение (ПЕР-16). Пока замена
-        // идёт, подтверждающая кнопка обязана быть занята — тем же способом, каким заняты
-        // кнопки удаления профиля и удаления лекарства.
-        click(TAG_REPLACE_CONFIRM_ACTION)
-        if (exists(TAG_REPLACE_CONFIRM_ACTION)) click(TAG_REPLACE_CONFIRM_ACTION)
+        // Человек подтверждает замену дважды подряд по той же точке: две точки без простоя
+        // между ними ([doublePress]) — ожидание простоя мерило бы скорость завершения замены,
+        // а не двойное нажатие. Второе нажатие не имеет права применить загрузку ещё раз —
+        // иначе необратимое действие выполняется дважды, а человек видел одно подтверждение
+        // (ПЕР-16). Пока замена идёт, подтверждающая кнопка занята (`ButtonState.Busy` —
+        // недоступна нажатию), тем же способом, каким заняты кнопки удаления профиля
+        // и удаления лекарства.
+        doublePressByTag(TAG_REPLACE_CONFIRM_ACTION)
         waitForTag(TAG_REPORT)
         capture("report")
 

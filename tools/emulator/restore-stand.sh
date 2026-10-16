@@ -5,16 +5,29 @@
 #
 # Зачем отдельный шаг. Фаза «чужая локаль» ставит системе fr-FR и масштаб шрифта с потолка
 # (`run-journeys.sh`, шаг 7), а снимает их последними строками прогона. Прерванный прогон
-# до снятия не доходит, а данные образа между прогонами сохраняются намеренно (И-1, И-10) —
-# и следующая прогонка начинается с французского интерфейса. Приложение объявляет шесть
-# языков (`localeConfig`), французского среди них нет, и платформа отдаёт ему русский:
-# проверка, называющая день недели по локали образа, слова не находит и падает таймаутом.
-# Отказ выглядит как дефект продукта, хотя причина — оставленное состояние образа.
+# (Ctrl-C, потолок времени, отказ задачи) до снятия не доходит, а данные образа между
+# прогонами сохраняются намеренно (И-1, И-10) — значит следующая прогонка начиналась бы
+# с французского интерфейса. Приложение объявляет шесть языков (`localeConfig`), французского
+# среди них нет, и платформа отдаёт ему русский: проверка, называющая день недели по локали
+# образа, слова не находит и падает таймаутом. Отказ выглядит как дефект продукта, хотя
+# причина — оставленное состояние образа.
 #
-# Что делает шаг: сравнивает локаль и масштаб шрифта с исходными значениями прогона
-# (`SKL_JOURNEY_DEFAULT_LOCALE`, `SKL_JOURNEY_FONT_SCALE_DEFAULT`), возвращает их и
-# **отказывает**, если вернуть не удалось: прогон на чужой обстановке называл бы отказы
-# продукта, которых нет.
+# Почему проверяется КОНФИГУРАЦИЯ, а не записанная настройка (SKL-119, 16.10.2026).
+# Запись настройки `system_locales` платформа применяет только при следующей загрузке —
+# свойство, из-за которого фаза «чужая локаль» и живёт без чужой локали (см. комментарий
+# в `HostileLocaleAndFontScaleTest`). Образ, загруженный в французской локали, вернёт
+# настройку русской, но останется французским до перезагрузки: проверка по настройке
+# называла бы такую обстановку исходной, и все походы, считающие слова по локали образа,
+# падали бы таймаутом. Так и случилось в прогоне 16.10.2026 — семь падений, из них пять
+# на словах: «Сентябрь 2026» против «сентябрь 2026», «30 минут» против «30 минуты»,
+# «5 таблеток» против «5 таблетки». Поэтому здесь читается действующая конфигурация
+# ([skl_system_locale]), а расхождение чинится загрузкой ([skl_reboot_image]): иначе
+# запись настройки не применяется вовсе.
+#
+# Что делает шаг: сравнивает действующую локаль, записанную локаль и масштаб шрифта
+# с исходными значениями прогона (`SKL_JOURNEY_DEFAULT_LOCALE`, `SKL_JOURNEY_FONT_SCALE_DEFAULT`),
+# возвращает их и **отказывает**, если вернуть не удалось: прогон на чужой обстановке
+# называл бы отказы продукта, которых нет.
 #
 # Имена переменных подставляются в фигурных скобках: рядом с кириллицей bash без UTF-8
 # в локали дописывает многобайтный символ к имени (`$locale_now»` читалось как имя
@@ -30,23 +43,69 @@ source "${SKL_DIR}/lib.sh"
 api="${1:-${SKL_JOURNEY_API_LEVEL}}"
 serial="${2:-$(skl_serial "${api}")}"
 
-locale_now="$(skl_adb -s "${serial}" shell settings get system system_locales 2>/dev/null | tr -d '\r' || true)"
-scale_now="$(skl_adb -s "${serial}" shell settings get system font_scale 2>/dev/null | tr -d '\r' || true)"
+locale_effective=""
+locale_written=""
+scale_now=""
 
-if [[ "${locale_now}" == "${SKL_JOURNEY_DEFAULT_LOCALE}" && "${scale_now}" == "${SKL_JOURNEY_FONT_SCALE_DEFAULT}" ]]; then
-    skl_log "обстановка образа исходная: локаль ${locale_now}, масштаб шрифта ${scale_now}"
+# Обстановка образа тремя значениями: действующая локаль, записанная локаль и масштаб шрифта.
+stand_state() {
+    locale_effective="$(skl_system_locale "${serial}")"
+    locale_written="$(skl_adb -s "${serial}" shell settings get system system_locales 2>/dev/null | tr -d '\r' || true)"
+    scale_now="$(skl_adb -s "${serial}" shell settings get system font_scale 2>/dev/null | tr -d '\r' || true)"
+}
+
+# Обстановка исходная: действующая локаль — исходная (пустая — образ её не сообщает,
+# и тогда судить нечем), записанная локаль — исходная, масштаб шрифта — исходный.
+stand_is_default() {
+    [[ -z "${locale_effective}" || "${locale_effective}" == "${SKL_JOURNEY_DEFAULT_LOCALE}" ]] &&
+        [[ "${locale_written}" == "${SKL_JOURNEY_DEFAULT_LOCALE}" ]] &&
+        [[ "${scale_now}" == "${SKL_JOURNEY_FONT_SCALE_DEFAULT}" ]]
+}
+
+stand_state
+if stand_is_default && [[ "${locale_effective}" == "${SKL_JOURNEY_DEFAULT_LOCALE}" ]]; then
+    skl_log "обстановка образа исходная: локаль ${locale_effective}, масштаб шрифта ${scale_now}"
     exit 0
 fi
 
-skl_warn "образ остался в обстановке прошлого прогона: локаль ${locale_now}, масштаб шрифта ${scale_now} — возвращаю исходную"
-skl_adb -s "${serial}" shell settings put system system_locales "${SKL_JOURNEY_DEFAULT_LOCALE}" >/dev/null 2>&1 || true
-skl_adb -s "${serial}" shell settings put system font_scale "${SKL_JOURNEY_FONT_SCALE_DEFAULT}" >/dev/null 2>&1 || true
+skl_warn "образ остался в обстановке прошлого прогона: локаль ${locale_effective} (действующая), ${locale_written} (записанная), масштаб шрифта ${scale_now} — возвращаю исходную"
 
-locale_now="$(skl_adb -s "${serial}" shell settings get system system_locales 2>/dev/null | tr -d '\r' || true)"
-scale_now="$(skl_adb -s "${serial}" shell settings get system font_scale 2>/dev/null | tr -d '\r' || true)"
+# Две попытки, потому что запись настроек ложится на диск не мгновенно, а локаль
+# применяется загрузкой: загрузка, начатая сразу после записи, поднимает прежнее значение
+# (засвидетельствовано опытом 16.10.2026: `settings put` за секунду до перезагрузки не
+# дожил до неё). Молча поднять образ в чужой локали прогон не имеет права — отсюда
+# пауза перед загрузкой и проверка после неё, а не надежда на одну запись.
+attempt=0
+while :; do
+    attempt=$((attempt + 1))
+    # Отказ записи не глушится проверкой ниже: она читает записанное и отказывает, если запись не легла.
+    skl_write_system_locale "${serial}" "${SKL_JOURNEY_DEFAULT_LOCALE}" || true
+    skl_adb -s "${serial}" shell settings put system font_scale "${SKL_JOURNEY_FONT_SCALE_DEFAULT}" >/dev/null 2>&1 || true
+    stand_state
+    if stand_is_default; then
+        break
+    fi
+    # Расхождение действующей локали с исходной чинится только загрузкой: записанное
+    # применяется при следующей. Масштаб шрифта применяется сразу и загрузки не требует.
+    if [[ -n "${locale_effective}" && "${locale_effective}" != "${SKL_JOURNEY_DEFAULT_LOCALE}" ]]; then
+        sleep 2
+        skl_reboot_image "${api}"
+        stand_state
+        if stand_is_default; then
+            break
+        fi
+    fi
+    if (( attempt >= 2 )); then
+        break
+    fi
+    skl_warn "попытка ${attempt} обстановку не вернула: локаль ${locale_effective} (действующая), ${locale_written} (записанная), масштаб шрифта ${scale_now} — повторяю"
+done
 
-if [[ "${locale_now}" != "${SKL_JOURNEY_DEFAULT_LOCALE}" || "${scale_now}" != "${SKL_JOURNEY_FONT_SCALE_DEFAULT}" ]]; then
-    skl_die "обстановку образа вернуть не удалось: локаль ${locale_now}, масштаб шрифта ${scale_now}. Прогон на такой обстановке называл бы отказы продукта, которых нет: перезапусти образ с гашением данных — start.sh ${api} --wipe"
+if [[ -z "${locale_effective}" ]]; then
+    skl_warn "образ не сообщает действующую конфигурацию: возврат локали проверен только по записи"
+fi
+if ! stand_is_default; then
+    skl_die "обстановку образа вернуть не удалось: локаль ${locale_effective} (действующая), ${locale_written} (записанная), масштаб шрифта ${scale_now}. Прогон на такой обстановке называл бы отказы продукта, которых нет: перезапусти образ с гашением данных — start.sh ${api} --wipe"
 fi
 
-skl_log "обстановка образа возвращена: локаль ${locale_now}, масштаб шрифта ${scale_now}"
+skl_log "обстановка образа возвращена: локаль ${locale_effective}, масштаб шрифта ${scale_now}"
