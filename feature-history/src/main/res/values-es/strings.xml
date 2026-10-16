@@ -8,7 +8,7 @@
     <string name="history_tile_misses">omisiones del mes</string>
 
     <string name="history_value_dash">—</string>
-    <string name="history_percent">%1$d %%</string>
+    <string name="history_percent">%1$d %%</string>
     <string name="history_percent_less_than_one">&lt; 1 %</string>
 
     <string name="cd_previous_month">Mes anterior</string>
@@ -109,4 +109,55 @@
     <string name="history_date_pattern">"d 'de' MMMM"</string>
     <string name="history_date_pattern_full">"d 'de' MMMM 'de' yyyy"</string>
     <string name="history_datetime_pattern">"d 'de' MMMM 'de' yyyy, HH:mm"</string>
+
+    <!--
+      Composición del informe y exportación del historial (SKL-119, norma de diseño §5.15–§5.16).
+      Los textos siguen la norma; la frase del patrón y las líneas de período reutilizan
+      los claves existentes `history_insight_*` y `report_document_*`.
+    -->
+    <string name="history_report_composition_section">Composición del informe</string>
+    <string name="history_report_composition_base">Básico</string>
+    <string name="history_report_composition_base_note">Resumen y desglose por medicamento</string>
+    <string name="history_report_composition_extended">Ampliado</string>
+    <string name="history_report_composition_extended_note">Períodos, dinámica, patrón de omisiones</string>
+
+    <string name="history_export_title">Exportar historial</string>
+    <string name="history_export_label_records">Registros</string>
+    <string name="history_export_format_value" translatable="false">CSV</string>
+    <string name="history_export_note">El archivo contiene datos médicos y se comparte sin cifrar</string>
+    <string name="history_export_cancelled">Transferencia del archivo cancelada</string>
+    <string name="history_export_share_failed">No se pudo compartir la exportación</string>
+    <string name="history_export_save_failed">El archivo no se guardó</string>
+    <string name="history_export_no_space">Espacio insuficiente. El archivo no se guardó</string>
+    <string name="history_export_success_title">Archivo creado</string>
+    <string name="history_export_file_name" translatable="false">sklyanka-history-%1$s.csv</string>
+    <string name="history_export_file_pattern" translatable="false">yyyy-MM-dd</string>
+    <!-- Шаблон колонки «Время отметки»: машинная форма для таблицы (решение дизайнера 16.10.2026). -->
+    <string name="history_export_acted_at_pattern" translatable="false">yyyy-MM-dd HH:mm</string>
+    <string name="history_export_media_type" translatable="false">text/csv</string>
+
+    <string name="history_export_header_profile">Perfil: %1$s</string>
+    <string name="history_export_header_period">Período: %1$s</string>
+    <string name="history_export_column_date">Fecha</string>
+    <string name="history_export_column_planned_time">Hora prevista</string>
+    <string name="history_export_column_medication">Medicamento</string>
+    <string name="history_export_column_dose">Dosis por toma</string>
+    <string name="history_export_column_strength">Concentración, si se indica</string>
+    <string name="history_export_column_status">Estado</string>
+    <string name="history_export_column_acted_at">Hora de la marca</string>
+    <string name="history_export_column_on_time">A tiempo</string>
+    <string name="history_export_status_taken">tomado</string>
+    <string name="history_export_status_on_demand">tomado según necesidad</string>
+    <string name="history_export_status_skipped">omitido — marcado por la persona</string>
+    <string name="history_export_status_missed">omitido — sin marca</string>
+    <string name="history_export_on_time_yes">sí</string>
+    <string name="history_export_on_time_no">no</string>
+
+    <string name="report_document_compare_title">COMPARACIÓN DE PERÍODOS</string>
+    <string name="report_compare_previous_period">Período anterior: %1$s — %2$s</string>
+    <string name="report_compare_previous_period_single">Período anterior: %1$s</string>
+    <string name="report_document_dynamics_title">DINÁMICA MENSUAL</string>
+    <string name="report_dynamics_count">%1$d de %2$d</string>
+    <string name="report_document_pattern_title">PATRÓN DE OMISIONES</string>
+    <string name="report_pattern_numbers">Omisiones a esa hora: %1$d de %2$d en el período</string>
 </resources>

@@ -1,6 +1,7 @@
 package ru.stohastika.sklyanka.feature.history
 
 import ru.stohastika.sklyanka.domain.history.DoctorReport
+import ru.stohastika.sklyanka.domain.history.ExtendedReportSections
 import ru.stohastika.sklyanka.domain.history.ReportDocument
 import java.time.ZoneId
 
@@ -14,7 +15,17 @@ import java.time.ZoneId
  */
 interface DoctorReportRenderer {
 
-    fun render(report: DoctorReport, zone: ZoneId): ReportDocument
+    /**
+     * Собрать документ.
+     *
+     * @param extended разделы «Про» расширенного состава; по умолчанию их нет — документ
+     *   собирается базовым ровно так, как собирался до появления второго состава (Р-36).
+     */
+    fun render(
+        report: DoctorReport,
+        zone: ZoneId,
+        extended: ExtendedReportSections = ExtendedReportSections.NONE,
+    ): ReportDocument
 
     /**
      * Состав документа для шторки: профиль, период, число принятых приёмов и формат.

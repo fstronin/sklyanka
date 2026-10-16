@@ -31,6 +31,7 @@ import ru.stohastika.sklyanka.ui.component.CheckGlyph
 import ru.stohastika.sklyanka.ui.component.FlatMark
 import ru.stohastika.sklyanka.ui.component.ListPickerDialog
 import ru.stohastika.sklyanka.ui.component.PinnedHeaderBar
+import ru.stohastika.sklyanka.ui.component.ProMark
 import ru.stohastika.sklyanka.ui.component.ScreenHeader
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderLabels
 import ru.stohastika.sklyanka.ui.component.SklyankaSwitchRow
@@ -332,6 +333,18 @@ private fun LazyListScope.dataBlock(onIntent: (SettingsIntent) -> Unit) {
                 modifier = Modifier.testTag(TAG_HISTORY_ROW),
             )
             RowDivider()
+            // «Экспорт истории» — сразу после «Истории приёмов» и до «Переноса данных» (Р-85 п. 2):
+            // строка стоит рядом с тем, что выгружает, и до того, что переносит всё.
+            SettingsRow(
+                title = stringResource(R.string.settings_export_history),
+                subtitle = RowSubtitle(stringResource(R.string.settings_export_note)),
+                // Зазор между последним словом подписи и меткой — `Small` (§5.9): остальной воздух
+                // вокруг слова — собственное поле метки (`ChipPadding`).
+                titleTrailing = { ProMark(modifier = Modifier.padding(start = SklyankaSpacing.Small)) },
+                onClick = { onIntent(SettingsIntent.OpenHistoryExport) },
+                modifier = Modifier.testTag(TAG_EXPORT_ROW),
+            )
+            RowDivider()
             SettingsRow(
                 title = stringResource(R.string.transfer_title),
                 subtitle = RowSubtitle(stringResource(R.string.settings_transfer_caption)),
@@ -463,6 +476,14 @@ private fun SettingsBlock(rubric: String, content: @Composable () -> Unit) {
 internal const val TAG_DELETE_PROFILE_ROW = "settings_delete_profile_row"
 internal const val TAG_DELETE_DIVIDER = "settings_delete_divider"
 internal const val TAG_HISTORY_ROW = "settings_history_row"
+
+/**
+ * Строка «Экспорт истории» (SKL-119, Р-35, §5.16).
+ *
+ * Отдельный тег: по нему поход и экранный стенд находят вход в шторку экспорта, и он же
+ * называет поверхность в реестре `docs/tasks/SKL-140/TDD.md` §7.
+ */
+internal const val TAG_EXPORT_ROW = "settings_export_row"
 internal const val TAG_TRANSFER_ROW = "settings_transfer_row"
 
 internal const val TAG_POLICY_ROW = "settings_policy_row"

@@ -32,6 +32,9 @@ fun SettingsRoute(viewModel: SettingsViewModel, navigation: SettingsNavigation, 
                 SettingsIntent.OpenPermissions -> navigation.openDiagnostics()
                 SettingsIntent.OpenHistory -> navigation.openHistory()
                 SettingsIntent.OpenDataTransfer -> navigation.openDataTransfer()
+                // «Экспорт истории» открывает шторку выгрузки: файл формируется в
+                // `feature-history`, а показывает его `app` — поверх корня, как витрину.
+                SettingsIntent.OpenHistoryExport -> navigation.openHistoryExport()
                 // Политику открывает браузер системным действием: своего просмотрщика
                 // в приложении нет (ОВ-123).
                 SettingsIntent.OpenPolicy -> uriHandler.openUri(policyUrl)
@@ -82,6 +85,14 @@ data class SettingsNavigation(
     val openDiagnostics: () -> Unit = {},
     val openHistory: () -> Unit = {},
     val openDataTransfer: () -> Unit = {},
+    /**
+     * Строка «Экспорт истории» → шторка выгрузки истории (SKL-119, Р-35).
+     *
+     * Шторку хостит `app`: `feature-settings` не зависит от `feature-history`, и рисовать
+     * поверхность соседнего модуля она не может (проверка направлений
+     * `verifyModuleDependencies`).
+     */
+    val openHistoryExport: () -> Unit = {},
     /**
      * Строка блока «Склянка Про» → витрина подписки (SKL-122, Р-67 п. 6).
      *

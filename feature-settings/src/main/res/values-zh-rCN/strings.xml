@@ -174,4 +174,8 @@
     <string name="profile_delete_no_picker">此设备上没有用于选择文件的应用。没有它无法保存传输文件。</string>
 
     <string name="settings_policy">隐私政策</string>
+
+    <!-- Строка «Экспорт истории» в блоке «Данные» (SKL-119, §5.16); слова — из нормы дизайна. -->
+    <string name="settings_export_history">导出历史</string>
+    <string name="settings_export_note">适用于 Excel 的 CSV</string>
 </resources>

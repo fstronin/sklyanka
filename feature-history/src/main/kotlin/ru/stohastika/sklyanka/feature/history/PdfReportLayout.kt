@@ -71,11 +71,14 @@ internal class PdfReportLayout(
 
         private val width: Float = geometry.width - geometry.marginSide * 2
 
-        // Правый столбец «N из M (P %)» резервируется единой колонкой на весь документ:
-        // ширина по самому длинному значению плюс зазор. Текст первой строки блока
-        // переносится только в остатке — наложение исключено (33-I).
-        private val rightColumn: Float = content.medicationBlocks
-            .mapNotNull { it.right }
+        // Правый столбец резервируется единой колонкой на весь документ: ширина по самому
+        // длинному значению плюс зазор. Текст первой строки блока переносится только в остатке —
+        // наложение исключено (33-I). Правые числа разделов «Про» мерятся той же линейкой:
+        // «30 из 30 (100 %)» шире строки лекарства, и без этого столбцы наложились бы.
+        private val rightColumn: Float = (
+            content.medicationBlocks.mapNotNull { it.right } +
+                content.extendedSections.flatMap { it.rows }.mapNotNull { it.right }
+            )
             .maxOfOrNull { metrics.measure(it, ReportPdfRole.BODY) }
             ?: 0f
         private val firstLineWidth: Float =
@@ -98,6 +101,12 @@ internal class PdfReportLayout(
             content.medicationsTitle?.let { title -> place(listOf(sectionLine(title)), gapBefore = SECTION_GAP) }
             content.medicationBlocks.forEach { block -> placeBlock(block) }
             content.emptyNote?.let { note -> place(physicalLine(note, width), gapBefore = SECTION_GAP) }
+            // «Про»-разделы идут после базовых, и первый из них начинается с новой страницы:
+            // страницы базового документа от добавления не сдвигаются (Р-36, §5.15).
+            if (content.extendedSections.isNotEmpty()) {
+                if (sheet.body.isNotEmpty()) flush()
+                content.extendedSections.forEach { section -> placeSection(section) }
+            }
             flush()
             return sheets.mapIndexed { index, page ->
                 PdfReportPage(
@@ -125,6 +134,29 @@ internal class PdfReportLayout(
             if (!fits(height) && sheet.body.isNotEmpty()) flush()
             place(lines, gapBefore = BLOCK_GAP)
         }
+
+        /**
+         * Раздел «Про»: заголовок, строка меты периода и строки показателей.
+         *
+         * Заголовок не остаётся последней строкой страницы: он переносится вместе со своей
+         * первой строкой — метой периода (§5.15). Дальше строки идут общим потоком, зазорами
+         * сводки: новых зазоров раздел не заводит.
+         */
+        private fun placeSection(section: ReportPdfSection) {
+            // Заголовок переносится вместе со своими строками меты: он не остаётся
+            // последней строкой страницы, а числа без названия периода не печатаются (§5.15).
+            val head = listOf(sectionLine(ReportPdfLine(section.title, ReportPdfRole.SECTION))) +
+                section.metas.map { meta -> physicalLine(ReportPdfLine(meta, ReportPdfRole.META), width).single() }
+            val headHeight = head.fold(0f) { sum, line -> sum + heightOf(line) } + SECTION_GAP
+            if (!fits(headHeight) && sheet.body.isNotEmpty()) flush()
+            place(head, gapBefore = SECTION_GAP)
+            section.rows.forEach { row -> place(listOf(rowLine(row)), gapBefore = SUMMARY_GAP) }
+            section.lines.forEach { line -> place(physicalLine(line, width), gapBefore = SUMMARY_GAP) }
+        }
+
+        /** Строка показателя: подпись, число периода и правое поле — число предыдущего периода. */
+        private fun rowLine(row: ReportPdfSectionRow): PdfPhysicalLine =
+            PdfPhysicalLine(text = row.label, role = ReportPdfRole.BODY, right = row.right, value = row.value)
 
         private fun fits(height: Float): Boolean = sheet.used + height <= bottom
 

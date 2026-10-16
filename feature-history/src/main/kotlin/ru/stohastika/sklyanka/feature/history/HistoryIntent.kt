@@ -1,6 +1,7 @@
 package ru.stohastika.sklyanka.feature.history
 
 import ru.stohastika.sklyanka.domain.history.ReportPreset
+import ru.stohastika.sklyanka.domain.history.ReportScope
 import java.time.LocalDate
 
 /**
@@ -22,6 +23,15 @@ sealed interface HistoryIntent {
     data object ReportRequested : HistoryIntent
 
     data object ReportDismissed : HistoryIntent
+
+    /**
+     * Выбран состав отчёта в шторке (Р-85 п. 1, §5.15).
+     *
+     * Без активного доступа выбор **не меняется**: нажатие расширенной строки открывает витрину,
+     * а печатается по-прежнему выбранный состав. Решает это `ViewModel` — поверхность покупки
+     * здесь не живёт (Р-67), и модуль про неё не знает.
+     */
+    data class ReportScopeChosen(val scope: ReportScope) : HistoryIntent
 
     /** Выбран пресет периода в шторке: состав пересобирается, сообщение исхода сбрасывается. */
     data class ReportPresetChosen(val preset: ReportPreset) : HistoryIntent

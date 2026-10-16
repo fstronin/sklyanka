@@ -4,24 +4,31 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import ru.stohastika.sklyanka.domain.history.AdherencePeriod
 import ru.stohastika.sklyanka.domain.history.BuildDoctorReportUseCase
+import ru.stohastika.sklyanka.domain.history.BuildExtendedSectionsUseCase
+import ru.stohastika.sklyanka.domain.history.ExtendedReportSections
 import ru.stohastika.sklyanka.domain.history.HistoryWindow
 import ru.stohastika.sklyanka.domain.history.MissedPatternRule
 import ru.stohastika.sklyanka.domain.history.ObserveAdherenceUseCase
 import ru.stohastika.sklyanka.domain.history.ReportPeriodRules
 import ru.stohastika.sklyanka.domain.history.ReportPreset
+import ru.stohastika.sklyanka.domain.history.ReportScope
 import ru.stohastika.sklyanka.domain.history.ReportShareLauncher
 import ru.stohastika.sklyanka.domain.history.ReportTarget
 import ru.stohastika.sklyanka.domain.history.ReportTransferOutcome
 import ru.stohastika.sklyanka.domain.history.TransferDoctorReportUseCase
+import ru.stohastika.sklyanka.domain.pro.ObserveProStatusUseCase
 import ru.stohastika.sklyanka.domain.time.TimeSource
 import java.time.LocalDate
 import java.time.YearMonth
@@ -48,12 +55,23 @@ import javax.inject.Inject
  */
 @HiltViewModel
 @OptIn(ExperimentalCoroutinesApi::class)
+@Suppress("LongParameterList")
 class HistoryViewModel @Inject constructor(
     private val observeAdherence: ObserveAdherenceUseCase,
     private val buildReport: BuildDoctorReportUseCase,
+    /** Разделы «Про» расширенного состава: считаются только по запросу выбранного состава (Р-22). */
+    private val buildExtended: BuildExtendedSectionsUseCase,
     private val transferReport: TransferDoctorReportUseCase,
     private val renderer: DoctorReportRenderer,
     private val missedPattern: MissedPatternRule,
+    /**
+     * Доступ «Склянка Про»: им решается, доступен ли расширенный состав (Р-85 п. 1).
+     *
+     * Читается при открытии шторки и перечитывается по возвращении из витрины
+     * ([refreshProAccess]): гейт решает по подписке, а не по нажатию, и экран в магазин
+     * не ходит (Р-7, Р-22).
+     */
+    private val proStatus: ObserveProStatusUseCase,
     private val time: TimeSource,
 ) : ViewModel() {
 
@@ -68,9 +86,33 @@ class HistoryViewModel @Inject constructor(
      */
     private var shareLauncher: ReportShareLauncher? = null
 
+    private val _showcase = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+
+    /**
+     * Сигнал «открыть витрину»: без активного доступа расширенный состав её и открывает (Р-22).
+     *
+     * Событие, а не состояние: витрина — одна поверхность на все точки входа (Р-67), и показывает
+     * её `app`; экран истории только просит. Выбор состава при этом не меняется: выбранный состав
+     * и есть то, что напечатают (§5.15).
+     */
+    val showcase: SharedFlow<Unit> = _showcase.asSharedFlow()
+
     /** Связать передачу с системным выбором получателя, который живёт на экране. */
     fun attachShareLauncher(launcher: ReportShareLauncher) {
         shareLauncher = launcher
+    }
+
+    /**
+     * Перечитать доступ «Про» после закрытия витрины (Р-85 п. 1).
+     *
+     * Шторка держит снимок доступа с момента открытия, а покупка в витрине пишет кэш подписки:
+     * без перечитывания повторное нажатие расширенной строки снова открывало бы витрину вместо
+     * выбора состава (тот же заход, что у формы лекарства, SKL-117). Состав при этом не
+     * пересобирается сам: §5.15 требует повторить нажатие — иначе человек получил бы документ,
+     * которого не просил.
+     */
+    fun refreshProAccess() {
+        viewModelScope.launch { local.value = local.value.copy(proIncluded = proStatus().included) }
     }
 
     val state: StateFlow<HistoryUiState> = combine(
@@ -86,6 +128,7 @@ class HistoryViewModel @Inject constructor(
             HistoryIntent.ReportRequested -> openReport()
             HistoryIntent.ReportDismissed -> local.value = LocalState()
             is HistoryIntent.ReportPresetChosen -> choosePreset(intent.preset)
+            is HistoryIntent.ReportScopeChosen -> chooseScope(intent.scope)
             is HistoryIntent.ReportStartPicked -> pickStart(intent.date)
             is HistoryIntent.ReportEndPicked -> pickEnd(intent.date)
             HistoryIntent.ShareReport -> share()
@@ -122,10 +165,37 @@ class HistoryViewModel @Inject constructor(
         )
     }
 
-    /** «Отчёт врачу»: чистое открытие — пресет по умолчанию, значения «Другого периода» свежие. */
+    /**
+     * «Отчёт врачу»: чистое открытие — базовый состав, пресет по умолчанию, свежие даты.
+     *
+     * Доступ читается здесь же: от него зависит, что произойдёт при нажатии расширенной строки,
+     * а не какой документ откроется — базовый формируется без единого нажатия в блоке выбора
+     * и от подписки не зависит вовсе (Р-36).
+     */
     private fun openReport() {
         val defaults = ReportPeriodRules.customDefaults(time.today())
-        rebuild(Selection(preset = ReportPreset.THIS_MONTH, from = defaults.from, to = defaults.to))
+        viewModelScope.launch {
+            val included = proStatus().included
+            local.value = local.value.copy(proIncluded = included)
+            rebuild(Selection(preset = ReportPreset.THIS_MONTH, from = defaults.from, to = defaults.to))
+        }
+    }
+
+    /**
+     * Выбор состава в шторке: «Базовый» — всегда, «Расширенный» — только с активным доступом.
+     *
+     * Без доступа выбор **не меняется** и открывается витрина: недоступное действие говорит
+     * «нельзя», а правда — «можно, по подписке» (П-7, §5.15). После отмены подписки базовый
+     * состав работает, расширенный закрыт (Р-22).
+     */
+    private fun chooseScope(scope: ReportScope) {
+        val current = local.value.selection ?: return
+        when {
+            // Без доступа выбор не меняется: витрину просят, состав остаётся прежним (П-7).
+            scope == ReportScope.EXTENDED && !local.value.proIncluded -> _showcase.tryEmit(Unit)
+            current.scope == scope -> Unit
+            else -> rebuild(current.copy(scope = scope))
+        }
     }
 
     /**
@@ -169,17 +239,27 @@ class HistoryViewModel @Inject constructor(
     private fun rebuild(selection: Selection) {
         local.value = local.value.copy(outcome = null, selection = selection)
         viewModelScope.launch {
-            val report = buildReport(windowOf(selection)) ?: return@launch
+            val window = windowOf(selection)
+            val report = buildReport(window) ?: return@launch
             // Сборку обогнал более новый выбор — её результат уже не актуален,
             // и рисовать документ ради выброшенной версии не нужно.
             if (local.value.selection != selection) return@launch
+            // Разделы «Про» считаются только для расширенного состава и только с активным
+            // доступом: базовый путь кода от выбора не меняется вовсе (Р-36), а расширенный
+            // без подписки не собирается (Р-22).
+            val extended = if (selection.scope == ReportScope.EXTENDED && local.value.proIncluded) {
+                buildExtended(window)
+            } else {
+                ExtendedReportSections.NONE
+            }
             val zone = time.zone()
             local.value = local.value.copy(
                 report = ReportUi(
-                    document = renderer.render(report, zone),
+                    document = renderer.render(report, zone, extended),
                     // Состав собирается тем же композером, что и PDF: двух версий одного
                     // содержания в продукте не остаётся.
                     composition = renderer.composition(report),
+                    scope = selection.scope,
                     preset = selection.preset,
                     customFrom = selection.from,
                     customTo = selection.to,
@@ -256,8 +336,13 @@ class HistoryViewModel @Inject constructor(
         is ReportTransferOutcome.Failed -> onFailure
     }
 
-    /** Выбранный период шторки: пресет и границы «Другого периода». */
-    private data class Selection(val preset: ReportPreset, val from: LocalDate, val to: LocalDate)
+    /** Выбранный состав и период шторки: пресет, границы «Другого периода» и выбор состава. */
+    private data class Selection(
+        val preset: ReportPreset,
+        val from: LocalDate,
+        val to: LocalDate,
+        val scope: ReportScope = ReportScope.BASE,
+    )
 
     /**
      * Состояние, которого нет в базе: открытый отчёт, выбранный период и исход передачи.
@@ -269,5 +354,12 @@ class HistoryViewModel @Inject constructor(
         val report: ReportUi? = null,
         val outcome: ReportOutcome? = null,
         val selection: Selection? = null,
+        /**
+         * Снимок доступа «Про» на момент открытия шторки.
+         *
+         * Хранится здесь, а не в разметке: решать, что произойдёт по нажатию расширенной строки,
+         * обязан `ViewModel`, а не элемент управления (§5.15, П-7).
+         */
+        val proIncluded: Boolean = false,
     )
 }

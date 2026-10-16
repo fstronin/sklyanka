@@ -33,6 +33,7 @@ import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
 import ru.stohastika.sklyanka.acceptance.world.ScenarioTransactor
 import ru.stohastika.sklyanka.domain.history.AdherenceCalculator
 import ru.stohastika.sklyanka.domain.history.BuildDoctorReportUseCase
+import ru.stohastika.sklyanka.domain.history.BuildExtendedSectionsUseCase
 import ru.stohastika.sklyanka.domain.history.MissedPatternRule
 import ru.stohastika.sklyanka.domain.history.ObserveAdherenceUseCase
 import ru.stohastika.sklyanka.domain.history.OnTimeRule
@@ -211,8 +212,17 @@ class HistoryNavigationSteps(private val world: AcceptanceWorld) {
             activeProfile = world.profileSession.activeStore,
             log = world.log,
         ),
+        buildExtended = BuildExtendedSectionsUseCase(
+            activeProfile = world.profileSession.activeStore,
+            history = world.history,
+            calculator = AdherenceCalculator(OnTimeRule.TwoHours),
+            missedPattern = MissedPatternRule(),
+            time = world.clock.time,
+        ),
         renderer = PdfDoctorReportRenderer(context),
         missedPattern = MissedPatternRule(),
+        // Доступ «Про» — тем же чтением кэша, каким живёт продукт (SKL-119, Р-22).
+        proStatus = world.pro.statusUseCase,
         time = world.clock.time,
     )
 

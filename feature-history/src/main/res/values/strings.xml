@@ -26,7 +26,7 @@
       интерфейса, пусть и из одного знака.
     -->
     <string name="history_value_dash">—</string>
-    <string name="history_percent">%1$d %%</string>
+    <string name="history_percent">%1$d %%</string>
     <string name="history_percent_less_than_one">&lt; 1 %</string>
 
     <!--
@@ -185,4 +185,59 @@
     <string name="strength_unit_millilitre">мл</string>
     <string name="strength_unit_international_unit">МЕ</string>
     <string name="strength_unit_percent">%</string>
+
+    <!--
+      Выбор состава отчёта и шторка экспорта истории (SKL-119, §5.15–§5.16).
+
+      Тексты — из нормы дизайна: предложение паттерна берётся существующими
+      `history_insight_*`, период, пропуски и оговорка — существующими `report_document_*`.
+      Второго словаря задача не заводит; ключи ниже — те, которых у отчёта не было.
+    -->
+    <string name="history_report_composition_section">Состав отчёта</string>
+    <string name="history_report_composition_base">Базовый</string>
+    <string name="history_report_composition_base_note">Сводка и разбивка по лекарствам</string>
+    <string name="history_report_composition_extended">Расширенный</string>
+    <string name="history_report_composition_extended_note">Периоды, динамика, паттерн пропусков</string>
+
+    <string name="history_export_title">Экспорт истории</string>
+    <string name="history_export_label_records">Записей</string>
+    <string name="history_export_format_value" translatable="false">CSV</string>
+    <string name="history_export_note">Файл содержит медицинские данные и передаётся в открытом виде.</string>
+    <string name="history_export_cancelled">Передача файла отменена</string>
+    <string name="history_export_share_failed">Экспорт не удалось передать</string>
+    <string name="history_export_save_failed">Файл не сохранён</string>
+    <string name="history_export_no_space">Места недостаточно. Файл не сохранён</string>
+    <string name="history_export_success_title">Файл сформирован</string>
+    <string name="history_export_file_name" translatable="false">sklyanka-history-%1$s.csv</string>
+    <string name="history_export_file_pattern" translatable="false">yyyy-MM-dd</string>
+    <!-- Шаблон колонки «Время отметки»: машинная форма для таблицы (решение дизайнера 16.10.2026). -->
+    <string name="history_export_acted_at_pattern" translatable="false">yyyy-MM-dd HH:mm</string>
+    <string name="history_export_media_type" translatable="false">text/csv</string>
+
+    <!-- Шапка и таблица файла выгрузки: шапка стоит до таблицы и называет профиль, период и оговорки. -->
+    <string name="history_export_header_profile">Профиль: %1$s</string>
+    <string name="history_export_header_period">Период: %1$s</string>
+    <string name="history_export_column_date">Дата</string>
+    <string name="history_export_column_planned_time">Время плана</string>
+    <string name="history_export_column_medication">Лекарство</string>
+    <string name="history_export_column_dose">Доза за приём</string>
+    <string name="history_export_column_strength">Дозировка препарата, если задана</string>
+    <string name="history_export_column_status">Статус</string>
+    <string name="history_export_column_acted_at">Время отметки</string>
+    <string name="history_export_column_on_time">Вовремя</string>
+    <string name="history_export_status_taken">принято</string>
+    <string name="history_export_status_on_demand">принято по потребности</string>
+    <string name="history_export_status_skipped">пропущено — отмечено человеком</string>
+    <string name="history_export_status_missed">пропущено — без отметки</string>
+    <string name="history_export_on_time_yes">да</string>
+    <string name="history_export_on_time_no">нет</string>
+
+    <!-- Разделы «Про» расширенного документа: те же роли и кегли, что у базового (§5.15). -->
+    <string name="report_document_compare_title">СРАВНЕНИЕ ПЕРИОДОВ</string>
+    <string name="report_compare_previous_period">Предыдущий период: %1$s — %2$s</string>
+    <string name="report_compare_previous_period_single">Предыдущий период: %1$s</string>
+    <string name="report_document_dynamics_title">ДИНАМИКА ПО МЕСЯЦАМ</string>
+    <string name="report_dynamics_count">%1$d из %2$d</string>
+    <string name="report_document_pattern_title">ПАТТЕРН ПРОПУСКОВ</string>
+    <string name="report_pattern_numbers">Пропусков в это время: %1$d из %2$d за период</string>
 </resources>

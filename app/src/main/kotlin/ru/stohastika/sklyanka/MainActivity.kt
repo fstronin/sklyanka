@@ -33,6 +33,9 @@ import ru.stohastika.sklyanka.domain.pro.RefreshProSubscriptionUseCase
 import ru.stohastika.sklyanka.domain.profile.ProfileContextProvider
 import ru.stohastika.sklyanka.domain.time.TimeSource
 import ru.stohastika.sklyanka.domain.undo.UndoableActionStore
+import ru.stohastika.sklyanka.feature.history.ExportHistoryIntent
+import ru.stohastika.sklyanka.feature.history.ExportHistoryRoute
+import ru.stohastika.sklyanka.feature.history.ExportHistoryViewModel
 import ru.stohastika.sklyanka.feature.history.HistoryViewModel
 import ru.stohastika.sklyanka.feature.meds.archive.ArchiveViewModel
 import ru.stohastika.sklyanka.feature.meds.card.MedicationCardViewModel
@@ -249,6 +252,14 @@ class MainActivity : ComponentActivity() {
     lateinit var proRefreshDue: ProSubscriptionRefreshDueUseCase
 
     private val proShowcase: ProShowcaseViewModel by viewModels()
+
+    /**
+     * Шторка экспорта истории (SKL-119, Р-35).
+     *
+     * Живёт в активности, а не на экране: вход в неё — строка настроек, а поверхность выгрузки
+     * принадлежит `feature-history`. Хостит её `app` поверх корня — тем же способом, что витрину.
+     */
+    private val exportHistory: ExportHistoryViewModel by viewModels()
     private val history: HistoryViewModel by viewModels()
     private val transfer: DataTransferViewModel by viewModels()
     private val deleteProfile: DeleteProfileViewModel by viewModels()
@@ -569,6 +580,10 @@ class MainActivity : ComponentActivity() {
                 if (!showcaseVisible) {
                     settings.refresh()
                     medsForm.refreshProAccess()
+                    // Шторка отчёта держит снимок доступа с открытия: после оформления подписки
+                    // повторное нажатие расширенной строки обязано выбрать состав, а не снова
+                    // открыть витрину (Р-85 п. 1, SKL-119).
+                    history.refreshProAccess()
                 }
             }
             // Пока витрина идёт или открыта, возврат принадлежит ей: иначе окно открытия
@@ -578,10 +593,25 @@ class MainActivity : ComponentActivity() {
             BackHandler(enabled = showcaseOpening) {
                 proShowcase.onIntent(ProShowcaseIntent.Dismiss)
             }
-            CompositionLocalProvider(LocalModalSurfaceOpen provides (showcaseVisible || showcaseOpening)) {
+            // Шторка экспорта истории — второй слой поверх корня (SKL-119): её открывает строка
+            // настроек, а показывает `app`, как витрину. Возврат принадлежит ей, пока она открыта.
+            val exportSheet by exportHistory.state.collectAsState()
+            val exportVisible = exportSheet.sheet != null
+            BackHandler(enabled = exportVisible) {
+                exportHistory.onIntent(ExportHistoryIntent.Dismissed)
+            }
+            // Сигнал шторки «открыть витрину»: так строка «Экспорт истории» ведёт в покупку,
+            // не открывая шторки, — без доступа файл не формируется вовсе (Р-22, П-7).
+            LaunchedEffect(Unit) {
+                exportHistory.showcase.collect { openPro(ProPoint.HISTORY_EXPORT) }
+            }
+            CompositionLocalProvider(
+                LocalModalSurfaceOpen provides (showcaseVisible || showcaseOpening || exportVisible),
+            ) {
                 Layers(onOpenPermissions = onOpenPermissions)
             }
             ProShowcaseRoute(viewModel = proShowcase, onOpenPolicy = ::openPolicy)
+            ExportHistoryRoute(viewModel = exportHistory)
         }
     }
 
@@ -609,6 +639,9 @@ class MainActivity : ComponentActivity() {
                     viewModel = history,
                     origin = HistoryOrigin.TODAY,
                     onLeave = { rootNavigation.leaveHistory() },
+                    // Расширенный состав отчёта — вторая точка входа витрины (SKL-119, Р-85 п. 1):
+                    // та же шторка, с пунктом-поводом «Расширенный отчёт врачу».
+                    onOpenPro = { openPro(ProPoint.HISTORY) },
                 )
 
                 is RootLayer.SettingsScreen -> SettingsSection(
@@ -616,6 +649,7 @@ class MainActivity : ComponentActivity() {
                     viewModels = SettingsViewModels(history, transfer, deleteProfile),
                     onLeave = rootNavigation::leaveSection,
                     onOpenPermissions = { startActivity(PermissionsActivity.intentFor(this)) },
+                    onOpenPro = { openPro(ProPoint.HISTORY) },
                 )
 
                 is RootLayer.Meds -> MedsSection(
@@ -689,6 +723,9 @@ class MainActivity : ComponentActivity() {
         // проходить цепочку заново, не сказав ему, сломано ли что-нибудь.
         openDiagnostics = { startActivity(DiagnosticsActivity.intentFor(this)) },
         openHistory = { rootNavigation.openSection(SettingsDestination.HISTORY) },
+        // «Экспорт истории»: шторку выгрузки хостит приложение (SKL-119, Р-35). Доступ
+        // проверяет её состояние: без подписки шторка не откроется, а файл не сформируется.
+        openHistoryExport = { exportHistory.onIntent(ExportHistoryIntent.Requested) },
         openDataTransfer = { rootNavigation.openSection(SettingsDestination.TRANSFER) },
         // «Удалить профиль «Имя»» — экран второго уровня настроек (ОВ-7, SKL-36).
         // Строка появляется только у активного чужого профиля, и «Готово»

@@ -7,7 +7,10 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import ru.stohastika.sklyanka.domain.history.AdherenceCalculator
 import ru.stohastika.sklyanka.domain.history.BuildDoctorReportUseCase
+import ru.stohastika.sklyanka.domain.history.BuildExtendedSectionsUseCase
+import ru.stohastika.sklyanka.domain.history.BuildHistoryCsvTableUseCase
 import ru.stohastika.sklyanka.domain.history.DoctorReportTransfer
+import ru.stohastika.sklyanka.domain.history.ExportHistoryCsvUseCase
 import ru.stohastika.sklyanka.domain.history.MissedPatternRule
 import ru.stohastika.sklyanka.domain.history.ObserveAdherenceUseCase
 import ru.stohastika.sklyanka.domain.history.OnTimeRule
@@ -17,6 +20,7 @@ import ru.stohastika.sklyanka.domain.repository.ActiveProfileRepository
 import ru.stohastika.sklyanka.domain.repository.HistoryRepository
 import ru.stohastika.sklyanka.domain.repository.ProfileRepository
 import ru.stohastika.sklyanka.domain.time.TimeSource
+import ru.stohastika.sklyanka.domain.transfer.TransferFiles
 import ru.stohastika.sklyanka.feature.history.DoctorReportRenderer
 import ru.stohastika.sklyanka.feature.history.PdfDoctorReportRenderer
 import ru.stohastika.sklyanka.platform.report.SystemDoctorReportTransfer
@@ -114,6 +118,73 @@ abstract class HistoryModule {
             history = history,
             calculator = calculator,
             time = time,
+            log = log,
+        )
+
+        /**
+         * Разделы «Про» расширенного отчёта (SKL-119).
+         *
+         * Пороги паттерна приходят тем же правилом, что строка-вывод «Истории»: второго
+         * экземпляра правила в продукте нет (Р-85 п. 4).
+         */
+        @Provides
+        @Singleton
+        @Suppress("LongParameterList")
+        fun provideBuildExtendedSections(
+            activeProfile: ActiveProfileRepository,
+            history: HistoryRepository,
+            calculator: AdherenceCalculator,
+            missedPattern: MissedPatternRule,
+            time: TimeSource,
+        ): BuildExtendedSectionsUseCase = BuildExtendedSectionsUseCase(
+            activeProfile = activeProfile,
+            history = history,
+            calculator = calculator,
+            missedPattern = missedPattern,
+            time = time,
+        )
+
+        /**
+         * Таблица выгрузки истории (SKL-119, Р-35).
+         *
+         * Окно «вовремя» — то же правило, что у расчёта приверженности и отчёта (Р-21):
+         * доля в файле и на экране считается одним порогом.
+         */
+        @Provides
+        @Singleton
+        @Suppress("LongParameterList")
+        fun provideBuildHistoryCsvTable(
+            activeProfile: ActiveProfileRepository,
+            profiles: ProfileRepository,
+            history: HistoryRepository,
+            onTimeRule: OnTimeRule.Agreed,
+            time: TimeSource,
+        ): BuildHistoryCsvTableUseCase = BuildHistoryCsvTableUseCase(
+            activeProfile = activeProfile,
+            profiles = profiles,
+            history = history,
+            onTimeRule = onTimeRule,
+            time = time,
+        )
+
+        /**
+         * Выгрузка истории файлом (SKL-119).
+         *
+         * Файловая часть — тот же [TransferFiles], что у переноса данных и служебной выгрузки
+         * журнала (НФТ-17, ПЕР-31); системный обмен — тот же [DoctorReportTransfer], что у отчёта
+         * врачу: второго механизма передачи пользовательского документа в продукте нет.
+         */
+        @Provides
+        @Singleton
+        fun provideExportHistoryCsv(
+            files: TransferFiles,
+            transfer: DoctorReportTransfer,
+            activeProfile: ActiveProfileRepository,
+            log: OperationLog,
+        ): ExportHistoryCsvUseCase = ExportHistoryCsvUseCase(
+            files = files,
+            transfer = transfer,
+            activeProfile = activeProfile,
             log = log,
         )
 

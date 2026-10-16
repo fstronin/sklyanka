@@ -50,8 +50,15 @@ fun HistorySection(
     origin: HistoryOrigin,
     onLeave: (HistoryOrigin) -> Unit,
     modifier: Modifier = Modifier,
+    /**
+     * Открыть витрину «Про»: расширенный состав отчёта закрыт без подписки (Р-85 п. 1).
+     *
+     * Витрину собирает `app` ([ru.stohastika.sklyanka.di.ProModule], `ProSheet`): поверхность
+     * покупки одна на все точки входа (Р-67), и `feature-history` от `feature-pro` не зависит.
+     */
+    onOpenPro: () -> Unit = {},
 ) {
     val leave = { onLeave(origin) }
     BackHandler(enabled = !LocalModalSurfaceOpen.current) { leave() }
-    HistoryRoute(viewModel = viewModel, onBack = leave, modifier = modifier)
+    HistoryRoute(viewModel = viewModel, onBack = leave, modifier = modifier, onOpenPro = onOpenPro)
 }

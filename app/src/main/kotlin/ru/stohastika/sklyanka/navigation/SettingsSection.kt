@@ -58,6 +58,8 @@ fun SettingsSection(
     onLeave: () -> Unit,
     onOpenPermissions: () -> Unit,
     modifier: Modifier = Modifier,
+    /** Витрина «Про» для расширенного состава отчёта: её собирает `app` (Р-67, Р-85 п. 1). */
+    onOpenPro: () -> Unit = {},
 ) {
     when (destination) {
         // История сама ставит перехват кнопки «Назад» и знает, откуда открыта.
@@ -66,6 +68,7 @@ fun SettingsSection(
             origin = HistoryOrigin.SETTINGS,
             onLeave = { onLeave() },
             modifier = modifier,
+            onOpenPro = onOpenPro,
         )
 
         SettingsDestination.TRANSFER -> {

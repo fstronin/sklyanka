@@ -43,6 +43,15 @@ sealed interface SettingsIntent {
 
     data object OpenDataTransfer : SettingsIntent
 
+    /**
+     * Строка «Экспорт истории» — открыть шторку выгрузки или витрину (SKL-119, Р-35).
+     *
+     * Одно намерение на оба исхода: доступ проверяет поверхность, которая шторку и собирает, —
+     * настройки о подписке не решают и шторки не рисуют (§5.16). Шторка живёт в `feature-history`
+     * и хостится `app` поверх корня, как витрина (Р-67).
+     */
+    data object OpenHistoryExport : SettingsIntent
+
     /** «Политика конфиденциальности» — системный переход в браузер (ОВ-123). */
     data object OpenPolicy : SettingsIntent
 

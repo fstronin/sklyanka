@@ -174,4 +174,8 @@
     <string name="profile_delete_no_picker">There is no file picker app on the device. The transfer file cannot be saved without it.</string>
 
     <string name="settings_policy">Privacy policy</string>
+
+    <!-- Строка «Экспорт истории» в блоке «Данные» (SKL-119, §5.16); слова — из нормы дизайна. -->
+    <string name="settings_export_history">History export</string>
+    <string name="settings_export_note">CSV for Excel</string>
 </resources>

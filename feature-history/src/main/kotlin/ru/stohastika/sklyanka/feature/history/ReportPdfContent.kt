@@ -27,11 +27,44 @@ internal data class ReportPdfContent(
     val medicationsTitle: ReportPdfLine?,
     val medicationBlocks: List<ReportPdfBlock>,
     val emptyNote: ReportPdfLine?,
+    /**
+     * Разделы «Про» расширенного состава — после базовых, в порядке §5.15 (SKL-119).
+     *
+     * Пустой список — базовый документ: разделов без данных не бывает вовсе (Р-33), и пустой
+     * таблицы на их месте тоже. Первый раздел начинается с новой страницы: страницы базового
+     * документа от добавления не сдвигаются (Р-36).
+     */
+    val extendedSections: List<ReportPdfSection> = emptyList(),
     /** Оговорка колонтитула; печатается на каждой странице (решение дизайна). */
     val disclaimer: String,
     /** «Склянка · стр. N»: подпись страницы, которую разметка ставит в колонтитул. */
     val brandPage: (Int) -> String,
 )
+
+/**
+ * Раздел «Про»: заголовок, строка меты периода и строки показателей (`docs/norm/06-design.md` §5.15).
+ *
+ * Строка меты обязательна у каждого раздела: лист врачу печатают и пересылают отдельно —
+ * по той же причине, по которой оговорка стоит на каждом листе.
+ */
+internal data class ReportPdfSection(
+    /** «СРАВНЕНИЕ ПЕРИОДОВ» — заголовок раздела. */
+    val title: String,
+    /**
+     * Строки меты раздела: «Период: …» и, у сравнения, следом «Предыдущий период: …».
+     *
+     * Каждый раздел начинается метой своего периода (§5.15): у сравнения их две, и без первой
+     * левая колонка чисел — текущий период — оставалась бы без названия.
+     */
+    val metas: List<String>,
+    /** Строки показателей: подпись, число периода и, у сравнения, число предыдущего справа. */
+    val rows: List<ReportPdfSectionRow> = emptyList(),
+    /** Прочие строки раздела: предложение правила, числа и даты паттерна. */
+    val lines: List<ReportPdfLine> = emptyList(),
+)
+
+/** Строка показателя раздела: подпись Golos Text, число Literata 600, правое поле — второго периода. */
+internal data class ReportPdfSectionRow(val label: String, val value: String, val right: String? = null)
 
 /**
  * Логическая строка документа.
@@ -131,5 +164,13 @@ internal fun ReportPdfContent.documentText(): String = buildList {
         }
     }
     emptyNote?.let { add(it.text) }
+    extendedSections.forEach { section ->
+        add(section.title)
+        section.metas.forEach { add(it) }
+        section.rows.forEach { row ->
+            add(listOfNotNull(row.label, row.value.takeIf { it.isNotEmpty() }, row.right).joinToString(" "))
+        }
+        section.lines.forEach { add(it.text) }
+    }
     add(disclaimer)
 }.joinToString("\n")

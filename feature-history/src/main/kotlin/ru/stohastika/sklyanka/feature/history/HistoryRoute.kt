@@ -42,7 +42,18 @@ import ru.stohastika.sklyanka.domain.history.ReportShareResult
  * неизвестен (SKL-101, дефект 4).
  */
 @Composable
-fun HistoryRoute(viewModel: HistoryViewModel, onBack: () -> Unit, modifier: Modifier = Modifier) {
+fun HistoryRoute(
+    viewModel: HistoryViewModel,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+    /**
+     * Открыть витрину «Про»: расширенный состав закрыт без подписки (Р-85 п. 1, Р-22).
+     *
+     * Поверхность покупки одна на все точки входа (Р-67): экран не рисует шторку сам,
+     * а просит `app` открыть её с [ru.stohastika.sklyanka.domain.pro.ProPoint.HISTORY].
+     */
+    onOpenPro: () -> Unit = {},
+) {
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
     val mediaType = stringResource(R.string.report_media_type)
@@ -51,6 +62,9 @@ fun HistoryRoute(viewModel: HistoryViewModel, onBack: () -> Unit, modifier: Modi
     // Показ системного выбора получателя подставляется состоянию разметкой: домен о нём
     // не знает, а получить результат диалога умеет только экран.
     LaunchedEffect(shareLauncher) { viewModel.attachShareLauncher(shareLauncher) }
+    // Нажатие расширенного состава без доступа открывает витрину: сигнал поднимает состояние
+    // экрана, а поверхность покупки показывает `app` (Р-67).
+    LaunchedEffect(Unit) { viewModel.showcase.collect { onOpenPro() } }
 
     val saveLauncher = rememberLauncherForActivityResult(
         // Имя предлагается системе, но окончательное решение — за человеком: приложение
@@ -99,7 +113,7 @@ fun HistoryRoute(viewModel: HistoryViewModel, onBack: () -> Unit, modifier: Modi
  * а `StartActivityForResult` доносит то же решение без лишнего контура.
  */
 @Composable
-private fun rememberReportShareLauncher(): ReportShareLauncher {
+internal fun rememberReportShareLauncher(): ReportShareLauncher {
     val pending = remember { PendingShare() }
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         pending.complete(

@@ -8,7 +8,7 @@
     <string name="history_tile_misses">本月漏服</string>
 
     <string name="history_value_dash">—</string>
-    <string name="history_percent">%1$d %%</string>
+    <string name="history_percent">%1$d %%</string>
     <string name="history_percent_less_than_one">&lt; 1%</string>
 
     <string name="cd_previous_month">上个月</string>
@@ -110,4 +110,55 @@
     <string name="history_date_pattern">M月d日</string>
     <string name="history_date_pattern_full">yyyy年M月d日</string>
     <string name="history_datetime_pattern">yyyy年M月d日 HH:mm</string>
+
+    <!--
+      报告内容与历史导出（SKL-119，设计规范 §5.15–§5.16）。
+      文案取自规范；漏服规律的句子与周期行沿用已有的
+      `history_insight_*` 与 `report_document_*` 键。
+    -->
+    <string name="history_report_composition_section">报告内容</string>
+    <string name="history_report_composition_base">基础</string>
+    <string name="history_report_composition_base_note">汇总和按药品分布</string>
+    <string name="history_report_composition_extended">扩展</string>
+    <string name="history_report_composition_extended_note">周期、动态、漏服规律</string>
+
+    <string name="history_export_title">导出历史</string>
+    <string name="history_export_label_records">记录</string>
+    <string name="history_export_format_value" translatable="false">CSV</string>
+    <string name="history_export_note">文件包含医疗数据，以明文方式分享</string>
+    <string name="history_export_cancelled">文件传输已取消</string>
+    <string name="history_export_share_failed">无法分享导出文件</string>
+    <string name="history_export_save_failed">文件未保存</string>
+    <string name="history_export_no_space">存储空间不足，文件未保存</string>
+    <string name="history_export_success_title">文件已生成</string>
+    <string name="history_export_file_name" translatable="false">sklyanka-history-%1$s.csv</string>
+    <string name="history_export_file_pattern" translatable="false">yyyy-MM-dd</string>
+    <!-- Шаблон колонки «Время отметки»: машинная форма для таблицы (решение дизайнера 16.10.2026). -->
+    <string name="history_export_acted_at_pattern" translatable="false">yyyy-MM-dd HH:mm</string>
+    <string name="history_export_media_type" translatable="false">text/csv</string>
+
+    <string name="history_export_header_profile">档案：%1$s</string>
+    <string name="history_export_header_period">周期：%1$s</string>
+    <string name="history_export_column_date">日期</string>
+    <string name="history_export_column_planned_time">计划时间</string>
+    <string name="history_export_column_medication">药品</string>
+    <string name="history_export_column_dose">每次剂量</string>
+    <string name="history_export_column_strength">药品规格（如有）</string>
+    <string name="history_export_column_status">状态</string>
+    <string name="history_export_column_acted_at">记录时间</string>
+    <string name="history_export_column_on_time">按时</string>
+    <string name="history_export_status_taken">已服用</string>
+    <string name="history_export_status_on_demand">按需服用</string>
+    <string name="history_export_status_skipped">漏服——由本人标记</string>
+    <string name="history_export_status_missed">漏服——无标记</string>
+    <string name="history_export_on_time_yes">是</string>
+    <string name="history_export_on_time_no">否</string>
+
+    <string name="report_document_compare_title">周期对比</string>
+    <string name="report_compare_previous_period">上一周期：%1$s — %2$s</string>
+    <string name="report_compare_previous_period_single">上一周期：%1$s</string>
+    <string name="report_document_dynamics_title">月度动态</string>
+    <string name="report_dynamics_count">%2$d 中的 %1$d</string>
+    <string name="report_document_pattern_title">漏服规律</string>
+    <string name="report_pattern_numbers">该时间的漏服：本周期 %2$d 次中的 %1$d 次</string>
 </resources>

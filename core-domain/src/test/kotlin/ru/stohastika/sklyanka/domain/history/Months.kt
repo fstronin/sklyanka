@@ -31,6 +31,8 @@ internal object Months {
     const val MEDICATION_ID = "33333333-3333-4333-8333-333333333333"
     const val SECOND_MEDICATION_ID = "44444444-4444-4444-8444-444444444444"
     const val ARCHIVED_MEDICATION_ID = "55555555-5555-4555-8555-555555555555"
+    const val DELETED_MEDICATION_ID = "66666666-6666-4666-8666-666666666666"
+    const val ON_DEMAND_MEDICATION_ID = "77777777-7777-4777-8777-777777777777"
 
     val ZONE: ZoneId = ZoneId.of("Europe/Moscow")
     val SEPTEMBER: YearMonth = YearMonth.of(2026, 9)
@@ -54,6 +56,7 @@ internal object Months {
         startDate: LocalDate = LocalDate.of(2026, 9, 1),
         endDate: LocalDate? = null,
         archivedAt: Instant? = null,
+        scheduleMode: ScheduleMode = ScheduleMode.SCHEDULED,
     ) = Medication(
         id = id,
         profileId = profileId,
@@ -65,7 +68,7 @@ internal object Months {
         strength = BigDecimal("50"),
         strengthUnit = "mg",
         foodRelation = FoodRelation.ANY,
-        scheduleMode = ScheduleMode.SCHEDULED,
+        scheduleMode = scheduleMode,
         maxPerDay = null,
         times = times,
         startDate = startDate,

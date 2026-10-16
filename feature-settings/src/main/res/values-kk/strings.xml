@@ -174,4 +174,8 @@
     <string name="profile_delete_no_picker">Құрылғыда файл таңдайтын қолданба жоқ. Онсыз көшіру файлын сақтау мүмкін емес.</string>
 
     <string name="settings_policy">Құпиялылық саясаты</string>
+
+    <!-- Строка «Экспорт истории» в блоке «Данные» (SKL-119, §5.16); слова — из нормы дизайна. -->
+    <string name="settings_export_history">Тарихты экспорттау</string>
+    <string name="settings_export_note">Excel үшін CSV</string>
 </resources>

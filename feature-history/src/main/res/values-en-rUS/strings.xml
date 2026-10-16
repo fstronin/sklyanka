@@ -8,7 +8,7 @@
     <string name="history_tile_misses">misses this month</string>
 
     <string name="history_value_dash">—</string>
-    <string name="history_percent">%1$d %%</string>
+    <string name="history_percent">%1$d %%</string>
     <string name="history_percent_less_than_one">&lt; 1%</string>
 
     <string name="cd_previous_month">Previous month</string>
@@ -109,4 +109,55 @@
     <string name="history_date_pattern">MMMM d</string>
     <string name="history_date_pattern_full">MMMM d, yyyy</string>
     <string name="history_datetime_pattern">MMMM d, yyyy, HH:mm</string>
+
+    <!--
+      Report composition and history export sheet (SKL-119, design norm §5.15–§5.16).
+      Wording follows the norm; the pattern sentence and the period lines reuse
+      the existing `history_insight_*` and `report_document_*` keys.
+    -->
+    <string name="history_report_composition_section">Report composition</string>
+    <string name="history_report_composition_base">Basic</string>
+    <string name="history_report_composition_base_note">Summary and breakdown by medication</string>
+    <string name="history_report_composition_extended">Extended</string>
+    <string name="history_report_composition_extended_note">Periods, dynamics, missed-dose pattern</string>
+
+    <string name="history_export_title">History export</string>
+    <string name="history_export_label_records">Records</string>
+    <string name="history_export_format_value" translatable="false">CSV</string>
+    <string name="history_export_note">The file contains medical data and is shared in the open</string>
+    <string name="history_export_cancelled">File transfer cancelled</string>
+    <string name="history_export_share_failed">The export could not be shared</string>
+    <string name="history_export_save_failed">The file was not saved</string>
+    <string name="history_export_no_space">Not enough space. The file was not saved</string>
+    <string name="history_export_success_title">The file is ready</string>
+    <string name="history_export_file_name" translatable="false">sklyanka-history-%1$s.csv</string>
+    <string name="history_export_file_pattern" translatable="false">yyyy-MM-dd</string>
+    <!-- Шаблон колонки «Время отметки»: машинная форма для таблицы (решение дизайнера 16.10.2026). -->
+    <string name="history_export_acted_at_pattern" translatable="false">yyyy-MM-dd HH:mm</string>
+    <string name="history_export_media_type" translatable="false">text/csv</string>
+
+    <string name="history_export_header_profile">Profile: %1$s</string>
+    <string name="history_export_header_period">Period: %1$s</string>
+    <string name="history_export_column_date">Date</string>
+    <string name="history_export_column_planned_time">Planned time</string>
+    <string name="history_export_column_medication">Medication</string>
+    <string name="history_export_column_dose">Dose per intake</string>
+    <string name="history_export_column_strength">Drug strength, if set</string>
+    <string name="history_export_column_status">Status</string>
+    <string name="history_export_column_acted_at">Marked at</string>
+    <string name="history_export_column_on_time">On time</string>
+    <string name="history_export_status_taken">taken</string>
+    <string name="history_export_status_on_demand">taken as needed</string>
+    <string name="history_export_status_skipped">missed — marked by the person</string>
+    <string name="history_export_status_missed">missed — without a mark</string>
+    <string name="history_export_on_time_yes">yes</string>
+    <string name="history_export_on_time_no">no</string>
+
+    <string name="report_document_compare_title">PERIOD COMPARISON</string>
+    <string name="report_compare_previous_period">Previous period: %1$s — %2$s</string>
+    <string name="report_compare_previous_period_single">Previous period: %1$s</string>
+    <string name="report_document_dynamics_title">MONTHLY DYNAMICS</string>
+    <string name="report_dynamics_count">%1$d of %2$d</string>
+    <string name="report_document_pattern_title">MISSED-DOSE PATTERN</string>
+    <string name="report_pattern_numbers">Missed at that time: %1$d of %2$d in the period</string>
 </resources>

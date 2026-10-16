@@ -94,6 +94,13 @@ internal fun SettingsRow(
     value: String? = null,
     leading: @Composable (() -> Unit)? = null,
     trailing: @Composable (() -> Unit)? = null,
+    /**
+     * Метка сразу за подписью строки — метка «Про» у платной возможности (§5.16).
+     *
+     * Слот стоит у самой подписи, а не в конце строки: метка называет **строку**, а не действие
+     * (Р-67 п. 5), и справа её место занимает шеврон перехода.
+     */
+    titleTrailing: @Composable (() -> Unit)? = null,
 ) {
     val colors = SklyankaTheme.colors
     Box(
@@ -105,7 +112,7 @@ internal fun SettingsRow(
     ) {
         StackingRow(
             leading = { leading?.invoke() },
-            text = { RowText(title, subtitle) },
+            text = { RowText(title, subtitle, titleTrailing) },
             action = { RowAction(value, trailing, colors.iconFaint) },
             gap = SklyankaSpacing.Medium,
             minTextWidth = SklyankaSizes.MinTextColumn,
@@ -144,12 +151,24 @@ private fun RowAction(value: String?, trailing: (@Composable () -> Unit)?, chevr
  */
 internal data class RowSubtitle(val text: String, val color: Color? = null)
 
-/** Текстовая колонка строки: заголовок и подпись состояния под ним. */
+/** Текстовая колонка строки: заголовок, метка за ним и подпись состояния под ними. */
 @Composable
-private fun RowText(title: String, subtitle: RowSubtitle?) {
+private fun RowText(title: String, subtitle: RowSubtitle?, titleTrailing: (@Composable () -> Unit)? = null) {
     val colors = SklyankaTheme.colors
     Column(verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Hair)) {
-        Text(text = title, style = SklyankaType.BodyDefault, color = colors.text)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            // Подпись берёт ровно нужное (`fill = false`) и переносится, метка держит свою ширину
+            // и стоит сразу за подписью (§5.16, макеты дают 10 px): и остаток, отданный метке,
+            // сжимал её до плашки без слова (§5.9, §6.3), и растянутая до края подпись отрывала
+            // метку от неё (V-69).
+            Text(
+                text = title,
+                style = SklyankaType.BodyDefault,
+                color = colors.text,
+                modifier = Modifier.weight(1f, fill = false),
+            )
+            titleTrailing?.invoke()
+        }
         if (subtitle != null) {
             Text(
                 text = subtitle.text,

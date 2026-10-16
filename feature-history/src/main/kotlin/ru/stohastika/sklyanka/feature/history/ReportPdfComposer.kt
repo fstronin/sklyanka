@@ -2,6 +2,10 @@ package ru.stohastika.sklyanka.feature.history
 
 import android.content.Context
 import ru.stohastika.sklyanka.domain.history.DoctorReport
+import ru.stohastika.sklyanka.domain.history.ExtendedReportSections
+import ru.stohastika.sklyanka.domain.history.MissedPatternBlock
+import ru.stohastika.sklyanka.domain.history.MonthDynamics
+import ru.stohastika.sklyanka.domain.history.PeriodComparison
 import ru.stohastika.sklyanka.ui.locale.withInterfaceLocale
 import java.time.Instant
 import java.time.ZoneId
@@ -33,7 +37,11 @@ internal class ReportPdfComposer(applicationContext: Context) {
 
     private val text = ReportPdfText(context)
 
-    fun compose(report: DoctorReport, zone: ZoneId): ReportPdfContent {
+    fun compose(
+        report: DoctorReport,
+        zone: ZoneId,
+        extended: ExtendedReportSections = ExtendedReportSections.NONE,
+    ): ReportPdfContent {
         val locale = context.resources.configuration.locales[0]
         // Условие экранного `isEmptyMonth` (`AdherencePeriod.isEmpty`): при пустом периоде
         // сводка и блок лекарств не печатаются вместе с заголовками, вместо всей сводки —
@@ -55,6 +63,10 @@ internal class ReportPdfComposer(applicationContext: Context) {
             } else {
                 null
             },
+            // Пустой период не даёт ни одного «Про»-раздела: документ остаётся базовым
+            // и несёт одну фразу (§5.15). Раздела без данных не бывает и в остальных случаях:
+            // `null` в составе — это «печатать нечего» (Р-33).
+            extendedSections = if (empty) emptyList() else extendedSections(extended, report, locale),
             disclaimer = context.getString(R.string.report_document_disclaimer),
             brandPage = { number -> context.getString(R.string.report_document_page, number) },
         )
@@ -124,4 +136,125 @@ internal class ReportPdfComposer(applicationContext: Context) {
         value.atZone(zone).format(text.pattern(R.string.history_datetime_pattern, locale))
 
     private fun section(string: Int): ReportPdfLine = ReportPdfLine(context.getString(string), ReportPdfRole.SECTION)
+
+    /**
+     * Разделы «Про» по порядку §5.15: сравнение периодов → динамика по месяцам → паттерн.
+     *
+     * Порядок — часть решения, а не следствие порядка полей: врач читает документ сверху вниз,
+     * и разделы стоят так же, как названы в норме и в пояснении состава шторки.
+     */
+    private fun extendedSections(
+        extended: ExtendedReportSections,
+        report: DoctorReport,
+        locale: Locale,
+    ): List<ReportPdfSection> = listOfNotNull(
+        extended.comparison?.let { comparisonSection(it, locale) },
+        extended.dynamics?.let { dynamicsSection(it, report, locale) },
+        extended.pattern?.let { patternSection(it, report, locale) },
+    )
+
+    /**
+     * Сравнение периодов: те же четыре подписи, что в сводке, и число предыдущего периода
+     * в правом поле.
+     *
+     * Строка показателя печатается, только когда её есть чем заполнить **в обоих** периодах:
+     * у «принято вовремя» числа может не быть вовсе (мерить нечего — Р-33), и тогда строки
+     * нет, а прочерка на её месте нет. Колонку правых чисел называет одна строка меты —
+     * заголовка столбца таблица не заводит.
+     */
+    private fun comparisonSection(comparison: PeriodComparison, locale: Locale): ReportPdfSection {
+        val current = comparison.current
+        val previous = comparison.previous
+        val rows = buildList {
+            add(
+                ReportPdfSectionRow(
+                    label = context.getString(R.string.report_document_taken_label),
+                    value = text.takenValue(current.taken, current.planned),
+                    right = text.takenValue(previous.taken, previous.planned),
+                ),
+            )
+            val currentOnTime = text.onTimeValue(current.onTimeShare)
+            val previousOnTime = text.onTimeValue(previous.onTimeShare)
+            if (currentOnTime != null && previousOnTime != null) {
+                add(
+                    ReportPdfSectionRow(
+                        label = context.getString(R.string.report_document_on_time_label),
+                        value = currentOnTime,
+                        right = previousOnTime,
+                    ),
+                )
+            }
+            add(
+                ReportPdfSectionRow(
+                    label = context.getString(R.string.report_document_days_without_misses_label),
+                    value = current.daysWithoutMisses.toString(),
+                    right = previous.daysWithoutMisses.toString(),
+                ),
+            )
+            add(
+                ReportPdfSectionRow(
+                    label = context.getString(R.string.report_document_misses_label),
+                    value = current.misses.toString(),
+                    right = previous.misses.toString(),
+                ),
+            )
+        }
+        return ReportPdfSection(
+            title = context.getString(R.string.report_document_compare_title),
+            // Первой строкой — период отчёта: правый столбец называет предыдущий период,
+            // и без первой строки левую колонку чисел (текущий период) не называло бы ничего.
+            metas = listOf(
+                text.period(current.from, current.to, locale),
+                text.previousPeriod(previous.from, previous.to, locale),
+            ),
+            rows = rows,
+        )
+    }
+
+    /**
+     * Динамика по месяцам: строка на месяц периода в хронологическом порядке.
+     *
+     * Месяцев без наступивших приёмов в составе нет вовсе — их не присылает домен (Р-33),
+     * и прочерка в документе не бывает.
+     */
+    private fun dynamicsSection(dynamics: MonthDynamics, report: DoctorReport, locale: Locale): ReportPdfSection =
+        ReportPdfSection(
+            title = context.getString(R.string.report_document_dynamics_title),
+            metas = listOf(text.period(report.period.from, report.period.to, locale)),
+            rows = dynamics.months.map { month ->
+                ReportPdfSectionRow(
+                    label = text.monthLabel(month.month, locale),
+                    value = text.monthPercent(month),
+                    right = text.dynamicsCount(month.taken, month.planned),
+                )
+            },
+        )
+
+    /**
+     * Паттерн пропусков: предложение правила, строка чисел и даты этого времени.
+     *
+     * Разрез здесь по времени, а не по лекарству, — ради него раздел и печатается; язык дат
+     * и их природы тот же, что в базовом документе.
+     */
+    private fun patternSection(pattern: MissedPatternBlock, report: DoctorReport, locale: Locale): ReportPdfSection =
+        ReportPdfSection(
+            title = context.getString(R.string.report_document_pattern_title),
+            metas = listOf(text.period(report.period.from, report.period.to, locale)),
+            lines = listOf(
+                ReportPdfLine(text.insightSentence(pattern.time, locale), ReportPdfRole.BODY),
+                ReportPdfLine(
+                    text.patternNumbers(pattern.misses, report.period.missesInPeriod),
+                    ReportPdfRole.BODY_MUTED,
+                ),
+                ReportPdfLine(
+                    text.missesLine(
+                        dates = pattern.missedDates,
+                        skippedByPerson = pattern.skippedByPerson,
+                        withoutMark = pattern.missedWithoutMark,
+                        locale = locale,
+                    ),
+                    ReportPdfRole.BODY_MUTED,
+                ),
+            ),
+        )
 }

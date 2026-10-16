@@ -2,14 +2,18 @@ package ru.stohastika.sklyanka.feature.history
 
 import android.content.Context
 import ru.stohastika.sklyanka.domain.history.DoctorReport
+import ru.stohastika.sklyanka.domain.history.MonthAdherence
 import ru.stohastika.sklyanka.domain.history.OnTimeShare
 import ru.stohastika.sklyanka.domain.history.ReportMedicationRow
 import ru.stohastika.sklyanka.domain.medication.DoseUnit
 import ru.stohastika.sklyanka.domain.medication.StrengthUnit
 import ru.stohastika.sklyanka.domain.medication.doseUnit
+import ru.stohastika.sklyanka.domain.model.MedicationForm
+import ru.stohastika.sklyanka.domain.today.PartOfDay
 import ru.stohastika.sklyanka.ui.text.pluralQuantityOf
 import java.math.BigDecimal
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -22,6 +26,7 @@ import java.util.Locale
  * читают одни ресурсы (НФТ-42), и обе не считают ни одного числа: всё приходит из
  * [DoctorReport], то есть из расчёта экрана истории.
  */
+@Suppress("TooManyFunctions")
 internal class ReportPdfText(private val context: Context) {
 
     /** Блок одного лекарства по решению дизайна: строка с долей и строка курса и пропусков. */
@@ -52,12 +57,20 @@ internal class ReportPdfText(private val context: Context) {
     }
 
     /** «Принято: 86 из 100 приёмов (86 %)» — сумма по строкам из домена (`TDD.md §5.2`). */
-    fun takenValue(report: DoctorReport): String = context.resources.getQuantityString(
+    fun takenValue(report: DoctorReport): String = takenValue(report.takenTotal, report.plannedTotal)
+
+    /**
+     * То же число по паре «принято — запланировано».
+     *
+     * Отдельной формулировки у сравнения периодов не заводится: «принято» в сводке и «принято»
+     * в сравнении — один показатель одного документа, и разойтись они не имеют права (§5.15).
+     */
+    fun takenValue(taken: Int, planned: Int): String = context.resources.getQuantityString(
         R.plurals.report_document_intakes_of_total,
-        report.plannedTotal,
-        report.takenTotal,
-        report.plannedTotal,
-        percent(report.takenPercent),
+        planned,
+        taken,
+        planned,
+        percent(if (planned == 0) 0 else Math.round(taken.toDouble() / planned * PERCENT).toInt()),
     )
 
     /**
@@ -67,7 +80,10 @@ internal class ReportPdfText(private val context: Context) {
      * а прочерк в документе читался бы как измерение, которого не было: строке нечего
      * сообщить, и она не печатается — тем же правилом, что и плитка на экране.
      */
-    fun onTimeValue(report: DoctorReport): String? = when (val share = report.period.onTimeShare) {
+    fun onTimeValue(report: DoctorReport): String? = onTimeValue(report.period.onTimeShare)
+
+    /** Та же доля, посчитанная для периода сравнения: строка сравнения берёт её этим же вызовом. */
+    fun onTimeValue(share: OnTimeShare): String? = when (share) {
         is OnTimeShare.Value -> if (share.lessThanOnePercent) {
             context.getString(R.string.history_percent_less_than_one)
         } else {
@@ -115,6 +131,89 @@ internal class ReportPdfText(private val context: Context) {
     private fun startOfMonth(date: LocalDate, locale: Locale): String =
         date.format(pattern(R.string.report_document_period_start, locale))
 
+    /**
+     * «Предыдущий период: 2 — 31 августа 2026» — строка меты раздела сравнения (§5.15).
+     *
+     * Колонку правых чисел называет она одна: заголовка столбца таблица не заводит, потому
+     * что других чисел в разделе нет. Для периода из одного дня — своя формулировка,
+     * как у периода документа.
+     */
+    fun previousPeriod(from: LocalDate, to: LocalDate, locale: Locale): String = if (from == to) {
+        context.getString(R.string.report_compare_previous_period_single, fullDate(from, locale))
+    } else {
+        val (start, end) = periodEnds(from, to, locale)
+        context.getString(R.string.report_compare_previous_period, start, end)
+    }
+
+    /**
+     * «Сентябрь 2026» — имя месяца динамики.
+     *
+     * Платформенный форматтер с локалью интерфейса по шаблону календаря (НФТ-43а): в zh-CN
+     * месяц и год стоят в другом порядке, и склейка «месяц + год» в коде назвала бы дату
+     * неверно на двух языках из шести.
+     */
+    fun monthLabel(month: YearMonth, locale: Locale): String =
+        month.atDay(1).format(pattern(R.string.history_month_pattern, locale))
+
+    /**
+     * Предложение паттерна пропусков — теми же словами, что строка-вывод «Истории» (Р-85 п. 4).
+     *
+     * Второго словаря правило не заводит: слово то же, место второе.
+     */
+    fun insightSentence(time: LocalTime, locale: Locale): String = context.getString(
+        when (PartOfDay.of(time)) {
+            PartOfDay.MORNING -> R.string.history_insight_morning
+            PartOfDay.DAY -> R.string.history_insight_day
+            PartOfDay.EVENING -> R.string.history_insight_evening
+            PartOfDay.NIGHT -> R.string.history_insight_night
+        },
+        time.format(pattern(R.string.history_time_pattern, locale)),
+    )
+
+    /** «Пропусков в это время: 4 из 6 за период» — строка чисел паттерна (§5.15). */
+    fun patternNumbers(misses: Int, total: Int): String =
+        context.getString(R.string.report_pattern_numbers, misses, total)
+
+    /** «44 из 48» — правое поле строки месяца динамики. */
+    fun dynamicsCount(taken: Int, planned: Int): String =
+        context.getString(R.string.report_dynamics_count, taken, planned)
+
+    /** Доля принятого месяца: «92 %», при доле меньше процента — словами (Р-27). */
+    fun monthPercent(month: MonthAdherence): String = if (month.lessThanOnePercent) {
+        context.getString(R.string.history_percent_less_than_one)
+    } else {
+        percent(month.takenPercent)
+    }
+
+    /**
+     * Строка пропусков по датам и их природе — одной сборкой для лекарства и для паттерна.
+     *
+     * Разрез у них разный (по лекарству и по времени), а язык один: врач читает один документ,
+     * и «отмечено человеком» обязано звучать одинаково в обоих разделах.
+     */
+    fun missesLine(dates: List<LocalDate>, skippedByPerson: Int, withoutMark: Int, locale: Locale): String {
+        val listed = context.getString(R.string.report_document_missed_dates, missedDates(dates, locale))
+        val natures = buildList {
+            if (skippedByPerson > 0) {
+                add(
+                    context.resources.getQuantityString(
+                        R.plurals.report_document_missed_by_person,
+                        skippedByPerson,
+                        skippedByPerson,
+                    ),
+                )
+            }
+            if (withoutMark > 0) {
+                add(context.getString(R.string.report_document_missed_without_mark, withoutMark))
+            }
+        }
+        return when (natures.size) {
+            0 -> listed
+            1 -> context.getString(R.string.report_document_missed_single, listed, natures.single())
+            else -> context.getString(R.string.report_document_missed_both, listed, natures[0], natures[1])
+        }
+    }
+
     fun pattern(string: Int, locale: Locale): DateTimeFormatter =
         DateTimeFormatter.ofPattern(context.getString(string), locale)
 
@@ -130,26 +229,12 @@ internal class ReportPdfText(private val context: Context) {
      */
     private fun misses(row: ReportMedicationRow, locale: Locale): String {
         if (row.misses == 0) return context.getString(R.string.report_document_no_misses)
-        val dates = context.getString(R.string.report_document_missed_dates, missedDates(row.missedDates, locale))
-        val natures = buildList {
-            if (row.skippedByPerson > 0) {
-                add(
-                    context.resources.getQuantityString(
-                        R.plurals.report_document_missed_by_person,
-                        row.skippedByPerson,
-                        row.skippedByPerson,
-                    ),
-                )
-            }
-            if (row.missedWithoutMark > 0) {
-                add(context.getString(R.string.report_document_missed_without_mark, row.missedWithoutMark))
-            }
-        }
-        return if (natures.size == 1) {
-            context.getString(R.string.report_document_missed_single, dates, natures.single())
-        } else {
-            context.getString(R.string.report_document_missed_both, dates, natures[0], natures[1])
-        }
+        return missesLine(
+            dates = row.missedDates,
+            skippedByPerson = row.skippedByPerson,
+            withoutMark = row.missedWithoutMark,
+            locale = locale,
+        )
     }
 
     /** «6, 9, 14, 21 сентября»: день без месяца в перечислении, месяц — один раз на группу. */
@@ -192,8 +277,18 @@ internal class ReportPdfText(private val context: Context) {
      * врачу неправду о принятом. Список идёт разделителем перечисления, как времена и даты
      * в этом же документе: слова для него уже есть в шести каталогах (НФТ-42).
      */
-    private fun dose(row: ReportMedicationRow): String {
-        val unit = DoseUnit.ofCode(row.doseUnit) ?: row.form.doseUnit()
+    private fun dose(row: ReportMedicationRow): String = row.doses.joinToString(separator()) {
+        doseText(it, doseUnitOf(row.doseUnit, row.form))
+    }
+
+    /**
+     * «1 таблетка» — формулировка дозы одного приёма.
+     *
+     * Одной сборкой с документом отчёта: «доза за приём» в выгрузке истории и доза в отчёте —
+     * одна и та же запись о принятом (ПР-19), и разойтись в словах они не имеют права.
+     */
+    @Suppress("LongParameterList")
+    fun doseText(amount: BigDecimal, unit: DoseUnit): String {
         val template = when (unit) {
             DoseUnit.TABLET -> R.plurals.report_document_dose_tablets
             DoseUnit.CAPSULE -> R.plurals.report_document_dose_capsules
@@ -202,10 +297,15 @@ internal class ReportPdfText(private val context: Context) {
             DoseUnit.SPRAY -> R.plurals.report_document_dose_sprays
             DoseUnit.INJECTION -> R.plurals.report_document_dose_injections
         }
-        return row.doses.joinToString(context.getString(R.string.report_document_list_separator)) {
-            context.resources.getQuantityString(template, pluralQuantityOf(it), amount(it))
-        }
+        return context.resources.getQuantityString(template, pluralQuantityOf(amount), amount(amount))
     }
+
+    /** Единица дозы записи: код, а при пустом или незнакомом коде — форма лекарства (МГ-6). */
+    fun doseUnitOf(code: String, form: MedicationForm): DoseUnit = DoseUnit.ofCode(code) ?: form.doseUnit()
+
+    /** «50 мкг»; `null` — дозировка не задана. Одной сборкой с документом отчёта и выгрузкой. */
+    fun strengthText(strength: BigDecimal?, unit: String?): String? =
+        if (strength != null && unit != null) amount(strength) + " " + unitText(unit) else null
 
     /**
      * «50 мкг». Дозировка печатается только целиком: число без единицы врачу не говорит
@@ -213,11 +313,7 @@ internal class ReportPdfText(private val context: Context) {
      * печатается словом языка; незнакомый код показывается как есть — отказать врачу
      * в строке хуже, чем показать код (МГ-6).
      */
-    private fun strength(row: ReportMedicationRow): String? {
-        val strength = row.strength
-        val unit = row.strengthUnit
-        return if (strength != null && unit != null) amount(strength) + " " + unitText(unit) else null
-    }
+    private fun strength(row: ReportMedicationRow): String? = strengthText(row.strength, row.strengthUnit)
 
     private fun unitText(code: String): String = when (StrengthUnit.ofCode(code)) {
         StrengthUnit.MILLIGRAM -> context.getString(R.string.strength_unit_milligram)
@@ -235,4 +331,8 @@ internal class ReportPdfText(private val context: Context) {
     private fun percent(value: Int): String = context.getString(R.string.history_percent, value)
 
     private fun separator(): String = context.getString(R.string.report_document_part_separator)
+
+    private companion object {
+        const val PERCENT = 100
+    }
 }

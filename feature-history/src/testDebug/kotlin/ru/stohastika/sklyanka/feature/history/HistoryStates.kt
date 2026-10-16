@@ -11,6 +11,7 @@ import ru.stohastika.sklyanka.domain.history.OnTimeShare
 import ru.stohastika.sklyanka.domain.history.ReportDocument
 import ru.stohastika.sklyanka.domain.history.ReportMedicationRow
 import ru.stohastika.sklyanka.domain.history.ReportPreset
+import ru.stohastika.sklyanka.domain.history.ReportScope
 import ru.stohastika.sklyanka.domain.model.FoodRelation
 import ru.stohastika.sklyanka.domain.model.MedicationForm
 import java.math.BigDecimal
@@ -133,6 +134,7 @@ internal object HistoryStates {
         composition: ReportComposition = realComposition(),
         preset: ReportPreset = ReportPreset.THIS_MONTH,
         outcome: ReportOutcome? = null,
+        scope: ReportScope = ReportScope.BASE,
     ): HistoryUiState = september().copy(
         report = ReportUi(
             document = ReportDocument(
@@ -141,6 +143,7 @@ internal object HistoryStates {
                 bytes = ByteArray(0),
             ),
             composition = composition,
+            scope = scope,
             preset = preset,
             customFrom = SEPTEMBER.atDay(1),
             customTo = SEPTEMBER.atEndOfMonth(),

@@ -1,21 +1,14 @@
 package ru.stohastika.sklyanka.feature.history
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -29,64 +22,59 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.withStyle
 import ru.stohastika.sklyanka.domain.history.ReportPreset
-import ru.stohastika.sklyanka.ui.component.Banner
-import ru.stohastika.sklyanka.ui.component.BannerKind
-import ru.stohastika.sklyanka.ui.component.ButtonForm
+import ru.stohastika.sklyanka.domain.history.ReportScope
 import ru.stohastika.sklyanka.ui.component.CheckGlyph
-import ru.stohastika.sklyanka.ui.component.ChipState
-import ru.stohastika.sklyanka.ui.component.DateTimePickerDialog
-import ru.stohastika.sklyanka.ui.component.ModalHeaderRow
-import ru.stohastika.sklyanka.ui.component.PrimaryButton
-import ru.stohastika.sklyanka.ui.component.QuietButton
-import ru.stohastika.sklyanka.ui.component.QuietButtonForm
-import ru.stohastika.sklyanka.ui.component.QuietButtonKind
-import ru.stohastika.sklyanka.ui.component.SecondaryButton
+import ru.stohastika.sklyanka.ui.component.ProMark
 import ru.stohastika.sklyanka.ui.component.SklyankaBottomSheet
-import ru.stohastika.sklyanka.ui.component.SklyankaChip
-import ru.stohastika.sklyanka.ui.component.StackingEqualButtons
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
-import ru.stohastika.sklyanka.ui.token.SklyankaMotion
 import ru.stohastika.sklyanka.ui.token.SklyankaShapes
 import ru.stohastika.sklyanka.ui.token.SklyankaSizes
 import ru.stohastika.sklyanka.ui.token.SklyankaSpacing
 import ru.stohastika.sklyanka.ui.token.SklyankaType
-import ru.stohastika.sklyanka.ui.R as UiR2
 
 /**
- * Отчёт врачу: выбор периода, состав, пояснение, передача системным обменом и сохранение.
+ * Отчёт врачу: выбор состава, период, состав словами, пояснение, передача и сохранение.
  *
  * Настоящая нижняя шторка (§4.18, ОВ-125): полотно по высоте содержимого, затемнение,
  * закреплённые шапка и действия. Документ один — PDF, с экрана он не показывается;
  * вместо сводки шторка показывает **состав** «подпись — значение», чтобы человек видел,
  * что именно отдаёт, до нажатия «Передать».
  *
- * Успех — **отдельное состояние содержимого**: чипы, карточка, пояснение и действия
+ * **Состав выбирается здесь же** (Р-85 п. 1, §5.15): «Базовый» выбран по умолчанию и метки
+ * не несёт (Р-36, Р-71), «Расширенный» несёт метку «Про». Выбор стоит до карточки состава:
+ * состав выбирают раньше, чем смотрят на итог. Без активного доступа нажатие расширенной
+ * строки выбор не меняет — открывается витрина, а формируется базовый документ (П-7).
+ *
+ * Успех — **отдельное состояние содержимого**: чипы, выбор, карточка, пояснение и действия
  * убираются, остаются фраза «Отчёт сформирован», исход словом и контурная галочка.
- * Отмена и ошибка — сообщением над составом, обычное содержимое остаётся, повтор возможен.
+ * Отмена и ошибка — сообщением над содержимым, обычное содержимое остаётся, повтор возможен.
  *
  * Период выбирается чипами-пресетами; «Другой период» заменяет строку «Период» строками
- * «С»/«По» с существующим диалогом даты (§4.14).
+ * «С/По» с существующим диалогом даты (§4.14).
  */
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun DoctorReportSheet(report: ReportUi, outcome: ReportOutcome?, onIntent: (HistoryIntent) -> Unit) {
     var dialog by remember { mutableStateOf(ReportDateField.NONE) }
     Column(modifier = Modifier.testTag(TAG_REPORT_SHEET)) {
-        SheetHeader(success = outcome?.isSuccess == true, onIntent = onIntent)
+        SheetHeader(
+            title = R.string.history_report_title,
+            success = outcome?.isSuccess == true,
+            onDismiss = { onIntent(HistoryIntent.ReportDismissed) },
+        )
         if (outcome?.isSuccess == true) {
-            SuccessContent(outcome)
+            SuccessContent(
+                title = R.string.history_report_success_title,
+                saved = outcome == ReportOutcome.SAVED,
+                titleTag = TAG_REPORT_SUCCESS,
+                markTag = TAG_REPORT_SUCCESS_MARK,
+            )
         } else {
             Column(
                 modifier = Modifier
@@ -96,95 +84,171 @@ internal fun DoctorReportSheet(report: ReportUi, outcome: ReportOutcome?, onInte
                     .padding(top = SklyankaSpacing.Block),
                 verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Block),
             ) {
-                outcome?.takeIf { !it.isSuccess }?.let { InlineOutcome(it) }
+                outcome?.takeIf { !it.isSuccess }?.let { OutcomeBanner(it) }
                 PeriodChips(report.preset) { onIntent(HistoryIntent.ReportPresetChosen(it)) }
+                // Доступ не украшает строку и не запирает её: он решает, что произойдёт
+                // по нажатию, а это делает `ViewModel` — здесь уходит только выбор (П-7).
+                CompositionChoice(scope = report.scope) { scope -> onIntent(HistoryIntent.ReportScopeChosen(scope)) }
                 CompositionCard(report) { field -> dialog = field }
                 DataNote()
             }
-            ReportActions(onIntent)
+            SheetActions(
+                shareTag = TAG_REPORT_SHARE,
+                saveTag = TAG_REPORT_SAVE,
+                onShare = { onIntent(HistoryIntent.ShareReport) },
+                onSave = { onIntent(HistoryIntent.SaveRequested) },
+            )
         }
     }
-    ReportDateDialog(dialog, report, onIntent) { dialog = ReportDateField.NONE }
+    ReportDateDialog(
+        field = dialog,
+        from = report.customFrom,
+        to = report.customTo,
+        today = report.today,
+        onStart = { onIntent(HistoryIntent.ReportStartPicked(it)) },
+        onEnd = { onIntent(HistoryIntent.ReportEndPicked(it)) },
+        onClose = { dialog = ReportDateField.NONE },
+    )
 }
 
+/**
+ * Сообщение исхода отчёта: отмена — нейтрально, ошибка — предупреждением (НФТ-30, ОВ-125).
+ *
+ * Отмена системного диалога выглядит для человека так же, как отказ записи, и различает их
+ * не цвет, а слова: у каждого исхода своя строка.
+ */
 @Composable
-private fun SheetHeader(success: Boolean, onIntent: (HistoryIntent) -> Unit) {
+private fun OutcomeBanner(outcome: ReportOutcome) {
+    InlineOutcome(text = stringResource(outcome.message()), warning = outcome.isWarning())
+}
+
+private fun ReportOutcome.message(): Int = when (this) {
+    ReportOutcome.CANCELLED -> R.string.history_report_cancelled
+    ReportOutcome.FAILED_SHARE -> R.string.history_report_share_failed
+    ReportOutcome.FAILED_SAVE -> R.string.history_report_save_failed
+    ReportOutcome.SHARED, ReportOutcome.SAVED -> R.string.history_report_success_title
+}
+
+/**
+ * Выбор состава отчёта: надстрочник и карточка-группа из двух строк (§5.15).
+ *
+ * Подпись расширенной строки несёт метку «Про» сразу за собой, а под обеими подписями стоит
+ * пояснение состава: человек видит, что войдёт в документ, **до** нажатия (П-7). Пояснение
+ * пишется словами состава, а не названием тарифа (Р-71). Строка не переводится
+ * в недоступность: правда не «нельзя», а «можно, по подписке».
+ */
+@Composable
+private fun CompositionChoice(scope: ReportScope, onChoose: (ReportScope) -> Unit) {
     val colors = SklyankaTheme.colors
-    // Отмена — ведущее приглушённое действие шапки, «Готово» — замыкающее подтверждение:
-    // «Отмена» набрана `BodyDefault` 15/400 `TextMuted`, «Готово» — `BodyDefaultStrong`
-    // 15/600 `Accent` (§3.2, §7, ОВ-146). Иначе выход успеха читается как отмена.
-    val action: @Composable () -> Unit = {
-        QuietButton(
-            text = stringResource(if (success) UiR2.string.action_done else UiR2.string.action_cancel),
-            onClick = { onIntent(HistoryIntent.ReportDismissed) },
-            kind = if (success) QuietButtonKind.Accent else QuietButtonKind.Muted,
-            form = QuietButtonForm.Header,
-        )
-    }
-    Column(modifier = Modifier.fillMaxWidth()) {
-        ModalHeaderRow(
-            title = stringResource(R.string.history_report_title),
-            // Слоты по общей сетке: на успехе ведущий слот пустеет, подтверждение встаёт
-            // в замыкающий, а невидимой заглушки ради центровки названия нет (Р-53, V-15).
-            // Пустой слот не заполняется ничем.
-            leading = if (success) null else action,
-            trailing = if (success) action else null,
-            modifier = Modifier
-                .padding(horizontal = SklyankaSpacing.Section)
-                .heightIn(min = SklyankaSizes.MinTouchTarget),
-        )
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(SklyankaSizes.DividerThickness)
-                .background(colors.line),
-        )
-    }
-}
-
-/** Отмена — нейтральный вид, ошибка — предупреждение: различает текст (НФТ-30, ОВ-125). */
-@Composable
-private fun InlineOutcome(outcome: ReportOutcome) {
-    val warning = outcome == ReportOutcome.FAILED_SHARE || outcome == ReportOutcome.FAILED_SAVE
-    val text = stringResource(
-        when (outcome) {
-            ReportOutcome.CANCELLED -> R.string.history_report_cancelled
-            ReportOutcome.FAILED_SHARE -> R.string.history_report_share_failed
-            ReportOutcome.FAILED_SAVE -> R.string.history_report_save_failed
-            ReportOutcome.SHARED, ReportOutcome.SAVED -> R.string.history_report_success_title
-        },
-    )
-    Banner(
-        text = text,
-        kind = if (warning) BannerKind.Warning else BannerKind.Neutral,
+    Column(
         modifier = Modifier.fillMaxWidth(),
-    )
-}
-
-/** Чипы-пресеты периода: «Этот месяц» по умолчанию, варианты видны и переключаются одним касанием. */
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun PeriodChips(selected: ReportPreset, onChoose: (ReportPreset) -> Unit) {
-    FlowRow(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Small),
         verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Small),
     ) {
-        ReportPreset.entries.forEach { preset ->
-            SklyankaChip(
-                text = stringResource(preset.label()),
-                state = if (preset == selected) ChipState.Selected else ChipState.Unselected,
-                onClick = { onChoose(preset) },
+        Text(
+            text = stringResource(R.string.history_report_composition_section).uppercase(),
+            style = SklyankaType.Overline,
+            color = colors.textMuted,
+            modifier = Modifier
+                .padding(start = SklyankaSpacing.Micro)
+                .testTag(TAG_REPORT_COMPOSITION_SECTION),
+        )
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(SklyankaShapes.Card)
+                .background(colors.surface)
+                .border(SklyankaSizes.BorderThin, colors.lineOnSurface, SklyankaShapes.Card),
+        ) {
+            ChoiceRow(
+                label = stringResource(R.string.history_report_composition_base),
+                note = stringResource(R.string.history_report_composition_base_note),
+                isSelected = scope == ReportScope.BASE,
+                proMarked = false,
+                testTag = TAG_REPORT_COMPOSITION_BASE,
+                onClick = { onChoose(ReportScope.BASE) },
+            )
+            CardDivider(modifier = Modifier.padding(horizontal = SklyankaSpacing.Block))
+            ChoiceRow(
+                label = stringResource(R.string.history_report_composition_extended),
+                note = stringResource(R.string.history_report_composition_extended_note),
+                isSelected = scope == ReportScope.EXTENDED,
+                // Метка стоит у платной строки: норма не продаёт бесплатное (Р-71). Без доступа
+                // строка метку не теряет — она по-прежнему называет платную возможность.
+                proMarked = true,
+                testTag = TAG_REPORT_COMPOSITION_EXTENDED,
+                // Выбор не меняется без доступа: экран просит витрину, а решает `ViewModel` —
+                // расширенный состав без подписки не собирается (Р-22).
+                onClick = { onChoose(ReportScope.EXTENDED) },
             )
         }
     }
 }
 
-private fun ReportPreset.label(): Int = when (this) {
-    ReportPreset.THIS_MONTH -> R.string.history_report_period_this_month
-    ReportPreset.PREVIOUS_MONTH -> R.string.history_report_period_previous_month
-    ReportPreset.LAST_THREE_MONTHS -> R.string.history_report_period_last_three_months
-    ReportPreset.CUSTOM -> R.string.history_report_period_custom
+/**
+ * Строка выбора состава: подпись, пояснение под ней, галочка у выбранной и семантика «выбрана».
+ *
+ * Строка собрана тем же способом, что выбор типа виджета (§5.12) и строки диалога списка (§5.10):
+ * подпись набрана `BodyDefault`, у выбранной — `BodyDefaultStrong` цветом акцента (НФТ-30, §6.4).
+ */
+@Composable
+private fun ChoiceRow(
+    label: String,
+    note: String,
+    isSelected: Boolean,
+    proMarked: Boolean,
+    testTag: String,
+    onClick: () -> Unit,
+) {
+    val colors = SklyankaTheme.colors
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = SklyankaSpacing.Block, vertical = SklyankaSpacing.Large)
+            .semantics { selected = isSelected }
+            .testTag(testTag),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Hair)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = label,
+                    style = if (isSelected) SklyankaType.BodyDefaultStrong else SklyankaType.BodyDefault,
+                    color = if (isSelected) colors.accent else colors.text,
+                )
+                if (proMarked) {
+                    ProMark(modifier = Modifier.padding(start = SklyankaSpacing.Small))
+                }
+            }
+            Text(text = note, style = SklyankaType.CaptionSmall, color = colors.textMuted)
+        }
+        // Место галочки зарезервировано всегда: галочка нарисована и у невыбранной строки,
+        // просто без краски. Так колонка текста одна и та же в обоих состояниях, и пояснение
+        // переносится одинаково независимо от выбора (§5.1 п. 4 нормы дизайна, находка V-19).
+        Spacer(modifier = Modifier.width(SklyankaSpacing.Medium))
+        // Галочка занимает своё место всегда и теряет только краску у невыбранной строки:
+        // слот состояния остаётся зарезервированным, а новых красок и токенов не заводится
+        // (НФТ-47 — цвета живут только в дизайн-системе).
+        CheckGlyph(
+            color = colors.accent,
+            modifier = if (isSelected) Modifier else Modifier.alpha(INVISIBLE_GLYPH),
+        )
+    }
+}
+
+private fun ReportOutcome.isWarning(): Boolean = this == ReportOutcome.FAILED_SHARE || this == ReportOutcome.FAILED_SAVE
+
+/** Тихое пояснение о данных под карточкой: пояснение к действию, а не сообщение об ошибке (НФТ-18). */
+@Composable
+private fun DataNote() {
+    Text(
+        text = stringResource(R.string.history_report_data_note),
+        style = SklyankaType.Caption,
+        color = SklyankaTheme.colors.textMuted,
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag(TAG_REPORT_DATA_NOTE),
+    )
 }
 
 @Composable
@@ -241,7 +305,13 @@ private fun CompositionCard(report: ReportUi, onPickDate: (ReportDateField) -> U
     }
 }
 
-/** Строка «Принято»: число приёмов или фраза пустого периода (ревизия 33-B). */
+/**
+ * Строка «Принято»: число приёмов или фраза пустого периода (ревизия 33-B).
+ *
+ * У расширенного состава карточка называет состав словами — и тем же числом: документ один,
+ * и «принято» в нём то же самое. Отдельной строки «расширенный» в карточке не заводится:
+ * выбранный состав уже отмечен галочкой в блоке выбора (Р-36 — состав документ не называет).
+ */
 @Composable
 private fun CompositionTaken(composition: ReportComposition) {
     val taken = composition.taken
@@ -261,206 +331,6 @@ private fun CompositionTaken(composition: ReportComposition) {
             testTag = TAG_REPORT_TAKEN,
             value = taken,
             numbersInLiterata = true,
-        )
-    }
-}
-
-@Composable
-private fun CardDivider() {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(SklyankaSizes.DividerThickness)
-            .background(SklyankaTheme.colors.lineOnSurface),
-    )
-}
-
-@Composable
-private fun CompositionRow(
-    label: String,
-    testTag: String,
-    value: String,
-    onValueClick: (() -> Unit)? = null,
-    numbersInLiterata: Boolean = false,
-) {
-    val colors = SklyankaTheme.colors
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .then(if (onValueClick == null) Modifier else Modifier.clickable(onClick = onValueClick))
-            .padding(vertical = SklyankaSpacing.Large)
-            .testTag(testTag),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(text = label, style = SklyankaType.Caption, color = colors.textMuted)
-        Spacer(modifier = Modifier.width(SklyankaSpacing.Medium))
-        // Значение занимает остаток строки и переносится внутри своей колонки.
-        // `StackingRow` здесь не годится: при нехватке ширины он уносил значение
-        // под подпись, и смена длины периода (пресеты) скачком меняла высоту
-        // карточки и всей шторки (SKL-101, дефект «скачет форма»).
-        Text(
-            text = if (numbersInLiterata) numberedValue(value) else AnnotatedString(value),
-            style = SklyankaType.BodyDefaultStrong,
-            color = colors.text,
-            textAlign = TextAlign.End,
-            modifier = Modifier.weight(1f),
-        )
-        if (onValueClick != null) {
-            Spacer(modifier = Modifier.width(SklyankaSpacing.Small))
-            ChevronGlyph(color = colors.textTertiary, pointsLeft = false, size = SklyankaSizes.Chevron)
-        }
-    }
-}
-
-/**
- * Значение, где числа набраны Literata 600 (§2.3): цифры показателя читаются как
- * показатель, а слова — интерфейсным шрифтом. Одна строка остаётся одной строкой
- * для чтения (`Text` с `AnnotatedString`), а не набором отдельных надписей.
- */
-private fun numberedValue(value: String): AnnotatedString = buildAnnotatedString {
-    var cursor = 0
-    NUMBER.findAll(value).forEach { match ->
-        append(value.substring(cursor, match.range.first))
-        withStyle(SklyankaType.NumberSpan) {
-            append(match.value)
-        }
-        cursor = match.range.last + 1
-    }
-    append(value.substring(cursor))
-}
-
-/** Число, при желании вместе со знаком «%»: «86», «100», «86 %» — цельные куски. */
-private val NUMBER = Regex("""\d+(?:\s*%)?""")
-
-/** Тихое пояснение о данных под карточкой: это пояснение к действию, а не сообщение об ошибке (НФТ-18). */
-@Composable
-private fun DataNote() {
-    Text(
-        text = stringResource(R.string.history_report_data_note),
-        style = SklyankaType.Caption,
-        color = SklyankaTheme.colors.textMuted,
-        modifier = Modifier
-            .fillMaxWidth()
-            .testTag(TAG_REPORT_DATA_NOTE),
-    )
-}
-
-@Composable
-private fun ReportActions(onIntent: (HistoryIntent) -> Unit) {
-    StackingEqualButtons(
-        first = {
-            PrimaryButton(
-                text = stringResource(R.string.history_report_share),
-                onClick = { onIntent(HistoryIntent.ShareReport) },
-                modifier = Modifier.testTag(TAG_REPORT_SHARE),
-            )
-        },
-        second = {
-            SecondaryButton(
-                text = stringResource(R.string.history_report_save),
-                onClick = { onIntent(HistoryIntent.SaveRequested) },
-                form = ButtonForm.Screen,
-                modifier = Modifier.testTag(TAG_REPORT_SAVE),
-            )
-        },
-        gap = SklyankaSpacing.Medium,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = SklyankaSpacing.Section, vertical = SklyankaSpacing.Block),
-    )
-}
-
-/**
- * Состояние успеха: содержимое заменяется целиком.
- *
- * Появление композиции — 0,96 → 1 и прозрачность, 200 ms `EasingEnter` (§9.3, сценарий 10);
- * при системном уменьшении движения Compose гасит длительность сам, конечный кадр тот же.
- * Галочка декоративная: чтению с экрана не объявляется — исход называют слова.
- */
-@Composable
-private fun SuccessContent(outcome: ReportOutcome) {
-    val colors = SklyankaTheme.colors
-    var shown by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) { shown = true }
-    val progress by animateFloatAsState(
-        targetValue = if (shown) 1f else 0f,
-        animationSpec = tween(SklyankaMotion.DurationShort, easing = SklyankaMotion.EasingEnter),
-        label = "report-success",
-    )
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = SklyankaSpacing.Section)
-            .padding(top = SklyankaSpacing.Screen, bottom = SklyankaSpacing.Screen)
-            .graphicsLayer {
-                val scale = SUCCESS_SCALE_FROM + (1f - SUCCESS_SCALE_FROM) * progress
-                scaleX = scale
-                scaleY = scale
-                alpha = progress
-            },
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Small),
-    ) {
-        Text(
-            text = stringResource(R.string.history_report_success_title),
-            style = SklyankaType.Subtitle,
-            color = colors.text,
-            modifier = Modifier
-                .semantics { liveRegion = LiveRegionMode.Polite }
-                .testTag(TAG_REPORT_SUCCESS),
-        )
-        Text(
-            text = stringResource(
-                if (outcome == ReportOutcome.SAVED) {
-                    R.string.history_report_success_saved
-                } else {
-                    R.string.history_report_success_shared
-                },
-            ),
-            style = SklyankaType.BodyDefault,
-            color = colors.textMuted,
-        )
-        Spacer(modifier = Modifier.height(SklyankaSpacing.Block))
-        CheckGlyph(
-            color = colors.taken,
-            size = SklyankaSizes.BottomSheetSuccessMark,
-            strokeWidth = SklyankaSizes.BottomSheetSuccessMarkStroke,
-            modifier = Modifier.testTag(TAG_REPORT_SUCCESS_MARK),
-        )
-    }
-}
-
-@Composable
-private fun ReportDateDialog(
-    field: ReportDateField,
-    report: ReportUi,
-    onIntent: (HistoryIntent) -> Unit,
-    onClose: () -> Unit,
-) {
-    when (field) {
-        ReportDateField.NONE -> Unit
-        ReportDateField.START -> DateTimePickerDialog(
-            title = stringResource(R.string.history_report_date_start_title),
-            initial = report.customFrom,
-            onDismiss = onClose,
-            onConfirm = { date ->
-                onIntent(HistoryIntent.ReportStartPicked(date))
-                onClose()
-            },
-            // «С» — любая прошедшая дата; будущее недоступно, нижней границы нет (ОВ-125).
-            notAfter = report.today,
-        )
-        ReportDateField.END -> DateTimePickerDialog(
-            title = stringResource(R.string.history_report_date_end_title),
-            initial = report.customTo,
-            onDismiss = onClose,
-            onConfirm = { date ->
-                onIntent(HistoryIntent.ReportEndPicked(date))
-                onClose()
-            },
-            // «По» не раньше «С» и не позже сегодня (ОВ-125).
-            notBefore = report.customFrom,
-            notAfter = report.today,
         )
     }
 }
@@ -507,4 +377,10 @@ const val TAG_REPORT_SAVE = "history_report_save"
 const val TAG_REPORT_SUCCESS = "history_report_success"
 const val TAG_REPORT_SUCCESS_MARK = "history_report_success_mark"
 
-private const val SUCCESS_SCALE_FROM = 0.96f
+/** Метки блока выбора состава (§5.15): на них опираются экранные проверки и эталоны. */
+const val TAG_REPORT_COMPOSITION_SECTION = "history_report_composition_section"
+const val TAG_REPORT_COMPOSITION_BASE = "history_report_composition_base"
+const val TAG_REPORT_COMPOSITION_EXTENDED = "history_report_composition_extended"
+
+/** Невидимая галочка невыбранной строки: место занято, краски нет (§5.1 п. 4). */
+private const val INVISIBLE_GLYPH = 0f

@@ -8,7 +8,7 @@
     <string name="history_tile_misses">Auslassungen im Monat</string>
 
     <string name="history_value_dash">—</string>
-    <string name="history_percent">%1$d %%</string>
+    <string name="history_percent">%1$d %%</string>
     <string name="history_percent_less_than_one">&lt; 1 %</string>
 
     <string name="cd_previous_month">Voriger Monat</string>
@@ -109,4 +109,55 @@
     <string name="history_date_pattern">d. MMMM</string>
     <string name="history_date_pattern_full">d. MMMM yyyy</string>
     <string name="history_datetime_pattern">d. MMMM yyyy, HH:mm</string>
+
+    <!--
+      Berichtsumfang und Verlaufsexport (SKL-119, Designnorm §5.15–§5.16).
+      Formulierungen aus der Norm; Satz des Musters und Zeitraumzeilen nutzen
+      die bestehenden Schlüssel `history_insight_*` und `report_document_*`.
+    -->
+    <string name="history_report_composition_section">Berichtsumfang</string>
+    <string name="history_report_composition_base">Basis</string>
+    <string name="history_report_composition_base_note">Zusammenfassung und Aufteilung nach Medikament</string>
+    <string name="history_report_composition_extended">Erweitert</string>
+    <string name="history_report_composition_extended_note">Zeiträume, Dynamik, Muster der Auslassungen</string>
+
+    <string name="history_export_title">Verlaufsexport</string>
+    <string name="history_export_label_records">Einträge</string>
+    <string name="history_export_format_value" translatable="false">CSV</string>
+    <string name="history_export_note">Die Datei enthält medizinische Daten und wird offen weitergegeben</string>
+    <string name="history_export_cancelled">Übertragung der Datei abgebrochen</string>
+    <string name="history_export_share_failed">Der Export konnte nicht weitergegeben werden</string>
+    <string name="history_export_save_failed">Die Datei wurde nicht gespeichert</string>
+    <string name="history_export_no_space">Nicht genügend Speicher. Die Datei wurde nicht gespeichert</string>
+    <string name="history_export_success_title">Datei erstellt</string>
+    <string name="history_export_file_name" translatable="false">sklyanka-history-%1$s.csv</string>
+    <string name="history_export_file_pattern" translatable="false">yyyy-MM-dd</string>
+    <!-- Шаблон колонки «Время отметки»: машинная форма для таблицы (решение дизайнера 16.10.2026). -->
+    <string name="history_export_acted_at_pattern" translatable="false">yyyy-MM-dd HH:mm</string>
+    <string name="history_export_media_type" translatable="false">text/csv</string>
+
+    <string name="history_export_header_profile">Profil: %1$s</string>
+    <string name="history_export_header_period">Zeitraum: %1$s</string>
+    <string name="history_export_column_date">Datum</string>
+    <string name="history_export_column_planned_time">Planzeit</string>
+    <string name="history_export_column_medication">Medikament</string>
+    <string name="history_export_column_dose">Dosis pro Einnahme</string>
+    <string name="history_export_column_strength">Wirkstoffstärke, falls angegeben</string>
+    <string name="history_export_column_status">Status</string>
+    <string name="history_export_column_acted_at">Markierungszeit</string>
+    <string name="history_export_column_on_time">Pünktlich</string>
+    <string name="history_export_status_taken">eingenommen</string>
+    <string name="history_export_status_on_demand">bei Bedarf eingenommen</string>
+    <string name="history_export_status_skipped">ausgelassen — vom Nutzer markiert</string>
+    <string name="history_export_status_missed">ausgelassen — ohne Markierung</string>
+    <string name="history_export_on_time_yes">ja</string>
+    <string name="history_export_on_time_no">nein</string>
+
+    <string name="report_document_compare_title">ZEITRAUMVERGLEICH</string>
+    <string name="report_compare_previous_period">Vorheriger Zeitraum: %1$s — %2$s</string>
+    <string name="report_compare_previous_period_single">Vorheriger Zeitraum: %1$s</string>
+    <string name="report_document_dynamics_title">MONATSDYNAMIK</string>
+    <string name="report_dynamics_count">%1$d von %2$d</string>
+    <string name="report_document_pattern_title">MUSTER DER AUSLASSUNGEN</string>
+    <string name="report_pattern_numbers">Auslassungen zu dieser Zeit: %1$d von %2$d im Zeitraum</string>
 </resources>

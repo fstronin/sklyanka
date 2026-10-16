@@ -13,6 +13,8 @@ import com.github.takahirom.roborazzi.fontScale
 import com.github.takahirom.roborazzi.size
 import org.junit.Test
 import org.junit.runner.RunWith
+import ru.stohastika.sklyanka.domain.history.ReportScope
+import ru.stohastika.sklyanka.ui.component.SklyankaBottomSheet
 import ru.stohastika.sklyanka.ui.profile.ProfileChrome
 import ru.stohastika.sklyanka.ui.profile.ProfileChromeState
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
@@ -59,6 +61,72 @@ class HistoryScreenSnapshotTest {
     @Test
     fun theDoctorReportOnTheScreen() = capture("history-report") {
         HistoryScreen(state = HistoryStates.withReport(), onIntent = {})
+    }
+
+    /** Шторка в состоянии расширенного выбора: вторая половина кадра «двух состояний выбора» (§5.15). */
+    @Test
+    fun theExtendedCompositionOnTheScreen() = capture("history-report-extended") {
+        HistoryScreen(state = HistoryStates.withReport(scope = ReportScope.EXTENDED), onIntent = {})
+    }
+
+    /**
+     * Шторка выгрузки истории: чипы, карточка состава, тихое пояснение, действия (§5.16).
+     *
+     * Кадр собирается настоящей шторкой в её слое: поверхность выгрузки хостит `app` (тем же
+     * способом, что витрину), и снимок показывает её так, как её увидит человек.
+     */
+    @Test
+    fun theExportSheetOnTheScreen() = capture("history-export", heightDp = TALLER, wrapped = false) {
+        ExportSurface(ExportStates.withRecords())
+    }
+
+    /** Пустой период: фраза вместо числа записей, файл остаётся с шапкой (Р-33). */
+    @Test
+    fun theExportOfAnEmptyPeriodOnTheScreen() = capture("history-export-empty", heightDp = TALLER, wrapped = false) {
+        ExportSurface(ExportStates.withoutRecords())
+    }
+
+    /** Места не хватило: сообщение первым элементом, содержимое остаётся (§5.16). */
+    @Test
+    fun theExportWithoutSpaceOnTheScreen() = capture("history-export-no-space", heightDp = TALLER, wrapped = false) {
+        ExportSurface(ExportStates.withoutSpace())
+    }
+
+    /** Успех выгрузки: содержимое заменяется целиком — «Файл сформирован» и «Сохранён». */
+    @Test
+    fun theExportSavedOnTheScreen() = capture("history-export-saved", heightDp = TALLER, wrapped = false) {
+        ExportSurface(ExportStates.saved())
+    }
+
+    /** Шторка выгрузки при 200 %: полотно растёт, средняя часть прокручивается (§6.3). */
+    @Test
+    fun theExportAtDoubleFontScale() = capture(
+        "history-export-200",
+        heightDp = TALLER,
+        fontScale = SCALE_200,
+        wrapped = false,
+    ) {
+        ExportSurface(ExportStates.withRecords())
+    }
+
+    /**
+     * Шторка выгрузки в её слое — над экраном, как в продукте (§5.16, Р-53).
+     *
+     * За затемнением стоит «История»: строку выгрузки нажимают из настроек, но `feature-history`
+     * не видит `feature-settings` (правило направлений `verifyModuleDependencies`), а кадр без
+     * экрана за затемнением показывал бы прозрачную подложку вместо затемнения. Верхний слой
+     * при этом тот же, что в продукте: шторка поверх корня.
+     */
+    @Composable
+    private fun ExportSurface(state: ExportHistoryUiState) {
+        SklyankaTheme {
+            Box(modifier = Modifier.fillMaxWidth()) {
+                HistoryScreen(state = HistoryStates.september(), onIntent = {})
+                SklyankaBottomSheet(visible = true, onDismiss = {}) {
+                    state.sheet?.let { sheet -> ExportHistorySheet(sheet, state.outcome, onIntent = {}) }
+                }
+            }
+        }
     }
 
     /** Отмена системного диалога: сообщение первым элементом, состав и действия на месте. */

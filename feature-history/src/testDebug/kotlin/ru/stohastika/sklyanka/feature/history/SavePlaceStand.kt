@@ -20,10 +20,12 @@ import androidx.test.core.app.ApplicationProvider
 import org.robolectric.Shadows.shadowOf
 import ru.stohastika.sklyanka.domain.history.AdherenceCalculator
 import ru.stohastika.sklyanka.domain.history.BuildDoctorReportUseCase
+import ru.stohastika.sklyanka.domain.history.BuildExtendedSectionsUseCase
 import ru.stohastika.sklyanka.domain.history.MissedPatternRule
 import ru.stohastika.sklyanka.domain.history.ObserveAdherenceUseCase
 import ru.stohastika.sklyanka.domain.history.OnTimeRule
 import ru.stohastika.sklyanka.domain.history.TransferDoctorReportUseCase
+import ru.stohastika.sklyanka.domain.pro.ObserveProStatusUseCase
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import java.time.LocalDate
 
@@ -84,8 +86,18 @@ internal class SavePlaceStand {
             log,
         ),
         transferReport = TransferDoctorReportUseCase(transfer, activeProfile, log),
+        buildExtended = BuildExtendedSectionsUseCase(
+            activeProfile = activeProfile,
+            history = history,
+            calculator = AdherenceCalculator(OnTimeRule.TwoHours),
+            missedPattern = MissedPatternRule(),
+            time = clock,
+        ),
         renderer = renderer,
         missedPattern = MissedPatternRule(),
+        // Доступ «Про» есть: стенд проверяет исходы передачи базового документа, и гейт
+        // состава ему безразличен (SKL-119).
+        proStatus = ObserveProStatusUseCase(FakeSubscriptionCache().apply { own(PRO_UNTIL) }, clock),
         time = clock,
     )
 
@@ -160,3 +172,6 @@ internal class SavePlaceStand {
         const val CHOOSER_PACKAGE = "com.android.documentsui"
     }
 }
+
+/** Срок подписки стенда: доступ есть, и до него ещё далеко. */
+private val PRO_UNTIL = java.time.LocalDate.of(2026, 11, 13)

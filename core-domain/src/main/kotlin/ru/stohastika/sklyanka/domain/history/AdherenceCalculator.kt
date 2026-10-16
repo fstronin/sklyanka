@@ -50,7 +50,7 @@ class AdherenceCalculator(
 
     fun of(slice: HistorySlice, window: HistoryWindow, today: LocalDate, zone: ZoneId): AdherencePeriod {
         val medications = slice.medications.associateBy { it.id }
-        val counted = slice.intakes.filter { intake -> isCounted(intake, medications[intake.medicationId], zone) }
+        val counted = countedIntakes(slice, zone)
         val byDate = counted.groupBy { it.scheduledAt.toLocalDate() }
 
         val days = window.dates.map { date ->
@@ -140,24 +140,37 @@ class AdherenceCalculator(
         return intake.status == IntakeStatus.TAKEN && actedAt != null && rule.isOnTime(intake.scheduledAt, actedAt)
     }
 
-    /**
-     * Приём участвует в картине месяца.
-     *
-     * Запись, чьё лекарство выборка не принесла, отбрасывается: это либо лекарство
-     * другого профиля, либо строка с непонятым значением перечисления (МГ-6) — и в обоих
-     * случаях приписывать её профилю нельзя.
-     */
-    private fun isCounted(intake: Intake, medication: Medication?, zone: ZoneId): Boolean = when {
-        medication == null -> false
-        !medication.isArchived -> true
-        // Граница по назначенному времени, а не по моменту отметки: знаменатель — это то,
-        // что приложение обещало человеку (ОВ-44, тот же выбор, что у CourseOutcome).
-        else -> !intake.scheduledAt.toLocalDate().isAfter(CourseOutcome.archivedDate(medication, zone))
-    }
-
     private companion object {
         const val LOW_ADHERENCE_BELOW = 0.8
     }
+}
+
+/**
+ * Приёмы среза, вошедшие в картину периода.
+ *
+ * Правило одно на весь продукт: им считается и приверженность, и состав отчёта, и выгрузка
+ * истории (SKL-119). Второго его изложения быть не может — разойдясь, они показали бы врачу
+ * один период, а выгрузили другой.
+ *
+ * Запись, чьё лекарство выборка не принесла, отбрасывается: это либо лекарство другого
+ * профиля, либо строка с непонятым значением перечисления (МГ-6) — и в обоих случаях
+ * приписывать её профилю нельзя.
+ */
+internal fun countedIntakes(slice: HistorySlice, zone: ZoneId): List<Intake> {
+    val medications = slice.medications.associateBy { it.id }
+    return slice.intakes.filter { intake -> isCountedInPeriod(intake, medications[intake.medicationId], zone) }
+}
+
+/**
+ * Приём участвует в картине периода.
+ *
+ * Граница по назначенному времени, а не по моменту отметки: знаменатель — это то, что
+ * приложение обещало человеку (ОВ-44, тот же выбор, что у `CourseOutcome`).
+ */
+internal fun isCountedInPeriod(intake: Intake, medication: Medication?, zone: ZoneId): Boolean = when {
+    medication == null -> false
+    !medication.isArchived -> true
+    else -> !intake.scheduledAt.toLocalDate().isAfter(CourseOutcome.archivedDate(medication, zone))
 }
 
 /**

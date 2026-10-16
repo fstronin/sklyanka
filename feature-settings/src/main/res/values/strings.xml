@@ -259,5 +259,8 @@
     <string name="settings_policy">Политика конфиденциальности</string>
     <!-- Плейсхолдер: адрес страницы политики — внешний вход заказчика (ОВ-2). -->
     <string name="settings_policy_url" translatable="false">https://example.invalid/sklyanka/privacy</string>
-</resources>
 
+    <!-- Строка «Экспорт истории» в блоке «Данные» (SKL-119, §5.16); слова — из нормы дизайна. -->
+    <string name="settings_export_history">Экспорт истории</string>
+    <string name="settings_export_note">CSV для Excel</string>
+</resources>

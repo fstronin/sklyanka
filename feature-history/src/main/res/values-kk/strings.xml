@@ -8,7 +8,7 @@
     <string name="history_tile_misses">айдағы өткізілулер</string>
 
     <string name="history_value_dash">—</string>
-    <string name="history_percent">%1$d %%</string>
+    <string name="history_percent">%1$d %%</string>
     <string name="history_percent_less_than_one">&lt; 1 %</string>
 
     <string name="cd_previous_month">Алдыңғы ай</string>
@@ -109,4 +109,55 @@
     <string name="history_date_pattern">d MMMM</string>
     <string name="history_date_pattern_full">d MMMM yyyy</string>
     <string name="history_datetime_pattern">d MMMM yyyy, HH:mm</string>
+
+    <!--
+      Есеп құрамы және тарихты экспорттау (SKL-119, дизайн нормасы §5.15–§5.16).
+      Мәтіндер нормадан алынды; үлгі сөйлемі мен кезең жолдары бұрыннан бар
+      `history_insight_*` және `report_document_*` кілттерін пайдаланады.
+    -->
+    <string name="history_report_composition_section">Есеп құрамы</string>
+    <string name="history_report_composition_base">Негізгі</string>
+    <string name="history_report_composition_base_note">Түйіндеме және дәрілер бойынша бөлу</string>
+    <string name="history_report_composition_extended">Кеңейтілген</string>
+    <string name="history_report_composition_extended_note">Кезеңдер, динамика, қалдырылған қабылдау үлгісі</string>
+
+    <string name="history_export_title">Тарихты экспорттау</string>
+    <string name="history_export_label_records">Жазбалар</string>
+    <string name="history_export_format_value" translatable="false">CSV</string>
+    <string name="history_export_note">Файл медициналық деректерді қамтиды және ашық түрде беріледі</string>
+    <string name="history_export_cancelled">Файлды беру тоқтатылды</string>
+    <string name="history_export_share_failed">Экспортты беру мүмкін болмады</string>
+    <string name="history_export_save_failed">Файл сақталмады</string>
+    <string name="history_export_no_space">Орын жеткіліксіз. Файл сақталмады</string>
+    <string name="history_export_success_title">Файл дайындалды</string>
+    <string name="history_export_file_name" translatable="false">sklyanka-history-%1$s.csv</string>
+    <string name="history_export_file_pattern" translatable="false">yyyy-MM-dd</string>
+    <!-- Шаблон колонки «Время отметки»: машинная форма для таблицы (решение дизайнера 16.10.2026). -->
+    <string name="history_export_acted_at_pattern" translatable="false">yyyy-MM-dd HH:mm</string>
+    <string name="history_export_media_type" translatable="false">text/csv</string>
+
+    <string name="history_export_header_profile">Профиль: %1$s</string>
+    <string name="history_export_header_period">Кезең: %1$s</string>
+    <string name="history_export_column_date">Күні</string>
+    <string name="history_export_column_planned_time">Жоспар уақыты</string>
+    <string name="history_export_column_medication">Дәрі</string>
+    <string name="history_export_column_dose">Қабылдау дозасы</string>
+    <string name="history_export_column_strength">Препарат дозасы, егер көрсетілсе</string>
+    <string name="history_export_column_status">Мәртебесі</string>
+    <string name="history_export_column_acted_at">Белгілеу уақыты</string>
+    <string name="history_export_column_on_time">Уақытында</string>
+    <string name="history_export_status_taken">қабылданды</string>
+    <string name="history_export_status_on_demand">қажеттілігіне қарай қабылданды</string>
+    <string name="history_export_status_skipped">қалдырылды — адам белгілеген</string>
+    <string name="history_export_status_missed">қалдырылды — белгісіз</string>
+    <string name="history_export_on_time_yes">иә</string>
+    <string name="history_export_on_time_no">жоқ</string>
+
+    <string name="report_document_compare_title">КЕЗЕҢДЕРДІ САЛЫСТЫРУ</string>
+    <string name="report_compare_previous_period">Алдыңғы кезең: %1$s — %2$s</string>
+    <string name="report_compare_previous_period_single">Алдыңғы кезең: %1$s</string>
+    <string name="report_document_dynamics_title">АЙЛАР БОЙЫНША ДИНАМИКА</string>
+    <string name="report_dynamics_count">%1$d / %2$d</string>
+    <string name="report_document_pattern_title">ҚАЛДЫРЫЛҒАН ҚАБЫЛДАУ ҮЛГІСІ</string>
+    <string name="report_pattern_numbers">Осы уақыттағы қалдырылған қабылдаулар: кезеңде %2$d ішінен %1$d</string>
 </resources>

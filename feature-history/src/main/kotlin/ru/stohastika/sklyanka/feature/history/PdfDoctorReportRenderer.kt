@@ -3,6 +3,7 @@ package ru.stohastika.sklyanka.feature.history
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
 import ru.stohastika.sklyanka.domain.history.DoctorReport
+import ru.stohastika.sklyanka.domain.history.ExtendedReportSections
 import ru.stohastika.sklyanka.domain.history.ReportDocument
 import java.time.ZoneId
 import javax.inject.Inject
@@ -29,8 +30,8 @@ class PdfDoctorReportRenderer @Inject constructor(@ApplicationContext private va
 
     private val composer = ReportPdfComposer(context)
 
-    override fun render(report: DoctorReport, zone: ZoneId): ReportDocument {
-        val content = composer.compose(report, zone)
+    override fun render(report: DoctorReport, zone: ZoneId, extended: ExtendedReportSections): ReportDocument {
+        val content = composer.compose(report, zone, extended)
         val metrics = AndroidPdfTextMetrics(context)
         val geometry = PdfPageGeometry()
         val pages = PdfReportLayout(metrics, geometry).paginate(content)

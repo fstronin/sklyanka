@@ -4,6 +4,7 @@ import androidx.compose.runtime.Immutable
 import ru.stohastika.sklyanka.domain.history.AdherencePeriod
 import ru.stohastika.sklyanka.domain.history.ReportDocument
 import ru.stohastika.sklyanka.domain.history.ReportPreset
+import ru.stohastika.sklyanka.domain.history.ReportScope
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.YearMonth
@@ -58,6 +59,13 @@ data class HistoryUiState(
 data class ReportUi(
     val document: ReportDocument,
     val composition: ReportComposition,
+    /**
+     * Выбранный состав: «Базовый» по умолчанию, «Расширенный» — только с активным доступом.
+     *
+     * Виден шторке, потому что отметку выбора рисует она; решает же, что произойдёт по нажатию,
+     * `ViewModel` — доступ «Про» состоянием разметки не становится (§5.15, П-7).
+     */
+    val scope: ReportScope = ReportScope.BASE,
     /** Выбранный пресет периода: подсвечивает чип и решает, показывать ли «С»/«По». */
     val preset: ReportPreset,
     /** Границы «Другого периода»: сохраняются в пределах открытой шторки. */
