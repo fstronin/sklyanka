@@ -63,6 +63,40 @@ internal fun Lint.configureSklyankaLint(rootProject: Project) {
 }
 
 /**
+ * Lint не анализирует тестовые исходники (SKL-152).
+ *
+ * Задачи анализа тестовых компонентов (`lintAnalyze<Variant>UnitTest`,
+ * `lintAnalyze<Variant>AndroidTest`) не проверяют ни одного требования проекта: его
+ * проверки — платформенные и все на уровне ошибки (`NewApi`, `InlinedApi`, `HardcodedText`,
+ * `ManifestOrder`), а `checkTestSources` в проекте выключен, поэтому ошибок там быть не может.
+ * Находки этих задач — только предупреждения чужого плагина Compose (`ComposableNaming`
+ * в шагах стенда, замер 16.10.2026: семь в `app/src/testDebug`), а предупреждение
+ * при `warningsAsErrors = false` сборку не останавливает.
+ *
+ * Цена же высока и уже оплачена: анализ Kotlin-исходников
+ * (`AndroidLintWorkAction` → Kotlin Analysis API, FIR) падал недетерминированно и ронял
+ * прогон — 09.10.2026 `:feature-meds:lintAnalyzeDebugUnitTest` (`ArchiveViewModelTest.kt`),
+ * 13.10.2026 `:app:lintAnalyzeDebugAndroidTest` (`ArchiveDeviceTest.kt`) и
+ * `:core-data:lintAnalyzeDebugAndroidTest` (`Refusals.kt`). Файл каждый раз был другим,
+ * а повторная та же команда — зелёной: отказ живёт в инструменте, а не в проверяемом коде,
+ * и лечится только удалением самого анализа (проверки продукта при этом не сужаются).
+ *
+ * Продуктовый анализ (`lintAnalyze<Variant>`) остаётся на месте и проверяется отдельно:
+ * страж `verifyStaticAnalysisRules` держит правила detekt, а живость lint проверена
+ * нарочным нарушением `HardcodedText` в продуктовом файле (см. отчёт задачи SKL-152).
+ */
+internal fun Project.skipLintOnTestComponents() {
+    tasks.matching { it.name.startsWith(LINT_ANALYZE) && TEST_COMPONENT_SUFFIXES.any(it.name::endsWith) }
+        .configureEach { enabled = false }
+}
+
+/** Имя задачи анализа компонента у AGP: `lintAnalyze<Variant>` и `lintAnalyze<Component><Variant>`. */
+private const val LINT_ANALYZE = "lintAnalyze"
+
+/** Компоненты, чьи исходники lint больше не разбирает: юнит-тесты и инструментальные. */
+private val TEST_COMPONENT_SUFFIXES = listOf("UnitTest", "AndroidTest")
+
+/**
  * Параметры инструментального прогона на эмуляторе (SKL-27).
  *
  * До этой задачи ни одна инструментальная проверка не выполнялась ни разу, и требований
