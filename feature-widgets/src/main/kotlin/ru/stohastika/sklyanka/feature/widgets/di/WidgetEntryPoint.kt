@@ -5,6 +5,7 @@ import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
+import ru.stohastika.sklyanka.domain.appearance.ObserveAccentThemeUseCase
 import ru.stohastika.sklyanka.domain.intake.MarkIntakeUseCase
 import ru.stohastika.sklyanka.domain.intake.SweepMissedIntakesUseCase
 import ru.stohastika.sklyanka.domain.time.TimeSource
@@ -45,6 +46,19 @@ interface WidgetEntryPoint {
 
     /** Привязка экземпляра плиты к лекарству у «по лекарству» (Р-34). */
     fun bindings(): WidgetBindingStore
+
+    /**
+     * Выбранная акцентная тема (§2.5, §5.11, SKL-120).
+     *
+     * Плита читает те же роли, что экраны, и акцент владельца у неё — акцент темы,
+     * а в тёмной среде — её тёмное значение (Р-23, §9). В чужом профиле акцент — цвет
+     * профиля, и он сильнее темы (ПРФ-12), поэтому тему там не спрашивают.
+     *
+     * Шов тот же, каким тему читает приложение ([ru.stohastika.sklyanka.domain.appearance
+     * .ObserveAccentThemeUseCase]): второй путь чтения разошёлся бы с первым, и плита
+     * показала бы не ту краску, что экран.
+     */
+    fun accentTheme(): ObserveAccentThemeUseCase
 
     /** Перерисовка плит по событию (ПР-1, П-7): одна точка у фоновых просителей. */
     fun refresher(): WidgetRefresher

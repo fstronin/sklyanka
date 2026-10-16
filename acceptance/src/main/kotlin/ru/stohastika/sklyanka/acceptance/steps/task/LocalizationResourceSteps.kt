@@ -87,7 +87,7 @@ class LocalizationResourceSteps {
     fun theBuildKeepsOnlyTheDeclaredLanguages() {
         val localized = modules().flatMap { module ->
             File(RepositoryLayout.root, "$module/src/main/res").listFiles()
-                ?.filter { it.isDirectory && it.name.startsWith("values-") }
+                ?.filter { it.isDirectory && LANGUAGE_QUALIFIER.matches(it.name) }
                 ?.map { "$module/${it.name}" }
                 .orEmpty()
         }
@@ -227,6 +227,17 @@ class LocalizationResourceSteps {
     private var declared: Set<String> = emptySet()
 
     private companion object {
+
+        /**
+         * Каталог, который называет **язык**: `values-en-rUS` — да, `values-night` — нет.
+         *
+         * Квалификатор ресурса — не только язык: `values-night` несёт роли тёмной среды (§9),
+         * `values-v26` — сборку API. Языковыми считаются каталоги вида «две буквы языка
+         * и необязательный регион»: объявленные языки обязаны совпасть с этим набором,
+         * а прочие квалификаторы к нему не относятся и проверке не подлежат.
+         */
+        val LANGUAGE_QUALIFIER = Regex("""values-[a-z]{2}(-r[A-Z]{2})?""")
+
         const val APP_MODULE = "app"
         const val BASE = "values"
         const val RUSSIAN = "ru"

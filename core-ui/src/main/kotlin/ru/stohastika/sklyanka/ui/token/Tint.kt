@@ -68,18 +68,40 @@ internal fun tint(base: Color, profile: Color, ratio: Float): Color = Color(
  * зависит от того, чей профиль; `text` и `textMuted` — контраст важнее оттенка;
  * `archiveBackground` — архив в контексте профиля не подкрашивается.
  */
-internal fun tintedColors(light: SklyankaColors, profile: Color): SklyankaColors = light.copy(
-    accent = profile,
-    accentSoft = tint(light.surface, profile, TINT_SOFT),
-    accentBorder = tint(light.accentBorder, profile, TINT_BORDER),
-    background = tint(light.background, profile, TINT_BACKGROUND),
-    profileBackground = tint(light.background, profile, TINT_BACKGROUND),
-    profileHeader = tint(light.background, profile, TINT_HEADER),
-    line = tint(light.line, profile, TINT_LINE),
-    lineOnSurface = tint(light.lineOnSurface, profile, TINT_LINE),
-    lineInteractive = tint(light.lineInteractive, profile, TINT_LINE),
-    profileStripe = profile,
-)
+internal fun tintedColors(base: SklyankaColors, profile: Color, dark: Boolean): SklyankaColors {
+    // Среда уходит из подложки и чернил, но не из акцента (§2.2, формула семьи):
+    // 1. подложка семьи — «бумага»: цвет профиля, разбавленный к белой поверхности 0,14,
+    //    одно значение в обеих средах — как у подложки темы, которая тоже светлая всегда;
+    // 2. чернила на ней — цвет профиля, затемнённый к основному тексту 0,50, тоже одно значение;
+    // 3. рамка лежит на поверхности **среды**, поэтому разбавляется к ней 0,20 — светлая рамка
+    //    вокруг тёмной карточки читалась бы браком;
+    // 4. сам акцент (и полоса профиля) в тёмной среде поднимается к светлому значению 0,55 —
+    //    к тому же #F8F6EF, каким тёмная среда набирает текст (§9, «фон и текст меняются
+    //    местами»): цвет профиля на тёмном фоне даёт 2,4–3,2 и ролью текста быть не может.
+    val raised = tint(Palette.Background, profile, PROFILE_RAISED_RATIO)
+    return base.copy(
+        accent = if (dark) raised else profile,
+        accentSoft = tint(Palette.Surface, profile, PROFILE_SOFT_RATIO),
+        onAccentSoft = onAccentSoftOf(profile),
+        accentBorder = tint(base.surface, profile, PROFILE_BORDER_RATIO),
+        background = tint(base.background, profile, TINT_BACKGROUND),
+        profileBackground = tint(base.background, profile, TINT_BACKGROUND),
+        profileHeader = tint(base.background, profile, TINT_HEADER),
+        line = tint(base.line, profile, TINT_LINE),
+        lineOnSurface = tint(base.lineOnSurface, profile, TINT_LINE),
+        lineInteractive = tint(base.lineInteractive, profile, TINT_LINE),
+        profileStripe = if (dark) raised else profile,
+    )
+}
+
+/** Доля подложки чужого профиля: цвет профиля, разбавленный к белой поверхности (§2.2). */
+private const val PROFILE_SOFT_RATIO = 0.14f
+
+/** Доля рамки чужого профиля: к поверхности **среды** — рамка лежит на ней (§2.2). */
+private const val PROFILE_BORDER_RATIO = 0.20f
+
+/** Доля поднятия акцента и полосы чужого профиля в тёмной среде (§2.2, §9). */
+private const val PROFILE_RAISED_RATIO = 0.55f
 
 /** Доля затемнения нажатого элемента. Подобрана так, чтобы нажатие было видно, но не мигало. */
 private const val PRESSED_RATIO = 0.16f

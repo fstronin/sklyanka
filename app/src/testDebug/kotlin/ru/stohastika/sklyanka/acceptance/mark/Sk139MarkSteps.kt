@@ -358,6 +358,8 @@ class Sk139MarkSteps {
 
     @И("новых ролей интерфейса не появилось")
     fun noNewInterfaceRoles() {
+        // «warningOnSoft» — не новая тема, а место применения: предупреждение на светлой
+        // подложке мягкого акцента (SKL-120, V-74, §9): значение то же, что у «warning».
         assertEquals(INTERFACE_ROLES, interfaceRoleNames(), "the set of interface roles changed")
     }
 
@@ -699,6 +701,7 @@ class Sk139MarkSteps {
             "textOnDark",
             "textTertiary",
             "warning",
+            "warningOnSoft",
         ).sorted()
     }
 }

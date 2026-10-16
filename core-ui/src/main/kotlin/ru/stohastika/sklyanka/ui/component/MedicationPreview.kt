@@ -55,7 +55,8 @@ fun MedicationPreview(
             MedicationGlyph(
                 form = form,
                 shape = shape,
-                color = colors.accent,
+                // Плитка светлая `accentSoft` — знак формы на ней цветом подписи (§9, V-75).
+                color = colors.onAccentSoft,
                 size = SklyankaSizes.PreviewGlyph,
             )
         }

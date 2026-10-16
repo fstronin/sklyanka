@@ -9,7 +9,13 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
+import ru.stohastika.sklyanka.domain.appearance.ObserveAccentThemeUseCase
+import ru.stohastika.sklyanka.domain.appearance.ObserveIconVariantUseCase
+import ru.stohastika.sklyanka.domain.appearance.SetAccentThemeUseCase
+import ru.stohastika.sklyanka.domain.appearance.SetIconVariantUseCase
 import ru.stohastika.sklyanka.domain.transfer.AppStamp
+import ru.stohastika.sklyanka.feature.settings.SettingsAppearance
+import ru.stohastika.sklyanka.feature.settings.SettingsEnvironment
 import ru.stohastika.sklyanka.feature.settings.SettingsNavigation
 import ru.stohastika.sklyanka.feature.settings.SettingsRoute
 import ru.stohastika.sklyanka.feature.settings.SettingsSystemStateReader
@@ -83,15 +89,26 @@ internal object SettingsRemindersStand {
         context = world.profileSession.contextProvider,
         medications = world.repositories.medicationStore,
         switchProfile = world.profileSession.switch,
-        system = SettingsSystemStateReader(
-            reminders = world.reminders.settingsStore,
-            permissions = world.system,
+        // Внешние ответы — одним узлом (НФТ-52, SKL-122): стенд собирает ту же модель, что продукт.
+        environment = SettingsEnvironment(
+            system = SettingsSystemStateReader(
+                reminders = world.reminders.settingsStore,
+                permissions = world.system,
+            ),
+            stamp = AppStamp(versionName = "1.0", versionCode = 1),
+            proStatus = world.pro.statusUseCase,
         ),
-        stamp = AppStamp(versionName = "1.0", versionCode = 1),
-        // Состояние подписки «Про» — тем же сценарием мира, что у продукта (SKL-122):
-        // стенд собирает настоящую модель настроек, и строка блока получает своё значение.
-        proStatus = world.pro.statusUseCase,
+        // Оформление (SKL-120, §5.17): стенд собирает ту же модель, что продукт.
+        appearance = SettingsAppearance(
+            observeTheme = ObserveAccentThemeUseCase(appearance),
+            observeIcon = ObserveIconVariantUseCase(appearance),
+            setTheme = SetAccentThemeUseCase(appearance, world.pro.statusUseCase),
+            setIcon = SetIconVariantUseCase(appearance, world.pro.statusUseCase),
+        ),
     )
+
+    /** Настройки оформления стенда: базовые «Олива» и «Ледяная» (Р-20, Р-56). */
+    private val appearance = FakeAppearancePreferences()
 
     /** Забыть подменённый главный диспетчер: стенд не должен влиять на соседние тесты. */
     fun dropMainDispatcher() {

@@ -58,9 +58,20 @@ fun startupFrame(
     today: TodayUiState,
     /** Почему база закрыта: новее ожидаемой или не хватает места на копию (Р-44, `ADR-0012` пп. 3, 7). */
     block: DatabaseBlock? = null,
+    /**
+     * Прочитано ли выбранное оформление (SKL-120, §5.17).
+     *
+     * Пока тема и вариант иконки не прочитаны, первый экран не готов: он отрисуется
+     * базовой «Оливой» и холодной иконкой, а через кадр сменится выбранным. Мигание
+     * чужого цвета — не косметика: человек с «Аметистом» видит его на своём экране,
+     * и это тот же класс ошибки, что пустой кадр «Сегодня» вместо заставки (ОВ-87).
+     * Для стенда и тестов, где оформление читать неоткуда, значение по умолчанию «готово».
+     */
+    appearanceReady: Boolean = true,
 ): StartupFrame = when {
     block != null -> StartupFrame.DatabaseBlocked(block)
     destination == null -> StartupFrame.AppSplash
+    !appearanceReady -> StartupFrame.AppSplash
     destination == StartDestination.Onboarding && onboardingUnseen && !onboardingDone -> StartupFrame.FirstScreen
     today is TodayUiState.Opening -> StartupFrame.AppSplash
     else -> StartupFrame.FirstScreen

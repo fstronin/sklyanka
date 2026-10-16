@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Подложка адаптивной иконки тёплого варианта («Про», §2.4, SKL-120): тёплая бумага
+  `#EFE7DB` в светлой системной теме.
+
+  Подложка адаптивной иконки заливается целиком: система обрежет её своей маской —
+  круглой, квадратной со скруглением или фирменной EMUI, — и любой незалитый угол
+  вылез бы ровно на той маске, которой не было под рукой.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+  <path
+      android:pathData="M0,0 h108 v108 h-108 z"
+      android:fillColor="@color/warm_mark_tile_light" />
+</vector>

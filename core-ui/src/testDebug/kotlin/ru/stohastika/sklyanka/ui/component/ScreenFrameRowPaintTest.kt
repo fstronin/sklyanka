@@ -160,7 +160,8 @@ class ScreenFrameRowPaintTest {
         return Frame(pixels, bitmap.width)
     }
 
-    private fun tintedForForeignProfile(): SklyankaColors = tintedColors(lightColors(), ProfileColor.Terracotta.color)
+    private fun tintedForForeignProfile(): SklyankaColors =
+        tintedColors(lightColors(), ProfileColor.Terracotta.color, dark = false)
 
     /** Пиксели снимка с доступом по координатам: плотность стенда — одна точка на пиксель. */
     private data class Frame(val pixels: IntArray, val width: Int) {

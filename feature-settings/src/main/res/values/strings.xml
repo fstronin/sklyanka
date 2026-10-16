@@ -168,6 +168,21 @@
     <string name="settings_rubric_system">Система</string>
     <string name="settings_rubric_data">Данные</string>
 
+    <!-- ==================================================================== -->
+    <!-- Блок «Оформление» (SKL-120, §5.17). Девять ключей идут во все шесть   -->
+    <!-- каталогов (Р-2, НФТ-42); слова — из §10 нормы дизайна. Тема и вариант -->
+    <!-- иконки — возможности «Про» (Р-31), поэтому у обеих строк есть метка. -->
+    <!-- ==================================================================== -->
+    <string name="settings_appearance_rubric">Оформление</string>
+    <string name="settings_theme_row">Акцентная тема</string>
+    <string name="settings_icon_row">Иконка приложения</string>
+    <string name="theme_olive">Олива</string>
+    <string name="theme_indigo">Индиго</string>
+    <string name="theme_pine">Хвоя</string>
+    <string name="theme_amethyst">Аметист</string>
+    <string name="icon_variant_ice">Ледяная</string>
+    <string name="icon_variant_warm">Тёплая</string>
+
     <!-- ===== Профили ===== -->
     <string name="settings_profile_self">Мои лекарства</string>
     <string name="settings_profile_self_initial">Я</string>

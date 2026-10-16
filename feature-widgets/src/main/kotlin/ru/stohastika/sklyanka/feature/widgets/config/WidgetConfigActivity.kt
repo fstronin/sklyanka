@@ -8,6 +8,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -16,12 +17,13 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import ru.stohastika.sklyanka.domain.appearance.AccentTheme
+import ru.stohastika.sklyanka.domain.appearance.ObserveAccentThemeUseCase
 import ru.stohastika.sklyanka.domain.pro.ProBenefit
 import ru.stohastika.sklyanka.feature.widgets.glance.WidgetType
 import ru.stohastika.sklyanka.feature.widgets.open.ProShowcaseTarget
 import ru.stohastika.sklyanka.ui.locale.withInterfaceLocale
 import ru.stohastika.sklyanka.ui.profile.ProfileChrome
-import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import javax.inject.Inject
 
 /**
@@ -41,6 +43,13 @@ class WidgetConfigActivity : ComponentActivity() {
 
     @Inject
     lateinit var showcase: ProShowcaseTarget
+
+    /**
+     * Акцентная тема «Про» (Р-31, §2.5): экран обязан нести выбор человека, а не базовую
+     * «оливу» — тем же швом, каким его читает корневая активность (SKL-120).
+     */
+    @Inject
+    lateinit var observeAccentTheme: ObserveAccentThemeUseCase
 
     private val viewModel: WidgetConfigViewModel by viewModels()
 
@@ -62,23 +71,24 @@ class WidgetConfigActivity : ComponentActivity() {
             // Экран ставится в оформление активного профиля (§5.12): человек видит, из чьего
             // профиля выбирает лекарство, и признаки чужого профиля рисуют компоненты.
             val state by viewModel.state.collectAsState()
-            ProfileChrome(state = state.profile) {
-                SklyankaTheme {
-                    // Витрина рисуется поверх экрана и не уводит с него (Р-83, §5.12):
-                    // по её закрытии доступ перечитывается, и установка продолжается тем же
-                    // экраном, если подписка появилась.
-                    var showcaseOpen by remember { mutableStateOf(false) }
-                    WidgetConfigScreen(
-                        state = state,
-                        onSelectType = viewModel::selectType,
-                        onSelectMedication = viewModel::selectMedication,
-                        onComplete = ::complete,
-                        onOpenPro = { showcaseOpen = true },
-                    )
-                    showcase.Showcase(visible = showcaseOpen, benefit = ProBenefit.WIDGETS) {
-                        showcaseOpen = false
-                        viewModel.refreshAccess()
-                    }
+            // Среда и тема — те же, что у всего приложения (Р-23, §2.5): вложенной обёртки
+            // с умолчаниями нет, иначе выбранный «Аметист» до экрана настройки не доходил бы.
+            val accentTheme by observeAccentTheme().collectAsState(initial = AccentTheme.DEFAULT)
+            ProfileChrome(state = state.profile, theme = accentTheme, dark = isSystemInDarkTheme()) {
+                // Витрина рисуется поверх экрана и не уводит с него (Р-83, §5.12):
+                // по её закрытии доступ перечитывается, и установка продолжается тем же
+                // экраном, если подписка появилась.
+                var showcaseOpen by remember { mutableStateOf(false) }
+                WidgetConfigScreen(
+                    state = state,
+                    onSelectType = viewModel::selectType,
+                    onSelectMedication = viewModel::selectMedication,
+                    onComplete = ::complete,
+                    onOpenPro = { showcaseOpen = true },
+                )
+                showcase.Showcase(visible = showcaseOpen, benefit = ProBenefit.WIDGETS) {
+                    showcaseOpen = false
+                    viewModel.refreshAccess()
                 }
             }
         }

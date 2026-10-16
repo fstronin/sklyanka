@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
+import ru.stohastika.sklyanka.domain.appearance.AccentTheme
 import ru.stohastika.sklyanka.ui.component.LocalScreenTopInset
 import ru.stohastika.sklyanka.ui.component.ProfileStripe
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
@@ -53,8 +54,21 @@ val LocalProfileChrome = staticCompositionLocalOf<ProfileChromeState> { ProfileC
  * а экран без индикации — дыра в защите (ПРФ-12). В корне забыть нечего.
  */
 @Composable
-fun ProfileChrome(state: ProfileChromeState, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
-    SklyankaTheme(profile = state.accent) {
+fun ProfileChrome(
+    state: ProfileChromeState,
+    modifier: Modifier = Modifier,
+    /**
+     * Акцентная тема «Про» (§2.5, SKL-120). Через обёртку, а не мимо неё: она ставит
+     * [SklyankaTheme] — единственное место, где роли становятся действующими, — и тема
+     * с тёмной средой обязаны прийти вместе с оформлением профиля, иначе экран под
+     * обёрткой получил бы базовый акцент «Оливы» при выбранной «Аметисте».
+     */
+    theme: AccentTheme = AccentTheme.DEFAULT,
+    /** Тёмная среда интерфейса из системной настройки (Р-23, §9). */
+    dark: Boolean = false,
+    content: @Composable () -> Unit,
+) {
+    SklyankaTheme(profile = state.accent, theme = theme, dark = dark) {
         // Верхний инсет обёртка знает первой — она и резервирует высоту системной панели
         // полосой цвета шапки. Тот же инсет она отдаёт потомкам (Р-54): шапка считает от него
         // своё поле, и правило «инсет + поле ≤ 56 dp» проверяется на стенде без окна, а не

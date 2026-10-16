@@ -48,7 +48,8 @@ fun Banner(
         leading = {
             when (kind) {
                 BannerKind.Warning -> WarningGlyph(
-                    color = colors.warning,
+                    // Подложка баннера — светлая `accentSoft`, и краски на ней светлые (§9, V-74).
+                    color = colors.warningOnSoft,
                     modifier = Modifier.semanticsLabel(stringResource(R.string.cd_warning)),
                 )
 

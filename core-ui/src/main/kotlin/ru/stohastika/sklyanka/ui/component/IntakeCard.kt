@@ -58,6 +58,8 @@ fun IntakeCard(
     val cardShape = SklyankaShapes.Card
     val background = if (state == IntakeCardState.AsNeeded) colors.background else colors.surface
     val border = when (state) {
+        // Плашка «приём идёт» — светлая `accentSoft`: знак формы читается на ней
+        // цветом подписи, а не акцентом (НФТ-33, §9, V-75).
         IntakeCardState.DueNow -> colors.accentBorder
         else -> colors.lineOnSurface
     }
@@ -121,12 +123,16 @@ fun IntakeCard(
 private fun IconPlate(state: IntakeCardState, form: MedicationForm?, shape: TabletShape?) {
     val colors = SklyankaTheme.colors
     val plate = when (state) {
+        // Плашка «приём идёт» — светлая `accentSoft`: знак формы читается на ней
+        // цветом подписи, а не акцентом (НФТ-33, §9, V-75).
         IntakeCardState.DueNow -> colors.accentSoft
         IntakeCardState.Taken -> colors.takenSoft
         else -> colors.neutralSoft
     }
     val glyph = when (state) {
-        IntakeCardState.DueNow -> colors.accent
+        // Плашка «приём идёт» — светлая `accentSoft`: знак формы читается на ней
+        // цветом подписи, а не акцентом (НФТ-33, §9, V-75).
+        IntakeCardState.DueNow -> colors.onAccentSoft
         IntakeCardState.Taken -> colors.taken
         else -> colors.textMuted
     }

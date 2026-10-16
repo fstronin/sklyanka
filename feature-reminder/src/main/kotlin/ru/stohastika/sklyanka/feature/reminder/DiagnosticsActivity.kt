@@ -3,6 +3,7 @@ package ru.stohastika.sklyanka.feature.reminder
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
@@ -11,9 +12,12 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import dagger.hilt.android.AndroidEntryPoint
+import ru.stohastika.sklyanka.domain.appearance.AccentTheme
+import ru.stohastika.sklyanka.domain.appearance.ObserveAccentThemeUseCase
 import ru.stohastika.sklyanka.domain.reminder.ReminderJournalDocument
 import ru.stohastika.sklyanka.ui.locale.withInterfaceLocale
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
@@ -67,15 +71,29 @@ class DiagnosticsActivity : ComponentActivity() {
     @Inject
     lateinit var settingsFixer: ReminderSettingsFixer
 
+    /**
+     * Акцентная тема «Про» (Р-31, §2.5): экран обязан нести выбор человека, а не базовую
+     * «оливу» — тем же швом, каким его читает корневая активность (SKL-120).
+     */
+    @Inject
+    lateinit var observeAccentTheme: ObserveAccentThemeUseCase
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Светлый экран — тёмные значки системных панелей (SKL-72 §4).
+        // Значки панелей читают среду у **системы**, а не у композиции (SKL-72 §4, Р-23).
         enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.light(AndroidColor.TRANSPARENT, AndroidColor.TRANSPARENT),
-            navigationBarStyle = SystemBarStyle.light(AndroidColor.TRANSPARENT, AndroidColor.TRANSPARENT),
+            statusBarStyle = SystemBarStyle.auto(AndroidColor.TRANSPARENT, AndroidColor.TRANSPARENT) { resources ->
+                resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
+            },
+            navigationBarStyle = SystemBarStyle.auto(AndroidColor.TRANSPARENT, AndroidColor.TRANSPARENT) { resources ->
+                resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
+            },
         )
         setContent {
-            SklyankaTheme {
+            // Среда — из системной настройки (Р-23), тема — из выбора человека:
+            // экран состояния базы не исключение, у него те же роли, что у всех (§9).
+            val accentTheme by observeAccentTheme().collectAsState(initial = AccentTheme.DEFAULT)
+            SklyankaTheme(theme = accentTheme, dark = isSystemInDarkTheme()) {
                 val state by viewModel.state.collectAsState()
                 val journalExportLauncher = rememberLauncherForActivityResult(
                     contract = ActivityResultContracts.CreateDocument(ReminderJournalDocument.MEDIA_TYPE),

@@ -9,6 +9,7 @@ import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.provideContent
+import ru.stohastika.sklyanka.domain.appearance.AccentTheme
 import ru.stohastika.sklyanka.domain.medication.WeekCounter
 import ru.stohastika.sklyanka.domain.widget.WidgetWeekSnapshot
 import ru.stohastika.sklyanka.feature.widgets.di.WidgetEntryPoint
@@ -36,16 +37,23 @@ class WeekWidget : GlanceAppWidget() {
         val snapshot = graph.snapshots().week()
         val today = graph.time().today()
         val zone = graph.time().zone()
+        val theme = graph.accentTheme().current()
         val open = graph.openTarget().intentFor(context, WidgetPlace.HISTORY)
-        provideContent { WeekPlate(snapshot, today, zone, open) }
+        provideContent { WeekPlate(snapshot, today, zone, theme, open) }
     }
 }
 
 @Composable
-private fun WeekPlate(snapshot: WidgetWeekSnapshot?, today: LocalDate, zone: ZoneId, open: Intent) {
+private fun WeekPlate(
+    snapshot: WidgetWeekSnapshot?,
+    today: LocalDate,
+    zone: ZoneId,
+    theme: AccentTheme,
+    open: Intent,
+) {
     val resources = LocalContext.current.resources
     val profile = snapshot?.profile
-    val accent = WidgetLook.accent(profile)
+    val accent = WidgetLook.accent(profile, theme)
     Plate(profile, accent, actionStartActivity(open)) {
         PlateHeader(
             subject = WidgetText.subject(resources, WidgetType.WEEK),

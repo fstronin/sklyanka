@@ -11,6 +11,7 @@ import org.junit.Assert.assertNotEquals
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import ru.stohastika.sklyanka.domain.appearance.AccentTheme
 import ru.stohastika.sklyanka.domain.history.DayState
 import ru.stohastika.sklyanka.domain.today.IntakePresentation
 import ru.stohastika.sklyanka.domain.widget.WidgetDaySummary
@@ -51,7 +52,7 @@ class WidgetMarkupTest {
         // Контекст даёт стенду ресурсы: доза, время и слова состояний собираются из них.
         setContext(ApplicationProvider.getApplicationContext())
         provideComposable {
-            WidgetLook.accent(null).let { accent ->
+            WidgetLook.accent(null, AccentTheme.DEFAULT).let { accent ->
                 Plate(profile = null, accent = accent, onClick = MARK) {
                     PlateHeader(subject = product(R.string.widget_type_today), profileLabel = null, accent = accent)
                     IntakeRows(
@@ -105,7 +106,7 @@ class WidgetMarkupTest {
         setContext(ApplicationProvider.getApplicationContext())
         provideComposable {
             val profile = WidgetProfileIndication(name = "mother", color = FOREIGN_COLOUR)
-            val accent = WidgetLook.accent(profile)
+            val accent = WidgetLook.accent(profile, AccentTheme.DEFAULT)
             Plate(profile = profile, accent = accent, onClick = MARK) {
                 PlateHeader(
                     subject = product(R.string.widget_type_today),
@@ -122,8 +123,8 @@ class WidgetMarkupTest {
         // не совпадает с акцентом владельца — цвет в дереве узлов не виден, поэтому
         // проверяется его источник, а кадр плиты с цветом сверяет визуальная проверка.
         assertNotEquals(
-            WidgetLook.accent(null),
-            WidgetLook.accent(WidgetProfileIndication(name = "mother", color = FOREIGN_COLOUR)),
+            WidgetLook.accent(null, AccentTheme.DEFAULT),
+            WidgetLook.accent(WidgetProfileIndication(name = "mother", color = FOREIGN_COLOUR), AccentTheme.DEFAULT),
         )
     }
 
@@ -132,7 +133,7 @@ class WidgetMarkupTest {
         setContext(ApplicationProvider.getApplicationContext())
         val resources = ApplicationProvider.getApplicationContext<android.content.Context>().resources
         provideComposable {
-            val accent = WidgetLook.accent(null)
+            val accent = WidgetLook.accent(null, AccentTheme.DEFAULT)
             DayPlate(
                 state = DayPlateState(
                     subject = product(R.string.widget_type_today),
@@ -164,7 +165,7 @@ class WidgetMarkupTest {
         setContext(ApplicationProvider.getApplicationContext())
         provideComposable {
             val profile = WidgetProfileIndication(name = "mother", color = FOREIGN_COLOUR)
-            val accent = WidgetLook.accent(profile)
+            val accent = WidgetLook.accent(profile, AccentTheme.DEFAULT)
             Plate(profile = profile, accent = accent, onClick = MARK) {
                 PlateHeader(
                     subject = product(R.string.widget_type_today),
@@ -189,7 +190,7 @@ class WidgetMarkupTest {
         // Контекст даёт стенду ресурсы: доза, время и слова состояний собираются из них.
         setContext(ApplicationProvider.getApplicationContext())
         provideComposable {
-            val accent = WidgetLook.accent(null)
+            val accent = WidgetLook.accent(null, AccentTheme.DEFAULT)
             Plate(profile = null, accent = accent, onClick = MARK) {
                 PlateHeader(subject = product(R.string.widget_type_today), profileLabel = null, accent = accent)
             }

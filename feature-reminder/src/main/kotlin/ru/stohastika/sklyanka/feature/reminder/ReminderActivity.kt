@@ -13,9 +13,12 @@ import androidx.activity.viewModels
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import dagger.hilt.android.AndroidEntryPoint
+import ru.stohastika.sklyanka.domain.appearance.AccentTheme
+import ru.stohastika.sklyanka.domain.appearance.ObserveAccentThemeUseCase
 import ru.stohastika.sklyanka.ui.locale.withInterfaceLocale
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import java.time.LocalDateTime
+import javax.inject.Inject
 import android.graphics.Color as AndroidColor
 
 /**
@@ -45,6 +48,19 @@ class ReminderActivity : ComponentActivity() {
 
     private val viewModel: ReminderViewModel by viewModels()
 
+    /**
+     * Акцентная тема «Про» (§2.5, SKL-120).
+     *
+     * Тёмная поверхность напоминания — не исключение из темы: «Принято» на ней та же
+     * акцентная кнопка, что в приложении, и оставить её «Оливой» при выбранной «Аметисте»
+     * значило бы показать чужой цвет ровно там, где человек принимает лекарство.
+     *
+     * Первое значение по умолчанию — базовая «Олива»: карточка обязана появиться сразу,
+     * не дожидаясь чтения настроек. Тема подменяет значение первым же кадром потока.
+     */
+    @Inject
+    lateinit var observeAccentTheme: ObserveAccentThemeUseCase
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // Тёмное полотно — светлые значки системных панелей (SKL-72 §4). Явный стиль,
@@ -60,7 +76,9 @@ class ReminderActivity : ComponentActivity() {
         setContent {
             // Тёмная среда — параметром темы, а не системной настройкой: тёмными бывают
             // напоминание и знак, а не приложение целиком (docs/norm/06-design.md §5).
-            SklyankaTheme(dark = true) {
+            // Акцентная тема при этом общая с приложением (§2.5).
+            val theme by observeAccentTheme().collectAsState(initial = AccentTheme.DEFAULT)
+            SklyankaTheme(theme = theme, dark = true) {
                 val state by viewModel.state.collectAsState()
                 ReminderCardHost(
                     state = state,

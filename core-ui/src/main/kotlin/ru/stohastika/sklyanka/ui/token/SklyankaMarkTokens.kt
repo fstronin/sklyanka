@@ -5,6 +5,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import ru.stohastika.sklyanka.domain.appearance.IconVariant
 import kotlin.math.round
 
 /**
@@ -204,6 +205,28 @@ object SklyankaMarkColors {
      * а две разные дуги SKL-21 запрещает.
      */
     val Amber: Color = Color(0xFFA86A22)
+
+    // --- Вторая палитра знака: тёплая, вариант иконки «Про» (§2.4, Р-31, SKL-120) ---
+    //
+    // Тот же знак, те же слои и те же альфы — другие краски и плитки. Эта палитра
+    // принадлежит **иконке приложения** и её миниатюре в диалоге выбора: ни один экран
+    // тёплый вариант не перекрашивает — знак в интерфейсе, заставка, фирменный блок
+    // и плоская редукция остаются холодными (§2.4, §9).
+
+    /** Краска знака тёплого варианта на светлой плите: тёмная олива. */
+    val WarmInkOnLight: Color = Color(0xFF241F1B)
+
+    /** Краска знака тёплого варианта на тёмной плите: тёплая бумага. */
+    val WarmInkOnDark: Color = Color(0xFFF8F6EF)
+
+    /** Светлая плитка тёплого варианта — тёплая бумага. */
+    val WarmTileLight: Color = Color(0xFFEFE7DB)
+
+    /** Тёмная плитка тёплого варианта — тёмная олива. */
+    val WarmTileDark: Color = Color(0xFF181712)
+
+    /** Дуга и каустика тёплого варианта — светлая олива (§2.4). */
+    val WarmAmber: Color = Color(0xFFB5C47A)
 
     /**
      * Доли смешения краски знака с тёмной плиткой — производные надписи и издателя (Р-57).
@@ -444,4 +467,34 @@ fun flatMarkColor(environment: MarkEnvironment): Color = when (environment) {
 fun markTileBackground(environment: MarkEnvironment): Color = when (environment) {
     MarkEnvironment.Dark -> SklyankaMarkColors.TileDark
     MarkEnvironment.Light -> SklyankaMarkColors.TileLight
+}
+
+/**
+ * Краска знака на плите среды — для выбранного варианта иконки (§2.4, SKL-120).
+ *
+ * Нужна ровно одному месту — миниатюре варианта в диалоге выбора (§5.17): иконку выбирают
+ * глазами, и подпись «Тёплая» без картинки заставляла бы человека представлять её самому.
+ * Экраны, заставка и плоская редукция берут холодную краску и этой функцией не пользуются:
+ * вариант иконки не перекрашивает интерфейс (§2.4).
+ */
+fun flatMarkColor(variant: IconVariant, environment: MarkEnvironment): Color = when (variant) {
+    IconVariant.ICE -> flatMarkColor(environment)
+    IconVariant.WARM -> when (environment) {
+        MarkEnvironment.Dark -> SklyankaMarkColors.WarmInkOnDark
+        MarkEnvironment.Light -> SklyankaMarkColors.WarmInkOnLight
+    }
+}
+
+/**
+ * Подложка плитки варианта иконки в среде (§2.4).
+ *
+ * Пара к [flatMarkColor] и с той же областью применения — плитка миниатюры: холодная
+ * плитка `#E7F0F4` / `#111A1E` или тёплая `#EFE7DB` / `#181712`.
+ */
+fun markTileBackground(variant: IconVariant, environment: MarkEnvironment): Color = when (variant) {
+    IconVariant.ICE -> markTileBackground(environment)
+    IconVariant.WARM -> when (environment) {
+        MarkEnvironment.Dark -> SklyankaMarkColors.WarmTileDark
+        MarkEnvironment.Light -> SklyankaMarkColors.WarmTileLight
+    }
 }

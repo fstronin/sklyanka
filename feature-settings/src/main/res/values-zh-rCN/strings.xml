@@ -130,6 +130,16 @@
     <string name="settings_rubric_system">系统</string>
     <string name="settings_rubric_data">数据</string>
 
+    <string name="settings_appearance_rubric">外观</string>
+    <string name="settings_theme_row">强调色</string>
+    <string name="settings_icon_row">应用图标</string>
+    <string name="theme_olive">橄榄</string>
+    <string name="theme_indigo">靛蓝</string>
+    <string name="theme_pine">松绿</string>
+    <string name="theme_amethyst">紫晶</string>
+    <string name="icon_variant_ice">冰色</string>
+    <string name="icon_variant_warm">暖色</string>
+
     <string name="settings_profile_self">我的药物</string>
     <string name="settings_profile_self_initial">我</string>
     <string name="settings_profile_mirrored">提醒会同步给我</string>

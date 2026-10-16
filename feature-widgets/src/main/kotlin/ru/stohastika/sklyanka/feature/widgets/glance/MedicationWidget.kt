@@ -11,6 +11,7 @@ import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.provideContent
+import ru.stohastika.sklyanka.domain.appearance.AccentTheme
 import ru.stohastika.sklyanka.domain.widget.WidgetMedicationSnapshot
 import ru.stohastika.sklyanka.feature.widgets.di.WidgetEntryPoint
 import ru.stohastika.sklyanka.feature.widgets.open.WidgetPlace
@@ -48,16 +49,17 @@ class MedicationWidget : GlanceAppWidget() {
             graph.bindings().forget(widgetId)
         }
         val today = graph.time().today()
+        val theme = graph.accentTheme().current()
         val open = graph.openTarget().intentFor(context, WidgetPlace.MEDICATION, medicationId)
-        provideContent { MedicationPlate(snapshot, today, open) }
+        provideContent { MedicationPlate(snapshot, today, theme, open) }
     }
 }
 
 @Composable
-private fun MedicationPlate(snapshot: WidgetMedicationSnapshot?, today: LocalDate, open: Intent) {
+private fun MedicationPlate(snapshot: WidgetMedicationSnapshot?, today: LocalDate, theme: AccentTheme, open: Intent) {
     val resources = LocalContext.current.resources
     val profile = snapshot?.profile
-    val accent = WidgetLook.accent(profile)
+    val accent = WidgetLook.accent(profile, theme)
     Plate(profile, accent, actionStartActivity(open)) {
         PlateHeader(
             subject = snapshot?.name ?: WidgetText.subject(resources, WidgetType.MEDICATION),

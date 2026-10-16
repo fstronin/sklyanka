@@ -130,6 +130,16 @@
     <string name="settings_rubric_system">Sistema</string>
     <string name="settings_rubric_data">Datos</string>
 
+    <string name="settings_appearance_rubric">Aspecto</string>
+    <string name="settings_theme_row">Color de acento</string>
+    <string name="settings_icon_row">Icono de la aplicación</string>
+    <string name="theme_olive">Oliva</string>
+    <string name="theme_indigo">Índigo</string>
+    <string name="theme_pine">Pino</string>
+    <string name="theme_amethyst">Amatista</string>
+    <string name="icon_variant_ice">Hielo</string>
+    <string name="icon_variant_warm">Cálida</string>
+
     <string name="settings_profile_self">Mis medicamentos</string>
     <string name="settings_profile_self_initial">Y</string>
     <string name="settings_profile_mirrored">los recordatorios se me duplican</string>

@@ -3,8 +3,8 @@ package ru.stohastika.sklyanka.acceptance.steps.task
 import io.cucumber.java.ru.Допустим
 import io.cucumber.java.ru.И
 import io.cucumber.java.ru.Когда
-import io.cucumber.java.ru.Но
 import io.cucumber.java.ru.Тогда
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import ru.stohastika.sklyanka.acceptance.RepositoryLayout
@@ -111,11 +111,31 @@ class Sk139MarkSteps {
         )
     }
 
-    @Но("механизм смены иконки нормой не заводится")
-    fun theIconSwitchMechanismIsNotIntroduced() {
-        // Механизм смены иконки — фаза C (Р-31): пока его нет, в манифесте нет ни одного
-        // `activity-alias`, и включить вторую иконку нечем.
-        assertFalse(manifest.contains(ACTIVITY_ALIAS), "the manifest must not declare an icon switch yet")
+    @И("оба варианта иконки объявлены манифестом как переключаемые")
+    fun bothIconVariantsAreDeclaredAsSwitchable() {
+        // Механизм смены иконки заведён фазой C (SKL-120, Р-31): фильтр `MAIN`/`LAUNCHER`
+        // несут два `activity-alias` — по одному на вариант, — и включён ровно один.
+        // До SKL-120 здесь стоял обратный запрет, и он был границей **задачи**, а не
+        // решением продукта: SKL-139 заканчивалась до механизма, и норму это удерживало.
+        // Задача границу сняла, и проверка перевёрнута вместе с нормой, а не удалена:
+        // «тёплый вид — второй вариант платного набора» остаётся утверждением о продукте,
+        // и у него обязана быть опора в сборке.
+        val aliases = ALIAS_BLOCK.findAll(manifest).map { it.value }.toList()
+        assertEquals(2, aliases.size, "two icon variants must be declared")
+        aliases.forEach { alias ->
+            assertTrue(MAIN_FILTER in alias, "each variant must be launchable: $alias")
+            // Имя в лончере от варианта не зависит: название принадлежит продукту (В-120-2).
+            assertTrue(APP_NAME_LABEL in alias, "the launcher name must not change with the variant: $alias")
+        }
+        assertEquals(
+            2,
+            aliases.count { TARGET_ACTIVITY in it },
+            "both variants must launch the same activity: the icon switch is not a second app",
+        )
+        assertTrue(
+            manifest.contains("android:enabled=\"false\""),
+            "the paid variant must arrive disabled: the base icon shows right after install (Р-56)",
+        )
     }
 
     @Когда("сверяют макеты знака")
@@ -179,7 +199,18 @@ class Sk139MarkSteps {
 
         const val MARK_SECTION = "### 2.4 Палитра знака"
         const val NEXT_SECTION = "## 3."
-        const val ACTIVITY_ALIAS = "activity-alias"
+
+        /** Объявление варианта иконки целиком: имя, значок, фильтр и метаданные ярлыка живут в нём. */
+        val ALIAS_BLOCK = Regex("<activity-alias.*?</activity-alias>", RegexOption.DOT_MATCHES_ALL)
+
+        /** Фильтр запуска: его несёт каждый вариант иконки — по одному на алиас. */
+        const val MAIN_FILTER = "android.intent.category.LAUNCHER"
+
+        /** Цель обоих алиасов одна: переключение значка не поднимает второе приложение. */
+        const val TARGET_ACTIVITY = "android:targetActivity=\".MainActivity\""
+
+        /** Имя в лончере: у обоих вариантов одно — название принадлежит продукту (В-120-2). */
+        const val APP_NAME_LABEL = "android:label=\"@string/app_name\""
         const val SILHOUETTE_TOKEN = "@color/mark_silhouette"
         const val LIMIT_RING = "a80,80"
         const val LIMIT_DOT = "a30,30"

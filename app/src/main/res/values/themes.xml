@@ -1,7 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Тема-обёртка до появления дизайн-системы (SKL-05). -->
-    <style name="Theme.Sklyanka" parent="android:Theme.Material.Light.NoActionBar" />
+    <!--
+      Тема-обёртка до появления дизайн-системы (SKL-05).
+
+      Принудительное затемнение системы к приложению **не применяется** (§9, SKL-120):
+      цвета назначены токенами, и системная инверсия нарисовала бы поверх наших ролей
+      вторую тему — сводя на нет и палитру Р-20, и акцентную тему «Про». Тот же атрибут
+      повторён в `values-night/themes.xml`: тёмная среда — не повод включать инверсию,
+      у неё свои роли.
+    -->
+    <style name="Theme.Sklyanka" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:forceDarkAllowed" tools:targetApi="q">false</item>
+    </style>
 
     <!--
       Заставка (SKL-21).

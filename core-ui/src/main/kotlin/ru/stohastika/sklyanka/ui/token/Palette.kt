@@ -163,6 +163,75 @@ internal object Palette {
      */
     val AccentSoftOnDark = Color(0xFFDEE4C3)
 
+    // --- §2.5, акцентные темы «Про» ---
+    //
+    // Три значения на тему: светлый акцент, светлая мягкая подложка, тёмный акцент.
+    // Остальные роли семьи (`accentBorder`, `onAccentSoft`, подложка тёмной среды)
+    // выводятся правилом из этих трёх — долями ACCENT_BORDER_RATIO, ON_ACCENT_SOFT_RATIO
+    // и DARK_ACCENT_SOFT_RATIO, — и здесь не хранятся: четвёртая константа на тему
+    // разошлась бы с правилом при первой правке.
+
+    /** «Индиго», глубокий синий: акцент, подложка и акцент тёмной среды (§2.5). */
+    val AccentIndigo = Color(0xFF3E4FA8)
+    val AccentSoftIndigo = Color(0xFFD9DCEB)
+    val AccentOnDarkIndigo = Color(0xFFA9B6EA)
+
+    /** «Хвоя», глубокая зелень (§2.5). */
+    val AccentPine = Color(0xFF1E5533)
+    val AccentSoftPine = Color(0xFFD9EDE1)
+    val AccentOnDarkPine = Color(0xFF8DC7A2)
+
+    /** «Аметист», приглушённый фиолетовый (§2.5). */
+    val AccentAmethyst = Color(0xFF6E3A72)
+    val AccentSoftAmethyst = Color(0xFFECD9ED)
+    val AccentOnDarkAmethyst = Color(0xFFCBA6D8)
+
+    // --- §9, полный набор ролей тёмной среды интерфейса ---
+    //
+    // Девять прежних тёмных токенов (SKL-109) доведены до полного набора: тёмная среда
+    // интерфейса покрывает все поверхности, поэтому переопределяется каждая роль,
+    // которая на экранах встречается. «Громкие» роли подняты к свету, «тихие» остались
+    // тихими — числа и причина в §9.
+
+    /** Недоступный текст тёмной среды: поднят к свету настолько, чтобы читаться рядом с соседом. */
+    val TextDisabledOnDark = Color(0xFF6E6459)
+
+    /** Линия на тёмной поверхности: [LineDark] рассчитана на фон. */
+    val LineOnSurfaceDark = Color(0xFF453C34)
+
+    /** Граница второстепенной кнопки в тёмной среде. */
+    val LineInteractiveDark = Color(0xFF5C5148)
+
+    /** Неинформативная графика тёмной среды: шеврон, декоративная стрелка. */
+    val IconFaintOnDark = Color(0xFF7C7266)
+
+    /** Время отметки, галочка, аватар владельца на тёмном: светлая роль «принято». */
+    val TakenOnDark = Color(0xFF96B2B4)
+
+    /** Плашка иконки принятого лекарства на тёмном. */
+    val TakenSoftOnDark = Color(0xFF2F4347)
+
+    /** Статус «пропущено» на тёмном: роль остаётся тихой. */
+    val MissedOnDark = Color(0xFF68635A)
+
+    /** Статус «принято частично» на тёмном: светлее фона, но тише [TakenOnDark]. */
+    val TakenPartialOnDark = Color(0xFFC8D8D6)
+
+    /** Предупреждение и опасность на тёмном: светлая тёплая краска, читаемая как текст. */
+    val WarningOnDark = Color(0xFFC9A393)
+
+    /** Нейтральная плашка и фон чипа времени на тёмном. */
+    val NeutralSoftOnDark = Color(0xFF3D372F)
+
+    /** Дорожка прогресса и фон недоступной кнопки на тёмном. */
+    val ProgressTrackOnDark = Color(0xFF3B342C)
+
+    /** Дорожка выключенного переключателя на тёмном. */
+    val SwitchOffOnDark = Color(0xFF574C42)
+
+    /** Фон карточки архивного курса на тёмном. */
+    val ArchiveBackgroundOnDark = Color(0xFF2B2620)
+
     /** Прозрачность — отсутствие цвета, а не цвет: полоса профиля у владельца. */
     val Transparent = Color.Transparent
 }

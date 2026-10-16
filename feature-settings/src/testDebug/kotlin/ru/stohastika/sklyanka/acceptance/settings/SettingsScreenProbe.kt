@@ -9,8 +9,15 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
+import ru.stohastika.sklyanka.domain.appearance.ObserveAccentThemeUseCase
+import ru.stohastika.sklyanka.domain.appearance.ObserveIconVariantUseCase
+import ru.stohastika.sklyanka.domain.appearance.SetAccentThemeUseCase
+import ru.stohastika.sklyanka.domain.appearance.SetIconVariantUseCase
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderSettings
 import ru.stohastika.sklyanka.domain.transfer.AppStamp
+import ru.stohastika.sklyanka.feature.settings.FakeAppearancePreferences
+import ru.stohastika.sklyanka.feature.settings.SettingsAppearance
+import ru.stohastika.sklyanka.feature.settings.SettingsEnvironment
 import ru.stohastika.sklyanka.feature.settings.SettingsIntent
 import ru.stohastika.sklyanka.feature.settings.SettingsScreen
 import ru.stohastika.sklyanka.feature.settings.SettingsSystemStateReader
@@ -43,6 +50,7 @@ internal object SettingsScreenProbe {
         if (lastWorld !== world) {
             lastWorld = world
             viewModel = null
+            appearance = FakeAppearancePreferences()
             builds = 0
             Dispatchers.setMain(UnconfinedTestDispatcher())
         }
@@ -115,14 +123,34 @@ internal object SettingsScreenProbe {
         context = world.profileSession.contextProvider,
         medications = world.repositories.medicationStore,
         switchProfile = world.profileSession.switch,
-        system = SettingsSystemStateReader(
-            reminders = world.reminders.settingsStore,
-            permissions = world.system,
+        // Внешние ответы — одним узлом: состояние системы читается при каждом показе,
+        // версия взята из макета стенда, подписка — тем же сценарием мира (НФТ-52, SKL-122).
+        environment = SettingsEnvironment(
+            system = SettingsSystemStateReader(
+                reminders = world.reminders.settingsStore,
+                permissions = world.system,
+            ),
+            stamp = APP_STAMP,
+            proStatus = world.pro.statusUseCase,
         ),
-        stamp = APP_STAMP,
-        // Состояние подписки — тот же сценарий мира, что и у продукта (SKL-122).
-        proStatus = world.pro.statusUseCase,
+        // Оформление (SKL-120): стенд берёт те же швы, что и продукт; носитель выбора —
+        // в памяти, а правило выбора — доменное (`AppearanceGate`), как в приёмке.
+        appearance = SettingsAppearance(
+            observeTheme = ObserveAccentThemeUseCase(appearance),
+            observeIcon = ObserveIconVariantUseCase(appearance),
+            setTheme = SetAccentThemeUseCase(appearance, world.pro.statusUseCase),
+            setIcon = SetIconVariantUseCase(appearance, world.pro.statusUseCase),
+        ),
     )
+
+    /**
+     * Настройки оформления стенда: базовые «Олива» и «Ледяная» (Р-20, Р-56).
+     *
+     * Пересоздаётся на новый мир: у сценария свой носитель выбора, иначе выбранная
+     * в одном сценарии тема осталась бы в следующем, и порядок сценариев начал бы
+     * решать, что видит проверка.
+     */
+    private var appearance = FakeAppearancePreferences()
 
     /** Забыть подменённый главный диспетчер: стенд не должен влиять на соседние тесты. */
     fun dropMainDispatcher() {

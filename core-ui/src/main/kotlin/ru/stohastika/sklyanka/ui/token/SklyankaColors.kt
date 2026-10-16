@@ -2,6 +2,7 @@ package ru.stohastika.sklyanka.ui.token
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
+import ru.stohastika.sklyanka.domain.appearance.AccentTheme
 
 /**
  * Роли цвета — верхний уровень дизайн-системы.
@@ -60,6 +61,16 @@ data class SklyankaColors(
      */
     val warning: Color,
     /**
+     * Предупреждающий знак и слово на **светлой** подложке мягкого акцента (§9, V-74).
+     *
+     * Подложка `accentSoft` светлая в обеих средах (Р-20: акцент, разбавленный к белой
+     * поверхности), поэтому и краски на ней светлые — решает подложка, а не среда. Роль
+     * заведена потому, что тёмная среда поднимает [warning] к свету для тёмных подложек,
+     * и на светлой он дал бы 1,68 при пороге 4,5. Значение — то же в обеих средах, как
+     * у [textOnDark]: это не переопределение §9, а отдельное место применения (§2.1).
+     */
+    val warningOnSoft: Color,
+    /**
      * Цвет опасного действия: фон основной кнопки необратимого действия, рамка и подпись
      * ошибки поля.
      *
@@ -104,13 +115,19 @@ data class SklyankaColors(
 )
 
 /**
- * Светлый набор — основной и единственный для продуктовых экранов.
+ * Светлый набор — основной для продуктовых экранов.
  *
  * Три роли профиля в нём нейтральны: полоса прозрачна, подкрашенные поверхности
  * совпадают с обычным фоном. Это и есть ПРФ-16: у владельца индикации нет, потому
  * что показывать нечего, а не потому, что экран её спрятал.
+ *
+ * [theme] меняет ровно семью акцента (§2.5): `accent`, `accentSoft`, `accentBorder`,
+ * `onAccentSoft`, `onAccent`. Остальные роли общие для всех тем — «олива на бумаге»
+ * (Р-20) остаётся фоном, а не свойством одной темы. Значение по умолчанию — базовая
+ * «Олива»: вызывающий, которому тема не важна (документ отчёта, выгрузка истории,
+ * щиток знака), получает базовый акцент и не обязан её называть.
  */
-fun lightColors(): SklyankaColors = SklyankaColors(
+fun lightColors(theme: AccentTheme = AccentTheme.DEFAULT): SklyankaColors = SklyankaColors(
     background = Palette.Background,
     surface = Palette.Surface,
     text = Palette.Text,
@@ -121,13 +138,14 @@ fun lightColors(): SklyankaColors = SklyankaColors(
     lineOnSurface = Palette.LineOnSurface,
     lineInteractive = Palette.LineInteractive,
     iconFaint = Palette.IconFaint,
-    accent = Palette.Accent,
-    accentSoft = Palette.AccentSoft,
-    accentBorder = Palette.AccentBorder,
-    onAccentSoft = Palette.OnAccentSoft,
+    accent = theme.palette.lightAccent,
+    accentSoft = theme.palette.lightSoft,
+    accentBorder = accentBorderOf(theme.palette.lightAccent, Palette.Surface),
+    onAccentSoft = onAccentSoftOf(theme.palette.lightAccent),
     onAccent = Palette.Surface,
     textOnDark = Palette.TextOnDark,
     warning = Palette.ProfileForeign,
+    warningOnSoft = Palette.ProfileForeign,
     danger = Palette.ProfileForeign,
     taken = Palette.Taken,
     takenSoft = Palette.TakenSoft,
@@ -153,57 +171,137 @@ fun lightColors(): SklyankaColors = SklyankaColors(
 internal const val SCRIM_ALPHA: Float = 0.32f
 
 /**
- * Тёмный набор — контекст двух поверхностей, а не вторая тема оформления
- * (`docs/norm/06-design.md` §5, ОВ-9).
+ * Тёмный набор — среда интерфейса, следующая за системной настройкой (§9, Р-23).
  *
- * Своими тёмными токенами переопределяются ровно девять ролей §5; остальные
- * наследуются от светлого набора и в тёмной среде не встречаются. Тёмный токен
- * «на всякий случай» — приглашение нарисовать экран, которого в объёме нет.
- * Исключение — `textOnDark`: подпись второстепенной кнопки напоминания задана
- * отдельной ролью §1.2 с одним и тем же значением в обеих средах (ОВ-146),
- * поэтому здесь она не переопределяется.
+ * Девять прежних тёмных токенов (SKL-109) здесь доведены до **полного** набора: тёмная
+ * среда покрывает все поверхности, поэтому переопределяется каждая роль, которая на
+ * экранах встречается. Наследовать «тихие» роли от светлой среды нельзя: светлое
+ * значение на тёмном фоне читается светящейся заливкой, а не тихой плашкой.
  *
- * Отдельно от этих девяти — две нейтральные роли профиля. Нового цвета они
- * вводят: «подкраски нет» означает «как фон среды», и в тёмной среде фон тёмный
- * (см. [NEUTRAL_PROFILE_ROLES]).
+ * Не переопределяются ровно четыре роли, и у каждой причина: `textOnDark` — отдельная
+ * роль §1.2 с одним значением в обеих средах (ОВ-146); `onAccentSoft` — по §2.5 значение
+ * **то же, что в светлой**; `profileStripe` — прозрачность, отсутствие цвета; `scrim` —
+ * один токен и одна доля на все модальные слои (§2.3). Их имена — в
+ * [DARK_INHERITED_ROLES], и список там не «на всякий случай»: тест падает и когда
+ * тёмную роль забыли, и когда роли разошлись молча.
+ *
+ * Две нейтральные роли профиля ([NEUTRAL_PROFILE_ROLES]) повторяют фон среды: у владельца
+ * подкраски нет, и «нет подкраски» в тёмной среде — это тёмный фон (ПРФ-16).
  *
  * Правило «основной акцент `#5F6F2E` в тёмной среде на тексте не применяется»
- * (контраст 3,25) держится подменой роли: `accent` здесь — уже `AccentOnDark`,
+ * (контраст 3,25) держится подменой роли: `accent` здесь — тёмное значение темы,
  * и запрещать отдельно нечего.
  */
-fun darkColors(): SklyankaColors = lightColors().copy(
+fun darkColors(theme: AccentTheme = AccentTheme.DEFAULT): SklyankaColors = lightColors(theme).copy(
     background = Palette.DarkBackground,
     surface = Palette.SurfaceDark,
     // §5: в тёмной среде фон и текст меняются местами.
     text = Palette.Background,
     textMuted = Palette.TextMutedOnDark,
     textTertiary = Palette.TextTertiaryOnDark,
+    textDisabled = Palette.TextDisabledOnDark,
     line = Palette.LineDark,
-    accent = Palette.AccentOnDark,
-    accentSoft = Palette.AccentSoftOnDark,
+    lineOnSurface = Palette.LineOnSurfaceDark,
+    lineInteractive = Palette.LineInteractiveDark,
+    iconFaint = Palette.IconFaintOnDark,
+    accent = theme.palette.darkAccent,
+    // Подложка тёмной среды — тёмный акцент, разбавленный к белой поверхности той же
+    // долей 0,55, которой выведена подложка базовой темы (§2.5, §9).
+    accentSoft = darkAccentSoftOf(theme.palette.darkAccent),
+    accentBorder = accentBorderOf(theme.palette.darkAccent, Palette.SurfaceDark),
     // Подпись на акцентной заливке в тёмной среде — фон среды, а не поверхность:
-    // белая поверхность на AccentOnDark даёт 1,88 и не читается (ОВ-90).
+    // белая поверхность на тёмном акценте даёт 1,88 и не читается (ОВ-90).
     onAccent = Palette.DarkBackground,
-    // Нейтральные роли профиля повторяют фон среды, а не заводят свой цвет: у
-    // владельца подкраски нет, и «нет подкраски» в тёмной среде — это тёмный фон
-    // (ПРФ-16). Оставленный светлым `profileHeader` давал светлую шапку на тёмном
-    // экране и заголовок цветом фона, то есть невидимый заголовок (SKL-25).
+    // «Громкие» роли подняты к свету: они служат цветом текста и заливкой с подписью (§9).
+    taken = Palette.TakenOnDark,
+    takenSoft = Palette.TakenSoftOnDark,
+    takenPartial = Palette.TakenPartialOnDark,
+    warning = Palette.WarningOnDark,
+    danger = Palette.WarningOnDark,
+    // «Тихие» роли остаются тихими: они стоят от фона на той же доле, что в светлой (§9).
+    missed = Palette.MissedOnDark,
+    neutralSoft = Palette.NeutralSoftOnDark,
+    progressTrack = Palette.ProgressTrackOnDark,
+    switchOff = Palette.SwitchOffOnDark,
+    archiveBackground = Palette.ArchiveBackgroundOnDark,
+    // Производный цвет считается тем же приёмом от тёмных ролей: архив тише списка в любой среде.
+    archiveText = tint(Palette.Background, Palette.ArchiveBackgroundOnDark, TINT_ARCHIVE_TEXT),
     profileBackground = Palette.DarkBackground,
     profileHeader = Palette.DarkBackground,
 )
 
-/** Имена девяти ролей, переопределяемых в тёмной среде своими тёмными токенами (§5). */
+/**
+ * Имена ролей, переопределяемых тёмной средой (§9).
+ *
+ * Список — не перечень «того, что успели»: он полон и проверяется тестом на равенство
+ * множеству фактически изменённых ролей. Дописать роль в код и забыть здесь нельзя,
+ * и завести тёмный токен «на всякий случай» тоже: неиспользуемая тёмная роль —
+ * приглашение нарисовать экран, которого в объёме нет.
+ */
 val DARK_OVERRIDDEN_ROLES: List<String> = listOf(
     "background",
     "surface",
     "text",
     "textMuted",
     "textTertiary",
+    "textDisabled",
     "line",
+    "lineOnSurface",
+    "lineInteractive",
+    "iconFaint",
     "accent",
     "accentSoft",
+    "accentBorder",
     "onAccent",
+    "taken",
+    "takenSoft",
+    "missed",
+    "takenPartial",
+    "warning",
+    "danger",
+    "neutralSoft",
+    "progressTrack",
+    "switchOff",
+    "archiveBackground",
+    "archiveText",
+    "profileBackground",
+    "profileHeader",
 )
+
+/**
+ * Роли, которые тёмная среда **не** переопределяет, и почему (§9, §2.3, §2.5).
+ *
+ * Их четыре: `textOnDark` — отдельная роль §1.2 с одним значением в обеих средах (ОВ-146);
+ * `onAccentSoft` — по §2.5 значение то же, что в светлой; `profileStripe` — прозрачность,
+ * а не цвет; `scrim` — один токен и одна доля на все модальные слои (§2.3).
+ */
+val DARK_INHERITED_ROLES: List<String> = listOf(
+    // Предупреждение на светлой подложке мягкого акцента: подложка светлая в обеих средах,
+    // и краска на ней одна и та же (V-74, §9).
+    "warningOnSoft",
+    "textOnDark",
+    "onAccentSoft",
+    "profileStripe",
+    "scrim",
+)
+
+/** Доля вывода `accentBorder` из акцента и поверхности (§2.5). */
+internal const val ACCENT_BORDER_RATIO: Float = 0.30f
+
+/** Доля вывода `onAccentSoft` из акцента и основного текста (§2.5). */
+internal const val ON_ACCENT_SOFT_RATIO: Float = 0.50f
+
+/** Доля вывода подложки тёмной среды из тёмного акцента и белой поверхности (§2.5, §9). */
+internal const val DARK_ACCENT_SOFT_RATIO: Float = 0.55f
+
+/** Рамка карточки, требующей действия: акцент, разбавленный к поверхности на 0,30 (§2.5). */
+internal fun accentBorderOf(accent: Color, surface: Color): Color = tint(surface, accent, ACCENT_BORDER_RATIO)
+
+/** Подпись на мягком акценте: акцент, затемнённый к тексту на 0,50, одно значение на обе среды. */
+internal fun onAccentSoftOf(accent: Color): Color = tint(Palette.Text, accent, ON_ACCENT_SOFT_RATIO)
+
+/** Подложка тёмной среды: тёмный акцент, разбавленный к белой поверхности на 0,55. */
+internal fun darkAccentSoftOf(accent: Color): Color = tint(accent, Palette.Surface, DARK_ACCENT_SOFT_RATIO)
 
 /**
  * Нейтральные роли профиля: подкраска, которой у владельца нет (ПРФ-16).

@@ -9,6 +9,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
+import ru.stohastika.sklyanka.domain.appearance.AccentTheme
 import ru.stohastika.sklyanka.ui.modifier.withCappedFontScale
 import ru.stohastika.sklyanka.ui.token.SklyankaColors
 import ru.stohastika.sklyanka.ui.token.SklyankaType
@@ -34,23 +35,31 @@ val LocalSklyankaColors = staticCompositionLocalOf { lightColors() }
  * компонент читает `SklyankaTheme.colors.accent`, а что им окажется, решает тема.
  * Забыть нечего — читать неоткуда.
  *
- * [dark] — параметр, а не системная тема устройства. Это прямое следствие §5
- * документа: тёмными бывают полноэкранное напоминание и знак, а не приложение
- * целиком. `isSystemInDarkTheme()` в проекте не вызывается — иначе человек с тёмной
- * системной темой получит одиннадцать экранов, которых никто не рисовал (ОВ-9).
+ * [dark] — параметр, а не чтение системы здесь же. Так решено намеренно (ОВ-9, SKL-120):
+ * тёмная среда интерфейса приходит **сверху** — из системной настройки на каркасе
+ * приложения (Р-23, §9), — а четыре тёмные поверхности (напоминание, карточка проверки,
+ * заставка, фирменный блок) передают `dark = true` всегда, в любой среде. Чтение
+ * `isSystemInDarkTheme()` внутри темы смешало бы эти два случая: неизменяемо тёмная
+ * поверхность стала бы зависеть от настройки телефона.
+ *
+ * [theme] — акцентная тема «Про» (§2.5, Р-31). Тема меняет семью акцента и ничего
+ * больше: фон, текст, роли исхода и палитра профилей от неё не зависят, и в чужом
+ * профиле подмена акцента идёт поверх ролей — цвета профиля теме не подчиняются (§2.2).
  */
 @Composable
 fun SklyankaTheme(
     profile: ProfileAccent = ProfileAccent.Owner,
+    theme: AccentTheme = AccentTheme.DEFAULT,
     dark: Boolean = false,
     content: @Composable () -> Unit,
 ) {
-    val colors = remember(profile, dark) {
-        when {
-            dark -> darkColors()
-            profile.isForeign -> tintedColors(lightColors(), profile.color)
-            else -> lightColors()
-        }
+    val colors = remember(profile, theme, dark) {
+        // Порядок веток — правило, а не приём: среда выбирает **роли**, а профиль
+        // подкрашивает уже выбранные. Обратный порядок (среда после профиля) стирал бы
+        // индикацию чужого профиля ночью — полоса, подкраска и акцент действий пропадали бы
+        // там, где их легче всего не заметить (ПРФ-10, §9).
+        val base = if (dark) darkColors(theme) else lightColors(theme)
+        if (profile.isForeign) tintedColors(base, profile.color, dark) else base
     }
     CompositionLocalProvider(LocalSklyankaColors provides colors) {
         MaterialTheme(

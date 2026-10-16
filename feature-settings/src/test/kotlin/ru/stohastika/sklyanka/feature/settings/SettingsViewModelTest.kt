@@ -2,7 +2,10 @@ package ru.stohastika.sklyanka.feature.settings
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -14,8 +17,15 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import ru.stohastika.sklyanka.domain.appearance.AccentTheme
+import ru.stohastika.sklyanka.domain.appearance.IconVariant
+import ru.stohastika.sklyanka.domain.appearance.ObserveAccentThemeUseCase
+import ru.stohastika.sklyanka.domain.appearance.ObserveIconVariantUseCase
+import ru.stohastika.sklyanka.domain.appearance.SetAccentThemeUseCase
+import ru.stohastika.sklyanka.domain.appearance.SetIconVariantUseCase
 import ru.stohastika.sklyanka.domain.model.Profile
 import ru.stohastika.sklyanka.domain.pro.ObserveProStatusUseCase
+import ru.stohastika.sklyanka.domain.pro.ProPoint
 import ru.stohastika.sklyanka.domain.profile.ProfileCreationDecision
 import ru.stohastika.sklyanka.domain.profile.SwitchProfileUseCase
 import ru.stohastika.sklyanka.domain.profile.SwitchReason
@@ -48,6 +58,12 @@ class SettingsViewModelTest {
 
     /** Кэш подписки: доступ «Про» для гейта на создание профиля (ПРФ-33, Р-84). */
     private val proCache = FakeProCache()
+
+    /** Постоянные настройки оформления в памяти (SKL-120, §5.17). */
+    private val appearance = FakeAppearancePreferences()
+
+    /** Доступ «Про» — один на все гейты экрана: и на профили, и на оформление. */
+    private val proStatus = ObserveProStatusUseCase(cache = proCache, time = FixedTimeSource(Instant.EPOCH))
 
     @Before
     fun setUp() {
@@ -324,19 +340,169 @@ class SettingsViewModelTest {
     private fun fiveProfiles(): List<Profile> = listOf(SettingsFixtures.self()) +
         (1..4).map { index -> SettingsFixtures.foreign("Guest $index").copy(id = "guest-$index") }
 
+    // --- Оформление: дверь открыта, гейт на выборе (SKL-120, §5.17) -------------------------
+
+    /**
+     * §5.17, Р-67 п. 5: строка открывает диалог и **без** доступа.
+     *
+     * Иначе человек не увидел бы, что покупает, а «Про» стояло бы у поверхности вместо
+     * платных строк набора. Витрина при нажатии строки не открывается ни в одном состоянии.
+     */
+    @Test
+    fun theThemeRowOpensThePickerWithoutAccess() = runTest(dispatcher) {
+        val model = viewModel()
+        dispatcher.scheduler.advanceUntilIdle()
+        val points = trackShowcase(model)
+
+        model.onIntent(SettingsIntent.OpenThemePicker)
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertTrue(model.state.value.themePickerVisible)
+        assertEquals(emptyList<ProPoint>(), points)
+    }
+
+    /** Тем же правилом живёт вторая строка блока: диалог иконки тоже открыт без доступа. */
+    @Test
+    fun theIconRowOpensThePickerWithoutAccess() = runTest(dispatcher) {
+        val model = viewModel()
+        dispatcher.scheduler.advanceUntilIdle()
+        val points = trackShowcase(model)
+
+        model.onIntent(SettingsIntent.OpenIconPicker)
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertTrue(model.state.value.iconPickerVisible)
+        assertEquals(emptyList<ProPoint>(), points)
+    }
+
+    /** Р-20, Р-56: базовые «Олива» и «Ледяная» выбираются в любой подписке и без неё. */
+    @Test
+    fun theBaseThemeAndTheBaseIconAreChosenWithoutAccess() = runTest(dispatcher) {
+        val model = viewModel()
+        dispatcher.scheduler.advanceUntilIdle()
+        val points = trackShowcase(model)
+
+        model.onIntent(SettingsIntent.OpenThemePicker)
+        dispatcher.scheduler.advanceUntilIdle()
+        model.onIntent(SettingsIntent.SelectTheme(AccentTheme.OLIVE))
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(AccentTheme.OLIVE, appearance.storedTheme)
+        assertFalse(model.state.value.themePickerVisible)
+
+        model.onIntent(SettingsIntent.SelectIconVariant(IconVariant.ICE))
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(IconVariant.ICE, appearance.storedVariant)
+        assertEquals(emptyList<ProPoint>(), points)
+    }
+
+    /**
+     * Р-67 пп. 2–3, Р-71: платный выбор без доступа не применяется и открывает витрину.
+     *
+     * Выбор при этом не меняется, а диалог закрывается: человек остаётся с тем, что
+     * применено сейчас, и после покупки нажимает строку ещё раз — скрытого продолжения нет.
+     */
+    @Test
+    fun thePaidThemeWithoutAccessOpensTheShowcaseAndKeepsTheChoice() = runTest(dispatcher) {
+        val model = viewModel()
+        dispatcher.scheduler.advanceUntilIdle()
+        val points = trackShowcase(model)
+
+        model.onIntent(SettingsIntent.OpenThemePicker)
+        dispatcher.scheduler.advanceUntilIdle()
+        model.onIntent(SettingsIntent.SelectTheme(AccentTheme.AMETHYST))
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(AccentTheme.OLIVE, appearance.storedTheme)
+        assertEquals(AccentTheme.OLIVE, model.state.value.accentTheme)
+        assertFalse(model.state.value.themePickerVisible)
+        assertEquals(listOf(ProPoint.ACCENT), points)
+    }
+
+    /** Тем же правилом — «Тёплая» иконка: один гейт на оба выбора (Р-31). */
+    @Test
+    fun thePaidIconWithoutAccessOpensTheShowcase() = runTest(dispatcher) {
+        val model = viewModel()
+        dispatcher.scheduler.advanceUntilIdle()
+        val points = trackShowcase(model)
+
+        model.onIntent(SettingsIntent.SelectIconVariant(IconVariant.WARM))
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(IconVariant.ICE, appearance.storedVariant)
+        assertEquals(listOf(ProPoint.ACCENT), points)
+    }
+
+    /**
+     * Р-22, В-120-3: после отмены подписки заведённое остаётся, выбор другой платной закрыт,
+     * а вернуться к базовой можно без подписки.
+     *
+     * Асимметрия названа нормой честно: платят за создание нового, а не за то, что заведено;
+     * запри закрытую дверь — «заведённое не запирается» превратилось бы в «заведённое
+     * не отпускает».
+     */
+    @Test
+    fun afterTheSubscriptionEndsTheChosenThemeStaysAndTheBaseOneIsReachable() = runTest(dispatcher) {
+        proCache.grant(PRO_UNTIL)
+        val model = viewModel()
+        dispatcher.scheduler.advanceUntilIdle()
+        model.onIntent(SettingsIntent.SelectTheme(AccentTheme.AMETHYST))
+        dispatcher.scheduler.advanceUntilIdle()
+        assertEquals(AccentTheme.AMETHYST, appearance.storedTheme)
+
+        // Подписка кончилась: кэш отдаёт отменённое состояние, и экран перечитывает доступ.
+        proCache.expire()
+        model.refresh()
+        dispatcher.scheduler.advanceUntilIdle()
+        val points = trackShowcase(model)
+
+        assertEquals(AccentTheme.AMETHYST, model.state.value.accentTheme)
+        model.onIntent(SettingsIntent.SelectTheme(AccentTheme.PINE))
+        dispatcher.scheduler.advanceUntilIdle()
+        assertEquals(AccentTheme.AMETHYST, appearance.storedTheme)
+        assertEquals(listOf(ProPoint.ACCENT), points)
+
+        model.onIntent(SettingsIntent.SelectTheme(AccentTheme.OLIVE))
+        dispatcher.scheduler.advanceUntilIdle()
+        assertEquals(AccentTheme.OLIVE, appearance.storedTheme)
+    }
+
+    /**
+     * Событие витрины слушается до нажатия: у потока нет повтора, и поздний слушатель его теряет.
+     *
+     * Сборщик поднимается на `Dispatchers.Unconfined` — так подписка случается в момент
+     * запуска, а не когда дойдёт очередь диспетчера: у `SharedFlow` без повтора сигнал,
+     * отправленный до подписки, пропадает молча.
+     */
+    private fun TestScope.trackShowcase(model: SettingsViewModel): List<ProPoint> {
+        val points = mutableListOf<ProPoint>()
+        backgroundScope.launch(Dispatchers.Unconfined) { model.showcase.collect { points += it } }
+        return points
+    }
+
     private fun viewModel() = SettingsViewModel(
         profiles = profiles,
         context = FakeProfileContext(profiles, active),
         medications = medications,
         switchProfile = SwitchProfileUseCase(profiles = profiles, active = active),
-        system = SettingsSystemStateReader(
-            reminders = reminders,
-            permissions = permissions,
+        environment = SettingsEnvironment(
+            system = SettingsSystemStateReader(
+                reminders = reminders,
+                permissions = permissions,
+            ),
+            stamp = AppStamp(versionName = VERSION, versionCode = VERSION_CODE),
+            proStatus = proStatus,
         ),
-        stamp = AppStamp(versionName = VERSION, versionCode = VERSION_CODE),
         // Подписка по умолчанию не оформлена: строка блока «Склянка Про» показывает
         // «Не оформлена», и её значение не мешает проверкам списка профилей (SKL-122).
-        proStatus = ObserveProStatusUseCase(cache = proCache, time = FixedTimeSource(Instant.EPOCH)),
+        // Оформление (SKL-120): те же швы, что у продукта, — «Олива» и «Ледяная» по умолчанию.
+        appearance = SettingsAppearance(
+            observeTheme = ObserveAccentThemeUseCase(appearance),
+            observeIcon = ObserveIconVariantUseCase(appearance),
+            setTheme = SetAccentThemeUseCase(appearance, proStatus),
+            setIcon = SetIconVariantUseCase(appearance, proStatus),
+        ),
     )
 
     private companion object {

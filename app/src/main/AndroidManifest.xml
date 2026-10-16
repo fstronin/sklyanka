@@ -150,10 +150,15 @@
         android:theme="@style/Theme.Sklyanka">
 
         <!--
+          Главная активность фильтр `MAIN`/`LAUNCHER` больше не несёт (SKL-120, §2.4):
+          его несут два алиаса ниже — по одному на вариант иконки. Знак в списке приложений
+          выбирает человек, а запускается всё та же активность: алиас — это не второе
+          приложение, а второе имя того же окна.
+
           launchMode="singleTask": ярлык быстрого доступа обязан вывести уже существующую
           задачу на передний план и прийти в `onNewIntent`, а не поднять вторую копию
           корня с формой поверх первой (SKL-80). Обычный запуск с иконки поведение
-          не меняет.
+          не меняет — и переезд фильтра на алиасы его не меняет тоже.
         -->
         <activity
             android:name=".MainActivity"
@@ -161,11 +166,6 @@
             android:label="@string/app_name"
             android:launchMode="singleTask"
             android:theme="@style/Theme.Sklyanka.Splash">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-
             <!--
               Ярлык быстрого доступа «Добавить лекарство» (SKL-80, ОВ-96): один ярлык —
               самое частое действие, форма нового лекарства. Служебные ярлыки разрешений
@@ -175,6 +175,64 @@
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />
         </activity>
+
+        <!--
+          Холодный вариант иконки — базовый (Р-56, Р-57).
+
+          Включён в манифесте: приложение обязано появиться в лончере сразу после установки,
+          а не после первого выбора оформления. Имя в лончере — `app_name` у обоих алиасов:
+          название в списке приложений принадлежит продукту, а не оформлению (В-120-2), и
+          переключение варианта в лончере видно, а переименования — нет.
+
+          Ярлык быстрого доступа объявлен на обоих алиасах: `android.app.shortcuts` читается
+          у компонента с фильтром `MAIN`/`LAUNCHER`, а его теперь несёт алиас, и оставить
+          метаданные только на активности значило бы потерять ярлык при переключении варианта
+          (П-7: обещание ярлыка обязано держаться в обоих вариантах).
+        -->
+        <activity-alias
+            android:name=".MainActivityIce"
+            android:enabled="true"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher"
+            android:label="@string/app_name"
+            android:roundIcon="@mipmap/ic_launcher_round"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
+        </activity-alias>
+
+        <!--
+          Тёплый вариант иконки — «Склянка Про» (§2.4, Р-31).
+
+          Выключен в манифесте: включённым его делает выбор человека
+          (`LauncherIconSwitch`, `setComponentEnabledSetting` с `DONT_KILL_APP`).
+          Ресурсы тёплого варианта лежат в сборке с самого начала — иначе первый же выбор
+          показывал бы систему без значка.
+
+          Разные у вариантов ресурсы подложки и переднего плана, а монохром общий: силуэт
+          от красок не зависит, и второй копии маски не заводится (§2.4).
+        -->
+        <activity-alias
+            android:name=".MainActivityWarm"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_warm"
+            android:label="@string/app_name"
+            android:roundIcon="@mipmap/ic_launcher_warm_round"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
+        </activity-alias>
 
         <!--
           Полноэкранное напоминание (НАП-29).

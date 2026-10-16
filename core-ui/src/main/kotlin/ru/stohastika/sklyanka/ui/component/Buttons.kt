@@ -208,7 +208,8 @@ fun QuietButton(
         QuietButtonKind.Accent -> colors.accent
         QuietButtonKind.Muted -> colors.textMuted
         QuietButtonKind.Danger -> colors.danger
-        QuietButtonKind.Warning -> colors.warning
+        // Тихие действия-предупреждения стоят на светлых подложках (§9, V-74).
+        QuietButtonKind.Warning -> colors.warningOnSoft
     }
     Row(
         modifier = modifier

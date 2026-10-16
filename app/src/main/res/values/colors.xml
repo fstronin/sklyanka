@@ -26,9 +26,54 @@
       уведомления останутся от прежней палитры. Сходимость стережёт приёмка SKL-109 §4.
     -->
 
+    <!--
+      Фон окна в тёмной среде интерфейса (§9, SKL-120).
+
+      То же значение, что роль `background` тёмной среды: окно обязано быть того же цвета,
+      что первый кадр приложения, иначе между заставкой и экраном мелькает чужая полоса.
+      Дубликат значения — цена того, что платформе цвет приходит ресурсом, а ролям — токеном;
+      сходимость стережит приёмка SKL-109 §4.
+    -->
+    <color name="environment_dark_background">#181712</color>
+
     <!-- Плитки иконки: светлая по умолчанию, тёмная — в `-night` (ОВ-95, §2.4). -->
     <color name="mark_tile_dark">#111A1E</color>
     <color name="mark_tile_light">#E7F0F4</color>
+
+    <!--
+      Вторая палитра знака: тёплая, вариант иконки «Про» (Р-31, §2.4, SKL-120).
+
+      Те же слои и те же альфы, что у холодной палитры, — другие краски и плитки.
+      Значения — из §2.4 нормы; имена повторяют холодные с приставкой `warm_`, чтобы
+      правка одной палитры не задевала вторую и расхождение было видно глазами.
+
+      В интерфейсе эта палитра не применяется: знак в приложении, заставка, фирменный
+      блок и плоская редукция остаются холодными (§2.4, §9). Она принадлежит только
+      иконке приложения и её миниатюре в диалоге выбора (§5.17).
+    -->
+    <color name="warm_mark_tile_dark">#181712</color>
+    <color name="warm_mark_tile_light">#EFE7DB</color>
+    <color name="warm_mark_ink_on_dark">#F8F6EF</color>
+    <color name="warm_mark_ink_on_light">#241F1B</color>
+    <!-- Белый блик: серп светлой плитки и первые две остановки тела — он общий двум версиям. -->
+    <color name="warm_mark_highlight">#FFFFFF</color>
+    <!-- Дуга и каустика тёплого варианта — светлая олива, одна краска в обеих версиях. -->
+    <color name="warm_mark_accent">#B5C47A</color>
+    <color name="warm_mark_body_dark_0">#3DF8F6EF</color>
+    <color name="warm_mark_body_dark_1">#12F8F6EF</color>
+    <color name="warm_mark_body_dark_2">#04F8F6EF</color>
+    <color name="warm_mark_body_light_0">#F2FFFFFF</color>
+    <color name="warm_mark_body_light_1">#59FFFFFF</color>
+    <color name="warm_mark_body_light_2">#0F241F1B</color>
+    <color name="warm_mark_rim_dark_0">#D9F8F6EF</color>
+    <color name="warm_mark_rim_dark_1">#29F8F6EF</color>
+    <color name="warm_mark_rim_dark_2">#6BF8F6EF</color>
+    <color name="warm_mark_rim_light_0">#29241F1B</color>
+    <color name="warm_mark_rim_light_1">#80241F1B</color>
+    <color name="warm_mark_rim_light_2">#38241F1B</color>
+    <color name="warm_mark_caustic_dark">#9EB5C47A</color>
+    <color name="warm_mark_caustic_light">#8CB5C47A</color>
+    <color name="warm_mark_caustic_clear">#00B5C47A</color>
 
     <!-- Краски знака: светлое стекло на тёмной плитке, тёмное — на светлой, белый блик серпа. -->
     <color name="mark_ink_on_dark">#C4F0F7</color>

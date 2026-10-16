@@ -130,6 +130,16 @@
     <string name="settings_rubric_system">Жүйе</string>
     <string name="settings_rubric_data">Деректер</string>
 
+    <string name="settings_appearance_rubric">Көрініс</string>
+    <string name="settings_theme_row">Акцент түсі</string>
+    <string name="settings_icon_row">Қолданба белгішесі</string>
+    <string name="theme_olive">Зәйтүн</string>
+    <string name="theme_indigo">Индиго</string>
+    <string name="theme_pine">Қарағай</string>
+    <string name="theme_amethyst">Аметист</string>
+    <string name="icon_variant_ice">Мұзды</string>
+    <string name="icon_variant_warm">Жылы</string>
+
     <string name="settings_profile_self">Менің дәрілерім</string>
     <string name="settings_profile_self_initial">М</string>
     <string name="settings_profile_mirrored">еске салғыштар маған қайталанады</string>

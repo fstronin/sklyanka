@@ -8,6 +8,7 @@ import androidx.glance.LocalContext
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.provideContent
+import ru.stohastika.sklyanka.domain.appearance.AccentTheme
 import ru.stohastika.sklyanka.domain.widget.WidgetDaySnapshot
 import ru.stohastika.sklyanka.feature.widgets.di.WidgetEntryPoint
 import ru.stohastika.sklyanka.feature.widgets.open.WidgetPlace
@@ -37,9 +38,10 @@ class TodayWidget : GlanceAppWidget() {
         val graph = runCatching { WidgetEntryPoint.of(context) }.getOrNull() ?: return
         val snapshot = graph.snapshots().day()
         val today = graph.time().today()
+        val theme = graph.accentTheme().current()
         val open = graph.openTarget().intentFor(context, WidgetPlace.TODAY)
         provideContent {
-            TodayPlate(snapshot = snapshot, today = today, open = open)
+            TodayPlate(snapshot = snapshot, today = today, theme = theme, open = open)
         }
     }
 }
@@ -51,10 +53,10 @@ class TodayWidget : GlanceAppWidget() {
  * от «по лекарству»: слова тихих состояний профиля и предмет в шапке.
  */
 @Composable
-private fun TodayPlate(snapshot: WidgetDaySnapshot?, today: LocalDate, open: Intent) {
+private fun TodayPlate(snapshot: WidgetDaySnapshot?, today: LocalDate, theme: AccentTheme, open: Intent) {
     val resources = LocalContext.current.resources
     val profile = snapshot?.profile
-    val accent = WidgetLook.accent(profile)
+    val accent = WidgetLook.accent(profile, theme)
     val items = snapshot?.items.orEmpty()
     DayPlate(
         state = DayPlateState(

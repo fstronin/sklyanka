@@ -1,5 +1,7 @@
 package ru.stohastika.sklyanka.feature.settings
 
+import ru.stohastika.sklyanka.domain.appearance.AccentTheme
+import ru.stohastika.sklyanka.domain.appearance.IconVariant
 import ru.stohastika.sklyanka.domain.pro.ProStatus
 import ru.stohastika.sklyanka.domain.pro.ProSubscription
 import ru.stohastika.sklyanka.domain.profile.ProfileCreationDecision
@@ -60,6 +62,25 @@ data class SettingsUiState(
      * по числу заведённых профилей и доступу — не экран.
      */
     val profileCreation: ProfileCreationDecision = ProfileCreationDecision.Allowed,
+    /**
+     * Выбранная акцентная тема (§5.17, Р-31).
+     *
+     * Умолчание — базовая «Олива» (Р-20): она показывает и то, что человек не выбирал
+     * ничего, и то, что выбранное не читается с диска мгновенно. Поток темы подменяет её
+     * первым же значением, и на экране это не мигает: тема применяется ко всему приложению
+     * до первой композиции (`TDD.md` §5).
+     */
+    val accentTheme: AccentTheme = AccentTheme.DEFAULT,
+    /** Выбранный вариант иконки (§5.17, Р-31). Умолчание — базовая «Ледяная» (Р-56). */
+    val iconVariant: IconVariant = IconVariant.DEFAULT,
+    /**
+     * Открыт ли выбор темы; видимость живёт в состоянии, а не в `remember` композиции,
+     * по той же причине, что у выбора интервала откладывания: стенд приёмки пересобирает
+     * композицию на каждом шаге (`TDD.md` §5.2).
+     */
+    val themePickerVisible: Boolean = false,
+    /** Открыт ли выбор иконки. */
+    val iconPickerVisible: Boolean = false,
 )
 
 /**

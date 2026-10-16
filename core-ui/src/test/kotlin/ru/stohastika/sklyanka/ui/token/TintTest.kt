@@ -1,6 +1,7 @@
 package ru.stohastika.sklyanka.ui.token
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -19,7 +20,7 @@ class TintTest {
 
     private val light = lightColors()
     private val profile = Palette.ProfileForeign
-    private val tinted = tintedColors(light, profile)
+    private val tinted = tintedColors(light, profile, dark = false)
 
     @Test
     fun `tinted surfaces follow the base tokens`() {
@@ -29,13 +30,31 @@ class TintTest {
         assertChannelsClose("line", tinted.line, TINTED_LINE)
         assertChannelsClose("lineOnSurface", tinted.lineOnSurface, TINTED_LINE_ON_SURFACE)
         assertChannelsClose("lineInteractive", tinted.lineInteractive, TINTED_LINE_INTERACTIVE)
-        assertChannelsClose("accentBorder", tinted.accentBorder, TINTED_ACCENT_BORDER)
+        // Рамка чужого профиля выводится от поверхности **среды** долей 0,20 (§2.2, SKL-120):
+        // к светлой поверхности, а не от рамки темы — иначе светлая рамка вставала бы
+        // вокруг тёмной карточки.
+        assertChannelsClose("accentBorder", tinted.accentBorder, tint(light.surface, profile, 0.20f).toArgb())
     }
 
     @Test
-    fun `accent and stripe become the profile colour itself`() {
+    fun `the soft plate and its ink are the profile's own and do not follow the environment`() {
+        // Подложка семьи — «бумага»: цвет профиля, разбавленный к белой поверхности 0,14,
+        // и чернила на ней — к основному тексту 0,50. Оба значения одни в обеих средах (§2.2).
+        assertChannelsClose("accentSoft", tinted.accentSoft, tint(Palette.Surface, profile, 0.14f).toArgb())
+        assertChannelsClose("onAccentSoft", tinted.onAccentSoft, onAccentSoftOf(profile).toArgb())
+        val atNight = tintedColors(darkColors(), profile, dark = true)
+        assertChannelsClose("accentSoft at night", atNight.accentSoft, tint(Palette.Surface, profile, 0.14f).toArgb())
+        assertChannelsClose("onAccentSoft at night", atNight.onAccentSoft, onAccentSoftOf(profile).toArgb())
+    }
+
+    @Test
+    fun `accent and stripe are raised at night and stay the profile colour by day`() {
         assertEquals(profile, tinted.accent)
         assertEquals(profile, tinted.profileStripe)
+        // В тёмной среде они поднимаются к светлому значению — иначе ролью текста не были бы (§2.2).
+        val atNight = tintedColors(darkColors(), profile, dark = true)
+        assertChannelsClose("accent at night", atNight.accent, tint(Palette.Background, profile, 0.55f).toArgb())
+        assertChannelsClose("stripe at night", atNight.profileStripe, tint(Palette.Background, profile, 0.55f).toArgb())
     }
 
     /**

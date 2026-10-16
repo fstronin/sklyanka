@@ -91,6 +91,9 @@ fun SettingsScreen(state: SettingsUiState, onIntent: (SettingsIntent) -> Unit, m
                 profilesBlock(state, onIntent)
                 remindersBlock(state, onIntent)
                 systemBlock(state, onIntent)
+                // «Оформление» — между «Системой» и «Данными» (Р-67 п. 6, §5.17): оформление
+                // принадлежит приложению, а не данным, и под строку «Склянка Про» ему не место.
+                appearanceBlock(state, onIntent)
                 dataBlock(onIntent)
                 proBlock(state, onIntent)
                 item {
@@ -109,6 +112,15 @@ fun SettingsScreen(state: SettingsUiState, onIntent: (SettingsIntent) -> Unit, m
             )
             if (state.snoozePickerVisible) {
                 SnoozePicker(state, onIntent)
+            }
+            // Диалоги блока «Оформление» — тем же слоем, что выбор интервала откладывания:
+            // затемнение одно на все модальные слои (§2.3), и своё у диалога темы разошлось бы
+            // с ним на первой же правке.
+            if (state.themePickerVisible) {
+                ThemePickerDialog(state, onIntent)
+            }
+            if (state.iconPickerVisible) {
+                IconPickerDialog(state, onIntent)
             }
         }
         // Ряд — слой над прокруткой: до порога его не видно, и места в потоке он не держит (§7).
@@ -526,7 +538,7 @@ private fun AboutPlate(version: String, modifier: Modifier = Modifier) {
  * списка, и он обязан занимать всю ширину, тогда как карточкам нужно поле (§7).
  */
 @Composable
-private fun SettingsBlock(rubric: String, content: @Composable () -> Unit) {
+internal fun SettingsBlock(rubric: String, content: @Composable () -> Unit) {
     Column(
         modifier = Modifier.padding(horizontal = SklyankaSpacing.Section),
         verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Small),

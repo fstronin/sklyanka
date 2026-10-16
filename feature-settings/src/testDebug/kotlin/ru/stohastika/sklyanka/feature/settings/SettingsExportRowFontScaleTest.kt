@@ -5,8 +5,10 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
@@ -55,8 +57,12 @@ class SettingsExportRowFontScaleTest {
             }
         }
 
-        val mark = composeRule.onNodeWithTag(TAG_PRO_MARK, useUnmergedTree = true).fetchSemanticsNode()
-        val text = composeRule.onNodeWithText(word, useUnmergedTree = true).fetchSemanticsNode()
+        val mark = exportRowMark().fetchSemanticsNode()
+        // Слово метки ищется на той же строке: «Про» носят и строки блока «Оформление».
+        val text = composeRule.onNode(
+            hasText(word) and hasAnyAncestor(hasTestTag(TAG_EXPORT_ROW)),
+            useUnmergedTree = true,
+        ).fetchSemanticsNode()
         val label = composeRule.onNodeWithText(
             context.withInterfaceLocale(RUSSIAN).getString(R.string.settings_export_history),
             useUnmergedTree = true,
@@ -79,6 +85,17 @@ class SettingsExportRowFontScaleTest {
         )
     }
 
+    /**
+     * Метка «Про» **строки «Экспорт истории»**, а не первая попавшаяся.
+     *
+     * Метку носят и строки блока «Оформление» (SKL-120, §5.17), поэтому поиск по тегу
+     * на целом экране нашёл бы три узла — проверка зазора мерила бы чужую строку.
+     */
+    private fun exportRowMark() = composeRule.onNode(
+        hasTestTag(TAG_PRO_MARK) and hasAnyAncestor(hasTestTag(TAG_EXPORT_ROW)),
+        useUnmergedTree = true,
+    )
+
     /** Зазор между концом подписи и началом метки: у нормы он ~10 px, а не «через полстроки». */
     private fun gapAt(scale: Float): Float {
         var gap = 0f
@@ -91,7 +108,7 @@ class SettingsExportRowFontScaleTest {
             context.withInterfaceLocale(RUSSIAN).getString(R.string.settings_export_history),
             useUnmergedTree = true,
         ).fetchSemanticsNode()
-        val mark = composeRule.onNodeWithTag(TAG_PRO_MARK, useUnmergedTree = true).fetchSemanticsNode()
+        val mark = exportRowMark().fetchSemanticsNode()
         gap = mark.positionInRoot.x - (title.positionInRoot.x + title.size.width)
         println(
             "pro mark gap at ${scale}x: $gap px " +

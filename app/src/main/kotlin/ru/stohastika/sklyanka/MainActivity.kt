@@ -9,6 +9,7 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -25,6 +26,9 @@ import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import ru.stohastika.sklyanka.data.room.DatabaseUpgrade
+import ru.stohastika.sklyanka.domain.appearance.AccentTheme
+import ru.stohastika.sklyanka.domain.appearance.ObserveAccentThemeUseCase
+import ru.stohastika.sklyanka.domain.appearance.ObserveIconVariantUseCase
 import ru.stohastika.sklyanka.domain.onboarding.OnboardingSource
 import ru.stohastika.sklyanka.domain.onboarding.ShouldShowOnboardingUseCase
 import ru.stohastika.sklyanka.domain.pro.ProPoint
@@ -79,6 +83,7 @@ import ru.stohastika.sklyanka.navigation.SettingsViewModels
 import ru.stohastika.sklyanka.navigation.UndoReturn
 import ru.stohastika.sklyanka.navigation.WidgetLaunch
 import ru.stohastika.sklyanka.navigation.layer
+import ru.stohastika.sklyanka.platform.icon.LauncherIconSwitch
 import ru.stohastika.sklyanka.platform.startup.StartupRouter
 import ru.stohastika.sklyanka.reminder.DeliveryCheckAnnouncer
 import ru.stohastika.sklyanka.reminder.ReminderOutageAnnouncer
@@ -255,6 +260,35 @@ class MainActivity : ComponentActivity() {
     private val proShowcase: ProShowcaseViewModel by viewModels()
 
     /**
+     * Действующая акцентная тема и вариант иконки (§5.17, Р-31, SKL-120).
+     *
+     * Читаются потоком в композиции, а не разово в `onCreate`: выбор применяется сразу
+     * и на целом экране — тема меняется, пока человек стоит в настройках, и перерисовывать
+     * для этого активность было бы подменой «применяется сразу» на «применяется после
+     * возврата».
+     *
+     * Заставка держится до первого значения (см. `startupFrame`): иначе первый кадр мелькнул
+     * бы базовой «Оливой», и человек с «Аметистом» увидел бы чужой цвет на своём экране
+     * (`TDD.md` §5).
+     */
+    @Inject
+    lateinit var observeAccentTheme: ObserveAccentThemeUseCase
+
+    @Inject
+    lateinit var observeIconVariant: ObserveIconVariantUseCase
+
+    /**
+     * Переключение варианта иконки — два `activity-alias` (§2.4).
+     *
+     * Применяется не только в момент выбора, но и на каждом старте: состояние компонента
+     * переживает перезапуск процесса, но не переустановку, и после обновления выбор обязан
+     * вернуться на своё место, а не остаться иконкой из манифеста (П-7: приложение обещает
+     * ровно то, что делает).
+     */
+    @Inject
+    lateinit var launcherIcon: LauncherIconSwitch
+
+    /**
      * Шторка экспорта истории (SKL-119, Р-35).
      *
      * Живёт в активности, а не на экране: вход в неё — строка настроек, а поверхность выгрузки
@@ -269,12 +303,17 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
-        // Приложение светлое независимо от темы телефона (ОВ-9), поэтому значки
-        // системных панелей задаются явно тёмными: умолчание выбрало бы их по
-        // системной теме и дало бы светлые значки на светлом экране (SKL-72).
+        // Значки системных панелей выбираются **по среде интерфейса**: в светлой среде они
+        // тёмные (иначе умолчание дало бы светлые значки на светлом экране, SKL-72), в тёмной —
+        // светлые (§9, SKL-120). Раньше стиль был прибит тёмным по ОВ-9, когда приложение
+        // было светлым всегда; теперь среду выбирает системная настройка (Р-23), и жёсткий
+        // стиль дал бы светлые значки на тёмном экране.
+        //
+        // `auto` читает ту же системную настройку, что `interfaceDark` в композиции: два
+        // механизма выбора среды не заводятся, но и разойтись им нечем — источник один.
         enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.light(AndroidColor.TRANSPARENT, AndroidColor.TRANSPARENT),
-            navigationBarStyle = SystemBarStyle.light(AndroidColor.TRANSPARENT, AndroidColor.TRANSPARENT),
+            statusBarStyle = SystemBarStyle.auto(AndroidColor.TRANSPARENT, AndroidColor.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.auto(AndroidColor.TRANSPARENT, AndroidColor.TRANSPARENT),
         )
 
         // Ярлык быстрого доступа «Добавить лекарство» (SKL-80, ОВ-96): явное действие
@@ -306,7 +345,25 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            SklyankaTheme {
+            // Оформление читается **до** первого кадра: пока значения нет, показывается
+            // заставка (`startupFrame`), и базовый акцент «Оливы» не мелькает у человека
+            // с выбранной «Аметистом» (TDD §5). Потоками, а не полями: выбор темы
+            // в настройках обязан перекрасить всё приложение сразу, без перезахода.
+            val accentTheme by observeAccentTheme().collectAsState(initial = null)
+            val iconVariant by observeIconVariant().collectAsState(initial = null)
+            // Вариант иконки применяется и на старте, и при выборе: состояние алиасов
+            // переживает перезапуск процесса, но не переустановку (§2.4).
+            LaunchedEffect(iconVariant) {
+                iconVariant?.let(launcherIcon::apply)
+            }
+            // Среда интерфейса следует системной настройке (Р-23, §9): своего переключателя
+            // у неё нет, и читается она здесь один раз — тема и обёртка профиля получают
+            // готовое решение, а не второе чтение того же состояния.
+            val interfaceDark = isSystemInDarkTheme()
+            SklyankaTheme(
+                theme = accentTheme ?: AccentTheme.DEFAULT,
+                dark = interfaceDark,
+            ) {
                 // Онбординг закрывается сам, а не сменой признака запуска: его исход
                 // решает человек кнопкой, и решение живёт в состоянии экрана, а не в том,
                 // что система ответила про разрешения (НАП-21).
@@ -332,6 +389,10 @@ class MainActivity : ComponentActivity() {
                         onboardingDone = onboardingDone,
                         today = todayState,
                         block = block,
+                        // Тема и иконка читаются из постоянных настроек; пока значения нет,
+                        // первый экран не готов — и на экране заставка. Иначе первый кадр
+                        // мелькнул бы базовой «Оливой» (§5.17, `TDD.md` §5).
+                        appearanceReady = accentTheme != null && iconVariant != null,
                     ),
                 ) {
                     LaunchRouting(
@@ -340,6 +401,8 @@ class MainActivity : ComponentActivity() {
                         onboardingDone = onboardingDone,
                         addMedicationRequested = addMedicationRequested,
                         onOnboardingDone = { onboardingDone = true },
+                        theme = accentTheme ?: AccentTheme.DEFAULT,
+                        dark = interfaceDark,
                     )
                 }
             }
@@ -362,6 +425,9 @@ class MainActivity : ComponentActivity() {
         onboardingDone: Boolean,
         addMedicationRequested: Boolean,
         onOnboardingDone: () -> Unit,
+        /** Акцентная тема (§2.5) и тёмная среда интерфейса (§9) — для обёртки профиля. */
+        theme: AccentTheme,
+        dark: Boolean,
     ) {
         when {
             // Экран разрешений EMUI (SKL-14): запуск, на котором с разрешениями
@@ -395,7 +461,14 @@ class MainActivity : ComponentActivity() {
             // в контексте профиля (ПРФ-12). Заставка и экран разрешений в него
             // не входят: профиля на них ещё нет, а на первом запуске он всегда
             // свой.
-            else -> ProfileChrome(profileChrome()) {
+            else -> ProfileChrome(
+                state = profileChrome(),
+                // Тема и среда приходят в обёртку явно: она ставит свою `SklyankaTheme`,
+                // и без них экран под ней получил бы базовую «Оливу» при выбранной
+                // «Аметисте», а тёмная среда интерфейса до неё не дошла бы вовсе (§9).
+                theme = theme,
+                dark = dark,
+            ) {
                 OutageNotice()
                 DeliveryCheckBanner()
                 Root(onOpenPermissions = { permissionsFromToday = true })
@@ -740,7 +813,7 @@ class MainActivity : ComponentActivity() {
         deleteProfile = { rootNavigation.openSection(SettingsDestination.DeleteProfile) },
         // Строка блока «Склянка Про» открывает шторку витрины тем же жестом, каким её
         // открывает точка выбора платной функции (Р-67 п. 6): поверхность одна.
-        openPro = { openPro() },
+        openPro = { point -> openPro(point) },
         openToday = { rootNavigation.openTab(RootTab.TODAY) },
         openMedications = { rootNavigation.openMeds(MedsDestination.List) },
     )

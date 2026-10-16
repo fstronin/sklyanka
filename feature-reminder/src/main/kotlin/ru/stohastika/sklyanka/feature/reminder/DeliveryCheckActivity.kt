@@ -9,6 +9,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -16,6 +17,8 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import ru.stohastika.sklyanka.domain.appearance.AccentTheme
+import ru.stohastika.sklyanka.domain.appearance.ObserveAccentThemeUseCase
 import ru.stohastika.sklyanka.domain.reminder.port.NotificationGateway
 import ru.stohastika.sklyanka.ui.locale.withInterfaceLocale
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
@@ -37,6 +40,10 @@ class DeliveryCheckActivity : ComponentActivity() {
     @Inject
     lateinit var notifications: NotificationGateway
 
+    /** Акцентная тема «Про» — та же, что в приложении и на боевом напоминании (§2.5, SKL-120). */
+    @Inject
+    lateinit var observeAccentTheme: ObserveAccentThemeUseCase
+
     override fun attachBaseContext(base: Context) {
         super.attachBaseContext(base.withInterfaceLocale())
     }
@@ -57,7 +64,8 @@ class DeliveryCheckActivity : ComponentActivity() {
             return
         }
         setContent {
-            SklyankaTheme(dark = true) {
+            val theme by observeAccentTheme().collectAsState(initial = AccentTheme.DEFAULT)
+            SklyankaTheme(theme = theme, dark = true) {
                 var closing by remember { mutableStateOf(false) }
                 ReminderFade(visible = true, closing = closing, onClosed = { finish() }) {
                     DeliveryCheckScreen(

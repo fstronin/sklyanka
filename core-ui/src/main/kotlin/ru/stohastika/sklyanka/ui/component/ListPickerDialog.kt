@@ -66,6 +66,18 @@ public fun <T> ListPickerDialog(
      * метки приносит вызывающий (метка «Про» — `ProMark`).
      */
     mark: (@Composable (T) -> Unit)? = null,
+    /**
+     * Образец варианта слева от подписи (§5.13, §5.17).
+     *
+     * У выбора темы здесь круг 40 dp, залитый светлым акцентом; у выбора иконки —
+     * миниатюра варианта. Место одно на все `ListPickerDialog` намеренно: образец цвета
+     * в мастере профиля и образец темы обязаны быть одной формы, иначе «здесь выбирают
+     * цвет» перестаёт читаться формой и становится знанием (Р-76).
+     *
+     * `null` — вариант без образца: диалог выбора значения (интервал откладывания)
+     * образцов не рисует.
+     */
+    leading: (@Composable (T) -> Unit)? = null,
 ) {
     val colors = SklyankaTheme.colors
     Dialog(
@@ -103,6 +115,7 @@ public fun <T> ListPickerDialog(
                             selected = option == selected,
                             onClick = { onSelect(option) },
                             mark = mark?.let { slot -> { slot(option) } },
+                            leading = leading?.let { slot -> { slot(option) } },
                         )
                     }
                     Row(
@@ -127,7 +140,13 @@ public fun <T> ListPickerDialog(
 
 /** Строка варианта: ≥44 dp, выбранная — акцентом, начертанием 600 и галочкой. */
 @Composable
-private fun OptionRow(text: String, selected: Boolean, onClick: () -> Unit, mark: (@Composable () -> Unit)? = null) {
+private fun OptionRow(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    mark: (@Composable () -> Unit)? = null,
+    leading: (@Composable () -> Unit)? = null,
+) {
     val colors = SklyankaTheme.colors
     val selectedLabel = stringResource(R.string.cd_list_picker_selected)
     Row(
@@ -140,11 +159,17 @@ private fun OptionRow(text: String, selected: Boolean, onClick: () -> Unit, mark
             .testTag(TAG_LIST_PICKER_OPTION),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        if (leading != null) {
+            leading()
+            Spacer(modifier = Modifier.width(SklyankaSpacing.Medium))
+        }
         Text(
             text = text,
             style = if (selected) SklyankaType.BodyDefaultStrong else SklyankaType.BodyDefault,
             color = if (selected) colors.accent else colors.text,
-            modifier = Modifier.weight(1f),
+            // Подпись занимает свою ширину, а не всю строку: метка «Про» встаёт сразу
+            // за последним словом варианта, а не у правого края (V-69, V-76).
+            modifier = Modifier.weight(1f, fill = false),
         )
         // Метка стоит между подписью и галочкой (§5.9, §5.10): у платного варианта
         // человек узнаёт о плате до нажатия, а не после открытия витрины (П-7).

@@ -130,6 +130,16 @@
     <string name="settings_rubric_system">System</string>
     <string name="settings_rubric_data">Data</string>
 
+    <string name="settings_appearance_rubric">Appearance</string>
+    <string name="settings_theme_row">Accent colour</string>
+    <string name="settings_icon_row">App icon</string>
+    <string name="theme_olive">Olive</string>
+    <string name="theme_indigo">Indigo</string>
+    <string name="theme_pine">Pine</string>
+    <string name="theme_amethyst">Amethyst</string>
+    <string name="icon_variant_ice">Ice</string>
+    <string name="icon_variant_warm">Warm</string>
+
     <string name="settings_profile_self">My medications</string>
     <string name="settings_profile_self_initial">M</string>
     <string name="settings_profile_mirrored">reminders are mirrored to me</string>

@@ -3,6 +3,7 @@ package ru.stohastika.sklyanka.ui.token
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import ru.stohastika.sklyanka.domain.appearance.AccentTheme
 
 /**
  * Полнота наборов ролей (TDD §11.1).
@@ -29,17 +30,55 @@ class ColorRolesTest {
     }
 
     /**
-     * §5: в тёмной среде переопределяются ровно девять ролей — плюс две нейтральные
-     * роли профиля, которые своего цвета не вводят и повторяют фон среды.
+     * §9: тёмная среда интерфейса переопределяет каждую роль, которая на экранах
+     * встречается, — и ровно те, что названы в [DARK_OVERRIDDEN_ROLES].
      *
-     * Тест падает и когда тёмную роль забыли, и когда завели лишнюю: неиспользуемый
-     * тёмный токен — приглашение нарисовать экран, которого в объёме нет.
+     * Тест падает и когда тёмную роль забыли, и когда завели лишнюю, и когда роль
+     * разошлась молча: неиспользуемый тёмный токен — приглашение нарисовать экран,
+     * которого в объёме нет, а светлое значение на тёмном фоне читается светящейся
+     * заливкой вместо тихой плашки.
      */
     @Test
-    fun `dark set overrides exactly the nine declared roles`() {
+    fun `dark set overrides exactly the declared roles`() {
         val changed = light.keys.filter { role -> light[role] != dark[role] }.toSet()
-        assertEquals((DARK_OVERRIDDEN_ROLES + NEUTRAL_PROFILE_ROLES).toSet(), changed)
-        assertEquals(NINE_DARK_TOKENS, DARK_OVERRIDDEN_ROLES.size)
+        assertEquals(DARK_OVERRIDDEN_ROLES.toSet(), changed)
+    }
+
+    /**
+     * Четыре роли тёмная среда **не** переопределяет, и это тоже проверяется (§9, §2.3, §2.5).
+     *
+     * Список закрыт: `textOnDark` (одно значение в обеих средах, ОВ-146), `onAccentSoft`
+     * (значение то же, что в светлой, §2.5), `profileStripe` (прозрачность) и `scrim`
+     * (один токен и одна доля на все модальные слои). Пятая «неизменная» роль означала бы,
+     * что тёмная среда отдала роль светлой.
+     */
+    @Test
+    fun `the four inherited roles stay identical in the dark set`() {
+        val unchanged = light.keys.filter { role -> light[role] == dark[role] }.toSet()
+        assertEquals(DARK_INHERITED_ROLES.toSet(), unchanged)
+        assertTrue(
+            "a role can be neither overridden nor inherited at the same time",
+            DARK_OVERRIDDEN_ROLES.intersect(DARK_INHERITED_ROLES.toSet()).isEmpty(),
+        )
+    }
+
+    /**
+     * Роли тёмной среды полны у каждой из четырёх тем (§2.5, SKL-120): тема меняет
+     * семью акцента, а тёмный набор остаётся полным и в ней.
+     */
+    @Test
+    fun `every accent theme gets a full dark set`() {
+        AccentTheme.entries.forEach { theme ->
+            val roles = rolesOf(darkColors(theme))
+            assertEquals("${theme.key}: roles must not depend on the theme", light.keys, roles.keys)
+            val blank = roles.filterValues { it.isBlank() }.keys
+            assertTrue("${theme.key}: roles without a value: $blank", blank.isEmpty())
+            assertEquals(
+                "${theme.key}: the dark accent of the theme must be the role",
+                theme.palette.darkAccent,
+                darkColors(theme).accent,
+            )
+        }
     }
 
     /**
@@ -69,7 +108,7 @@ class ColorRolesTest {
     @Test
     fun `foreign profile turns all three indicators on at once`() {
         ProfilePalette.all.forEach { profile ->
-            val colors = tintedColors(lightColors(), profile.color)
+            val colors = tintedColors(lightColors(), profile.color, dark = false)
             assertEquals(profile.color, colors.profileStripe)
             assertEquals(profile.color, colors.accent)
             assertTrue(
@@ -80,9 +119,6 @@ class ColorRolesTest {
     }
 
     private companion object {
-
-        /** §5 называет девять тёмных токенов; число проверяется, а не подразумевается. */
-        const val NINE_DARK_TOKENS = 9
 
         /**
          * Имена и значения ролей из `toString()` набора.

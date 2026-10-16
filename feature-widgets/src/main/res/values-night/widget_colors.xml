@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Те же роли плиты в тёмной среде интерфейса (§9, SKL-120).
+
+  Квалификатор `-night` — это и есть следование плиты за системной настройкой (Р-23):
+  своего переключателя у среды нет, и второго механизма её выбора у виджета не заводится.
+  Значения — из таблицы §9: «громкие» роли подняты к свету, «тихие» остались тихими.
+-->
+<resources>
+    <color name="widget_surface">#342D26</color>
+    <color name="widget_line">#453C34</color>
+    <color name="widget_text">#F8F6EF</color>
+    <color name="widget_text_muted">#C9BFB1</color>
+    <color name="widget_text_tertiary">#A79C90</color>
+    <color name="widget_on_accent">#181712</color>
+    <color name="widget_line_interactive">#5C5148</color>
+    <color name="widget_ring">#68635A</color>
+    <color name="widget_dot">#574C42</color>
+    <color name="widget_day_taken">#96B2B4</color>
+    <color name="widget_day_partial">#C8D8D6</color>
+    <color name="widget_day_missed">#68635A</color>
+
+    <!--
+      Тёмная половина акцента каждой темы (§2.5, §9): светлая светлота на тёмном фоне
+      ролью текста быть не может, поэтому у каждой темы названо своё тёмное значение.
+    -->
+    <color name="widget_accent_olive">#B5C47A</color>
+    <color name="widget_accent_indigo">#A9B6EA</color>
+    <color name="widget_accent_pine">#8DC7A2</color>
+    <color name="widget_accent_amethyst">#CBA6D8</color>
+</resources>

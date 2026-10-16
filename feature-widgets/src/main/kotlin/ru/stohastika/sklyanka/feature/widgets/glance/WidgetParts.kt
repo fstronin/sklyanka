@@ -374,9 +374,9 @@ private fun RowScope.DayColumn(day: WidgetDaySummary, resources: Resources, zone
 @Composable
 private fun DayMark(state: AdherenceDayState) {
     when (state) {
-        AdherenceDayState.Taken -> FilledCircle(WidgetLook.role(WidgetLook.colors.taken))
-        AdherenceDayState.Partial -> FilledCircle(WidgetLook.role(WidgetLook.colors.takenPartial))
-        AdherenceDayState.Missed -> FilledCircle(WidgetLook.role(WidgetLook.colors.missed))
+        AdherenceDayState.Taken -> FilledCircle(WidgetLook.dayRole(AdherenceDayState.Taken))
+        AdherenceDayState.Partial -> FilledCircle(WidgetLook.dayRole(AdherenceDayState.Partial))
+        AdherenceDayState.Missed -> FilledCircle(WidgetLook.dayRole(AdherenceDayState.Missed))
 
         // Полый кружок «сегодня»: обводка 2 dp ролью `missed`, собранная подложкой.
         AdherenceDayState.Today -> Box(

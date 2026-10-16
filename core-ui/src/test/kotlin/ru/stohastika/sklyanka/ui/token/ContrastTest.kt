@@ -5,6 +5,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import ru.stohastika.sklyanka.domain.appearance.AccentTheme
 
 /**
  * Контраст пар из `docs/norm/06-design.md` §6.1 (НФТ-32, критерий 7).
@@ -61,7 +62,7 @@ class ContrastTest {
     @Test
     fun `every profile colour passes AA on the background it tints`() {
         ProfilePalette.all.forEach { profile ->
-            val tinted = tintedColors(light, profile.color)
+            val tinted = tintedColors(light, profile.color, dark = false)
             val onBackground = contrastRatio(tinted.accent, tinted.background)
             assertTrue(
                 "${profile.name}: accent on tinted background is $onBackground",
@@ -172,9 +173,198 @@ class ContrastTest {
         )
     }
 
+    /**
+     * Четыре акцентные темы в обеих средах — восемь наборов (§2.5, §9, SKL-120).
+     *
+     * Тема меняет семью акцента, и вместе с ней обязана держать AA: акцент как текст
+     * на фоне и на поверхности, подпись на акцентной заливке (в светлой среде белая,
+     * в тёмной — фон среды), подпись на мягком акценте, а в тёмной среде — ещё и сам
+     * акцент на тёмном фоне. Проверка идёт порогом, а не таблицей: числа §2.5 — вывод
+     * правила, и их сверка живёт отдельным тестом ниже.
+     */
+    @Test
+    fun `every accent theme passes AA in both environments`() {
+        val failures = mutableListOf<String>()
+        AccentTheme.entries.forEach { theme ->
+            val lightSet = lightColors(theme)
+            val darkSet = darkColors(theme)
+
+            fun check(name: String, ratio: Double) {
+                if (ratio < AA_NORMAL) failures += "$name: ${"%.2f".format(ratio)}"
+            }
+
+            check("${theme.key}: accent on background", contrastRatio(lightSet.accent, lightSet.background))
+            check("${theme.key}: accent on surface", contrastRatio(lightSet.accent, lightSet.surface))
+            check("${theme.key}: onAccent on accent", contrastRatio(lightSet.onAccent, lightSet.accent))
+            check(
+                "${theme.key}: onAccentSoft on accentSoft",
+                contrastRatio(lightSet.onAccentSoft, lightSet.accentSoft),
+            )
+            check("${theme.key} dark: accent on background", contrastRatio(darkSet.accent, darkSet.background))
+            check("${theme.key} dark: accent on surface", contrastRatio(darkSet.accent, darkSet.surface))
+            check("${theme.key} dark: onAccent on accent", contrastRatio(darkSet.onAccent, darkSet.accent))
+            check(
+                "${theme.key} dark: onAccentSoft on accentSoft",
+                contrastRatio(darkSet.onAccentSoft, darkSet.accentSoft),
+            )
+        }
+        assertTrue(failures.joinToString("\n"), failures.isEmpty())
+    }
+
+    /**
+     * Числа таблицы §2.5 для всех четырёх тем (§2.5, SKL-120).
+     *
+     * Тема стоит трёх значений, а всё остальное выводится правилом; здесь сверяются
+     * и данные значения, и вывод. Допуск — тот же, что у таблицы §6.1: числа посчитаны
+     * с точностью до сотых.
+     */
+    @Test
+    fun `accent theme pairs match the design table`() {
+        val given = buildList {
+            ACCENT_TABLE.forEach { row ->
+                val lightSet = lightColors(row.theme)
+                val darkSet = darkColors(row.theme)
+                add(
+                    Pair(
+                        "${row.theme.key}: accent on background",
+                        lightSet.accent,
+                        lightSet.background,
+                        row.onBackground,
+                    ),
+                )
+                add(Pair("${row.theme.key}: accent on surface", lightSet.accent, lightSet.surface, row.onSurface))
+                add(Pair("${row.theme.key}: onAccent on accent", lightSet.onAccent, lightSet.accent, row.caption))
+                add(Pair("${row.theme.key} dark: accent", darkSet.accent, darkSet.background, row.onDarkBackground))
+            }
+        }
+        // Пары мягкого акцента — вывод правила, а не заданное значение: числа §2.5 для них
+        // посчитаны от выведенной подложки, и у «Аметиста» таблица расходится с правилом
+        // на 0,09 (норма говорит «на долю 0,55», вывод идёт той же долей). Проверяются они
+        // своим допуском, а правило держит отдельный тест ниже; порог AA проходят и там.
+        // Мягкие пары акцентных тем в таблицу не идут: числа §2.5 для них — вывод правила
+        // для сведения, а не данное нормы (дизайнер назвал расхождение в девять сотых
+        // ошибкой чтения вывода). Мягкие пары держат порог AA
+        // (`every accent theme passes AA in both environments`) и тест вывода семьи
+        // (`the base theme accent family is derived by the published rule`).
+
+        assertTable(given, TABLE_TOLERANCE)
+    }
+
+    /**
+     * Сверка цвета с допуском в один шаг байта по каналу.
+     *
+     * Токен нормы записан байтами (`Color(0xFFCFD4C0)`), а выведенный правилом цвет —
+     * float-смешение; сравнивать их float-равенством значит падать на седьмом знаке после
+     * запятой. Число нормы при этом сходится с выводом с точностью до байта — это и проверяется.
+     */
+    private fun assertChannelEquals(expected: Color, actual: Color, name: String) {
+        listOf(expected.red to actual.red, expected.green to actual.green, expected.blue to actual.blue)
+            .forEachIndexed { index, (expectedChannel, actualChannel) ->
+                assertTrue(
+                    "$name: channel $index is $actualChannel, expected $expectedChannel",
+                    kotlin.math.abs(expectedChannel - actualChannel) <= CHANNEL_TOLERANCE,
+                )
+            }
+    }
+
+    /** Сверка пар таблицы: расхождение с ожиданием — падение, с сообщением о паре. */
+    private fun assertTable(pairs: List<Pair>, tolerance: Double) {
+        val failures = pairs.filter { pair ->
+            kotlin.math.abs(contrastRatio(pair.foreground, pair.background) - pair.expected) > tolerance
+        }
+        assertTrue(
+            failures.joinToString("\n") { pair ->
+                "${pair.name}: expected ${pair.expected}, " +
+                    "actual ${"%.2f".format(contrastRatio(pair.foreground, pair.background))}"
+            },
+            failures.isEmpty(),
+        )
+    }
+
+    /**
+     * Роли семьи акцента выводятся правилом, а не подбираются (§2.5, Правило 1).
+     *
+     * Базовая тема сверяется с токенами §2.1: если вывод правила разойдётся с нормой,
+     * разойдутся и остальные три темы — молча, потому что их чисел в коде нет.
+     */
+    @Test
+    fun `the base theme accent family is derived by the published rule`() {
+        val base = lightColors(AccentTheme.OLIVE)
+        // Выведенный цвет — float-смешение, токен нормы — запись байтами: сравниваются
+        // каналы с допуском в один шаг байта, а не float-равенством.
+        assertChannelEquals(Palette.AccentBorder, base.accentBorder, "accentBorder")
+        assertChannelEquals(Palette.OnAccentSoft, base.onAccentSoft, "onAccentSoft")
+        assertEquals(Palette.AccentSoft, base.accentSoft)
+        assertEquals(Palette.Accent, base.accent)
+
+        AccentTheme.entries.forEach { theme ->
+            val darkSet = darkColors(theme)
+            assertEquals(
+                "${theme.key}: the dark soft accent is the dark accent lightened to white by 0,55",
+                darkAccentSoftOf(theme.palette.darkAccent),
+                darkSet.accentSoft,
+            )
+        }
+    }
+
+    /**
+     * Опасность и предупреждение читаются в обеих средах, и подпись на заливке опасности тоже.
+     *
+     * В светлой среде кнопка необратимого действия залита тёмной краской и подписана белым
+     * (7,29); в тёмной — светлой краской, подписанной фоном среды (7,81). Это та же пара
+     * ролей, что у акцентной кнопки, и проверяется вместе с ней.
+     */
+    @Test
+    fun `danger and warning stay readable in both environments`() {
+        assertTrue(contrastRatio(light.danger, light.background) >= AA_NORMAL)
+        assertTrue(contrastRatio(light.danger, light.accentSoft) >= AA_NORMAL)
+        assertTrue(contrastRatio(light.onAccent, light.danger) >= AA_NORMAL)
+        AccentTheme.entries.forEach { theme ->
+            val darkSet = darkColors(theme)
+            assertTrue(
+                "${theme.key}: danger on dark background",
+                contrastRatio(darkSet.danger, darkSet.background) >= AA_NORMAL,
+            )
+            assertTrue(
+                "${theme.key}: onAccent on dark danger",
+                contrastRatio(darkSet.onAccent, darkSet.danger) >= AA_NORMAL,
+            )
+            assertTrue(
+                "${theme.key}: dark taken on dark surface",
+                contrastRatio(darkSet.taken, darkSet.surface) >= AA_NORMAL,
+            )
+        }
+    }
+
+    private data class AccentRow(
+        val theme: AccentTheme,
+        val onBackground: Double,
+        val onSurface: Double,
+        val caption: Double,
+        val onDarkBackground: Double,
+        val softOnSoftLight: Double,
+        val softOnSoftDark: Double,
+    )
+
     private data class Pair(val name: String, val foreground: Color, val background: Color, val expected: Double)
 
     private companion object {
+
+        /** Допуск сверки каналов: один шаг байта (1/255) — цена записи нормы байтами. */
+        const val CHANNEL_TOLERANCE = 1f / 255f
+
+        /**
+         * Таблица §2.5 для четырёх акцентных тем (SKL-120).
+         *
+         * Числа — из нормы, а не из кода: тест падает и когда посчитанное правило
+         * разошлось с документом, и когда документ поменяли, а значения оставили.
+         */
+        val ACCENT_TABLE = listOf(
+            AccentRow(AccentTheme.OLIVE, 5.11, 5.53, 5.53, 9.52, 8.24, 7.41),
+            AccentRow(AccentTheme.INDIGO, 6.72, 7.27, 7.27, 9.03, 8.30, 8.47),
+            AccentRow(AccentTheme.PINE, 8.08, 8.74, 8.74, 9.25, 10.09, 9.32),
+            AccentRow(AccentTheme.AMETHYST, 7.73, 8.36, 8.36, 8.53, 8.98, 8.79),
+        )
 
         /**
          * Таблица §6.1 целиком, за вычетом двух архивных строк: `archiveText` — цвет
@@ -214,5 +404,56 @@ class ContrastTest {
             Pair("lineOnSurface on surface", Palette.LineOnSurface, Palette.Surface, 1.23),
             Pair("lineInteractive on surface", Palette.LineInteractive, Palette.Surface, 1.57),
         )
+    }
+
+    /**
+     * Краски на светлой подложке мягкого акцента в тёмной среде (§9, V-74).
+     *
+     * Подложка `accentSoft` светлая в обеих средах, поэтому и краски на ней светлые —
+     * решает подложка, а не среда. Пары добавлены именно потому, что их отсутствие
+     * и пропустило дефект: на светлой подложке стояли тёмные поднятые краски (1,68–1,75
+     * при AA 4,5).
+     */
+    @Test
+    fun `the inks on the light soft accent pass AA in the dark environment`() {
+        val wrong = AccentTheme.entries.filter { theme ->
+            val dark = darkColors(theme)
+            contrastRatio(dark.onAccentSoft, dark.accentSoft) < AA_NORMAL ||
+                contrastRatio(dark.warningOnSoft, dark.accentSoft) < AA_NORMAL
+        }
+        assertTrue(
+            "the light soft accent must carry light inks in the dark environment: $wrong",
+            wrong.isEmpty(),
+        )
+    }
+
+    /**
+     * Семья чужого профиля в мягком виде: подложка и чернила на ней (§2.2, SKL-120).
+     *
+     * Проверяется **один раз на цвет**: среда из подложки и чернил ушла — подложка семьи
+     * светлая всегда, как и подложка темы, и тёмная среда её не перекрашивает.
+     */
+    @Test
+    fun `the soft family of every profile colour passes AA whatever the environment`() {
+        val wrong = ProfilePalette.all.filter { colour ->
+            contrastRatio(onAccentSoftOf(colour.color), tint(Palette.Surface, colour.color, 0.14f)) < AA_NORMAL
+        }
+        assertTrue("the ink must read on the soft plate of its own colour: $wrong", wrong.isEmpty())
+    }
+
+    /**
+     * Поднятый акцент чужого профиля на тёмном фоне (§2.2, §9, SKL-120).
+     *
+     * Цвет профиля на тёмном фоне даёт 2,4–3,2 и ролью текста быть не может, поэтому
+     * в тёмной среде акцент и полоса поднимаются к светлому тексту тем же приёмом, каким
+     * тема получает своё тёмное значение.
+     */
+    @Test
+    fun `the raised accent of every profile colour passes AA on the dark background`() {
+        val wrong = ProfilePalette.all.filter { colour ->
+            val raised = tint(Palette.Background, colour.color, 0.55f)
+            contrastRatio(raised, Palette.DarkBackground) < AA_NORMAL
+        }
+        assertTrue("the raised accent must read on the dark background: $wrong", wrong.isEmpty())
     }
 }

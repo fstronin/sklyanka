@@ -365,7 +365,7 @@ class Sk109PaletteSteps {
         assertEquals(lightColors().scrim, darkColors().scrim)
         assertEquals(
             lightColors().scrim,
-            tintedColors(lightColors(), FOREIGN_PROFILE.color).scrim,
+            tintedColors(lightColors(), FOREIGN_PROFILE.color, dark = false).scrim,
         )
     }
 
@@ -429,9 +429,37 @@ class Sk109PaletteSteps {
             "mark_caustic_light" to "8C$amber",
             "mark_caustic_clear" to "00$amber",
         )
-        val wrong = plain.filterNot { (name, colour) ->
+        // Тёплая палитра — второй вариант знака (Р-31, SKL-120): те же слои и альфы,
+        // другие краски. Дубликат в ресурсах существует вынужденно, и страж тот же:
+        // без него вторая палитра разошлась бы с токенами молча.
+        val warmPlain = mapOf(
+            "warm_mark_tile_dark" to SklyankaMarkColors.WarmTileDark,
+            "warm_mark_tile_light" to SklyankaMarkColors.WarmTileLight,
+            "warm_mark_ink_on_dark" to SklyankaMarkColors.WarmInkOnDark,
+            "warm_mark_ink_on_light" to SklyankaMarkColors.WarmInkOnLight,
+            "warm_mark_accent" to SklyankaMarkColors.WarmAmber,
+        )
+        val warmInkOnDark = hex6(SklyankaMarkColors.WarmInkOnDark)
+        val warmInkOnLight = hex6(SklyankaMarkColors.WarmInkOnLight)
+        val warmAmber = hex6(SklyankaMarkColors.WarmAmber)
+        val warmWithAlpha = mapOf(
+            "warm_mark_body_dark_0" to "3D$warmInkOnDark",
+            "warm_mark_body_dark_1" to "12$warmInkOnDark",
+            "warm_mark_body_dark_2" to "04$warmInkOnDark",
+            "warm_mark_rim_dark_0" to "D9$warmInkOnDark",
+            "warm_mark_rim_dark_1" to "29$warmInkOnDark",
+            "warm_mark_rim_dark_2" to "6B$warmInkOnDark",
+            "warm_mark_body_light_2" to "0F$warmInkOnLight",
+            "warm_mark_rim_light_0" to "29$warmInkOnLight",
+            "warm_mark_rim_light_1" to "80$warmInkOnLight",
+            "warm_mark_rim_light_2" to "38$warmInkOnLight",
+            "warm_mark_caustic_dark" to "9E$warmAmber",
+            "warm_mark_caustic_light" to "8C$warmAmber",
+            "warm_mark_caustic_clear" to "00$warmAmber",
+        )
+        val wrong = (plain + warmPlain).filterNot { (name, colour) ->
             resources.contains("name=\"$name\">${hex(colour)}<")
-        }.keys + withAlpha.filterNot { (name, value) ->
+        }.keys + (withAlpha + warmWithAlpha).filterNot { (name, value) ->
             resources.contains("name=\"$name\">#$value<")
         }.keys
         assertTrue(
@@ -444,7 +472,7 @@ class Sk109PaletteSteps {
 
     private fun roles(): SklyankaColors = when {
         dark -> darkColors()
-        foreign -> tintedColors(lightColors(), FOREIGN_PROFILE.color)
+        foreign -> tintedColors(lightColors(), FOREIGN_PROFILE.color, dark = false)
         else -> lightColors()
     }
 

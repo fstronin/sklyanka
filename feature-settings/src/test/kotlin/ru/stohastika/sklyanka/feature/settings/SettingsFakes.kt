@@ -195,6 +195,16 @@ internal class FakeProCache(private var subscription: ProSubscription = ProSubsc
     fun grant(until: LocalDate) {
         subscription = ProSubscription.Active(productId = null, until = until)
     }
+
+    /**
+     * Подписка кончилась: магазин действующей записи больше не отдаёт.
+     *
+     * Состояние то же, что у «не оформлена», и это не упрощение, а слова модели: `None`
+     * значит «подписки нет — не оформлена или истекла» (`ProSubscription.None`, Р-22).
+     */
+    fun expire() {
+        subscription = ProSubscription.None
+    }
 }
 
 internal object SettingsFixtures {

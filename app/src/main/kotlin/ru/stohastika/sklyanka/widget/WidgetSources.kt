@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
+import ru.stohastika.sklyanka.domain.appearance.AppearancePreferences
 import ru.stohastika.sklyanka.domain.repository.ActiveProfileRepository
 import ru.stohastika.sklyanka.domain.repository.IntakeRepository
 import ru.stohastika.sklyanka.domain.repository.MedicationRepository
@@ -34,6 +35,14 @@ class RepositoryWidgetSources @Inject constructor(
     private val medications: MedicationRepository,
     private val intakes: IntakeRepository,
     private val time: TimeSource,
+    /**
+     * Оформление: плита читает акцентную тему в момент отрисовки (§5.11, SKL-120).
+     *
+     * Без этого потока выбор новой темы не просил бы перерисовку: приложение перекрасилось
+     * бы, а плита несла бы прежний акцент до следующего события данных — то есть до
+     * ближайшей отметки или правки лекарства.
+     */
+    private val appearance: AppearancePreferences,
 ) : WidgetSources {
 
     /**
@@ -48,7 +57,8 @@ class RepositoryWidgetSources @Inject constructor(
             combine(
                 medications.observeActive(profileId),
                 intakes.observeDay(profileId, time.today()),
-            ) { scheduled, today -> scheduled to today }
+                appearance.accentTheme,
+            ) { scheduled, today, _ -> scheduled to today }
         }
         .map { Unit }
 }

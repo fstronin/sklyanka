@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Роли плиты виджета в светлой среде (§5.11, §9, SKL-120).
+
+  Почему значения записаны здесь, а не взяты из токенов напрямую. Разметка виджета живёт
+  вне Compose-контекста приложения: `ColorProvider` Glance 1.1 умеет либо одно значение,
+  либо ресурс, и пары «день · ночь» у него нет вовсе. Значит среду выбирает система по
+  квалификатору ресурса (`values-night`), и значения ролей обязаны существовать ресурсами.
+
+  Значения — дубликат ролей `SklyankaColors` (§2.1) и тёмного набора (§9): другого источника
+  у ресурса нет, а подставлять в плиту светлые роли всегда запрещено — светлая плита на тёмных
+  обоях слепит. Сходимость дубликата с токенами стережёт приёмочная проверка палитры;
+  тот же приём и по той же причине применён к палитре знака в `app/res/values/colors.xml`.
+
+  Габариты, шрифты и слова плиты от красок не зависят: здесь только цвет.
+-->
+<resources>
+    <color name="widget_surface">#FFFFFF</color>
+    <color name="widget_line">#EFE7DB</color>
+    <color name="widget_text">#241F1B</color>
+    <color name="widget_text_muted">#5F564D</color>
+    <color name="widget_text_tertiary">#8C8177</color>
+    <color name="widget_on_accent">#FFFFFF</color>
+    <color name="widget_line_interactive">#D9CDBD</color>
+    <color name="widget_ring">#C9BFB1</color>
+    <color name="widget_dot">#DCD1C2</color>
+    <color name="widget_day_taken">#1F5F6B</color>
+    <color name="widget_day_partial">#6E9FA8</color>
+    <color name="widget_day_missed">#C9BFB1</color>
+
+    <!--
+      Акцент владельца — роль `accent` выбранной темы (§2.5): четыре набора, по одному
+      на тему, потому что тему выбирает человек, а не среда. Значения светлой половины
+      пары «день · ночь»; тёмная половина — в `values-night/widget_colors.xml`.
+    -->
+    <color name="widget_accent_olive">#5F6F2E</color>
+    <color name="widget_accent_indigo">#3E4FA8</color>
+    <color name="widget_accent_pine">#1E5533</color>
+    <color name="widget_accent_amethyst">#6E3A72</color>
+</resources>

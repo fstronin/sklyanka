@@ -4,15 +4,21 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
+import ru.stohastika.sklyanka.domain.appearance.AccentTheme
+import ru.stohastika.sklyanka.domain.appearance.AppearanceOutcome
+import ru.stohastika.sklyanka.domain.appearance.IconVariant
 import ru.stohastika.sklyanka.domain.model.Profile
-import ru.stohastika.sklyanka.domain.pro.ObserveProStatusUseCase
+import ru.stohastika.sklyanka.domain.pro.ProPoint
 import ru.stohastika.sklyanka.domain.profile.ProfileContextProvider
 import ru.stohastika.sklyanka.domain.profile.ProfileCreationGate
 import ru.stohastika.sklyanka.domain.profile.SwitchProfileUseCase
@@ -20,7 +26,6 @@ import ru.stohastika.sklyanka.domain.profile.SwitchReason
 import ru.stohastika.sklyanka.domain.reminder.SnoozeIntervals
 import ru.stohastika.sklyanka.domain.repository.MedicationRepository
 import ru.stohastika.sklyanka.domain.repository.ProfileRepository
-import ru.stohastika.sklyanka.domain.transfer.AppStamp
 import javax.inject.Inject
 
 /**
@@ -52,31 +57,52 @@ class SettingsViewModel @Inject constructor(
     context: ProfileContextProvider,
     medications: MedicationRepository,
     private val switchProfile: SwitchProfileUseCase,
-    /** Всё, что читается из системы заново при каждом показе экрана (НФТ-52). */
-    private val system: SettingsSystemStateReader,
     /**
-     * Версия приложения — из собранного пакета, а не из макета.
+     * Внешние ответы, которые экран спрашивает, а не помнит (НФТ-52, SKL-122).
      *
-     * Тот же снимок, что уходит в файл переноса: двух источников версии в продукте быть
-     * не должно, иначе экран и файл однажды назовут разные числа.
+     * Одним узлом ([SettingsEnvironment]): состояние системы читается заново при каждом
+     * показе экрана, версия берётся из собранного пакета, подписка — из кэша магазина.
      */
-    stamp: AppStamp,
+    private val environment: SettingsEnvironment,
     /**
-     * Состояние подписки «Склянка Про» (SKL-122) — из кэша последнего ответа магазина.
+     * Оформление: действующие тема и вариант иконки, их чтение и запись (§5.17, Р-31).
      *
-     * Читается по [refresh], а не потоком: кэш меняется действиями человека (покупка,
-     * восстановление, проверка при запуске), и подписка на хранилище дала бы строке
-     * значение, которого магазин уже не говорит (Р-68 п. 7).
+     * Одним узлом ([SettingsAppearance]), а не четырьмя параметрами: четыре шва идут вместе
+     * и по одной причине — тема и иконка это одна возможность «Про» с общим гейтом
+     * и общим хранилищем выбора. Границы «Про» здесь нет: она живёт в домене, и экран
+     * только называет намерение.
      */
-    private val proStatus: ObserveProStatusUseCase,
+    private val appearance: SettingsAppearance,
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(SettingsUiState(version = stamp.versionName))
+    private val _state = MutableStateFlow(SettingsUiState(version = environment.stamp.versionName))
     val state: StateFlow<SettingsUiState> = _state.asStateFlow()
+
+    /**
+     * Просьба открыть витрину: нажатие **платной** строки диалога без доступа ведёт
+     * в покупку, а не меняет выбор (§5.17, Р-67 пп. 2–3).
+     *
+     * Сигналом, а не полем состояния: шторку хостит `app` (поверхность покупки одна на все
+     * точки входа, Р-67), и настройки о ней не знают. Точку-повод называет экран —
+     * `ProPoint.ACCENT`, — и её же называет поход в реестре `SKL-140/TDD.md` §7.
+     */
+    private val _showcase = MutableSharedFlow<ProPoint>(extraBufferCapacity = 1)
+    val showcase: SharedFlow<ProPoint> = _showcase.asSharedFlow()
 
     init {
         observeProfiles(profiles, context, medications)
+        observeAppearance()
         refresh()
+    }
+
+    /** Тема и вариант иконки: потоком, потому что их меняет и диалог, и другая сборка. */
+    private fun observeAppearance() {
+        viewModelScope.launch {
+            appearance.observeTheme().collect { theme -> _state.value = _state.value.copy(accentTheme = theme) }
+        }
+        viewModelScope.launch {
+            appearance.observeIcon().collect { variant -> _state.value = _state.value.copy(iconVariant = variant) }
+        }
     }
 
     /**
@@ -88,14 +114,14 @@ class SettingsViewModel @Inject constructor(
      */
     fun refresh() {
         viewModelScope.launch {
-            val snapshot = system.read()
+            val snapshot = environment.system.read()
             _state.value = decision(
                 _state.value.copy(
                     reminders = snapshot.reminders,
                     permissions = snapshot.permissions,
                     // Состояние подписки — тем же заходом и по той же причине: магазин мог
                     // ответить, пока человек был в нём (покупка, восстановление, отмена).
-                    pro = proStatus(),
+                    pro = environment.proStatus(),
                 ),
             )
         }
@@ -121,8 +147,67 @@ class SettingsViewModel @Inject constructor(
             is SettingsIntent.OpenSnooze -> _state.value = _state.value.copy(snoozePickerVisible = true)
             is SettingsIntent.DismissSnooze -> _state.value = _state.value.copy(snoozePickerVisible = false)
             is SettingsIntent.SetSnooze -> setSnooze(intent.minutes)
+            // Строки блока «Оформление» (SKL-120): диалог открывается всегда, а гейт стоит
+            // на самом выборе — платный без доступа уводит в витрину, базовый применяется
+            // всегда (§5.17).
+            SettingsIntent.OpenThemePicker -> openAppearancePicker(AppearancePicker.THEME)
+            SettingsIntent.OpenIconPicker -> openAppearancePicker(AppearancePicker.ICON)
+            SettingsIntent.DismissThemePicker -> _state.value = _state.value.copy(themePickerVisible = false)
+            SettingsIntent.DismissIconPicker -> _state.value = _state.value.copy(iconPickerVisible = false)
+            is SettingsIntent.SelectTheme -> chooseTheme(intent.theme)
+            is SettingsIntent.SelectIconVariant -> chooseIconVariant(intent.variant)
             // Остальные намерения — переходы; их исполняет тот, кто собрал маршруты.
             else -> Unit
+        }
+    }
+
+    /**
+     * Нажатие строки блока «Оформление» (§5.17, Р-67).
+     *
+     * Диалог открывается **всегда**, и доступа для этого не спрашивают: человек видит
+     * четыре образца темы и обе миниатюры иконки до покупки (Р-67 п. 5), а «Про» стоит
+     * у платных строк, а не у поверхности (Р-71). Гейт живёт на **выборе**: без доступа
+     * платный вариант не применяется и открывает витрину, а «Олива» и «Ледяная» выбираются
+     * бесплатно — в том числе чтобы откатиться с оплаченного (Р-22, В-120-3).
+     *
+     * Скрытого автопродолжения нет: оформив доступ, человек нажимает строку ещё раз —
+     * та же модель, что у состава отчёта (§5.15).
+     */
+    private fun openAppearancePicker(picker: AppearancePicker) {
+        _state.value = when (picker) {
+            AppearancePicker.THEME -> _state.value.copy(themePickerVisible = true)
+            AppearancePicker.ICON -> _state.value.copy(iconPickerVisible = true)
+        }
+    }
+
+    /**
+     * Выбор темы: применяется сразу и закрывает диалог (§5.17).
+     *
+     * Исход решает домен, а не экран: без доступа платная тема не применяется, диалог
+     * закрывается, и открывается витрина — доступ мог кончиться, пока диалог был открыт.
+     */
+    private fun chooseTheme(theme: AccentTheme) {
+        viewModelScope.launch {
+            when (appearance.setTheme(theme)) {
+                AppearanceOutcome.APPLIED -> _state.value = _state.value.copy(themePickerVisible = false)
+                AppearanceOutcome.SHOWCASE -> {
+                    _state.value = _state.value.copy(themePickerVisible = false)
+                    _showcase.tryEmit(ProPoint.ACCENT)
+                }
+            }
+        }
+    }
+
+    /** Выбор варианта иконки: тем же правилом, что и тема (§5.17, §2.4). */
+    private fun chooseIconVariant(variant: IconVariant) {
+        viewModelScope.launch {
+            when (appearance.setIcon(variant)) {
+                AppearanceOutcome.APPLIED -> _state.value = _state.value.copy(iconPickerVisible = false)
+                AppearanceOutcome.SHOWCASE -> {
+                    _state.value = _state.value.copy(iconPickerVisible = false)
+                    _showcase.tryEmit(ProPoint.ACCENT)
+                }
+            }
         }
     }
 
@@ -196,7 +281,7 @@ class SettingsViewModel @Inject constructor(
      */
     private fun setPersistent(enabled: Boolean) {
         viewModelScope.launch {
-            _state.value = _state.value.copy(reminders = system.setPersistentEnabled(enabled))
+            _state.value = _state.value.copy(reminders = environment.system.setPersistentEnabled(enabled))
         }
     }
 
@@ -211,9 +296,17 @@ class SettingsViewModel @Inject constructor(
         if (!SnoozeIntervals.isAllowed(minutes)) return
         viewModelScope.launch {
             _state.value = _state.value.copy(
-                reminders = system.setSnoozeMinutes(minutes),
+                reminders = environment.system.setSnoozeMinutes(minutes),
                 snoozePickerVisible = false,
             )
         }
     }
 }
+
+/**
+ * Какой из двух диалогов блока «Оформление» просит открыть нажатие (§5.17).
+ *
+ * Тип нужен потому, что правило гейта у обеих строк одно, а диалоги разные: писать его
+ * дважды значило бы однажды разойтись в том, что открывается без доступа.
+ */
+private enum class AppearancePicker { THEME, ICON }

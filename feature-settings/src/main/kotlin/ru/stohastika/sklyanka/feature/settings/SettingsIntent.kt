@@ -1,5 +1,8 @@
 package ru.stohastika.sklyanka.feature.settings
 
+import ru.stohastika.sklyanka.domain.appearance.AccentTheme
+import ru.stohastika.sklyanka.domain.appearance.IconVariant
+
 /**
  * Что человек сделал на экране настроек.
  *
@@ -70,6 +73,30 @@ sealed interface SettingsIntent {
      * и заводить её копию в модуле настроек значило бы получить вторую поверхность (Р-67).
      */
     data object OpenPro : SettingsIntent
+
+    /**
+     * Строка «Акцентная тема» (§5.17, Р-31, SKL-120).
+     *
+     * Открывает диалог выбора всегда — и без доступа тоже: «Про» стоит у платных строк
+     * диалога, а не у поверхности, и человек имеет право увидеть набор до покупки
+     * (Р-67 п. 5, П-7). Исход решает домен на **выборе**, а не на входе.
+     */
+    data object OpenThemePicker : SettingsIntent
+
+    /** Закрыть выбор темы без изменения («Отмена», системная «Назад», тап вне окна). */
+    data object DismissThemePicker : SettingsIntent
+
+    /** Выбрана акцентная тема: применяется сразу, без «Сохранить» (§5.17). */
+    data class SelectTheme(val theme: AccentTheme) : SettingsIntent
+
+    /** Строка «Иконка приложения» — тот же диалог и тот же гейт на выборе, что у темы (§5.17). */
+    data object OpenIconPicker : SettingsIntent
+
+    /** Закрыть выбор иконки без изменения. */
+    data object DismissIconPicker : SettingsIntent
+
+    /** Выбран вариант иконки: применяется сразу (§5.17, §2.4). */
+    data class SelectIconVariant(val variant: IconVariant) : SettingsIntent
 
     data object OpenToday : SettingsIntent
 

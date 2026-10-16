@@ -19,6 +19,16 @@ import ru.stohastika.sklyanka.domain.reminder.port.ReminderPermission
  */
 class ScenarioSystemState : PermissionStateReader {
 
+    /**
+     * Тёмная тема устройства: среда интерфейса следует ей, своего переключателя у приложения
+     * нет (Р-23, §9, SKL-120).
+     *
+     * Состояние — **системное**, как и разрешения: человек выбирает его в настройках телефона,
+     * мимо приложения, и спрашивать о нём экран обязан у системы. Стенды читают флаг отсюда,
+     * а не держат своё представление о среде: двух ответов «какая сейчас среда» быть не должно.
+     */
+    var darkTheme: Boolean = false
+
     private val states = linkedMapOf<ReminderPermission, PermissionState>()
 
     override fun state(permission: ReminderPermission): PermissionState =
