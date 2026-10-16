@@ -56,6 +56,7 @@ import ru.stohastika.sklyanka.feature.settings.SettingsNavigation
 import ru.stohastika.sklyanka.feature.settings.SettingsRoute
 import ru.stohastika.sklyanka.feature.settings.SettingsViewModel
 import ru.stohastika.sklyanka.feature.settings.profile.DeleteProfileViewModel
+import ru.stohastika.sklyanka.feature.settings.profile.ProfileFormViewModel
 import ru.stohastika.sklyanka.feature.settings.transfer.DataTransferViewModel
 import ru.stohastika.sklyanka.feature.today.TodayNavigation
 import ru.stohastika.sklyanka.feature.today.TodayRoute
@@ -263,6 +264,7 @@ class MainActivity : ComponentActivity() {
     private val history: HistoryViewModel by viewModels()
     private val transfer: DataTransferViewModel by viewModels()
     private val deleteProfile: DeleteProfileViewModel by viewModels()
+    private val profileForm: ProfileFormViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
@@ -580,6 +582,10 @@ class MainActivity : ComponentActivity() {
                 if (!showcaseVisible) {
                     settings.refresh()
                     medsForm.refreshProAccess()
+                    // Мастер профиля перечитывает доступ по той же причине: покупка в витрине,
+                    // открытой из него, обязана снять платную границу, не теряя набранное имя
+                    // (Р-84 п. 2, SKL-121).
+                    profileForm.refreshProAccess()
                     // Шторка отчёта держит снимок доступа с открытия: после оформления подписки
                     // повторное нажатие расширенной строки обязано выбрать состав, а не снова
                     // открыть витрину (Р-85 п. 1, SKL-119).
@@ -646,10 +652,12 @@ class MainActivity : ComponentActivity() {
 
                 is RootLayer.SettingsScreen -> SettingsSection(
                     destination = layer.destination,
-                    viewModels = SettingsViewModels(history, transfer, deleteProfile),
+                    viewModels = SettingsViewModels(history, transfer, deleteProfile, profileForm),
                     onLeave = rootNavigation::leaveSection,
                     onOpenPermissions = { startActivity(PermissionsActivity.intentFor(this)) },
-                    onOpenPro = { openPro(ProPoint.HISTORY) },
+                    // Точку-повод называет экран: расширенный состав отчёта — `HISTORY`,
+                    // мастер профиля — `PROFILES` (Р-67 п. 2, Р-84 п. 2, SKL-121).
+                    onOpenPro = { point -> openPro(point) },
                 )
 
                 is RootLayer.Meds -> MedsSection(
@@ -709,11 +717,10 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun settingsNavigation(): SettingsNavigation = SettingsNavigation(
-        // Строки «Добавить профиль» на экране нет: мастера создания профиля не существует,
-        // а «будет доступно в ближайшем обновлении» — обещание функции, которой нет (П-7,
-        // Р-29). Намерение и переход остаются швом пост-MVP: мастер вернётся без правки
-        // навигации (SKL-121).
-        addProfile = {},
+        // «Добавить профиль» открывает мастер, «Изменить» в строке профиля — экран правки:
+        // оба — второй уровень настроек, и возврат ведёт в настройки (SKL-121, ПРФ-9, ПРФ-27).
+        addProfile = { rootNavigation.openSection(SettingsDestination.AddProfile) },
+        editProfile = { profileId -> rootNavigation.openSection(SettingsDestination.EditProfile(profileId)) },
         // Строка «Системные настройки уведомлений» — системный экран уведомлений
         // приложения (ОВ-98, Р-52): там оба
         // канала и выбор звука с важностью для каждого.
@@ -722,15 +729,15 @@ class MainActivity : ComponentActivity() {
         // и только потом онбординг. Обратный порядок отправлял бы человека
         // проходить цепочку заново, не сказав ему, сломано ли что-нибудь.
         openDiagnostics = { startActivity(DiagnosticsActivity.intentFor(this)) },
-        openHistory = { rootNavigation.openSection(SettingsDestination.HISTORY) },
+        openHistory = { rootNavigation.openSection(SettingsDestination.History) },
         // «Экспорт истории»: шторку выгрузки хостит приложение (SKL-119, Р-35). Доступ
         // проверяет её состояние: без подписки шторка не откроется, а файл не сформируется.
         openHistoryExport = { exportHistory.onIntent(ExportHistoryIntent.Requested) },
-        openDataTransfer = { rootNavigation.openSection(SettingsDestination.TRANSFER) },
+        openDataTransfer = { rootNavigation.openSection(SettingsDestination.Transfer) },
         // «Удалить профиль «Имя»» — экран второго уровня настроек (ОВ-7, SKL-36).
         // Строка появляется только у активного чужого профиля, и «Готово»
         // возвращает в настройки — туда, откуда человек пришёл.
-        deleteProfile = { rootNavigation.openSection(SettingsDestination.DELETE_PROFILE) },
+        deleteProfile = { rootNavigation.openSection(SettingsDestination.DeleteProfile) },
         // Строка блока «Склянка Про» открывает шторку витрины тем же жестом, каким её
         // открывает точка выбора платной функции (Р-67 п. 6): поверхность одна.
         openPro = { openPro() },

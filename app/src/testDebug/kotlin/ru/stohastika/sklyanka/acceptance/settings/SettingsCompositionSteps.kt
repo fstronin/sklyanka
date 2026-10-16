@@ -141,7 +141,7 @@ class SettingsCompositionSteps(private val world: AcceptanceWorld) {
         val main = File(RepositoryLayout.root, MAIN_ACTIVITY).readText()
         assertEquals(
             1,
-            Regex("SettingsDestination\\.TRANSFER").findAll(main).count(),
+            Regex("SettingsDestination\\.Transfer").findAll(main).count(),
             "MainActivity must set the transfer destination from one place only",
         )
     }

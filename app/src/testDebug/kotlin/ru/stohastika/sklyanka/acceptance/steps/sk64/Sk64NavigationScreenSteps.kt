@@ -34,7 +34,7 @@ class Sk64NavigationScreenSteps {
     @Когда("^человек открывает «Перенос данных» из настроек$")
     fun theTransferOpensFromSettings() {
         navigation.openTab(RootTab.SETTINGS)
-        navigation.openSection(SettingsDestination.TRANSFER)
+        navigation.openSection(SettingsDestination.Transfer)
         motion = { navigation.rootMotion }
     }
 

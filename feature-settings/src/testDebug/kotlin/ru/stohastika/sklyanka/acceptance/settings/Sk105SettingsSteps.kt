@@ -31,9 +31,10 @@ import ru.stohastika.sklyanka.ui.R as UiR
  * и `DeleteProfileViewModel` на мире сценария ([SettingsScreenProbe],
  * [DeleteProfileScreenProbe]); здесь — только вопросы к собранной композиции.
  *
- * Строка «Добавить профиль» снята с экрана (Р-29, П-7): символов `TAG_ADD_PROFILE`
- * и `settings_profile_add*` больше нет, поэтому шаг ищет не удалённую метку, а сам факт
- * отсутствия лишней строки в блоке — по числу строк профилей и по тексту экрана.
+ * Строка «Добавить профиль» возвращена в блок мастером (SKL-121, ПРФ-9), и здесь её
+ * больше нет: SKL-105 держит только то, что снято его решением, — **обещание**
+ * «Будет доступно в ближайшем обновлении». Шаг ищет его по тексту экрана, а не по метке
+ * строки: обещания нереализованной функции в продукте нет ни в одном виде (П-7).
  *
  * Русский текст в аннотациях — ключевые слова Gherkin, а не текст интерфейса.
  */
@@ -42,32 +43,7 @@ class Sk105SettingsSteps(private val world: AcceptanceWorld) {
 
     private val context: Context = ApplicationProvider.getApplicationContext()
 
-    // --- Блок «Профили»: мёртвой строки нет ---------------------------------------------------
-
-    /**
-     * Строки «Добавить профиль» в блоке нет.
-     *
-     * Метка строки удалена из продукта (Р-29), и искать её имя — значит проверять отсутствие
-     * символа в коде, а не строки на экране. Проверяется факт: в блоке «Профили» стоят ровно
-     * существующие профили, а обещания нереализованной строки на экране нет.
-     */
-    @Тогда("^строки «Добавить профиль» в блоке нет$")
-    fun theProfilesBlockCarriesNoAddRow() {
-        val state = SettingsScreenProbe.state(world)
-        SettingsScreenProbe.ask(world) {
-            val rows = onAllNodesWithTag(TAG_PROFILE_ROW, useUnmergedTree = true).fetchSemanticsNodes()
-            assertEquals(
-                state.profiles.size,
-                rows.size,
-                "в блоке «Профили» стоят ровно существующие профили, лишней строки нет (Р-29)",
-            )
-            assertEquals(
-                emptyList<String>(),
-                screenTexts().filter { it.contains(ADD_PROFILE_ROW) },
-                "строки «$ADD_PROFILE_ROW» на экране нет (Р-29)",
-            )
-        }
-    }
+    // --- Блок «Профили»: список и переключение ------------------------------------------------
 
     /**
      * Обещания «Будет доступно в ближайшем обновлении» на экране нет.
@@ -194,9 +170,6 @@ class Sk105SettingsSteps(private val world: AcceptanceWorld) {
             node.children.flatMap { textsOf(it) }
 
     private companion object {
-        /** Прежняя строка блока «Профили», снятая Р-29. Литерал намеренный: в ресурсах её нет. */
-        const val ADD_PROFILE_ROW = "Добавить профиль"
-
         /** Прежнее обещание нереализованной строки, снятое вместе с ней (П-7). Литерал намеренный. */
         const val UPDATE_PROMISE = "Будет доступно в ближайшем обновлении"
     }

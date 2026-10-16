@@ -27,6 +27,9 @@ class ProfileRepositoryImpl @Inject constructor(private val dao: ProfileDao) : P
 
     override suspend fun getSelf(): Profile? = dao.getSelf()?.toDomain()
 
+    /** Счётчик берётся у базы, а не пересчётом списка: значение спрашивает гейт создания (ПРФ-33). */
+    override suspend fun count(): Int = dao.count()
+
     override suspend fun save(profile: Profile) {
         Invariants.requireValid(Invariants.violations(profile))
         val entity = profile.toEntity()

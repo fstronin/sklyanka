@@ -34,7 +34,7 @@ class RootNavigationTest {
     @Test
     fun `the plate of a medication closes an open section`() {
         val navigation = RootNavigation()
-        navigation.openSection(SettingsDestination.TRANSFER)
+        navigation.openSection(SettingsDestination.Transfer)
 
         navigation.openFromLaunch(WidgetLaunch.OPEN_MEDICATION, medicationId = "med-9")
 
@@ -50,7 +50,7 @@ class RootNavigationTest {
     fun `the plate of the week closes both layers and opens the history`() {
         val navigation = RootNavigation()
         navigation.openMeds(MedsDestination.List)
-        navigation.openSection(SettingsDestination.HISTORY)
+        navigation.openSection(SettingsDestination.History)
 
         navigation.openFromLaunch(WidgetLaunch.OPEN_HISTORY)
 
@@ -83,7 +83,7 @@ class RootNavigationTest {
     fun `returning to today closes a settings second level and selects the tab`() {
         val navigation = RootNavigation()
         navigation.openTab(RootTab.SETTINGS)
-        navigation.openSection(SettingsDestination.TRANSFER)
+        navigation.openSection(SettingsDestination.Transfer)
 
         navigation.openToday()
 

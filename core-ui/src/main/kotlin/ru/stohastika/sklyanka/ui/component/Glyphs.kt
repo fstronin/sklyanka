@@ -143,6 +143,10 @@ private const val SHEET_LINE = 0.42f
 /** Шестерёнка вкладки «Настройки»: сердцевина и шесть лучей. */
 private const val CORE_RADIUS = 0.15f
 private const val SPOKE_INNER = 0.26f
+
+/** Длина плеча плюса от центра: плюс не касается краёв габарита и читается как знак, а не как крест. */
+private const val PLUS_ARM = 0.36f
+
 private const val SPOKE_OUTER = 0.44f
 private const val SPOKE_COUNT = 6
 private const val FULL_TURN = 360f
@@ -298,6 +302,25 @@ fun ChevronDownGlyph(color: Color, modifier: Modifier = Modifier, size: Dp = Skl
                 join = StrokeJoin.Round,
             ),
         )
+    }
+}
+
+/**
+ * Плюс: декоративный ведущий знак строки «Добавить профиль» (§5.13, SKL-121).
+ *
+ * Смысл несёт подпись словами, поэтому чтению с экрана глиф не объявляется.
+ * Габарит по умолчанию — токен [SklyankaSizes.Chevron] 16 dp: плюс стоит внутри
+ * кружка-плашки 40 dp и не спорит с инициалами профилей в том же списке.
+ */
+@Composable
+fun PlusGlyph(color: Color, modifier: Modifier = Modifier, size: Dp = SklyankaSizes.Chevron) {
+    Canvas(modifier.size(size)) {
+        val side = this.size.minDimension
+        val stroke = side * STROKE_RATIO
+        val center = side / 2f
+        val arm = side * PLUS_ARM
+        drawLine(color, Offset(center - arm, center), Offset(center + arm, center), stroke, StrokeCap.Round)
+        drawLine(color, Offset(center, center - arm), Offset(center, center + arm), stroke, StrokeCap.Round)
     }
 }
 

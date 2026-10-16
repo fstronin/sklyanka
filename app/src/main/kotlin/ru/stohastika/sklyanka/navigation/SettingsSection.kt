@@ -3,9 +3,13 @@ package ru.stohastika.sklyanka.navigation
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import ru.stohastika.sklyanka.domain.pro.ProPoint
 import ru.stohastika.sklyanka.feature.history.HistoryViewModel
 import ru.stohastika.sklyanka.feature.settings.profile.DeleteProfileRoute
 import ru.stohastika.sklyanka.feature.settings.profile.DeleteProfileViewModel
+import ru.stohastika.sklyanka.feature.settings.profile.ProfileFormMode
+import ru.stohastika.sklyanka.feature.settings.profile.ProfileFormRoute
+import ru.stohastika.sklyanka.feature.settings.profile.ProfileFormViewModel
 import ru.stohastika.sklyanka.feature.settings.transfer.DataTransferRoute
 import ru.stohastika.sklyanka.feature.settings.transfer.DataTransferViewModel
 
@@ -27,17 +31,26 @@ enum class RootTab {
  *
  * Подключение часов (SKL-17) здесь отсутствует намеренно: экрана в продукте нет, и строка
  * настроек перехода не обещает.
+ *
+ * Правка профиля несёт идентификатор: править можно любого профиля — в том числе
+ * неактивного (SKL-121, ПРФ-19), и маршрут обязан назвать, чей профиль открыт.
  */
-enum class SettingsDestination {
+sealed interface SettingsDestination {
 
     /** Настройки → Данные → История приёмов (SKL-18). */
-    HISTORY,
+    data object History : SettingsDestination
 
     /** Настройки → Данные → Перенос данных (SKL-19). */
-    TRANSFER,
+    data object Transfer : SettingsDestination
 
     /** Настройки → Профили → удаление активного чужого профиля (ОВ-7, SKL-36). */
-    DELETE_PROFILE,
+    data object DeleteProfile : SettingsDestination
+
+    /** Настройки → Профили → «Добавить профиль»: мастер «Новый профиль» (ПРФ-9, SKL-121). */
+    data object AddProfile : SettingsDestination
+
+    /** Настройки → Профили → тихое «Изменить»: экран «Профиль» этого профиля (ПРФ-27, SKL-121). */
+    data class EditProfile(val profileId: String) : SettingsDestination
 }
 
 /**
@@ -58,20 +71,23 @@ fun SettingsSection(
     onLeave: () -> Unit,
     onOpenPermissions: () -> Unit,
     modifier: Modifier = Modifier,
-    /** Витрина «Про» для расширенного состава отчёта: её собирает `app` (Р-67, Р-85 п. 1). */
-    onOpenPro: () -> Unit = {},
+    /**
+     * Витрина «Про»: точку-повод называет вызывающий (Р-67 п. 2) — расширенный состав отчёта
+     * (`ProPoint.HISTORY`) и мастер профиля (`ProPoint.PROFILES`).
+     */
+    onOpenPro: (ProPoint) -> Unit = {},
 ) {
     when (destination) {
         // История сама ставит перехват кнопки «Назад» и знает, откуда открыта.
-        SettingsDestination.HISTORY -> HistorySection(
+        SettingsDestination.History -> HistorySection(
             viewModel = viewModels.history,
             origin = HistoryOrigin.SETTINGS,
             onLeave = { onLeave() },
             modifier = modifier,
-            onOpenPro = onOpenPro,
+            onOpenPro = { onOpenPro(ProPoint.HISTORY) },
         )
 
-        SettingsDestination.TRANSFER -> {
+        SettingsDestination.Transfer -> {
             BackHandler(enabled = !LocalModalSurfaceOpen.current) { onLeave() }
             DataTransferRoute(
                 viewModel = viewModels.transfer,
@@ -83,12 +99,34 @@ fun SettingsSection(
             )
         }
 
-        SettingsDestination.DELETE_PROFILE -> {
+        SettingsDestination.DeleteProfile -> {
             BackHandler(enabled = !LocalModalSurfaceOpen.current) { onLeave() }
             DeleteProfileRoute(
                 viewModel = viewModels.deleteProfile,
                 onLeave = onLeave,
                 modifier = modifier,
+            )
+        }
+
+        SettingsDestination.AddProfile -> {
+            BackHandler(enabled = !LocalModalSurfaceOpen.current) { onLeave() }
+            ProfileFormRoute(
+                viewModel = viewModels.profileForm,
+                mode = ProfileFormMode.Add,
+                onLeave = onLeave,
+                modifier = modifier,
+                onOpenPro = { onOpenPro(ProPoint.PROFILES) },
+            )
+        }
+
+        is SettingsDestination.EditProfile -> {
+            BackHandler(enabled = !LocalModalSurfaceOpen.current) { onLeave() }
+            ProfileFormRoute(
+                viewModel = viewModels.profileForm,
+                mode = ProfileFormMode.Edit(destination.profileId),
+                onLeave = onLeave,
+                modifier = modifier,
+                onOpenPro = { onOpenPro(ProPoint.PROFILES) },
             )
         }
     }
@@ -104,4 +142,5 @@ data class SettingsViewModels(
     val history: HistoryViewModel,
     val transfer: DataTransferViewModel,
     val deleteProfile: DeleteProfileViewModel,
+    val profileForm: ProfileFormViewModel,
 )

@@ -173,6 +173,25 @@
     <string name="profile_delete_no_space">No hay espacio suficiente. El archivo no se guardó y el perfil no se eliminó.</string>
     <string name="profile_delete_no_picker">No hay ninguna aplicación para elegir archivos en el dispositivo. El archivo de transferencia no se puede guardar sin ella.</string>
 
+    <!-- ===== Профили сверх двух: мастер, правка, цвета (SKL-121, §5.13, §5.14); слова — §10. ===== -->
+    <string name="profile_add_title">Perfil nuevo</string>
+    <string name="profile_edit_title">Perfil</string>
+    <string name="profile_add_action">Añadir perfil</string>
+    <string name="profile_save_action">Guardar</string>
+    <string name="profile_row_edit">Editar</string>
+    <string name="profile_label_name">Nombre del perfil</string>
+    <string name="profile_label_colour">Color del perfil</string>
+    <string name="profile_switch_mirror">Duplicar recordatorios</string>
+    <string name="profile_switch_mirror_hint">Los recordatorios de las tomas de este perfil llegarán a este teléfono</string>
+    <string name="profile_blocked_name">Indica un nombre de perfil</string>
+    <string name="profile_add_blocked_pro">Más de dos perfiles son de Sklyanka Pro</string>
+    <string name="profile_add_blocked_limit">No más de cinco perfiles</string>
+    <string name="cd_profile_colour_terracotta">Terracota</string>
+    <string name="cd_profile_colour_teal">Verde azulado</string>
+    <string name="cd_profile_colour_olive">Oliva</string>
+    <string name="cd_profile_colour_plum">Ciruela</string>
+    <string name="cd_profile_colour_indigo">Índigo</string>
+
     <string name="settings_policy">Política de privacidad</string>
 
     <!-- Строка «Экспорт истории» в блоке «Данные» (SKL-119, §5.16); слова — из нормы дизайна. -->

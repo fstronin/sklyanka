@@ -24,6 +24,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import ru.stohastika.sklyanka.domain.pro.ProNotice
 import ru.stohastika.sklyanka.domain.pro.ProStatus
+import ru.stohastika.sklyanka.domain.profile.ProfileCreationDecision
 import ru.stohastika.sklyanka.domain.reminder.SnoozeIntervals
 import ru.stohastika.sklyanka.ui.component.BottomBar
 import ru.stohastika.sklyanka.ui.component.BottomBarTab
@@ -32,6 +33,7 @@ import ru.stohastika.sklyanka.ui.component.FlatMark
 import ru.stohastika.sklyanka.ui.component.ListPickerDialog
 import ru.stohastika.sklyanka.ui.component.PinnedHeaderBar
 import ru.stohastika.sklyanka.ui.component.ProMark
+import ru.stohastika.sklyanka.ui.component.QuietButton
 import ru.stohastika.sklyanka.ui.component.ScreenHeader
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderLabels
 import ru.stohastika.sklyanka.ui.component.SklyankaSwitchRow
@@ -148,25 +150,68 @@ private fun SnoozePicker(state: SettingsUiState, onIntent: (SettingsIntent) -> U
  * (ОВ-7, SKL-36): удалить можно ровно того, в чьём контексте человек находится, и только
  * его одного. Само переключение — SKL-15: экран только сообщает, какую строку нажали.
  *
- * Строки «Добавить профиль» здесь нет: мастера создания профиля не существует, а строка
- * «будет доступно в ближайшем обновлении» — обещание функции, которой нет, то есть тот же
- * класс лжи, что и лже-отчёт (П-7, Р-29). Шов открытия мастера
- * ([SettingsIntent.AddProfile], [SettingsNavigation.addProfile]) сохранён в коде: возвращение
- * мастера не потребует правки навигации.
+ * Строка «Добавить профиль» вернулась в SKL-121 вместе с мастером (П-7, Р-29): это функция
+ * базы (ПРФ-9), и она встаёт последней в перечне профилей, **перед** строкой удаления —
+ * разрушительная строка остаётся последней в разделе (ОВ-7).
  */
 private fun LazyListScope.profilesBlock(state: SettingsUiState, onIntent: (SettingsIntent) -> Unit) {
     item {
         SettingsBlock(stringResource(R.string.settings_rubric_profiles)) {
             state.profiles.forEachIndexed { index, profile ->
                 if (index > 0) RowDivider()
-                ProfileRow(profile) { onIntent(SettingsIntent.SelectProfile(profile.id)) }
+                ProfileRow(
+                    profile = profile,
+                    onSelect = { onIntent(SettingsIntent.SelectProfile(profile.id)) },
+                    onEdit = { onIntent(SettingsIntent.EditProfile(profile.id)) },
+                )
             }
+            RowDivider()
+            AddProfileRow(state.profileCreation) { onIntent(SettingsIntent.AddProfile) }
             state.deletableProfile?.let { profile ->
                 RowDivider(modifier = Modifier.testTag(TAG_DELETE_DIVIDER))
                 DeleteProfileRow(profile) { onIntent(SettingsIntent.DeleteProfile) }
             }
         }
     }
+}
+
+/**
+ * Строка «Добавить профиль» — последняя в перечне профилей и перед разрушительной
+ * строкой удаления (§5.13, ПРФ-9).
+ *
+ * Три состояния, и все они — про следующее создание, а не про строку: без метки, пока
+ * создание бесплатно; с меткой «Про», когда следующее создание платное (Р-84 п. 3);
+ * при пяти профилях — без метки и со строкой причины, чтобы про предел человек узнал
+ * **до** нажатия (ПРФ-34). Строка нажимается в любом состоянии и ведёт в мастер: витрину
+ * она не открывает ни в одном из них — покупку открывает кнопка мастера (§5.12, §5.13).
+ */
+@Composable
+private fun AddProfileRow(decision: ProfileCreationDecision, onClick: () -> Unit) {
+    val colors = SklyankaTheme.colors
+    SettingsRow(
+        title = stringResource(R.string.profile_add_action),
+        titleStyle = SklyankaType.BodyDefaultMedium,
+        titleColor = colors.accent,
+        // Причина предела — второй строкой подписи: про предел человек узнаёт заранее
+        // (ПРФ-34), а не от недоступной кнопки в мастере.
+        subtitle = when (decision) {
+            ProfileCreationDecision.BlockedByLimit ->
+                RowSubtitle(stringResource(R.string.profile_add_blocked_limit))
+
+            else -> null
+        },
+        titleTrailing = when (decision) {
+            // Метка — только у платного исхода (Р-71): когда доступ есть, норма не продаёт
+            // то, что уже открыто; при пределе метки нет — предел не продаётся (ПРФ-34).
+            ProfileCreationDecision.BlockedByPro ->
+                ({ ProMark(modifier = Modifier.padding(start = SklyankaSpacing.Small)) })
+
+            else -> null
+        },
+        leading = { ProfileAddPlate() },
+        onClick = onClick,
+        modifier = Modifier.testTag(TAG_ADD_PROFILE_ROW),
+    )
 }
 
 /**
@@ -185,8 +230,16 @@ private fun DeleteProfileRow(profile: ProfileRowState, onClick: () -> Unit) {
     )
 }
 
+/**
+ * Строка профиля: тело переключает профиль, тихое «Изменить» — правит его (§5.14).
+ *
+ * Два действия одной строки разведены целями: тап по телу меняет активный профиль
+ * (ПРФ-17, ПРФ-19) и это поведение не меняется, а слово справа открывает правку — в том
+ * числе у неактивного профиля: чтобы исправить имя или цвет, в профиль не переключаются
+ * (переключение меняет весь экран и является осознанным действием).
+ */
 @Composable
-private fun ProfileRow(profile: ProfileRowState, onClick: () -> Unit) {
+private fun ProfileRow(profile: ProfileRowState, onSelect: () -> Unit, onEdit: () -> Unit) {
     val colors = SklyankaTheme.colors
     // Владельцу — мягкий «принято», чужому — цвет его профиля из закрытого набора
     // дизайн-системы (ПРФ-15). Индикации «чужого» своему профилю не добавляется (ПРФ-16).
@@ -196,21 +249,31 @@ private fun ProfileRow(profile: ProfileRowState, onClick: () -> Unit) {
     SettingsRow(
         title = if (profile.isSelf) stringResource(R.string.settings_profile_self) else profile.name,
         subtitle = if (profile.isSelf) null else RowSubtitle(profile.subtitle()),
-        onClick = onClick,
+        onClick = onSelect,
         modifier = Modifier.testTag(TAG_PROFILE_ROW),
         leading = { ProfileInitial(profile.initial(), plate, onPlate) },
         trailing = {
-            if (profile.isActive) {
-                // Отметка активного профиля названа словами: статус не передаётся одним
-                // значком без подписи для чтения с экрана (НФТ-30, НФТ-33).
-                CheckGlyph(
-                    color = colors.taken,
-                    modifier = Modifier
-                        .semantics { contentDescription = activeLabel }
-                        .testTag(TAG_ACTIVE_PROFILE),
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Small),
+            ) {
+                QuietButton(
+                    text = stringResource(R.string.profile_row_edit),
+                    onClick = onEdit,
+                    modifier = Modifier.testTag(TAG_EDIT_PROFILE_ROW),
                 )
-            } else {
-                ChevronGlyph(colors.iconFaint)
+                if (profile.isActive) {
+                    // Отметка активного профиля названа словами: статус не передаётся одним
+                    // значком без подписи для чтения с экрана (НФТ-30, НФТ-33).
+                    CheckGlyph(
+                        color = colors.taken,
+                        modifier = Modifier
+                            .semantics { contentDescription = activeLabel }
+                            .testTag(TAG_ACTIVE_PROFILE),
+                    )
+                } else {
+                    ChevronGlyph(colors.iconFaint)
+                }
             }
         },
     )
@@ -474,6 +537,17 @@ private fun SettingsBlock(rubric: String, content: @Composable () -> Unit) {
 }
 
 internal const val TAG_DELETE_PROFILE_ROW = "settings_delete_profile_row"
+
+/**
+ * Строка «Добавить профиль» (SKL-121, ПРФ-9).
+ *
+ * Отдельный тег: по нему экранный стенд и поход находят вход в мастер, и он же называет
+ * поверхность в реестре `docs/tasks/SKL-140/TDD.md` §7.
+ */
+internal const val TAG_ADD_PROFILE_ROW = "settings_add_profile_row"
+
+/** Тихая строка «Изменить» в строке профиля — вход в правку (§5.14, SKL-121). */
+internal const val TAG_EDIT_PROFILE_ROW = "settings_edit_profile_row"
 internal const val TAG_DELETE_DIVIDER = "settings_delete_divider"
 internal const val TAG_HISTORY_ROW = "settings_history_row"
 

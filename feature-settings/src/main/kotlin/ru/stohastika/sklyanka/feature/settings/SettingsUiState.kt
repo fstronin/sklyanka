@@ -2,6 +2,7 @@ package ru.stohastika.sklyanka.feature.settings
 
 import ru.stohastika.sklyanka.domain.pro.ProStatus
 import ru.stohastika.sklyanka.domain.pro.ProSubscription
+import ru.stohastika.sklyanka.domain.profile.ProfileCreationDecision
 import ru.stohastika.sklyanka.domain.reminder.port.PermissionState
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPermission
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderSettingsValues
@@ -49,6 +50,16 @@ data class SettingsUiState(
      * обязана назвать новое состояние, а не то, что было на момент открытия (`ADR-0015`, SKL-122).
      */
     val pro: ProStatus = ProStatus(ProSubscription.None),
+    /**
+     * Исход гейта на **следующее** заведение профиля (SKL-121, ПРФ-33, Р-84 п. 3).
+     *
+     * Строка «Добавить профиль» показывает метку «Про» тогда и только тогда, когда
+     * следующее создание платное ([ProfileCreationDecision.BlockedByPro]), а предел пяти
+     * называет словами до нажатия ([ProfileCreationDecision.BlockedByLimit], ПРФ-34).
+     * Решение принимает доменный [ru.stohastika.sklyanka.domain.profile.ProfileCreationGate]
+     * по числу заведённых профилей и доступу — не экран.
+     */
+    val profileCreation: ProfileCreationDecision = ProfileCreationDecision.Allowed,
 )
 
 /**

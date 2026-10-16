@@ -45,7 +45,7 @@ class UndoReturnTest {
     @Test
     fun `a live window brings the person from a settings second level to today`() {
         navigation.openTab(RootTab.SETTINGS)
-        navigation.openSection(SettingsDestination.HISTORY)
+        navigation.openSection(SettingsDestination.History)
         publishWindow()
 
         assertTrue(UndoReturn.onAppeared(undoActions, navigation))

@@ -36,6 +36,10 @@ internal class ProfileTestWorld {
 
     val setMirror = SetMirrorRemindersUseCase(profiles = profiles, replan = replanner, log = log)
 
+    val rename = RenameProfileUseCase(profiles = profiles, log = log)
+
+    val setColour = SetProfileColourUseCase(profiles = profiles, palette = PALETTE, log = log)
+
     val eraser = RecordingProfileEraser()
 
     val delete = DeleteProfileUseCase(

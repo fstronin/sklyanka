@@ -9,16 +9,23 @@ import com.github.takahirom.roborazzi.fontScale
 import com.github.takahirom.roborazzi.size
 import org.junit.Test
 import org.junit.runner.RunWith
+import ru.stohastika.sklyanka.domain.pro.ProProductId
+import ru.stohastika.sklyanka.domain.pro.ProStatus
+import ru.stohastika.sklyanka.domain.pro.ProSubscription
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import java.io.File
+import java.time.LocalDate
 
 /**
  * Эталонные снимки экрана настроек (SKL-24).
  *
- * Три состояния, а не одно: одно разрешение не выдано — состояние, близкое к макету;
- * всё выдано — то, как экран выглядит в собранном продукте; и тот же экран при системном
- * шрифте 200 %, где вёрстка обязана расти, а не обрезаться (НФТ-31). Строки часов
- * на снимках нет по решению `ADR-0009`.
+ * Три состояния экрана: одно разрешение не выдано — состояние, близкое к макету; всё выдано —
+ * то, как экран выглядит в собранном продукте; и тот же экран при системном шрифте 200 %,
+ * где вёрстка обязана расти, а не обрезаться (НФТ-31). Строки часов на снимках нет
+ * по решению `ADR-0009`.
+ *
+ * Ещё три состояния — строка «Добавить профиль» в трёх исходах гейта (SKL-121): без метки,
+ * с меткой «Про» и со строкой причины при пределе пяти (Р-84 п. 3, ПРФ-34).
  */
 @RunWith(AndroidJUnit4::class)
 class SettingsScreenSnapshotTest {
@@ -36,6 +43,33 @@ class SettingsScreenSnapshotTest {
     @Test
     fun theScreenAtDoubleFontScale() = capture("settings-font-200", fontScale = SCALE_200) {
         SettingsScreen(state = SettingsScreenFixtures.state(), onIntent = {})
+    }
+
+    /**
+     * Строка «Добавить профиль» в трёх состояниях гейта (SKL-121).
+     *
+     * Состояния различает не экран, а исход: без метки, пока создание бесплатно; с меткой «Про»,
+     * когда следующее создание платное; со строкой причины при пределе пяти (Р-84 п. 3, ПРФ-34).
+     */
+    @Test
+    fun theAddRowWithoutAPaidCreation() = capture("settings-add-free") {
+        SettingsScreen(state = SettingsScreenFixtures.state(foreignProfiles = 0), onIntent = {})
+    }
+
+    @Test
+    fun theAddRowWithAPaidCreation() = capture("settings-add-pro") {
+        SettingsScreen(state = SettingsScreenFixtures.state(), onIntent = {})
+    }
+
+    @Test
+    fun theAddRowAtTheFiveProfileLimit() = capture("settings-add-limit") {
+        SettingsScreen(
+            state = SettingsScreenFixtures.state(
+                foreignProfiles = 4,
+                pro = ProStatus(ProSubscription.Active(ProProductId.MONTHLY, LocalDate.of(2026, 11, 13))),
+            ),
+            onIntent = {},
+        )
     }
 
     @OptIn(ExperimentalRoborazziApi::class)

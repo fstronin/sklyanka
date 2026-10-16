@@ -1,5 +1,6 @@
 package ru.stohastika.sklyanka.feature.settings
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -17,7 +19,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
+import ru.stohastika.sklyanka.ui.component.PlusGlyph
 import ru.stohastika.sklyanka.ui.component.StackingRow
 import ru.stohastika.sklyanka.ui.locale.interfaceLocale
 import ru.stohastika.sklyanka.ui.modifier.minTouchTarget
@@ -101,6 +107,15 @@ internal fun SettingsRow(
      * (Р-67 п. 5), и справа её место занимает шеврон перехода.
      */
     titleTrailing: @Composable (() -> Unit)? = null,
+    /**
+     * Начертание и краска подписи. По умолчанию — обычная строка списка.
+     *
+     * Параметром, а не по месту: строка «Добавить профиль» набрана `BodyDefaultMedium`
+     * цветом `accent` (§5.13) — это действие, а не утверждение о состоянии, и отличается
+     * он ровно этим. Остальные строки остаются тем, чем были.
+     */
+    titleStyle: TextStyle = SklyankaType.BodyDefault,
+    titleColor: Color? = null,
 ) {
     val colors = SklyankaTheme.colors
     Box(
@@ -112,7 +127,7 @@ internal fun SettingsRow(
     ) {
         StackingRow(
             leading = { leading?.invoke() },
-            text = { RowText(title, subtitle, titleTrailing) },
+            text = { RowText(title, subtitle, titleTrailing, titleStyle, titleColor ?: colors.text) },
             action = { RowAction(value, trailing, colors.iconFaint) },
             gap = SklyankaSpacing.Medium,
             minTextWidth = SklyankaSizes.MinTextColumn,
@@ -153,7 +168,13 @@ internal data class RowSubtitle(val text: String, val color: Color? = null)
 
 /** Текстовая колонка строки: заголовок, метка за ним и подпись состояния под ними. */
 @Composable
-private fun RowText(title: String, subtitle: RowSubtitle?, titleTrailing: (@Composable () -> Unit)? = null) {
+private fun RowText(
+    title: String,
+    subtitle: RowSubtitle?,
+    titleTrailing: (@Composable () -> Unit)? = null,
+    titleStyle: TextStyle = SklyankaType.BodyDefault,
+    titleColor: Color = SklyankaTheme.colors.text,
+) {
     val colors = SklyankaTheme.colors
     Column(verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Hair)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -163,8 +184,8 @@ private fun RowText(title: String, subtitle: RowSubtitle?, titleTrailing: (@Comp
             // метку от неё (V-69).
             Text(
                 text = title,
-                style = SklyankaType.BodyDefault,
-                color = colors.text,
+                style = titleStyle,
+                color = titleColor,
                 modifier = Modifier.weight(1f, fill = false),
             )
             titleTrailing?.invoke()
@@ -228,6 +249,34 @@ internal fun SettingsValueRow(title: String, value: String, modifier: Modifier =
         )
     }
 }
+
+/**
+ * Плашка с плюсом у строки «Добавить профиль» (§5.13, SKL-121).
+ *
+ * Пунктирная обводка — не украшение: сплошная рамка читалась бы как уже существующий
+ * профиль с серым инициалом, а пунктир отличает «здесь появится новый» от «здесь кто-то
+ * есть» — и отличается не только цветом (НФТ-33). Габарит тот же, что у инициала профиля
+ * ([SklyankaSizes.IconPlate]), поэтому строки списка стоят ровно.
+ */
+@Composable
+internal fun ProfileAddPlate(modifier: Modifier = Modifier) {
+    val colors = SklyankaTheme.colors
+    Box(modifier = modifier.size(SklyankaSizes.IconPlate), contentAlignment = Alignment.Center) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val stroke = SklyankaSizes.BorderThin.toPx()
+            val dash = stroke * DASH_RATIO
+            drawCircle(
+                color = colors.lineInteractive,
+                radius = size.minDimension / 2f - stroke / 2f,
+                style = Stroke(width = stroke, pathEffect = PathEffect.dashPathEffect(floatArrayOf(dash, dash))),
+            )
+        }
+        PlusGlyph(color = colors.accent)
+    }
+}
+
+/** Длина штриха пунктира в толщинах обводки: пунктир остаётся различимым при любом масштабе. */
+private const val DASH_RATIO = 5f
 
 /** Метки строк — точки опоры экранных проверок. */
 const val TAG_SETTINGS_SCREEN = "settings_screen"

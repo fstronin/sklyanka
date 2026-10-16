@@ -1,5 +1,8 @@
 package ru.stohastika.sklyanka.feature.settings
 
+import ru.stohastika.sklyanka.domain.pro.ProStatus
+import ru.stohastika.sklyanka.domain.pro.ProSubscription
+import ru.stohastika.sklyanka.domain.profile.ProfileCreationGate
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderSettingsValues
 import ru.stohastika.sklyanka.ui.token.ProfileColor
 
@@ -9,6 +12,10 @@ import ru.stohastika.sklyanka.ui.token.ProfileColor
  * Мир тот же, что в `acceptance.feature`: свой профиль активен, у профиля «Мама» четыре
  * лекарства с дублированием напоминаний, одно разрешение не выдано. Часов в сборке
  * нет — шов вырезан (Р-3, SKL-106).
+ *
+ * Строка «Добавить профиль» несёт исход гейта на **следующее** заведение (SKL-121):
+ * он считается тем же [ProfileCreationGate] и по тем же числам, что у `SettingsViewModel`, —
+ * число строк и доступ. Иначе фикстура показывала бы состояние, которого экран не увидит.
  */
 internal object SettingsScreenFixtures {
 
@@ -16,33 +23,32 @@ internal object SettingsScreenFixtures {
     const val FOREIGN_MEDICATIONS = 4
     const val VERSION = "0.1.0"
 
+    /** Имена чужих профилей сверх первого: пять профилей — владелец и четыре чужих (ПРФ-32). */
+    private val FOREIGN_NAMES = listOf(FOREIGN_NAME, "Папа", "Бабушка", "Сестра")
+
+    /** Цвета чужих профилей из закрытого набора (ПРФ-15), по порядку строк. */
+    private val FOREIGN_COLOURS = listOf(
+        ProfileColor.Terracotta,
+        ProfileColor.Olive,
+        ProfileColor.Plum,
+        ProfileColor.Indigo,
+    )
+
+    /**
+     * @param foreignProfiles сколько чужих профилей сверх владельца: 0 — один профиль,
+     *   4 — предел пяти (ПРФ-32). По умолчанию — «Мама», как в остальных фикстурах модуля.
+     * @param pro состояние подписки: исход гейта на создание считается по её доступу.
+     */
     fun state(
         denied: Int = 1,
         manual: Int = 1,
         reminders: ReminderSettingsValues = ReminderSettingsValues(persistentEnabled = true),
         activeIsSelf: Boolean = true,
         snoozePickerVisible: Boolean = false,
+        foreignProfiles: Int = 1,
+        pro: ProStatus = ProStatus(ProSubscription.None),
     ): SettingsUiState {
-        val profiles = listOf(
-            ProfileRowState(
-                id = "self",
-                name = "Владелец",
-                colorArgb = ProfileColor.Teal.argb,
-                isSelf = true,
-                isActive = activeIsSelf,
-                medicationCount = 2,
-                mirrorReminders = false,
-            ),
-            ProfileRowState(
-                id = "mother",
-                name = FOREIGN_NAME,
-                colorArgb = ProfileColor.Terracotta.argb,
-                isSelf = false,
-                isActive = !activeIsSelf,
-                medicationCount = FOREIGN_MEDICATIONS,
-                mirrorReminders = true,
-            ),
-        )
+        val profiles = listOf(ownerRow(activeIsSelf)) + foreignRows(activeIsSelf, foreignProfiles)
         return SettingsUiState(
             profiles = profiles,
             // Как у ViewModel: удаляемым считается активный чужой профиль, и только он.
@@ -51,6 +57,32 @@ internal object SettingsScreenFixtures {
             snoozePickerVisible = snoozePickerVisible,
             permissions = PermissionsSummary(denied = denied, manual = manual),
             version = VERSION,
+            pro = pro,
+            // Тем же правилом, что `SettingsViewModel`: по числу строк и доступу (ПРФ-33, ПРФ-34).
+            profileCreation = ProfileCreationGate.decide(profiles.size, pro.included),
+        )
+    }
+
+    private fun ownerRow(active: Boolean): ProfileRowState = ProfileRowState(
+        id = "self",
+        name = "Владелец",
+        colorArgb = ProfileColor.Teal.argb,
+        isSelf = true,
+        isActive = active,
+        medicationCount = 2,
+        mirrorReminders = false,
+    )
+
+    private fun foreignRows(activeIsSelf: Boolean, count: Int): List<ProfileRowState> = List(count) { index ->
+        val name = FOREIGN_NAMES.getOrElse(index) { "Профиль ${index + 1}" }
+        ProfileRowState(
+            id = if (index == 0) "mother" else "foreign-$index",
+            name = name,
+            colorArgb = FOREIGN_COLOURS[index % FOREIGN_COLOURS.size].argb,
+            isSelf = false,
+            isActive = !activeIsSelf && index == 0,
+            medicationCount = if (index == 0) FOREIGN_MEDICATIONS else 1,
+            mirrorReminders = true,
         )
     }
 }

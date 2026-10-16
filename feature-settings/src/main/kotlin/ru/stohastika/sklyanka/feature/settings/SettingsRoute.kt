@@ -24,6 +24,7 @@ fun SettingsRoute(viewModel: SettingsViewModel, navigation: SettingsNavigation, 
         onIntent = { intent ->
             when (intent) {
                 SettingsIntent.AddProfile -> navigation.addProfile()
+                is SettingsIntent.EditProfile -> navigation.editProfile(intent.profileId)
                 SettingsIntent.DeleteProfile -> navigation.deleteProfile()
                 // Строка «Системные настройки уведомлений» ведёт в системный экран
                 // уведомлений приложения (ОВ-98, Р-52):
@@ -58,8 +59,15 @@ fun SettingsRoute(viewModel: SettingsViewModel, navigation: SettingsNavigation, 
  * в продукте ещё нет, не должен заставлять собирать заглушку на стороне вызывающего.
  */
 data class SettingsNavigation(
-    /** Список профилей → добавление профиля (`ОВ-3`, механика SKL-15). */
+    /** Список профилей → добавление профиля (`ОВ-3`, ПРФ-9, SKL-121). */
     val addProfile: () -> Unit = {},
+    /**
+     * Тихая строка «Изменить» → экран правки профиля (§5.14, SKL-121).
+     *
+     * Идентификатор профиля приходит от строки списка: править можно любого — в том числе
+     * неактивного, — и решать, чей профиль правится, обязан тот, кто собрал маршрут.
+     */
+    val editProfile: (String) -> Unit = {},
     /**
      * «Удалить профиль «Имя»» → экран подтверждения удаления (`ОВ-7`, SKL-36).
      *

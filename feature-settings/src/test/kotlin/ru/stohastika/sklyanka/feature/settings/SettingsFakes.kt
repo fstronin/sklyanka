@@ -10,6 +10,8 @@ import ru.stohastika.sklyanka.domain.model.Medication
 import ru.stohastika.sklyanka.domain.model.MedicationForm
 import ru.stohastika.sklyanka.domain.model.Profile
 import ru.stohastika.sklyanka.domain.model.ScheduleMode
+import ru.stohastika.sklyanka.domain.pro.ProSubscription
+import ru.stohastika.sklyanka.domain.pro.ProSubscriptionCache
 import ru.stohastika.sklyanka.domain.profile.ProfileContext
 import ru.stohastika.sklyanka.domain.profile.ProfileContextProvider
 import ru.stohastika.sklyanka.domain.profile.SwitchReason
@@ -172,6 +174,27 @@ internal class FakePermissions(
 ) : PermissionStateReader {
 
     override fun state(permission: ReminderPermission): PermissionState = states[permission] ?: PermissionState.UNKNOWN
+}
+
+/**
+ * Кэш подписки в памяти: доступ «Про» для гейтов состава (Р-22, ПРФ-33, Р-68 п. 7).
+ *
+ * По умолчанию — «подписки нет», как у первого запуска: доступ в тесте обязан быть
+ * назван явно ([grant]), иначе проверка «без доступа закрыто» доказывала бы не то.
+ * Срок давности у кэша отсутствует намеренно: магазин мог ответить, а сеть пропасть (П-6).
+ */
+internal class FakeProCache(private var subscription: ProSubscription = ProSubscription.None) : ProSubscriptionCache {
+
+    override suspend fun read(): ProSubscription = subscription
+
+    override suspend fun write(subscription: ProSubscription) {
+        this.subscription = subscription
+    }
+
+    /** Действующий доступ до даты включительно — то, чем кончается покупка в витрине. */
+    fun grant(until: LocalDate) {
+        subscription = ProSubscription.Active(productId = null, until = until)
+    }
 }
 
 internal object SettingsFixtures {

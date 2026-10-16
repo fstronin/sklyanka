@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 import ru.stohastika.sklyanka.domain.model.Profile
 import ru.stohastika.sklyanka.domain.pro.ObserveProStatusUseCase
 import ru.stohastika.sklyanka.domain.profile.ProfileContextProvider
+import ru.stohastika.sklyanka.domain.profile.ProfileCreationGate
 import ru.stohastika.sklyanka.domain.profile.SwitchProfileUseCase
 import ru.stohastika.sklyanka.domain.profile.SwitchReason
 import ru.stohastika.sklyanka.domain.reminder.SnoozeIntervals
@@ -88,15 +89,30 @@ class SettingsViewModel @Inject constructor(
     fun refresh() {
         viewModelScope.launch {
             val snapshot = system.read()
-            _state.value = _state.value.copy(
-                reminders = snapshot.reminders,
-                permissions = snapshot.permissions,
-                // Состояние подписки — тем же заходом и по той же причине: магазин мог
-                // ответить, пока человек был в нём (покупка, восстановление, отмена).
-                pro = proStatus(),
+            _state.value = decision(
+                _state.value.copy(
+                    reminders = snapshot.reminders,
+                    permissions = snapshot.permissions,
+                    // Состояние подписки — тем же заходом и по той же причине: магазин мог
+                    // ответить, пока человек был в нём (покупка, восстановление, отмена).
+                    pro = proStatus(),
+                ),
             )
         }
     }
+
+    /**
+     * Исход гейта на следующее создание профиля (ПРФ-33, Р-84).
+     *
+     * Считается по **числу заведённых** профилей и доступу из кэша, а не по подписке:
+     * второй профиль бесплатен всегда, третий без доступа закрыт, пятый закрыт при любой
+     * подписке. Решение принимает домен ([ProfileCreationGate]) — экран лишь показывает
+     * его словами и меткой; пересчитывается оно и при смене списка, и при перечитывании
+     * доступа после витрины.
+     */
+    private fun decision(state: SettingsUiState): SettingsUiState = state.copy(
+        profileCreation = ProfileCreationGate.decide(state.profiles.size, state.pro.included),
+    )
 
     fun onIntent(intent: SettingsIntent) {
         when (intent) {
@@ -127,11 +143,13 @@ class SettingsViewModel @Inject constructor(
             combine(profiles.observeAll(), context.current) { all, active -> all to active.id }
                 .flatMapLatest { (all, activeId) -> rows(all, activeId, medications) }
                 .collect { rows ->
-                    _state.value = _state.value.copy(
-                        profiles = rows,
-                        // Удалить можно ровно тот профиль, в контексте которого человек
-                        // находится: чужой и активный (ОВ-7). Свой сюда не попадает (ПРФ-28).
-                        deletableProfile = rows.firstOrNull { it.isActive && !it.isSelf },
+                    _state.value = decision(
+                        _state.value.copy(
+                            profiles = rows,
+                            // Удалить можно ровно тот профиль, в контексте которого человек
+                            // находится: чужой и активный (ОВ-7). Свой сюда не попадает (ПРФ-28).
+                            deletableProfile = rows.firstOrNull { it.isActive && !it.isSelf },
+                        ),
                     )
                 }
         }

@@ -49,9 +49,9 @@ class RootLayerMotionTest {
         val navigation = RootNavigation()
         navigation.openTab(RootTab.SETTINGS)
 
-        navigation.openSection(SettingsDestination.TRANSFER)
+        navigation.openSection(SettingsDestination.Transfer)
 
-        assertEquals(RootLayer.SettingsScreen(SettingsDestination.TRANSFER), navigation.layer())
+        assertEquals(RootLayer.SettingsScreen(SettingsDestination.Transfer), navigation.layer())
         assertEquals(LayerMotion.Forward, navigation.rootMotion)
 
         navigation.leaveSection()
@@ -100,7 +100,7 @@ class RootLayerMotionTest {
     fun `returning to today closes every layer at once`() {
         val navigation = RootNavigation()
         navigation.openTab(RootTab.SETTINGS)
-        navigation.openSection(SettingsDestination.DELETE_PROFILE)
+        navigation.openSection(SettingsDestination.DeleteProfile)
 
         navigation.openToday()
 
@@ -112,7 +112,7 @@ class RootLayerMotionTest {
     fun `history from today wins over the settings second level`() {
         val navigation = RootNavigation()
         navigation.openTab(RootTab.SETTINGS)
-        navigation.openSection(SettingsDestination.HISTORY)
+        navigation.openSection(SettingsDestination.History)
         navigation.openHistory()
 
         assertEquals(RootLayer.HistoryFromToday, navigation.layer())

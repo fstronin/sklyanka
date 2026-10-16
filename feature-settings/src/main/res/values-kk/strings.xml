@@ -173,6 +173,25 @@
     <string name="profile_delete_no_space">Орын жеткіліксіз. Файл сақталмады, бейін жойылмады.</string>
     <string name="profile_delete_no_picker">Құрылғыда файл таңдайтын қолданба жоқ. Онсыз көшіру файлын сақтау мүмкін емес.</string>
 
+    <!-- ===== Профили сверх двух: мастер, правка, цвета (SKL-121, §5.13, §5.14); слова — §10. ===== -->
+    <string name="profile_add_title">Жаңа бейін</string>
+    <string name="profile_edit_title">Бейін</string>
+    <string name="profile_add_action">Бейін қосу</string>
+    <string name="profile_save_action">Сақтау</string>
+    <string name="profile_row_edit">Өзгерту</string>
+    <string name="profile_label_name">Бейін атауы</string>
+    <string name="profile_label_colour">Бейін түсі</string>
+    <string name="profile_switch_mirror">Еске салғыштарды қайталау</string>
+    <string name="profile_switch_mirror_hint">Бұл бейіннің қабылдаулары туралы еске салғыштар осы телефонға келеді</string>
+    <string name="profile_blocked_name">Бейін атауын жазыңыз</string>
+    <string name="profile_add_blocked_pro">Екіден көп бейін — Sklyanka Pro жазылымында</string>
+    <string name="profile_add_blocked_limit">Бейін саны бестен аспайды</string>
+    <string name="cd_profile_colour_terracotta">Терракота</string>
+    <string name="cd_profile_colour_teal">Көгілдір</string>
+    <string name="cd_profile_colour_olive">Зәйтүн</string>
+    <string name="cd_profile_colour_plum">Қара өрік</string>
+    <string name="cd_profile_colour_indigo">Индиго</string>
+
     <string name="settings_policy">Құпиялылық саясаты</string>
 
     <!-- Строка «Экспорт истории» в блоке «Данные» (SKL-119, §5.16); слова — из нормы дизайна. -->

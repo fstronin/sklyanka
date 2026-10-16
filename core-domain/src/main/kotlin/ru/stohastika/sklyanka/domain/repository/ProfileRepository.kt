@@ -1,6 +1,7 @@
 package ru.stohastika.sklyanka.domain.repository
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import ru.stohastika.sklyanka.domain.model.Profile
 
 /**
@@ -24,4 +25,14 @@ interface ProfileRepository {
     suspend fun getSelf(): Profile?
 
     suspend fun save(profile: Profile)
+
+    /**
+     * Сколько профилей заведено.
+     *
+     * Отдельный счётчик, а не `observeAll().size` у вызывающего: граница «сверх двух» и предел
+     * пяти считаются по **числу заведённых** профилей (ПРФ-33, Р-84 пп. 1–3), и вопрос «сколько
+     * их сейчас» задаётся в одном месте. Значение по умолчанию — пересчёт списка: фейкам тестов
+     * этого достаточно, а база отвечает своим дешёвым `count()`.
+     */
+    suspend fun count(): Int = observeAll().first().size
 }

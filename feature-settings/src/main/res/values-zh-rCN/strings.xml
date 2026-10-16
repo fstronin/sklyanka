@@ -173,6 +173,25 @@
     <string name="profile_delete_no_space">空间不足。文件未保存，档案未删除。</string>
     <string name="profile_delete_no_picker">此设备上没有用于选择文件的应用。没有它无法保存传输文件。</string>
 
+    <!-- ===== Профили сверх двух: мастер, правка, цвета (SKL-121, §5.13, §5.14); слова — §10. ===== -->
+    <string name="profile_add_title">新档案</string>
+    <string name="profile_edit_title">档案</string>
+    <string name="profile_add_action">添加档案</string>
+    <string name="profile_save_action">保存</string>
+    <string name="profile_row_edit">编辑</string>
+    <string name="profile_label_name">档案名称</string>
+    <string name="profile_label_colour">档案颜色</string>
+    <string name="profile_switch_mirror">重复提醒</string>
+    <string name="profile_switch_mirror_hint">该档案的服药提醒会发送到这台手机</string>
+    <string name="profile_blocked_name">请输入档案名称</string>
+    <string name="profile_add_blocked_pro">两个以上的档案需订阅 Sklyanka Pro</string>
+    <string name="profile_add_blocked_limit">档案不超过五个</string>
+    <string name="cd_profile_colour_terracotta">陶土色</string>
+    <string name="cd_profile_colour_teal">蓝绿色</string>
+    <string name="cd_profile_colour_olive">橄榄色</string>
+    <string name="cd_profile_colour_plum">李紫色</string>
+    <string name="cd_profile_colour_indigo">靛蓝色</string>
+
     <string name="settings_policy">隐私政策</string>
 
     <!-- Строка «Экспорт истории» в блоке «Данные» (SKL-119, §5.16); слова — из нормы дизайна. -->

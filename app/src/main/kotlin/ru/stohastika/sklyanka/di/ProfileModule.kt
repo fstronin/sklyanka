@@ -11,7 +11,9 @@ import ru.stohastika.sklyanka.domain.profile.OpenReminderProfileUseCase
 import ru.stohastika.sklyanka.domain.profile.ProfileEraser
 import ru.stohastika.sklyanka.domain.profile.ProfileIdSource
 import ru.stohastika.sklyanka.domain.profile.ProfileSetReplanner
+import ru.stohastika.sklyanka.domain.profile.RenameProfileUseCase
 import ru.stohastika.sklyanka.domain.profile.SetMirrorRemindersUseCase
+import ru.stohastika.sklyanka.domain.profile.SetProfileColourUseCase
 import ru.stohastika.sklyanka.domain.profile.SwitchProfileUseCase
 import ru.stohastika.sklyanka.domain.profile.UuidProfileIds
 import ru.stohastika.sklyanka.domain.reminder.RescheduleReason
@@ -127,4 +129,32 @@ object ProfileModule {
         replan = replan,
         log = log,
     )
+
+    /**
+     * Правка имени профиля (SKL-121, ПРФ-27).
+     *
+     * Имя правится у любого профиля — и у владельца: оно уходит в отчёт врачу и в файл
+     * переноса, а по умолчанию равно «Я» (ПРФ-25). Перепланирования здесь нет: имя
+     * не меняет ни состава приёмов, ни будильников.
+     */
+    @Provides
+    @Singleton
+    fun provideRenameProfile(profiles: ProfileRepository, log: OperationLog): RenameProfileUseCase =
+        RenameProfileUseCase(profiles = profiles, log = log)
+
+    /**
+     * Правка цвета чужого профиля (SKL-121, ПРФ-27).
+     *
+     * Набор допустимых цветов — тот же [ProfilePalette], что у заведения профиля: цвет
+     * выбирается из закрытого набора (ПРФ-15). У владельца цвет не правится — он нигде
+     * не виден (ПРФ-16), и решает это домен, а не экран.
+     */
+    @Provides
+    @Singleton
+    fun provideSetProfileColour(profiles: ProfileRepository, log: OperationLog): SetProfileColourUseCase =
+        SetProfileColourUseCase(
+            profiles = profiles,
+            palette = ProfilePalette.allowedArgb,
+            log = log,
+        )
 }

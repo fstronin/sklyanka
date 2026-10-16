@@ -180,6 +180,21 @@ class AcceptanceWorld {
         log = log,
     )
 
+    /**
+     * Правка состава профилей настоящими сценариями домена (SKL-121).
+     *
+     * Заведение, переименование, цвет и дублирование идут теми же сценариями, что и в
+     * продукте; граница «сверх двух» и предел пяти считает `ProfileCreationGate` по числу
+     * заведённых профилей, а не по подписке (ПРФ-33, Р-84).
+     */
+    val profileManagement = ScenarioProfileManagement(
+        profiles = profiles,
+        repository = repositories.profileStore,
+        replan = reminders.replanner,
+        log = log,
+        deletion = profileDeletion,
+    )
+
     // --- Снимок состояния до действия -------------------------------------------------------
 
     /**
