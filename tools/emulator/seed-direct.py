@@ -85,8 +85,8 @@ def main() -> None:
         connection.execute(
             "INSERT INTO medication (id, profile_id, name, form, shape, dose_amount, dose_unit, strength,"
             " strength_unit, food_relation, schedule_mode, max_per_day, times, start_date, end_date, stock_left,"
-            " stock_threshold_days, archived_at, archive_reason, mirror_to_watch)"
-            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            " stock_threshold_days, archived_at, archive_reason)"
+            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (
                 medication,
                 owner,
@@ -107,7 +107,6 @@ def main() -> None:
                 None,
                 None,
                 None,
-                1,
             ),
         )
         for position, moment in enumerate(moments):
