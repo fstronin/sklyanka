@@ -178,6 +178,10 @@ SKL_JOURNEY_SURVIVAL_CHECK_CLASSES="ru.stohastika.sklyanka.screen.journey.Surviv
 # запуск, потому что права и обстановку меняет скрипт вне приложения, а не человек.
 SKL_JOURNEY_NOT_GRANTED_CLASSES="ru.stohastika.sklyanka.screen.journey.PermissionsNotGrantedJourneyTest"
 SKL_JOURNEY_SETTING_CLASSES="ru.stohastika.sklyanka.screen.journey.HostileLocaleAndFontScaleTest"
+# Happy-path: только положительные походы человека, без враждебных проходов, отзыва прав
+# и смены обстановки. Список — один запуск инструментовки; эстафета выживания идёт
+# отдельными фазами ниже, потому что ей нужен свежий процесс.
+SKL_JOURNEY_HAPPY_CLASSES="ru.stohastika.sklyanka.screen.journey.FirstLaunchJourneyTest,ru.stohastika.sklyanka.screen.journey.MedicationCreationJourneyTest,ru.stohastika.sklyanka.screen.journey.TodayMarkingJourneyTest,ru.stohastika.sklyanka.screen.journey.StockJourneyTest,ru.stohastika.sklyanka.screen.journey.ArchiveAndDeletionJourneyTest,ru.stohastika.sklyanka.screen.journey.HistoryAndReportJourneyTest,ru.stohastika.sklyanka.screen.journey.DataTransferJourneyTest,ru.stohastika.sklyanka.screen.journey.ProfilesJourneyTest,ru.stohastika.sklyanka.screen.journey.ReminderJourneyTest,ru.stohastika.sklyanka.screen.journey.MedicationEditJourneyTest,ru.stohastika.sklyanka.screen.journey.MedicationScheduleJourneyTest,ru.stohastika.sklyanka.screen.journey.DiagnosticsJourneyTest"
 SKL_JOURNEY_FONT_SCALE="1.3"
 SKL_JOURNEY_FONT_SCALE_DEFAULT="1.0"
 SKL_JOURNEY_UNKNOWN_LOCALE="fr-FR"

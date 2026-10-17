@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 # Прогон походов на эмуляторе одной командой (SKL-140, TDD §9).
 #
-#   ./run-journeys.sh [API] [--keep] [--class <полное имя класса>]
+#   ./run-journeys.sh [API] [--keep] [--happy] [--class <полное имя класса>]
 #
 #   API      уровень образа (по умолчанию SKL_JOURNEY_API_LEVEL — targetSdk)
 #   --keep   не гасить образ после прогона
+#   --happy  только положительные походы человека и эстафета выживания; враждебные
+#            проходы, отзыв прав и смена обстановки не идут
 #   --class  один класс похода вместо всего набора: разбор одной проверки
 #
 # Порядок прогона, и каждый запуск инструментовки — отдельный запуск приложения:
@@ -33,16 +35,18 @@ source "$SKL_DIR/lib.sh"
 
 api="${SKL_JOURNEY_API_LEVEL}"
 keep=0
+happy=0
 only_class=""
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --keep) keep=1 ;;
+        --happy) happy=1 ;;
         --class)
             shift
             only_class="${1:-}"
             [[ -n "$only_class" ]] || skl_die "для --class нужно полное имя класса"
             ;;
-        '' | *[!0-9]*) skl_die "неизвестный параметр: $1 ([API] | --keep | --class <имя>)" ;;
+        '' | *[!0-9]*) skl_die "неизвестный параметр: $1 ([API] | --keep | --happy | --class <имя>)" ;;
         *) api="$1" ;;
     esac
     shift
@@ -147,14 +151,24 @@ run_phase() {
     # частью имени переменной, "$label»" разбирается как переменная «label»» и падает
     # под `set -u`. Тот же разбор ломал прогон группы целиком (SKL-122).
     skl_log "запуск «${label}»; лог: $log_file"
+    local xml_dir="$SKL_REPO_ROOT/app/build/outputs/androidTest-results/connected"
+    # Отчёты прошлой инструментовки не должны попасть в сводку этой фазы: каталог AGP
+    # складывает результаты нескольких прогонов, и старый `StoreShotsCapture` уже
+    # приписывал happy-прогону пять чужих падений.
+    rm -rf "$xml_dir"
     skl_gradle "$api" ":app:connectedFreeDebugAndroidTest" \
         ${1+"$@"} \
         "-Pandroid.testInstrumentationRunnerArguments.$SKL_JOURNEY_STORAGE_ARGUMENT" \
         "-Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true" 2>&1 |
         tee -a "$log_file" || status=$?
 
-    local xml_dir="$SKL_REPO_ROOT/app/build/outputs/androidTest-results/connected"
-    if [[ -d "$xml_dir" ]]; then
+    # У flavored-варианта настоящий отчёт — `debug/flavors/free`; верхний
+    # `debug/TEST-…` может быть агрегатом или остатком другого прогона.
+    if [[ -d "$xml_dir/debug/flavors/free" ]]; then
+        local phase_dir="$results/androidTest-results/journey-$label/debug/flavors/free"
+        mkdir -p "$phase_dir"
+        cp "$xml_dir/debug/flavors/free/"*.xml "$phase_dir/" 2>/dev/null || true
+    elif [[ -d "$xml_dir" ]]; then
         mkdir -p "$results/androidTest-results/journey-$label"
         cp -R "$xml_dir/." "$results/androidTest-results/journey-$label/" 2>/dev/null || true
     fi
@@ -171,7 +185,21 @@ keep_first_status() {
     fi
 }
 
-if [[ -n "$only_class" ]]; then
+if (( happy )); then
+    grant_permissions
+    run_phase happy "-Pandroid.testInstrumentationRunnerArguments.class=$SKL_JOURNEY_HAPPY_CLASSES" ||
+        keep_first_status $?
+
+    # Эстафета выживания — единственный положительный поход, которому нужны два запуска:
+    # фаза 1 пишет состояние и умирает, фаза 2 утверждает, что оно пережило смерть процесса.
+    run_phase survival-write \
+        "-Pandroid.testInstrumentationRunnerArguments.class=$SKL_JOURNEY_SURVIVAL_WRITE_CLASSES" ||
+        keep_first_status $?
+
+    run_phase survival \
+        "-Pandroid.testInstrumentationRunnerArguments.class=$SKL_JOURNEY_SURVIVAL_CHECK_CLASSES" ||
+        keep_first_status $?
+elif [[ -n "$only_class" ]]; then
     grant_permissions
     run_phase single "-Pandroid.testInstrumentationRunnerArguments.class=$only_class" || keep_first_status $?
 else
@@ -223,6 +251,13 @@ stop_logcat
 
 shots_status=0
 "$SKL_DIR/screenshots.sh" "$api" || shots_status=$?
+
+# Контактный лист — для глаз человека, а не для сверки: 13 ключевых кадров
+# в порядке пути. Сборка листа не влияет на код возврата прогона.
+if (( happy )) && command -v python3 >/dev/null 2>&1; then
+    python3 "$SKL_DIR/contact-sheet.py" "$results/ui-screens" "$results/happy-contact-sheet.png" ||
+        skl_warn "контактный лист happy-path собрать не удалось"
+fi
 
 elapsed=$((SECONDS - started))
 
