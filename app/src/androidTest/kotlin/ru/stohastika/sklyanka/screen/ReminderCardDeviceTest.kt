@@ -1,7 +1,9 @@
 package ru.stohastika.sklyanka.screen
 
+import android.content.Intent
 import dagger.hilt.android.testing.HiltAndroidTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import ru.stohastika.sklyanka.domain.model.Intake
@@ -11,6 +13,8 @@ import ru.stohastika.sklyanka.feature.reminder.TAG_ACTION_SKIP
 import ru.stohastika.sklyanka.feature.reminder.TAG_ACTION_SNOOZE
 import ru.stohastika.sklyanka.feature.reminder.TAG_ACTION_TAKEN
 import ru.stohastika.sklyanka.feature.reminder.TAG_REMINDER
+import ru.stohastika.sklyanka.reminder.ReminderActionReceiver
+import ru.stohastika.sklyanka.screen.support.DeviceActivities
 import ru.stohastika.sklyanka.screen.support.DeviceTestClock
 import ru.stohastika.sklyanka.screen.support.DeviceTestSeed
 import ru.stohastika.sklyanka.test.R
@@ -72,6 +76,59 @@ class ReminderCardDeviceTest : DeviceScreenTest() {
         awaitScreenClosed(ReminderActivity::class.java)
 
         assertEquals(IntakeStatus.SKIPPED, currentIntake().status)
+    }
+
+    /**
+     * Системная «Назад» с карточки — выход без потерь и без побочного отложения: приём
+     * остаётся `PENDING`, отложенной записи нет, слот не израсходован и карточка
+     * открывается повторно тем же намерением. Находка теста релиза: карточка не должна
+     * становиться путём, из которого человек выходит потерянным напоминанием.
+     */
+    @Test
+    fun theBackDismissKeepsTheIntakePending() {
+        seedPendingIntake()
+        openCard()
+
+        pressBack()
+        awaitScreenClosed(ReminderActivity::class.java)
+
+        val intake = currentIntake()
+        assertEquals(IntakeStatus.PENDING, intake.status)
+        assertNull(
+            "dismissal must not defer the firing",
+            DeviceTestSeed.deferredFor(targetContext, intake.id),
+        )
+
+        openCard()
+    }
+
+    /**
+     * Действие «Принято» из шторки отмечает приём, не открывая карточку (RT-4, Р-87 п. 3).
+     *
+     * Действие уведомления — явный broadcast в [ReminderActionReceiver], а не активность:
+     * отметка идёт тем же сценарием, что и карточка (единственная точка отметки), но карточка
+     * не поднимается, а уведомление снимается последствием отметки (`DismissReminderUseCase`).
+     * Здесь проверяется сам приёмник на настоящем устройстве: отметка случается через боевой
+     * граф и карточка не открывается. Состав уведомления (три действия) стережёт unit-тест
+     * построителя (`ReminderNotifierActionsTest`).
+     */
+    @Test
+    fun theShadeTakenActionMarksTheIntakeWithoutOpeningTheCard() {
+        seedPendingIntake()
+        val intake = currentIntake()
+
+        val action = Intent(targetContext, ReminderActionReceiver::class.java)
+            .setAction(ReminderActionReceiver.ACTION_TAKEN)
+            .putExtra(ReminderActionReceiver.EXTRA_INTAKE_IDS, arrayOf(intake.id))
+        targetContext.sendBroadcast(action)
+
+        waitUntil(SCREEN_TIMEOUT_MS, "отметки приёма действием из шторки") {
+            currentIntake().status == IntakeStatus.TAKEN
+        }
+        assertTrue(
+            "marking from the shade must not open the card",
+            DeviceActivities.resumedActivity() !is ReminderActivity,
+        )
     }
 
     private fun seedPendingIntake() {

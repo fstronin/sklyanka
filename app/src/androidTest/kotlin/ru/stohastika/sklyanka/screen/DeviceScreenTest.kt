@@ -3,6 +3,7 @@ package ru.stohastika.sklyanka.screen
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import androidx.activity.ComponentActivity
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ComposeTimeoutException
@@ -160,6 +161,19 @@ abstract class DeviceScreenTest {
         waitUntil(LAUNCH_TIMEOUT_MS, "закрытия ${clazz.simpleName}") {
             !clazz.isInstance(DeviceActivities.resumedActivity())
         }
+    }
+
+    /**
+     * Системная «Назад» — тем же путём, каким она приходит человеку: через диспетчер
+     * возврата активного экрана. Обработчики Compose (`BackHandler`) срабатывают на нём же.
+     */
+    protected fun pressBack() {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        val shown = requireNotNull(DeviceActivities.resumedActivity()) { "на экране нет активности" }
+        val activity = shown as? ComponentActivity
+            ?: error("экран ${shown.javaClass.simpleName} не умеет системный возврат")
+        instrumentation.runOnMainSync { activity.onBackPressedDispatcher.onBackPressed() }
+        compose.waitForIdle()
     }
 
     /**

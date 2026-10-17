@@ -1,7 +1,6 @@
 package ru.stohastika.sklyanka.screen.journey
 
 import android.content.res.Configuration
-import androidx.activity.ComponentActivity
 import androidx.annotation.StringRes
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
@@ -151,19 +150,6 @@ abstract class JourneyTest : DeviceScreenTest() {
             click()
             click()
         }
-        compose.waitForIdle()
-    }
-
-    /**
-     * Системная «Назад» — тем же путём, каким она приходит человеку: через диспетчер
-     * возврата активного экрана. Обработчики Compose (`BackHandler`) срабатывают на нём же.
-     */
-    protected fun pressBack() {
-        val instrumentation = InstrumentationRegistry.getInstrumentation()
-        val shown = requireNotNull(DeviceActivities.resumedActivity()) { "на экране нет активности" }
-        val activity = shown as? ComponentActivity
-            ?: error("экран ${shown.javaClass.simpleName} не умеет системный возврат")
-        instrumentation.runOnMainSync { activity.onBackPressedDispatcher.onBackPressed() }
         compose.waitForIdle()
     }
 
