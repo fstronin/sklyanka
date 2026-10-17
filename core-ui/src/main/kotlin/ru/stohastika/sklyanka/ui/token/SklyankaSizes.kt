@@ -210,8 +210,7 @@ object SklyankaSizes {
     val FormTile: Dp = 80.dp
     val FormTileGlyph: Dp = 30.dp
 
-    /** Кнопка вида таблетки и силуэт на ней (`AddMed.dc.html`). */
-    val ShapeButton: Dp = 60.dp
+    /** Силуэт на кнопке вида таблетки; плитка — квадрат по доле ширины ряда (`AddMed.dc.html`). */
     val ShapeGlyph: Dp = 30.dp
 
     /** Плитка и силуэт блока-превью выбора (§4.16, ОВ-94). */

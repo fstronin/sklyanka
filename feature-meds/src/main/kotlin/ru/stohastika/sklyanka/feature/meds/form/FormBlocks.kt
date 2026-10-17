@@ -7,9 +7,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -162,11 +162,16 @@ internal fun ReleaseFormBlock(state: MedFormUiState, onIntent: (MedFormIntent) -
 }
 
 /**
- * «Вид таблетки» — ряд из пяти силуэтов.
+ * «Вид таблетки» — ряд из пяти силуэтов, занимающий всю ширину контента.
  *
  * Блок существует только для формы «таблетка» (ПР-9, ИНВ-16, ОВ-88); при смене
  * формы выпуска на неприменимую он не просто скрывается — выбранное значение
  * сбрасывается в черновике, иначе оно уедет в базу незаметно для человека.
+ *
+ * Плитки делят ширину ряда поровну (`weight`) и остаются квадратными (`aspectRatio`):
+ * фиксированные 60 dp на узком экране съедали остаток у последней плитки. Плитка не уже
+ * 44 dp (НФТ-29), пока ширина ряда не меньше 260 dp, то есть экран не уже 300 dp, — это
+ * граница поддерживаемых экранов.
  *
  * Видимого текста у кнопок нет, поэтому подписи для чтения с экрана обязательны
  * и взяты дословно из `aria-label` макета (НФТ-30).
@@ -178,14 +183,15 @@ internal fun TabletShapeBlock(state: MedFormUiState, onIntent: (MedFormIntent) -
     FormBlock(stringResource(R.string.form_label_tablet_shape), null, anchors) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Default),
-            modifier = Modifier.testTag(TAG_TABLET_SHAPE_ROW),
+            modifier = Modifier.fillMaxWidth().testTag(TAG_TABLET_SHAPE_ROW),
         ) {
             TabletShape.entries.forEach { shape ->
                 val selected = state.draft.shape == shape
                 val label = shape.label()
                 Box(
                     modifier = Modifier
-                        .size(SklyankaSizes.ShapeButton)
+                        .weight(1f)
+                        .aspectRatio(1f)
                         .background(
                             if (selected) colors.accentSoft else colors.surface,
                             SklyankaShapes.Large,

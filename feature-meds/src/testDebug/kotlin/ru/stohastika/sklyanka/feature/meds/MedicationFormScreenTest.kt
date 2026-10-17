@@ -1,5 +1,7 @@
 package ru.stohastika.sklyanka.feature.meds
 
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHasNoClickAction
@@ -51,6 +53,8 @@ import ru.stohastika.sklyanka.feature.meds.form.TAG_TIMES_BLOCK
 import ru.stohastika.sklyanka.feature.meds.form.TAG_TIME_ROW
 import ru.stohastika.sklyanka.ui.component.TAG_SCREEN_HEADER
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
+import ru.stohastika.sklyanka.ui.token.SklyankaSizes
+import ru.stohastika.sklyanka.ui.token.SklyankaSpacing
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalTime
@@ -63,7 +67,7 @@ import ru.stohastika.sklyanka.ui.R as UiR
  * компилироваться (`assembleDebugAndroidTest`), прогон — на эталонном устройстве.
  */
 @RunWith(AndroidJUnit4::class)
-@org.robolectric.annotation.Config(qualifiers = "w390dp-h2400dp-mdpi")
+@org.robolectric.annotation.Config(qualifiers = "w340dp-h2400dp-mdpi")
 class MedicationFormScreenTest {
 
     @get:Rule
@@ -134,6 +138,56 @@ class MedicationFormScreenTest {
             R.string.tablet_shape_triangular,
         ).forEach { id ->
             composeRule.onNodeWithContentDescription(context.getString(id)).assertIsDisplayed()
+        }
+    }
+
+    /**
+     * SKL-155: ряд «Вид таблетки» занимает всю ширину контента, пять плиток равны и квадратны.
+     *
+     * Ширина класса узкая намеренно: на 390 dp фиксированные 60 dp ещё помещаются, и старый
+     * дефект — последняя плитка, съеденная остатком ряда, — не виден. На 340 dp четыре целых
+     * плитки и объедок последней — ровно то, что нашёл владелец. Квалификатор стоит на классе,
+     * а не на методе: вторая песочница внутри одного класса не нужна, когда весь класс может
+     * идти на узкой опорной ширине; проектная ширина 390 dp остаётся под приёмкой и эталонами.
+     */
+    @Test
+    fun theTabletShapeRowFillsTheContentWidthWithEqualTiles() {
+        show(draft(form = MedicationForm.TABLET))
+
+        val density = composeRule.density
+        val row = composeRule.onNodeWithTag(TAG_TABLET_SHAPE_ROW).fetchSemanticsNode()
+        assertEquals(
+            "the shape row must stand on the section margin",
+            SklyankaSpacing.Section.value,
+            with(density) { row.boundsInRoot.left.toDp().value },
+            TOLERANCE,
+        )
+        assertEquals(
+            "the shape row must fill the content width",
+            340f - 2 * SklyankaSpacing.Section.value,
+            with(density) { row.size.width.toDp().value },
+            TOLERANCE,
+        )
+
+        val tiles = composeRule.onAllNodes(
+            hasAnyAncestor(hasTestTag(TAG_TABLET_SHAPE_ROW)) and
+                SemanticsMatcher.keyIsDefined(SemanticsProperties.ContentDescription),
+            useUnmergedTree = true,
+        ).fetchSemanticsNodes()
+        assertEquals("the shape row must offer five tiles", 5, tiles.size)
+
+        val widths = tiles.map { with(density) { it.size.width.toDp().value } }
+        val tile = (340f - 2 * SklyankaSpacing.Section.value - 4 * SklyankaSpacing.Default.value) / 5
+        assertEquals(
+            "every shape tile must be $tile dp wide",
+            listOf(tile, tile, tile, tile, tile),
+            widths,
+        )
+        widths.forEach { width ->
+            assertTrue(
+                "a shape tile is $width dp wide, below ${SklyankaSizes.MinTouchTarget} (НФТ-29)",
+                width >= SklyankaSizes.MinTouchTarget.value - TOLERANCE,
+            )
         }
     }
 
@@ -410,5 +464,8 @@ class MedicationFormScreenTest {
 
     private companion object {
         const val PROFILE_ID = "11111111-1111-4111-8111-111111111111"
+
+        /** Округление плотности может отнять доли точки; одной точки запаса хватает. */
+        const val TOLERANCE = 1f
     }
 }
