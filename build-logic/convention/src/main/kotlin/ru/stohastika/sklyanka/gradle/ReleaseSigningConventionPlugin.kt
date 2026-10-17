@@ -10,10 +10,15 @@ import org.gradle.kotlin.dsl.configure
 /**
  * Варианты сборки и подпись (TDD §4.3).
  *
- * debug       — отладочный ключ; на часы ничего не отправит (ЧАС-9);
- * release     — релизный ключ, выпуск;
- * watchTest   — релизная подпись при возможности отладки: именно этот вариант
- *               идёт на испытания карточки Wear Engine (SKL-03, SKL-16).
+ * Измерение `contour` (Р-86, ADR-0016) удваивает имена: `freeDebug`/`proDebug`,
+ * `freeRelease`/`proRelease`, `freeWatchTest`/`proWatchTest`.
+ *
+ * freeDebug / proDebug     — отладочный ключ; на часы ничего не отправит (ЧАС-9);
+ * freeRelease              — релизный ключ; единственная поставляемая сборка;
+ * proRelease / proWatchTest — выключены: подписанного артефакта у `pro` нет вовсе,
+ *                            вариант живёт отладочной сборкой и unit-тестами;
+ * freeWatchTest            — релизная подпись при возможности отладки: именно этот
+ *                            вариант идёт на испытания карточки Wear Engine (SKL-03, SKL-16).
  *
  * Без секретов релизные варианты не собираются вовсе, а попытка их собрать
  * заканчивается внятным отказом, а не отладочной подписью.
@@ -67,9 +72,32 @@ class ReleaseSigningConventionPlugin : Plugin<Project> {
             }
         }
 
+        // `pro` не поставляется: подписанного релизного артефакта у него нет вовсе
+        // (Р-86, ADR-0016 п. 2). Компиляция и unit-тесты идут отладочным вариантом;
+        // freeRelease остаётся единственной подписываемой сборкой.
+        disableProReleaseVariants()
+
         if (secrets == null) {
             disableReleaseVariants()
             registerRefusingStubs()
+        }
+    }
+
+    /**
+     * Выключить релизные варианты контура `pro`.
+     *
+     * Селектор назван измерением и значением, а не порядком: конвенция применяется только
+     * к `app`, где эти имена объявлены (Р-86, ADR-0016). `proWatchTest` выключен по той же
+     * причине — он тоже несёт релизную подпись.
+     */
+    private fun Project.disableProReleaseVariants() {
+        extensions.configure<ApplicationAndroidComponentsExtension> {
+            beforeVariants(selector().withFlavor(CONTOUR_DIMENSION, PRO_FLAVOR).withBuildType(RELEASE)) {
+                it.enable = false
+            }
+            beforeVariants(selector().withFlavor(CONTOUR_DIMENSION, PRO_FLAVOR).withBuildType(WATCH_TEST)) {
+                it.enable = false
+            }
         }
     }
 
@@ -102,11 +130,29 @@ class ReleaseSigningConventionPlugin : Plugin<Project> {
         const val DEBUG = "debug"
         const val RELEASE = "release"
         const val WATCH_TEST = "watchTest"
+
+        /** Измерение контура и непоставляемый вариант (Р-86, ADR-0016 п. 2). */
+        const val CONTOUR_DIMENSION = "contour"
+        const val PRO_FLAVOR = "pro"
+
+        /**
+         * Варианты контура (Р-86, ADR-0016): `free` — поставляемый, `pro` — запасной.
+         *
+         * Список имён повторяет фактические задачи AGP с измерением `contour`
+         * (`assembleFreeRelease`, `assembleProRelease`, …): у неflavored-сборки были
+         * `assembleRelease`/`bundleRelease`, и после введения вариантов они перестали
+         * существовать. Без этого списка release без секретов падал бы «задачей не найдено»
+         * или, хуже, собирался бы без явного отказа.
+         */
         val REFUSED_TASKS = listOf(
-            "assembleRelease",
-            "bundleRelease",
-            "assembleWatchTest",
-            "bundleWatchTest",
+            "assembleFreeRelease",
+            "bundleFreeRelease",
+            "assembleProRelease",
+            "bundleProRelease",
+            "assembleFreeWatchTest",
+            "bundleFreeWatchTest",
+            "assembleProWatchTest",
+            "bundleProWatchTest",
         )
     }
 }

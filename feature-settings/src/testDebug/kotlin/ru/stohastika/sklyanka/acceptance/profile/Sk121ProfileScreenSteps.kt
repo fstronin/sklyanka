@@ -10,7 +10,6 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
-import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.runComposeUiTest
@@ -39,7 +38,6 @@ import ru.stohastika.sklyanka.ui.locale.withInterfaceLocale
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.ProfilePalette
 import java.util.Locale
-import ru.stohastika.sklyanka.ui.R as UiR
 
 /**
  * Экранные шаги приёмки SKL-121 — мастер добавления профиля и строка «Добавить профиль» (§5.13).
@@ -49,8 +47,8 @@ import ru.stohastika.sklyanka.ui.R as UiR
  * их может только прогон самого модуля (`SKL-26/TDD.md §4.3`).
  *
  * Состояние берётся из мира сценария, а не пересказывается: число профилей — `world.profiles.all()`,
- * доступ — `world.pro.status()`, а исход гейта считает тот же [ProfileCreationGate], что у продукта
- * (ПРФ-33, ПРФ-34). Стенд только собирает ту же форму и ту же строку, что продукт.
+ * доступ — `world.access.status()`, а исход гейта считает тот же [ProfileCreationGate], что у продукта
+ * (ПРФ-32, ПРФ-34). Стенд только собирает ту же форму и ту же строку, что продукт.
  *
  * Выражение кончается на «на стенде»: словарь шагов общий на прогон, и второе объявление
  * выражения сценарного шага из общего артефакта было бы дублем (`SKL-26/TDD.md §4.4`).
@@ -106,36 +104,6 @@ class Sk121ProfileScreenSteps(private val world: AcceptanceWorld) {
         }
     }
 
-    /**
-     * Причина платной границы названа словами над кнопкой, а кнопка не приглушена (П-7, §5.10).
-     *
-     * Платная причина не переводит кнопку в недоступность: недоступное действие говорит «нельзя»,
-     * а правда — «можно, по подписке», и нажатие ведёт в витрину.
-     */
-    @Тогда("^на стенде над кнопкой названа причина платной границы$")
-    fun thePaidBoundaryReasonIsNamedOnTheStand() {
-        composeForm {
-            assertTrue(
-                "над кнопкой названа причина платной границы",
-                textsOfNode(TAG_PROFILE_BLOCK).contains(string(R.string.profile_add_blocked_pro)),
-            )
-        }
-    }
-
-    /**
-     * Кнопка завершения на платной границе нажимается: причина названа, а действие не отнято.
-     *
-     * Спрашивается именно **приглушение**, а не действие в семантике: `clickable(enabled = false)`
-     * оставляет узел с `OnClick` и добавляет `Disabled`, и «нет действия нажатия» недоступную
-     * кнопку не отличает — отличает её признак `Disabled` (`assertIsNotEnabled`).
-     */
-    @Тогда("^на стенде кнопка завершения не приглушена$")
-    fun theWizardFinishIsNotDimmedOnTheStand() {
-        composeForm {
-            onNodeWithTag(TAG_PROFILE_SUBMIT).assertIsEnabled()
-        }
-    }
-
     /** Предел пяти закрывает завершение: кнопка приглушена (`ButtonState.Disabled`) и зовёт слова. */
     @Тогда("^на стенде завершение недоступно$")
     fun theWizardFinishIsUnavailableOnTheStand() {
@@ -155,37 +123,15 @@ class Sk121ProfileScreenSteps(private val world: AcceptanceWorld) {
         }
     }
 
-    /**
-     * Строка «Добавить профиль» несёт метку «Про»: следующее создание платное (Р-84 п. 3).
-     *
-     * Метка — слово каталога `core-ui`, и оно читается из текстов узла строки рекурсией,
-     * не слитым деревом: строка нажимается, и слитая она спрятала бы слова внутри себя.
-     */
-    @Тогда("^на стенде строка «Добавить профиль» несёт метку «Про»$")
-    fun theAddRowCarriesTheProMarkOnTheStand() {
+    /** Строка «Добавить профиль» на месте и названа словом каталога (§5.13). */
+    @Тогда("^на стенде строка «Добавить профиль» на месте$")
+    fun theAddRowIsOnTheStand() {
         composeSettings {
             val texts = textsOfNode(TAG_ADD_PROFILE_ROW)
             assertTrue(
                 "строка добавления названа «${string(R.string.profile_add_action)}»: $texts",
                 texts.contains(string(R.string.profile_add_action)),
             )
-            assertTrue(
-                "строка добавления несёт метку «${string(UiR.string.pro_mark)}»: $texts",
-                texts.contains(string(UiR.string.pro_mark)),
-            )
-        }
-    }
-
-    /** Без платного создания метки нет, а подпись строки остаётся: строка на месте, но не продаёт. */
-    @Тогда("^на стенде строка «Добавить профиль» не несёт метки «Про»$")
-    fun theAddRowCarriesNoProMarkOnTheStand() {
-        composeSettings {
-            val texts = textsOfNode(TAG_ADD_PROFILE_ROW)
-            assertTrue(
-                "строка добавления названа «${string(R.string.profile_add_action)}»: $texts",
-                texts.contains(string(R.string.profile_add_action)),
-            )
-            assertTrue("без платного создания метки нет: $texts", !texts.contains(string(UiR.string.pro_mark)))
         }
     }
 
@@ -202,7 +148,7 @@ class Sk121ProfileScreenSteps(private val world: AcceptanceWorld) {
     }
 
     /**
-     * Мастер из мира: имя шага, первый свободный цвет набора и исход гейта (ПРФ-33, ПРФ-34).
+     * Мастер из мира: имя шага, первый свободный цвет набора и исход гейта (ПРФ-32, ПРФ-34).
      *
      * Дублирование включено — норма при создании (Р-29); владельцем форма не открывается.
      */
@@ -212,7 +158,7 @@ class Sk121ProfileScreenSteps(private val world: AcceptanceWorld) {
         colour = freeColour(),
         mirrorReminders = true,
         isSelf = false,
-        creation = ProfileCreationGate.decide(world.profiles.all().size, world.pro.status().included),
+        creation = ProfileCreationGate.decide(world.profiles.all().size, world.access.status().included),
     )
 
     /** Экран настроек из мира: строки профилей и исход гейта, тем же правилом, что у ViewModel. */
@@ -231,8 +177,8 @@ class Sk121ProfileScreenSteps(private val world: AcceptanceWorld) {
         }
         return SettingsUiState(
             profiles = rows,
-            pro = world.pro.status(),
-            profileCreation = ProfileCreationGate.decide(profiles.size, world.pro.status().included),
+            pro = world.access.status(),
+            profileCreation = ProfileCreationGate.decide(profiles.size, world.access.status().included),
             version = VERSION,
         )
     }

@@ -18,6 +18,10 @@
 body{margin:0;background:#F3EDE3;color:#241F1B;font-family:'Golos Text',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
 a{color:#5F6F2E;text-decoration:none}
 .preview-head{max-width:1226px;padding:36px 40px 8px}
+/* Историческая пометка листа: он не действует и сохранён только как история (Р-86). */
+.archive-note{max-width:1146px;margin:24px 40px 0;box-sizing:border-box;border:1.5px solid #8F3E23;background:#EFE4E0;border-radius:16px;padding:16px 18px;display:flex;flex-direction:column;gap:6px}
+.archive-note-title{font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#8F3E23}
+.archive-note-text{font-size:15px;line-height:1.5;color:#5A2E1F}
 .preview-eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#5F564D;font-weight:600}
 .preview-head h1{margin:12px 0 12px;font-family:'Literata',Georgia,serif;font-size:36px;font-weight:600;letter-spacing:-.01em;line-height:1.15}
 .preview-head p{margin:0;font-size:16px;color:#241F1B;line-height:1.55}
@@ -114,10 +118,14 @@ a{color:#5F6F2E;text-decoration:none}
 figcaption{max-width:390px;font-size:12px;color:#5F564D;margin-top:12px;line-height:1.5}
 </style>
 </helmet>
+<div class="archive-note" role="note">
+<div class="archive-note-title">Лист не действует</div>
+<div class="archive-note-text">Решение Р-86 (17.10.2026) отменило подписку: продукт бесплатен, витрин, цен, покупок и управления подпиской в нём нет. Этот лист сохранён только как история решений Р-67…Р-82 и в работу не берётся.</div>
+</div>
 <div class="preview-head">
-<div class="preview-eyebrow">Склянка · витрина «Склянка Про» · Р-67, Р-72, Р-73, Р-74, Р-75, Р-76, Р-77, Р-78, Р-79, Р-80, Р-82</div>
+<div class="preview-eyebrow">Склянка · исторический лист · не действует · Р-67, Р-72, Р-73, Р-74, Р-75, Р-76, Р-77, Р-78, Р-79, Р-80, Р-82</div>
 <h1>Витрина «Склянка Про»</h1>
-<p>Покупка подписки одной шторкой: три состояния, выбранный период фрагментом, строка блока в настройках и метка «Про» — искра и слово на мягком акценте (норма §5.9). Выгода — короткое имя, значок и разделитель; период — карточка на поверхности, внутри неё цена с периодом и залитый «Год дешевле», над годовой карточкой — лента «Выгоднее»; выбранная карточка — мягкий акцент и рамка 1,5 dp. Раскрытие магазина свёрнуто в две строки и разворачивается строкой «Подробнее» в этой же шторке. Период при открытии не выбран.</p>
+<p>Ниже — как выглядела покупка подписки до решения Р-86, отменившего её. Покупка одной шторкой: три состояния, выбранный период фрагментом, строка блока в настройках и метка «Про» — искра и слово на мягком акценте (норма §5.9). Выгода — короткое имя, значок и разделитель; период — карточка на поверхности, внутри неё цена с периодом и залитый «Год дешевле», над годовой карточкой — лента «Выгоднее»; выбранная карточка — мягкий акцент и рамка 1,5 dp. Раскрытие магазина свёрнуто в две строки и разворачивается строкой «Подробнее» в этой же шторке. Период при открытии не выбран.</p>
 </div>
 <div class="sheet-grid">
 
@@ -433,7 +441,7 @@ figcaption{max-width:390px;font-size:12px;color:#5F564D;margin-top:12px;line-hei
 
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1306,"height":2160}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1306,"height":2330}}'>
 class Component extends DCLogic {
   renderVals() {
     return {};

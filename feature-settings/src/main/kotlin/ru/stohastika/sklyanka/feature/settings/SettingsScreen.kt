@@ -40,6 +40,7 @@ import ru.stohastika.sklyanka.ui.component.SklyankaSwitchRow
 import ru.stohastika.sklyanka.ui.component.rememberScreenHeaderState
 import ru.stohastika.sklyanka.ui.locale.interfaceLocale
 import ru.stohastika.sklyanka.ui.modifier.minTouchTarget
+import ru.stohastika.sklyanka.ui.pro.LocalProUiEnabled
 import ru.stohastika.sklyanka.ui.text.proDate
 import ru.stohastika.sklyanka.ui.text.proText
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
@@ -73,6 +74,9 @@ fun SettingsScreen(state: SettingsUiState, onIntent: (SettingsIntent) -> Unit, m
     val colors = SklyankaTheme.colors
     val header = rememberScreenHeaderState()
     val labels = ScreenHeaderLabels(title = stringResource(R.string.settings_title))
+    // Блок «Склянка Про» существует только в платном варианте сборки: в поставляемой
+    // бесплатной его нет вовсе, и строки «Не оформлена» человек не видит (Р-86, ADR-0016).
+    val proUiEnabled = LocalProUiEnabled.current
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -95,7 +99,11 @@ fun SettingsScreen(state: SettingsUiState, onIntent: (SettingsIntent) -> Unit, m
                 // принадлежит приложению, а не данным, и под строку «Склянка Про» ему не место.
                 appearanceBlock(state, onIntent)
                 dataBlock(onIntent)
-                proBlock(state, onIntent)
+                // Строка «Склянка Про» — только в платном варианте (Р-86): в бесплатной
+                // сборке входа в покупку нет, и блока нет вовсе, а не «пустого».
+                if (proUiEnabled) {
+                    proBlock(state, onIntent)
+                }
                 item {
                     AboutPlate(state.version, modifier = Modifier.padding(horizontal = SklyankaSpacing.Section))
                 }
@@ -192,10 +200,11 @@ private fun LazyListScope.profilesBlock(state: SettingsUiState, onIntent: (Setti
  * строкой удаления (§5.13, ПРФ-9).
  *
  * Три состояния, и все они — про следующее создание, а не про строку: без метки, пока
- * создание бесплатно; с меткой «Про», когда следующее создание платное (Р-84 п. 3);
- * при пяти профилях — без метки и со строкой причины, чтобы про предел человек узнал
- * **до** нажатия (ПРФ-34). Строка нажимается в любом состоянии и ведёт в мастер: витрину
- * она не открывает ни в одном из них — покупку открывает кнопка мастера (§5.12, §5.13).
+ * создание доступно; с меткой «Про», когда следующее создание платное (Р-84 п. 3, только
+ * в платном варианте сборки — в бесплатном `ProMark` не рисует ничего); при пяти профилях —
+ * без метки и со строкой причины, чтобы про предел человек узнал **до** нажатия (ПРФ-34).
+ * Строка нажимается в любом состоянии и ведёт в мастер: витрину она не открывает
+ * ни в одном из них — покупку открывает кнопка мастера (§5.12, §5.13).
  */
 @Composable
 private fun AddProfileRow(decision: ProfileCreationDecision, onClick: () -> Unit) {
@@ -413,8 +422,9 @@ private fun LazyListScope.dataBlock(onIntent: (SettingsIntent) -> Unit) {
             SettingsRow(
                 title = stringResource(R.string.settings_export_history),
                 subtitle = RowSubtitle(stringResource(R.string.settings_export_note)),
-                // Зазор между последним словом подписи и меткой — `Small` (§5.9): остальной воздух
-                // вокруг слова — собственное поле метки (`ChipPadding`).
+                // Метка остаётся в разметке ради платного варианта, а в бесплатной сборке
+                // `ProMark` не рисует ничего — выгрузка CSV доступна всем (Р-86).
+                // Зазор между последним словом подписи и меткой — `Small` (§5.9).
                 titleTrailing = { ProMark(modifier = Modifier.padding(start = SklyankaSpacing.Small)) },
                 onClick = { onIntent(SettingsIntent.OpenHistoryExport) },
                 modifier = Modifier.testTag(TAG_EXPORT_ROW),
@@ -439,6 +449,9 @@ private fun LazyListScope.dataBlock(onIntent: (SettingsIntent) -> Unit) {
 /**
  * Блок «Склянка Про» — пятый блок настроек, после «Данных» и перед плашкой «О приложении»
  * (Р-67 п. 6, SKL-122).
+ *
+ * **В бесплатной сборке этого блока нет.** Строки «Не оформлена» в поставляемом продукте
+ * не существует: блок зовётся только при [LocalProUiEnabled] (§5.9, Р-86, ADR-0016).
  *
  * Рубрики у блока нет, и это не упущение: прописная «СКЛЯНКА ПРО» над строкой «Склянка Про»
  * повторила бы подпись дважды, а макет даёт блок карточкой без рубрики
@@ -579,5 +592,6 @@ internal const val TAG_POLICY_ROW = "settings_policy_row"
  *
  * Отдельный тег, а не тег строки политики: по нему поход и экранный стенд находят вход
  * в витрину, и он же называет поверхность в реестре `docs/tasks/SKL-140/TDD.md` §7.
+ * В бесплатной сборке узла с этим тегом на экране нет (§5.9, Р-86).
  */
 internal const val TAG_PRO_ROW = "settings_pro_row"

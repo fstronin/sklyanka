@@ -30,7 +30,7 @@ REPO_ROOT="$(cd -- "$PROBE_DIR/../.." && pwd)"
 source "$PROBE_DIR/../emulator/lib.sh"
 
 APP_ID="ru.stohastika.sklyanka"
-APK="$REPO_ROOT/app/build/outputs/apk/debug/app-debug.apk"
+APK="$REPO_ROOT/app/build/outputs/apk/free/debug/app-free-debug.apk"
 LOG_TAG="SklyankaProbe"
 ACTION_SCHEDULE="ru.stohastika.sklyanka.debug.SCHEDULE_PROBE"
 ACTION_STRATEGY="ru.stohastika.sklyanka.debug.SET_PROBE_STRATEGY"
@@ -56,7 +56,7 @@ usage() {
 
 Флаги:
   --serial S           последовательный номер устройства (по умолчанию — единственное подключённое)
-  --install            собрать :app:assembleDebug с -Psklyanka.reminderMeasurement=true и adb install -r -g
+  --install            собрать :app:assembleFreeDebug с -Psklyanka.reminderMeasurement=true и adb install -r -g
   --strategy ВАРИАНТ   записать вариант измерения: alarm_clock | exact_idle (настройка SKL-85)
   --probes +2,+5,+10   смещения проб в минутах от момента постановки (по умолчанию +2,+5,+10)
   --wait-min N         ждать N минут после последней пробы, прежде чем снимать артефакты (по умолчанию 5)
@@ -183,7 +183,7 @@ fi
 if (( install )); then
     skl_log "сборка отладочного APK с режимом измерения (SKL-85)"
     ANDROID_SERIAL="$serial" "$REPO_ROOT/gradlew" --project-dir "$REPO_ROOT" --console=plain \
-        :app:assembleDebug -Psklyanka.reminderMeasurement=true
+        :app:assembleFreeDebug -Psklyanka.reminderMeasurement=true
     [[ -f "$APK" ]] || skl_die "APK не найден после сборки: $APK"
     skl_adb -s "$serial" install -r -g "$APK"
 else

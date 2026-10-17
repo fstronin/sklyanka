@@ -32,13 +32,6 @@ a{color:#5F6F2E;text-decoration:none}a:hover{color:#8F3E23}
    из пропа `accent` по месту, как у остальных выбранных элементов макета. */
 .chip{flex:1 1 44px;min-width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:#FFFFFF;border:1px solid #E6DED2;border-radius:13px;font-size:13px;line-height:1.35;color:#241F1B}
 .chip--on{background:#EBEEDA;border:1.5px solid #5F6F2E;font-weight:600}
-/* Строка границы: метка «Про» и подпись — вместе читаются «Про — больше одного дня». */
-.pro-line{display:flex;align-items:center;gap:8px}
-/* Метка «Про» — собранная композиция из токенов (§5.9, Р-79): подложка `accentSoft`, слово
-   `CaptionStrong` 13/600 цветом `onAccentSoft`, искра 14 sp перед словом, поле 7 × 14 dp.
-   Не нажимается — цели нажатия не требует. */
-.pro-mark{display:inline-flex;align-items:baseline;gap:4px;border-radius:999px;background:#EBEEDA;color:#424724;font-size:13px;font-weight:600;line-height:1.35;padding:7px 14px;flex-shrink:0}
-.pro-mark svg{display:block;width:14px;height:14px;flex-shrink:0}
 /* Пояснение под блоком — `CaptionSmall` 12/400 `textMuted`. */
 .hint{font-size:12px;line-height:1.45;color:#5F564D}
 /* Строка «подпись — числовое поле»: та же сборка, что строки остатка (§5.3): подпись
@@ -60,10 +53,6 @@ a{color:#5F6F2E;text-decoration:none}a:hover{color:#8F3E23}
 .stage-field .unit{font-size:13px;font-weight:400;color:#5F564D;white-space:nowrap}
 /* «Добавить этап» — та же сборка, что «Добавить время»: пунктир `lineInteractive`, `Label` 14/500 `accent`. */
 .add-btn{height:44px;box-sizing:border-box;border:1px dashed #D9CDBD;background:transparent;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:500;color:#5F6F2E}
-/* Состояние без подписки: причина над кнопкой — `CaptionSmall` `textMuted`. */
-.save-bar{display:flex;flex-direction:column;gap:8px;padding:14px 20px 26px;background:#F8F6EF}
-.btn-save{width:100%;height:54px;border:none;border-radius:16px;background:#5F6F2E;color:#FFFFFF;font-family:inherit;font-size:16px;font-weight:600;cursor:pointer}
-
 /* --- Лист состояний --- */
 .sheet-head{font-size:13px;font-weight:600;color:#5F564D;letter-spacing:.02em;padding:34px 20px 6px}
 .state{width:390px;box-sizing:border-box;padding:0 20px 0}
@@ -291,7 +280,7 @@ figcaption{max-width:390px;font-size:12px;color:#5F564D;margin:12px 0 30px;line-
 
 <!-- ===== Лист состояний блока «Расписание» (§5.10, SKL-117) =====
      Ежедневное (по умолчанию) — на экране формы выше: строка вида говорит «Каждый день»,
-     других параметров у блока нет. Ниже — четыре сложных вида, список видов и платная граница. -->
+     других параметров у блока нет. Ниже — четыре сложных вида и список видов. -->
 <div class="sheet-head">Состояния блока «Расписание» (SKL-117, §5.10 нормы)</div>
 
 <div class="state">
@@ -305,14 +294,11 @@ figcaption{max-width:390px;font-size:12px;color:#5F564D;margin:12px 0 30px;line-
 </div>
 <div class="rubric">Дни недели</div>
 <div class="chips">
-<span class="chip chip--on" style="border-color:{{accent}}">Пн</span><span class="chip">Вт</span><span class="chip chip--on" style="border-color:{{accent}}">Ср</span><span class="chip">Чт</span><span class="chip chip--on" style="border-color:{{accent}}">Пт</span><span class="chip">Сб</span><span class="chip">Вс</span>
+<div class="chip chip--on" style="border-color:{{accent}}">Пн</span><span class="chip">Вт</span><span class="chip chip--on" style="border-color:{{accent}}">Ср</span><span class="chip">Чт</span><span class="chip chip--on" style="border-color:{{accent}}">Пт</span><span class="chip">Сб</span><span class="chip">Вс</span>
 </div>
-<div class="pro-line">
-<span class="pro-mark"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.6l1.5 6.3 4.9-4.3-4.3 4.9 6.3 1.5-6.3 1.5 4.3 4.9-4.9-4.3L12 21.4l-1.5-6.3-4.9 4.3 4.3-4.9L3.6 13l6.3-1.5-4.3-4.9 4.9 4.3z"></path></svg>Про</span>
-<span class="hint">Больше одного дня</span>
+<div class="hint">Больше одного дня</div>
 </div>
-</div>
-<figcaption>Один день недели — база (Р-24), два и более — «Про» (ПР-16). Метка стоит у дней, а не в строке вида: она отмечает то место, где начинается платная часть вида. Дни выбираются чипами (44 dp, зазор 4 dp — семь целей в 350 dp), выбор множественный, приглушения нет: второй день выбирается так же, как первый (П-7, §5.10).</figcaption>
+<figcaption>Дни недели — чипы (44 dp, зазор 4 dp — семь целей в 350 dp), выбор множественный, приглушения нет: второй день выбирается так же, как первый (§5.10). Подпись «Больше одного дня» — нейтральное пояснение к выбору, без метки (Р-86).</figcaption>
 </div>
 
 <div class="state">
@@ -412,49 +398,15 @@ figcaption{max-width:390px;font-size:12px;color:#5F564D;margin:12px 0 30px;line-
 <div class="dialog-divider"></div>
 <div class="dialog-opt">По дням недели</div>
 <div class="dialog-divider"></div>
-<div class="dialog-opt">Через несколько дней
-<span class="pro-mark"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.6l1.5 6.3 4.9-4.3-4.3 4.9 6.3 1.5-6.3 1.5 4.3 4.9-4.9-4.3L12 21.4l-1.5-6.3-4.9 4.3 4.3-4.9L3.6 13l6.3-1.5-4.3-4.9 4.9 4.3z"></path></svg>Про</span>
-</div>
+<div class="dialog-opt">Через несколько дней</div>
 <div class="dialog-divider"></div>
-<div class="dialog-opt">Циклами
-<span class="pro-mark"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.6l1.5 6.3 4.9-4.3-4.3 4.9 6.3 1.5-6.3 1.5 4.3 4.9-4.9-4.3L12 21.4l-1.5-6.3-4.9 4.3 4.3-4.9L3.6 13l6.3-1.5-4.3-4.9 4.9 4.3z"></path></svg>Про</span>
-</div>
+<div class="dialog-opt">Циклами</div>
 <div class="dialog-divider"></div>
-<div class="dialog-opt">По этапам
-<span class="pro-mark"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.6l1.5 6.3 4.9-4.3-4.3 4.9 6.3 1.5-6.3 1.5 4.3 4.9-4.9-4.3L12 21.4l-1.5-6.3-4.9 4.3 4.3-4.9L3.6 13l6.3-1.5-4.3-4.9 4.9 4.3z"></path></svg>Про</span>
-</div>
+<div class="dialog-opt">По этапам</div>
 <div class="dialog-cancel">Отмена</div>
 </div>
 </div>
-<figcaption>Порядок списка — порядок нормы (ПР-15), а не цены: список не сортируется по платности, иначе порядок читался бы подсовыванием (П-7). Метка «Про» стоит сразу за подписью платного варианта, до галочки выбранного, и видна до нажатия (Р-67 п. 5, Р-79). У «По дням недели» метки нет: один день недели — база (Р-24).</figcaption>
-</div>
-
-<div class="state">
-<div class="state-label">Без подписки: сохранение не проходит</div>
-<div class="state-body">
-<div class="sched-row">
-<span class="label">Расписание</span>
-<span class="value">Циклами
-<svg class="chev-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9.5 12 15.5 18 9.5"></path></svg>
-</span>
-</div>
-<div class="sched-card">
-<div class="num-row">
-<span class="label">Дней приёма подряд</span>
-<span class="num-field">21</span>
-</div>
-<div class="sched-divider"></div>
-<div class="num-row">
-<span class="label">Дней перерыва</span>
-<span class="num-field">7</span>
-</div>
-</div>
-</div>
-<div class="save-bar" style="padding-left:0;padding-right:0">
-<div class="hint">Сложное расписание — в подписке «Склянка Про»</div>
-<button type="button" class="btn-save" style="background:{{accent}}">Сохранить лекарство</button>
-</div>
-<figcaption>Вид выбирается, параметры видны и правятся — закрыто только завершение создания (ПР-20). Кнопка не приглушается: недоступное действие говорит «нельзя», а правда — «можно, по подписке» (П-7, Р-79); причина названа словами над кнопкой, а нажатие открывает витрину с пунктом-поводом «Сложные расписания» первым (Р-67 пп. 2–3). Правка уже заведённого сложного курса разрешена целиком — причины нет и сохранение проходит (Р-28, §5.10).</figcaption>
+<figcaption>Порядок списка — порядок нормы (ПР-15): виды не сортируются и не помечаются, выбор сразу открывает параметры своего вида. Выбранный вид несёт начертание 600 и галочку; «Каждый день» — вид по умолчанию.</figcaption>
 </div>
 
 <div class="state">

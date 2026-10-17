@@ -32,19 +32,30 @@ internal fun Project.configureKotlinJvmTarget() {
  *
  * Отладочный прогон строго шире: в нём, кроме `src/test`, участвует `src/testDebug`
  * стенда, которого у релизного варианта нет вовсе. Релизный вариант при этом
- * собирается и проверяется как прежде: `assembleRelease`, `verifyManifestRelease`,
- * `verifyDependenciesRelease`, `lintRelease` остаются на месте — снимается только
+ * собирается и проверяется как прежде: `assembleFreeRelease` (единственный поставляемый
+ * релиз; `proRelease` выключен решением Р-86), `verifyManifestFreeRelease`,
+ * `verifyDependenciesFreeRelease`, `lintFreeRelease` остаются на месте — снимается только
  * повторный прогон тех же тестов.
  *
  * Задача не удаляется и не прячется: она остаётся в графе и печатается как SKIPPED,
  * поэтому «тестов нет» и «тесты не гоняются» по-прежнему разные вещи.
  */
 internal fun Project.skipDuplicateReleaseUnitTest() {
-    tasks.matching { it.name == DUPLICATE_UNIT_TEST }.configureEach { enabled = false }
+    tasks.matching { it.name.startsWith(TEST_PREFIX) && it.name.endsWith(DUPLICATE_UNIT_TEST_SUFFIX) }
+        .configureEach { enabled = false }
 }
 
 /** Релизный прогон юнит-тестов: та же проверка, что отладочная, второй раз. */
-private const val DUPLICATE_UNIT_TEST = "testReleaseUnitTest"
+private const val TEST_PREFIX = "test"
+
+/**
+ * Хвост имени релизного прогона.
+ *
+ * У модуля без вариантов это `testReleaseUnitTest`, у `app` с измерением `contour`
+ * (Р-86, ADR-0016) — `testFreeReleaseUnitTest` и `testProReleaseUnitTest`. Отключение
+ * по хвосту имени снимает все три, а не только первый.
+ */
+private const val DUPLICATE_UNIT_TEST_SUFFIX = "ReleaseUnitTest"
 
 /**
  * Android Lint отвечает за платформенное: NewApi (ПЛ-1) и HardcodedText (НФТ-42).

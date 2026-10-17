@@ -86,6 +86,26 @@ android {
     buildFeatures {
         buildConfig = true
     }
+    // Контур продукта (Р-86, ADR-0016): `free` — единственная поставляемая сборка,
+    // `pro` — запасной вариант для будущего возврата платной модели. Измерение одно,
+    // поэтому варианты называются `freeDebug`/`proDebug`, `freeRelease`/`proRelease`.
+    // Подписанного `proRelease` нет: платная модель не поставляется (release-вариант
+    // pro выключает sklyanka.release.signing), `pro` живёт отладочной сборкой и тестами.
+    //
+    // Платёжные модули подключены только к `pro` (§2 TDD): в `free` их нет ни в графе
+    // зависимостей, ни в слитом манифесте, поэтому `INTERNET` в бесплатную сборку
+    // не приезжает. Приёмка и эталоны платных поверхностей удалены (Р-86 п. 3):
+    // `pro` держится компиляцией, DI-графом и unit-тестами.
+    flavorDimensions += "contour"
+    productFlavors {
+        create("free") {
+            dimension = "contour"
+            isDefault = true
+        }
+        create("pro") {
+            dimension = "contour"
+        }
+    }
     defaultConfig {
         buildConfigField("boolean", "REMINDER_MEASUREMENT", reminderMeasurement.toString())
         // Стенд устройства (SKL-97): приложение тестов и Hilt-граф на проверку.
@@ -121,11 +141,13 @@ dependencies {
     // Экран разрешений EMUI (SKL-14).
     implementation(project(":feature-onboarding"))
     // Витрина «Склянки Про»: одна модальная поверхность покупки (SKL-122, Р-67).
-    implementation(project(":feature-pro"))
+    // Только для контура `pro` (Р-86, ADR-0016 п. 1–2): в `free` витрины нет, и модуль
+    // не попадает ни в граф зависимостей, ни в артефакт.
+    "proImplementation"(project(":feature-pro"))
     // Платный сетевой контур: реализация порта магазина и единственное место сборки,
-    // которому разрешена сеть (SKL-122, ADR-0010 п. 1–2). Модуль подключён, чтобы граф Hilt
-    // и гейт состава артефакта проверялись на сборке, а не на устройстве.
-    implementation(project(":billing-appgallery"))
+    // которому разрешена сеть (SKL-122, ADR-0010 п. 1–2). Подключён только к `pro`,
+    // поэтому `INTERNET` объявляется исключительно в про-варианте.
+    "proImplementation"(project(":billing-appgallery"))
     // Виджеты домашнего экрана (SKL-118): провайдеры и экран настройки приезжают слиянием
     // манифеста модуля, а обновление виджетов по событиям — точками графа в app.
     implementation(project(":feature-widgets"))

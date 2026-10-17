@@ -13,7 +13,7 @@ SKL_BASELINES_DIR="$SKL_VISUAL_DIR/baselines"
 
 # Тест-генератор контактных листов SKL-91 — единственное место, где он назван.
 # Копия фильтра разошлась бы с тестом молча, как разошлись бы параметры эмулятора.
-SKL_CAPTURE_TASK=":app:testDebugUnitTest"
+SKL_CAPTURE_TASK=":app:testFreeDebugUnitTest"
 SKL_CAPTURE_TEST_FILTER="*LocalizationContactSheetTest*"
 SKL_CAPTURE_TEST_FILE="app/src/testDebug/kotlin/ru/stohastika/sklyanka/acceptance/locale/matrix/LocalizationContactSheetTest.kt"
 SKL_VISUAL_REVIEW_PROPERTY="sklyanka.visualReview"

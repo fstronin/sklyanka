@@ -17,13 +17,13 @@ import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import java.io.File
 
 /**
- * Эталонные снимки экрана настройки виджета (SKL-118, §5.12).
+ * Эталонные снимки экрана настройки виджета (SKL-118, §5.12, Р-86).
  *
- * Снимков два — по одному на состояние платной границы: без подписки (слова причины над
- * кнопкой, кнопка «Добавить виджет» и не приглушена) и с подпиской и выбранным лекарством
- * (завершение доступно). Витрина и её состояния снимаются своим эталоном (SKL-122), а плиты
- * виджетов здесь не рисуются: Glance собирает RemoteViews, и кадры типов приходят
- * с устройства (фаза 6.2).
+ * Снимков два — по одному на состояние бесплатного экрана: тип «Сегодня» (выбор
+ * по умолчанию) и «По лекарству» с выбранным лекарством (завершение доступно).
+ * Платной границы в бесплатном продукте нет: гейт проходит, метки «Про» и слов о подписке
+ * экран не рисует. Плиты виджетов здесь не рисуются: Glance собирает RemoteViews, и кадры
+ * типов приходят с устройства (фаза 6.2).
  *
  * Ширина окна — телефонная, как у настоящего экрана: он открывается системой поверх
  * домашнего экрана прошивки (НФТ-43).
@@ -33,16 +33,16 @@ class WidgetConfigSnapshotTest {
 
     @OptIn(ExperimentalRoborazziApi::class)
     @Test
-    fun withoutSubscription() {
-        capture(fileName = "widget-config-no-pro.png", state = state(proIncluded = false))
+    fun todayWithoutMedication() {
+        capture(fileName = "widget-config-today.png", state = state())
     }
 
     @OptIn(ExperimentalRoborazziApi::class)
     @Test
-    fun withSubscriptionAndMedication() {
+    fun medicationChosen() {
         capture(
-            fileName = "widget-config-pro.png",
-            state = state(proIncluded = true, type = WidgetType.MEDICATION, selectedMedicationId = "mag"),
+            fileName = "widget-config-medication.png",
+            state = state(type = WidgetType.MEDICATION, selectedMedicationId = "mag"),
         )
     }
 
@@ -70,17 +70,15 @@ class WidgetConfigSnapshotTest {
         }
     }
 
-    private fun state(
-        proIncluded: Boolean,
-        type: WidgetType = WidgetType.TODAY,
-        selectedMedicationId: String? = null,
-    ): WidgetConfigState = WidgetConfigState(
-        type = type,
-        medications = listOf(magnesium()),
-        selectedMedicationId = selectedMedicationId,
-        proIncluded = proIncluded,
-        profile = ProfileChromeState.Owner,
-    )
+    private fun state(type: WidgetType = WidgetType.TODAY, selectedMedicationId: String? = null): WidgetConfigState =
+        WidgetConfigState(
+            type = type,
+            medications = listOf(magnesium()),
+            selectedMedicationId = selectedMedicationId,
+            // Бесплатный продукт: доступ есть всегда (Р-86), платной границы на экране нет.
+            proIncluded = true,
+            profile = ProfileChromeState.Owner,
+        )
 
     private fun magnesium() = ru.stohastika.sklyanka.domain.model.Medication(
         id = "mag",

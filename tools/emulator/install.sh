@@ -23,9 +23,9 @@ serial="$(skl_serial "$api")"
 skl_avd_running "$api" || skl_die "образ API $api не запущен: сначала ./start.sh $api"
 
 skl_log "сборка отладочного артефакта"
-skl_gradle "$api" ":app:assembleDebug"
+skl_gradle "$api" ":app:assembleFreeDebug"
 
-apk="$(find "$SKL_REPO_ROOT/app/build/outputs/apk/debug" -name '*.apk' -print -quit)"
+apk="$(find "$SKL_REPO_ROOT/app/build/outputs/apk/free/debug" -name '*.apk' -print -quit)"
 [[ -n "$apk" ]] || skl_die "отладочный apk не найден после сборки"
 
 if [[ "$mode" == "--fresh" ]]; then

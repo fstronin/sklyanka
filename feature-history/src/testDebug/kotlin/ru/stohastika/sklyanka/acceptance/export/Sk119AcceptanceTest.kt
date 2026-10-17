@@ -5,9 +5,7 @@ import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.runComposeUiTest
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
@@ -20,7 +18,6 @@ import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
 import ru.stohastika.sklyanka.domain.history.AdherenceCalculator
 import ru.stohastika.sklyanka.domain.history.BuildDoctorReportUseCase
 import ru.stohastika.sklyanka.domain.history.BuildExtendedSectionsUseCase
-import ru.stohastika.sklyanka.domain.history.ExtendedReportSections
 import ru.stohastika.sklyanka.domain.history.MissedPatternRule
 import ru.stohastika.sklyanka.domain.history.ObserveAdherenceUseCase
 import ru.stohastika.sklyanka.domain.history.OnTimeRule
@@ -37,9 +34,10 @@ import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
  * Стенд выбора состава отчёта — настоящий `HistoryViewModel` на мире сценария (SKL-119).
  *
  * Состояние собирает **продукт**, а не пересказ: приверженность считает настоящий
- * `ObserveAdherenceUseCase`, разделы «Про» — настоящий `BuildExtendedSectionsUseCase`, доступ
- * читает `ObserveProStatusUseCase` поверх кэша подписки мира. Стенд только собирает композицию
- * и передаёт намерения; правил гейта в нём нет — иначе сценарий проверял бы стенд.
+ * `ObserveAdherenceUseCase`, расширенные разделы — настоящий `BuildExtendedSectionsUseCase`,
+ * доступ читает тот же сценарий, каким живёт продукт (Р-86: в поставляемой сборке он всегда
+ * есть). Стенд только собирает композицию и передаёт намерения; правил гейта в нём нет —
+ * иначе сценарий проверял бы стенд.
  *
  * Отрисовка документа — записывающая: настоящий PDF рисуется только на устройстве
  * (`PdfDocument`), а проверке нужны **разделы**, с которыми документ собран, и сам факт сборки.
@@ -50,15 +48,9 @@ internal object ReportScopeStand {
 
     private var lastWorld: AcceptanceWorld? = null
     private var viewModel: HistoryViewModel? = null
-    private var collecting: CoroutineScope? = null
 
     /** Отрисовка документа записывающая: разделы, с которыми собран документ, видны сценарию. */
     val renderer = FakeRenderer()
-
-    /** Обращения к витрине: «без доступа расширенный состав её открывает» (Р-22). */
-    var showcaseRequests: Int = 0
-
-        private set
 
     fun model(world: AcceptanceWorld): HistoryViewModel {
         reset(world)
@@ -101,9 +93,6 @@ internal object ReportScopeStand {
         Dispatchers.resetMain()
     }
 
-    /** Разделы «Про» последнего собранного документа: с ними документ и передают. */
-    fun lastSections(): ExtendedReportSections = renderer.sections.lastOrNull() ?: ExtendedReportSections.NONE
-
     @Composable
     private fun Content(state: HistoryUiState, onIntent: (HistoryIntent) -> Unit) {
         SklyankaTheme { HistoryScreen(state = state, onIntent = onIntent) }
@@ -112,11 +101,8 @@ internal object ReportScopeStand {
     private fun build(world: AcceptanceWorld): HistoryViewModel {
         val dispatcher = UnconfinedTestDispatcher()
         Dispatchers.setMain(dispatcher)
-        val collector = CoroutineScope(dispatcher)
-        collecting = collector
         renderer.rendered.clear()
         renderer.sections.clear()
-        showcaseRequests = 0
         return HistoryViewModel(
             observeAdherence = ObserveAdherenceUseCase(
                 activeProfile = world.profileSession.activeStore,
@@ -147,12 +133,10 @@ internal object ReportScopeStand {
             ),
             renderer = renderer,
             missedPattern = MissedPatternRule(),
-            // Доступ «Про» — тем же чтением кэша, каким живёт продукт (Р-68 п. 7).
-            proStatus = world.pro.statusUseCase,
+            // Доступ — тем же сценарием, каким живёт продукт (Р-86: он всегда есть).
+            proStatus = world.access.statusUseCase,
             time = world.clock.time,
-        ).also { model ->
-            collector.launch { model.showcase.collect { showcaseRequests++ } }
-        }
+        )
     }
 
     private fun reset(world: AcceptanceWorld) {
@@ -160,7 +144,6 @@ internal object ReportScopeStand {
             dropMainDispatcher()
             lastWorld = world
             viewModel = null
-            collecting = null
         }
     }
 
@@ -169,7 +152,6 @@ internal object ReportScopeStand {
         dropMainDispatcher()
         viewModel = null
         lastWorld = null
-        collecting = null
     }
 }
 

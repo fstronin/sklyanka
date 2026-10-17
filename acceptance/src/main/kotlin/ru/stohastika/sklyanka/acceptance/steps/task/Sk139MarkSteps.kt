@@ -103,11 +103,11 @@ class Sk139MarkSteps {
     @И("прежняя тёплая оливовая иконка остаётся вторым вариантом")
     fun theWarmIconStaysTheSecondVariant() {
         // Вторая палитра названа словами, а не только числами: иначе тёплый вид прочли бы
-        // как забытые значения, а не как вариант платного набора (Р-56, Р-31).
+        // как забытые значения, а не как второй вариант, доступный как холодный (Р-56, Р-86).
         val section = markSection()
         assertTrue(
-            section.contains("вторым вариантом") && section.contains("«Про»"),
-            "the warm palette must be named as the second variant of the paid set",
+            section.contains("второй вариант") && section.contains("Р-86"),
+            "the warm palette must be named as the second variant, free like the cold one (Р-86)",
         )
     }
 
@@ -118,8 +118,8 @@ class Sk139MarkSteps {
         // До SKL-120 здесь стоял обратный запрет, и он был границей **задачи**, а не
         // решением продукта: SKL-139 заканчивалась до механизма, и норму это удерживало.
         // Задача границу сняла, и проверка перевёрнута вместе с нормой, а не удалена:
-        // «тёплый вид — второй вариант платного набора» остаётся утверждением о продукте,
-        // и у него обязана быть опора в сборке.
+        // «тёплый вид — второй вариант, доступный как холодный» остаётся утверждением
+        // о продукте (Р-86), и у него обязана быть опора в сборке.
         val aliases = ALIAS_BLOCK.findAll(manifest).map { it.value }.toList()
         assertEquals(2, aliases.size, "two icon variants must be declared")
         aliases.forEach { alias ->

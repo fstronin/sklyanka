@@ -14,13 +14,9 @@ import androidx.test.core.app.ApplicationProvider
 import io.cucumber.java.ru.И
 import io.cucumber.java.ru.Но
 import io.cucumber.java.ru.Тогда
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
 import ru.stohastika.sklyanka.acceptance.world.ScenarioWidgets
-import ru.stohastika.sklyanka.domain.pro.ProStatus
 import ru.stohastika.sklyanka.feature.widgets.R
-import ru.stohastika.sklyanka.feature.widgets.config.TAG_WIDGET_ADD
 import ru.stohastika.sklyanka.feature.widgets.config.TAG_WIDGET_MEDICATION_ROW
 import ru.stohastika.sklyanka.feature.widgets.config.TAG_WIDGET_PRO_REQUIRED
 import ru.stohastika.sklyanka.feature.widgets.config.WidgetConfigScreen
@@ -39,17 +35,17 @@ import java.util.Locale
  * Шаги живут в `feature-widgets`, потому что говорят об одной поверхности этого модуля
  * (`SKL-26/TDD.md §4.3`): экран собирается из компонентов `core-ui`, а состояние приходит
  * в него целиком, а не пересчитывается здесь. Состояние набирают глобальные шаги сценария
- * (подписка, лекарства профилей), а этот класс проверяет то, что видит человек: слова,
- * метки «Про», доступность завершения и состав выбора лекарства.
+ * (лекарства профилей), а этот класс проверяет то, что видит человек: слова, отсутствие
+ * меток «Про» и состав выбора лекарства.
  *
  * **Почему экран собирается на каждую проверку.** Сессия Compose живёт внутри блока
  * `runComposeUiTest`, а шаги Gherkin — отдельные вызовы: держать блок открытым между ними
  * нечем. Поэтому состояние копится в полях, а экран собирается заново в том шаге,
  * который его спрашивает.
  *
- * **Почему нажатие на кнопку без подписки не завершает установку.** По §5.12 кнопка
- * не приглушается: она остаётся «Добавить виджет» и открывает витрину. Поэтому
- * «завершение недоступно» проверяется не состоянием кнопки, а исходом нажатия.
+ * **Почему доступ к установке не проверяется словами причины.** В бесплатном продукте
+ * оплаты нет (Р-86): гейт проходит, и слов о подписке экран не рисует. Платная копия
+ * и витрина остаются кодом `pro`-контура и этой приёмкой не проверяются.
  *
  * Русский текст в аннотациях — ключевые слова Gherkin, а не текст интерфейса; тексты
  * интерфейса берутся из ресурсов модуля с закреплённым языком (НФТ-43).
@@ -62,20 +58,14 @@ class Sk118WidgetConfigScreenSteps(private val world: AcceptanceWorld) {
     /** Тип, названный общим шагом сценария: у «по лекарству» появляется строка лекарства. */
     private val type: WidgetType get() = widgetType(world.widgets.type)
 
-    /** Завершение установки состоялось: экран позвал запись привязки и `RESULT_OK`. */
-    private var completed: Boolean = false
-
-    /** Витрина попросила показаться: без доступа кнопка ведёт в неё, а не к завершению. */
-    private var showcaseRequested: Boolean = false
-
     @Тогда("на нём названы три типа виджетов")
     fun threeTypesAreNamed() = onScreen {
         WidgetType.entries.forEach { onNodeWithText(string(it.label)).assertExists() }
     }
 
-    @И("у типов стоит метка «Про»")
-    fun theTypesCarryTheProMark() = onScreen {
-        onAllNodesWithTag(TAG_PRO_MARK).assertCountEquals(WidgetType.entries.size)
+    @И("у типов нет метки «Про»")
+    fun theTypesCarryNoProMark() = onScreen {
+        onAllNodesWithTag(TAG_PRO_MARK).assertCountEquals(0)
     }
 
     @И("сказано, что виджет показывает приёмы активного профиля")
@@ -88,10 +78,10 @@ class Sk118WidgetConfigScreenSteps(private val world: AcceptanceWorld) {
         onNodeWithText(string(R.string.widget_action_add)).assertExists()
     }
 
-    @И("сказано, что виджеты — в подписке «Склянка Про»")
-    fun theReasonIsShown() = onScreen {
-        onNodeWithTag(TAG_WIDGET_PRO_REQUIRED).assertExists()
-        onNodeWithText(string(R.string.widget_pro_required)).assertExists()
+    @И("о подписке экран не говорит")
+    fun theScreenSaysNothingAboutSubscription() = onScreen {
+        onNodeWithTag(TAG_WIDGET_PRO_REQUIRED).assertDoesNotExist()
+        onNodeWithText(string(R.string.widget_pro_required)).assertDoesNotExist()
     }
 
     @Тогда("^в выборе лекарства есть «([^»]+)»$")
@@ -99,21 +89,6 @@ class Sk118WidgetConfigScreenSteps(private val world: AcceptanceWorld) {
 
     @Но("^в нём нет «([^»]+)»$")
     fun thePickerDoesNotOffer(name: String) = onPicker { onNodeWithText(name).assertDoesNotExist() }
-
-    @Тогда("завершение настройки недоступно")
-    fun theCompletionIsUnavailable() {
-        onScreen { onNodeWithTag(TAG_WIDGET_ADD).performClick() }
-        // Нажатие без доступа ведёт в витрину и не завершает установку (Р-32, §5.12):
-        // плита не появляется, пока подписки нет.
-        assertFalse("установка не завершается без подписки", completed)
-        assertTrue("нажатие открывает витрину", showcaseRequested)
-    }
-
-    @И("причина названа словами над кнопкой")
-    fun theReasonStandsAboveTheButton() = onScreen {
-        onNodeWithTag(TAG_WIDGET_PRO_REQUIRED).assertExists()
-        onNodeWithTag(TAG_WIDGET_ADD).assertExists()
-    }
 
     /** Открыть выбор лекарства: строка ведёт в диалог дизайн-системы (§5.12). */
     private fun onPicker(block: ComposeUiTest.() -> Unit) {
@@ -141,8 +116,8 @@ class Sk118WidgetConfigScreenSteps(private val world: AcceptanceWorld) {
                     state = state,
                     onSelectType = { world.widgets.type = scenarioType(it) },
                     onSelectMedication = { },
-                    onComplete = { completed = true },
-                    onOpenPro = { showcaseRequested = true },
+                    onComplete = { },
+                    onOpenPro = { },
                 )
             }
         }
@@ -155,7 +130,8 @@ class Sk118WidgetConfigScreenSteps(private val world: AcceptanceWorld) {
             type = type,
             medications = world.medications.all().filter { it.profileId == active.id },
             selectedMedicationId = null,
-            proIncluded = ProStatus(world.pro.state.subscription).included,
+            // Бесплатный продукт: доступ есть всегда (Р-86), его даёт мир свободной сборки.
+            proIncluded = world.access.status().included,
             profile = ProfileChromeState.of(active.name, active.color, active.isSelf),
         )
     }

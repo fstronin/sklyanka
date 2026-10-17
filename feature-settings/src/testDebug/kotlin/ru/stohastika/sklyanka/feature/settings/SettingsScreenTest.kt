@@ -321,6 +321,26 @@ class SettingsScreenTest {
         )
     }
 
+    /**
+     * Р-86, ADR-0016: в поставляемой бесплатной сборке нет ни строки «Склянка Про»,
+     * ни метки «Про».
+     *
+     * Проверка идёт тремя утверждениями: отсутствует тег блока подписки, отсутствует слово
+     * метки и отсутствует название блока. Строка «Экспорт истории» при этом на месте —
+     * выгрузка CSV доступна всем, а не спрятана вместе с меткой.
+     */
+    @Test
+    fun theFreeScreenHasNoProRowAndNoProMark() {
+        show()
+
+        composeRule.onAllNodesWithTag(TAG_PRO_ROW).assertCountEquals(0)
+        val mark = context.getString(ru.stohastika.sklyanka.ui.R.string.pro_mark)
+        composeRule.onAllNodesWithText(mark, useUnmergedTree = true).assertCountEquals(0)
+        val proTitle = context.getString(ru.stohastika.sklyanka.ui.R.string.pro_sheet_title)
+        composeRule.onAllNodesWithText(proTitle, useUnmergedTree = true).assertCountEquals(0)
+        composeRule.onNodeWithTag(TAG_EXPORT_ROW).assertExists()
+    }
+
     /** НФТ-29: каждая цель нажатия на экране — не меньше 44 dp, включая строки списков. */
     @Test
     fun everyTouchTargetIsAtLeastTheMinimum() {

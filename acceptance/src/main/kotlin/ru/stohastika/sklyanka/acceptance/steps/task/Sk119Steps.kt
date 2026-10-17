@@ -39,7 +39,7 @@ import java.io.File
 import java.time.LocalTime
 
 /**
- * Шаги приёмки SKL-119 — состав отчёта и выгрузка истории (Р-85, Р-35).
+ * Шаги приёмки SKL-119 — состав отчёта и выгрузка истории (Р-85, Р-35, Р-86).
  *
  * Мир отдаёт данные, а правила исполняют **настоящие** сценарии домена: разделы считает
  * `BuildExtendedSectionsUseCase`, таблицу выгрузки — `BuildHistoryCsvTableUseCase`, запись —
@@ -49,11 +49,13 @@ import java.time.LocalTime
  * **Чего эти шаги не проверяют.** Слова шапки, колонок и статусов — их держит экранный прогон
  * (`feature-history`, тег `@screen`): в чистом JVM-модуле нет ни каталогов строк, ни ресурсов.
  * Здесь проверяется, что ключ словаря есть и что он непуст: ключ без слов — не слова (П-7).
+ * Оплаты в продукте нет (Р-86), поэтому доступность расширенного состава и выгрузки проверяется
+ * экранным прогоном, а не подпиской в мире сценария.
  */
 @Suppress("TooManyFunctions")
 class Sk119Steps(private val world: AcceptanceWorld) {
 
-    /** Разделы «Про» последнего собранного расширенного состава. */
+    /** Расширенные разделы последнего собранного состава. */
     private var sections: ExtendedReportSections = ExtendedReportSections.NONE
 
     /** Таблица последней выгрузки. */
@@ -138,7 +140,7 @@ class Sk119Steps(private val world: AcceptanceWorld) {
 
     // --- Проверки: базовый состав отчёта ------------------------------------------
 
-    /** Базовый состав — сводка и разбивка: то же, что на экране, и то же, что было до «Про» (Р-36). */
+    /** Базовый состав — сводка и разбивка: то же, что на экране, и то же, что было до второго состава (Р-36). */
     @Тогда("^базовый состав несёт сводку и разбивку по лекарствам$")
     fun theBaseCompositionCarriesTheSummaryAndTheBreakdown() {
         val report = requireNotNull(world.history.buildReport(windowOf(SEPTEMBER))) {
@@ -148,7 +150,7 @@ class Sk119Steps(private val world: AcceptanceWorld) {
         assertTrue(report.plannedTotal > 0, "the base report must count the planned intakes of the period")
     }
 
-    // --- Проверки: разделы «Про» ---------------------------------------------------
+    // --- Проверки: расширенные разделы ---------------------------------------------
 
     @Тогда("^документ несёт сравнение периодов$")
     fun theDocumentCarriesTheComparison() {
@@ -184,7 +186,7 @@ class Sk119Steps(private val world: AcceptanceWorld) {
         }
         assertTrue(
             report.medications.isNotEmpty(),
-            "the breakdown by medication stays in the base composition and does not move to 'Pro' (Р-36)",
+            "the breakdown by medication stays in the base composition and does not move to the extended one (Р-36)",
         )
     }
 
@@ -268,8 +270,9 @@ class Sk119Steps(private val world: AcceptanceWorld) {
      *
      * Проверяется **сам файл**, а не литералы в исходнике: выгрузка идёт настоящим
      * `ExportReminderJournalUseCase` на файловом порте мира, и её содержимое читается здесь же.
-     * Поверхность журнала (метка «Про» и доступность без подписки) проверяется сценарием
-     * на стенде «Проверки напоминаний»: у чистого JVM-модуля нет ни экрана, ни каталогов строк.
+     * Поверхность журнала (доступность без оплаты и отсутствие метки «Про») проверяется
+     * сценарием на стенде «Проверки напоминаний»: у чистого JVM-модуля нет ни экрана,
+     * ни каталогов строк.
      */
     @Когда("^человек выгружает журнал срабатываний файлом$")
     fun thePersonExportsTheReminderJournal() {
@@ -488,18 +491,6 @@ class Sk119Steps(private val world: AcceptanceWorld) {
             HistoryCsvStatus.SKIPPED_BY_PERSON to "history_export_status_skipped",
             HistoryCsvStatus.MISSED_WITHOUT_MARK to "history_export_status_missed",
         )
-
-        /** Поверхность журнала срабатываний и его файл: с выгрузкой истории они не смешиваются (НФТ-19). */
-        const val DIAGNOSTICS_SCREEN =
-            "feature-reminder/src/main/kotlin/ru/stohastika/sklyanka/feature/reminder/DiagnosticsScreen.kt"
-        const val JOURNAL_CSV =
-            "core-domain/src/main/kotlin/ru/stohastika/sklyanka/domain/reminder/ExportReminderJournalUseCase.kt"
-
-        /** Колонки, которых в служебном файле быть не может: он несёт идентификаторы, а не имена и дозы. */
-        val FORBIDDEN_JOURNAL_COLUMNS = listOf("Лекарство", "Доза за приём", "Вовремя")
-
-        /** Признаки платного контура: на поверхности журнала их нет (Р-85 п. 2). */
-        val PRO_MARKERS = listOf("\"pro_", "R.string.pro_", "ProMark", "ProPoint", "ProStatus", "ObserveProStatus")
 
         /** Русский каталог `feature-history`: слова, о которых говорит сценарий (§10 нормы дизайна). */
         val CATALOG: Map<String, String> by lazy {

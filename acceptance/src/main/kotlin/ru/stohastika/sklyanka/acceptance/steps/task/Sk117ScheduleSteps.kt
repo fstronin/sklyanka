@@ -11,7 +11,6 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import ru.stohastika.sklyanka.acceptance.RepositoryLayout
 import ru.stohastika.sklyanka.acceptance.RussianDates
-import ru.stohastika.sklyanka.acceptance.steps.dateOf
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
 import ru.stohastika.sklyanka.acceptance.world.TransferFileBuilder
 import ru.stohastika.sklyanka.domain.medication.DraftViolation
@@ -19,7 +18,6 @@ import ru.stohastika.sklyanka.domain.medication.MedicationDraft
 import ru.stohastika.sklyanka.domain.medication.MedicationListOrder
 import ru.stohastika.sklyanka.domain.medication.SaveResult
 import ru.stohastika.sklyanka.domain.medication.ValidateMedicationDraft
-import ru.stohastika.sklyanka.domain.medication.effectiveSchedule
 import ru.stohastika.sklyanka.domain.medication.normalized
 import ru.stohastika.sklyanka.domain.model.Intake
 import ru.stohastika.sklyanka.domain.model.IntakeStatus
@@ -28,9 +26,6 @@ import ru.stohastika.sklyanka.domain.model.MedicationForm
 import ru.stohastika.sklyanka.domain.model.ScheduleMode
 import ru.stohastika.sklyanka.domain.model.ScheduleRule
 import ru.stohastika.sklyanka.domain.model.Stage
-import ru.stohastika.sklyanka.domain.pro.ComplexScheduleGate
-import ru.stohastika.sklyanka.domain.pro.ProPoint
-import ru.stohastika.sklyanka.domain.pro.ProProductId
 import ru.stohastika.sklyanka.domain.reminder.ReminderSlot
 import ru.stohastika.sklyanka.domain.today.BuildTodayAgenda
 import ru.stohastika.sklyanka.domain.today.IntakeItem
@@ -53,17 +48,19 @@ import java.time.YearMonth
  * и ступени (ПР-15…ПР-21, ИНВ-23…ИНВ-25).
  *
  * Правила не пересказываются: приёмы порождает настоящий `ScheduleExpander` за портом
- * `SaveMedicationUseCase`, отказы называет настоящий `ValidateMedicationDraft`, платную
- * границу решает настоящий `ComplexScheduleGate`, шторку показывает настоящий
- * `ProSheetSession`, а полный обход после загрузки файла идёт тем же портом, что
- * в продукте. Мир сценария подставляет только порты платформы и хранилище в памяти
- * (`ADR-0007`).
+ * `SaveMedicationUseCase`, отказы называет настоящий `ValidateMedicationDraft`, а полный
+ * обход после загрузки файла идёт тем же портом, что в продукте. Мир сценария подставляет
+ * только порты платформы и хранилище в памяти (`ADR-0007`).
+ *
+ * Виды расписания доступны всем (Р-86): сценарии этой задачи не говорят о подписке,
+ * и сохранение сложного расписания не спрашивает оплату. Метки «Про» в форме нет —
+ * это держит экранная проверка и страж `SKL-153.feature`.
  *
  * Экранный прогон живёт рядом с доменным: строки «человек заполняет форму нового лекарства
  * «…»» и «нажимает «Сохранить лекарство»» объявлены здесь один раз на оба прогона — словарь
  * шагов не допускает второго объявления, — а собранную форму держит стенд `feature-meds`.
- * Он читает доменный черновик через [formDraft] и приносит нажатие нижней кнопки крючком
- * [saveOnScreen]; в доменном прогоне крючок пуст, и те же строки работают по черновику.
+ * Он читает доменный черновик через [formDraft]. В экранном прогоне нажатие приходит
+ * с настоящей кнопки, в доменном — по черновику.
  *
  * Русский текст в аннотациях — ключевые слова Gherkin, а не текст интерфейса. Слова,
  * о которых сценарий говорит вслух («форма называет причину словами», «поле интервала
@@ -92,9 +89,6 @@ class Sk117ScheduleSteps(private val world: AcceptanceWorld) {
     /** Нарушения последней попытки сохранить: по ним форма называет причину словами. */
     private var violations: List<DraftViolation> = emptyList()
 
-    /** Сохранение закрыто платной границей: вид сложный, а доступа нет (ПР-20, ПР-21). */
-    private var blockedByPro: Boolean = false
-
     private var lastSave: SaveResult? = null
 
     /** Курс, о котором говорят проверки приёмов и напоминаний. */
@@ -108,22 +102,6 @@ class Sk117ScheduleSteps(private val world: AcceptanceWorld) {
 
     /** Приёмы прошлой недели как их оставила Предыстория обновления (SKL-117, группа `@migration`). */
     private var lastWeekRows: List<Intake> = emptyList()
-
-    /** Нажатие нижней кнопки собранной формы: домен остаётся один, нажатие приходит из стенда. */
-    var saveOnScreen: (() -> Unit)? = null
-
-    /**
-     * Доступ «Про», каким его видит **открытая форма** (Р-22, SKL-122, SKL-117 F3).
-     *
-     * Форма читает доступ при открытии и перечитывает его, когда закрывается витрина: покупка
-     * в витрине, открытой из формы, обязана разблокировать сохранение без ухода из формы
-     * (`MedicationFormViewModel.refreshProAccess`, `MainActivity`). Здесь этот снимок повторён
-     * потому, что «форма» сценарного прогона — её черновик: правила гейта настоящие, а то, **когда**
-     * форма читает доступ, — часть продукта, и сценарий повторяет её, а не выдумывает. Без
-     * снимка «купил из формы и сохранил» проходило бы чтением доступа прямо в момент нажатия,
-     * то есть проверяло бы не то, что делает продукт.
-     */
-    private var formAccess: Boolean? = null
 
     // --- Заведение курса: вид расписания решает, какие дни порождают приёмы -------------------
 
@@ -172,6 +150,13 @@ class Sk117ScheduleSteps(private val world: AcceptanceWorld) {
         assertEveryRuleWeekdayIsFilled(medication())
     }
 
+    @Тогда("^приёмы идут только по выбранным дням недели$")
+    fun theIntakesFollowOnlyTheChosenWeekdays() {
+        // Выбранные дни — свойство вида: приёмы стоят на них и ни на каких других (ПР-16).
+        assertIntakesOnlyOnRuleDays(medication())
+        assertEveryRuleWeekdayIsFilled(medication())
+    }
+
     @Когда("^человек заводит курс «([^»]+)» с приёмом через каждый второй день в (\\d{2}):(\\d{2})$")
     fun thePersonStartsAnIntervalCourse(name: String, hour: String, minute: String) {
         createCourse(name, ScheduleRule.EveryNDays(EVERY_SECOND_DAY), LocalTime.of(hour.toInt(), minute.toInt()))
@@ -206,8 +191,6 @@ class Sk117ScheduleSteps(private val world: AcceptanceWorld) {
         // в модуле экрана, и крючка «открыть форму» здесь нет — контейнер шагов ленив).
         draft = defaultDraft(name)
         course = name
-        // Открытие формы читает доступ «Про» один раз — так же, как `MedicationFormViewModel.open`.
-        formAccess = world.pro.status().included
     }
 
     @Когда("^выбирает приём через каждый день в (\\d{2}):(\\d{2})$")
@@ -233,13 +216,6 @@ class Sk117ScheduleSteps(private val world: AcceptanceWorld) {
         // базового вида (§5.10): слово живёт в каталоге формы, и ключ без слов — не слова.
         assertEquals(ScheduleRule.Daily, current().schedule, "the interval of one day degenerates into the daily kind")
         assertEquals(hint, formWords(ONE_DAY_INTERVAL_KEY), "the hint of the interval field")
-    }
-
-    @Тогда("^метки «Про» у выбора вида расписания нет$")
-    fun theKindRowCarriesNoProMark() {
-        // Метка стоит у платного варианта, а платное — это сложный вид (Р-17, ПР-16):
-        // у ежедневного расписания метки нет ни при какой подписке.
-        assertFalse(current().schedule.isComplex, "the chosen kind must not be paid")
     }
 
     @Когда("^человек заводит курс «([^»]+)» циклами «(\\d+)/(\\d+)» в (\\d{2}):(\\d{2})$")
@@ -464,7 +440,7 @@ class Sk117ScheduleSteps(private val world: AcceptanceWorld) {
         assertEquals(0, RussianDates.amount(dose).compareTo(snapshot), "the marked intake must keep its dose")
     }
 
-    // --- Платная граница: покупка в витрине, открытой из формы, разблокирует сохранение -------
+    // --- Сохранение формы: сложное расписание доступно всем (Р-86) ---------------------------
 
     /** Вид расписания с длинами цикла — тем же черновиком, каким его собирает форма. */
     @Когда("^выбирает вид расписания «([^»]+)» с длинами «([^»]+)» и «([^»]+)»$")
@@ -474,30 +450,6 @@ class Sk117ScheduleSteps(private val world: AcceptanceWorld) {
             else -> error("the scenario names no lengths for «$kind»")
         }
         draft = current().copy(schedule = rule)
-    }
-
-    /** Покупка в уже открытой витрине — через настоящие `ProSheetSession` и магазин мира. */
-    @Когда("^человек покупает подписку «Склянка Про» в открытой витрине$")
-    fun thePersonBuysInTheOpenShowcase() {
-        assertTrue(world.pro.state.visible, "the showcase must already be open — the form opened it")
-        world.pro.session.select(ProProductId.MONTHLY)
-        runBlocking { world.pro.session.buy() }
-        assertTrue(world.pro.status().included, "a confirmed purchase must give access")
-    }
-
-    /**
-     * Витрина закрылась — форма перечитала доступ (SKL-117 F3, SKL-122).
-     *
-     * Это повтор связки продукта: `MainActivity` на закрытие шторки перечитывает доступ
-     * и строке настроек, и форме лекарства (`refreshProAccess`). Сценарий называет
-     * состояние, которое продукт создаёт сам, — без этого «купил и сохранил» оставалось бы
-     * правдой только при чтении доступа в момент нажатия.
-     */
-    @Когда("^витрина закрывается$")
-    fun theShowcaseIsDismissed() {
-        world.pro.session.dismiss()
-        assertFalse(world.pro.state.visible, "the showcase must be closed")
-        formAccess = world.pro.status().included
     }
 
     // --- Параметры вида: их проверяют до сохранения, и причина названа словами ---------------
@@ -523,29 +475,18 @@ class Sk117ScheduleSteps(private val world: AcceptanceWorld) {
     fun theMedicationIsNotSaved(name: String) {
         val current = requireNotNull(draft) { "the scenario never filled the form" }
         violations = validate(current.normalized())
-        // Отказ формы — не запись: курс не появляется в профиле ни при отказе правил,
-        // ни при закрытой платной границе (ПР-20). В экранном прогоне форму сохраняет
-        // стенд, и его решения проверяет экранный шаг: здесь остаётся сам запрет записи.
+        // Отказ формы — не запись: курс не появляется в профиле, и у отказа есть причина
+        // из правил вида, а не платная граница (Р-86).
         assertFalse(world.medications.has(name), "the form must not write «$name»")
-        if (saveOnScreen == null) {
-            assertTrue(
-                violations.isNotEmpty() || blockedByPro,
-                "the refusal must have a reason: rules or the paid boundary",
-            )
-        }
+        assertTrue(violations.isNotEmpty(), "the refusal must name the broken parameter")
     }
 
     @Тогда("^форма называет причину словами$")
     fun theFormNamesTheReasonInWords() {
         // Слов в чистом JVM-модуле нет, поэтому «названа словами» проверяется словарём
         // отказов: у каждой причины есть ключ, и ключ обязан иметь непустую строку (§10).
-        val keys = if (violations.isNotEmpty()) {
-            violations.map(::wordsOf)
-        } else {
-            assertTrue(blockedByPro, "the form must name a reason")
-            listOf(BLOCKED_CREATION_KEY)
-        }
-        keys.forEach { key ->
+        assertTrue(violations.isNotEmpty(), "the form must name a reason")
+        violations.map(::wordsOf).forEach { key ->
             assertTrue(formWords(key).isNotBlank(), "the form catalog must carry words for $key")
         }
     }
@@ -555,118 +496,25 @@ class Sk117ScheduleSteps(private val world: AcceptanceWorld) {
         draft = current().copy(schedule = ScheduleRule.Weekdays(MONDAY_AND_WEDNESDAY))
     }
 
-    @Тогда("^у выбора вида расписания стоит метка «Про»$")
-    fun theKindRowCarriesTheProMark() {
-        // Метка стоит там, где начинается платное: у «по дням недели» это второй день
-        // (Р-24, Р-17), и признак платности вида — ровно `isComplex`.
-        assertTrue(current().schedule.isComplex, "the chosen kind must be paid")
-    }
-
     @Когда("^нажимает «Сохранить лекарство»$")
     fun theSaveOfTheMedicationIsPressed() {
         val current = requireNotNull(draft) { "the scenario never filled the form" }
         violations = validate(current.normalized())
-        // Платная граница проверяется после правил: незаполненный вид доходит до отказа
-        // формы и называет свои правила, а закрытой она оказывается только у правильно
-        // заполненного сложного расписания (ПР-20, ПР-21).
-        //
-        // Доступ берётся у открытой формы ([formAccess]), а не у магазина в момент нажатия:
-        // форма держит снимок и перечитывает его, когда закрывается витрина (SKL-117, F3).
-        val complexCreation = ComplexScheduleGate.isCreationOfComplex(
-            original = current.originalSchedule,
-            next = current.effectiveSchedule,
-            included = formAccess ?: world.pro.status().included,
-        )
-        blockedByPro = violations.isEmpty() && complexCreation
-        if (blockedByPro) {
-            // Недоступное действие говорит «нельзя», а правда — «можно, по подписке» (П-7):
-            // нажатие ведёт в единственную витрину, и она открывается с места выбора (Р-67).
-            runBlocking { world.pro.session.open(ProPoint.MEDICATION_FORM) }
-        }
-        if (violations.isEmpty() && !blockedByPro && saveOnScreen == null) {
-            lastSave = world.save(current)
-        }
-        saveOnScreen?.invoke()
+        // Продукт бесплатный (Р-86): сохранение не спрашивает оплату и не открывает витрину.
+        // Нажатие сохраняет ровно то, что прошло правила формы.
+        if (violations.isEmpty()) lastSave = world.save(current)
     }
 
-    @Тогда("^предложено оформить подписку «Склянка Про»$")
-    fun theSubscriptionIsOffered() {
-        assertTrue(blockedByPro, "the offer is the outcome of a closed creation, not of a wish")
-        assertTrue(world.pro.state.visible, "the showcase must be open")
-        assertEquals(ProPoint.MEDICATION_FORM, world.pro.state.point, "the showcase must open from the form")
-    }
-
-    // --- Платная граница: создание закрыто, заведённое не отнимается --------------------------
+    // --- Курсы прошлого: заведение и обновление не меняют заведённое -------------------------
 
     @Допустим("^у человека есть ежедневный курс «([^»]+)» в (\\d{2}):(\\d{2})$")
     fun thePersonHasADailyCourse(name: String, hour: String, minute: String) {
         createCourse(name, ScheduleRule.Daily, LocalTime.of(hour.toInt(), minute.toInt()))
     }
 
-    @Когда("^человек открывает курс «([^»]+)» на правку$")
-    fun thePersonOpensTheCourseForEditing(name: String) {
-        // Форма правки — черновик, заполненный из курса: исходный вид приходит в него
-        // вместе с курсом, и решение о сложности принимается по переходу (ПР-21).
-        draft = MedicationDraft.of(world.medications.get(name))
-        course = name
-        formAccess = world.pro.status().included
-    }
-
-    @Тогда("^расписание курса «([^»]+)» остаётся ежедневным$")
-    fun theCourseScheduleStaysDaily(name: String) {
-        assertEquals(
-            ScheduleRule.Daily,
-            world.medications.get(name).schedule,
-            "a closed save must not rewrite the schedule of the course",
-        )
-    }
-
     @Допустим("^у человека есть курс «([^»]+)» с приёмом по понедельникам, средам и пятницам в (\\d{2}):(\\d{2})$")
     fun thePersonHasAWeekdaysCourse(name: String, hour: String, minute: String) {
         createCourse(name, ScheduleRule.Weekdays(MON_WED_FRI), LocalTime.of(hour.toInt(), minute.toInt()))
-    }
-
-    @Когда("^подписка «Склянка Про» истекает (\\d+) октября (\\d+)$")
-    fun theSubscriptionExpiresInOctober(day: String, year: String) {
-        // Истёкшая подписка — это срок, названный магазином и уже прошедший: доступ считает
-        // правило истечения, а не хранилище (Р-67 п. 3, ADR-0015).
-        world.pro.owned(ProProductId.MONTHLY, world.dateOf("$day октября $year"))
-    }
-
-    @Тогда("^приёмы по понедельникам, средам и пятницам идут дальше$")
-    fun theWeekdayIntakesKeepGoing() {
-        val medication = medication()
-        assertTrue(intakesOf(medication).isNotEmpty(), "the taken-away subscription must not stop the intakes")
-        assertIntakesOnlyOnRuleDays(medication)
-    }
-
-    @Тогда("^напоминания по ним поставлены$")
-    fun theRemindersOnThemAreStillScheduled() {
-        assertReminderDaysAre(MON_WED_FRI)
-    }
-
-    @Тогда("^правка параметров курса «([^»]+)» разрешена$")
-    fun theParametersOfTheCourseStayEditable(name: String) {
-        // Правка заведённого сложного курса разрешена целиком (Р-28): он уже оплачен,
-        // и new-сложным переход не является.
-        val schedule = world.medications.get(name).schedule
-        assertFalse(
-            ComplexScheduleGate.isCreationOfComplex(schedule, schedule, included = false),
-            "editing an existing complex course must stay allowed without a subscription",
-        )
-    }
-
-    @Тогда("^создание нового сложного расписания закрыто$")
-    fun theCreationOfANewComplexScheduleIsClosed() {
-        assertFalse(world.pro.status().included, "the scenario must run without access")
-        assertTrue(
-            ComplexScheduleGate.isCreationOfComplex(
-                original = null,
-                next = ScheduleRule.Weekdays(MONDAY_AND_WEDNESDAY),
-                included = world.pro.status().included,
-            ),
-            "a new complex schedule must be closed without a subscription (Р-17, ПР-20)",
-        )
     }
 
     // --- Перенос: вид расписания и дозы этапов не теряются на пути, который умеет расписание --
@@ -1154,9 +1002,6 @@ class Sk117ScheduleSteps(private val world: AcceptanceWorld) {
         const val FORM_STRINGS = "feature-meds/src/main/res/values/strings.xml"
 
         const val ONE_DAY_INTERVAL_KEY = "error_interval_one_day"
-
-        /** Причина над кнопкой, когда создание сложного расписания закрыто (ПР-20). */
-        const val BLOCKED_CREATION_KEY = "form_save_blocked_pro"
 
         /** Каталог слов формы: ключ → строка, как их читает экран. */
         val FORM_CATALOG: Map<String, String> by lazy {

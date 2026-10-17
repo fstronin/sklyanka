@@ -6,9 +6,6 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.test.ExperimentalTestApi
-import androidx.compose.ui.test.hasAnyAncestor
-import androidx.compose.ui.test.hasTestTag
-import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
@@ -32,7 +29,6 @@ import ru.stohastika.sklyanka.feature.settings.TAG_EXPORT_ROW
 import ru.stohastika.sklyanka.ui.locale.withInterfaceLocale
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import java.util.Locale
-import ru.stohastika.sklyanka.ui.R as UiR
 
 /**
  * Экранные шаги приёмки SKL-119 — строка «Экспорт истории» в настройках (Р-85 п. 2, §5.16).
@@ -67,23 +63,6 @@ class Sk119ExportRowScreenSteps(private val world: AcceptanceWorld) {
         }
     }
 
-    @Тогда("^на строке стоит метка «Про»$")
-    fun theRowCarriesTheProMark() {
-        val mark = string(UiR.string.pro_mark)
-        compose { test ->
-            // Метка ищется **на этой строке**, а не на экране: метку «Про» носят и строки
-            // блока «Оформление» (SKL-120, §5.17), и счёт по всему экрану требовал бы
-            // от них отсутствия метки — то есть проверял бы чужую строку.
-            val found = test
-                .onAllNodes(
-                    hasText(mark) and hasAnyAncestor(hasTestTag(TAG_EXPORT_ROW)),
-                    useUnmergedTree = true,
-                )
-                .fetchSemanticsNodes()
-            assertEquals("the paid row carries the mark once (§5.9)", 1, found.size)
-        }
-    }
-
     @Тогда("^нажатие строки просит открыть выгрузку$")
     fun theRowAsksForTheExportSheet() {
         compose { test -> test.onNodeWithTag(TAG_EXPORT_ROW, useUnmergedTree = true).performClick() }
@@ -102,7 +81,7 @@ class Sk119ExportRowScreenSteps(private val world: AcceptanceWorld) {
             setContent {
                 Stand {
                     SettingsScreen(
-                        state = SettingsUiState(pro = world.pro.status(), version = VERSION),
+                        state = SettingsUiState(pro = world.access.status(), version = VERSION),
                         onIntent = { intent -> intents = intents + intent },
                     )
                 }

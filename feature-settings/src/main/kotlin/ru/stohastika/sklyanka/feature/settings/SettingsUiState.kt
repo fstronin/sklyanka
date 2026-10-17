@@ -56,8 +56,10 @@ data class SettingsUiState(
      * Исход гейта на **следующее** заведение профиля (SKL-121, ПРФ-33, Р-84 п. 3).
      *
      * Строка «Добавить профиль» показывает метку «Про» тогда и только тогда, когда
-     * следующее создание платное ([ProfileCreationDecision.BlockedByPro]), а предел пяти
-     * называет словами до нажатия ([ProfileCreationDecision.BlockedByLimit], ПРФ-34).
+     * следующее создание платное ([ProfileCreationDecision.BlockedByPro]) **и** сборка
+     * показывает платный контур; в поставляемой бесплатной сборке метки нет, а доступ есть
+     * всегда (Р-86). Предел пяти называет причину словами до нажатия
+     * ([ProfileCreationDecision.BlockedByLimit], ПРФ-34).
      * Решение принимает доменный [ru.stohastika.sklyanka.domain.profile.ProfileCreationGate]
      * по числу заведённых профилей и доступу — не экран.
      */

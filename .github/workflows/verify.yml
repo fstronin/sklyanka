@@ -3,8 +3,8 @@
 # build-logic/convention (ProjectChecksConventionPlugin): сборка всех модулей,
 # статический анализ, проверки состава артефактов, все уровни тестов JVM и
 # приёмочные сценарии. Инструментальные тесты здесь только компилируются
-# (assembleDebugAndroidTest); их запуск на эмуляторе — отдельный необязательный
-# workflow android-test.yml по явному запуску.
+# (assembleFreeDebugAndroidTest/assembleProDebugAndroidTest); их запуск на эмуляторе —
+# отдельный необязательный workflow android-test.yml по явному запуску.
 name: verify
 
 on:

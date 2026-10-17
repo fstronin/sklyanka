@@ -133,6 +133,10 @@ SKL_ADB_TIMEOUT=60
 # feature-history — байты отчёта врачу (SKL-41, PdfDocument живёт только на устройстве).
 SKL_TEST_MODULES=(":core-data" ":feature-history")
 SKL_TEST_TASK="connectedDebugAndroidTest"
+# У app есть измерение контура (Р-86, ADR-0016): unflavored-задачи
+# `connectedDebugAndroidTest` у него больше нет. Экранные проверки и походы идут
+# на поставляемом варианте `free`.
+SKL_APP_TEST_TASK="connectedFreeDebugAndroidTest"
 
 SKL_GROUP_FAST_PACKAGES="ru.stohastika.sklyanka.data.repository"
 SKL_GROUP_DATA_PACKAGES="ru.stohastika.sklyanka.data.room,ru.stohastika.sklyanka.data.transfer,ru.stohastika.sklyanka.data.reminder,ru.stohastika.sklyanka.data.history,ru.stohastika.sklyanka.feature.history,ru.stohastika.sklyanka.screen"

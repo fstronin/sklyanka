@@ -88,7 +88,11 @@ for module in "${modules[@]}"; do
     # системный bash macOS — считает разворот пустого массива обращением к неназначенной
     # переменной и с set -u прекращает работу. Прогон «всё подряд» на такой машине
     # не запускался вовсе.
-    skl_gradle "$api" "$module:$SKL_TEST_TASK" ${filter[@]+"${filter[@]}"} 2>&1 |
+    # У app задача варианта контура (`connectedFreeDebugAndroidTest`), у остальных
+    # модулей измерения нет и имя прежнее (Р-86, ADR-0016).
+    task="$SKL_TEST_TASK"
+    if [[ "$module" == ":app" ]]; then task="$SKL_APP_TEST_TASK"; fi
+    skl_gradle "$api" "$module:$task" ${filter[@]+"${filter[@]}"} 2>&1 |
         tee -a "$log_file" || status=$?
 
     # Отчёты AGP — машинно читаемые XML; они и есть результат прогона проверок,

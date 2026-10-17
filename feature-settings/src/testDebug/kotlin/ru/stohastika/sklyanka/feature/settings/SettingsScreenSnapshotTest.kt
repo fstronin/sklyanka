@@ -9,12 +9,8 @@ import com.github.takahirom.roborazzi.fontScale
 import com.github.takahirom.roborazzi.size
 import org.junit.Test
 import org.junit.runner.RunWith
-import ru.stohastika.sklyanka.domain.pro.ProProductId
-import ru.stohastika.sklyanka.domain.pro.ProStatus
-import ru.stohastika.sklyanka.domain.pro.ProSubscription
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import java.io.File
-import java.time.LocalDate
 
 /**
  * Эталонные снимки экрана настроек (SKL-24).
@@ -24,8 +20,8 @@ import java.time.LocalDate
  * где вёрстка обязана расти, а не обрезаться (НФТ-31). Строки часов на снимках нет
  * по решению `ADR-0009`.
  *
- * Ещё три состояния — строка «Добавить профиль» в трёх исходах гейта (SKL-121): без метки,
- * с меткой «Про» и со строкой причины при пределе пяти (Р-84 п. 3, ПРФ-34).
+ * Ещё два состояния — строка «Добавить профиль» без метки (создание доступно) и со строкой
+ * причины при пределе пяти (ПРФ-32, ПРФ-34); платного исхода в поставляемой сборке нет (Р-86).
  */
 @RunWith(AndroidJUnit4::class)
 class SettingsScreenSnapshotTest {
@@ -46,10 +42,10 @@ class SettingsScreenSnapshotTest {
     }
 
     /**
-     * Строка «Добавить профиль» в трёх состояниях гейта (SKL-121).
+     * Строка «Добавить профиль» в двух состояниях (SKL-121).
      *
-     * Состояния различает не экран, а исход: без метки, пока создание бесплатно; с меткой «Про»,
-     * когда следующее создание платное; со строкой причины при пределе пяти (Р-84 п. 3, ПРФ-34).
+     * Состояния различает не экран, а исход: без метки, пока создание доступно; со строкой
+     * причины при пределе пяти (ПРФ-32, ПРФ-34). Платного исхода в бесплатной сборке нет (Р-86).
      */
     @Test
     fun theAddRowWithoutAPaidCreation() = capture("settings-add-free") {
@@ -57,19 +53,8 @@ class SettingsScreenSnapshotTest {
     }
 
     @Test
-    fun theAddRowWithAPaidCreation() = capture("settings-add-pro") {
-        SettingsScreen(state = SettingsScreenFixtures.state(), onIntent = {})
-    }
-
-    @Test
     fun theAddRowAtTheFiveProfileLimit() = capture("settings-add-limit") {
-        SettingsScreen(
-            state = SettingsScreenFixtures.state(
-                foreignProfiles = 4,
-                pro = ProStatus(ProSubscription.Active(ProProductId.MONTHLY, LocalDate.of(2026, 11, 13))),
-            ),
-            onIntent = {},
-        )
+        SettingsScreen(state = SettingsScreenFixtures.state(foreignProfiles = 4), onIntent = {})
     }
 
     @OptIn(ExperimentalRoborazziApi::class)

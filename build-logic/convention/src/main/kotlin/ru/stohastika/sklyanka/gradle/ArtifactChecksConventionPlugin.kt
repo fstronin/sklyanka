@@ -19,6 +19,14 @@ class ArtifactChecksConventionPlugin : Plugin<Project> {
         extensions.configure<ApplicationAndroidComponentsExtension> {
             onVariants { variant ->
                 val suffix = variant.name.replaceFirstChar { it.uppercase() }
+                // Один признак на обе проверки: манифест и граф зависимостей обязаны судить
+                // о контуре одинаково (SKL-153, free/pro). Без этого free-вариант требовал бы
+                // вендорскую координату, которой у него нет.
+                val contourInArtifact = provider {
+                    variant.runtimeConfiguration.incoming.resolutionResult.allComponents.any {
+                        it.id.displayName.startsWith("project ${AnalyticsContourRules.PAID_CONTOUR_PROJECT}")
+                    }
+                }
 
                 val manifestCheck = tasks.register<VerifyMergedManifestTask>("verifyManifest$suffix") {
                     group = VERIFICATION_GROUP
@@ -44,13 +52,7 @@ class ArtifactChecksConventionPlugin : Plugin<Project> {
                             }
                         },
                     )
-                    paidContourPresent.set(
-                        provider {
-                            variant.runtimeConfiguration.incoming.resolutionResult.allComponents.any {
-                                it.id.displayName.startsWith("project ${AnalyticsContourRules.PAID_CONTOUR_PROJECT}")
-                            }
-                        },
-                    )
+                    paidContourPresent.set(contourInArtifact)
                     report.set(layout.buildDirectory.file("reports/composition/manifest-${variant.name}.txt"))
                 }
 
@@ -71,6 +73,7 @@ class ArtifactChecksConventionPlugin : Plugin<Project> {
                             },
                         )
                         versionCatalog.set(rootProject.layout.projectDirectory.file("gradle/libs.versions.toml"))
+                        paidContourPresent.set(contourInArtifact)
                         report.set(
                             layout.buildDirectory.file("reports/composition/dependencies-${variant.name}.txt"),
                         )
@@ -81,7 +84,10 @@ class ArtifactChecksConventionPlugin : Plugin<Project> {
                 tasks.matching { it.name == "assemble$suffix" }.configureEach {
                     dependsOn(manifestCheck, dependencyCheck)
                 }
-                if (variant.name == "debug") {
+                // `check` обязан видеть гейт у отладочного варианта и после введения контура:
+                // вариант называется `freeDebug`/`proDebug`, поэтому сравнение идёт
+                // по типу сборки, а не по полному имени (SKL-153).
+                if (variant.buildType == "debug") {
                     tasks.matching { it.name == "check" }.configureEach {
                         dependsOn(manifestCheck, dependencyCheck)
                     }

@@ -24,11 +24,6 @@ import com.github.takahirom.roborazzi.captureRoboImage
 import com.github.takahirom.roborazzi.size
 import io.cucumber.java.ru.Когда
 import io.cucumber.java.ru.Тогда
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.launch
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
@@ -36,7 +31,6 @@ import ru.stohastika.sklyanka.acceptance.settings.SettingsScreenProbe
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
 import ru.stohastika.sklyanka.domain.appearance.AccentTheme
 import ru.stohastika.sklyanka.domain.appearance.IconVariant
-import ru.stohastika.sklyanka.domain.pro.ProPoint
 import ru.stohastika.sklyanka.feature.settings.TAG_ICON_DIALOG
 import ru.stohastika.sklyanka.feature.settings.TAG_ICON_ROW
 import ru.stohastika.sklyanka.feature.settings.TAG_THEME_DIALOG
@@ -49,7 +43,6 @@ import java.io.File
 import java.nio.file.Files
 import java.util.Locale
 import ru.stohastika.sklyanka.feature.settings.R as SettingsR
-import ru.stohastika.sklyanka.ui.R as UiR
 
 /**
  * Экранные шаги приёмки SKL-120 — блок «Оформление», его диалоги и тёмная среда экрана (§5.17).
@@ -58,11 +51,10 @@ import ru.stohastika.sklyanka.ui.R as UiR
  * ([SettingsScreenProbe]): состояние считает тот же `SettingsViewModel`, что у продукта,
  * и выбор проходит через домен. Правил в шагах нет.
  *
- * **Дверь и гейт разделены нарочно** (Р-67 п. 5, §5.17): строка открывает диалог и без
- * доступа — так выбор платной функции виден до покупки, — а платная строка диалога без
- * доступа выбор не меняет и открывает витрину. Стенд проверяет обе половины: открытие
- * диалога, состав и метки вариантов, применение базового выбора и отказ платного
- * с сигналом витрины.
+ * **Выбор бесплатен** (Р-86, ADR-0016): в поставляемой сборке доступ есть всегда, поэтому
+ * любая из четырёх тем и любой из двух вариантов иконки применяются сразу. Стенд проверяет
+ * открытие диалога, состав вариантов и применение выбора; отсутствие меток «Про» на экранах
+ * держит страж бесплатной сборки (SKL-153) и экранная проверка настроек.
  *
  * **Тёмная среда проверяется полотном, а не разметкой.** Стенд собирает экран в обеих
  * средах и читает пиксель полотна: если бы тема не доехала до экрана, тёмный кадр был бы
@@ -76,18 +68,10 @@ class Sk120AppearanceScreenSteps(private val world: AcceptanceWorld) {
 
     private val context: Context = ApplicationProvider.getApplicationContext()
 
-    /** Точки-поводы последних открытых витрин: их просит сигнал блока «Оформление». */
-    private val showcasePoints = mutableListOf<ProPoint>()
-
-    private val showcaseScope = CoroutineScope(Dispatchers.Unconfined)
-
-    private var showcaseJob: Job? = null
-
     // --- Блок «Оформление» ---------------------------------------------------------
 
     @Когда("^на стенде настроек открыт блок «Оформление»$")
     fun theAppearanceBlockIsOpen() {
-        watchShowcase()
         SettingsScreenProbe.ask(world) {
             onNodeWithTag(TAG_THEME_ROW, useUnmergedTree = true).assertExists()
             onNodeWithTag(TAG_ICON_ROW, useUnmergedTree = true).assertExists()
@@ -106,15 +90,6 @@ class Sk120AppearanceScreenSteps(private val world: AcceptanceWorld) {
         }
     }
 
-    @Тогда("^на стенде у обеих строк стоит метка «Про»$")
-    fun bothRowsCarryTheProMark() {
-        val mark = string(UiR.string.pro_mark)
-        SettingsScreenProbe.ask(world) {
-            assertEquals("the theme row must carry the Pro mark once", 1, marks(TAG_THEME_ROW, mark))
-            assertEquals("the icon row must carry the Pro mark once", 1, marks(TAG_ICON_ROW, mark))
-        }
-    }
-
     @Тогда("^на стенде тема названа «Оливой»$")
     fun theThemeRowNamesTheBaseTheme() {
         SettingsScreenProbe.ask(world) {
@@ -129,11 +104,6 @@ class Sk120AppearanceScreenSteps(private val world: AcceptanceWorld) {
         openPicker(TAG_THEME_ROW, TAG_THEME_DIALOG)
     }
 
-    @Когда("^на стенде настроек открыт выбор темы заново$")
-    fun theThemePickerIsOpenAgain() {
-        openPicker(TAG_THEME_ROW, TAG_THEME_DIALOG)
-    }
-
     @Тогда("^на стенде в диалоге четыре темы, и «Олива» идёт первой$")
     fun theDialogCarriesFourThemes() {
         val names = THEMES.values.map { it to string(it) }
@@ -142,19 +112,6 @@ class Sk120AppearanceScreenSteps(private val world: AcceptanceWorld) {
         }
         // Порядок: «Олива» — тема базы (Р-20) и стоит первой (§5.17).
         assertEquals(AccentTheme.OLIVE, AccentTheme.entries.first())
-    }
-
-    @Тогда("^на стенде метку «Про» несут три платные темы$")
-    fun threeThemesCarryTheProMark() {
-        val mark = string(UiR.string.pro_mark)
-        SettingsScreenProbe.ask(world) {
-            assertEquals(
-                "three paid themes carry the mark, the base one does not (Р-71)",
-                3,
-                marks(TAG_THEME_DIALOG, mark),
-            )
-        }
-        assertEquals(3, AccentTheme.entries.count { !it.isBase })
     }
 
     @Когда("^на стенде выбрана тема «([^»]+)»$")
@@ -168,31 +125,9 @@ class Sk120AppearanceScreenSteps(private val world: AcceptanceWorld) {
             onNodeWithTag(TAG_THEME_DIALOG, useUnmergedTree = true).assertDoesNotExist()
         }
         assertEquals(
-            "the base theme must be applied without access (§5.17)",
+            "the chosen theme must be applied and stored (§5.17)",
             themeNamed(name),
             SettingsScreenProbe.state(world).accentTheme,
-        )
-    }
-
-    @Тогда("^на стенде выбор остался «([^»]+)»$")
-    fun theChoiceStayedAs(name: String) {
-        assertEquals(
-            "the paid choice must not change the stored one without access (§5.17)",
-            themeNamed(name),
-            SettingsScreenProbe.state(world).accentTheme,
-        )
-    }
-
-    @Тогда("^на стенде просят витрину ради акцента и иконок$")
-    fun theShowcaseIsAskedForTheAccentPoint() {
-        assertTrue(
-            "the paid choice must open the showcase (Р-67 пп. 2–3), asked: $showcasePoints",
-            showcasePoints.isNotEmpty(),
-        )
-        assertEquals(
-            "the appearance block asks the showcase from its own entry (Р-67 п. 2)",
-            ProPoint.ACCENT,
-            showcasePoints.last(),
         )
     }
 
@@ -212,24 +147,16 @@ class Sk120AppearanceScreenSteps(private val world: AcceptanceWorld) {
         assertEquals(IconVariant.ICE, IconVariant.entries.first())
     }
 
-    @Тогда("^на стенде метку «Про» несёт только «Тёплая»$")
-    fun onlyTheWarmVariantCarriesTheProMark() {
-        val mark = string(UiR.string.pro_mark)
-        SettingsScreenProbe.ask(world) {
-            assertEquals("only the warm variant is paid (Р-56, Р-71)", 1, marks(TAG_ICON_DIALOG, mark))
-        }
-    }
-
     @Когда("^на стенде выбран тёплый вариант иконки$")
     fun theWarmVariantIsChosen() {
         selectInDialog(TAG_ICON_DIALOG, string(SettingsR.string.icon_variant_warm))
     }
 
-    @Тогда("^на стенде вариант остался «([^»]+)»$")
-    fun theVariantStayedIce(name: String) {
+    @Тогда("^на стенде вариант записан «([^»]+)»$")
+    fun theVariantIsStored(name: String) {
         val expected = if (name.startsWith(ICE)) IconVariant.ICE else IconVariant.WARM
         assertEquals(
-            "the paid variant must not change the stored one without access (§5.17)",
+            "the chosen icon variant must be applied and stored (§5.17)",
             expected,
             SettingsScreenProbe.state(world).iconVariant,
         )
@@ -297,7 +224,6 @@ class Sk120AppearanceScreenSteps(private val world: AcceptanceWorld) {
 
     /** Открыть диалог нажатием строки: нажатие идёт тем же ViewModel, что у продукта. */
     private fun openPicker(rowTag: String, dialogTag: String) {
-        watchShowcase()
         SettingsScreenProbe.act(world) { onNodeWithTag(rowTag, useUnmergedTree = true).performClick() }
         SettingsScreenProbe.ask(world) { onNodeWithTag(dialogTag, useUnmergedTree = true).assertExists() }
     }
@@ -311,14 +237,6 @@ class Sk120AppearanceScreenSteps(private val world: AcceptanceWorld) {
         }
     }
 
-    /** Слушать сигнал витрины с того же ViewModel, что у экрана: поток без повтора, слушать надо заранее. */
-    private fun watchShowcase() {
-        showcasePoints.clear()
-        val model = SettingsScreenProbe.model(world)
-        showcaseJob?.cancel()
-        showcaseJob = showcaseScope.launch { model.showcase.collect { showcasePoints += it } }
-    }
-
     private fun ComposeUiTest.assertCarries(tag: String, text: String) {
         val found = onAllNodes(hasText(text) and hasAnyAncestor(hasTestTag(tag)), useUnmergedTree = true)
             .fetchSemanticsNodes()
@@ -329,11 +247,6 @@ class Sk120AppearanceScreenSteps(private val world: AcceptanceWorld) {
         val found = onAllNodes(hasText(text), useUnmergedTree = true).fetchSemanticsNodes()
         assertTrue("the dialog must carry «$text»", found.isNotEmpty())
     }
-
-    private fun ComposeUiTest.marks(ancestorTag: String, mark: String): Int = onAllNodes(
-        hasText(mark) and hasAnyAncestor(hasTestTag(ancestorTag)),
-        useUnmergedTree = true,
-    ).fetchSemanticsNodes().size
 
     /** Слово каталога стенда: язык закреплён, потому что сценарии записаны по-русски (НФТ-43). */
     private fun string(id: Int): String = context.withInterfaceLocale(RUSSIAN).getString(id)

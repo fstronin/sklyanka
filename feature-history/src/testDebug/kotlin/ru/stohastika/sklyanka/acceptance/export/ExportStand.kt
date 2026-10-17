@@ -5,9 +5,7 @@ import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.runComposeUiTest
 import androidx.test.core.app.ApplicationProvider
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
@@ -42,12 +40,6 @@ internal object ExportStand {
 
     private var lastWorld: AcceptanceWorld? = null
     private var viewModel: ExportHistoryViewModel? = null
-    private var collector: CoroutineScope? = null
-
-    /** Обращения к витрине: строка настроек без доступа открывает её вместо шторки (Р-22). */
-    var showcaseRequests: Int = 0
-
-        private set
 
     fun model(world: AcceptanceWorld): ExportHistoryViewModel {
         reset(world)
@@ -56,7 +48,7 @@ internal object ExportStand {
 
     fun state(world: AcceptanceWorld): ExportHistoryUiState = model(world).state.value
 
-    /** Нажатие строки «Экспорт истории»: с доступом — шторка, без доступа — витрина. */
+    /** Нажатие строки «Экспорт истории»: в поставляемой сборке всегда открывает шторку (Р-86). */
     fun open(world: AcceptanceWorld) {
         model(world)
         onIntent(world, ExportHistoryIntent.Requested)
@@ -96,7 +88,6 @@ internal object ExportStand {
         Dispatchers.resetMain()
         viewModel = null
         lastWorld = null
-        collector = null
     }
 
     @Composable
@@ -110,9 +101,6 @@ internal object ExportStand {
     private fun build(world: AcceptanceWorld): ExportHistoryViewModel {
         val dispatcher = UnconfinedTestDispatcher()
         Dispatchers.setMain(dispatcher)
-        val collecting = CoroutineScope(dispatcher)
-        collector = collecting
-        showcaseRequests = 0
         return ExportHistoryViewModel(
             buildTable = BuildHistoryCsvTableUseCase(
                 activeProfile = world.profileSession.activeStore,
@@ -128,9 +116,9 @@ internal object ExportStand {
                 activeProfile = world.profileSession.activeStore,
                 log = world.log,
             ),
-            proStatus = world.pro.statusUseCase,
+            proStatus = world.access.statusUseCase,
             time = world.clock.time,
-        ).also { model -> collecting.launch { model.showcase.collect { showcaseRequests++ } } }
+        )
     }
 
     private fun reset(world: AcceptanceWorld) {

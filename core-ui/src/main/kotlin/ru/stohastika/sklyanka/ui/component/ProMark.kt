@@ -13,6 +13,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import ru.stohastika.sklyanka.ui.R
+import ru.stohastika.sklyanka.ui.pro.LocalProUiEnabled
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaShapes
 import ru.stohastika.sklyanka.ui.token.SklyankaSizes
@@ -35,9 +36,15 @@ import ru.stohastika.sklyanka.ui.token.SklyankaType
  * акцент (Р-79, «Почему»).
  *
  * Чтению с экрана объявляется только слово: искра декоративна и смысла не несёт (НФТ-33).
+ *
+ * **В бесплатной сборке метки нет.** [LocalProUiEnabled] по умолчанию `false`, и тогда
+ * компонент не рисует ничего: ни плашки, ни слова, ни места в строке. Вызовы метки при этом
+ * остаются на местах — платный вариант сборки включает флаг, и метки возвращаются без правки
+ * экранов (Р-86, ADR-0016).
  */
 @Composable
 fun ProMark(modifier: Modifier = Modifier) {
+    if (!LocalProUiEnabled.current) return
     val colors = SklyankaTheme.colors
     Row(
         modifier = modifier

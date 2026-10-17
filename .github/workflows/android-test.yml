@@ -1,7 +1,7 @@
 # Необязательный гейт (Р-19): инструментальные тесты на эмуляторе запускаются
 # только явно (workflow_dispatch) и не блокируют push/pull_request — обязательный
 # контур живёт в verify.yml, где androidTest-исходники хотя бы компилируются
-# (assembleDebugAndroidTest входит в verifyAll).
+# (вариантные assembleFreeDebugAndroidTest/assembleProDebugAndroidTest входят в verifyAll).
 #
 # Образ эмулятора — AOSP без Google APIs (target: default): продукт живёт без
 # GMS (ПЛ-4, НФТ-39), и локальная оснастка tools/emulator/ использует те же
@@ -26,7 +26,7 @@ concurrency:
 
 jobs:
   connected-tests:
-    name: connectedDebugAndroidTest (API ${{ inputs.api-level || '35' }})
+    name: connectedFreeDebugAndroidTest (API ${{ inputs.api-level || '35' }})
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
@@ -53,4 +53,6 @@ jobs:
           target: default
           arch: x86_64
           disable-animations: true
-          script: ./gradlew connectedDebugAndroidTest --no-daemon --stacktrace
+          # У app есть измерение контура (Р-86, ADR-0016): unflavored-задачи
+          # connectedDebugAndroidTest у него нет, и поставляемый вариант — `free`.
+          script: ./gradlew :app:connectedFreeDebugAndroidTest :core-data:connectedDebugAndroidTest :feature-history:connectedDebugAndroidTest --no-daemon --stacktrace

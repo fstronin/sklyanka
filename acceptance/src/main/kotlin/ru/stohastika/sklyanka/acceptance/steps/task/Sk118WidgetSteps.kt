@@ -30,7 +30,7 @@ import java.time.LocalDateTime
 import java.time.LocalTime
 
 /**
- * Шаги мира и поведения приёмки SKL-118: данные виджета, отметка из виджета и гейт «Про».
+ * Шаги мира и поведения приёмки SKL-118: данные виджета, отметка из виджета и установка.
  *
  * Экранная приёмка проверяет собранную поверхность (`Sk118WidgetConfigScreenSteps`), а это —
  * правила, которые сценарии называют словами. Снимок собирается **той же чистой сборкой
@@ -40,7 +40,9 @@ import java.time.LocalTime
  *
  * Установка виджета изображается состоянием: диалог домашнего экрана прошивки приёмке
  * недоступен, а проверяются правила гейта — отмена настройки не добавляет виджет,
- * завершение добавляет (Р-32, ПР-23).
+ * завершение добавляет (Р-32, ПР-23). Оплаты в продукте нет (Р-86): доступ к установке
+ * есть всегда, поэтому гейт проходит, а доменное правило состава остаётся и проверяется
+ * своим unit-тестом.
  *
  * Русский текст в аннотациях — ключевые слова Gherkin, а не текст интерфейса; имена
  * лекарств и профилей — ключи сценария, в модель уходят идентификаторы (НФТ-19).
@@ -109,17 +111,6 @@ class Sk118WidgetSteps(private val world: AcceptanceWorld) {
             times = listOf(time(hour, minute)),
         )
         materialise(name)
-    }
-
-    @Допустим("^у человека есть установленный виджет «([^»]+)»$")
-    fun theWidgetIsInstalled(name: String) {
-        world.widgets.type = typeOf(name)
-        world.widgets.installed = 1
-        world.widgets.installedAtStart = 1
-        // Плита показывает день активного профиля: у профиля есть действующий курс,
-        // и его сегодняшние строки — иначе «по-прежнему несёт приёмы дня» не про что.
-        ensureCourse(WIDGET_COURSE)
-        activeMedications(activeContext().id).forEach { materialise(it) }
     }
 
     @Допустим("^активен профиль владельца$")
@@ -315,16 +306,11 @@ class Sk118WidgetSteps(private val world: AcceptanceWorld) {
         )
     }
 
-    // --- Гейт «Про»: экран настройки -----------------------------------------
+    // --- Установка: экран настройки ------------------------------------------
 
     @Когда("^человек добавляет виджет «([^»]+)» с домашнего экрана$")
     fun thePersonAddsAWidget(name: String) {
         addWidget(typeOf(name))
-    }
-
-    @Когда("человек добавляет ещё один виджет с домашнего экрана")
-    fun thePersonAddsOneMoreWidget() {
-        addWidget(world.widgets.type)
     }
 
     @Тогда("открыт экран настройки виджета")
@@ -348,34 +334,6 @@ class Sk118WidgetSteps(private val world: AcceptanceWorld) {
         assertEquals(typeOf(name), world.widgets.type, "тип выбирается в настройке (§5.12)")
     }
 
-    @Тогда("на нём сказано, что виджеты — в подписке «Склянка Про»")
-    fun theReasonIsSpelledOut() {
-        assertFalse(proIncluded(), "доступа к «Про» нет")
-        // Сами слова причины проверяет экранный прогон модуля: мир приёмки — чистый
-        // Kotlin/JVM и строк интерфейса не видит (SKL-26/TDD.md §4.1). Здесь проверяется
-        // правило: доступа нет, и завершение ведёт в витрину, а не к установке (§5.12).
-        assertTrue(world.widgets.showcaseOffered, "без доступа завершение ведёт в витрину")
-    }
-
-    @Тогда("предложено оформить подписку")
-    fun theShowcaseIsOffered() {
-        assertTrue(world.widgets.showcaseOffered, "завершение ведёт в витрину вместо установки (Р-32)")
-    }
-
-    @Когда("человек закрывает настройку, не оформив подписку")
-    fun thePersonClosesTheSetup() {
-        world.widgets.configOpen = false
-    }
-
-    @Тогда("виджет не добавлен")
-    fun theWidgetIsNotAdded() {
-        assertEquals(
-            world.widgets.installedAtStart,
-            world.widgets.installed,
-            "отмена настройки не добавляет виджет (Р-32)",
-        )
-    }
-
     @Когда("человек завершает настройку")
     fun thePersonCompletesTheSetup() {
         completeSetup()
@@ -386,7 +344,7 @@ class Sk118WidgetSteps(private val world: AcceptanceWorld) {
         assertEquals(
             world.widgets.installedAtStart + 1,
             world.widgets.installed,
-            "с действующей подпиской установка завершается (ПР-23)",
+            "в бесплатном продукте установка завершается (Р-86, ПР-23)",
         )
     }
 
@@ -426,37 +384,24 @@ class Sk118WidgetSteps(private val world: AcceptanceWorld) {
         assertTrue(snapshot.items.all { it.medicationName == medication.name }, "в снимке нет приёмов других лекарств")
     }
 
-    @Тогда("данные виджета по-прежнему несут приёмы дня")
-    fun theInstalledWidgetKeepsWorking() {
-        assertTrue(
-            daySnapshot(world.clock.today()).items.isNotEmpty(),
-            "установленная плита работает и после истечения подписки (ПР-23)",
-        )
-        assertFalse(proIncluded(), "доступ к «Про» истёк")
-    }
-
-    @Тогда("настройка не завершает установку")
-    fun theSetupDoesNotComplete() {
-        assertFalse(canComplete(), "без действующей подписки завершить установку нечем (ПР-23, Р-32)")
-        completeSetup()
-        assertEquals(1, world.widgets.installed, "новых плит не появилось")
-    }
-
     // --- Общая часть ----------------------------------------------------------
 
-    /** Человек начал добавлять виджет: открыт экран настройки, витрина предложена по доступу. */
+    /** Человек начал добавлять виджет: открыт экран настройки, счёт плит начат заново. */
     private fun addWidget(kind: ScenarioWidgets.Type) {
         world.widgets.type = kind
         world.widgets.configOpen = true
         world.widgets.selectedMedication = null
-        world.widgets.showcaseOffered = !proIncluded()
+        // Платформа добавляет плиту по одной за настройку: «добавлен» — это «стало на одну
+        // больше», поэтому каждый новый заход считает от текущего числа.
+        world.widgets.installedAtStart = world.widgets.installed
     }
 
     /**
-     * Завершение настройки: доступ есть и выбор закончен — плита появляется, иначе нет.
+     * Завершение настройки: выбор закончен — плита появляется, иначе нет.
      *
-     * Это и есть гейт Р-32 в терминах состояния: §5.12 не даёт завершить установку без
-     * подписки, а платформа не добавляет виджет, если настройка вернула отмену.
+     * Гейт Р-32 остаётся правилом продукта: платформа не добавляет виджет, если настройка
+     * вернула отмену. Оплаты в продукте нет (Р-86), поэтому доступа хватает всегда,
+     * и незавершённым установку делает только невыбранное лекарство.
      */
     private fun completeSetup() {
         if (canComplete()) world.widgets.installed += 1
@@ -467,15 +412,16 @@ class Sk118WidgetSteps(private val world: AcceptanceWorld) {
      * Завершает ли установку этот экран — правило продукта, а не поле мира (Р-32, §5.12).
      *
      * Тем же `WidgetSetupGate` живёт кнопка экрана: сценарий проверяет решение продукта,
-     * а не свою же запись о том, что виджет «добавлен».
+     * а не свою же запись о том, что виджет «добавлен». Доступ берётся из мира бесплатной
+     * сборки ([ru.stohastika.sklyanka.acceptance.world.ScenarioAccess]): он отвечает
+     * «активна», как free-кэш подписки (Р-86, ADR-0016), а платное правило гейта остаётся
+     * в домене и проверяется `WidgetSetupGateTest`.
      */
     private fun canComplete(): Boolean = WidgetSetupGate.canComplete(
-        proIncluded = proIncluded(),
+        proIncluded = world.access.status().included,
         medicationRequired = world.widgets.type == ScenarioWidgets.Type.MEDICATION,
         medicationChosen = world.widgets.selectedMedication != null,
     )
-
-    private fun proIncluded(): Boolean = world.pro.status().included
 
     /** Отметка из виджета — тот же сценарий, что кнопка в приложении (ПР-22). */
     private fun markFromWidget(name: String) {
@@ -596,7 +542,6 @@ class Sk118WidgetSteps(private val world: AcceptanceWorld) {
         world.widgets.type = kind
         world.widgets.configOpen = true
         world.widgets.selectedMedication = null
-        world.widgets.showcaseOffered = !proIncluded()
     }
 
     /** Имя типа — ключ сценария, а не текст интерфейса: слова проверяет экранный прогон. */
@@ -622,10 +567,6 @@ class Sk118WidgetSteps(private val world: AcceptanceWorld) {
 
         /** Время курса, который шаг заводит сам: утро — обычное время ежедневного приёма. */
         val DEFAULT_TIME: LocalTime = LocalTime.of(8, 0)
-
-        /** Курс установленной плиты: сценарий говорит «виджет показывает день», а не чем. */
-        const val WIDGET_COURSE = "Магний"
-        const val PRO_TITLE = "Склянка Про"
 
         /** Имена типов виджетов словами сценария: те же, что в §5.11. */
         const val TODAY_WORD = "Сегодня"

@@ -7,15 +7,11 @@ import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.stringPreferencesKey
 import dagger.hilt.android.testing.HiltAndroidTest
-import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import ru.stohastika.sklyanka.domain.model.Intake
-import ru.stohastika.sklyanka.domain.pro.ProProductId
 import ru.stohastika.sklyanka.domain.reminder.ReminderEvent
 import ru.stohastika.sklyanka.domain.reminder.ReminderLogEntry
 import ru.stohastika.sklyanka.domain.reminder.RescheduleReason
@@ -30,7 +26,6 @@ import ru.stohastika.sklyanka.feature.meds.list.TAG_ADD_MEDICATION
 import ru.stohastika.sklyanka.feature.meds.list.TAG_MEDICATION_LIST
 import ru.stohastika.sklyanka.screen.support.DeviceTestClock
 import ru.stohastika.sklyanka.screen.support.DeviceTestSeed
-import ru.stohastika.sklyanka.screen.support.DeviceTestStores
 import ru.stohastika.sklyanka.test.R
 import ru.stohastika.sklyanka.ui.component.TAG_CHIP
 import java.time.DayOfWeek
@@ -53,19 +48,14 @@ import ru.stohastika.sklyanka.feature.meds.R as MedsR
  * приёма: понедельник 5-го, среда 7-го и пятница 9-го. Суббота, воскресенье, вторник
  * и четверг остаются пустыми — по ним и проверяется «в остальные дни приёмов нет».
  *
- * Два состояния стенда, названные здесь честно, а не обойдённые:
+ * Одно состояние стенда, названное здесь честно, а не обойдённое:
  *
- * 1. **Недельная схема из двух и более дней — платное создание** (ПР-20). Сценарий приёмки
- *    начинается словами «подписка “Склянка Про” активна» (SKL-117.feature, `@weekdays @happy`),
- *    поэтому поход подкладывает в кэш подписки тот же ответ, что дал бы магазин (ключ и формат
- *    — из `ProSubscriptionDataStore`, тем же приёмом, что поход «Витрина “Склянка Про”»):
- *    без доступа сохранение закрыто, и поход проверял бы витрину, а не расписание.
- * 2. **Поставленный будильник на стенде не наблюдается.** Право точных будильников тестовому
- *    пакету не выдано, `AlarmManager` отказывает, `AlarmGateway` глотает отказ, и зеркало
- *    будильников пусто — это состояние стенда, названное в `SKL-140/TDD.md` §8.1 (и там же
- *    решено не патчить). Наблюдаемое здесь — запись пересборки окна в журнале напоминаний
- *    (`ReminderEvent.RESCHEDULED`): что продукт запланировал и на какой приём. Настоящее
- *    срабатывание будильника держат испытания оснастки и человек, и поход его не имитирует (П-7).
+ * **Поставленный будильник на стенде не наблюдается.** Право точных будильников тестовому
+ * пакету не выдано, `AlarmManager` отказывает, `AlarmGateway` глотает отказ, и зеркало
+ * будильников пусто — это состояние стенда, названное в `SKL-140/TDD.md` §8.1 (и там же
+ * решено не патчить). Наблюдаемое здесь — запись пересборки окна в журнале напоминаний
+ * (`ReminderEvent.RESCHEDULED`): что продукт запланировал и на какой приём. Настоящее
+ * срабатывание будильника держат испытания оснастки и человек, и поход его не имитирует (П-7).
  */
 @HiltAndroidTest
 class MedicationScheduleJourneyTest : JourneyTest() {
@@ -73,7 +63,6 @@ class MedicationScheduleJourneyTest : JourneyTest() {
     @Test
     fun thePersonSetsAWeeklySchedule() {
         val name = testContext.getString(R.string.device_test_medication_name, NAME_SUFFIX)
-        seedActiveSubscription()
 
         launchApp()
         awaitRoot()
@@ -236,24 +225,6 @@ class MedicationScheduleJourneyTest : JourneyTest() {
         ) { "пересборка окна после сохранения обязана оставить запись" }
     }
 
-    /**
-     * Подписка «Про» в кэше: ответ магазина, которого на стенде некому дать (SKL-122).
-     *
-     * Недельная схема из двух и более дней — платное создание (ПР-20), и без доступа кнопка
-     * сохранения открывает витрину вместо записи. Ключ и формат записи повторяют
-     * `ProSubscriptionDataStore` (`active|<товар>|<день>`): другого способа поднять состояние
-     * «активна» без живого магазина у проверки нет.
-     */
-    private fun seedActiveSubscription() {
-        val until = DeviceTestClock.today.plusDays(ACTIVE_DAYS)
-        runBlocking {
-            DeviceTestStores.settings(targetContext).edit { preferences ->
-                preferences[PRO_SUBSCRIPTION] =
-                    "active|${ProProductId.YEARLY.storeId}|${until.toEpochDay()}"
-            }
-        }
-    }
-
     /** Сутки окна генерации: семь дней, считая сегодняшний. */
     private val windowDates: List<LocalDate>
         get() = (0 until WINDOW_DAYS).map { offset ->
@@ -276,12 +247,6 @@ class MedicationScheduleJourneyTest : JourneyTest() {
 
         /** Глубина окна генерации в сутках, считая текущие (`IntakeGenerationPolicy`). */
         const val WINDOW_DAYS = 7
-
-        /** Сколько дней подписки лежит в кэше: состояние «активна» с запасом. */
-        const val ACTIVE_DAYS = 30L
-
-        /** Ключ кэша состояния подписки: то же имя, что в `ProSubscriptionDataStore`. */
-        val PRO_SUBSCRIPTION = stringPreferencesKey("pro_subscription")
 
         /** Понедельник недели-образца продукта: 1 января 2024 года (`MedsText`). */
         val REFERENCE_WEEK: LocalDate = LocalDate.of(2024, 1, 1)

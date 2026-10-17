@@ -31,7 +31,6 @@ import androidx.compose.ui.semantics.semantics
 import ru.stohastika.sklyanka.domain.history.ReportPreset
 import ru.stohastika.sklyanka.domain.history.ReportScope
 import ru.stohastika.sklyanka.ui.component.CheckGlyph
-import ru.stohastika.sklyanka.ui.component.ProMark
 import ru.stohastika.sklyanka.ui.component.SklyankaBottomSheet
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaShapes
@@ -47,10 +46,10 @@ import ru.stohastika.sklyanka.ui.token.SklyankaType
  * вместо сводки шторка показывает **состав** «подпись — значение», чтобы человек видел,
  * что именно отдаёт, до нажатия «Передать».
  *
- * **Состав выбирается здесь же** (Р-85 п. 1, §5.15): «Базовый» выбран по умолчанию и метки
- * не несёт (Р-36, Р-71), «Расширенный» несёт метку «Про». Выбор стоит до карточки состава:
- * состав выбирают раньше, чем смотрят на итог. Без активного доступа нажатие расширенной
- * строки выбор не меняет — открывается витрина, а формируется базовый документ (П-7).
+ * **Состав выбирается здесь же** (Р-85 п. 1, §5.15): «Базовый» выбран по умолчанию (Р-36),
+ * «Расширенный» доступен без оплаты (Р-86). Выбор стоит до карточки состава: состав
+ * выбирают раньше, чем смотрят на итог. Метки «Про» у строк нет: платного контура
+ * в бесплатной сборке не существует (Р-86, ADR-0016).
  *
  * Успех — **отдельное состояние содержимого**: чипы, выбор, карточка, пояснение и действия
  * убираются, остаются фраза «Отчёт сформирован», исход словом и контурная галочка.
@@ -132,10 +131,9 @@ private fun ReportOutcome.message(): Int = when (this) {
 /**
  * Выбор состава отчёта: надстрочник и карточка-группа из двух строк (§5.15).
  *
- * Подпись расширенной строки несёт метку «Про» сразу за собой, а под обеими подписями стоит
- * пояснение состава: человек видит, что войдёт в документ, **до** нажатия (П-7). Пояснение
- * пишется словами состава, а не названием тарифа (Р-71). Строка не переводится
- * в недоступность: правда не «нельзя», а «можно, по подписке».
+ * Под обеими подписями стоит пояснение состава: человек видит, что войдёт в документ,
+ * **до** нажатия (П-7). Пояснение пишется словами состава, а не названием тарифа (Р-71).
+ * Оба состава доступны без оплаты, поэтому метки «Про» здесь нет (Р-86, ADR-0016).
  */
 @Composable
 private fun CompositionChoice(scope: ReportScope, onChoose: (ReportScope) -> Unit) {
@@ -163,7 +161,6 @@ private fun CompositionChoice(scope: ReportScope, onChoose: (ReportScope) -> Uni
                 label = stringResource(R.string.history_report_composition_base),
                 note = stringResource(R.string.history_report_composition_base_note),
                 isSelected = scope == ReportScope.BASE,
-                proMarked = false,
                 testTag = TAG_REPORT_COMPOSITION_BASE,
                 onClick = { onChoose(ReportScope.BASE) },
             )
@@ -172,12 +169,7 @@ private fun CompositionChoice(scope: ReportScope, onChoose: (ReportScope) -> Uni
                 label = stringResource(R.string.history_report_composition_extended),
                 note = stringResource(R.string.history_report_composition_extended_note),
                 isSelected = scope == ReportScope.EXTENDED,
-                // Метка стоит у платной строки: норма не продаёт бесплатное (Р-71). Без доступа
-                // строка метку не теряет — она по-прежнему называет платную возможность.
-                proMarked = true,
                 testTag = TAG_REPORT_COMPOSITION_EXTENDED,
-                // Выбор не меняется без доступа: экран просит витрину, а решает `ViewModel` —
-                // расширенный состав без подписки не собирается (Р-22).
                 onClick = { onChoose(ReportScope.EXTENDED) },
             )
         }
@@ -191,14 +183,7 @@ private fun CompositionChoice(scope: ReportScope, onChoose: (ReportScope) -> Uni
  * подпись набрана `BodyDefault`, у выбранной — `BodyDefaultStrong` цветом акцента (НФТ-30, §6.4).
  */
 @Composable
-private fun ChoiceRow(
-    label: String,
-    note: String,
-    isSelected: Boolean,
-    proMarked: Boolean,
-    testTag: String,
-    onClick: () -> Unit,
-) {
+private fun ChoiceRow(label: String, note: String, isSelected: Boolean, testTag: String, onClick: () -> Unit) {
     val colors = SklyankaTheme.colors
     Row(
         modifier = Modifier
@@ -210,16 +195,11 @@ private fun ChoiceRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Hair)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = label,
-                    style = if (isSelected) SklyankaType.BodyDefaultStrong else SklyankaType.BodyDefault,
-                    color = if (isSelected) colors.accent else colors.text,
-                )
-                if (proMarked) {
-                    ProMark(modifier = Modifier.padding(start = SklyankaSpacing.Small))
-                }
-            }
+            Text(
+                text = label,
+                style = if (isSelected) SklyankaType.BodyDefaultStrong else SklyankaType.BodyDefault,
+                color = if (isSelected) colors.accent else colors.text,
+            )
             Text(text = note, style = SklyankaType.CaptionSmall, color = colors.textMuted)
         }
         // Место галочки зарезервировано всегда: галочка нарисована и у невыбранной строки,

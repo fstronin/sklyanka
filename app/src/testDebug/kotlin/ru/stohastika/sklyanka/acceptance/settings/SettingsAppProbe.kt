@@ -134,15 +134,15 @@ internal object SettingsAppProbe {
                 permissions = world.system,
             ),
             stamp = AppStamp(versionName = "1.0", versionCode = 1),
-            proStatus = world.pro.statusUseCase,
+            proStatus = world.access.statusUseCase,
         ),
         // Оформление (SKL-120, §5.17): те же доменные швы, что у продукта; носитель выбора
         // подменён памятью, правило выбора — нет.
         appearance = SettingsAppearance(
             observeTheme = ObserveAccentThemeUseCase(appearance),
             observeIcon = ObserveIconVariantUseCase(appearance),
-            setTheme = SetAccentThemeUseCase(appearance, world.pro.statusUseCase),
-            setIcon = SetIconVariantUseCase(appearance, world.pro.statusUseCase),
+            setTheme = SetAccentThemeUseCase(appearance, world.access.statusUseCase),
+            setIcon = SetIconVariantUseCase(appearance, world.access.statusUseCase),
         ),
     )
 

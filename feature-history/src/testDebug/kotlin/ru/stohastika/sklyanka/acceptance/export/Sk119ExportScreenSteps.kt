@@ -59,7 +59,7 @@ import java.time.LocalDate
 import java.time.LocalTime
 
 /**
- * Экранные шаги приёмки SKL-119 — выбор состава отчёта, гейт «Про», шторка выгрузки и её файл.
+ * Экранные шаги приёмки SKL-119 — выбор состава отчёта, шторка выгрузки и её файл.
  *
  * Шаги живут в `feature-history`, потому что говорят о поверхностях этого модуля: блок выбора
  * состава и шторка выгрузки объявлены здесь, а их теги `internal` — увидеть их может только
@@ -109,10 +109,10 @@ class Sk119ExportScreenSteps(private val world: AcceptanceWorld) {
      * «Базовый» выбран по умолчанию — и это видно разметке, а не только состоянию.
      *
      * Проверяется семантика `selected` строк (НФТ-30, §6.4): снятие отрисовки выбора сценарий
-     * обязан заметить, поэтому поля состояния и счётчика метки мало. Метка «Про» стоит
-     * у платной строки и только у неё (Р-71).
+     * обязан заметить, поэтому поля состояния мало. Метки «Про» в шторке нет ни у одной строки:
+     * платного контура в поставляемой сборке не существует (Р-86, ADR-0016).
      */
-    @Тогда("^«Базовый» выбран по умолчанию и метки «Про» не несёт$")
+    @Тогда("^«Базовый» выбран по умолчанию и метки «Про» в шторке нет$")
     fun theBaseRowIsSelectedAndUnmarked() {
         assertEquals(ReportScope.BASE, scope())
         ReportScopeStand.ask(world) { test ->
@@ -120,15 +120,7 @@ class Sk119ExportScreenSteps(private val world: AcceptanceWorld) {
                 .assert(SemanticsMatcher.expectValue(SemanticsProperties.Selected, true))
             test.onNodeWithTag(TAG_REPORT_COMPOSITION_EXTENDED, useUnmergedTree = true)
                 .assert(SemanticsMatcher.expectValue(SemanticsProperties.Selected, false))
-            test.onAllNodesWithText(proMark(), useUnmergedTree = true).assertCountEquals(1)
-        }
-    }
-
-    @Тогда("^расширенный состав несёт метку «Про»$")
-    fun theExtendedRowCarriesTheProMark() {
-        ReportScopeStand.ask(world) { test ->
-            test.onNodeWithTag(TAG_REPORT_COMPOSITION_EXTENDED, useUnmergedTree = true).assertExists()
-            test.onNodeWithText(proMark(), useUnmergedTree = true).assertExists()
+            test.onAllNodesWithText(proMark(), useUnmergedTree = true).assertCountEquals(0)
         }
     }
 
@@ -139,47 +131,9 @@ class Sk119ExportScreenSteps(private val world: AcceptanceWorld) {
         }
     }
 
-    /**
-     * Витрину просят, а не показывают: поверхность покупки одна и живёт в `app` (Р-67).
-     *
-     * Слова места и точка входа называются парой: «Расширенный отчёт» — состав отчёта
-     * (`ProPoint.HISTORY`), «Экспорт истории» — строка выгрузки (`ProPoint.HISTORY_EXPORT`),
-     * и у каждой свои слова пункта-повода (§10 нормы дизайна, Р-85 пп. 1 и 2).
-     */
-    @Тогда("^открыть витрину просят словами места «([^»]+)»$")
-    fun theShowcaseIsRequestedWithTheWordsOfThePlace(words: String) {
-        val catalog = proCatalog()
-        val entry = when (words) {
-            catalog.getValue("pro_benefit_report_short") -> PLACE_REPORT
-            catalog.getValue("pro_benefit_export_short") -> PLACE_EXPORT
-            else -> error("the scenario names no place of the showcase: «$words»")
-        }
-        assertEquals(words, proCatalog().getValue(entry.notice))
-        val wiring = File(RepositoryLayout.root, MAIN_ACTIVITY).readText()
-        assertTrue(
-            "the app must open the showcase with this entry point (Р-85): $wiring",
-            wiring.contains(entry.wiring),
-        )
-    }
-
-    @Тогда("^выбранным остаётся базовый состав$")
-    fun theBaseCompositionStaysChosen() {
-        assertEquals(ReportScope.BASE, scope())
-    }
-
     @Тогда("^выбран расширенный состав$")
     fun theExtendedCompositionIsChosen() {
         assertEquals(ReportScope.EXTENDED, scope())
-    }
-
-    @Тогда("^базовый документ сформирован$")
-    fun theBaseDocumentIsBuilt() {
-        assertNotNull("the base document must be built", ReportScopeStand.state(world).report?.document)
-        assertEquals(
-            "the base document is assembled with no 'Pro' sections (Р-36)",
-            ExtendedReportSections.NONE,
-            ReportScopeStand.lastSections(),
-        )
     }
 
     /**
@@ -189,8 +143,8 @@ class Sk119ExportScreenSteps(private val world: AcceptanceWorld) {
      * что заголовки дошли до собранного документа тем же композером, что и PDF: «разделы есть»
      * без тройки подтверждало бы только «что-то непусто».
      */
-    @Тогда("^документ собран с разделами «Про»$")
-    fun theDocumentIsBuiltWithTheProSections() {
+    @Тогда("^документ собран с расширенными разделами$")
+    fun theDocumentIsBuiltWithTheExtendedSections() {
         // Выбранный состав берётся у состояния: нажатие расширенной строки отдало именно его.
         assertEquals("the extended composition must be the chosen one", ReportScope.EXTENDED, scope())
 
@@ -264,16 +218,16 @@ class Sk119ExportScreenSteps(private val world: AcceptanceWorld) {
         }
     }
 
-    @Тогда("^первый раздел «Про» начинается с новой страницы$")
-    fun theFirstProSectionStartsANewPage() {
+    @Тогда("^первый расширенный раздел начинается с новой страницы$")
+    fun theFirstExtendedSectionStartsANewPage() {
         assertTrue(
-            "the first 'Pro' section must start a new page: ${extendedPages.size} pages",
+            "the first extended section must start a new page: ${extendedPages.size} pages",
             extendedPages.size > basePages.size,
         )
         println("report pages: base=${basePages.size} extended=${extendedPages.size}")
         val first = extendedPages[basePages.size]
         assertTrue(
-            "the first 'Pro' section must open page ${basePages.size + 1}: ${first.body.map { it.text }}",
+            "the first extended section must open page ${basePages.size + 1}: ${first.body.map { it.text }}",
             first.body.any { it.text == firstSectionTitle },
         )
     }
@@ -291,11 +245,12 @@ class Sk119ExportScreenSteps(private val world: AcceptanceWorld) {
         ExportStand.open(world)
     }
 
-    /** Шторка выгрузки не открыта и состав не собран: без доступа файла нет вовсе (Р-22, П-7). */
-    @Тогда("^шторка выгрузки не открыта и состав не собран$")
-    fun theExportSheetIsNotOpenAndNothingIsAssembled() {
-        assertNull("the export sheet must not be open", ExportStand.state(world).sheet)
-        assertEquals("the row must ask for the showcase exactly once", 1, ExportStand.showcaseRequests)
+    /** Шторка выгрузки открыта и файл собран: доступ в поставляемой сборке есть всегда (Р-86). */
+    @Тогда("^шторка выгрузки открыта и файл собран$")
+    fun theExportSheetIsOpenAndTheFileIsBuilt() {
+        val sheet = ExportStand.state(world).sheet
+        assertNotNull("the export sheet must be open", sheet)
+        assertNotNull("the export file must be assembled", sheet?.document)
     }
 
     @Тогда("^в ней есть чипы периода и карточка состава$")
@@ -307,6 +262,8 @@ class Sk119ExportScreenSteps(private val world: AcceptanceWorld) {
                 .assertExists()
             test.onNodeWithText(context.getString(R.string.history_report_label_format), useUnmergedTree = true)
                 .assertExists()
+            // Метки «Про» на шторке выгрузки нет: платного контура не существует (Р-86).
+            test.onAllNodesWithText(proMark(), useUnmergedTree = true).assertCountEquals(0)
             // «Записей» несёт число строк, а пустой период — фразу вместо числа (Р-33):
             // карточка состава есть в обоих состояниях, и состояние называет себя словами.
             val records = test.onAllNodesWithText(
@@ -548,8 +505,6 @@ class Sk119ExportScreenSteps(private val world: AcceptanceWorld) {
 
         const val PREVIOUS_MONTH_WORDS = "прошлый месяц"
 
-        const val MAIN_ACTIVITY = "app/src/main/kotlin/ru/stohastika/sklyanka/MainActivity.kt"
-
         val PLANNED_TIME: LocalTime = LocalTime.of(8, 0)
         const val LATE_HOURS = 4L
 
@@ -564,12 +519,5 @@ class Sk119ExportScreenSteps(private val world: AcceptanceWorld) {
             R.string.history_export_column_acted_at,
             R.string.history_export_column_on_time,
         )
-
-        /** Пара «слово пункта-повода — точка входа витрины»: у каждого места они свои (Р-85). */
-        val PLACE_REPORT = PlaceOfShowcase("pro_benefit_report_short", "openPro(ProPoint.HISTORY)")
-        val PLACE_EXPORT = PlaceOfShowcase("pro_benefit_export_short", "openPro(ProPoint.HISTORY_EXPORT)")
     }
 }
-
-/** Слова пункта-повода и точка входа витрины: у каждого места они свои (Р-85, §10). */
-private data class PlaceOfShowcase(val notice: String, val wiring: String)

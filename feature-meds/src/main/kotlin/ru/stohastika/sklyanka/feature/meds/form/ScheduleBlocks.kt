@@ -57,7 +57,6 @@ import ru.stohastika.sklyanka.feature.meds.shortWeekdayName
 import ru.stohastika.sklyanka.feature.meds.stageDaysWord
 import ru.stohastika.sklyanka.ui.component.ChipState
 import ru.stohastika.sklyanka.ui.component.ListPickerDialog
-import ru.stohastika.sklyanka.ui.component.ProMark
 import ru.stohastika.sklyanka.ui.component.SklyankaChip
 import ru.stohastika.sklyanka.ui.component.SklyankaNumberField
 import ru.stohastika.sklyanka.ui.component.SklyankaTextField
@@ -158,8 +157,8 @@ internal fun ScheduleKindBlock(state: MedFormUiState, onIntent: (MedFormIntent) 
             options = ScheduleKind.entries,
             selected = state.shownScheduleKind,
             label = { kind -> kind.label() },
-            // Метка стоит у платного варианта и тогда, когда подписка активна (Р-67 п. 5).
-            mark = { kind -> if (kind.proMarked) ProMark() },
+            // Метки «Про» у вариантов нет: продукт бесплатный (Р-86), а вид расписания —
+            // предметное свойство курса, а не признак подписки.
             onSelect = { kind ->
                 onIntent(MedFormIntent.ScheduleKindChanged(kind))
                 pickerOpen = false
@@ -183,13 +182,12 @@ private fun ScheduleParams(state: MedFormUiState, onIntent: (MedFormIntent) -> U
 }
 
 /**
- * Ряд семи дней недели и строка платной границы (§5.10, ПР-16).
+ * Ряд семи дней недели и нейтральная подпись под ним (§5.10).
  *
  * Подпись чипа — короткая форма интерфейса, имя для чтения с экрана — полная: семь дней
  * в шести локалях платформа склоняет и сокращает сама, а семь комплектов в каталогах
  * разошлись бы с календарём. Ни приглушения, ни состояния недоступности у дней нет
- * (П-7, Р-79): второй день выбирается так же, как первый, — закрыто только завершение
- * создания курса (ПР-20).
+ * (П-7, Р-79): расписание доступно всем (Р-86), и второй день выбирается так же, как первый.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -220,19 +218,14 @@ private fun WeekdayParams(state: MedFormUiState, onIntent: (MedFormIntent) -> Un
                 )
             }
         }
-        // «Про — больше одного дня»: метка несёт слово, подпись — то, за что платят.
-        Row(
-            modifier = Modifier.testTag(TAG_WEEKDAYS_PRO_NOTE),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Small),
-        ) {
-            ProMark()
-            Text(
-                text = stringResource(R.string.form_weekdays_pro_note),
-                style = SklyankaType.CaptionSmall,
-                color = SklyankaTheme.colors.textMuted,
-            )
-        }
+        // «Больше одного дня» — нейтральная подпись под рядом, без метки «Про» (Р-86):
+        // она называет то, что выбирают, а не то, за что платят.
+        Text(
+            text = stringResource(R.string.form_weekdays_pro_note),
+            style = SklyankaType.CaptionSmall,
+            color = SklyankaTheme.colors.textMuted,
+            modifier = Modifier.testTag(TAG_WEEKDAYS_NOTE),
+        )
     }
 }
 
@@ -674,9 +667,9 @@ const val TAG_SCHEDULE_CARD = "form_schedule_card"
 const val TAG_SCHEDULE_ROW = "form_schedule_row"
 const val TAG_SCHEDULE_PICKER = "form_schedule_picker"
 
-/** Параметры видов: ряд дней, интервал, длины цикла, карточки этапов. */
+/** Параметры видов: ряд дней и подпись под ним, интервал, длины цикла, карточки этапов. */
 const val TAG_WEEKDAYS_ROW = "form_weekdays"
-const val TAG_WEEKDAYS_PRO_NOTE = "form_weekdays_pro_note"
+const val TAG_WEEKDAYS_NOTE = "form_weekdays_note"
 const val TAG_INTERVAL_FIELD = "form_interval"
 const val TAG_INTERVAL_ONE_DAY = "form_interval_one_day"
 const val TAG_CYCLE_ON_FIELD = "form_cycle_on"

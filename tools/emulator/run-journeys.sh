@@ -147,7 +147,7 @@ run_phase() {
     # частью имени переменной, "$label»" разбирается как переменная «label»» и падает
     # под `set -u`. Тот же разбор ломал прогон группы целиком (SKL-122).
     skl_log "запуск «${label}»; лог: $log_file"
-    skl_gradle "$api" ":app:connectedDebugAndroidTest" \
+    skl_gradle "$api" ":app:connectedFreeDebugAndroidTest" \
         ${1+"$@"} \
         "-Pandroid.testInstrumentationRunnerArguments.$SKL_JOURNEY_STORAGE_ARGUMENT" \
         "-Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true" 2>&1 |

@@ -10,15 +10,11 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import ru.stohastika.sklyanka.acceptance.RepositoryLayout
 import ru.stohastika.sklyanka.acceptance.RussianNames
-import ru.stohastika.sklyanka.acceptance.steps.dateOf
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
 import ru.stohastika.sklyanka.acceptance.world.ScenarioProfileManagement
 import ru.stohastika.sklyanka.acceptance.world.TransferFileBuilder
 import ru.stohastika.sklyanka.domain.log.OpEvent
 import ru.stohastika.sklyanka.domain.model.Profile
-import ru.stohastika.sklyanka.domain.pro.ProBenefit
-import ru.stohastika.sklyanka.domain.pro.ProPoint
-import ru.stohastika.sklyanka.domain.pro.ProProductId
 import ru.stohastika.sklyanka.domain.profile.CreateProfileOutcome
 import ru.stohastika.sklyanka.domain.profile.DeleteProfileOutcome
 import ru.stohastika.sklyanka.domain.profile.MirrorRemindersOutcome
@@ -32,37 +28,31 @@ import java.io.File
 import java.time.YearMonth
 
 /**
- * Шаги приёмки SKL-121 — профили сверх двух: мастер добавления, платная граница и предел пяти
- * (ПРФ-9, ПРФ-15, ПРФ-26, ПРФ-27, ПРФ-32…ПРФ-34, Р-84).
+ * Шаги приёмки SKL-121 — профили сверх двух: мастер добавления и предел пяти
+ * (ПРФ-9, ПРФ-15, ПРФ-26, ПРФ-27, ПРФ-32…ПРФ-34).
  *
- * Правила не пересказываются: границу «сверх двух» и предел пяти решает настоящий
- * `ProfileCreationGate`, заведение — `CreateProfileUseCase`, правку имени и цвета —
- * `RenameProfileUseCase` и `SetProfileColourUseCase`, дублирование — `SetMirrorRemindersUseCase`,
- * удаление — `DeleteProfileUseCase` (`world.profileManagement`). Мир сценария подставляет
- * только хранилище в памяти (`ADR-0007`).
+ * Правила не пересказываются: предел пяти решает настоящий `ProfileCreationGate`, заведение —
+ * `CreateProfileUseCase`, правку имени и цвета — `RenameProfileUseCase` и
+ * `SetProfileColourUseCase`, дублирование — `SetMirrorRemindersUseCase`, удаление —
+ * `DeleteProfileUseCase` (`world.profileManagement`). Мир сценария подставляет только
+ * хранилище в памяти (`ADR-0007`).
+ *
+ * **Платной границы больше нет.** Продукт бесплатный (Р-86, ADR-0016): доступ в сборке есть
+ * всегда, поэтому третий, четвёртый и пятый профили заводятся без оплаты, а закрывает
+ * создание только продуктовый предел пяти (ПРФ-32). Решение `BlockedByPro` осталось в домене
+ * как код будущего платного варианта, и в этих сценариях оно недостижимо.
  *
  * **Состояние мастера живёт здесь.** Экрана добавления профиля у сценарного прогона нет
  * (`ОВ-3`), поэтому черновик формы держится полями этого класса — как у формы расписания
  * в `Sk117ScheduleSteps`: имя, цвет, вопрос о дублировании и доступ, перечитанный при
  * открытии. Шаг не пересказывает продукт, а спрашивает у домена те же величины, что видит
  * человек: границу — у `ProfileCreationGate`, доступ — у `ObserveProStatusUseCase`
- * (`world.pro.status()`), причину — у каталога строк формы.
+ * (`world.access.status()`), причину — у каталога строк формы.
  *
  * **«Названа словами» проверяется по каталогу формы.** В чистом JVM-модуле нет ни разметки,
  * ни ресурсов Android, поэтому «слова есть» значит: ключ существует в
  * `feature-settings/res/values/strings.xml` и его значение непусто (П-7). Вёрстку и метку
  * на строке держит экранный прогон `@screen`.
- *
- * **Что доказывает какой уровень** (уровни дополняют друг друга, и ни один не судит сам себя):
- * — **сценарий** — правило домена и **продуктовые слова**: границу по числу заведённых, предел
- *   пяти, доступ из кэша, порядок причин и наличие строк каталога;
- * — **экранный стенд** (`feature-settings/.../Sk121ProfileScreenSteps`) — вёрстку: поле, ряд
- *   цветов, переключатель, причину над кнопкой, **приглушение** кнопки и метку «Про» на строке;
- * — **`ProfileFormViewModelTest`** — поведение ViewModel: первый свободный цвет, включённое
- *   дублирование, состояние кнопки по `block`, событие `showcase` вместо создания, перечитывание
- *   доступа по `refreshProAccess`;
- * — **поход** (`ProfilesJourneyTest`) — тот же путь на устройстве, включая точку-повод, которую
- *   выбирает `app`.
  *
  * Русский текст в аннотациях — ключевые слова Gherkin, а не текст интерфейса.
  */
@@ -78,7 +68,7 @@ class Sk121ProfileSteps(private val world: AcceptanceWorld) {
     /** Вопрос о дублировании в черновике мастера (по умолчанию включено, Р-29). */
     private var draftMirror: Boolean = false
 
-    /** Доступ «Про», прочитанный формой при открытии (ПРФ-33, Р-84). `null` — мастер не открывали. */
+    /** Доступ, прочитанный формой при открытии (ПРФ-33). `null` — мастер не открывали. */
     private var formAccess: Boolean? = null
 
     /** Чем форма заблокировала завершение в последний раз; `null` — не блокировала. */
@@ -145,7 +135,7 @@ class Sk121ProfileSteps(private val world: AcceptanceWorld) {
         world.profiles.setMirrorReminders(ward.name, true)
     }
 
-    // --- Действия: заведение, мастер, граница ----------------------------------------------
+    // --- Действия: заведение, мастер, предел ------------------------------------------------
 
     /**
      * Заведение профиля настоящим `CreateProfileUseCase` (ПРФ-9).
@@ -163,15 +153,15 @@ class Sk121ProfileSteps(private val world: AcceptanceWorld) {
      * Человек открыл мастер добавления профиля (ПРФ-9, ОВ-3).
      *
      * Форма заполнена тем, что человек получил бы при открытии: имя пустое, цвет — первый
-     * свободный из палитры, дублирование включено (Р-29), а доступ «Про» прочитан
-     * у того же сценария, что у экрана (ПРФ-33). Завершать пока нечем — блок не поставлен.
+     * свободный из палитры, дублирование включено (Р-29), а доступ прочитан у того же
+     * сценария, что у экрана. Завершать пока нечем — блок не поставлен.
      */
     @Когда("^человек открывает мастер добавления профиля$")
     fun thePersonOpensTheCreationMaster() {
         openMaster()
     }
 
-    /** Имя и цвет выбраны в открытом мастере; дальше завершение решает граница по числу заведённых. */
+    /** Имя и цвет выбраны в открытом мастере; дальше завершение решает предел по числу заведённых. */
     @Когда("^(?:человек )?заполняет имя профиля «([^»]+)» и цвет «([^»]+)»$")
     fun thePersonFillsTheNameAndTheColour(name: String, colour: String) {
         draftName = name
@@ -191,48 +181,25 @@ class Sk121ProfileSteps(private val world: AcceptanceWorld) {
     }
 
     /**
-     * Нажатие завершения в мастере (ПРФ-32, ПРФ-33, Р-84).
+     * Нажатие завершения в мастере (ПРФ-32, ПРФ-34).
      *
-     * Сначала граница по числу заведённых, потом имя:
+     * Сначала предел по числу заведённых, потом имя:
      *
-     * - [ProfileCreationDecision.BlockedByLimit] — пять профилей: предел не продаётся,
-     *   витрина не открывается вовсе (ПРФ-34);
-     * - [ProfileCreationDecision.BlockedByPro] — два и больше без доступа: причина платная,
-     *   нажатие ведёт в витрину из точки [ProPoint.PROFILES] (Р-67 п. 2);
+     * - [ProfileCreationDecision.BlockedByLimit] — пять профилей: кнопка недоступна,
+     *   витрины нет вовсе (ПРФ-34);
      * - [ProfileCreationDecision.Allowed] и пустое имя — профиль не заводится, сказано «нужно имя»;
      * - [ProfileCreationDecision.Allowed] — профиль заводит настоящий `CreateProfileUseCase`.
+     *
+     * [ProfileCreationDecision.BlockedByPro] в бесплатной сборке недостижим: доступ есть
+     * всегда (Р-86), и шаг отвечает отказом, если домен всё же закрыл создание оплатой, —
+     * молча подставить витрину значило бы придумать поверхность, которой нет.
      */
     @Когда("^человек нажимает завершение$")
     fun thePersonFinishesTheMaster() {
         submit()
     }
 
-    /**
-     * Покупка в уже открытой витрине: подтверждение магазина, доступ, возврат (SKL-122, Р-68).
-     *
-     * Сценарий говорит «подписка становится активной», то есть магазин подтверждает покупку,
-     * а не отказывает и не молчит: исход покупки задаётся здесь явно — по умолчанию магазин
-     * мира ничего не подтверждает. После возврата форма **перечитывает доступ** тем же
-     * сценарием, что и продукт (`MainActivity`/`ProfileFormViewModel.refreshProAccess`):
-     * иначе третий профиль остался бы закрытым при оплаченной подписке.
-     *
-     * Сам путь перечитывания — продуктовый, и здесь он только **повторяется**: у сценарного
-     * прогона нет ни `MainActivity`, ни ViewModel. Доказывают его `ProfileFormViewModelTest`
-     * (`a purchase after the showcase lets the same press create the profile` — перечитывание
-     * и завершение тем же нажатием) и поход (`ProfilesJourneyTest`: возврат из витрины
-     * застаёт форму открытой, причина уходит, создание завершает та же кнопка).
-     */
-    @Когда("^подписка «Склянка Про» становится активной до (.+)$")
-    fun theSubscriptionBecomesActiveUntil(until: String) {
-        world.pro.confirmsPurchase(ProProductId.MONTHLY, world.dateOf(until))
-        world.pro.session.select(ProProductId.MONTHLY)
-        runBlocking { world.pro.session.buy() }
-        world.pro.session.dismiss()
-        formAccess = world.pro.status().included
-        assertTrue(formAccess == true, "the store confirmed the purchase, the access must be there")
-    }
-
-    /** Правка имени владельца и цвета подопечного — настоящими сценариями домена (ПРФ-27, Р-84 п. 5). */
+    /** Правка имени владельца и цвета подопечного — настоящими сценариями домена (ПРФ-27). */
     @Когда("^человек меняет имя владельца на «([^»]+)» и цвет «([^»]+)» на «([^»]+)»$")
     fun thePersonRenamesTheOwnerAndRecoloursTheWard(ownerName: String, wardName: String, colour: String) {
         val owner = requireNotNull(world.profiles.self()) { "the scenario must have the owner profile" }
@@ -259,7 +226,7 @@ class Sk121ProfileSteps(private val world: AcceptanceWorld) {
      * Удаление третьего профиля настоящим `DeleteProfileUseCase` (ПРФ-28, ПРФ-31).
      *
      * Переключение активного на владельца — штатное поведение сценария (ПРФ-31), и здесь
-     * оно не обходится: удаление заведённого сверх лимита лимитом не ограничено (Р-22).
+     * оно не обходится: удаление заведённого лимитом не ограничено (Р-22).
      */
     @Когда("^человек удаляет третий профиль$")
     fun thePersonDeletesTheThirdProfile() {
@@ -282,8 +249,8 @@ class Sk121ProfileSteps(private val world: AcceptanceWorld) {
      *
      * Файл собирает `TransferFileBuilder`, применяет настоящий `ApplyTransferUseCase` в режиме
      * слияния: профили файла сопоставляются по нормализованному имени (ПЕР-19), и один
-     * из трёх — новый. Перенос лимитом не ограничен (ПЕР-19), а вот **добавление** после
-     * него закрыто, если заведённых стало больше двух.
+     * из трёх — новый. Перенос лимитом не ограничен (ПЕР-19), а добавление после него
+     * остаётся доступным, пока заведённых меньше пяти (ПРФ-32).
      */
     @Когда("^человек загружает файл переноса с тремя профилями$")
     fun thePersonLoadsATransferFileWithThreeProfiles() {
@@ -297,55 +264,21 @@ class Sk121ProfileSteps(private val world: AcceptanceWorld) {
         assertTrue(outcome is TransferOutcome.Applied, "the transfer must be applied, not $outcome")
     }
 
-    // --- Проверки мастера и границы ---------------------------------------------------------
-
-    /**
-     * Завершение не приглушено: у платной границы кнопка доступна, причина названа словами
-     * (П-7, §5.10, §5.13).
-     *
-     * **Сама недоступность кнопки — свойство вёрстки, и здесь она не проверяется**: у сценарного
-     * прогона нет композиции, а `ProfileCreationGate` внутри шага доказывал бы сам себя. Признак
-     * `Disabled` и нажимаемость кнопки доказывают экранный стенд (`Sk121ProfileScreenSteps`:
-     * «кнопка завершения не приглушена» и «завершение недоступно») и `ProfileFormViewModelTest`
-     * (состояние кнопки по `block`). Сценарий держит то, чего у них нет: что решение принято по
-     * **числу заведённых** и что причина у границы — платная, а не предел.
-     */
-    @Тогда("^завершение не приглушено$")
-    fun theFinishIsNotDisabled() {
-        assertEquals(
-            BLOCK_PRO,
-            visibleReason(),
-            "the reason at the paid boundary must be the paid one, not the limit (П-7)",
-        )
-        assertWords("profile_add_blocked_pro")
-    }
-
-    /**
-     * Над кнопкой названа причина платной границы (П-7, Р-84 пп. 1–3).
-     *
-     * Причина видна до нажатия: слова берутся из каталога формы — `profile_add_blocked_pro`,
-     * и ключ без слов словами не считается (П-7). Саму строку над кнопкой рисует вёрстка, и
-     * её текст сверяет экранный стенд («над кнопкой названа причина платной границы»);
-     * сценарный прогон в чистом JVM слов на экране не видит и держит каталог.
-     */
-    @Тогда("^над кнопкой названа причина платной границы$")
-    fun thePaidReasonIsNamedAboveTheButton() {
-        assertWords("profile_add_blocked_pro")
-    }
+    // --- Проверки мастера и предела ---------------------------------------------------------
 
     /**
      * Предел пяти закрывает завершение (ПРФ-32, ПРФ-34).
      *
      * Приглушение кнопки здесь не проверяется — это вёрстка (её держат экранный стенд и
      * `ProfileFormViewModelTest`); сценарий утверждает, что причина у кнопки — именно предел,
-     * а не платная граница, и что слова предела есть в каталоге.
+     * и что слова предела есть в каталоге.
      */
     @Тогда("^завершение недоступно$")
     fun theFinishIsDisabled() {
         assertEquals(
             BLOCK_LIMIT,
             visibleReason(),
-            "five profiles close the creation at any subscription (ПРФ-32)",
+            "five profiles close the creation (ПРФ-32)",
         )
         assertWords("profile_add_blocked_limit")
     }
@@ -357,12 +290,6 @@ class Sk121ProfileSteps(private val world: AcceptanceWorld) {
     @Тогда("^причина названа словами до нажатия$")
     fun theReasonIsNamedBeforeTheTap() {
         assertWords("profile_add_blocked_limit")
-    }
-
-    /** Нажатие при пределе пяти не ведёт в витрину: предел не продаётся (ПРФ-34). */
-    @Тогда("^витрина не открывается$")
-    fun theShowcaseDoesNotOpen() {
-        assertFalse(world.pro.state.visible, "the limit of five must not lead to the showcase (ПРФ-34)")
     }
 
     /** Пустое имя не заводит профиль: человек остаётся с тем же составом (ПРФ-9). */
@@ -413,34 +340,15 @@ class Sk121ProfileSteps(private val world: AcceptanceWorld) {
         assertWords("profile_switch_mirror_hint")
     }
 
-    /** Витрина открылась на пункте-поводе «Больше профилей», и он стоит первым (Р-67 п. 2, Р-75). */
-    @Тогда("^открывается витрина с пунктом «Больше профилей» первым$")
-    fun theShowcaseOpensWithTheProfilesPointFirst() {
-        assertTrue(world.pro.state.visible, "the paid boundary must open the showcase")
-        assertEquals(ProPoint.PROFILES, world.pro.state.point, "the showcase must come from the profiles entry")
-        assertEquals(
-            ProBenefit.PROFILES,
-            ProPoint.PROFILES.benefitOrder().first(),
-            "the entry point must be the first benefit row (Р-75 п. 3)",
-        )
-    }
-
-    /** Профиля не прибавилось: до оплаты третий профиль не заводится (ПРФ-33, Р-84 п. 3). */
-    @Тогда("^профиля не прибавилось$")
-    fun theProfileCountDidNotGrow() {
-        val before = requireNotNull(profilesBeforeSubmit) { "the scenario must submit the master first" }
-        assertEquals(before, created(), "a closed creation must not add a profile")
-    }
-
-    /** С активным доступом заведение разрешено: граница считает доступ, а не одно число (Р-84 п. 4). */
+    /** Создание доступно: профилей меньше пяти, и доступ в сборке есть (ПРФ-32, Р-86). */
     @Тогда("^создание профиля доступно$")
     fun theCreationIsAvailable() {
-        assertEquals(ProfileCreationDecision.Allowed, gate(), "the paid access must open the creation")
+        assertEquals(ProfileCreationDecision.Allowed, gate(), "the creation must be open below the five-profile limit")
     }
 
     // --- Проверки правки заведённого --------------------------------------------------------
 
-    /** Имя владельца и цвет подопечного сохранены: правка заведённого лимитом не ограничена (Р-22, Р-28). */
+    /** Имя владельца и цвета подопечного сохранены: правка заведённого лимитом не ограничена (Р-22, Р-28). */
     @Тогда("^владелец назван «([^»]+)», а «([^»]+)» носит цвет «([^»]+)»$")
     fun theOwnerIsNamedAndTheWardWearsTheColour(ownerName: String, wardName: String, colour: String) {
         val owner = requireNotNull(world.profiles.self()) { "the scenario must have the owner profile" }
@@ -517,16 +425,14 @@ class Sk121ProfileSteps(private val world: AcceptanceWorld) {
         assertEquals(expected, third.name, "the third profile must carry the new name")
     }
 
-    /** Добавление закрыто: заведённых два и больше без активного доступа (ПРФ-33, Р-84 пп. 1–3). */
+    /** Добавление закрыто: заведено пять профилей — предел продукта (ПРФ-32). */
     @Тогда("^добавление профиля закрыто$")
     fun theCreationIsClosed() {
-        assertTrue(gate() != ProfileCreationDecision.Allowed, "two profiles without access close the creation")
-    }
-
-    /** После удаления заведённого добавление остаётся закрытым: удаление лишнего границу не отменяет. */
-    @Тогда("^добавление профиля по-прежнему закрыто$")
-    fun theCreationIsStillClosed() {
-        assertTrue(gate() != ProfileCreationDecision.Allowed, "the creation stays closed after a deletion")
+        assertEquals(
+            ProfileCreationDecision.BlockedByLimit,
+            gate(),
+            "five profiles close the creation at any access (ПРФ-32)",
+        )
     }
 
     /** Профилей снова два: удаление сверхлимитного прошло (ПРФ-32, ОВ-7). */
@@ -548,17 +454,6 @@ class Sk121ProfileSteps(private val world: AcceptanceWorld) {
         )
     }
 
-    /** Перенос принёс больше двух профилей, и добавление после него закрыто без доступа (ПЕР-19, ПРФ-33). */
-    @Тогда("^добавление новых профилей закрыто, потому что их стало больше двух$")
-    fun theCreationIsClosedBecauseThereAreMoreThanTwo() {
-        assertTrue(created() > ProfileCreationGate.FREE, "the transfer must bring more than two profiles")
-        assertEquals(
-            ProfileCreationDecision.BlockedByPro,
-            gate(),
-            "more than two profiles without access close the creation (ПРФ-33)",
-        )
-    }
-
     /**
      * Профиль появился в списке профилей — и в мире, и в хранилище (ПРФ-9).
      *
@@ -576,48 +471,34 @@ class Sk121ProfileSteps(private val world: AcceptanceWorld) {
         )
     }
 
-    /** Строка «Добавить профиль» не несёт метки «Про»: метка есть только у платного исхода (Р-71). */
-    @Тогда("^строка «Добавить профиль» не несёт метки «Про»$")
-    fun theAddProfileRowCarriesNoProMark() {
-        assertTrue(
-            gate() != ProfileCreationDecision.BlockedByPro,
-            "the row carries the mark only when the creation is paid (Р-71)",
-        )
-        assertWords("profile_add_action")
-    }
-
     // --- Обвязка ----------------------------------------------------------------------------
 
-    /** Мастер открыт и заполнен тем, что человек получил бы при открытии (Р-29, ПРФ-33). */
+    /** Мастер открыт и заполнен тем, что человек получил бы при открытии (Р-29). */
     private fun openMaster() {
         draftName = ""
         draftColour = firstFreeColour()
         draftMirror = true
-        formAccess = world.pro.status().included
+        formAccess = world.access.status().included
         submitBlock = null
         profilesBeforeSubmit = created()
     }
 
-    /** Нажатие завершения: граница и имя, затем либо профиль, либо причина. */
+    /** Нажатие завершения: предел и имя, затем либо профиль, либо причина. */
     private fun submit() {
         profilesBeforeSubmit = created()
-        // Порядок тот же, что у продукта: предел → пустое имя → платная граница
-        // (`ProfileFormUiState.block`, §5.13). Придел закрывает создание при любой подписке,
-        // пустое имя называет себя, и только потом слово о плате.
+        // Порядок тот же, что у продукта: предел → пустое имя (`ProfileFormUiState.block`, §5.13).
+        // Платная граница в бесплатной сборке недостижима: доступ есть всегда (Р-86).
         submitBlock = when {
             gate() == ProfileCreationDecision.BlockedByLimit -> BLOCK_LIMIT
             draftName.isBlank() -> BLOCK_NAME
-            gate() == ProfileCreationDecision.BlockedByPro -> BLOCK_PRO
             else -> null
         }
+        assertTrue(
+            gate() != ProfileCreationDecision.BlockedByPro,
+            "the free build must not block creation by payment (Р-86)",
+        )
         when (submitBlock) {
             BLOCK_LIMIT, BLOCK_NAME -> Unit
-            // Точку-повод называет продукт: форму просит `app`, и он открывает витрину
-            // с `ProPoint.PROFILES` (`SettingsSection`). В чистом JVM-модуле `app` нет,
-            // поэтому вызов повторяет его здесь; что точку выбирает **продукт**, доказывают
-            // поход (`ProfilesJourneyTest`: первая строка выгод — «Больше профилей») и
-            // `ProfileFormViewModelTest` (нажатие испускает `showcase`, а не создаёт профиль).
-            BLOCK_PRO -> runBlocking { world.pro.session.open(ProPoint.PROFILES) }
             else -> {
                 val colour = requireNotNull(draftColour) { "the master has no colour chosen" }
                 val outcome = runBlocking { world.profileManagement.create(draftName, colour, draftMirror) }
@@ -626,11 +507,11 @@ class Sk121ProfileSteps(private val world: AcceptanceWorld) {
         }
     }
 
-    /** Граница создания по числу заведённых и активному доступу (ПРФ-32…ПРФ-34). */
+    /** Предел создания по числу заведённых и доступу сборки (ПРФ-32, ПРФ-34). */
     private fun gate(): ProfileCreationDecision =
-        ProfileCreationGate.decide(created(), formAccess ?: world.pro.status().included)
+        ProfileCreationGate.decide(created(), formAccess ?: world.access.status().included)
 
-    /** Видимая причина у кнопки: предел — приглушение, платная граница — названная причина (П-7). */
+    /** Видимая причина у кнопки: в бесплатной сборке такая одна — предел (ПРФ-34). */
     private fun visibleReason(): String? = when (gate()) {
         ProfileCreationDecision.BlockedByLimit -> BLOCK_LIMIT
         ProfileCreationDecision.BlockedByPro -> BLOCK_PRO
@@ -649,12 +530,6 @@ class Sk121ProfileSteps(private val world: AcceptanceWorld) {
     private fun wardProfile(name: String): Profile? {
         val resolved = RussianNames.resolve(name, world.profiles.all().map { it.name }) ?: name
         return world.profiles.all().firstOrNull { it.name == resolved && !it.isSelf }
-    }
-
-    /** Имя подопечного из текста шага в том же падеже, в каком его поставила фраза. */
-    private fun wardName(name: String): String {
-        val resolved = RussianNames.resolve(name, world.profiles.all().map { it.name })
-        return requireNotNull(resolved) { "unknown profile: $name" }
     }
 
     /** Цвет закрытой палитры по слову сценария (ПРФ-15): в базу уходит ARGB. */

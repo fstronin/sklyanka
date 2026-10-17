@@ -103,7 +103,17 @@ class ProjectChecksConventionPlugin : Plugin<Project> {
             dependsOn(subprojects.map { "${it.path}:build" })
             // Инструментальные и экранные тесты запустить негде, но они обязаны
             // компилироваться: иначе сломанный androidTest обнаружится на устройстве.
-            dependsOn(ANDROID_MODULES.map { "$it:assembleDebugAndroidTest" })
+            //
+            // `app` носит измерение `contour` (Р-86, ADR-0016), и unflavored-задачи
+            // `assembleDebugAndroidTest` у него больше нет: вариантные задачи называются
+            // `assembleFreeDebugAndroidTest` и `assembleProDebugAndroidTest`. Остальные
+            // модули измерения не имеют и сохраняют прежнее имя.
+            dependsOn(ANDROID_TEST_ASSEMBLE_TASKS)
+            // Pro-вариант не поставляется, но обязан компилироваться и проходить unit-тесты
+            // в CI (Р-86 п. 3, ADR-0016). Оба прогона названы явно: `:app:build` собирает
+            // оба debug-варианта, а эти строки делают требование видимым и не зависящим
+            // от состава агрегата `check`.
+            dependsOn(":app:testFreeDebugUnitTest", ":app:testProDebugUnitTest")
             dependsOn(moduleGraph, moduleGraphRule, rulesFire)
             dependsOn(gradle.includedBuild("detekt-rules").task(":test"))
             // Проверка словаря шагов приёмки — часть единого прогона, а не отдельная
@@ -147,6 +157,16 @@ class ProjectChecksConventionPlugin : Plugin<Project> {
             // проверяются устройством, и их инструментальный набор обязан компилироваться.
             ":feature-widgets",
         )
+
+        /**
+         * Компиляция инструментальных наборов: у `app` — по варианту контура, у остальных
+         * модулей — как прежде. Список назван, а не собран шаблоном: имя задачи — часть
+         * сборочного контракта, и его изменение должно быть видно здесь.
+         */
+        val ANDROID_TEST_ASSEMBLE_TASKS = listOf(
+            ":app:assembleFreeDebugAndroidTest",
+            ":app:assembleProDebugAndroidTest",
+        ) + (ANDROID_MODULES - ":app").map { "$it:assembleDebugAndroidTest" }
         val PROJECT_RULES = listOf(
             "HardcodedDesignToken",
             "HardcodedTextStyle",

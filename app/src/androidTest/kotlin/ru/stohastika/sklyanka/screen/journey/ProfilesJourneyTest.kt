@@ -1,8 +1,5 @@
 package ru.stohastika.sklyanka.screen.journey
 
-import androidx.compose.ui.semantics.SemanticsNode
-import androidx.compose.ui.semantics.SemanticsProperties
-import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasScrollAction
@@ -13,8 +10,6 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.stringPreferencesKey
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
@@ -30,11 +25,8 @@ import org.junit.Test
 import ru.stohastika.sklyanka.domain.log.OpEvent
 import ru.stohastika.sklyanka.domain.medication.MedicationDraft
 import ru.stohastika.sklyanka.domain.model.Profile
-import ru.stohastika.sklyanka.domain.pro.ProProductId
 import ru.stohastika.sklyanka.domain.repository.ActiveProfileRepository
 import ru.stohastika.sklyanka.domain.repository.ProfileRepository
-import ru.stohastika.sklyanka.feature.pro.TAG_PRO_BENEFITS
-import ru.stohastika.sklyanka.feature.pro.TAG_PRO_SHEET
 import ru.stohastika.sklyanka.feature.settings.TAG_SETTINGS_SCREEN
 import ru.stohastika.sklyanka.feature.settings.profile.TAG_DELETE_CONFIRM
 import ru.stohastika.sklyanka.feature.settings.profile.TAG_DELETE_DONE
@@ -51,7 +43,6 @@ import ru.stohastika.sklyanka.feature.settings.profile.TAG_PROFILE_SUBMIT
 import ru.stohastika.sklyanka.screen.support.DeviceTestClock
 import ru.stohastika.sklyanka.screen.support.DeviceTestGraph
 import ru.stohastika.sklyanka.screen.support.DeviceTestSeed
-import ru.stohastika.sklyanka.screen.support.DeviceTestStores
 import ru.stohastika.sklyanka.test.R
 import ru.stohastika.sklyanka.ui.component.TAG_CONFIRM_WORD_FIELD
 import ru.stohastika.sklyanka.ui.component.TAG_PROFILE_LABEL
@@ -192,9 +183,9 @@ class ProfilesJourneyTest : JourneyTest() {
     /**
      * Поход «Правка заведённого профиля» (SKL-121, ПРФ-26…ПРФ-28, П-7).
      *
-     * Покупка закрывает **создание** нового профиля, а не настройку заведённого: имя
-     * правится у любого, включая владельца, и после отмены подписки (Р-22, Р-28). Поход
-     * идёт от строки настроек — тихое «Изменить» в строке профиля, — и правит профиль,
+     * Никакой предел не закрывает настройку заведённого: имя правится у любого профиля,
+     * включая владельца (Р-86). Поход идёт от строки настроек — тихое «Изменить»
+     * в строке профиля, — и правит профиль,
      * который **не** активен: чтобы исправить имя, в профиль не переключаются (§5.14).
      *
      * Активный контекст проверяется на данных, а не по виду экрана: отметка активного
@@ -277,24 +268,19 @@ class ProfilesJourneyTest : JourneyTest() {
     }
 
     /**
-     * Поход «Платный мастер профиля» (SKL-121, ПРФ-33, Р-84 пп. 1–3).
+     * Поход «Третий профиль» (SKL-121, SKL-153, ПРФ-32, Р-86).
      *
-     * Второй профиль бесплатен, третий — нет: при двух заведённых профилях и без активного
-     * доступа создание закрыто (ПРФ-33, Р-84 п. 1). Закрыто **завершение**, и говорит об
-     * этом причина словами над кнопкой, а не приглушённая кнопка: «нельзя» и «можно,
-     * по подписке» — разные вещи (П-7). Поэтому нажатие открывает витрину с пунктом-поводом
-     * «Больше профилей», а не молчит.
-     *
-     * Магазина на стенде нет (нет HMS Core), и покупку поход не имитирует (Р-49): он
-     * подкладывает в кэш подписки тот же ответ, что дал бы магазин, — как это делает поход
-     * витрины. Дальше идёт настоящий путь человека: шторка закрыта, `app` перечитал доступ
-     * (Р-84 п. 2), и то же нажатие доводит создание до конца, не теряя набранное имя.
+     * Профили с третьего по пятый доступны всем: продукт бесплатный, доступа не покупают,
+     * и гейт создания видит `included = true` (ADR-0016 §3). Поэтому мастер завершает
+     * создание сразу — без платной причины над кнопкой, без витрины и без подложенного
+     * ответа магазина. Предел пяти остаётся продуктовым ограничением (ПРФ-32), но здесь
+     * до него далеко: заводятся три профиля, и третий — обычный чужой профиль.
      *
      * Новый профиль активным не становится (ПРФ-18): активный профиль меняет только
      * осознанное переключение (ПРФ-19).
      */
     @Test
-    fun thePersonIsStoppedByThePaidBoundaryAndThenAddsAProfile() {
+    fun thePersonAddsAThirdProfileForFree() {
         // Чужой профиль — оливой: тогда первый свободный цвет в мастере — терракота,
         // и выбор бирюзы видно по значению в базе, а не только по нажатию (§5.13).
         seedWardProfile(wardName, ProfileColor.Olive.argb)
@@ -303,42 +289,16 @@ class ProfilesJourneyTest : JourneyTest() {
         openSettings()
         waitUntil(SCREEN_TIMEOUT_MS, "строки «$wardName» в настройках") { textExists(wardName) }
 
-        // Два профиля без доступа: мастер открывается, но завершение называет платную границу.
         clickSettingsRow(addProfileRow)
         waitForTag(TAG_PROFILE_FORM)
         assertTrue("the wizard must ask about duplication", exists(TAG_PROFILE_MIRROR))
         typeInto(TAG_PROFILE_NAME_FIELD, thirdName)
-        waitUntil(SCREEN_TIMEOUT_MS, "платной причины над кнопкой") { proBoundaryShown() }
-        // Кнопка не приглушена — она ведёт в витрину, и это её состояние проверкой и названо.
+        // Бесплатная сборка не знает платной границы: завершение доступно сразу (Р-86).
+        assertFalse("the free wizard must show no paid boundary", exists(TAG_PROFILE_BLOCK))
         compose.onNodeWithTag(TAG_PROFILE_SUBMIT, useUnmergedTree = true).assertIsEnabled()
-        capture("profiles-form-blocked-pro")
+        capture("profiles-form-free")
 
-        click(TAG_PROFILE_SUBMIT)
-        waitForTag(TAG_PRO_SHEET)
-
-        // Точку-повод называет **продукт**: витрину открывает `app` с `ProPoint.PROFILES`
-        // (`SettingsSection`), и первая строка выгод обязана быть «Больше профилей» (Р-67 п. 2,
-        // Р-75 п. 3). Это единственное место, где выбор точки виден на экране: сценарный шаг
-        // подставляет её сам, а экранные шаги витрину не собирают.
-        assertEquals(
-            "the showcase must open on the profiles entry: its benefit must be the first row",
-            ui(UiR.string.pro_benefit_profiles_short),
-            firstBenefitRow(),
-        )
-
-        // Нажатие открыло витрину, а не завело профиль: закрытое создание не пишет строку.
-        assertEquals("no profile may be created while the creation is closed", 2, profileCount())
-        assertFalse("a closed creation must leave no trace in the log", opLogHas(OpEvent.PROFILE_CREATED))
-
-        // Ответ магазина, которого на стенде некому дать: покупка пишет тот же кэш.
-        seedActiveAccess()
-        pressBack()
-        waitUntil(SCREEN_TIMEOUT_MS, "закрытия витрины") { !exists(TAG_PRO_SHEET) }
-        // Возврат из витрины застаёт ту же форму с набранным именем (§5.13).
-        assertTrue("the wizard must stay open behind the showcase", exists(TAG_PROFILE_FORM))
-        waitUntil(SCREEN_TIMEOUT_MS, "снятия платной границы после доступа") { !exists(TAG_PROFILE_BLOCK) }
-
-        // Цвет — образцом из закрытого набора (ПРФ-15), имя — то же, что набрано до витрины.
+        // Цвет — образцом из закрытого набора (ПРФ-15).
         scrollToAndClick(colourTeal)
         click(TAG_PROFILE_SUBMIT)
         waitForTag(TAG_SETTINGS_SCREEN)
@@ -437,44 +397,6 @@ class ProfilesJourneyTest : JourneyTest() {
         ).performScrollToNode(hasText(text))
     }
 
-    /** Причина над кнопкой мастера — словами и ровно та, что ждёт человек (П-7, §5.13). */
-    private fun proBoundaryShown(): Boolean = exists(TAG_PROFILE_BLOCK) &&
-        nodeText(TAG_PROFILE_BLOCK) == targetContext.getString(SettingsR.string.profile_add_blocked_pro)
-
-    /**
-     * Подписка в кэше: ответ магазина, которого на стенде некому дать (нет HMS Core).
-     *
-     * Ключ и формат записи повторяют `ProSubscriptionDataStore` (`active|<товар>|<день>`):
-     * другого способа поднять состояние «доступ есть» без живого магазина у проверки нет,
-     * и покупку поход не имитирует (Р-49) — он подкладывает то же состояние, что дала бы она.
-     */
-    /**
-     * Первая по положению строка выгод витрины (Р-67 п. 2).
-     *
-     * Пункт-повод стоит в списке первым (Р-75 п. 3), и другого признака «витрина открыта
-     * из мастера профиля» на экране нет: цена и состав одинаковы у всех входов. Берётся
-     * самая верхняя подпись блока выгод, а не порядок обхода дерева: порядок обхода
-     * гарантией не является, положение — является.
-     */
-    private fun firstBenefitRow(): String {
-        val benefits = compose.onNodeWithTag(TAG_PRO_BENEFITS, useUnmergedTree = true).fetchSemanticsNode()
-        return textsWithTops(benefits).minByOrNull { it.second }?.first.orEmpty()
-    }
-
-    private fun textsWithTops(node: SemanticsNode): List<Pair<String, Float>> =
-        node.config.getOrNull(SemanticsProperties.Text).orEmpty().map { it.text to node.boundsInRoot.top } +
-            node.children.flatMap { textsWithTops(it) }
-
-    private fun seedActiveAccess() {
-        val until = DeviceTestClock.today.plusDays(ACTIVE_DAYS)
-        runBlocking {
-            DeviceTestStores.settings(targetContext).edit { preferences ->
-                preferences[PRO_SUBSCRIPTION] =
-                    "active|${ProProductId.YEARLY.storeId}|${until.toEpochDay()}"
-            }
-        }
-    }
-
     /** Активный профиль — из постоянных настроек устройства, а не из вида экрана (ПРФ-18). */
     private fun activeProfileId(): String = runBlocking { profileGraph().activeProfile().current() }
 
@@ -535,12 +457,6 @@ class ProfilesJourneyTest : JourneyTest() {
         const val OWNER_MEDICATION_ID = "journey-profiles-owner"
         const val WARD_PROFILE_ID = "journey-profiles-ward"
         const val WARD_MEDICATION_ID = "journey-profiles-ward-med"
-
-        /** Сколько дней живёт подложенный доступ «Про» в кэше подписки. */
-        const val ACTIVE_DAYS = 30L
-
-        /** Ключ кэша состояния подписки: то же имя, что в `ProSubscriptionDataStore`. */
-        val PRO_SUBSCRIPTION = stringPreferencesKey("pro_subscription")
     }
 }
 

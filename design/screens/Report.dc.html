@@ -52,9 +52,6 @@
 .opt-note{font-size:12px;line-height:1.45;color:#5F564D}
 .check{display:block;width:18px;height:18px;stroke:#5F6F2E;flex-shrink:0}
 .divider{height:1px;background:#EFE7DB;margin:0 16px}
-/* Метка «Про» — собранная композиция из токенов (§5.9). */
-.pro-mark{display:inline-flex;align-items:baseline;gap:4px;border-radius:999px;background:#EBEEDA;color:#424724;font-size:13px;font-weight:600;line-height:1.35;padding:7px 14px;flex-shrink:0}
-.pro-mark svg{display:block;width:14px;height:14px;flex-shrink:0}
 /* Карточка состава: подпись `Caption` 13/400 `textMuted`, значение `BodyDefaultStrong` 15/600 справа. */
 .crow{display:flex;align-items:center;gap:12px;padding:14px 16px}
 .clabel{font-size:13px;line-height:1.35;color:#5F564D}
@@ -74,12 +71,6 @@
 .success-title{font-family:'Literata',Georgia,serif;font-size:23px;font-weight:600;line-height:1.25;text-align:center}
 .success-sub{font-size:15px;line-height:1.45;color:#5F564D;text-align:center}
 .success-mark{width:72px;height:72px;stroke:#1F5F6B;margin-top:16px}
-/* Фрагмент витрины (§5.9): полотно `surface`, шапка `BodyDefaultStrong`, выгоды со значками. */
-.benefit{display:flex;align-items:flex-start;gap:12px;padding:12px 0}
-.benefit-glyph{width:20px;height:20px;flex-shrink:0;color:#8C8177;margin-top:2px}
-.benefit-glyph svg{display:block;width:20px;height:20px}
-.benefit-name{font-size:15px;font-weight:600;line-height:1.45}
-.bdiv{height:1px;background:#EFE7DB;margin-left:32px}
 figcaption{font-size:12px;line-height:1.5;color:#5F564D}
 /* ---- Страницы документа: A4 595 × 842 pt, поля 51/51/45 pt, кегли документа 20/12/11/10/8 pt ---- */
 .page-row{display:flex;gap:28px;padding:0 40px 60px;align-items:flex-start}
@@ -100,9 +91,9 @@ figcaption{font-size:12px;line-height:1.5;color:#5F564D}
 </style>
 </helmet>
 <div class="preview-head">
-<div class="preview-eyebrow">Склянка · отчёт врачу и экспорт истории · Р-21, Р-33, Р-35, Р-36, Р-85, Р-22, П-7 · §5.9, §5.15–§5.16</div>
+<div class="preview-eyebrow">Склянка · отчёт врачу и экспорт истории · Р-21, Р-33, Р-35, Р-36, Р-86, Р-22, П-7 · §5.15–§5.16</div>
 <h1>Отчёт врачу и экспорт истории</h1>
-<p>Выбор состава в шторке отчёта (два состояния), шторка экспорта истории с исходами и крупным шрифтом и две страницы расширенного документа. Базовый отчёт не меняется (Р-36): «Про» добавляет разделы — сравнение периодов, динамику по месяцам и паттерн пропусков, — а разбивка по лекарствам остаётся в базовом составе. Метка «Про» стоит у расширенного состава и на строке «Экспорт истории»; без доступа нажатие открывает витрину, а выбранным остаётся то, что напечатают.</p>
+<p>Выбор состава в шторке отчёта (два состояния), шторка экспорта истории с исходами и крупным шрифтом и две страницы расширенного документа. Оба состава бесплатны (Р-86): «Расширенный» добавляет к сводке сравнение периодов, динамику по месяцам и паттерн пропусков, разбивка по лекарствам остаётся в «Базовом». Метки «Про» нет ни у состава, ни у экспорта истории: расширенный состав выбирается так же, как базовый, и выбранным остаётся то, что напечатают.</p>
 </div>
 <div class="sheet-grid">
 
@@ -145,7 +136,7 @@ figcaption{font-size:12px;line-height:1.5;color:#5F564D}
               <div class="divider"></div>
               <div class="opt">
                 <div class="opt-text">
-                  <div class="opt-name-row"><span class="opt-name">Расширенный</span><span class="pro-mark"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l2.6 6.9 6.9 2.6-6.9 2.6L12 21.5l-2.6-6.9L2.5 12l6.9-2.6z"></path></svg>Про</span></div>
+                  <div class="opt-name-row"><span class="opt-name">Расширенный</span></div>
                   <div class="opt-note">Периоды, динамика, паттерн пропусков</div>
                 </div>
               </div>
@@ -168,12 +159,12 @@ figcaption{font-size:12px;line-height:1.5;color:#5F564D}
         </div>
       </div>
     </div>
-    <figcaption>Блок выбора стоит над карточкой состава: состав выбирают раньше, чем смотрят на итог. «Базовый» выбран по умолчанию и метки не несёт — норма не продаёт бесплатное (Р-71, П-7); «Расширенный» несёт метку «Про» и пояснение состава, чтобы человек знал, что войдёт в документ, до нажатия.</figcaption>
+    <figcaption>Блок выбора стоит над карточкой состава: состав выбирают раньше, чем смотрят на итог. «Базовый» выбран по умолчанию; «Расширенный» несёт пояснение состава, чтобы человек знал, что войдёт в документ, до нажатия. Метки у состава нет — он бесплатен (Р-86).</figcaption>
   </figure>
 
   <!-- ============ 2 · ШТОРКА ОТЧЁТА, РАСШИРЕННЫЙ СОСТАВ ============ -->
   <figure class="state">
-    <div class="state-label">2 · Шторка отчёта: выбран «Расширенный» (доступ активен)</div>
+    <div class="state-label">2 · Шторка отчёта: выбран «Расширенный»</div>
     <div class="phone">
       <div class="screen">
         <div class="screen-head">
@@ -209,7 +200,7 @@ figcaption{font-size:12px;line-height:1.5;color:#5F564D}
               <div class="divider"></div>
               <div class="opt opt--on">
                 <div class="opt-text">
-                  <div class="opt-name-row"><span class="opt-name">Расширенный</span><span class="pro-mark"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l2.6 6.9 6.9 2.6-6.9 2.6L12 21.5l-2.6-6.9L2.5 12l6.9-2.6z"></path></svg>Про</span></div>
+                  <div class="opt-name-row"><span class="opt-name">Расширенный</span></div>
                   <div class="opt-note">Периоды, динамика, паттерн пропусков</div>
                 </div>
                 <svg class="check" viewBox="0 0 24 24" fill="none" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg>
@@ -233,51 +224,12 @@ figcaption{font-size:12px;line-height:1.5;color:#5F564D}
         </div>
       </div>
     </div>
-    <figcaption>Выбранный состав отличён не только цветом (§6.4): начертанием 600, акцентом и галочкой. Смена пресета периода выбор не сбрасывает — период и состав две независимые настройки одного документа. Без доступа нажатие расширенной строки оставило бы отмеченным «Базовый» и открыло витрину (Р-85 п. 1); повторное нажатие после оформления доступа выбирает расширенный состав.</figcaption>
+    <figcaption>Выбранный состав отличён не только цветом (§6.4): начертанием 600, акцентом и галочкой. Смена пресета периода выбор не сбрасывает — период и состав две независимые настройки одного документа. Нажатие расширенной строки сразу выбирает её: отдельного доступа не требуется (Р-86).</figcaption>
   </figure>
 
-  <!-- ============ 3 · ВИТРИНА ИЗ ШТОРКИ ОТЧЁТА ============ -->
+  <!-- ============ 3 · ШТОРКА ЭКСПОРТА ============ -->
   <figure class="state">
-    <div class="state-label">3 · Без доступа: витрина из выбора состава</div>
-    <div class="phone">
-      <div class="screen">
-        <div class="screen-head">
-          <h1 class="title-screen">История</h1>
-          <span class="quiet-action">Отчёт врачу</span>
-        </div>
-        <div class="tiles">
-          <div class="tile"><b>91 %</b><span>принято вовремя</span></div>
-          <div class="tile"><b>74</b><span>дней без пропусков</span></div>
-          <div class="tile"><b>12</b><span>пропусков за месяц</span></div>
-        </div>
-      </div>
-      <div class="scrim"></div>
-      <div class="sheet">
-        <div class="sheet-head"><span class="sheet-title">Склянка Про</span></div>
-        <div class="sheet-body" style="padding-bottom:20px">
-          <div class="benefit">
-            <span class="benefit-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3.5" width="14" height="17" rx="2.5"></rect><path d="M8.5 8.5h7M8.5 12h7M8.5 15.5h4"></path></svg></span>
-            <div><div class="benefit-name">Расширенный отчёт врачу</div></div>
-          </div>
-          <div class="bdiv"></div>
-          <div class="benefit">
-            <span class="benefit-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5v10"></path><path d="m8 7.5 4-4 4 4"></path><path d="M5 13v5.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V13"></path></svg></span>
-            <div><div class="benefit-name">Экспорт истории</div></div>
-          </div>
-          <div class="bdiv"></div>
-          <div class="benefit">
-            <span class="benefit-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="3"></rect><path d="M8 3v4M16 3v4M3.5 10h17"></path></svg></span>
-            <div><div class="benefit-name">Сложные расписания</div></div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <figcaption>Витрина — та же шторка §5.9 и единственная поверхность покупки; пункт-повод «Расширенный отчёт врачу» идёт первым и назван словами места (Р-85 п. 1, Р-67 п. 2). Строка примера есть только у сложных расписаний — у остальных выгод её нет (§5.9). Базовый состав при этом формируется как прежде.</figcaption>
-  </figure>
-
-  <!-- ============ 4 · ШТОРКА ЭКСПОРТА ============ -->
-  <figure class="state">
-    <div class="state-label">4 · Шторка экспорта истории</div>
+    <div class="state-label">3 · Шторка экспорта истории</div>
     <div class="phone">
       <div class="screen">
         <div class="screen-head">
@@ -315,12 +267,12 @@ figcaption{font-size:12px;line-height:1.5;color:#5F564D}
         </div>
       </div>
     </div>
-    <figcaption>Шторка — та же сборка, что у отчёта (Р-53, §5.9): та же шапка, те же четыре пресета периода и те же границы «Другого периода», та же карточка состава (вместо «Принято» — «Записей»), то же тихое пояснение и те же действия. Второго набора пресетов и второго формата нет; выбора состава у экспорта нет — файл один.</figcaption>
+    <figcaption>Шторка — та же сборка, что у отчёта (Р-53, §5.15): та же шапка, те же четыре пресета периода и те же границы «Другого периода», та же карточка состава (вместо «Принято» — «Записей»), то же тихое пояснение и те же действия. Второго набора пресетов и второго формата нет; выбора состава у экспорта нет — файл один.</figcaption>
   </figure>
 
-  <!-- ============ 5 · ЭКСПОРТ: УСПЕХ ============ -->
+  <!-- ============ 4 · ЭКСПОРТ: УСПЕХ ============ -->
   <figure class="state">
-    <div class="state-label">5 · Экспорт: исход «Файл сформирован»</div>
+    <div class="state-label">4 · Экспорт: исход «Файл сформирован»</div>
     <div class="phone">
       <div class="screen">
         <div class="screen-head"><h1 class="title-screen">Настройки</h1></div>
@@ -342,9 +294,9 @@ figcaption{font-size:12px;line-height:1.5;color:#5F564D}
     <figcaption>Успех заменяет содержимое шторки целиком, как у отчёта: заголовок `Subtitle` 23/600, подпись 15/400 `textMuted`, галочка 72 dp (`BottomSheetSuccessMark`) ролью `taken` — она декоративна, исход называют слова. Ведущий слот шапки пустеет, «Готово» встаёт в замыкающий: выход успеха не читается отменой (Р-53). «Передан» значит «отдан системному обмену» и доставку не обещает (П-7).</figcaption>
   </figure>
 
-  <!-- ============ 6 · ЭКСПОРТ: НЕТ МЕСТА ============ -->
+  <!-- ============ 5 · ЭКСПОРТ: НЕТ МЕСТА ============ -->
   <figure class="state">
-    <div class="state-label">6 · Экспорт: «Места недостаточно»</div>
+    <div class="state-label">5 · Экспорт: «Места недостаточно»</div>
     <div class="phone">
       <div class="screen">
         <div class="screen-head"><h1 class="title-screen">Настройки</h1></div>
@@ -387,9 +339,9 @@ figcaption{font-size:12px;line-height:1.5;color:#5F564D}
     <figcaption>Ошибка названа словами и встаёт первым элементом: свободное место проверяется до записи, поэтому успеха не бывает (П-7). Содержимое шторки остаётся, повтор возможен сразу; баннер — `BannerKind.Warning` (подложка `accentSoft`, глиф `warning`), вида «опасность» у баннера нет (§5).</figcaption>
   </figure>
 
-  <!-- ============ 7 · ЭКСПОРТ: ПУСТОЙ ПЕРИОД ============ -->
+  <!-- ============ 6 · ЭКСПОРТ: ПУСТОЙ ПЕРИОД ============ -->
   <figure class="state">
-    <div class="state-label">7 · Экспорт: в периоде нет записей</div>
+    <div class="state-label">6 · Экспорт: в периоде нет записей</div>
     <div class="phone">
       <div class="screen">
         <div class="screen-head"><h1 class="title-screen">Настройки</h1></div>
@@ -428,9 +380,9 @@ figcaption{font-size:12px;line-height:1.5;color:#5F564D}
     <figcaption>Нуля в строке «Записей» нет: при пустом периоде на её месте стоит фраза — так же, как в карточке отчёта (ревизия 33-B, Р-33). Файл при этом формируется с шапкой и без строк: шапка называет профиль и период, и это честный ответ «записей нет».</figcaption>
   </figure>
 
-  <!-- ============ 8 · ЭКСПОРТ: КРУПНЫЙ ШРИФТ ============ -->
+  <!-- ============ 7 · ЭКСПОРТ: КРУПНЫЙ ШРИФТ ============ -->
   <figure class="state">
-    <div class="state-label">8 · Экспорт при масштабе шрифта 200 %</div>
+    <div class="state-label">7 · Экспорт при масштабе шрифта 200 %</div>
     <div class="phone">
       <div class="sheet sheet--full">
         <div class="sheet-head" style="padding:20px 20px 16px"><span class="sheet-lead" style="font-size:30px">Отмена</span><span class="sheet-title" style="font-size:30px">Экспорт истории</span></div>
@@ -464,7 +416,7 @@ figcaption{font-size:12px;line-height:1.5;color:#5F564D}
 
 <div class="page-row">
   <figure class="page-figure">
-    <div class="state-label">9 · Расширенный документ, страница 1 — базовый состав</div>
+    <div class="state-label">8 · Расширенный документ, страница 1 — базовый состав</div>
     <div class="page">
       <h2 class="page-title">Отчёт о приёме лекарств</h2>
       <div class="page-subtitle">Склянка · профиль «Я»</div>
@@ -492,7 +444,7 @@ figcaption{font-size:12px;line-height:1.5;color:#5F564D}
   </figure>
 
   <figure class="page-figure">
-    <div class="state-label">10 · Расширенный документ, страница 2 — разделы «Про»</div>
+    <div class="state-label">9 · Расширенный документ, страница 2 — разделы расширенного состава</div>
     <div class="page">
       <div class="sec" style="margin-top:0">СРАВНЕНИЕ ПЕРИОДОВ</div>
       <div class="pline pline--muted"><span>Период: 1 августа — 31 октября 2026</span></div>
@@ -513,7 +465,7 @@ figcaption{font-size:12px;line-height:1.5;color:#5F564D}
       <div class="pline pline--muted"><span>Пропуски: 3, 7, 10, 14, 17, 21, 24, 28 октября; из них 3 отмечены человеком, 5 — без отметки</span></div>
       <div class="page-foot"><span>Не является медицинским документом</span><span>Склянка · стр. 2</span></div>
     </div>
-    <figcaption>Первый «Про»-раздел начинает новую страницу: страницы базового документа не сдвигаются, и страж «базовый не меняется» видит те же страницы. Разделы — теми же ролями и кеглями (заголовок 11/600 `textMuted`, мета 10/400 `textMuted`, текст 10/400, числа Literata 600 12 pt), без полос и графиков; каждую колонку правых чисел называет строка «Предыдущий период» — других чисел в разделе нет. Каждый раздел начинается строкой «Период»: лист печатают и пересылают постранично.</figcaption>
+    <figcaption>Разделы расширенного состава начинаются новой страницей: страницы базового документа не сдвигаются, и страж «базовый не меняется» видит те же страницы. Разделы — теми же ролями и кеглями (заголовок 11/600 `textMuted`, мета 10/400 `textMuted`, текст 10/400, числа Literata 600 12 pt), без полос и графиков; каждую колонку правых чисел называет строка «Предыдущий период» — других чисел в разделе нет. Каждый раздел начинается строкой «Период»: лист печатают и пересылают постранично.</figcaption>
   </figure>
 </div>
 </x-dc>

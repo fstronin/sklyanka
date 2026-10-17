@@ -142,7 +142,7 @@ Compose-проверки группы `ui` (настоящий `MainActivity`, �
 | `в SDK нет emulator` | пакет не установлен | `./avd.sh create` докачает; вручную — `sdkmanager emulator` |
 | `образ не загрузился за 600 с` | нет аппаратного ускорения либо мало памяти | проверить `/dev/kvm`, поднять `SKL_BOOT_TIMEOUT` в `config.sh`, освободить место |
 | эмулятор поднялся, `adb devices` пуст | порт занят чужим эмулятором | `./stop.sh --all`, затем `adb kill-server` |
-| `connectedDebugAndroidTest` не видит устройства | Gradle взял другой серийный номер | скрипты сами задают `ANDROID_SERIAL`; вручную — `ANDROID_SERIAL=emulator-5560` |
+| `connectedFreeDebugAndroidTest` не видит устройства | Gradle взял другой серийный номер | скрипты сами задают `ANDROID_SERIAL`; вручную — `ANDROID_SERIAL=emulator-5560` |
 | миграции падают «нет схемы» | ассеты схем не собрались | схемы лежат в `core-data/schemas` и подключены в `core-data/build.gradle.kts`; пересобрать `:core-data:assembleDebugAndroidTest` |
 | `базу приложения снять не удалось` | приложение ни разу не запускалось | `./install.sh`, запустить приложение, повторить `./collect.sh` |
 | испытание вышло с кодом 3 | сценарий на эмуляторе не воспроизводится (И-12, И-13) | это не отказ прогона: измеряется только на живом Huawei |
@@ -150,6 +150,6 @@ Compose-проверки группы `ui` (настоящий `MainActivity`, �
 | «Выбрать файл» ничего не открывает | на образе нет `DocumentsUI` (`aosp_atd`) | нагрузка режимом `--mode direct`; приложение при этом не падает, а сообщает об отказе |
 | смена пояса не приводит к пересборке | авто-синхронизация вернула пояс обратно | `./start.sh` выключает `auto_time` и `auto_time_zone`; проверить `settings get global auto_time` |
 | `run-ui.sh` не поднимает окно | машина без дисплея или окно недоступно | прогон проверок не требует окна: `./start.sh 35` (без `--window`), затем `./run-tests.sh 35 ui` и `./screenshots.sh 35` |
-| группа `ui`: ноль проверок | пакет проверок не совпал или `androidTest` не собрался | проверить `SKL_GROUP_UI_PACKAGES` в `config.sh` и `:app:assembleDebugAndroidTest` |
-| `screenshots.sh`: «кадров нет» | проверки не запускались или не дошли до снятия кадра | повторить `./run-tests.sh 35 ui`, посмотреть `tests-ui.log`; проверить, что `:app:connectedDebugAndroidTest` исполнился, а не упал на установке |
+| группа `ui`: ноль проверок | пакет проверок не совпал или `androidTest` не собрался | проверить `SKL_GROUP_UI_PACKAGES` в `config.sh` и `:app:assembleFreeDebugAndroidTest` |
+| `screenshots.sh`: «кадров нет» | проверки не запускались или не дошли до снятия кадра | повторить `./run-tests.sh 35 ui`, посмотреть `tests-ui.log`; проверить, что `:app:connectedFreeDebugAndroidTest` исполнился, а не упал на установке |
 | `python3 не найден: сводка не собрана` | в `PATH` нет python3 | поставить python3 (нужен и разбору SKL-27); прогон, кадры и код возврата при этом не страдают |

@@ -27,6 +27,7 @@ h1{font-family:'Literata',Georgia,serif;font-size:34px;font-weight:600;letter-sp
 .cap-name:hover{color:var(--accent)}
 .cap-file{display:block;font-size:12px;color:var(--muted);margin-top:3px}
 .badge{display:inline-block;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#FFFFFF;background:var(--accent);border-radius:999px;padding:2px 8px;margin-left:8px;vertical-align:2px}
+.badge--off{background:#8F3E23}
 .foot{margin-top:44px;font-size:13px;color:var(--muted);max-width:920px;line-height:1.6}
 .foot code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;background:var(--neutral-soft);border-radius:5px;padding:1px 5px}
 </style>
@@ -214,6 +215,13 @@ h1{font-family:'Literata',Georgia,serif;font-size:34px;font-weight:600;letter-sp
     (<code>SklyankaSpacing.Small</code> 8 <code>dp</code>, §5.9), и он же поправлен в макетах
     <code>Report.dc.html</code>, <code>Settings.dc.html</code>, <code>Themes.dc.html</code>,
     <code>Profiles.dc.html</code> и <code>WidgetSetup.dc.html</code>.</div>
+  <div class="note"><b>Правка Р-86 (17.10.2026).</b> Продукт стал бесплатным: подписки, витрин, цен,
+    покупок и управления подпиской в нём нет. Из макетов убраны метки «Про», платные состояния и
+    витрины: сложные расписания, три виджета, расширенный отчёт, экспорт CSV, четыре акцентные темы,
+    оба варианта иконки и пять профилей — обычные бесплатные экраны. Лист
+    <code>design/screens/Pro.dc.html</code> сохранён <b>только как история</b> и помечен «лист не
+    действует». Записи Р-74…Р-82 и SKL-117…SKL-121 выше описывают макеты до отмены подписки и
+    читаются как история решений, а не как действующее состояние макетов.</div>
   <div class="grid">
       <div class="card">
         <div class="thumb">
@@ -242,7 +250,7 @@ h1{font-family:'Literata',Georgia,serif;font-size:34px;font-weight:600;letter-sp
         </div>
         <div class="cap">
           <a class="cap-name" href="screens/AddMed.dc.html" target="_blank" rel="noopener">Новое лекарство</a>
-          <span class="cap-file">Форма, длинный экран · доза и дозировка — двумя блоками (§5.3) · шапка — крупный заголовок без действий, выход системный «Назад» (Р-54) · блок расписания: строка вида, параметры, семь состояний (§5.10) · AddMed.dc.html</span>
+          <span class="cap-file">Форма, длинный экран · доза и дозировка — двумя блоками (§5.3) · шапка — крупный заголовок без действий, выход системный «Назад» (Р-54) · блок расписания: строка вида, параметры, шесть состояний (§5.10) · AddMed.dc.html</span>
         </div>
       </div>
       <div class="card">
@@ -292,7 +300,7 @@ h1{font-family:'Literata',Georgia,serif;font-size:34px;font-weight:600;letter-sp
         </div>
         <div class="cap">
           <a class="cap-name" href="screens/SklyankaIcon.dc.html" target="_blank" rel="noopener">Иконка</a>
-          <span class="cap-file">Холодный (базовый, Р-56) и тёплый («Про») варианты: плитки светлая и тёмная, 48 dp в списке приложений; монохром у обоих общий · SklyankaIcon.dc.html</span>
+          <span class="cap-file">Холодный (базовый, Р-56) и тёплый варианты: плитки светлая и тёмная, 48 dp в списке приложений; монохром у обоих общий · SklyankaIcon.dc.html</span>
         </div>
       </div>
       <div class="card">
@@ -446,13 +454,13 @@ h1{font-family:'Literata',Georgia,serif;font-size:34px;font-weight:600;letter-sp
         </div>
       </div>
       <div class="card card--sheet">
-        <div class="thumb thumb--sheet" style="aspect-ratio:1306/2160">
-          <iframe src="screens/Pro.dc.html" title="Витрина «Склянка Про»" scrolling="no" loading="lazy" style="width:1306px;height:2160px;transform:none"></iframe>
-          <a class="hit" href="screens/Pro.dc.html" target="_blank" rel="noopener" aria-label="Открыть макет: Витрина «Склянка Про» — состояния"></a>
+        <div class="thumb thumb--sheet" style="aspect-ratio:1306/2330">
+          <iframe src="screens/Pro.dc.html" title="Витрина «Склянка Про» — исторический лист" scrolling="no" loading="lazy" style="width:1306px;height:2330px;transform:none"></iframe>
+          <a class="hit" href="screens/Pro.dc.html" target="_blank" rel="noopener" aria-label="Открыть макет: Витрина «Склянка Про» — исторический лист"></a>
         </div>
         <div class="cap">
-          <a class="cap-name" href="screens/Pro.dc.html" target="_blank" rel="noopener">Витрина «Склянка Про» — состояния</a><span class="badge">Новое</span>
-          <span class="cap-file">Покупка подписки: не оформлена (карточки периодов, лента «Выгоднее» у года, ни одна не выбрана, кнопка недоступна), активна (она же управление автопродлением), магазин недоступен, выбранный период фрагментом · строка блока «Склянка Про» в настройках и метка «Про» — искра и слово на мягком акценте · короткие имена выгод со значками, свёрнутое раскрытие со строкой «Подробнее» · Pro.dc.html</span>
+          <a class="cap-name" href="screens/Pro.dc.html" target="_blank" rel="noopener">Витрина «Склянка Про» — исторический лист</a><span class="badge badge--off">Не действует</span>
+          <span class="cap-file">Сохранён только как история решений: покупка подписки — не оформлена (карточки периодов, лента «Выгоднее» у года), активна, магазин недоступен, выбранный период фрагментом, строка «Склянка Про» в настройках и метка «Про». В приложении этого нет: подписка отменена решением Р-86 · Pro.dc.html</span>
         </div>
       </div>
       <div class="card card--sheet">
@@ -462,7 +470,7 @@ h1{font-family:'Literata',Georgia,serif;font-size:34px;font-weight:600;letter-sp
         </div>
         <div class="cap">
           <a class="cap-name" href="screens/Widgets.dc.html" target="_blank" rel="noopener">Виджеты домашнего экрана — состояния</a><span class="badge">Новое</span>
-          <span class="cap-file">«Сегодня» с быстрой отметкой, «Неделя», «По лекарству»: ступени объявленных размеров, состояние приёма словом, полоса недели словарём §5.2, компактная индикация чужого профиля (ПР-24), метки «Про» на плите нет (ПР-23, Р-32) · Widgets.dc.html</span>
+          <span class="cap-file">«Сегодня» с быстрой отметкой, «Неделя», «По лекарству»: ступени объявленных размеров, состояние приёма словом, полоса недели словарём §5.2, компактная индикация чужого профиля (ПР-24); метки «Про» нет — виджеты бесплатны (Р-86) · Widgets.dc.html</span>
         </div>
       </div>
       <div class="card card--sheet">
@@ -472,17 +480,17 @@ h1{font-family:'Literata',Georgia,serif;font-size:34px;font-weight:600;letter-sp
         </div>
         <div class="cap">
           <a class="cap-name" href="screens/WidgetSetup.dc.html" target="_blank" rel="noopener">Экран настройки виджета — состояния</a><span class="badge">Новое</span>
-          <span class="cap-file">Крупный заголовок без действий (Р-54), карточка типов с метками «Про», карточка лекарства для «по лекарству», слова платной причины над кнопкой, витрина из единственной точки, признаки чужого профиля от компонентов (ПРФ-13) · WidgetSetup.dc.html</span>
+          <span class="cap-file">Крупный заголовок без действий (Р-54), карточка типов без меток, карточка лекарства для «по лекарству», выбор лекарства диалогом, состояние «у профиля нет лекарств», признаки чужого профиля от компонентов (ПРФ-13); все три типа бесплатны (Р-86) · WidgetSetup.dc.html</span>
         </div>
       </div>
       <div class="card card--sheet">
-        <div class="thumb thumb--sheet" style="aspect-ratio:1724/4180">
-          <iframe src="screens/Profiles.dc.html" title="Профили: добавление и правка" scrolling="no" loading="lazy" style="width:1724px;height:4180px;transform:scale(.7958)"></iframe>
+        <div class="thumb thumb--sheet" style="aspect-ratio:1724/3340">
+          <iframe src="screens/Profiles.dc.html" title="Профили: добавление и правка" scrolling="no" loading="lazy" style="width:1724px;height:3340px;transform:scale(.7958)"></iframe>
           <a class="hit" href="screens/Profiles.dc.html" target="_blank" rel="noopener" aria-label="Открыть макет: Профили — добавление и правка, состояния"></a>
         </div>
         <div class="cap">
           <a class="cap-name" href="screens/Profiles.dc.html" target="_blank" rel="noopener">Профили: добавление и правка — состояния</a><span class="badge">Новое</span>
-          <span class="cap-file">Строка «Добавить профиль» в четырёх состояниях (бесплатно, метка «Про», активный доступ, предел пяти с причиной в строке), мастер «Новый профиль» в пяти (форма, пустое имя, платная граница, предел, крупный шрифт 200 %), экран «Профиль» в трёх; пятый цвет набора <code>#4555B1</code>, вход в правку — тихая строка «Изменить» в строке профиля (§2.2, §5.13–§5.14) · Profiles.dc.html</span>
+          <span class="cap-file">Строка «Добавить профиль» в четырёх состояниях (один профиль, два, три, предел пяти с причиной в строке), мастер «Новый профиль» в четырёх (форма, пустое имя, предел, крупный шрифт 200 %), экран «Профиль» в трёх; пятый цвет набора <code>#4555B1</code>, вход в правку — тихая строка «Изменить» в строке профиля; все профили бесплатны (Р-86) (§2.2, §5.13–§5.14) · Profiles.dc.html</span>
         </div>
       </div>
       <div class="card card--sheet">
@@ -492,7 +500,7 @@ h1{font-family:'Literata',Georgia,serif;font-size:34px;font-weight:600;letter-sp
         </div>
         <div class="cap">
           <a class="cap-name" href="screens/Report.dc.html" target="_blank" rel="noopener">Отчёт врачу и экспорт истории — состояния</a><span class="badge">Новое</span>
-          <span class="cap-file">Выбор состава отчёта («Базовый» по умолчанию без метки, «Расширенный» с меткой «Про» и пояснением), витрина из выбора состава, шторка экспорта истории (обычная, успех, «места недостаточно», пустой период, 200 %) и две страницы расширенного документа: базовая не изменилась (Р-36), разделы «Про» — сравнение периодов, динамика по месяцам, паттерн пропусков; числами, без полос и графиков · Report.dc.html</span>
+          <span class="cap-file">Выбор состава отчёта («Базовый» по умолчанию, «Расширенный» с пояснением), шторка экспорта истории (обычная, успех, «места недостаточно», пустой период, 200 %) и две страницы расширенного документа: базовая не изменилась (Р-36), расширенный состав добавляет сравнение периодов, динамику по месяцам и паттерн пропусков — числами, без полос и графиков; оба состава бесплатны (Р-86) · Report.dc.html</span>
         </div>
       </div>
       <div class="card card--sheet">
@@ -502,7 +510,7 @@ h1{font-family:'Literata',Georgia,serif;font-size:34px;font-weight:600;letter-sp
         </div>
         <div class="cap">
           <a class="cap-name" href="screens/Themes.dc.html" target="_blank" rel="noopener">Акцентные темы, тёмная среда и варианты иконки — состояния</a><span class="badge">Новое</span>
-          <span class="cap-file">Блок «Оформление» с метками «Про», диалог выбора темы (четыре образца) и диалог выбора иконки (миниатюры), «Сегодня» под темами «Индиго» и «Аметист», тёмная среда интерфейса (Р-23) и плита виджета в ней · тема меняет только семью акцента, фон остаётся «оливой на бумаге» (§2.5); в чужом профиле семья акцента принадлежит профилю (В-120-5) · Themes.dc.html</span>
+          <span class="cap-file">Блок «Оформление» без меток, диалог выбора темы (четыре образца) и диалог выбора иконки (миниатюры), «Сегодня» под темами «Индиго» и «Аметист», тёмная среда интерфейса (Р-23) и плита виджета в ней · тема меняет только семью акцента, фон остаётся «оливой на бумаге» (§2.5); в чужом профиле семья акцента принадлежит профилю (В-120-5); темы и иконки бесплатны (Р-86) · Themes.dc.html</span>
         </div>
       </div>
   </div>

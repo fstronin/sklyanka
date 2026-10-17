@@ -39,6 +39,7 @@ import ru.stohastika.sklyanka.ui.component.ProMark
 import ru.stohastika.sklyanka.ui.component.ScreenFrame
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderLabels
 import ru.stohastika.sklyanka.ui.modifier.minTouchTarget
+import ru.stohastika.sklyanka.ui.pro.LocalProUiEnabled
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaShapes
 import ru.stohastika.sklyanka.ui.token.SklyankaSizes
@@ -59,10 +60,13 @@ public const val TAG_WIDGET_ADD: String = "widget_add"
  * (он же отмена установки — виджет не появляется) и завершение. Шеврона возврата и слова
  * «Отмена» у экрана нет: возвращаться внутри приложения некуда (Р-54).
  *
- * Без подписки причина стоит словами **над** кнопкой, а кнопка остаётся «Добавить виджет»
- * и не приглушается: недоступное действие говорит «нельзя», а правда — «можно, по подписке»
- * (П-7). Нажатие открывает витрину вместо завершения; вернувшись с покупкой, тот же экран
- * завершает установку — перезапуска и второго входа не требуется.
+ * **В бесплатном продукте оплаты нет (Р-86).** Гейт состава проходит, и завершение доступно
+ * сразу после выбора; метки «Про» не рисуются (`ProMark`), а слова причины не появляются
+ * вместе с платным контуром (`LocalProUiEnabled`). В `pro`-варианте причина стоит словами
+ * **над** кнопкой, а кнопка остаётся «Добавить виджет» и не приглушается: недоступное
+ * действие говорит «нельзя», а правда — «можно, по подписке» (П-7). Нажатие открывает
+ * витрину вместо завершения; вернувшись с покупкой, тот же экран завершает установку —
+ * перезапуска и второго входа не требуется.
  *
  * **Раскладка — две части, а не наложение** (§4.1): прокручиваемое содержимое с весом
  * и панель действия соседом снизу, в потоке. Панель обязана идти после содержимого:
@@ -152,7 +156,7 @@ private fun GroupCard(content: @Composable () -> Unit) {
     }
 }
 
-/** Карточка типов: три строки, у каждой метка «Про», выбранная — акцентом и галочкой (§5.12). */
+/** Карточка типов: три строки, у каждой метка «Про» в платном контуре, выбранная — акцентом и галочкой (§5.12). */
 @Composable
 private fun TypeCard(selected: WidgetType, onSelect: (WidgetType) -> Unit) {
     GroupCard {
@@ -267,6 +271,11 @@ private fun MedicationPicker(state: WidgetConfigState, onSelect: (String) -> Uni
 @Composable
 private fun ActionPanel(state: WidgetConfigState, onComplete: () -> Unit, onOpenPro: () -> Unit) {
     val colors = SklyankaTheme.colors
+    val proUiEnabled = LocalProUiEnabled.current
+    // В бесплатном контуре оплаты нет (Р-86): доступ гарантирован, и ветка витрины не должна
+    // наступить даже в первый кадр, пока кэш ещё не прочитан, — иначе кнопка вела бы в никуда
+    // (П-7). Пока доступ не прочитан, кнопка просто недоступна, как при незаконченном выборе.
+    val access = state.proIncluded || !proUiEnabled
     Column(
         // Поля панели действия — §4.1: верх `Large` 14, бока `Section` 20, низ `Screen` 24.
         modifier = Modifier
@@ -279,7 +288,7 @@ private fun ActionPanel(state: WidgetConfigState, onComplete: () -> Unit, onOpen
             ),
         verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Small),
     ) {
-        if (!state.proIncluded) {
+        if (proUiEnabled && !state.proIncluded) {
             Text(
                 text = stringResource(R.string.widget_pro_required),
                 style = SklyankaType.BodyDefault,
@@ -289,10 +298,10 @@ private fun ActionPanel(state: WidgetConfigState, onComplete: () -> Unit, onOpen
         }
         PrimaryButton(
             text = stringResource(R.string.widget_action_add),
-            onClick = if (state.proIncluded) onComplete else onOpenPro,
+            onClick = if (access) onComplete else onOpenPro,
             // Причина платная и от выбора не зависит: без завершённого выбора кнопка
-            // недоступна, а с отсутствующей подпиской — ведёт в витрину (§5.12).
-            state = if (state.proIncluded && !state.printable) ButtonState.Disabled else ButtonState.Normal,
+            // недоступна, а в платном контуре без подписки — ведёт в витрину (§5.12).
+            state = if (access && !state.printable) ButtonState.Disabled else ButtonState.Normal,
             modifier = Modifier.fillMaxWidth().testTag(TAG_WIDGET_ADD),
         )
     }

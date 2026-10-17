@@ -222,7 +222,7 @@ class HistoryNavigationSteps(private val world: AcceptanceWorld) {
         renderer = PdfDoctorReportRenderer(context),
         missedPattern = MissedPatternRule(),
         // Доступ «Про» — тем же чтением кэша, каким живёт продукт (SKL-119, Р-22).
-        proStatus = world.pro.statusUseCase,
+        proStatus = world.access.statusUseCase,
         time = world.clock.time,
     )
 

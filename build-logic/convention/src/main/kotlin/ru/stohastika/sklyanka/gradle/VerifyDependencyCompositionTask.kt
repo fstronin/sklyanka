@@ -4,6 +4,7 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
+import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.OutputFile
@@ -19,7 +20,8 @@ import org.gradle.api.tasks.TaskAction
  *    и в разрешённом classpath, и в каталоге версий;
  * 2. ни одна координата `com.huawei.*` не проезжает мимо белого списка
  *    (`AnalyticsContourRules`): в релизе без сетевого контура список пуст (ПМ-31);
- * 3. если у контура объявлены обязательные координаты, они присутствуют в classpath.
+ * 3. если платный контур входит в артефакт, его обязательные координаты присутствуют
+ *    в classpath; в `free` контура нет, и требовать их не с чего (Р-86, ADR-0016).
  *
  * Правила вынесены в общий объект, чтобы проверка манифеста и проверка графа не разошлись.
  */
@@ -27,6 +29,16 @@ abstract class VerifyDependencyCompositionTask : DefaultTask() {
 
     @get:Input
     abstract val coordinates: ListProperty<String>
+
+    /**
+     * Входит ли платный контур в артефакт (SKL-153, Р-86).
+     *
+     * `free`-вариант контура не содержит, и требовать от него вендорских координат нельзя:
+     * обязательная координата — обещание, что покупка работает, а не свойство любого APK.
+     * `pro`-вариант контур содержит, и для него проверка остаётся прежней.
+     */
+    @get:Input
+    abstract val paidContourPresent: Property<Boolean>
 
     @get:InputFile
     @get:PathSensitive(PathSensitivity.RELATIVE)
@@ -57,8 +69,12 @@ abstract class VerifyDependencyCompositionTask : DefaultTask() {
                 "(SKL-100, ADR-0011). Add it to AnalyticsContourRules consciously, or remove it."
         }
 
-        val missing = AnalyticsContourRules.REQUIRED_COORDINATES.filterNot { required ->
-            huawei.any { it.startsWith(required) }
+        val missing = if (paidContourPresent.get()) {
+            AnalyticsContourRules.REQUIRED_COORDINATES.filterNot { required ->
+                huawei.any { it.startsWith(required) }
+            }
+        } else {
+            emptyList()
         }
         if (missing.isNotEmpty()) {
             problems += "the contour is missing required coordinates ${missing.joinToString()} " +
@@ -75,7 +91,11 @@ abstract class VerifyDependencyCompositionTask : DefaultTask() {
                 appendLine("Forbidden groups checked: ${AnalyticsContourRules.FORBIDDEN_GROUPS.joinToString()}")
                 appendLine(
                     "Contour required coordinates: " +
-                        AnalyticsContourRules.REQUIRED_COORDINATES.joinToString().ifEmpty { "none" },
+                        if (paidContourPresent.get()) {
+                            AnalyticsContourRules.REQUIRED_COORDINATES.joinToString().ifEmpty { "none" }
+                        } else {
+                            "none (no paid contour in this artifact)"
+                        },
                 )
                 appendLine("Huawei coordinates resolved: ${huawei.joinToString().ifEmpty { "none" }}")
                 problems.forEach { appendLine("  FAIL $it") }

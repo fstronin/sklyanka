@@ -38,7 +38,6 @@ import ru.stohastika.sklyanka.feature.meds.form.TAG_VIOLATION
 import ru.stohastika.sklyanka.feature.meds.list.TAG_ADD_MEDICATION
 import ru.stohastika.sklyanka.feature.meds.list.TAG_MEDICATION_CARD
 import ru.stohastika.sklyanka.feature.meds.list.TAG_MEDICATION_LIST
-import ru.stohastika.sklyanka.feature.pro.TAG_PRO_SHEET
 import ru.stohastika.sklyanka.screen.support.DeviceTestClock
 import ru.stohastika.sklyanka.test.R
 import ru.stohastika.sklyanka.ui.component.TAG_DATE_TIME_PICKER
@@ -186,9 +185,9 @@ class HostileMedicationFormTest : JourneyTest() {
      * Ступенчатый вид — самая длинная форма продукта: вид, у каждой из двух карточек этапа
      * доза и длительность. Поворот пересоздаёт активность, и человек обязан вернуться к той же
      * форме с тем же видом и теми же числами: потерянная карточка или цифра — это потерянное
-     * назначение врача, а не косметика. Сохранение здесь не проверяется намеренно: создание
-     * сложного вида платное (ПР-20), а подписку этот враждебный проход не поднимает —
-     * предмет пробы в том, что введённое переживает пересоздание, а не в записи курса.
+     * назначение врача, а не косметика. Создание сложного вида в бесплатной сборке ничем
+     * не закрыто (Р-86, `ADR-0016`), поэтому шторки на пути нет; предмет пробы по-прежнему
+     * в том, что введённое переживает пересоздание, а не в записи курса.
      */
     @Test
     fun theStagedFormSurvivesRotation() {
@@ -203,11 +202,8 @@ class HostileMedicationFormTest : JourneyTest() {
         // Доза курса вводится до выбора вида: у ступенчатого вида её поле уступает место этапам.
         typeInto(TAG_DOSE_FIELD, DOSE)
         chooseScheduleKind(MedsR.string.schedule_kind_steps)
-        // Выбор платного вида — точка выбора платной функции (§5.10, Р-67 п. 3): витрина
-        // открывается тут же, до заполнения этапов. Человек закрывает её тапом
-        // по затемнению (Р-54) и продолжает набирать назначение — форма под шторкой цела.
-        waitForTag(TAG_PRO_SHEET)
-        dismissShowcase()
+        // Вид выбирается без оплаты и без витрины: в бесплатной сборке доступа не покупают
+        // (Р-86), и следующим шагом форма показывает карточки этапов.
         waitForTag(TAG_STAGE_CARD)
         fillStages()
         // Заполненное сверяется до поворота: иначе «потеряно поворотом» не отличить
@@ -327,20 +323,6 @@ class HostileMedicationFormTest : JourneyTest() {
     private fun typedText(fieldTag: String): String = typedText(
         compose.onNode(hasSetTextAction() and hasAnyAncestor(hasTestTag(fieldTag)), useUnmergedTree = true),
     )
-
-    /**
-     * Закрыть витрину «Про» системным «Назад» — путь человека (Р-54).
-     *
-     * Три пути закрытия — «Назад», тап по затемнению и «Отмена» — зовут один обработчик шторки
-     * (`SklyankaBottomSheet`), и поход берёт тот, который не зависит от геометрии: тап по
-     * затемнению адресуется центром узла, а центр полноэкранного затемнения лежит под самой
-     * шторкой, и нажатие уходило бы в неё (проверено прогоном 16.10.2026: 15 с ожидания
-     * закрытия). Тем же путём закрывает витрину и поход «Витрина “Склянка Про”».
-     */
-    private fun dismissShowcase() {
-        pressBack()
-        waitUntil(SCREEN_TIMEOUT_MS, "закрытия витрины «Про»") { !exists(TAG_PRO_SHEET) }
-    }
 
     /** Введённое в поле, найденное не по тегу: у ступеней тег общий, различает их имя поля. */
     private fun typedText(node: SemanticsNodeInteraction): String = node.fetchSemanticsNode()
