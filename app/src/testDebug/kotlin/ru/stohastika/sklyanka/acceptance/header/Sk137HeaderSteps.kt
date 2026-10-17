@@ -1,6 +1,7 @@
 package ru.stohastika.sklyanka.acceptance.header
 
 import android.content.Context
+import android.os.Looper
 import androidx.activity.OnBackPressedDispatcher
 import androidx.activity.OnBackPressedDispatcherOwner
 import androidx.activity.compose.BackHandler
@@ -18,13 +19,18 @@ import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasScrollAction
+import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.runComposeUiTest
 import androidx.compose.ui.test.swipeUp
@@ -44,15 +50,22 @@ import io.cucumber.java.ru.Тогда
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.robolectric.Shadows.shadowOf
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
+import ru.stohastika.sklyanka.acceptance.world.ScenarioTransactor
 import ru.stohastika.sklyanka.domain.history.AdherencePeriod
 import ru.stohastika.sklyanka.domain.history.ReportDocument
 import ru.stohastika.sklyanka.domain.history.ReportPreset
 import ru.stohastika.sklyanka.domain.medication.MedicationDraft
 import ru.stohastika.sklyanka.domain.medication.MedicationListRules
+import ru.stohastika.sklyanka.domain.medication.SaveMedicationUseCase
+import ru.stohastika.sklyanka.domain.medication.ValidateMedicationDraft
 import ru.stohastika.sklyanka.domain.medication.normalized
 import ru.stohastika.sklyanka.domain.model.Medication
 import ru.stohastika.sklyanka.domain.model.MedicationForm
+import ru.stohastika.sklyanka.domain.pro.ObserveProStatusUseCase
+import ru.stohastika.sklyanka.domain.pro.ProSubscription
+import ru.stohastika.sklyanka.domain.pro.ProSubscriptionCache
 import ru.stohastika.sklyanka.feature.history.HistoryScreen
 import ru.stohastika.sklyanka.feature.history.HistoryUiState
 import ru.stohastika.sklyanka.feature.history.ReportComposition
@@ -61,8 +74,11 @@ import ru.stohastika.sklyanka.feature.history.TAG_REPORT_PROFILE
 import ru.stohastika.sklyanka.feature.history.TAG_REPORT_SHEET
 import ru.stohastika.sklyanka.feature.meds.form.FormInputs
 import ru.stohastika.sklyanka.feature.meds.form.FormMode
+import ru.stohastika.sklyanka.feature.meds.form.MedFormIntent
 import ru.stohastika.sklyanka.feature.meds.form.MedFormUiState
+import ru.stohastika.sklyanka.feature.meds.form.MedicationFormRoute
 import ru.stohastika.sklyanka.feature.meds.form.MedicationFormScreen
+import ru.stohastika.sklyanka.feature.meds.form.MedicationFormViewModel
 import ru.stohastika.sklyanka.feature.meds.form.TAG_MEDICATION_FORM
 import ru.stohastika.sklyanka.feature.meds.form.TAG_NAME_FIELD
 import ru.stohastika.sklyanka.feature.meds.list.MedicationCardUi
@@ -73,6 +89,8 @@ import ru.stohastika.sklyanka.feature.meds.list.TAG_MEDICATION_CARD
 import ru.stohastika.sklyanka.feature.reminder.DeliveryCheckSheet
 import ru.stohastika.sklyanka.ui.component.LocalScreenTopInset
 import ru.stohastika.sklyanka.ui.component.TAG_COMPACT_TITLE
+import ru.stohastika.sklyanka.ui.component.TAG_CONFIRM_CONFIRM
+import ru.stohastika.sklyanka.ui.component.TAG_CONFIRM_DIALOG
 import ru.stohastika.sklyanka.ui.component.TAG_PINNED_HEADER_BAR
 import ru.stohastika.sklyanka.ui.component.TAG_QUIET_BUTTON
 import ru.stohastika.sklyanka.ui.component.TAG_SCREEN_HEADER
@@ -81,6 +99,7 @@ import ru.stohastika.sklyanka.ui.profile.ProfileChrome
 import ru.stohastika.sklyanka.ui.profile.ProfileChromeState
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaType
+import java.time.LocalDate
 import java.time.LocalTime
 import java.time.YearMonth
 import java.util.Locale
@@ -137,6 +156,12 @@ class Sk137HeaderSteps(private val world: AcceptanceWorld) {
     /** Название, введённое в форму: по нему проверяется след в списке. */
     private var draftName: String = ""
 
+    /** Маршрут спросил подтверждение сброса перед закрытием формы (Р-87 п. 1, RT-1). */
+    private var dialogAskedConfirmation = false
+
+    /** Детерминированные, но разные идентификаторы сохранений (приём `AcceptanceWorld.save`). */
+    private var savedForms = 0
+
     /** Шторка проверки доставки закрылась системным «Назад». */
     private var sheetClosedByBack = false
     private var checkStarted = false
@@ -191,7 +216,7 @@ class Sk137HeaderSteps(private val world: AcceptanceWorld) {
     }
 
     // =======================================================================================
-    // 2. Выход из формы: системный «Назад» (Р-54)
+    // 2. Выход из формы: системный «Назад» (Р-54) и подтверждение сброса (Р-87 п. 1)
     // =======================================================================================
 
     @Допустим("^человек заполнил название «(.+?)» и форму выпуска «(.+?)»$")
@@ -203,22 +228,100 @@ class Sk137HeaderSteps(private val world: AcceptanceWorld) {
 
     @Когда("^человек нажимает системную «Назад» на форме$")
     fun thePersonPressesSystemBackOnTheForm() {
+        pressSystemBackOnTheRoute(confirmDiscard = false)
+    }
+
+    @Когда("^человек подтверждает сброс на форме$")
+    fun thePersonConfirmsTheDiscardOnTheForm() {
+        pressSystemBackOnTheRoute(confirmDiscard = true)
+        formOpen = false
+    }
+
+    @Тогда("^форма спрашивает подтверждение сброса$")
+    fun theFormAsksForDiscardConfirmation() {
+        assertTrue(
+            "the system back on a dirty form must ask for confirmation (RT-1, Р-87 п. 1)",
+            dialogAskedConfirmation,
+        )
+    }
+
+    /**
+     * Системная «Назад» нажимается на настоящем маршруте (Р-87 п. 1): перехват грязного
+     * черновика и диалог подтверждения — код продукта `MedicationFormRoute`, а стенд даёт
+     * лишь владельца диспетчера и записывает наблюдения. Композиция собирается заново на
+     * каждое действие (конвенция этого класса), поэтому заполненное Предысторией шаг
+     * возвращает на форму сам: название вводом в поле, форму выпуска — намерением модели.
+     */
+    private fun pressSystemBackOnTheRoute(confirmDiscard: Boolean) {
         val owner = RecordingBackOwner()
+        val model = formModel()
+        closedWithoutSaving = false
+        dialogAskedConfirmation = false
         runComposeUiTest {
             setContent {
                 CompositionLocalProvider(LocalOnBackPressedDispatcherOwner provides owner) {
                     Stand {
-                        // Плейсхолдер обработчика раздела: он ниже формы по композиции,
-                        // поэтому форма со своим перехватом выиграла бы у него.
+                        // Плейсхолдер обработчика раздела: он снаружи маршрута и раньше него,
+                        // поэтому форму без перехвата (чистый черновик) закрывает раздел (Р-54).
                         BackHandler(enabled = true) { closedWithoutSaving = true }
-                        formScreen()
+                        MedicationFormRoute(
+                            viewModel = model,
+                            medicationId = null,
+                            onDone = { closedWithoutSaving = true },
+                            onAbandon = { closedWithoutSaving = true },
+                        )
                     }
                 }
             }
-            waitForIdle()
+            settleUntilForm()
+            if (draftName.isNotEmpty()) {
+                onNode(
+                    hasSetTextAction() and hasAnyAncestor(hasTestTag(TAG_NAME_FIELD)),
+                    useUnmergedTree = true,
+                ).performTextInput(draftName)
+                settle()
+                draft?.let { model.onIntent(MedFormIntent.ReleaseFormChanged(it.draft.form)) }
+                settle()
+            }
             owner.onBackPressedDispatcher.onBackPressed()
-            waitForIdle()
+            settle()
+            dialogAskedConfirmation = onAllNodesWithTag(TAG_CONFIRM_DIALOG).fetchSemanticsNodes().isNotEmpty()
+            if (dialogAskedConfirmation && confirmDiscard) {
+                onNodeWithTag(TAG_CONFIRM_CONFIRM).performClick()
+                settle()
+                dialogAskedConfirmation = onAllNodesWithTag(TAG_CONFIRM_DIALOG).fetchSemanticsNodes().isNotEmpty()
+            }
         }
+    }
+
+    /** Настоящая модель формы на хранилищах мира сценария (образец — `AcceptanceWorld.save`). */
+    private fun formModel(): MedicationFormViewModel = MedicationFormViewModel(
+        activeProfile = world.profileSession.activeStore,
+        medications = world.repositories.medicationStore,
+        saveMedication = SaveMedicationUseCase(
+            validate = ValidateMedicationDraft(),
+            medications = world.repositories.medicationStore,
+            planner = world.planner(),
+            transactor = ScenarioTransactor(world.intakes, world.medications),
+            log = world.log,
+            newId = { "medication-sk137-${++savedForms}" },
+        ),
+        time = world.clock.time,
+        proStatus = ObserveProStatusUseCase(StandProCache, world.clock.time),
+    )
+
+    /** Прогнать очередь главного looper'а и кадры композиции: маршрут открывает форму корутиной. */
+    private fun ComposeUiTest.settle() {
+        shadowOf(Looper.getMainLooper()).idle()
+        waitForIdle()
+    }
+
+    private fun ComposeUiTest.settleUntilForm() {
+        repeat(SETTLE_ROUNDS) { settle() }
+        assertTrue(
+            "the form must be opened by the route",
+            onAllNodesWithTag(TAG_MEDICATION_FORM).fetchSemanticsNodes().isNotEmpty(),
+        )
     }
 
     @Тогда("^форма закрывается и открывается список лекарств$")
@@ -637,6 +740,9 @@ class Sk137HeaderSteps(private val world: AcceptanceWorld) {
 
         const val SCROLL_SWIPES = 12
 
+        /** Раундов осаждения достаточно, чтобы корутина открытия формы маршрутом завершилась. */
+        const val SETTLE_ROUNDS = 3
+
         /** Тексты состава отчёта: стенд говорит о слотах шапки, а не о содержимом документа. */
         const val REPORT_PERIOD = "1 - 30 September 2026"
         const val REPORT_TAKEN = "10 / 10"
@@ -667,4 +773,16 @@ private class RecordingBackOwner :
     init {
         registry.currentState = Lifecycle.State.RESUMED
     }
+}
+
+/**
+ * Доступ «Про» на стенде: продукт бесплатен (Р-86), и гейт состава в сценариях выхода
+ * не участвует. Кэш держится у шагов, а не берётся из сборки: `testDebug` компилируется
+ * для обоих флаворов, а `FreeProSubscriptionCache` живёт только в `free`.
+ */
+private object StandProCache : ProSubscriptionCache {
+
+    override suspend fun read(): ProSubscription = ProSubscription.Active(productId = null, until = LocalDate.MAX)
+
+    override suspend fun write(subscription: ProSubscription) = Unit
 }

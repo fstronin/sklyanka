@@ -26,6 +26,7 @@ import ru.stohastika.sklyanka.domain.intake.UndoRequest
 import ru.stohastika.sklyanka.domain.medication.UndoDeleteMedicationUseCase
 import ru.stohastika.sklyanka.domain.model.IntakeSource
 import ru.stohastika.sklyanka.domain.reminder.ReadReminderReliabilityUseCase
+import ru.stohastika.sklyanka.domain.startup.ExplainDatabaseResetUseCase
 import ru.stohastika.sklyanka.domain.time.TimeSource
 import ru.stohastika.sklyanka.domain.today.GroupAction
 import ru.stohastika.sklyanka.domain.today.GroupMarkOutcome
@@ -75,6 +76,11 @@ class TodayViewModel @Inject constructor(
      * где продукт спрашивает систему о разрешениях, не появляется.
      */
     private val readReliability: ReadReminderReliabilityUseCase,
+    /**
+     * Объяснение сброса данных после повреждения базы (МГ-8, Р-87 п. 2): старт экрана
+     * спрашивает, не пересоздана ли база на жившей отметке, и показывает баннер один раз.
+     */
+    private val explainDatabaseReset: ExplainDatabaseResetUseCase,
 ) : ViewModel() {
 
     private val view = MutableStateFlow(ViewState())
@@ -144,6 +150,13 @@ class TodayViewModel @Inject constructor(
                 }
             }
         }
+        viewModelScope.launch {
+            // Один раз на процесс: признак пересоздания снимается первым чтением, а
+            // незакрытое объяснение переживает поворот и возврат на экран (МГ-8).
+            if (explainDatabaseReset.explanationOnStartup()) {
+                view.update { it.copy(databaseResetExplanation = true) }
+            }
+        }
     }
 
     /**
@@ -175,6 +188,8 @@ class TodayViewModel @Inject constructor(
             is TodayIntent.ArmGroupMark -> armGroup(intent.time)
 
             TodayIntent.DismissGroupConfirm -> clearConfirmation()
+
+            TodayIntent.DismissResetExplanation -> dismissDatabaseReset()
 
             is TodayIntent.UndoMark -> {
                 clearConfirmation()
@@ -222,6 +237,15 @@ class TodayViewModel @Inject constructor(
             TodayIntent.OpenHistory,
             -> Unit
         }
+    }
+
+    /**
+     * «Закрыть» на объяснении сброса: событие признаётся в постоянных отметках и
+     * больше не показывается; следующее пересоздание базы заведёт новое (МГ-8).
+     */
+    private fun dismissDatabaseReset() {
+        view.update { it.copy(databaseResetExplanation = false) }
+        viewModelScope.launch { explainDatabaseReset.dismissExplanation() }
     }
 
     /**
@@ -402,6 +426,7 @@ class TodayViewModel @Inject constructor(
         TodayUiState.Empty(
             date = agenda.date,
             deletion = current.deletion,
+            databaseReset = current.databaseResetExplanation,
         )
     } else {
         TodayUiState.Content(
@@ -423,6 +448,7 @@ class TodayViewModel @Inject constructor(
             },
             prnCollapsed = current.prnCollapsed,
             nothingToday = agenda.hasNothingToday,
+            databaseReset = current.databaseResetExplanation,
         )
     }
 
@@ -440,6 +466,7 @@ class TodayViewModel @Inject constructor(
         val prnCollapsed: Boolean = false,
         val undo: UndoNotice? = null,
         val deletion: UndoableDeletion? = null,
+        val databaseResetExplanation: Boolean = false,
     ) {
         fun withToggledSection(partOfDay: PartOfDay): ViewState = copy(
             toggledSections = if (partOfDay in toggledSections) {

@@ -1,6 +1,7 @@
 package ru.stohastika.sklyanka.feature.meds.form
 
 import android.text.format.DateFormat
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -13,6 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import ru.stohastika.sklyanka.feature.meds.R
+import ru.stohastika.sklyanka.ui.component.ConfirmDialog
+import ru.stohastika.sklyanka.ui.component.ConfirmDialogTexts
 import ru.stohastika.sklyanka.ui.component.DateTimePickerDialog
 
 /**
@@ -40,6 +43,13 @@ fun MedicationFormRoute(
     viewModel: MedicationFormViewModel,
     medicationId: String?,
     onDone: () -> Unit,
+    /**
+     * Уход с формы без сохранения (RT-1, Р-87 п. 1): системная «Назад» на грязном черновике
+     * и выбранное в диалоге «сбросить». Закрывает маршрут той же навигацией, что и [onDone]
+     * (снятие уровня стека раздела), но записи не делает. По умолчанию — тот же выход, что
+     * [onDone]: и сохранение, и сброс возвращают человека туда, откуда форма была открыта.
+     */
+    onAbandon: () -> Unit = onDone,
     modifier: Modifier = Modifier,
     /**
      * Открыть витрину «Про»: сложное расписание закрыто без подписки (ПР-20, ПР-21).
@@ -68,6 +78,9 @@ fun MedicationFormRoute(
     // маршрута, а не черновика: до нажатия «Готово» пользовательское значение не меняется.
     var dateDialog by remember { mutableStateOf<DateTarget?>(null) }
     var timeDialogIndex by remember { mutableStateOf<Int?>(null) }
+    // Открыт ли диалог подтверждения сброса (RT-1): состояние маршрута, а не черновика —
+    // до выбора человека ни уход, ни запись не случаются.
+    var showDiscardDialog by rememberSaveable { mutableStateOf(false) }
 
     // Успешное сохранение закрывает форму: список и карточка пересобираются потоком,
     // и перечитывать их отдельно не нужно. Событие не повторяется при новой подписке,
@@ -78,6 +91,13 @@ fun MedicationFormRoute(
     LaunchedEffect(Unit) { viewModel.showcase.collect { onOpenPro() } }
 
     val current = state ?: return
+
+    // Системная «Назад» на грязной форме спрашивает подтверждение, а не сбрасывает ввод молча
+    // (RT-1, Р-87 п. 1). На чистой форме и на правке без изменений перехват выключен, и «Назад»
+    // закрывает форму навигацией раздела — своего обработчика форма по-прежнему не заводит (Р-54).
+    // Диалог — своё окно: пока он открыт, системная «Назад» уходит в его `onDismissRequest`
+    // («остаться»), а не в этот перехват, поэтому двойного срабатывания нет.
+    BackHandler(enabled = current.isDirty) { showDiscardDialog = true }
     MedicationFormScreen(
         state = current,
         onIntent = viewModel::onIntent,
@@ -87,41 +107,102 @@ fun MedicationFormRoute(
     )
 
     dateDialog?.let { target ->
-        DateTimePickerDialog(
-            title = when (target) {
-                DateTarget.START -> stringResource(R.string.form_dialog_start_date)
-                DateTarget.END -> stringResource(R.string.form_dialog_end_date)
-            },
-            initial = when (target) {
-                DateTarget.START -> current.draft.startDate
-                DateTarget.END -> current.draft.endDate ?: current.draft.startDate
-            },
+        FormDateDialog(
+            target = target,
+            state = current,
+            onIntent = viewModel::onIntent,
             onDismiss = { dateDialog = null },
-            onConfirm = { picked ->
-                viewModel.onIntent(
-                    when (target) {
-                        DateTarget.START -> MedFormIntent.StartDateChanged(picked)
-                        DateTarget.END -> MedFormIntent.EndDateChanged(picked)
-                    },
-                )
-                dateDialog = null
-            },
         )
     }
 
     timeDialogIndex?.let { index ->
-        val initial = current.draft.times.getOrNull(index) ?: return@let
-        DateTimePickerDialog(
-            title = stringResource(R.string.form_dialog_time),
-            initial = initial,
-            // Системную настройку читаем в момент открытия, а не кэшируем: при смене
-            // режима 12/24 следующий диалог обязан открыться уже по-новому (TDD §10.3).
-            is24Hour = DateFormat.is24HourFormat(context),
+        FormTimeDialog(
+            index = index,
+            state = current,
+            onIntent = viewModel::onIntent,
             onDismiss = { timeDialogIndex = null },
-            onConfirm = { picked ->
-                viewModel.onIntent(MedFormIntent.TimeChanged(index, picked))
-                timeDialogIndex = null
-            },
         )
     }
+
+    if (showDiscardDialog) {
+        FormDiscardDialog(
+            onConfirm = {
+                showDiscardDialog = false
+                onAbandon()
+            },
+            onDismiss = { showDiscardDialog = false },
+        )
+    }
+}
+
+/** Диалог даты курса: цель определяет и заголовок, и начальное значение, и намерение подтверждения. */
+@Composable
+private fun FormDateDialog(
+    target: DateTarget,
+    state: MedFormUiState,
+    onIntent: (MedFormIntent) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    DateTimePickerDialog(
+        title = when (target) {
+            DateTarget.START -> stringResource(R.string.form_dialog_start_date)
+            DateTarget.END -> stringResource(R.string.form_dialog_end_date)
+        },
+        initial = when (target) {
+            DateTarget.START -> state.draft.startDate
+            DateTarget.END -> state.draft.endDate ?: state.draft.startDate
+        },
+        onDismiss = onDismiss,
+        onConfirm = { picked ->
+            onIntent(
+                when (target) {
+                    DateTarget.START -> MedFormIntent.StartDateChanged(picked)
+                    DateTarget.END -> MedFormIntent.EndDateChanged(picked)
+                },
+            )
+            onDismiss()
+        },
+    )
+}
+
+/** Диалог времени приёма: строка берётся по индексу на момент открытия. */
+@Composable
+private fun FormTimeDialog(
+    index: Int,
+    state: MedFormUiState,
+    onIntent: (MedFormIntent) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val initial = state.draft.times.getOrNull(index) ?: return
+    val context = LocalContext.current
+    DateTimePickerDialog(
+        title = stringResource(R.string.form_dialog_time),
+        initial = initial,
+        // Системную настройку читаем в момент открытия, а не кэшируем: при смене
+        // режима 12/24 следующий диалог обязан открыться уже по-новому (TDD §10.3).
+        is24Hour = DateFormat.is24HourFormat(context),
+        onDismiss = onDismiss,
+        onConfirm = { picked ->
+            onIntent(MedFormIntent.TimeChanged(index, picked))
+            onDismiss()
+        },
+    )
+}
+
+/**
+ * Подтверждение сброса грязной формы (RT-1, Р-87 п. 1): «Сбросить» закрывает без записи,
+ * «Остаться» (и системная «Назад», и тап вне окна) возвращает к правке с сохранённым вводом.
+ */
+@Composable
+private fun FormDiscardDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    ConfirmDialog(
+        texts = ConfirmDialogTexts(
+            title = stringResource(R.string.form_discard_title),
+            message = stringResource(R.string.form_discard_message),
+            confirmLabel = stringResource(R.string.form_discard_confirm),
+            dismissLabel = stringResource(R.string.form_discard_stay),
+        ),
+        onConfirm = onConfirm,
+        onDismiss = onDismiss,
+    )
 }

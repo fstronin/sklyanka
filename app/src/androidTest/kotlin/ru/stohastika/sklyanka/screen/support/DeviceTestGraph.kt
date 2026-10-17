@@ -16,11 +16,16 @@ import ru.stohastika.sklyanka.domain.model.IntakeStatus
 import ru.stohastika.sklyanka.domain.model.Medication
 import ru.stohastika.sklyanka.domain.model.Profile
 import ru.stohastika.sklyanka.domain.onboarding.port.OnboardingStateStore
+import ru.stohastika.sklyanka.domain.reminder.ReminderCard
+import ru.stohastika.sklyanka.domain.reminder.ReminderChannel
 import ru.stohastika.sklyanka.domain.reminder.ReminderEvent
 import ru.stohastika.sklyanka.domain.reminder.ReminderLogEntry
+import ru.stohastika.sklyanka.domain.reminder.ReminderSlot
 import ru.stohastika.sklyanka.domain.reminder.port.AlarmRegistry
 import ru.stohastika.sklyanka.domain.reminder.port.DeferredReminder
 import ru.stohastika.sklyanka.domain.reminder.port.DeferredReminders
+import ru.stohastika.sklyanka.domain.reminder.port.NotificationGateway
+import ru.stohastika.sklyanka.domain.reminder.port.ReminderCardSource
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderJournal
 import ru.stohastika.sklyanka.domain.repository.IntakeRepository
 import ru.stohastika.sklyanka.domain.repository.MedicationRepository
@@ -64,6 +69,12 @@ internal interface DeviceTestGraph {
 
     /** Память о поставленных будильниках: что пересборка ставила до смерти процесса (SKL-140). */
     fun alarmRegistry(): AlarmRegistry
+
+    /** Показ напоминания уведомлением: путь действий из шторки (RT-4). */
+    fun notificationGateway(): NotificationGateway
+
+    /** Состав карточки слота: то же, что несёт уведомление напоминания (RT-4). */
+    fun reminderCards(): ReminderCardSource
 }
 
 internal object DeviceTestSeed {
@@ -127,6 +138,16 @@ internal object DeviceTestSeed {
      */
     fun alarmMirror(context: Context): Map<String, Instant> = runBlocking {
         graph(context).alarmRegistry().all()
+    }
+
+    /** Состав карточки слота — то же, что несёт уведомление напоминания (RT-4). */
+    fun reminderCard(context: Context, slot: ReminderSlot): ReminderCard? = runBlocking {
+        graph(context).reminderCards().card(slot)
+    }
+
+    /** Показать напоминание уведомлением обычным каналом — путь действий из шторки (RT-4). */
+    fun showReminder(context: Context, card: ReminderCard) = runBlocking {
+        graph(context).notificationGateway().show(card, ReminderChannel.REGULAR)
     }
 
     /** Сколько записей журнала операций читает поход: хватает на весь его путь. */

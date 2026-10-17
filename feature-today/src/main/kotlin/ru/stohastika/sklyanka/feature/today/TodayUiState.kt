@@ -62,6 +62,13 @@ sealed interface TodayUiState {
          * последнее лекарство, человек обязан видеть, что произошло, и способ вернуть.
          */
         val deletion: UndoableDeletion? = null,
+
+        /**
+         * Объяснение сброса данных после повреждения базы (МГ-8): показывается один
+         * раз, пока человек его не закрыл. Несётся и в пустое состояние: стёртая
+         * база открывает именно его.
+         */
+        val databaseReset: Boolean = false,
     ) : TodayUiState
 
     @Immutable
@@ -118,6 +125,8 @@ sealed interface TodayUiState {
         val prnCollapsed: Boolean,
         /** Лекарства есть, а приёмов на сегодня нет (ОВ-34). */
         val nothingToday: Boolean,
+        /** Объяснение сброса данных после повреждения базы (МГ-8); закрытое не возвращается. */
+        val databaseReset: Boolean = false,
     ) : TodayUiState {
 
         /** Плотный день показывает секции по времени суток, обычный — ленты подряд. */

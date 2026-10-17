@@ -41,6 +41,10 @@
     <string name="form_dialog_time">服药时间</string>
     <string name="form_dialog_start_date">开始日期</string>
     <string name="form_dialog_end_date">结束日期</string>
+    <string name="form_discard_title">放弃更改？</string>
+    <string name="form_discard_message">如果现在退出，未保存的更改将会丢失。</string>
+    <string name="form_discard_confirm">放弃</string>
+    <string name="form_discard_stay">继续编辑</string>
     <string name="form_label_mode">服药方式</string>
     <string name="form_mode_scheduled">按计划</string>
     <string name="form_mode_as_needed">按需</string>

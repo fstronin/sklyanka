@@ -3,6 +3,7 @@ package ru.stohastika.sklyanka.acceptance.today
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
+import ru.stohastika.sklyanka.acceptance.world.InMemoryDatabaseLife
 import ru.stohastika.sklyanka.acceptance.world.ScenarioTransactor
 import ru.stohastika.sklyanka.domain.intake.CreatePrnIntakeUseCase
 import ru.stohastika.sklyanka.domain.intake.MarkIntakeUseCase
@@ -13,6 +14,7 @@ import ru.stohastika.sklyanka.domain.reminder.ReadReminderReliabilityUseCase
 import ru.stohastika.sklyanka.domain.schedule.GenerationWindow
 import ru.stohastika.sklyanka.domain.schedule.MedicationPlanner
 import ru.stohastika.sklyanka.domain.schedule.PlanResult
+import ru.stohastika.sklyanka.domain.startup.ExplainDatabaseResetUseCase
 import ru.stohastika.sklyanka.domain.stock.StockWarning
 import ru.stohastika.sklyanka.domain.stock.StockWarningForProfileUseCase
 import ru.stohastika.sklyanka.domain.today.BuildTodayAgenda
@@ -184,6 +186,7 @@ internal object TodayStand {
             ),
             time = time,
             readReliability = ReadReminderReliabilityUseCase(world.system),
+            explainDatabaseReset = ExplainDatabaseResetUseCase(InMemoryDatabaseLife(), time),
         )
     }
 }

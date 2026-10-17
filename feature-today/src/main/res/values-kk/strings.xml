@@ -19,6 +19,9 @@
     <string name="today_reliability_full_screen_off">Қабылдау картасы құлыпталған экранда шықпайды: толық экранды хабарлама рұқсаты берілмеген</string>
     <string name="today_reliability_action">Реттеу</string>
 
+    <string name="today_db_reset_banner">Деректер зақымдалып, өшірілді. Дәрілер мен тарихты қайта енгізу қажет.</string>
+    <string name="today_db_reset_action">Жабу</string>
+
     <string name="part_of_day_morning">Таң</string>
     <string name="part_of_day_day">Күндіз</string>
     <string name="part_of_day_evening">Кеш</string>

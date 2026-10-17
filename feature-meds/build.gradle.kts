@@ -25,6 +25,11 @@ dependencies {
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
 
+    // Системная «Назад» на грязной форме спрашивает подтверждение сброса и перехватывается
+    // самим маршрутом формы (RT-1, Р-87 п. 1): `BackHandler` живёт в activity-compose —
+    // та же зависимость, что у шторки дизайн-системы в `core-ui`.
+    implementation(libs.androidx.activity.compose)
+
     // Состояние экранов и правила формы проверяются на JVM: эмулятора в среде задачи нет,
     // а арифметика по черновику в нём и не нуждается.
     testImplementation(libs.junit4)
@@ -36,8 +41,9 @@ dependencies {
     // фабрика объектов Cucumber раздаёт один мир всем классам шагов сценария.
     testDebugImplementation(project(":acceptance"))
     testDebugImplementation(libs.cucumber.picocontainer)
-    // Стенд формы нажимает системную «Назад» настоящим `OnBackPressedDispatcher` (Р-54):
-    // обработчик возврата живёт в разделе (`app`), а форма его не перехватывает, и проверка
-    // обязана идти через диспетчер, а не пересказом шага (образец — `Sk101ReportSheetScreenSteps`).
+    // Стенд формы нажимает системную «Назад» настоящим `OnBackPressedDispatcher` (Р-54, RT-1):
+    // обработчик возврата живёт в разделе (`app`), а форма перехватывает его только на грязном
+    // черновике, и проверка обязана идти через диспетчер, а не пересказом шага
+    // (образец — `Sk101ReportSheetScreenSteps`).
     testDebugImplementation(libs.androidx.activity.compose)
 }

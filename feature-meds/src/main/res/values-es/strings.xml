@@ -41,6 +41,10 @@
     <string name="form_dialog_time">Hora de la toma</string>
     <string name="form_dialog_start_date">Fecha de inicio</string>
     <string name="form_dialog_end_date">Fecha de fin</string>
+    <string name="form_discard_title">¿Descartar los cambios?</string>
+    <string name="form_discard_message">Si sales ahora, se perderán los cambios sin guardar.</string>
+    <string name="form_discard_confirm">Descartar</string>
+    <string name="form_discard_stay">Seguir editando</string>
     <string name="form_label_mode">Modo de toma</string>
     <string name="form_mode_scheduled">Según horario</string>
     <string name="form_mode_as_needed">Según necesidad</string>

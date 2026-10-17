@@ -41,6 +41,10 @@
     <string name="form_dialog_time">Intake time</string>
     <string name="form_dialog_start_date">Start date</string>
     <string name="form_dialog_end_date">End date</string>
+    <string name="form_discard_title">Discard changes?</string>
+    <string name="form_discard_message">If you leave now, your unsaved edits will be lost.</string>
+    <string name="form_discard_confirm">Discard</string>
+    <string name="form_discard_stay">Keep editing</string>
     <string name="form_label_mode">Intake mode</string>
     <string name="form_mode_scheduled">Scheduled</string>
     <string name="form_mode_as_needed">As needed</string>

@@ -11,6 +11,8 @@ import ru.stohastika.sklyanka.domain.log.OperationLog
 import ru.stohastika.sklyanka.domain.repository.ActiveProfileRepository
 import ru.stohastika.sklyanka.domain.repository.IntakeRepository
 import ru.stohastika.sklyanka.domain.repository.MedicationRepository
+import ru.stohastika.sklyanka.domain.startup.DatabaseLifeStore
+import ru.stohastika.sklyanka.domain.startup.ExplainDatabaseResetUseCase
 import ru.stohastika.sklyanka.domain.stock.StockWarningForProfileUseCase
 import ru.stohastika.sklyanka.domain.time.TimeSource
 import ru.stohastika.sklyanka.domain.today.BuildTodayAgenda
@@ -73,4 +75,15 @@ object TodayModule {
         time = time,
         log = log,
     )
+
+    /**
+     * Объяснение сброса данных после повреждения базы (МГ-8, Р-87 п. 2).
+     *
+     * Собирается здесь, а не аннотацией в домене: домен не видит Hilt (НФТ-46).
+     * Потребитель один — состояние экрана «Сегодня».
+     */
+    @Provides
+    @Singleton
+    fun provideExplainDatabaseReset(life: DatabaseLifeStore, time: TimeSource): ExplainDatabaseResetUseCase =
+        ExplainDatabaseResetUseCase(life, time)
 }

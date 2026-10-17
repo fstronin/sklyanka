@@ -83,6 +83,10 @@
     <string name="form_dialog_time">Время приёма</string>
     <string name="form_dialog_start_date">Дата начала</string>
     <string name="form_dialog_end_date">Дата окончания</string>
+    <string name="form_discard_title">Сбросить изменения?</string>
+    <string name="form_discard_message">Если выйти сейчас, несохранённые правки будут потеряны.</string>
+    <string name="form_discard_confirm">Сбросить</string>
+    <string name="form_discard_stay">Остаться</string>
     <string name="form_label_mode">Режим приёма</string>
     <string name="form_mode_scheduled">По расписанию</string>
     <string name="form_mode_as_needed">По потребности</string>

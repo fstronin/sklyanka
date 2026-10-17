@@ -40,6 +40,9 @@ import ru.stohastika.sklyanka.feature.meds.list.TAG_MEDICATION_CARD
 import ru.stohastika.sklyanka.feature.meds.list.TAG_MEDICATION_LIST
 import ru.stohastika.sklyanka.screen.support.DeviceTestClock
 import ru.stohastika.sklyanka.test.R
+import ru.stohastika.sklyanka.ui.component.TAG_CONFIRM_CONFIRM
+import ru.stohastika.sklyanka.ui.component.TAG_CONFIRM_DIALOG
+import ru.stohastika.sklyanka.ui.component.TAG_CONFIRM_DISMISS
 import ru.stohastika.sklyanka.ui.component.TAG_DATE_TIME_PICKER
 import java.time.LocalTime
 import ru.stohastika.sklyanka.feature.meds.R as MedsR
@@ -99,16 +102,36 @@ class HostileMedicationFormTest : JourneyTest() {
         typeInto(TAG_DOSE_FIELD, DOSE)
         capture("form-half")
 
-        // 2. Системная «Назад» без сохранения: человек возвращается в список «Лекарства» —
-        //    возврат с формы повторяет возврат и не выводит из раздела (§5.1), — форма закрыта,
-        //    лекарства не заведено. Кадр `after-back` обязан показывать список.
+        // 2. Системная «Назад» на грязной форме спрашивает подтверждение (RT-1, Р-87 п. 1):
+        //    «остаться» держит форму и ввод, «сбросить» закрывает в список без записи —
+        //    возврат с формы повторяет возврат и не выводит из раздела (§5.1).
         pressBack()
-        waitUntil(SCREEN_TIMEOUT_MS, "возврата в список лекарств системной «Назад»") {
+        waitForTag(TAG_CONFIRM_DIALOG)
+        capture("back-confirm")
+        click(TAG_CONFIRM_DISMISS)
+        waitUntil(SCREEN_TIMEOUT_MS, "закрытия подтверждения «остаться»") { !exists(TAG_CONFIRM_DIALOG) }
+        assertTrue("«остаться» must keep the form open", exists(TAG_MEDICATION_FORM))
+        assertEquals("«остаться» must keep the input", halfName, typedText(TAG_NAME_FIELD))
+
+        pressBack()
+        waitForTag(TAG_CONFIRM_DIALOG)
+        click(TAG_CONFIRM_CONFIRM)
+        waitUntil(SCREEN_TIMEOUT_MS, "закрытия формы после «сбросить»") {
             exists(TAG_MEDICATION_LIST) && !exists(TAG_MEDICATION_FORM)
         }
         capture("after-back")
         assertEquals("an abandoned form must not create a row", 0, cardsWith(halfName))
         assertEquals("an abandoned form must not create a medication", 0, opLogCount(OpEvent.MEDICATION_CREATED))
+
+        // 2б. Чистая форма закрывается без вопроса (Р-87 п. 1): человек ничего не ввёл —
+        //     терять нечего, и подтверждение было бы шумом.
+        click(TAG_ADD_MEDICATION)
+        waitForTag(TAG_MEDICATION_FORM)
+        pressBack()
+        waitUntil(SCREEN_TIMEOUT_MS, "закрытия чистой формы без подтверждения") {
+            exists(TAG_MEDICATION_LIST) && !exists(TAG_MEDICATION_FORM)
+        }
+        assertTrue("a clean form must close without asking", !exists(TAG_CONFIRM_DIALOG))
 
         // 3. Двойное нажатие «Сохранить»: одно лекарство и один план приёмов, а не два.
         click(TAG_ADD_MEDICATION)

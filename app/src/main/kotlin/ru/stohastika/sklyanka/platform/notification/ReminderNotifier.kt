@@ -3,6 +3,7 @@ package ru.stohastika.sklyanka.platform.notification
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -13,12 +14,14 @@ import ru.stohastika.sklyanka.domain.reminder.ReminderSlot
 import ru.stohastika.sklyanka.domain.reminder.port.NotificationGateway
 import ru.stohastika.sklyanka.feature.reminder.DeliveryCheckActivity
 import ru.stohastika.sklyanka.feature.reminder.ReminderActivity
+import ru.stohastika.sklyanka.reminder.ReminderActionReceiver
 import ru.stohastika.sklyanka.ui.locale.interfaceLocale
 import ru.stohastika.sklyanka.ui.locale.withInterfaceLocale
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 import javax.inject.Singleton
+import ru.stohastika.sklyanka.feature.reminder.R as ReminderR
 
 /**
  * Показ напоминания уведомлением с полноэкранным намерением (НАП-29).
@@ -63,6 +66,7 @@ class ReminderNotifier @Inject constructor(
         val names = card.items.joinToString(context.getString(R.string.reminder_notification_separator)) {
             it.medicationName
         }
+        val intakeIds = card.items.map { it.intakeId }.toTypedArray()
         val notification = NotificationCompat.Builder(context, channel.id)
             .setSmallIcon(R.drawable.ic_notification_mark)
             .setContentTitle(names)
@@ -91,8 +95,26 @@ class ReminderNotifier @Inject constructor(
             .setContentIntent(fullScreen(card.slot))
             .addExtras(
                 android.os.Bundle().apply {
-                    putStringArray(EXTRA_INTAKE_IDS, card.items.map { it.intakeId }.toTypedArray())
+                    putStringArray(EXTRA_INTAKE_IDS, intakeIds)
                 },
+            )
+            // Три действия из шторки (RT-4, Р-87 п. 3): отметка и откладывание теми же
+            // сценариями, что и карточка, но без открытия активности. Иконки у действия
+            // нет (0) — смысл несёт подпись, а не рисунок (НФТ-30).
+            .addAction(
+                0,
+                context.getString(ReminderR.string.reminder_row_taken),
+                shadeActionIntent(card.slot, intakeIds, ReminderActionReceiver.ACTION_TAKEN),
+            )
+            .addAction(
+                0,
+                context.getString(ReminderR.string.reminder_row_skip),
+                shadeActionIntent(card.slot, intakeIds, ReminderActionReceiver.ACTION_SKIP),
+            )
+            .addAction(
+                0,
+                context.getString(ReminderR.string.reminder_action_snooze),
+                shadeActionIntent(card.slot, intakeIds, ReminderActionReceiver.ACTION_SNOOZE),
             )
             .build()
         manager.notify(idOf(card.slot), notification)
@@ -174,6 +196,25 @@ class ReminderNotifier @Inject constructor(
         ReminderActivity.intentFor(context, slot.profileId, slot.scheduledAt),
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
     )
+
+    /**
+     * Намерение действия уведомления из шторки (RT-4, Р-87 п. 3).
+     *
+     * Явный broadcast своему приёмнику, а не активность: отметка из шторки не открывает
+     * карточку. Код запроса выводится из слота, а действие различает три намерения одного
+     * слота, поэтому дополнения разных слотов и разных действий не перетирают друг друга.
+     */
+    private fun shadeActionIntent(slot: ReminderSlot, intakeIds: Array<String>, action: String): PendingIntent {
+        val intent = Intent(context, ReminderActionReceiver::class.java)
+            .setAction(action)
+            .putExtra(ReminderActionReceiver.EXTRA_INTAKE_IDS, intakeIds)
+        return PendingIntent.getBroadcast(
+            context,
+            idOf(slot),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+    }
 
     /** Полноэкранное намерение карточки проверки: своя Activity, слоту приёма взяться неоткуда. */
     private fun fullScreenCheck(at: LocalDateTime): PendingIntent = PendingIntent.getActivity(

@@ -29,7 +29,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -62,14 +61,15 @@ enum class BottomBarTab { Today, Meds, Settings }
  * о маршрутах, ни о намерениях экранов — соответствие вкладки и действия задаёт тот,
  * кто её собирает.
  *
- * Панель — полоса во всю ширину, но её высота фиксирована и компактна: верхнее и нижнее
- * поле `SklyankaSpacing.Micro` вокруг содержимого, поэтому значок и подпись стоят по центру
+ * Панель — полоса во всю ширину, компактная в обычном шрифте: верхнее и нижнее поле
+ * `SklyankaSpacing.Micro` вокруг содержимого, поэтому значок и подпись стоят по центру
  * полосы, а не прижимаются к верхнему краю. Системная навигационная панель резервируется
  * **под** панелью отдельным прозрачным полем: её фон остаётся фоном экрана, а не
  * поверхностью панели (SKL-71 §4, SKL-72).
  *
- * Подпись вкладки скрывается на большом системном масштабе шрифта, а значок остаётся
- * с подписью для чтения с экрана: скрывается дубль, а не смысл (§6.3, НФТ-30).
+ * Подпись вкладки живёт на любом системном масштабе шрифта, а высота панели растёт
+ * вместе с подписью (§6.3, Р-87 п. 4): крупный шрифт не отнимает у человека подписи-
+ * ориентиры, значок остаётся с подписью и для чтения с экрана (НФТ-30).
  */
 @Composable
 fun BottomBar(selected: BottomBarTab, onSelect: (BottomBarTab) -> Unit, modifier: Modifier = Modifier) {
@@ -146,7 +146,6 @@ private fun Tab(
         animationSpec = animation.spec,
         label = "tabTint",
     )
-    val showLabel = LocalDensity.current.fontScale <= SklyankaSizes.LABEL_HIDE_FONT_SCALE
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Micro),
@@ -158,18 +157,16 @@ private fun Tab(
                 onClick = onClick,
             )
             .minTouchTarget()
-            // Подпись есть в обычном масштабе, но на увеличенном она исчезает —
-            // значок обязан остаться названным (НФТ-30).
+            // Подпись живёт на любом масштабе, но значок остаётся названным и для чтения
+            // с экрана, и как второй носитель смысла вкладки (НФТ-30).
             .semantics { contentDescription = label },
     ) {
         icon(tint)
-        if (showLabel) {
-            Text(
-                text = label,
-                style = if (selected) SklyankaType.MicroStrong else SklyankaType.Micro,
-                color = tint,
-            )
-        }
+        Text(
+            text = label,
+            style = if (selected) SklyankaType.MicroStrong else SklyankaType.Micro,
+            color = tint,
+        )
     }
 }
 

@@ -19,6 +19,9 @@
     <string name="today_reliability_full_screen_off">La tarjeta de toma no aparecerá en la pantalla bloqueada: no se ha concedido el permiso de notificaciones de pantalla completa</string>
     <string name="today_reliability_action">Configurar</string>
 
+    <string name="today_db_reset_banner">Tus datos estaban dañados y se han restablecido. Tendrás que volver a registrar los medicamentos y el historial.</string>
+    <string name="today_db_reset_action">Cerrar</string>
+
     <string name="part_of_day_morning">Mañana</string>
     <string name="part_of_day_day">Día</string>
     <string name="part_of_day_evening">Tarde</string>

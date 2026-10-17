@@ -41,6 +41,10 @@
     <string name="form_dialog_time">Einnahmezeit</string>
     <string name="form_dialog_start_date">Startdatum</string>
     <string name="form_dialog_end_date">Enddatum</string>
+    <string name="form_discard_title">Änderungen verwerfen?</string>
+    <string name="form_discard_message">Wenn Sie jetzt gehen, gehen nicht gespeicherte Änderungen verloren.</string>
+    <string name="form_discard_confirm">Verwerfen</string>
+    <string name="form_discard_stay">Weiter bearbeiten</string>
     <string name="form_label_mode">Einnahmemodus</string>
     <string name="form_mode_scheduled">Nach Plan</string>
     <string name="form_mode_as_needed">Bei Bedarf</string>

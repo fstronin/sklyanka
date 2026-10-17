@@ -181,6 +181,18 @@ private fun TodayEmpty(state: TodayUiState.Empty, onIntent: (TodayIntent) -> Uni
             ),
             trailing = { ProfileAvatar(onOpenProfiles = { onIntent(TodayIntent.OpenSettings) }) },
         )
+        // Объяснение сброса показывается и над пустым состоянием: стёртая база
+        // открывает ровно его, и без баннера потеря осталась бы неназванной (МГ-8).
+        if (state.databaseReset) {
+            DatabaseResetBanner(
+                onDismiss = { onIntent(TodayIntent.DismissResetExplanation) },
+                modifier = Modifier.padding(
+                    start = SklyankaSpacing.Section,
+                    end = SklyankaSpacing.Section,
+                    bottom = SklyankaSpacing.Large,
+                ),
+            )
+        }
         Box(modifier = Modifier.fillMaxSize().weight(1f), contentAlignment = Alignment.Center) {
             EmptyState(
                 title = stringResource(R.string.today_empty_title),
@@ -272,6 +284,11 @@ private fun TodayHeader(
                     modifier = Modifier.testTag(TAG_RELIABILITY_BANNER),
                 )
             }
+            // Объяснение сброса данных — после предупреждения о ненадёжности: сначала
+            // о том, что ломается сейчас, потом о том, что уже случилось (МГ-8).
+            if (state.databaseReset) {
+                DatabaseResetBanner(onDismiss = { onIntent(TodayIntent.DismissResetExplanation) })
+            }
             // Полоса дня показывается, только когда есть что считать: «Принято 0 из 0»
             // не сообщает ничего, а место занимает.
             if (state.progress.hasPlan) {
@@ -295,6 +312,24 @@ private fun TodayHeader(
             }
         }
     }
+}
+
+/**
+ * Объяснение сброса данных после повреждения базы (МГ-8, Р-87 п. 2).
+ *
+ * Немодальный баннер предупреждения с одним действием — «Закрыть»: человек узнаёт,
+ * что данные потеряны не по его вине, и сам решает, когда убрать объяснение.
+ * Закрытый баннер не возвращается до следующего пересоздания базы.
+ */
+@Composable
+private fun DatabaseResetBanner(onDismiss: () -> Unit, modifier: Modifier = Modifier) {
+    Banner(
+        text = stringResource(R.string.today_db_reset_banner),
+        kind = BannerKind.Warning,
+        actionLabel = stringResource(R.string.today_db_reset_action),
+        onAction = onDismiss,
+        modifier = modifier.testTag(TAG_DB_RESET_BANNER),
+    )
 }
 
 /**
@@ -367,6 +402,7 @@ const val TAG_TODAY_EMPTY = "today_empty"
 const val TAG_DAY_PROGRESS = "day_progress"
 const val TAG_STOCK_BANNER = "stock_banner"
 const val TAG_RELIABILITY_BANNER = "reliability_banner"
+const val TAG_DB_RESET_BANNER = "db_reset_banner"
 const val TAG_NOTHING_TODAY = "nothing_today"
 
 /** Ключи элементов ленты: у списка «Сегодня» состав меняется от состояния. */

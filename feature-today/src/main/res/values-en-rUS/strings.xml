@@ -19,6 +19,9 @@
     <string name="today_reliability_full_screen_off">The intake card will not appear on the lock screen: full-screen notification permission is not granted</string>
     <string name="today_reliability_action">Set up</string>
 
+    <string name="today_db_reset_banner">Your data was corrupted and has been reset. You will need to add your medications and history again.</string>
+    <string name="today_db_reset_action">Close</string>
+
     <string name="part_of_day_morning">Morning</string>
     <string name="part_of_day_day">Day</string>
     <string name="part_of_day_evening">Evening</string>

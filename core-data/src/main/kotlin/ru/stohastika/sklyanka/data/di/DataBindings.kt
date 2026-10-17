@@ -5,6 +5,7 @@ import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import ru.stohastika.sklyanka.data.log.RoomOperationLog
+import ru.stohastika.sklyanka.data.prefs.DatabaseLifeDataStore
 import ru.stohastika.sklyanka.data.prefs.DeviceProtectedDirectBootStore
 import ru.stohastika.sklyanka.data.repository.ActiveProfileContext
 import ru.stohastika.sklyanka.data.repository.ActiveProfileRepositoryImpl
@@ -25,6 +26,7 @@ import ru.stohastika.sklyanka.domain.repository.ActiveProfileRepository
 import ru.stohastika.sklyanka.domain.repository.IntakeRepository
 import ru.stohastika.sklyanka.domain.repository.MedicationRepository
 import ru.stohastika.sklyanka.domain.repository.ProfileRepository
+import ru.stohastika.sklyanka.domain.startup.DatabaseLifeStore
 import javax.inject.Singleton
 
 /**
@@ -86,4 +88,9 @@ abstract class DataBindings {
     @Binds
     @Singleton
     abstract fun bindDirectBootTraceStore(impl: DeviceProtectedDirectBootStore): DirectBootTraceStore
+
+    /** Отметки жизни базы вне её файла — объяснение сброса после повреждения (МГ-8). */
+    @Binds
+    @Singleton
+    abstract fun bindDatabaseLifeStore(impl: DatabaseLifeDataStore): DatabaseLifeStore
 }

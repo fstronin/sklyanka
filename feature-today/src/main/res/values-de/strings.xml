@@ -19,6 +19,9 @@
     <string name="today_reliability_full_screen_off">Die Einnahmekarte erscheint nicht auf dem Sperrbildschirm: die Berechtigung für Vollbild-Benachrichtigungen fehlt</string>
     <string name="today_reliability_action">Einrichten</string>
 
+    <string name="today_db_reset_banner">Ihre Daten waren beschädigt und wurden zurückgesetzt. Medikamente und Verlauf müssen neu angelegt werden.</string>
+    <string name="today_db_reset_action">Schließen</string>
+
     <string name="part_of_day_morning">Morgen</string>
     <string name="part_of_day_day">Tag</string>
     <string name="part_of_day_evening">Abend</string>

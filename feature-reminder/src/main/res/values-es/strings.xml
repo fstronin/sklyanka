@@ -5,6 +5,7 @@
     <string name="reminder_time_pattern">HH:mm</string>
 
     <string name="reminder_snooze">Posponer %1$d min</string>
+    <string name="reminder_action_snooze">Posponer</string>
 
     <string name="reminder_dose_separator">" · "</string>
 

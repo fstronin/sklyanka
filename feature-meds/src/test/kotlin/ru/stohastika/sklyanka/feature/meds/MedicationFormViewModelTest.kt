@@ -140,6 +140,31 @@ class MedicationFormViewModelTest {
         assertEquals(MedsTestData.PROFILE_ID, state.draft.profileId)
     }
 
+    // --- Грязный черновик (RT-1, Р-87 п. 1) --------------------------------------------------
+
+    @Test
+    fun `a fresh form is clean and turns dirty on the first edit`() = runTest(dispatcher) {
+        open()
+        assertFalse("a brand-new empty form is clean", model.state.value!!.isDirty)
+
+        model.onIntent(MedFormIntent.NameChanged("Magnesium"))
+        assertTrue("typing a name dirties the form", model.state.value!!.isDirty)
+    }
+
+    @Test
+    fun `an edit form stays clean until changed and cleans again when reverted`() = runTest(dispatcher) {
+        medications.put(MedsTestData.medication(id = "magnesium", name = "med-a"))
+        model.open("magnesium")
+        advanceUntilIdle()
+        assertFalse("an untouched edit form is clean", model.state.value!!.isDirty)
+
+        model.onIntent(MedFormIntent.NameChanged("med-b"))
+        assertTrue("renaming dirties the edit form", model.state.value!!.isDirty)
+
+        model.onIntent(MedFormIntent.NameChanged("med-a"))
+        assertFalse("reverting the name cleans the edit form again", model.state.value!!.isDirty)
+    }
+
     // --- Применимость блоков ---------------------------------------------------------------
 
     @Test

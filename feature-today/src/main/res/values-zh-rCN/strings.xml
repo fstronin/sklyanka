@@ -19,6 +19,9 @@
     <string name="today_reliability_full_screen_off">锁屏上不会显示服药卡片：未授予全屏通知权限</string>
     <string name="today_reliability_action">设置</string>
 
+    <string name="today_db_reset_banner">数据已损坏并被重置。药物和历史记录需要重新录入。</string>
+    <string name="today_db_reset_action">关闭</string>
+
     <string name="part_of_day_morning">早上</string>
     <string name="part_of_day_day">白天</string>
     <string name="part_of_day_evening">晚上</string>

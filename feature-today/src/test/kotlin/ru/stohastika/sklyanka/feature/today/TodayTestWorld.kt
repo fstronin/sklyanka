@@ -47,6 +47,8 @@ import ru.stohastika.sklyanka.domain.schedule.IntakePlanDiff
 import ru.stohastika.sklyanka.domain.schedule.MedicationPlanner
 import ru.stohastika.sklyanka.domain.schedule.PlanApplyResult
 import ru.stohastika.sklyanka.domain.schedule.PlanResult
+import ru.stohastika.sklyanka.domain.startup.DatabaseLifeStore
+import ru.stohastika.sklyanka.domain.startup.ExplainDatabaseResetUseCase
 import ru.stohastika.sklyanka.domain.stock.StockWarningForProfileUseCase
 import ru.stohastika.sklyanka.domain.time.TimeSource
 import ru.stohastika.sklyanka.domain.today.BuildTodayAgenda
@@ -130,6 +132,7 @@ internal class TodayTestWorld(scheduler: TestCoroutineScheduler, startAt: LocalD
         undoDelete = UndoDeleteMedicationUseCase(medications, noOpPlanner(clock)),
         time = clock,
         readReliability = ReadReminderReliabilityUseCase(permissionReader),
+        explainDatabaseReset = ExplainDatabaseResetUseCase(InMemoryDatabaseLife(), clock),
     )
 }
 
@@ -453,4 +456,44 @@ internal class RecordingLog : OperationLog {
     override suspend fun lastOccurredAt(event: OpEvent): Instant? = records.lastOrNull { it.event == event }?.at
 
     override suspend fun prune(keepDays: Long, keepRecords: Int) = Unit
+}
+
+/**
+ * Отметки жизни базы в памяти (МГ-8): база сценариев не повреждается, признак
+ * пересоздания снят, и объяснение сброса в состояниях экрана не появляется.
+ */
+internal class InMemoryDatabaseLife : DatabaseLifeStore {
+
+    private var recreated = false
+    private var life = false
+    private var resetEventAt: Long? = null
+    private var acknowledgedAt: Long? = null
+
+    fun recreate() {
+        recreated = true
+    }
+
+    override fun consumeDatabaseRecreated(): Boolean {
+        val value = recreated
+        recreated = false
+        return value
+    }
+
+    override suspend fun hadLife(): Boolean = life
+
+    override suspend fun markLife() {
+        life = true
+    }
+
+    override suspend fun resetEventAt(): Long? = resetEventAt
+
+    override suspend fun recordResetEventAt(epochMillis: Long) {
+        resetEventAt = epochMillis
+    }
+
+    override suspend fun resetEventAcknowledgedAt(): Long? = acknowledgedAt
+
+    override suspend fun acknowledgeResetEventAt(epochMillis: Long) {
+        acknowledgedAt = epochMillis
+    }
 }

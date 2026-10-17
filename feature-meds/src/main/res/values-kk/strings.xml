@@ -41,6 +41,10 @@
     <string name="form_dialog_time">Қабылдау уақыты</string>
     <string name="form_dialog_start_date">Басталу күні</string>
     <string name="form_dialog_end_date">Аяқталу күні</string>
+    <string name="form_discard_title">Өзгерістерді жою керек пе?</string>
+    <string name="form_discard_message">Қазір шықсаңыз, сақталмаған өзгерістер жоғалады.</string>
+    <string name="form_discard_confirm">Жою</string>
+    <string name="form_discard_stay">Өңдеуді жалғастыру</string>
     <string name="form_label_mode">Қабылдау режимі</string>
     <string name="form_mode_scheduled">Кесте бойынша</string>
     <string name="form_mode_as_needed">Қажетіне қарай</string>

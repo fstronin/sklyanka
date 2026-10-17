@@ -11,6 +11,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import ru.stohastika.sklyanka.data.room.DatabaseRecreation
 import ru.stohastika.sklyanka.data.room.DatabaseState
 import ru.stohastika.sklyanka.data.room.DatabaseUpgrade
 import ru.stohastika.sklyanka.data.room.SklyankaDatabase
@@ -53,10 +54,18 @@ object DataModule {
      */
     @Provides
     @Singleton
-    fun provideDatabase(@ApplicationContext context: Context, upgrade: DatabaseUpgrade): SklyankaDatabase {
+    fun provideDatabase(
+        @ApplicationContext context: Context,
+        upgrade: DatabaseUpgrade,
+        recreation: DatabaseRecreation,
+    ): SklyankaDatabase {
         upgrade.prepare()
         val builder = Room.databaseBuilder(context, SklyankaDatabase::class.java, SklyankaDatabase.NAME)
         SklyankaMigrations.ALL.forEach { builder.addMigrations(it) }
+        // Признак пересоздания базы (МГ-8): `onCreate` срабатывает и на чистой
+        // установке, и после стирания повреждённого файла платформой — отличить
+        // одно от другого помогает отметка жизни базы вне файла.
+        builder.addCallback(recreation.callback)
         val database = builder.build()
         // Состояние спрашивается **после** подготовки, а не приходит готовым значением:
         // отказ по месту, случившийся между решением и копией, обязан победить и здесь —

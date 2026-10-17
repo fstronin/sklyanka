@@ -5,6 +5,7 @@
     <string name="reminder_time_pattern">HH:mm</string>
 
     <string name="reminder_snooze">%1$d мин кейін</string>
+    <string name="reminder_action_snooze">Кейін</string>
 
     <string name="reminder_dose_separator">" · "</string>
 

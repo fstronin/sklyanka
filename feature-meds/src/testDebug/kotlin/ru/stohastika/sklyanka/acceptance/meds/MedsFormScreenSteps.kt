@@ -52,8 +52,6 @@ import ru.stohastika.sklyanka.feature.meds.form.TAG_STRENGTH_FIELD
 import ru.stohastika.sklyanka.feature.meds.form.TAG_TABLET_SHAPE_ROW
 import ru.stohastika.sklyanka.feature.meds.form.TAG_TIMES_BLOCK
 import ru.stohastika.sklyanka.feature.meds.form.TAG_TIME_ROW
-import ru.stohastika.sklyanka.feature.meds.list.TAG_MEDICATION_CARD
-import ru.stohastika.sklyanka.ui.component.TAG_SCREEN_HEADER
 import java.time.LocalTime
 import ru.stohastika.sklyanka.ui.R as UiR
 
@@ -443,45 +441,6 @@ class MedsFormScreenSteps(private val world: AcceptanceWorld) {
         // Отступление от макета по Д-3: сохранение одно, и дублирующей кнопки нет вовсе.
         MedsFormStand.ask(world) { test ->
             test.onAllNodesWithText(DONE_LABEL, useUnmergedTree = true).assertCountEquals(0)
-        }
-    }
-
-    // --- Системный возврат ----------------------------------------------------------------
-
-    @Допустим("^человек заполнил название «(.+?)» и форму выпуска «(.+?)»$")
-    fun thePersonHasFilledInTheNameAndForm(name: String, form: String) {
-        MedsFormStand.open(world)
-        MedsFormStand.intent(world, MedFormIntent.NameChanged(name))
-        MedsFormStand.intent(world, MedFormIntent.ReleaseFormChanged(formOf(form)))
-        MedsFormStand.ask(world) { test -> test.onNodeWithText(name).assertExists() }
-    }
-
-    @Когда("^он нажимает системную «Назад»$")
-    fun thePersonPressesSystemBack() {
-        MedsFormStand.systemBack(world)
-        assertTrue("the system back must close the form", MedsFormStand.closedWithoutSaving)
-    }
-
-    @Тогда("^форма закрывается и открывается список лекарств$")
-    fun theFormClosesAndTheListOpens() {
-        assertTrue("the system back must close the form", MedsFormStand.closedWithoutSaving)
-        MedsListStand.ask(world) { test ->
-            assertTrue(
-                "the medication list must open after the form",
-                context.getString(R.string.meds_title) in MedsProbe.texts(test, TAG_SCREEN_HEADER),
-            )
-        }
-    }
-
-    @Тогда("^лекарство «(.+?)» не появляется в списке$")
-    fun theMedicationDoesNotAppearInTheList(name: String) {
-        assertTrue(
-            "«$name» must not reach the world: ${world.medications.names()}",
-            world.medications.all().none { it.name == name },
-        )
-        MedsListStand.ask(world) { test ->
-            test.onAllNodesWithTag(TAG_MEDICATION_CARD, useUnmergedTree = true).assertCountEquals(0)
-            test.onAllNodesWithText(name, useUnmergedTree = true).assertCountEquals(0)
         }
     }
 

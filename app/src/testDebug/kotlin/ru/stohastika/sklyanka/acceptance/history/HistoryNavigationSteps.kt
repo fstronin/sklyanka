@@ -30,6 +30,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
+import ru.stohastika.sklyanka.acceptance.world.InMemoryDatabaseLife
 import ru.stohastika.sklyanka.acceptance.world.ScenarioTransactor
 import ru.stohastika.sklyanka.domain.history.AdherenceCalculator
 import ru.stohastika.sklyanka.domain.history.BuildDoctorReportUseCase
@@ -47,6 +48,7 @@ import ru.stohastika.sklyanka.domain.reminder.ReadReminderReliabilityUseCase
 import ru.stohastika.sklyanka.domain.schedule.GenerationWindow
 import ru.stohastika.sklyanka.domain.schedule.MedicationPlanner
 import ru.stohastika.sklyanka.domain.schedule.PlanResult
+import ru.stohastika.sklyanka.domain.startup.ExplainDatabaseResetUseCase
 import ru.stohastika.sklyanka.domain.stock.StockWarningForProfileUseCase
 import ru.stohastika.sklyanka.domain.today.BuildTodayAgenda
 import ru.stohastika.sklyanka.domain.today.MarkIntakeGroupUseCase
@@ -282,6 +284,7 @@ class HistoryNavigationSteps(private val world: AcceptanceWorld) {
             ),
             time = time,
             readReliability = ReadReminderReliabilityUseCase(world.system),
+            explainDatabaseReset = ExplainDatabaseResetUseCase(InMemoryDatabaseLife(), time),
         )
     }
 
