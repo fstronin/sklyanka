@@ -24,6 +24,7 @@ import ru.stohastika.sklyanka.domain.today.SectionState
 import ru.stohastika.sklyanka.domain.today.SectionSummary
 import ru.stohastika.sklyanka.domain.today.TodayLayout
 import ru.stohastika.sklyanka.ui.component.CheckGlyph
+import ru.stohastika.sklyanka.ui.modifier.minTouchTarget
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaShapes
 import ru.stohastika.sklyanka.ui.token.SklyankaSizes
@@ -46,7 +47,7 @@ internal fun LazyListScope.denseSections(
         val expanded = state.isExpanded(section)
         todayItem(key = "section-${section.partOfDay}") {
             if (expanded) {
-                SectionDivider(section)
+                SectionDivider(section, onIntent)
             } else {
                 CollapsedSection(section, onIntent)
             }
@@ -68,14 +69,24 @@ internal fun LazyListScope.denseSections(
     }
 }
 
-/** Развёрнутая секция: «День · 12:00 — 17:00» и счётчик «3 из 9» акцентом. */
+/**
+ * Развёрнутая секция: «День · 12:00 — 17:00» и счётчик «3 из 9» акцентом.
+ *
+ * Нажатие на ряд сворачивает секцию обратно: тот же [TodayIntent.ToggleSection], что
+ * и у свёрнутой плашки. Шеврон вверх обещает это действие, цель нажатия — не меньше
+ * 44 dp (НФТ-29); без него раскрытая секция оставалась без обратного пути.
+ */
 @Composable
-private fun SectionDivider(section: DaySection) {
+private fun SectionDivider(section: DaySection, onIntent: (TodayIntent) -> Unit) {
     val colors = SklyankaTheme.colors
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Default),
-        modifier = Modifier.fillMaxWidth().testTag(TAG_SECTION_EXPANDED),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onIntent(TodayIntent.ToggleSection(section.partOfDay)) }
+            .minTouchTarget()
+            .testTag(TAG_SECTION_EXPANDED),
     ) {
         Text(text = section.title(), style = SklyankaType.LabelStrong, color = colors.text)
         Box(
@@ -89,6 +100,7 @@ private fun SectionDivider(section: DaySection) {
             style = SklyankaType.CaptionStrong,
             color = colors.accent,
         )
+        ChevronUpGlyph(color = colors.iconFaint)
     }
 }
 

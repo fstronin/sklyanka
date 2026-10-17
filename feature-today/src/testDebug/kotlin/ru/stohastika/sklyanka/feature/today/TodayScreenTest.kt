@@ -379,6 +379,16 @@ class TodayScreenTest {
     }
 
     @Test
+    fun anExpandedSectionAsksToCollapseOnATap() {
+        val intents = mutableListOf<TodayIntent>()
+        show(TodayFixtures.denseDay(), onIntent = intents::add)
+
+        composeRule.onNodeWithTag(TAG_SECTION_EXPANDED).performClick()
+
+        assertEquals(listOf(TodayIntent.ToggleSection(PartOfDay.DAY)), intents)
+    }
+
+    @Test
     fun theDenseProgressCaptionNamesTheMedicationCount() {
         show(TodayFixtures.denseDay())
 

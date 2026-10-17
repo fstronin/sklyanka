@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -61,10 +62,11 @@ enum class BottomBarTab { Today, Meds, Settings }
  * о маршрутах, ни о намерениях экранов — соответствие вкладки и действия задаёт тот,
  * кто её собирает.
  *
- * Фон рисуется до нижнего паддинга, поэтому поверхность панели продолжается под
- * системной навигационной панелью, а ряд вкладок стоит выше неё (SKL-71 §4, SKL-72).
- * Собственное нижнее поле — не меньше экранного отступа, чтобы на конфигурациях без
- * системной навигации панель не липла к краю.
+ * Панель — полоса во всю ширину, но её высота фиксирована и компактна: верхнее и нижнее
+ * поле `SklyankaSpacing.Micro` вокруг содержимого, поэтому значок и подпись стоят по центру
+ * полосы, а не прижимаются к верхнему краю. Системная навигационная панель резервируется
+ * **под** панелью отдельным прозрачным полем: её фон остаётся фоном экрана, а не
+ * поверхностью панели (SKL-71 §4, SKL-72).
  *
  * Подпись вкладки скрывается на большом системном масштабе шрифта, а значок остаётся
  * с подписью для чтения с экрана: скрывается дубль, а не смысл (§6.3, НФТ-30).
@@ -73,50 +75,53 @@ enum class BottomBarTab { Today, Meds, Settings }
 fun BottomBar(selected: BottomBarTab, onSelect: (BottomBarTab) -> Unit, modifier: Modifier = Modifier) {
     val colors = SklyankaTheme.colors
     val bottomInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(colors.surface)
-            .testTag(TAG_BOTTOM_BAR),
-    ) {
-        Box(
+    Column(modifier = modifier.fillMaxWidth()) {
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(SklyankaSizes.DividerThickness)
-                .background(colors.line),
-        )
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(
-                    start = SklyankaSpacing.Screen,
-                    end = SklyankaSpacing.Screen,
-                    top = SklyankaSpacing.Default,
-                    bottom = maxOf(bottomInset, SklyankaSpacing.Screen),
-                ),
+                .background(colors.surface)
+                .testTag(TAG_BOTTOM_BAR),
         ) {
-            Tab(
-                label = stringResource(R.string.tab_today),
-                selected = selected == BottomBarTab.Today,
-                onClick = { onSelect(BottomBarTab.Today) },
-                icon = { color -> CalendarGlyph(color) },
-                modifier = Modifier.weight(1f),
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(SklyankaSizes.DividerThickness)
+                    .background(colors.line),
             )
-            Tab(
-                label = stringResource(R.string.tab_meds),
-                selected = selected == BottomBarTab.Meds,
-                onClick = { onSelect(BottomBarTab.Meds) },
-                icon = { color -> MedicationPictogram(color) },
-                modifier = Modifier.weight(1f),
-            )
-            Tab(
-                label = stringResource(R.string.tab_settings),
-                selected = selected == BottomBarTab.Settings,
-                onClick = { onSelect(BottomBarTab.Settings) },
-                icon = { color -> GearGlyph(color) },
-                modifier = Modifier.weight(1f),
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        start = SklyankaSpacing.Screen,
+                        end = SklyankaSpacing.Screen,
+                        top = SklyankaSpacing.Micro,
+                        bottom = SklyankaSpacing.Micro,
+                    ),
+            ) {
+                Tab(
+                    label = stringResource(R.string.tab_today),
+                    selected = selected == BottomBarTab.Today,
+                    onClick = { onSelect(BottomBarTab.Today) },
+                    icon = { color -> CalendarGlyph(color) },
+                    modifier = Modifier.weight(1f),
+                )
+                Tab(
+                    label = stringResource(R.string.tab_meds),
+                    selected = selected == BottomBarTab.Meds,
+                    onClick = { onSelect(BottomBarTab.Meds) },
+                    icon = { color -> MedicationPictogram(color) },
+                    modifier = Modifier.weight(1f),
+                )
+                Tab(
+                    label = stringResource(R.string.tab_settings),
+                    selected = selected == BottomBarTab.Settings,
+                    onClick = { onSelect(BottomBarTab.Settings) },
+                    icon = { color -> GearGlyph(color) },
+                    modifier = Modifier.weight(1f),
+                )
+            }
         }
+        Spacer(modifier = Modifier.height(bottomInset))
     }
 }
 

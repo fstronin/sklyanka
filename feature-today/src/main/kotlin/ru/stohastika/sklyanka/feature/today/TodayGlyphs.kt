@@ -53,6 +53,23 @@ internal fun ChevronDownGlyph(color: Color, modifier: Modifier = Modifier, size:
     }
 }
 
+/** Шеврон вверх: развёрнутая секция плотного дня сворачивается. */
+@Composable
+internal fun ChevronUpGlyph(color: Color, modifier: Modifier = Modifier, size: Dp = SklyankaSizes.Chevron) {
+    Canvas(modifier.size(size)) {
+        val side = this.size.minDimension
+        drawPath(
+            path = Path().apply {
+                moveTo(side * CHEVRON_LEFT, side * CHEVRON_BOTTOM)
+                lineTo(side * MIDDLE, side * CHEVRON_TOP)
+                lineTo(side * CHEVRON_RIGHT, side * CHEVRON_BOTTOM)
+            },
+            color = color,
+            style = stroke(side),
+        )
+    }
+}
+
 /** Часы: секция времени суток, которая ещё не наступила (`MainDense.dc.html`). */
 @Composable
 internal fun ClockGlyph(color: Color, modifier: Modifier = Modifier, size: Dp = SklyankaSizes.MarkButtonGlyph) {
