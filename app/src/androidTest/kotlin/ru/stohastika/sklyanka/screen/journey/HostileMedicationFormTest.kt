@@ -107,7 +107,8 @@ class HostileMedicationFormTest : JourneyTest() {
         //    возврат с формы повторяет возврат и не выводит из раздела (§5.1).
         pressBack()
         waitForTag(TAG_CONFIRM_DIALOG)
-        capture("back-confirm")
+        // У подтверждения своё окно: кадр берётся его корнем (SKL-148, SKL-24/105).
+        capture("back-confirm", compose.onNode(isDialog()))
         click(TAG_CONFIRM_DISMISS)
         waitUntil(SCREEN_TIMEOUT_MS, "закрытия подтверждения «остаться»") { !exists(TAG_CONFIRM_DIALOG) }
         assertTrue("«остаться» must keep the form open", exists(TAG_MEDICATION_FORM))

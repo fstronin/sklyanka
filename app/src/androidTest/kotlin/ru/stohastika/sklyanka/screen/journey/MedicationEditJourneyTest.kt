@@ -22,6 +22,8 @@ import ru.stohastika.sklyanka.feature.meds.form.TAG_SAVE_BUTTON
 import ru.stohastika.sklyanka.feature.meds.form.TAG_TIME_ROW
 import ru.stohastika.sklyanka.screen.support.DeviceTestClock
 import ru.stohastika.sklyanka.test.R
+import ru.stohastika.sklyanka.ui.component.TAG_CONFIRM_CONFIRM
+import ru.stohastika.sklyanka.ui.component.TAG_CONFIRM_DIALOG
 import ru.stohastika.sklyanka.ui.component.TAG_DATE_TIME_PICKER
 import ru.stohastika.sklyanka.ui.component.TAG_TIME_INPUT
 import java.time.LocalTime
@@ -143,6 +145,9 @@ class MedicationEditJourneyTest : JourneyTest() {
         capture("form-unsaved")
 
         pressBack()
+        // RT-1: грязная форма спрашивает подтверждение; «сбросить» закрывает её без записи.
+        waitForTag(TAG_CONFIRM_DIALOG)
+        click(TAG_CONFIRM_CONFIRM)
         waitForTag(TAG_MEDICATION_CARD_SCREEN)
         assertTrue(
             "leaving the form must keep the saved schedule and dose",
