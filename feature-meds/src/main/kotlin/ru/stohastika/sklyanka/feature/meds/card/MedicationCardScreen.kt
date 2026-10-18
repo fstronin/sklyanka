@@ -26,13 +26,13 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import ru.stohastika.sklyanka.feature.meds.BackGlyph
-import ru.stohastika.sklyanka.feature.meds.GlyphButton
 import ru.stohastika.sklyanka.feature.meds.R
 import ru.stohastika.sklyanka.feature.meds.screenPadding
 import ru.stohastika.sklyanka.ui.component.Banner
 import ru.stohastika.sklyanka.ui.component.BannerKind
+import ru.stohastika.sklyanka.ui.component.ButtonForm
 import ru.stohastika.sklyanka.ui.component.MedicationGlyph
+import ru.stohastika.sklyanka.ui.component.PrimaryButton
 import ru.stohastika.sklyanka.ui.component.ProfileIndication
 import ru.stohastika.sklyanka.ui.component.QuietButton
 import ru.stohastika.sklyanka.ui.component.QuietButtonKind
@@ -43,7 +43,6 @@ import ru.stohastika.sklyanka.ui.token.SklyankaSizes
 import ru.stohastika.sklyanka.ui.token.SklyankaSpacing
 import ru.stohastika.sklyanka.ui.token.SklyankaType
 import kotlin.math.ceil
-import ru.stohastika.sklyanka.ui.R as UiR
 
 /**
  * Карточка лекарства (`design/screens/MedCard.dc.html`).
@@ -92,7 +91,6 @@ fun MedicationCardScreen(state: MedCardUiState, onIntent: (MedCardIntent) -> Uni
             // «Профиль · Имя» с баннером выпадала из неё вместе с `ScreenHeader` —
             // дыра в защите, найденная исполнимой приёмкой SKL-15 (ПРФ-12, SKL-26).
             ProfileIndication()
-            CardTopBar(onIntent)
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -102,7 +100,7 @@ fun MedicationCardScreen(state: MedCardUiState, onIntent: (MedCardIntent) -> Uni
                     }
                     .verticalScroll(scroll)
                     .screenPadding()
-                    .padding(bottom = SklyankaSpacing.Block),
+                    .padding(top = SklyankaSizes.HeaderTopPaddingProfile, bottom = SklyankaSpacing.Block),
                 verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Large),
             ) {
                 Title(state)
@@ -119,7 +117,7 @@ fun MedicationCardScreen(state: MedCardUiState, onIntent: (MedCardIntent) -> Uni
                 )
                 WeekBlock(state.week)
             }
-            ArchiveAction(state, onIntent)
+            CardActions(state, onIntent)
         }
         if (state.deleteConfirmation) {
             DeleteMedicationSheet(
@@ -157,49 +155,6 @@ internal class MedCardScrollBounds {
 
     /** Насколько ряд действий вышел за нижнюю грань окна; ноль и меньше — ряд цел (V-39). */
     val actionsBeyondViewport: Float get() = actionsBottom - viewportBottom
-}
-
-/**
- * Шапка карточки: стрелка «Назад» слева, «Изменить» справа (`MedCard.dc.html`).
- *
- * Собрана по месту, а не компонентом `ScreenHeader` вида «Вложенная»: тот всегда рисует
- * заголовок экрана, а заголовок этой карточки — название лекарства, которое стоит ниже,
- * рядом с плиткой значка 62 dp. Нарисовать его дважды значило бы прочитать макет вольно.
- *
- * У стрелки нет видимого текста, поэтому подпись для чтения с экрана обязательна и взята
- * дословно из `aria-label` макета (НФТ-30); цель нажатия доводится до 44 dp модификатором,
- * а не размером рисунка (НФТ-29).
- */
-@Composable
-private fun CardTopBar(onIntent: (MedCardIntent) -> Unit) {
-    val colors = SklyankaTheme.colors
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(
-                start = SklyankaSpacing.Small,
-                end = SklyankaSpacing.Section,
-                top = SklyankaSizes.HeaderTopPaddingProfile,
-                bottom = SklyankaSpacing.Small,
-            ),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Medium),
-    ) {
-        GlyphButton(
-            contentDescription = stringResource(UiR.string.cd_back),
-            onClick = { onIntent(MedCardIntent.Back) },
-            bordered = false,
-            modifier = Modifier.testTag(TAG_BACK),
-        ) {
-            BackGlyph(color = colors.text)
-        }
-        Box(modifier = Modifier.weight(1f))
-        QuietButton(
-            text = stringResource(R.string.card_edit),
-            onClick = { onIntent(MedCardIntent.Edit) },
-            modifier = Modifier.testTag(TAG_EDIT),
-        )
-    }
 }
 
 /** Плитка значка, название и подпись из четырёх сведений (ЭКР-7). */
@@ -278,17 +233,18 @@ private fun NoticeBanner(notice: MedCardNotice, onIntent: (MedCardIntent) -> Uni
 }
 
 /**
- * Действие внизу экрана: «В архив» у активного курса, «Вернуть» у архивированного.
+ * Нижний ряд действий: главная «Изменить», затем «В архив»/«Вернуть», ниже — «Удалить».
  *
- * Одна кнопка на два действия, а не две рядом: архивный вид карточки макета не имеет,
- * и словами `docs/norm/04-behavior.md` задано именно замещение.
+ * «Изменить» — главное действие карточки после SKL-158: оно стоит первой кнопкой, а не
+ * в верхней шапке. У архива одна кнопка на два действия, а не две рядом: архивный вид
+ * карточки макета не имеет, и словами `docs/norm/04-behavior.md` задано именно замещение.
  *
  * Ниже, если удаление доступно (ПМ-24, ОВ-124), стоит тихая кнопка `Danger` «Удалить»
  * и пояснение условия: удалить можно только запись без единой отметки «принято».
  * При наличии `TAKEN` в разметке нет ни кнопки, ни пояснения — состояние `canDelete`.
  */
 @Composable
-private fun ArchiveAction(state: MedCardUiState, onIntent: (MedCardIntent) -> Unit) {
+private fun CardActions(state: MedCardUiState, onIntent: (MedCardIntent) -> Unit) {
     val colors = SklyankaTheme.colors
     Column(
         modifier = Modifier
@@ -297,6 +253,13 @@ private fun ArchiveAction(state: MedCardUiState, onIntent: (MedCardIntent) -> Un
             .padding(PaddingValues(top = SklyankaSpacing.Block, bottom = SklyankaSpacing.Screen)),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        PrimaryButton(
+            text = stringResource(R.string.card_edit),
+            onClick = { onIntent(MedCardIntent.Edit) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag(TAG_EDIT),
+        )
         SecondaryButton(
             text = if (state.isArchived) {
                 stringResource(R.string.card_restore)
@@ -306,8 +269,10 @@ private fun ArchiveAction(state: MedCardUiState, onIntent: (MedCardIntent) -> Un
             onClick = {
                 onIntent(if (state.isArchived) MedCardIntent.Restore else MedCardIntent.Archive)
             },
+            form = ButtonForm.Screen,
             modifier = Modifier
                 .fillMaxWidth()
+                .padding(top = SklyankaSpacing.Default)
                 .testTag(if (state.isArchived) TAG_RESTORE else TAG_ARCHIVE),
         )
         if (state.canDelete) {
@@ -337,7 +302,6 @@ const val TAG_MEDICATION_CARD_SCREEN = "medication_card_screen"
 
 /** Окно прокрутки карточки: по его нижней грани видно, срезан ли ряд действий (V-39). */
 const val TAG_CARD_SCROLL = "med_card_scroll"
-const val TAG_BACK = "med_card_back"
 const val TAG_TITLE = "med_card_title"
 const val TAG_CARD_PLATE_GLYPH = "med_card_plate_glyph"
 const val TAG_SUBTITLE = "med_card_subtitle"

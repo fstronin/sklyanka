@@ -2,7 +2,6 @@ package ru.stohastika.sklyanka.ui.component
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,11 +14,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import ru.stohastika.sklyanka.domain.model.MedicationForm
 import ru.stohastika.sklyanka.domain.model.TabletShape
 import ru.stohastika.sklyanka.ui.R
+import ru.stohastika.sklyanka.ui.modifier.clickableShape
 import ru.stohastika.sklyanka.ui.modifier.dashedBorder
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaShapes
@@ -65,7 +66,11 @@ fun IntakeCard(
     }
     val borderWidth = if (state == IntakeCardState.DueNow) SklyankaSizes.BorderAccent else SklyankaSizes.BorderThin
     Column(
-        modifier = modifier
+        modifier = Modifier
+            // Обрезка стоит до внешнего modifier: нажатие на карточку приходит
+            // снаружи через него, и рябь обязана остаться внутри скругления.
+            .clip(cardShape)
+            .then(modifier)
             .fillMaxWidth()
             .background(background, cardShape)
             .then(
@@ -230,7 +235,7 @@ private fun MarkButton(medicationLabel: String, onMark: (() -> Unit)?) {
     val colors = SklyankaTheme.colors
     Box(
         modifier = Modifier
-            .clickable(enabled = onMark != null) { onMark?.invoke() }
+            .clickableShape(SklyankaShapes.Pill, enabled = onMark != null) { onMark?.invoke() }
             .semanticsLabel(stringResource(R.string.cd_mark_intake, medicationLabel))
             .size(SklyankaSizes.MarkButton)
             .background(colors.background, SklyankaShapes.Pill)

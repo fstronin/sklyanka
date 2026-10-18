@@ -2,7 +2,6 @@ package ru.stohastika.sklyanka.ui.profile
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -19,6 +18,7 @@ import ru.stohastika.sklyanka.ui.R
 import ru.stohastika.sklyanka.ui.component.ChevronDownGlyph
 import ru.stohastika.sklyanka.ui.component.semanticsLabel
 import ru.stohastika.sklyanka.ui.locale.interfaceLocale
+import ru.stohastika.sklyanka.ui.modifier.clickableShape
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaShapes
 import ru.stohastika.sklyanka.ui.token.SklyankaSizes
@@ -55,7 +55,7 @@ fun ProfileAvatar(onOpenProfiles: () -> Unit, modifier: Modifier = Modifier) {
             .height(SklyankaSizes.ProfileAvatarButton)
             .background(colors.surface, SklyankaShapes.Pill)
             .border(SklyankaSizes.BorderThin, colors.lineInteractive, SklyankaShapes.Pill)
-            .clickable(onClick = onOpenProfiles)
+            .clickableShape(SklyankaShapes.Pill, onClick = onOpenProfiles)
             .padding(horizontal = SklyankaSizes.ProfileAvatarPadding)
             .semanticsLabel(stringResource(R.string.cd_profile_avatar))
             .testTag(TAG_PROFILE_AVATAR),

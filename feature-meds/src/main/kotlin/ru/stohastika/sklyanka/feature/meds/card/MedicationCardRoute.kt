@@ -73,7 +73,6 @@ fun MedicationCardRoute(
         state = current,
         onIntent = { intent ->
             when (intent) {
-                MedCardIntent.Back -> onBack()
                 MedCardIntent.Edit -> onEdit(current.medicationId)
                 else -> viewModel.onIntent(intent)
             }

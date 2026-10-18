@@ -24,6 +24,7 @@ import ru.stohastika.sklyanka.domain.today.SectionState
 import ru.stohastika.sklyanka.domain.today.SectionSummary
 import ru.stohastika.sklyanka.domain.today.TodayLayout
 import ru.stohastika.sklyanka.ui.component.CheckGlyph
+import ru.stohastika.sklyanka.ui.modifier.clickableShape
 import ru.stohastika.sklyanka.ui.modifier.minTouchTarget
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaShapes
@@ -144,9 +145,9 @@ internal fun CollapsedBlock(
         horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Medium),
         modifier = modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
             .background(colors.archiveBackground, SklyankaShapes.Card)
             .border(SklyankaSizes.BorderThin, colors.line, SklyankaShapes.Card)
+            .clickableShape(SklyankaShapes.Card, onClick = onClick)
             .padding(SklyankaSpacing.Large)
             .testTag(tag),
     ) {

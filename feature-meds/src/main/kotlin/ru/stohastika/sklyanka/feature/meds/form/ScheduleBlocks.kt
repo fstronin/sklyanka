@@ -2,14 +2,15 @@ package ru.stohastika.sklyanka.feature.meds.form
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -25,11 +26,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Constraints
 import ru.stohastika.sklyanka.domain.medication.DraftField
 import ru.stohastika.sklyanka.domain.model.FoodRelation
@@ -60,6 +63,7 @@ import ru.stohastika.sklyanka.ui.component.ListPickerDialog
 import ru.stohastika.sklyanka.ui.component.SklyankaChip
 import ru.stohastika.sklyanka.ui.component.SklyankaNumberField
 import ru.stohastika.sklyanka.ui.component.SklyankaTextField
+import ru.stohastika.sklyanka.ui.modifier.clickableShape
 import ru.stohastika.sklyanka.ui.modifier.dashedBorder
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaShapes
@@ -568,7 +572,7 @@ private fun TimeRow(time: LocalTime, onPick: () -> Unit, onDelete: () -> Unit) {
             .fillMaxWidth()
             .background(colors.surface, SklyankaShapes.Medium)
             .border(SklyankaSizes.BorderThin, colors.line, SklyankaShapes.Medium)
-            .clickable(role = Role.Button, onClick = onPick)
+            .clickableShape(SklyankaShapes.Medium, role = Role.Button, onClick = onPick)
             .padding(horizontal = SklyankaSpacing.Large, vertical = SklyankaSpacing.Small)
             .testTag(TAG_TIME_ROW),
         verticalAlignment = Alignment.CenterVertically,
@@ -605,7 +609,7 @@ private fun DashedAddButton(text: String, onClick: () -> Unit, modifier: Modifie
             .fillMaxWidth()
             .height(SklyankaSizes.SecondaryButtonHeight)
             .dashedBorder(SklyankaSizes.BorderThin, colors.lineInteractive, SklyankaShapes.MediumRadius)
-            .clickable(role = Role.Button, onClick = onClick),
+            .clickableShape(SklyankaShapes.Medium, role = Role.Button, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Text(text = text, style = SklyankaType.Label, color = colors.accent)
@@ -613,35 +617,75 @@ private fun DashedAddButton(text: String, onClick: () -> Unit, modifier: Modifie
 }
 
 /**
- * «Связь с едой» — ряд из четырёх кнопок.
+ * «Связь с едой» — четыре кнопки, которые при нехватке ширины встают по две.
  *
  * Высота — минимум цели нажатия, а не жёсткий размер: переведённая подпись («Before food»,
  * «Тамаққа дейін») длиннее русской и переносится на вторую строку. Ряд растёт по самой
  * высокой плитке (IntrinsicSize.Min), плитки выравниваются по ней — §6.3 дизайн-системы
  * требует роста блока, а не обрезки текста.
+ *
+ * Число колонок решает измеренная ширина самой длинной подписи, а не `fontScale`: на
+ * 360 dp при 130 % слово «Неважно» в четырёх равных колонках не помещается, и Compose
+ * рвёт его по буквам. Тогда блок раскладывается 2×2; если не помещаются и две колонки —
+ * в столбик. Порог по фактической ширине не врёт на длинных локалях, как и порог
+ * компактного заголовка (§6.3, SKL-136).
  */
 @Composable
 internal fun FoodRelationBlock(state: MedFormUiState, onIntent: (MedFormIntent) -> Unit, anchors: FormAnchors) {
     FormBlock(stringResource(R.string.form_label_food_relation), null, anchors) {
-        Row(
-            modifier = Modifier.height(IntrinsicSize.Min),
-            horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Small),
-        ) {
-            FoodRelation.entries.forEach { relation ->
-                ChoiceTile(
-                    label = relation.label(),
-                    selected = state.draft.foodRelation == relation,
-                    onClick = { onIntent(MedFormIntent.FoodRelationChanged(relation)) },
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                        .defaultMinSize(minHeight = SklyankaSizes.MinTouchTarget)
-                        .testTag(TAG_FOOD_RELATION),
-                )
+        val labels = FoodRelation.entries.map { it.label() }
+        val textMeasurer = rememberTextMeasurer()
+        val density = LocalDensity.current
+        val minTileWidth = remember(labels, density, textMeasurer) {
+            with(density) {
+                // Режется по буквам только слово, которое не влезает целиком; перенос
+                // по пробелам («До еды») — нормальный и высоту плитки растит.
+                val widestWord = labels
+                    .flatMap { label -> label.split(' ') }
+                    .maxOf { word -> textMeasurer.measure(text = word, style = SklyankaType.CaptionStrong).size.width }
+                widestWord.toDp() + SklyankaSpacing.Small * 2 + SklyankaSpacing.Hair
+            }
+        }
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+            val columns = when {
+                maxWidth >= minTileWidth * FOOD_COLUMNS_MAX + SklyankaSpacing.Small * (FOOD_COLUMNS_MAX - 1) -> {
+                    FOOD_COLUMNS_MAX
+                }
+                maxWidth >= minTileWidth * 2 + SklyankaSpacing.Small -> 2
+                else -> 1
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Small)) {
+                FoodRelation.entries.chunked(columns).forEach { rowRelations ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min),
+                        horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Small),
+                    ) {
+                        rowRelations.forEach { relation ->
+                            ChoiceTile(
+                                label = relation.label(),
+                                selected = state.draft.foodRelation == relation,
+                                onClick = { onIntent(MedFormIntent.FoodRelationChanged(relation)) },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight()
+                                    .defaultMinSize(minHeight = SklyankaSizes.MinTouchTarget)
+                                    .testTag(TAG_FOOD_RELATION),
+                            )
+                        }
+                        // Последний ряд может быть короче: пустые доли не дают плиткам
+                        // растянуться на всю ширину и сломать сетку.
+                        repeat(columns - rowRelations.size) {
+                            Spacer(modifier = Modifier.weight(1f))
+                        }
+                    }
+                }
             }
         }
     }
 }
+
+/** Четыре варианта связи с едой в одной строке, пока подписи помещаются. */
+private const val FOOD_COLUMNS_MAX = 4
 
 /** Сообщение об отказе под блоком, у которого нет собственного поля ввода. */
 @Composable

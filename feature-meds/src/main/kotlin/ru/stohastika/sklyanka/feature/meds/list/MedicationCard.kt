@@ -2,7 +2,6 @@ package ru.stohastika.sklyanka.feature.meds.list
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -30,6 +29,7 @@ import ru.stohastika.sklyanka.ui.component.ChipState
 import ru.stohastika.sklyanka.ui.component.MedicationGlyph
 import ru.stohastika.sklyanka.ui.component.SecondaryButton
 import ru.stohastika.sklyanka.ui.component.SklyankaChip
+import ru.stohastika.sklyanka.ui.modifier.clickableShape
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaShapes
 import ru.stohastika.sklyanka.ui.token.SklyankaSizes
@@ -57,7 +57,7 @@ internal fun MedicationCard(
             .fillMaxWidth()
             .background(colors.surface, SklyankaShapes.Card)
             .border(SklyankaSizes.BorderThin, colors.line, SklyankaShapes.Card)
-            .clickable(role = Role.Button, onClick = onOpen)
+            .clickableShape(SklyankaShapes.Card, role = Role.Button, onClick = onOpen)
             .padding(SklyankaSpacing.Large)
             .testTag(TAG_MEDICATION_CARD),
         verticalAlignment = Alignment.Top,

@@ -28,6 +28,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -37,6 +38,7 @@ import androidx.compose.ui.text.style.TextAlign
 import ru.stohastika.sklyanka.domain.undo.UndoableDeletion
 import ru.stohastika.sklyanka.ui.component.Snackbar
 import ru.stohastika.sklyanka.ui.locale.interfaceLocale
+import ru.stohastika.sklyanka.ui.modifier.clickableShape
 import ru.stohastika.sklyanka.ui.modifier.minTouchTarget
 import ru.stohastika.sklyanka.ui.motion.MotionPhase
 import ru.stohastika.sklyanka.ui.motion.motionTiming
@@ -98,7 +100,7 @@ internal fun SegmentedControl(segments: List<Segment>, modifier: Modifier = Modi
                             Modifier
                         },
                     )
-                    .clickable(role = Role.Tab, onClick = segment.onClick)
+                    .clickableShape(SklyankaShapes.Compact, role = Role.Tab, onClick = segment.onClick)
                     .padding(horizontal = SklyankaSpacing.Small),
                 contentAlignment = Alignment.Center,
             ) {
@@ -139,7 +141,7 @@ internal fun ChoiceTile(
                 if (selected) colors.accent else colors.line,
                 SklyankaShapes.Large,
             )
-            .clickable(role = Role.RadioButton, onClick = onClick)
+            .clickableShape(SklyankaShapes.Large, role = Role.RadioButton, onClick = onClick)
             .padding(SklyankaSpacing.Small),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Small, Alignment.CenterVertically),
@@ -182,7 +184,7 @@ internal fun GlyphButton(
                     Modifier
                 },
             )
-            .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
+            .clickableShape(SklyankaShapes.Pill, enabled = enabled, role = Role.Button, onClick = onClick)
             .semantics { this.contentDescription = contentDescription },
         contentAlignment = Alignment.Center,
     ) {
@@ -198,7 +200,9 @@ internal fun SectionCard(modifier: Modifier = Modifier, content: @Composable () 
         modifier = modifier
             .fillMaxWidth()
             .background(colors.surface, SklyankaShapes.Large)
-            .border(SklyankaSizes.BorderThin, colors.line, SklyankaShapes.Large),
+            .border(SklyankaSizes.BorderThin, colors.line, SklyankaShapes.Large)
+            // Ряды внутри карточки нажимаются и рябь должна остаться в её скруглении.
+            .clip(SklyankaShapes.Large),
     ) {
         content()
     }

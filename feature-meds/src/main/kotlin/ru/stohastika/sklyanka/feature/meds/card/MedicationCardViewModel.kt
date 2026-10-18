@@ -95,7 +95,7 @@ class MedicationCardViewModel @Inject constructor(
             MedCardIntent.DeleteConfirmed -> delete()
             MedCardIntent.NoticeDismissed -> local.value = local.value.copy(notice = null)
             // Переходы наружу состояния карточки не меняют: их разбирает маршрут экрана.
-            MedCardIntent.Back, MedCardIntent.Edit -> Unit
+            MedCardIntent.Edit -> Unit
         }
     }
 

@@ -17,11 +17,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.windowInsetsBottomHeight
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -63,65 +66,80 @@ enum class BottomBarTab { Today, Meds, Settings }
  *
  * Панель — полоса во всю ширину, компактная в обычном шрифте: верхнее и нижнее поле
  * `SklyankaSpacing.Micro` вокруг содержимого, поэтому значок и подпись стоят по центру
- * полосы, а не прижимаются к верхнему краю. Системная навигационная панель резервируется
- * **под** панелью отдельным прозрачным полем: её фон остаётся фоном экрана, а не
- * поверхностью панели (SKL-71 §4, SKL-72).
+ * полосы, а не прижимаются к верхнему краю. Поверхность панели продолжается **под**
+ * системной навигацией ровно на `WindowInsets.navigationBars`: при нулевом инсете
+ * дополнительной полосы нет, при трёхкнопочной панели белое поле растёт на её высоту,
+ * ряд вкладок остаётся выше. Боковые инсеты сдвигают ряд, а не поверхность (SKL-71,
+ * SKL-72, SKL-158).
  *
  * Подпись вкладки живёт на любом системном масштабе шрифта, а высота панели растёт
  * вместе с подписью (§6.3, Р-87 п. 4): крупный шрифт не отнимает у человека подписи-
  * ориентиры, значок остаётся с подписью и для чтения с экрана (НФТ-30).
  */
 @Composable
-fun BottomBar(selected: BottomBarTab, onSelect: (BottomBarTab) -> Unit, modifier: Modifier = Modifier) {
+fun BottomBar(
+    selected: BottomBarTab,
+    onSelect: (BottomBarTab) -> Unit,
+    modifier: Modifier = Modifier,
+    /**
+     * Системные инсеты навигации. Параметром, а не чтением внутри, чтобы проверка могла
+     * подставить нулевой, трёхкнопочный и боковой варианты: поверхность обязана тянуться
+     * ровно на инсет, а не на константу.
+     */
+    navigationBars: WindowInsets = WindowInsets.navigationBars,
+) {
     val colors = SklyankaTheme.colors
-    val bottomInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    Column(modifier = modifier.fillMaxWidth()) {
-        Column(
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(colors.surface)
+            .testTag(TAG_BOTTOM_BAR),
+    ) {
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(colors.surface)
-                .testTag(TAG_BOTTOM_BAR),
+                .height(SklyankaSizes.DividerThickness)
+                .background(colors.line),
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                // Боковые инсеты системной панели (ландшафт, боковая навигация) сдвигают
+                // ряд вкладок, но не поверхность: она остаётся во всю ширину.
+                .windowInsetsPadding(navigationBars.only(WindowInsetsSides.Horizontal))
+                .padding(
+                    start = SklyankaSpacing.Screen,
+                    end = SklyankaSpacing.Screen,
+                    top = SklyankaSpacing.Micro,
+                    bottom = SklyankaSpacing.Micro,
+                ),
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(SklyankaSizes.DividerThickness)
-                    .background(colors.line),
+            Tab(
+                label = stringResource(R.string.tab_today),
+                selected = selected == BottomBarTab.Today,
+                onClick = { onSelect(BottomBarTab.Today) },
+                icon = { color -> CalendarGlyph(color) },
+                modifier = Modifier.weight(1f),
             )
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(
-                        start = SklyankaSpacing.Screen,
-                        end = SklyankaSpacing.Screen,
-                        top = SklyankaSpacing.Micro,
-                        bottom = SklyankaSpacing.Micro,
-                    ),
-            ) {
-                Tab(
-                    label = stringResource(R.string.tab_today),
-                    selected = selected == BottomBarTab.Today,
-                    onClick = { onSelect(BottomBarTab.Today) },
-                    icon = { color -> CalendarGlyph(color) },
-                    modifier = Modifier.weight(1f),
-                )
-                Tab(
-                    label = stringResource(R.string.tab_meds),
-                    selected = selected == BottomBarTab.Meds,
-                    onClick = { onSelect(BottomBarTab.Meds) },
-                    icon = { color -> MedicationPictogram(color) },
-                    modifier = Modifier.weight(1f),
-                )
-                Tab(
-                    label = stringResource(R.string.tab_settings),
-                    selected = selected == BottomBarTab.Settings,
-                    onClick = { onSelect(BottomBarTab.Settings) },
-                    icon = { color -> GearGlyph(color) },
-                    modifier = Modifier.weight(1f),
-                )
-            }
+            Tab(
+                label = stringResource(R.string.tab_meds),
+                selected = selected == BottomBarTab.Meds,
+                onClick = { onSelect(BottomBarTab.Meds) },
+                icon = { color -> MedicationPictogram(color) },
+                modifier = Modifier.weight(1f),
+            )
+            Tab(
+                label = stringResource(R.string.tab_settings),
+                selected = selected == BottomBarTab.Settings,
+                onClick = { onSelect(BottomBarTab.Settings) },
+                icon = { color -> GearGlyph(color) },
+                modifier = Modifier.weight(1f),
+            )
         }
-        Spacer(modifier = Modifier.height(bottomInset))
+        // Поверхность продолжается под системную навигацию ровно на её инсет: при нулевом
+        // инсете (жесты без панели, аппаратные клавиши) лишней полосы нет; при трёхкнопочной
+        // панели белое поле растёт на её высоту, а ряд вкладок остаётся выше.
+        Spacer(modifier = Modifier.windowInsetsBottomHeight(navigationBars))
     }
 }
 

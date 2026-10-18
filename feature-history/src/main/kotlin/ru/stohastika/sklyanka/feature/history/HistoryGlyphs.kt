@@ -1,7 +1,6 @@
 package ru.stohastika.sklyanka.feature.history
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
@@ -15,7 +14,9 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
+import ru.stohastika.sklyanka.ui.modifier.clickableShape
 import ru.stohastika.sklyanka.ui.modifier.minTouchTarget
+import ru.stohastika.sklyanka.ui.token.SklyankaShapes
 import ru.stohastika.sklyanka.ui.token.SklyankaSizes
 
 /**
@@ -61,7 +62,7 @@ internal fun GlyphButton(
 ) {
     Box(
         modifier = modifier
-            .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
+            .clickableShape(SklyankaShapes.Pill, enabled = enabled, role = Role.Button, onClick = onClick)
             .minTouchTarget()
             .size(SklyankaSizes.MonthArrow)
             .semantics { this.contentDescription = contentDescription },

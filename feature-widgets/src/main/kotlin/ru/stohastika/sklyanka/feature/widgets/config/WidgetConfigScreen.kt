@@ -22,6 +22,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.selected
@@ -150,7 +151,9 @@ private fun GroupCard(content: @Composable () -> Unit) {
                 width = SklyankaSizes.BorderThin,
                 color = SklyankaTheme.colors.lineOnSurface,
                 shape = RoundedCornerShape(SklyankaShapes.CardRadius),
-            ),
+            )
+            // Строки внутри нажимаются; рябь обязана остаться в скруглении карточки.
+            .clip(RoundedCornerShape(SklyankaShapes.CardRadius)),
     ) {
         Column { content() }
     }

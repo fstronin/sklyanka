@@ -2,7 +2,6 @@ package ru.stohastika.sklyanka.feature.meds.form
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -45,6 +44,7 @@ import ru.stohastika.sklyanka.ui.component.MedicationGlyph
 import ru.stohastika.sklyanka.ui.component.MedicationPreview
 import ru.stohastika.sklyanka.ui.component.SklyankaTextField
 import ru.stohastika.sklyanka.ui.component.TabletShapeGlyph
+import ru.stohastika.sklyanka.ui.modifier.clickableShape
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaShapes
 import ru.stohastika.sklyanka.ui.token.SklyankaSizes
@@ -201,7 +201,9 @@ internal fun TabletShapeBlock(state: MedFormUiState, onIntent: (MedFormIntent) -
                             if (selected) colors.accent else colors.line,
                             SklyankaShapes.Large,
                         )
-                        .clickable(role = Role.RadioButton) { onIntent(MedFormIntent.ShapeChanged(shape)) }
+                        .clickableShape(SklyankaShapes.Large, role = Role.RadioButton) {
+                            onIntent(MedFormIntent.ShapeChanged(shape))
+                        }
                         .semantics { contentDescription = label },
                     contentAlignment = Alignment.Center,
                 ) {

@@ -7,11 +7,13 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
@@ -40,6 +42,7 @@ import ru.stohastika.sklyanka.feature.meds.card.TAG_ARCHIVE
 import ru.stohastika.sklyanka.feature.meds.card.TAG_CARD_SCROLL
 import ru.stohastika.sklyanka.feature.meds.card.TAG_COURSE_BAR
 import ru.stohastika.sklyanka.feature.meds.card.TAG_COURSE_BLOCK
+import ru.stohastika.sklyanka.feature.meds.card.TAG_EDIT
 import ru.stohastika.sklyanka.feature.meds.card.TAG_LIMIT_BLOCK
 import ru.stohastika.sklyanka.feature.meds.card.TAG_REFILL
 import ru.stohastika.sklyanka.feature.meds.card.TAG_REFILL_CANCEL
@@ -52,6 +55,7 @@ import ru.stohastika.sklyanka.feature.meds.card.TAG_STOCK_BLOCK
 import ru.stohastika.sklyanka.feature.meds.card.TAG_STOCK_VALUE
 import ru.stohastika.sklyanka.feature.meds.card.TAG_SUBTITLE
 import ru.stohastika.sklyanka.feature.meds.card.TAG_TIME_CHIP
+import ru.stohastika.sklyanka.feature.meds.card.TAG_TITLE
 import ru.stohastika.sklyanka.feature.meds.card.TAG_WEEK_BLOCK
 import ru.stohastika.sklyanka.ui.component.TAG_ADHERENCE_DAY
 import ru.stohastika.sklyanka.ui.component.TAG_ADHERENCE_LEGEND
@@ -406,10 +410,29 @@ class MedicationCardScreenTest {
     }
 
     @Test
-    fun theBackArrowIsLabelledForAScreenReader() {
+    fun theCardDoesNotDuplicateTheSystemBack() {
         show(state())
 
-        composeRule.onNodeWithContentDescription(context.getString(UiR.string.cd_back)).assertIsDisplayed()
+        composeRule
+            .onAllNodesWithContentDescription(context.getString(UiR.string.cd_back))
+            .assertCountEquals(0)
+    }
+
+    @Test
+    fun theEditActionStandsInTheBottomActionRow() {
+        show(state())
+
+        val title = composeRule.onNodeWithTag(TAG_TITLE).fetchSemanticsNode()
+        val edit = composeRule.onNodeWithTag(TAG_EDIT).fetchSemanticsNode()
+
+        assertTrue(
+            "«Изменить» must stand below the title: ${edit.boundsInRoot.top} > ${title.boundsInRoot.bottom}",
+            edit.boundsInRoot.top >= title.boundsInRoot.bottom,
+        )
+        assertTrue(
+            "«Изменить» must remain inside the screen: ${edit.boundsInRoot}",
+            edit.boundsInRoot.bottom <= composeRule.onRoot().fetchSemanticsNode().size.height.toFloat(),
+        )
     }
 
     @Test

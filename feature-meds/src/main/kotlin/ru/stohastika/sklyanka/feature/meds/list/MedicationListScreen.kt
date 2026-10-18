@@ -1,7 +1,6 @@
 package ru.stohastika.sklyanka.feature.meds.list
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,6 +32,7 @@ import ru.stohastika.sklyanka.ui.component.ScreenHeader
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderLabels
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderState
 import ru.stohastika.sklyanka.ui.component.rememberScreenHeaderState
+import ru.stohastika.sklyanka.ui.modifier.clickableShape
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaShapes
 import ru.stohastika.sklyanka.ui.token.SklyankaSizes
@@ -180,7 +180,7 @@ private fun AddMedicationButton(onClick: () -> Unit, modifier: Modifier = Modifi
         modifier = modifier
             .size(SklyankaSizes.AddButton)
             .background(colors.accent, SklyankaShapes.Pill)
-            .clickable(role = Role.Button, onClick = onClick)
+            .clickableShape(SklyankaShapes.Pill, role = Role.Button, onClick = onClick)
             .semantics { contentDescription = label }
             .testTag(TAG_ADD_MEDICATION),
         contentAlignment = Alignment.Center,

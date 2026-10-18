@@ -64,6 +64,29 @@ class MedicationCardDeviceTest : DeviceScreenTest() {
         capture("med-card-refilled")
     }
 
+    /**
+     * Системный «Назад» закрывает карточку: своего шеврона у неё больше нет (SKL-158).
+     * Возврат — тот же жест/кнопка платформы, каким выходит форма лекарства (Р-54).
+     */
+    @Test
+    fun theSystemBackReturnsToTheList() {
+        val name = testContext.getString(R.string.device_test_medication_card)
+        seedMedication(id = "dev-med-back", name = name, times = listOf(DeviceTestClock.scheduledTime))
+        planIntakes()
+
+        launchApp()
+        awaitRoot()
+        openMedications()
+        scrollTo(TAG_MEDICATION_LIST, TAG_MEDICATION_CARD)
+        click(TAG_MEDICATION_CARD)
+        waitForTag(TAG_MEDICATION_CARD_SCREEN)
+
+        pressBack()
+
+        waitForTag(TAG_MEDICATION_LIST)
+        capture("list-after-system-back")
+    }
+
     private companion object {
         const val COURSE_DAYS = 30L
         const val STOCK_BEFORE = "9"

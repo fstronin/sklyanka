@@ -18,6 +18,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -57,7 +58,9 @@ internal fun SettingsCard(modifier: Modifier = Modifier, content: @Composable Co
         modifier = modifier
             .fillMaxWidth()
             .background(colors.surface, SklyankaShapes.Card)
-            .border(SklyankaSizes.BorderThin, colors.lineOnSurface, SklyankaShapes.Card),
+            .border(SklyankaSizes.BorderThin, colors.lineOnSurface, SklyankaShapes.Card)
+            // Строки внутри нажимаются; рябь обязана остаться в скруглении карточки.
+            .clip(SklyankaShapes.Card),
         content = content,
     )
 }

@@ -9,9 +9,6 @@ package ru.stohastika.sklyanka.feature.meds.card
  */
 sealed interface MedCardIntent {
 
-    /** Стрелка «Назад»: возврат в список лекарств. Разбирает маршрут. */
-    data object Back : MedCardIntent
-
     /** «Изменить»: та же форма, что и заведение лекарства (SKL-09). Разбирает маршрут. */
     data object Edit : MedCardIntent
 

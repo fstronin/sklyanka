@@ -2,7 +2,6 @@ package ru.stohastika.sklyanka.feature.meds.archive
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -44,6 +43,7 @@ import ru.stohastika.sklyanka.ui.component.ScreenHeaderLabels
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderState
 import ru.stohastika.sklyanka.ui.component.SecondaryButton
 import ru.stohastika.sklyanka.ui.component.rememberScreenHeaderState
+import ru.stohastika.sklyanka.ui.modifier.clickableShape
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaShapes
 import ru.stohastika.sklyanka.ui.token.SklyankaSizes
@@ -305,7 +305,9 @@ private fun ArchivedMedicationCard(card: ArchiveCard, onIntent: (ArchiveIntent) 
             .fillMaxWidth()
             .background(colors.archiveBackground, SklyankaShapes.Card)
             .border(SklyankaSizes.BorderThin, colors.lineOnSurface, SklyankaShapes.Card)
-            .clickable(role = Role.Button, onClick = { onIntent(ArchiveIntent.OpenMedication(card.medicationId)) })
+            .clickableShape(SklyankaShapes.Card, role = Role.Button, onClick = {
+                onIntent(ArchiveIntent.OpenMedication(card.medicationId))
+            })
             .padding(SklyankaSpacing.Large)
             .testTag(TAG_ARCHIVE_CARD),
         verticalAlignment = Alignment.CenterVertically,

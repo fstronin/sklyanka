@@ -11,6 +11,7 @@ import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -681,14 +682,24 @@ class MedCardScreenSteps(private val world: AcceptanceWorld) {
         MedCardStand.ask(world, medication) { test -> test.onNodeWithTag(TAG_CARD_TITLE).assertIsDisplayed() }
     }
 
-    @Когда("^он нажимает «Назад»$")
-    fun thePersonPressesBack() {
-        val intents = MedCardStand.act(world, focusedMedication()) { test ->
-            // Возврат — шеврон с доступным именем «Назад» (§7, Р-30): ищем по имени,
-            // а не по тегу разметки.
-            test.onNodeWithContentDescription(context.getString(UiR.string.cd_back)).performClick()
+    @Тогда("^у карточки нет шеврона «Назад»$")
+    fun theCardHasNoBackChevron() {
+        MedCardStand.ask(world, focusedMedication()) { test ->
+            test.onAllNodesWithContentDescription(context.getString(UiR.string.cd_back))
+                .assertCountEquals(0)
         }
-        assertTrue("the back chevron must return to the list: $intents", MedCardIntent.Back in intents)
+    }
+
+    @Тогда("^«Изменить» стоит в нижнем ряду действий$")
+    fun theEditStandsInTheBottomActionRow() {
+        MedCardStand.ask(world, focusedMedication()) { test ->
+            val title = test.onNodeWithTag(TAG_CARD_TITLE).fetchSemanticsNode()
+            val edit = test.onNodeWithTag(TAG_EDIT).fetchSemanticsNode()
+            assertTrue(
+                "«Изменить» must stand below the title: ${edit.boundsInRoot.top} > ${title.boundsInRoot.bottom}",
+                edit.boundsInRoot.top >= title.boundsInRoot.bottom,
+            )
+        }
     }
 
     @Тогда("^открывается список лекарств$")

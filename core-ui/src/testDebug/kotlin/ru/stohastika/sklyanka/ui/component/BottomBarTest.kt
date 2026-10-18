@@ -1,5 +1,6 @@
 package ru.stohastika.sklyanka.ui.component
 
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -13,6 +14,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.assertEquals
@@ -122,6 +124,46 @@ class BottomBarTest {
         assertTrue("the bar must grow with the font: $normalHeight -> $largeHeight", largeHeight > normalHeight)
     }
 
+    /**
+     * Поверхность растёт ровно на системный инсет и не больше: при нулевом инсете
+     * лишней полосы нет, при 48 dp белое поле увеличивается на 48 dp, а ряд вкладок
+     * остаётся выше него. Это ответ на систему без нижней панели и на трёхкнопочную.
+     */
+    @Test
+    fun theSurfaceStretchesExactlyByTheNavigationInset() {
+        var inset by mutableStateOf(0.dp)
+        composeTestRule.setContent {
+            SklyankaTheme {
+                BottomBar(
+                    selected = BottomBarTab.Today,
+                    onSelect = {},
+                    navigationBars = WindowInsets(0.dp, 0.dp, 0.dp, inset),
+                )
+            }
+        }
+        val base = barHeightDp()
+
+        inset = 48.dp
+        composeTestRule.waitForIdle()
+
+        assertEquals("the surface must grow by the inset only", 48f, barHeightDp() - base, TOLERANCE_DP)
+        val barBottom = composeTestRule.onNodeWithTag(TAG_BOTTOM_BAR).fetchSemanticsNode().boundsInRoot.bottom
+        val labelBottom = composeTestRule
+            .onNodeWithText(context.getString(R.string.tab_today))
+            .fetchSemanticsNode()
+            .boundsInRoot
+            .bottom
+        val insetPx = with(composeTestRule.density) { 48.dp.toPx() }
+        assertTrue(
+            "the tabs must stay above the inset: bar $barBottom, label $labelBottom",
+            barBottom - labelBottom >= insetPx - 1f,
+        )
+    }
+
+    private fun barHeightDp(): Float = with(composeTestRule.density) {
+        composeTestRule.onNodeWithTag(TAG_BOTTOM_BAR).fetchSemanticsNode().size.height.toDp().value
+    }
+
     private fun labels(): List<String> = listOf(
         context.getString(R.string.tab_today),
         context.getString(R.string.tab_meds),
@@ -134,5 +176,10 @@ class BottomBarTest {
                 BottomBar(selected = selected, onSelect = onSelect)
             }
         }
+    }
+
+    private companion object {
+        /** Округление плотности может отнять доли точки. */
+        const val TOLERANCE_DP = 1f
     }
 }
