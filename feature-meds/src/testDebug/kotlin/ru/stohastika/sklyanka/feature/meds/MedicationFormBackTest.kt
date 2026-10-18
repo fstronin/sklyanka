@@ -87,6 +87,11 @@ class MedicationFormBackTest {
     fun tearDownTheStand() {
         controllers.forEach { runCatching { it.destroy() } }
         controllers.clear()
+        // Диалог подтверждения живёт своим окном и анимируется вне часов правила: после
+        // уничтожения активности на главном лупере остаются его задачи, и следующий
+        // Compose-тест в том же процессе никогда не видит покоя (`AppNotIdle`). Гасим
+        // луппер, как это уже делает проверка поворота.
+        shadowOf(Looper.getMainLooper()).idle()
     }
 
     @Test
