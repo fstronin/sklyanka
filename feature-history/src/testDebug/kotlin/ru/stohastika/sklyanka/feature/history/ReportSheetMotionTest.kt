@@ -10,6 +10,7 @@ import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Rule
@@ -33,14 +34,14 @@ class ReportSheetMotionTest {
         show()
         composeRule.onAllNodesWithTag(TAG_REPORT_SHEET).assertCountEquals(0)
 
-        composeRule.onNodeWithTag(TAG_REPORT_ACTION).performClick()
+        composeRule.onNodeWithTag(TAG_REPORT_ACTION).performScrollTo().performClick()
         composeRule.onNodeWithTag(TAG_REPORT_SHEET).assertIsDisplayed()
 
         composeRule.onNodeWithText(context.getString(UiR.string.action_cancel)).performClick()
         composeRule.waitForIdle()
         composeRule.onAllNodesWithTag(TAG_REPORT_SHEET).assertCountEquals(0)
 
-        composeRule.onNodeWithTag(TAG_REPORT_ACTION).performClick()
+        composeRule.onNodeWithTag(TAG_REPORT_ACTION).performScrollTo().performClick()
         composeRule.onNodeWithTag(TAG_REPORT_SHEET).assertIsDisplayed()
     }
 

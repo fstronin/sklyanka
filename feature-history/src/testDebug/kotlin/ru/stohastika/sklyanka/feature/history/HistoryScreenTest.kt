@@ -13,6 +13,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -48,32 +49,63 @@ class HistoryScreenTest {
 
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
 
+    /** Шапка несёт возврат и название; действие выгрузки живёт в конце содержимого (Р-88). */
     @Test
-    fun theHeaderCarriesTheTitleAndTheReportAction() {
+    fun theHeaderCarriesTheTitleAndTheReturn() {
         show(HistoryStates.september())
 
         composeRule.onNodeWithText(context.getString(R.string.history_title)).assertIsDisplayed()
-        composeRule.onNodeWithTag(TAG_REPORT_ACTION).assertIsDisplayed()
-        composeRule.onNodeWithText(context.getString(R.string.history_report_action)).assertIsDisplayed()
+        composeRule.onNodeWithContentDescription(context.getString(UiR.string.cd_back)).assertIsDisplayed()
+        composeRule.onNodeWithTag(TAG_REPORT_ACTION).performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText(context.getString(R.string.history_report_action))
+            .performScrollTo()
+            .assertIsDisplayed()
+    }
+
+    /** «Отчёт врачу» — последний блок содержимого, ниже разбивки и во всю ширину (Р-88). */
+    @Test
+    fun theReportActionStandsAtTheEndOfTheContent() {
+        show(HistoryStates.september())
+
+        val header = composeRule.onNodeWithTag(TAG_SCREEN_HEADER).fetchSemanticsNode()
+        val summary = composeRule.onNodeWithTag(TAG_SUMMARY).fetchSemanticsNode()
+        val breakdown = composeRule.onNodeWithTag(TAG_BREAKDOWN).fetchSemanticsNode()
+        val action = composeRule.onNodeWithTag(TAG_REPORT_ACTION).fetchSemanticsNode()
+        assertTrue(
+            "the action must stand below the header, but it is ${action.boundsInRoot} and the header ends at ${header.boundsInRoot.bottom}",
+            action.boundsInRoot.top >= header.boundsInRoot.bottom,
+        )
+        assertTrue(
+            "the action must follow the breakdown, but it is ${action.boundsInRoot} and the breakdown ends at ${breakdown.boundsInRoot.bottom}",
+            action.boundsInRoot.top >= breakdown.boundsInRoot.bottom,
+        )
+        // Ширина содержимого — по ряду плиток: у карточки разбивки тег стоит внутри её
+        // поля, и её габарит уже на два поля.
+        assertEquals(
+            "the action must span the content width: ${action.size.width} vs ${summary.size.width}",
+            summary.size.width,
+            action.size.width,
+        )
     }
 
     /**
      * Развёрнутая шапка начинается своим верхним полем: ряд места не держит (§7).
      *
      * Закреплённый ряд — слой над прокруткой, и до порога его не видно: 56 dp в потоке
-     * не резервируются, иначе над рядом действия и крупным заголовком встала бы пустая
-     * полоса. Отсчёт идёт от верхней грани шапки до её первой строки — ряда действия.
+     * не резервируются, иначе над рядом возврата и крупным заголовком встала бы пустая
+     * полоса. Отсчёт идёт от верхней грани шапки до её первой строки — ряда возврата.
      */
     @Test
     fun theHeaderStartsAtItsOwnTopPaddingWhileTheRowIsHidden() {
         show(HistoryStates.september())
 
         val header = composeRule.onNodeWithTag(TAG_SCREEN_HEADER).fetchSemanticsNode()
-        val action = composeRule.onNodeWithTag(TAG_REPORT_ACTION).fetchSemanticsNode()
-        val gap = with(composeRule.density) { (action.boundsInRoot.top - header.boundsInRoot.top).toDp() }
+        val back = composeRule.onNodeWithContentDescription(context.getString(UiR.string.cd_back))
+            .fetchSemanticsNode()
+        val gap = with(composeRule.density) { (back.boundsInRoot.top - header.boundsInRoot.top).toDp() }
         val padding = with(composeRule.density) { SklyankaSizes.HeaderTopPadding }
         assertTrue(
-            "the action row stands $gap from the header top, and only the top padding ($padding) is allowed",
+            "the return row stands $gap from the header top, and only the top padding ($padding) is allowed",
             gap <= padding + 1.dp,
         )
     }
@@ -381,7 +413,7 @@ class HistoryScreenTest {
             }
         }
 
-        composeRule.onNodeWithTag(TAG_REPORT_ACTION).performClick()
+        composeRule.onNodeWithTag(TAG_REPORT_ACTION).performScrollTo().performClick()
 
         composeRule.onNodeWithTag(TAG_REPORT_SHEET).assertIsDisplayed()
         composeRule.onNodeWithTag(TAG_REPORT_DATA_NOTE).assertIsDisplayed()
@@ -408,12 +440,12 @@ class HistoryScreenTest {
             }
         }
 
-        composeRule.onNodeWithTag(TAG_REPORT_ACTION).performClick()
+        composeRule.onNodeWithTag(TAG_REPORT_ACTION).performScrollTo().performClick()
         composeRule.onNodeWithText(context.getString(UiR.string.action_cancel)).performClick()
 
         composeRule.onAllNodesWithTag(TAG_REPORT_SHEET).assertCountEquals(0)
 
-        composeRule.onNodeWithTag(TAG_REPORT_ACTION).performClick()
+        composeRule.onNodeWithTag(TAG_REPORT_ACTION).performScrollTo().performClick()
 
         composeRule.onNodeWithTag(TAG_REPORT_SHEET).assertIsDisplayed()
     }

@@ -9,6 +9,7 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.runComposeUiTest
@@ -19,19 +20,23 @@ import androidx.test.core.app.ApplicationProvider
 import io.cucumber.java.ru.Допустим
 import io.cucumber.java.ru.И
 import io.cucumber.java.ru.Тогда
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import ru.stohastika.sklyanka.feature.history.HistoryScreen
 import ru.stohastika.sklyanka.feature.history.HistoryStates
 import ru.stohastika.sklyanka.feature.history.HistoryUiState
 import ru.stohastika.sklyanka.feature.history.R
+import ru.stohastika.sklyanka.feature.history.TAG_BREAKDOWN
 import ru.stohastika.sklyanka.feature.history.TAG_REPORT_ACTION
 import ru.stohastika.sklyanka.feature.history.TAG_REPORT_CONTENT
 import ru.stohastika.sklyanka.feature.history.TAG_REPORT_DATA_NOTE
 import ru.stohastika.sklyanka.feature.history.TAG_REPORT_SAVE
 import ru.stohastika.sklyanka.feature.history.TAG_REPORT_SHARE
+import ru.stohastika.sklyanka.feature.history.TAG_SUMMARY
 import ru.stohastika.sklyanka.ui.component.TAG_SCREEN_HEADER
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaSizes
+import ru.stohastika.sklyanka.ui.R as UiR
 
 @OptIn(ExperimentalTestApi::class)
 @Suppress("TooManyFunctions")
@@ -47,29 +52,65 @@ class Sk90HistoryLayoutScreenSteps {
     fun theTopPaddingIsAppliedOnce() = probe(HistoryStates.september()) {
         // Крупный отступ шапка берёт один раз и с самой верхней грани (§4, §7): закреплённый
         // ряд — слой над прокруткой, до порога его не видно и места в потоке он не держит.
-        // Полоса ряда перед заголовком означала бы второй отступ.
+        // Полоса ряда перед заголовком означала бы второй отступ. Первая строка шапки —
+        // ряд возврата: действия в шапке «Истории» нет (Р-88).
         val header = onNodeWithTag(TAG_SCREEN_HEADER).fetchSemanticsNode()
-        val action = onNodeWithTag(TAG_REPORT_ACTION).fetchSemanticsNode()
-        val gap = with(density) { (action.boundsInRoot.top - header.boundsInRoot.top).toDp() }
+        val back = onNodeWithContentDescription(context.getString(UiR.string.cd_back)).fetchSemanticsNode()
+        val gap = with(density) { (back.boundsInRoot.top - header.boundsInRoot.top).toDp() }
         val padding = with(density) { SklyankaSizes.HeaderTopPadding }
         assertTrue(
-            "the header must take its top padding once ($padding), but its action row starts $gap below the top",
+            "the header must take its top padding once ($padding), but its return row starts $gap below the top",
             gap <= padding + TOLERANCE,
         )
     }
 
-    @И("^между рядом действия и заголовком «История» зазор не больше 12 dp$")
-    fun theTitleFollowsTheActionRow() = probe(HistoryStates.september()) {
-        // Ряд действия стоит в прокручиваемой шапке — так нарисован макет «История — покой»;
-        // заголовок следует за рядом, а не за кнопкой, поэтому считаем от нижней грани ряда
-        // действия (кнопка «Отчёт врачу» в цели 44 dp) (§7).
-        val action = onNodeWithTag(TAG_REPORT_ACTION).fetchSemanticsNode()
+    @И("^между рядом возврата и заголовком «История» зазор не больше 12 dp$")
+    fun theTitleFollowsTheReturnRow() = probe(HistoryStates.september()) {
+        // Ряд возврата стоит в прокручиваемой шапке — так нарисован макет «История — покой»;
+        // заголовок следует за рядом. Действия в ряду нет: «Отчёт врачу» живёт в конце
+        // содержимого (Р-88), поэтому нижняя граница ряда — шеврон в цели 44 dp (§7).
+        val back = onNodeWithContentDescription(context.getString(UiR.string.cd_back)).fetchSemanticsNode()
         val title = onNodeWithText(context.getString(R.string.history_title)).fetchSemanticsNode()
-        val gap = with(density) { (title.boundsInRoot.top - action.boundsInRoot.bottom).toDp() }
+        val gap = with(density) { (title.boundsInRoot.top - back.boundsInRoot.bottom).toDp() }
         assertTrue(
-            "the title must follow the action row closely, but the gap is $gap " +
-                "(title=${title.boundsInRoot}, action=${action.boundsInRoot})",
+            "the title must follow the return row closely, but the gap is $gap " +
+                "(title=${title.boundsInRoot}, back=${back.boundsInRoot})",
             gap in MIN_GAP..MAX_GAP,
+        )
+    }
+
+    @Тогда("^в шапке «Истории» нет действия «Отчёт врачу»$")
+    fun theHeaderHasNoReportAction() = probe(HistoryStates.september()) {
+        val header = onNodeWithTag(TAG_SCREEN_HEADER).fetchSemanticsNode()
+        val action = onNodeWithTag(TAG_REPORT_ACTION).fetchSemanticsNode()
+        assertTrue(
+            "the report action must stand below the header, but it is ${action.boundsInRoot} " +
+                "inside ${header.boundsInRoot}",
+            action.boundsInRoot.top >= header.boundsInRoot.bottom,
+        )
+    }
+
+    @И("^кнопка «Отчёт врачу» стоит ниже блока «По лекарствам»$")
+    fun theReportActionFollowsTheBreakdown() = probe(HistoryStates.september()) {
+        val breakdown = onNodeWithTag(TAG_BREAKDOWN).fetchSemanticsNode()
+        val action = onNodeWithTag(TAG_REPORT_ACTION).fetchSemanticsNode()
+        assertTrue(
+            "the report action must follow the breakdown, but it is ${action.boundsInRoot} " +
+                "above ${breakdown.boundsInRoot}",
+            action.boundsInRoot.top >= breakdown.boundsInRoot.bottom,
+        )
+    }
+
+    @И("^кнопка «Отчёт врачу» занимает ширину содержимого$")
+    fun theReportActionSpansTheContentWidth() = probe(HistoryStates.september()) {
+        // Ширина содержимого — по ряду плиток: у карточки разбивки тег стоит внутри её поля,
+        // и её габарит уже на два поля (§5.4).
+        val summary = onNodeWithTag(TAG_SUMMARY).fetchSemanticsNode()
+        val action = onNodeWithTag(TAG_REPORT_ACTION).fetchSemanticsNode()
+        assertEquals(
+            "the report action must span the content width: ${action.size.width} vs ${summary.size.width}",
+            summary.size.width,
+            action.size.width,
         )
     }
 

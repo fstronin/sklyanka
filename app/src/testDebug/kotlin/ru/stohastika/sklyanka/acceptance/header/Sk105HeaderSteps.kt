@@ -424,23 +424,6 @@ class Sk105HeaderSteps(private val world: AcceptanceWorld) {
         fontScale = percent / PERCENT
     }
 
-    @Тогда("^компактного заголовка нет$")
-    fun thereIsNoCompactTitle() {
-        // Сценарий называет немецкий язык и 200 %: немецкое название истории вместе
-        // с действием «Arztbericht» не помещается в строку, и порог — фактическая ширина
-        // подписи, а не `fontScale` (§6.3, §7). Язык сценария задаёт Предыстория, и стенд
-        // собирает экран на том же немецком ресурсе.
-        runComposeUiTest {
-            setContent {
-                Stand(locale = GERMAN, fontScale = fontScale) {
-                    Window { HistoryScreen(state = historyState(), onIntent = {}) }
-                }
-            }
-            scrollToEnd()
-            onAllNodesWithTag(TAG_COMPACT_TITLE, useUnmergedTree = true).assertCountEquals(0)
-        }
-    }
-
     @И("^крупный заголовок не обрезан$")
     fun theLargeTitleIsNotTruncated() {
         runComposeUiTest {

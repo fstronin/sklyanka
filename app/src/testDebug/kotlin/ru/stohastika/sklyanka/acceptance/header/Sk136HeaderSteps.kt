@@ -495,8 +495,17 @@ class Sk136HeaderSteps(private val world: AcceptanceWorld) {
 
     /** Текстовые узлы внутри названной части экрана: под шторкой стоит тот же экран целиком. */
     private fun ComposeUiTest.inSheet(sheet: SemanticsNode, text: String): List<SemanticsNode> =
-        onAllNodesWithText(text, useUnmergedTree = true).fetchSemanticsNodes()
-            .filter { sheet.boundsInRoot.contains(it.boundsInRoot.center) }
+        nodesUnder(sheet).filter { node ->
+            node.config.getOrNull(SemanticsProperties.Text).orEmpty().any { it.text == text }
+        }
+
+    /**
+     * Узлы поддерева, а не по границам: действие «Отчёт врачу» переехало в конец
+     * содержимого «Истории» (Р-88) и лежит под шторкой — по границам его подпись
+     * читалась бы как вторая подпись шторки.
+     */
+    private fun nodesUnder(node: SemanticsNode): List<SemanticsNode> =
+        listOf(node) + node.children.flatMap(::nodesUnder)
 
     /** Разрешённый стиль подписи: им проверяются роли действия шапки (ОВ-146, §7). */
     private fun ComposeUiTest.styleOf(node: SemanticsNode): TextStyle {

@@ -11,6 +11,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.runComposeUiTest
 import androidx.test.platform.app.InstrumentationRegistry
 import io.cucumber.java.ru.Допустим
@@ -53,7 +54,7 @@ class Sk64ReportSheetScreenSteps {
             }
         }
 
-        onNodeWithTag(TAG_REPORT_ACTION).performClick()
+        onNodeWithTag(TAG_REPORT_ACTION).performScrollTo().performClick()
         mainClock.advanceTimeByFrame()
         waitForIdle()
 
@@ -69,7 +70,7 @@ class Sk64ReportSheetScreenSteps {
                 HistoryScreen(state = state, onIntent = { intent -> state = state.after(intent) })
             }
         }
-        onNodeWithTag(TAG_REPORT_ACTION).performClick()
+        onNodeWithTag(TAG_REPORT_ACTION).performScrollTo().performClick()
         mainClock.autoAdvance = true
         waitForIdle()
 
@@ -91,7 +92,7 @@ class Sk64ReportSheetScreenSteps {
                 HistoryScreen(state = state, onIntent = { intent -> state = state.after(intent) })
             }
         }
-        onNodeWithTag(TAG_REPORT_ACTION).performClick()
+        onNodeWithTag(TAG_REPORT_ACTION).performScrollTo().performClick()
         mainClock.autoAdvance = true
         waitForIdle()
 

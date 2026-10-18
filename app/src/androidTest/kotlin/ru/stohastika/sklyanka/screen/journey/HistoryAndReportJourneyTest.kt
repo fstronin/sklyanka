@@ -13,6 +13,7 @@ import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import dagger.hilt.android.testing.HiltAndroidTest
 import kotlinx.coroutines.runBlocking
@@ -289,7 +290,7 @@ class HistoryAndReportJourneyTest : JourneyTest() {
      */
     private fun openReportSheetWithPreviousMonth() {
         assertFalse("no transfer control on the history screen", exists(TAG_REPORT_SHARE))
-        click(TAG_REPORT_ACTION)
+        waitForTag(TAG_REPORT_ACTION).performScrollTo().performClick()
         waitForTag(TAG_REPORT_SHEET)
         waitForTag(TAG_REPORT_CONTENT)
         assertTrue("the empty current month must say so", exists(TAG_REPORT_EMPTY))

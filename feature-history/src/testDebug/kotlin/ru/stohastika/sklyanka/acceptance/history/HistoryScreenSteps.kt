@@ -19,6 +19,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.runComposeUiTest
 import androidx.test.core.app.ApplicationProvider
 import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
@@ -558,7 +559,9 @@ class HistoryScreenSteps(private val world: AcceptanceWorld) {
 
     @When("^(?:человек|он) нажимает «Отчёт врачу»$")
     fun thePersonPressesTheReportAction() {
-        val intents = HistoryScreenProbe.act(world) { test -> test.onNodeWithTag(TAG_REPORT_ACTION).performClick() }
+        val intents = HistoryScreenProbe.act(world) { test ->
+            test.onNodeWithTag(TAG_REPORT_ACTION).performScrollTo().performClick()
+        }
         assertTrue("the button must ask for the report: $intents", intents.contains(HistoryIntent.ReportRequested))
     }
 

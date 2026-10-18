@@ -22,6 +22,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import ru.stohastika.sklyanka.domain.history.OnTimeShare
+import ru.stohastika.sklyanka.ui.component.ButtonForm
 import ru.stohastika.sklyanka.ui.component.PinnedHeaderBar
 import ru.stohastika.sklyanka.ui.component.ScreenHeader
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderKind
@@ -39,9 +40,9 @@ import ru.stohastika.sklyanka.ui.token.SklyankaType
  * Экран истории приёмов (`design/screens/History.dc.html`).
  *
  * Состояния не держит вовсе: всё приходит в [state], наружу уходят только намерения.
- * Порядок блоков — за макетом: шапка со стрелкой «Назад» и кнопкой «Отчёт врачу»,
- * заголовок «История», три плитки сводки, календарь месяца, блок «По лекарствам»
- * и строка-вывод. Нижней панели нет: это экран второго уровня.
+ * Порядок блоков — за макетом: шапка со стрелкой «Назад», заголовок «История», три плитки
+ * сводки, календарь месяца, блок «По лекарствам» и строка-вывод; «Отчёт врачу» —
+ * последний элемент содержимого (Р-88). Нижней панели нет: это экран второго уровня.
  *
  * **Индикация чужого профиля действует и здесь, хотя её нет в макете.**
  * `History.dc.html` не несёт её вовсе, и `docs/norm/04-behavior.md` называет это прямо:
@@ -57,7 +58,7 @@ import ru.stohastika.sklyanka.ui.token.SklyankaType
  * «отметили вы» — относится к отметке, а не к экрану, и живёт в блоке «По лекарствам».
  *
  * Экран прокручивается целиком: при крупном системном шрифте блоки растут по высоте,
- * и кнопка «Отчёт врачу» обязана остаться достижимой (НФТ-31).
+ * и кнопка «Отчёт врачу» — последний элемент прокрутки — остаётся достижимой (НФТ-31).
  *
  * **Шторка отчёта лежит поверх содержимого, а не рядом с ним.** Корень экрана — `Box`:
  * соседом в столбце шторка получала нулевой остаток высоты (`Column` меряет детей без
@@ -83,14 +84,15 @@ fun HistoryScreen(state: HistoryUiState, onIntent: (HistoryIntent) -> Unit, modi
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Large),
             ) {
-                // Возврат и «Отчёт врачу» стоят в прокручиваемой шапке, как нарисован
-                // макет «История — покой»; на пороге те же кнопки рисует ряд (§7).
+                // Возврат стоит в прокручиваемой шапке, как нарисован макет «История —
+                // покой»; на пороге его рисует ряд (§7). Действия в шапке нет: «Отчёт
+                // врачу» — выгрузка данных, которые человек видит ниже, и живёт в конце
+                // содержимого (Р-88).
                 ScreenHeader(
                     labels = labels,
                     kind = ScreenHeaderKind.Nested,
                     pinning = header,
                     onBack = { onIntent(HistoryIntent.Back) },
-                    trailing = { ReportAction(onIntent) },
                 )
                 Column(
                     modifier = Modifier.padding(horizontal = SklyankaSpacing.Section),
@@ -103,6 +105,9 @@ fun HistoryScreen(state: HistoryUiState, onIntent: (HistoryIntent) -> Unit, modi
                     if (state.period.byMedication.isNotEmpty()) {
                         MedicationBreakdown(rows = state.period.byMedication, insightTime = state.insightTime)
                     }
+                    // Действие стоит после данных, к которым относится: отчёт строится
+                    // по тому, что человек видит выше (Р-88).
+                    ReportAction(onIntent)
                 }
                 Spacer(modifier = Modifier.padding(bottom = SklyankaSpacing.Screen))
             }
@@ -114,10 +119,11 @@ fun HistoryScreen(state: HistoryUiState, onIntent: (HistoryIntent) -> Unit, modi
 }
 
 /**
- * Закреплённый ряд «Истории»: возврат и «Отчёт врачу» (§7).
+ * Закреплённый ряд «Истории»: возврат и компактный заголовок (§7).
  *
- * Ряд — слой над прокруткой и включается порогом; до него те же кнопки рисует шапка
- * в содержимом, поэтому состав у них один.
+ * Ряд — слой над прокруткой и включается порогом; до него те же элементы рисует шапка
+ * в содержимом. Действия в ряду нет: «Отчёт врачу» стоит последним в содержимом (Р-88),
+ * и дублировать его второй кнопкой незачем.
  */
 @Composable
 private fun HistoryPinnedRow(
@@ -132,17 +138,22 @@ private fun HistoryPinnedRow(
         modifier = modifier,
         kind = ScreenHeaderKind.Nested,
         onBack = { onIntent(HistoryIntent.Back) },
-        trailing = { ReportAction(onIntent) },
     )
 }
 
-/** «Отчёт врачу» — одно и то же действие в шапке и в ряду. */
+/**
+ * «Отчёт врачу» — последний элемент содержимого (Р-88).
+ *
+ * Форма `Screen` 52 dp и ширина содержимого: выгрузка видна и нажимается как действие
+ * экрана, но остаётся второстепенной — она не главное, за чем сюда приходят.
+ */
 @Composable
 private fun ReportAction(onIntent: (HistoryIntent) -> Unit) {
     SecondaryButton(
         text = stringResource(R.string.history_report_action),
         onClick = { onIntent(HistoryIntent.ReportRequested) },
-        modifier = Modifier.testTag(TAG_REPORT_ACTION),
+        form = ButtonForm.Screen,
+        modifier = Modifier.fillMaxWidth().testTag(TAG_REPORT_ACTION),
     )
 }
 
