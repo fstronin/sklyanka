@@ -1,14 +1,18 @@
 package ru.stohastika.sklyanka.ui.component
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -34,6 +38,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import ru.stohastika.sklyanka.ui.R
@@ -59,6 +64,10 @@ import java.time.LocalTime
  * диалога не совпадает с полем макета, и оболочку пришлось бы перебивать отступами.
  * Ширину задаёт собственная вёрстка.
  */
+// Параметров восемь: два поля (диалога и содержимого) нужны, чтобы сетка дат
+// получила 336 dp, а заголовок и действия сохранили поле `Block`. Контейнер из двух
+// полей спрятал бы, что именно объявляет вызывающий.
+@Suppress("LongParameterList")
 @Composable
 internal fun DateTimePickerShell(
     title: String,
@@ -66,6 +75,10 @@ internal fun DateTimePickerShell(
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
     modifier: Modifier = Modifier,
+    /** Поле диалога от края экрана: у даты оно меньше, иначе сетка M3 не помещается. */
+    horizontalPadding: Dp = SklyankaSpacing.Screen,
+    /** Поле содержимого внутри оболочки: у даты ноль — сетка забирает всю ширину. */
+    contentHorizontalPadding: Dp = SklyankaSpacing.Block,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val colors = SklyankaTheme.colors
@@ -80,14 +93,21 @@ internal fun DateTimePickerShell(
             Surface(
                 modifier = modifier
                     .fillMaxWidth()
-                    .padding(SklyankaSpacing.Screen)
+                    .padding(horizontal = horizontalPadding, vertical = SklyankaSpacing.Screen)
                     .testTag(TAG_DATE_TIME_PICKER),
                 shape = SklyankaShapes.Large,
                 color = colors.surface,
                 border = BorderStroke(SklyankaSizes.BorderThin, colors.lineOnSurface),
             ) {
+                // Заголовок и действия держат боковое поле `Block` сами: содержимому
+                // (сетке дат) при `contentHorizontalPadding = 0` нужна вся ширина.
+                val textPadding = (SklyankaSpacing.Block - contentHorizontalPadding)
+                    .coerceAtLeast(SklyankaSpacing.None)
                 Column(
-                    modifier = Modifier.padding(SklyankaSpacing.Block),
+                    modifier = Modifier.padding(
+                        horizontal = contentHorizontalPadding,
+                        vertical = SklyankaSpacing.Block,
+                    ),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Large),
                 ) {
@@ -95,11 +115,11 @@ internal fun DateTimePickerShell(
                         text = title,
                         style = SklyankaType.BodyDefaultStrong,
                         color = colors.text,
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = textPadding),
                     )
                     content()
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = textPadding),
                         horizontalArrangement = Arrangement.spacedBy(SklyankaSpacing.Default, Alignment.End),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
@@ -265,34 +285,53 @@ fun DateTimePickerDialog(
         onDismiss = onDismiss,
         onConfirm = { if (selected != null) onConfirm(selected.toLocalDateUtc()) },
         modifier = modifier,
+        // Сетке M3 нужно 336 dp (7 столбцов по 48 dp). На 360 dp экране это
+        // 360 − 2 × 12: поле `Screen` 24 и внутренний `Block` 16 оставляли 280 dp,
+        // сжимали предпоследнюю колонку и прятали воскресенья (SKL-157).
+        horizontalPadding = SklyankaSpacing.Medium,
+        contentHorizontalPadding = SklyankaSpacing.None,
     ) {
         // Заголовок выбранной даты M3 набирает ролью `headlineLarge`, а мост темы
         // отдаёт её `Display` (64 sp): дата не помещалась и год обрезался
         // (SKL-101, дефект заказчика). Локальная типографика берёт `Headline`
         // с потолком масштаба — как цифры тайм-пикера (ОВ-119).
         MaterialTheme(typography = datePickerTypography()) {
-            DatePicker(
-                state = state,
-                modifier = Modifier.testTag(TAG_DATE_PICKER),
-                colors = DatePickerDefaults.colors(
-                    containerColor = colors.surface,
-                    titleContentColor = colors.text,
-                    headlineContentColor = colors.accent,
-                    weekdayContentColor = colors.textMuted,
-                    subheadContentColor = colors.text,
-                    navigationContentColor = colors.text,
-                    yearContentColor = colors.text,
-                    currentYearContentColor = colors.accent,
-                    selectedYearContentColor = colors.surface,
-                    selectedYearContainerColor = colors.accent,
-                    dayContentColor = colors.text,
-                    selectedDayContentColor = colors.surface,
-                    selectedDayContainerColor = colors.accent,
-                    todayContentColor = colors.accent,
-                    todayDateBorderColor = colors.accent,
-                    dividerColor = colors.lineOnSurface,
-                ),
-            )
+            BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                // Уже 336 dp сетка не помещается: на 320 dp она прокручивается
+                // по горизонтали, но все семь дней остаются достижимы.
+                @Composable
+                fun Grid(modifier: Modifier) {
+                    DatePicker(
+                        state = state,
+                        modifier = modifier.testTag(TAG_DATE_PICKER),
+                        colors = DatePickerDefaults.colors(
+                            containerColor = colors.surface,
+                            titleContentColor = colors.text,
+                            headlineContentColor = colors.accent,
+                            weekdayContentColor = colors.textMuted,
+                            subheadContentColor = colors.text,
+                            navigationContentColor = colors.text,
+                            yearContentColor = colors.text,
+                            currentYearContentColor = colors.accent,
+                            selectedYearContentColor = colors.surface,
+                            selectedYearContainerColor = colors.accent,
+                            dayContentColor = colors.text,
+                            selectedDayContentColor = colors.surface,
+                            selectedDayContainerColor = colors.accent,
+                            todayContentColor = colors.accent,
+                            todayDateBorderColor = colors.accent,
+                            dividerColor = colors.lineOnSurface,
+                        ),
+                    )
+                }
+                if (maxWidth < SklyankaSizes.DatePickerMinWidth) {
+                    Box(modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())) {
+                        Grid(Modifier.width(SklyankaSizes.DatePickerMinWidth))
+                    }
+                } else {
+                    Grid(Modifier.fillMaxWidth())
+                }
+            }
         }
     }
 }
@@ -321,6 +360,8 @@ const val TAG_DATE_TIME_PICKER = "date_time_picker"
 const val TAG_TIME_PICKER = "date_time_picker_time"
 const val TAG_TIME_INPUT = "date_time_picker_time_input"
 const val TAG_DATE_PICKER = "date_time_picker_date"
+
+/** Минимальная ширина сетки M3: семь столбцов по 48 dp (SKL-157). */
 
 /**
  * Границы выбора дня: недоступные дни приглушены и не нажимаются (§4.14, ОВ-125).

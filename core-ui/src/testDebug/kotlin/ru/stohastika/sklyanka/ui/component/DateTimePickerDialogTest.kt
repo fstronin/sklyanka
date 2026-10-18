@@ -12,6 +12,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Assert.assertEquals
@@ -19,6 +20,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.annotation.Config
 import ru.stohastika.sklyanka.ui.R
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import java.time.LocalDate
@@ -95,6 +97,48 @@ class DateTimePickerDialogTest {
 
         assertTrue("cancel must dismiss the dialog", dismissed)
         assertEquals(null, confirmed)
+    }
+
+    /**
+     * SKL-157: на телефоне 360 dp сетка дат помещается целиком.
+     *
+     * До правки оболочка отдавала 280 dp, M3 сжимал предпоследнюю колонку в овал,
+     * а последний столбец (воскресенья) уходил за границу. Ширина 336 dp — семь
+     * столбцов по 48 dp; этого хватает, чтобы все семь дней были в сетке.
+     */
+    @Test
+    @Config(qualifiers = "w360dp-h800dp-mdpi")
+    fun theDateGridFitsThePhone() {
+        show {
+            DateTimePickerDialog(
+                title = DATE_TITLE,
+                initial = LocalDate.of(2026, 9, 25),
+                onDismiss = {},
+                onConfirm = {},
+            )
+        }
+
+        val picker = composeTestRule.onNodeWithTag(TAG_DATE_PICKER).fetchSemanticsNode()
+        val width = with(composeTestRule.density) { picker.size.width.toDp() }
+        assertTrue("the calendar needs at least 336 dp, but got $width", width >= 336.dp)
+    }
+
+    /** На 320 dp сетка не помещается и прокручивается, но её ширина остаётся 336 dp. */
+    @Test
+    @Config(qualifiers = "w320dp-h800dp-mdpi")
+    fun theNarrowPhoneKeepsTheWholeDateGrid() {
+        show {
+            DateTimePickerDialog(
+                title = DATE_TITLE,
+                initial = LocalDate.of(2026, 9, 25),
+                onDismiss = {},
+                onConfirm = {},
+            )
+        }
+
+        val picker = composeTestRule.onNodeWithTag(TAG_DATE_PICKER).fetchSemanticsNode()
+        val width = with(composeTestRule.density) { picker.size.width.toDp() }
+        assertTrue("the grid must keep its 336 dp on a narrow phone, but got $width", width >= 336.dp)
     }
 
     @Test
