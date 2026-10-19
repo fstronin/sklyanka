@@ -7,6 +7,7 @@ import dagger.hilt.components.SingletonComponent
 import ru.stohastika.sklyanka.data.log.RoomOperationLog
 import ru.stohastika.sklyanka.data.prefs.DatabaseLifeDataStore
 import ru.stohastika.sklyanka.data.prefs.DeviceProtectedDirectBootStore
+import ru.stohastika.sklyanka.data.privacy.PrivacyConsentDataStore
 import ru.stohastika.sklyanka.data.repository.ActiveProfileContext
 import ru.stohastika.sklyanka.data.repository.ActiveProfileRepositoryImpl
 import ru.stohastika.sklyanka.data.repository.IntakeRepositoryImpl
@@ -17,6 +18,7 @@ import ru.stohastika.sklyanka.data.repository.RoomProfileLossesSource
 import ru.stohastika.sklyanka.data.room.SklyankaTransactor
 import ru.stohastika.sklyanka.domain.Transactor
 import ru.stohastika.sklyanka.domain.log.OperationLog
+import ru.stohastika.sklyanka.domain.privacy.PrivacyConsentStore
 import ru.stohastika.sklyanka.domain.profile.ProfileContextProvider
 import ru.stohastika.sklyanka.domain.profile.ProfileEraser
 import ru.stohastika.sklyanka.domain.profile.ProfileLossesSource
@@ -93,4 +95,9 @@ abstract class DataBindings {
     @Binds
     @Singleton
     abstract fun bindDatabaseLifeStore(impl: DatabaseLifeDataStore): DatabaseLifeStore
+
+    /** Диалог политики при первом запуске (Р-89). */
+    @Binds
+    @Singleton
+    abstract fun bindPrivacyConsentStore(impl: PrivacyConsentDataStore): PrivacyConsentStore
 }

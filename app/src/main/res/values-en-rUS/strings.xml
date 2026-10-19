@@ -2,6 +2,11 @@
 <resources>
     <string name="app_name">Sklyanka</string>
 
+    <string name="privacy_consent_title">Privacy policy</string>
+    <string name="privacy_consent_message">Sklyanka keeps all data on this device and never transfers it. Please read the privacy policy before you start.</string>
+    <string name="privacy_consent_open_policy">Open the privacy policy</string>
+    <string name="privacy_consent_agree">I agree</string>
+
     <string name="profile_self_default_name">Me</string>
 
     <string name="reminder_channel_regular_name">Medication reminders</string>

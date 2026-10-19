@@ -1,5 +1,6 @@
 package ru.stohastika.sklyanka.screen.journey
 
+import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -19,6 +20,8 @@ import ru.stohastika.sklyanka.feature.reminder.TAG_RESTART_SETUP
 import ru.stohastika.sklyanka.feature.settings.TAG_SETTINGS_SCREEN
 import ru.stohastika.sklyanka.feature.today.TAG_TODAY_EMPTY
 import ru.stohastika.sklyanka.feature.today.TAG_TODAY_SCREEN
+import ru.stohastika.sklyanka.startup.TAG_PRIVACY_CONSENT
+import ru.stohastika.sklyanka.startup.TAG_PRIVACY_CONSENT_AGREE
 import ru.stohastika.sklyanka.feature.settings.R as SettingsR
 import ru.stohastika.sklyanka.feature.today.R as TodayR
 
@@ -55,9 +58,15 @@ class FirstLaunchJourneyTest : JourneyTest() {
         returnToToday()
     }
 
-    /** Первый запуск: экран разрешений → «Дальше» → онбординг пройден. */
+    /** Первый запуск: политика → экран разрешений → «Дальше» → онбординг пройден. */
     private fun passFirstLaunchOnboarding() {
-        // Не awaitRoot(): на первом запуске первым виден экран разрешений, а не «Сегодня».
+        // Не awaitRoot(): на первом запуске раньше «Сегодня» видны диалог политики
+        // и экран разрешений.
+        waitUntil(ROOT_TIMEOUT_MS, "диалога политики при первом запуске") { exists(TAG_PRIVACY_CONSENT) }
+        capture("privacy-first-launch", compose.onNode(isDialog()))
+        click(TAG_PRIVACY_CONSENT_AGREE)
+        waitUntil(ROOT_TIMEOUT_MS, "исчезновения диалога политики") { !exists(TAG_PRIVACY_CONSENT) }
+
         waitUntil(ROOT_TIMEOUT_MS, "экрана разрешений при первом запуске") { exists(TAG_PERMISSIONS_SCREEN) }
         waitForTag(TAG_STEPS_LIST)
         capture("permissions-first-launch")

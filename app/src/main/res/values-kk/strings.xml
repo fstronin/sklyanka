@@ -2,6 +2,11 @@
 <resources>
     <string name="app_name">Sklyanka</string>
 
+    <string name="privacy_consent_title">Құпиялылық саясаты</string>
+    <string name="privacy_consent_message">«Sklyanka» барлық деректерді тек осы құрылғыда сақтайды және еш жерге жібермейді. Жұмысты бастамас бұрын құпиялылық саясатын оқып шығыңыз.</string>
+    <string name="privacy_consent_open_policy">Құпиялылық саясатын ашу</string>
+    <string name="privacy_consent_agree">Қабылдаймын</string>
+
     <string name="profile_self_default_name">Мен</string>
 
     <string name="reminder_channel_regular_name">Қабылдау туралы еске салғыштар</string>

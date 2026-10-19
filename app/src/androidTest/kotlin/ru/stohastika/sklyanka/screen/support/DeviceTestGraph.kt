@@ -16,6 +16,7 @@ import ru.stohastika.sklyanka.domain.model.IntakeStatus
 import ru.stohastika.sklyanka.domain.model.Medication
 import ru.stohastika.sklyanka.domain.model.Profile
 import ru.stohastika.sklyanka.domain.onboarding.port.OnboardingStateStore
+import ru.stohastika.sklyanka.domain.privacy.PrivacyConsentStore
 import ru.stohastika.sklyanka.domain.reminder.ReminderCard
 import ru.stohastika.sklyanka.domain.reminder.ReminderChannel
 import ru.stohastika.sklyanka.domain.reminder.ReminderEvent
@@ -50,6 +51,9 @@ internal interface DeviceTestGraph {
     fun profileBootstrap(): ProfileBootstrap
 
     fun onboardingState(): OnboardingStateStore
+
+    /** Отметка о политике: состоявшаяся установка не встречает диалог первого запуска (Р-89). */
+    fun privacyConsent(): PrivacyConsentStore
 
     fun medications(): MedicationRepository
 
@@ -87,6 +91,15 @@ internal object DeviceTestSeed {
         graph(context).onboardingState().markSeen()
     }
 
+    /**
+     * Состоявшаяся установка: политика уже принята (Р-89).
+     *
+     * Проверка первого запуска этот сид переопределяет — там диалог и есть предмет проверки.
+     */
+    fun privacyAcknowledged(context: Context) = runBlocking {
+        graph(context).privacyConsent().acknowledge()
+    }
+
     fun medication(context: Context, medication: Medication) = runBlocking {
         graph(context).medications().save(medication)
     }
@@ -118,6 +131,11 @@ internal object DeviceTestSeed {
     /** Видел ли человек экран разрешений: признак живёт в хранилище, а не в памяти (SKL-140). */
     fun onboardingSeenFlag(context: Context): Boolean = runBlocking {
         graph(context).onboardingState().seen()
+    }
+
+    /** Принята ли политика: после кнопки «Принимаю» признак обязан пережить перезапуск (Р-89). */
+    fun privacyAcknowledgedFlag(context: Context): Boolean = runBlocking {
+        graph(context).privacyConsent().acknowledged()
     }
 
     /**

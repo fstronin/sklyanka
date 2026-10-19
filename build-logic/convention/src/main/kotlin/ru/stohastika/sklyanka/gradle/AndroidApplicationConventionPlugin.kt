@@ -22,8 +22,8 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
                 targetSdk = ProjectDefaults.TARGET_SDK
                 // Версии по Р-26: versionCode монотонный (+1 на загрузку в магазин),
                 // versionName — calver ГГГГ.ММ месяца выпуска.
-                versionCode = 1
-                versionName = "2026.10"
+                versionCode = 2
+                versionName = "2026.10.1"
                 testInstrumentationRunner = ProjectDefaults.ANDROID_TEST_RUNNER
                 // Объявленные языки (НФТ-43, ПМ-14) записаны здесь, а не только
                 // в строках: иначе в артефакт едут чужие переводы библиотек, а система

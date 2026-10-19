@@ -31,6 +31,8 @@ import ru.stohastika.sklyanka.domain.appearance.ObserveAccentThemeUseCase
 import ru.stohastika.sklyanka.domain.appearance.ObserveIconVariantUseCase
 import ru.stohastika.sklyanka.domain.onboarding.OnboardingSource
 import ru.stohastika.sklyanka.domain.onboarding.ShouldShowOnboardingUseCase
+import ru.stohastika.sklyanka.domain.privacy.AcknowledgePrivacyConsentUseCase
+import ru.stohastika.sklyanka.domain.privacy.ShouldShowPrivacyConsentUseCase
 import ru.stohastika.sklyanka.domain.pro.ProPoint
 import ru.stohastika.sklyanka.domain.profile.ProfileContextProvider
 import ru.stohastika.sklyanka.domain.time.TimeSource
@@ -84,6 +86,7 @@ import ru.stohastika.sklyanka.pro.ProHost
 import ru.stohastika.sklyanka.reminder.DeliveryCheckAnnouncer
 import ru.stohastika.sklyanka.reminder.ReminderOutageAnnouncer
 import ru.stohastika.sklyanka.startup.DatabaseBlock
+import ru.stohastika.sklyanka.startup.PrivacyConsentDialog
 import ru.stohastika.sklyanka.startup.StartDestination
 import ru.stohastika.sklyanka.startup.StartupDecision
 import ru.stohastika.sklyanka.startup.StartupFrames
@@ -157,6 +160,19 @@ class MainActivity : ComponentActivity() {
      */
     @Inject
     lateinit var shouldShowOnboarding: ShouldShowOnboardingUseCase
+
+    /**
+     * Показывать ли политику конфиденциальности при запуске (Р-89, AppGallery 7.5).
+     *
+     * Отдельный факт от онбординга: предложение прочитать политику не шаг настройки
+     * надёжности, и пока человек не нажал «Принимаю», оно показывается на каждом запуске.
+     */
+    @Inject
+    lateinit var shouldShowPrivacyConsent: ShouldShowPrivacyConsentUseCase
+
+    /** Записать принятие политики: со следующего запуска диалог не показывается (Р-89). */
+    @Inject
+    lateinit var acknowledgePrivacyConsent: AcknowledgePrivacyConsentUseCase
 
     /** Единственный источник контекста активного профиля на всё приложение (ПРФ-17). */
     @Inject
@@ -283,6 +299,10 @@ class MainActivity : ComponentActivity() {
     private val deleteProfile: DeleteProfileViewModel by viewModels()
     private val profileForm: ProfileFormViewModel by viewModels()
 
+    // Длинный по составу запуска, а не по сложности: заставка, системные панели, ярлык
+    // запуска, признаки первого запуска и чтение оформления идут в одном порядке, и
+    // разрезание на «до композиции» и «в композиции» спрятало бы именно его.
+    @Suppress("LongMethod")
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
@@ -314,16 +334,15 @@ class MainActivity : ComponentActivity() {
         val block = DatabaseBlock.of(databaseUpgrade.state())
 
         var decision by mutableStateOf<StartupDecision?>(null)
-        var onboardingUnseen by mutableStateOf(false)
+        // Признаки первого запуска читаются одним заходом: второе чтение дало бы другой
+        // ответ — первый запуск перестаёт быть первым сразу после отметки.
+        var startupFlags by mutableStateOf(StartupFlags())
         // Системный кадр приложение не удерживает: на Android 12+ платформа держит его
         // до первого кадра приложения и снимает сама — это и есть передача кадра.
         // `setKeepOnScreenCondition` только отложил бы снятие, а завязанный на отрисовку
         // сигнал «кадр нарисован» заблокировал бы её насмерть (`TDD.md` §3.1).
         lifecycleScope.launch {
-            // Оба признака читаются в одном заходе: решение о первом экране принимается
-            // один раз, и второе чтение дало бы другой ответ — первый запуск перестаёт
-            // быть первым сразу после отметки.
-            onboardingUnseen = shouldShowOnboarding()
+            startupFlags = readStartupFlags()
             decision = startupRouter.resolve()
         }
 
@@ -368,7 +387,7 @@ class MainActivity : ComponentActivity() {
                 StartupFrames(
                     frame = startupFrame(
                         destination = decision?.destination,
-                        onboardingUnseen = onboardingUnseen,
+                        onboardingUnseen = startupFlags.onboardingUnseen,
                         onboardingDone = onboardingDone,
                         today = todayState,
                         block = block,
@@ -380,10 +399,14 @@ class MainActivity : ComponentActivity() {
                 ) {
                     LaunchRouting(
                         decision = decision,
-                        onboardingUnseen = onboardingUnseen,
+                        onboardingUnseen = startupFlags.onboardingUnseen,
                         onboardingDone = onboardingDone,
+                        privacyConsentUnseen = startupFlags.privacyConsentUnseen,
                         addMedicationRequested = addMedicationRequested,
                         onOnboardingDone = { onboardingDone = true },
+                        onPrivacyAgree = {
+                            acknowledgePrivacy { startupFlags = startupFlags.copy(privacyConsentUnseen = false) }
+                        },
                         theme = accentTheme ?: AccentTheme.DEFAULT,
                         dark = interfaceDark,
                     )
@@ -392,13 +415,28 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /** Признаки первого запуска — онбординг и политика — одним чтением (Р-89). */
+    private suspend fun readStartupFlags(): StartupFlags = StartupFlags(
+        onboardingUnseen = shouldShowOnboarding(),
+        privacyConsentUnseen = shouldShowPrivacyConsent(),
+    )
+
+    /** Записать принятие политики и снять диалог после успешной записи, а не до неё. */
+    private fun acknowledgePrivacy(onAcknowledged: () -> Unit) {
+        lifecycleScope.launch {
+            acknowledgePrivacyConsent()
+            onAcknowledged()
+        }
+    }
+
     /**
      * Первый экран запуска: разрешения или корень приложения.
      *
-     * Вынесено из `onCreate` отдельной функцией, потому что решений здесь два и каждое
-     * со своей причиной; `onCreate` остаётся сборкой состояния. Согласия среди них нет:
-     * UX скрыт до подключения провайдера (ПМ-31), первый запуск идёт в онбординг
-     * разрешений.
+     * Вынесено из `onCreate` отдельной функцией, потому что решений здесь несколько и каждое
+     * со своей причиной; `onCreate` остаётся сборкой состояния. Диалог политики показывается
+     * поверх любого первого экрана и до него: пока человек не нажал «Принимаю», он не может
+     * ни пройти онбординг, ни отметить приём (Р-89, AppGallery 7.5). Аналитического согласия
+     * по-прежнему нет: провайдера в продукте нет (ПМ-31).
      */
     @Composable
     @Suppress("LongParameterList")
@@ -406,12 +444,21 @@ class MainActivity : ComponentActivity() {
         decision: StartupDecision?,
         onboardingUnseen: Boolean,
         onboardingDone: Boolean,
+        privacyConsentUnseen: Boolean,
         addMedicationRequested: Boolean,
         onOnboardingDone: () -> Unit,
+        onPrivacyAgree: () -> Unit,
         /** Акцентная тема (§2.5) и тёмная среда интерфейса (§9) — для обёртки профиля. */
         theme: AccentTheme,
         dark: Boolean,
     ) {
+        if (privacyConsentUnseen) {
+            PrivacyConsentDialog(
+                // Адрес и браузер остаются у `app` (`PolicyPage`), диалог их не знает.
+                onOpenPolicy = { PolicyPage.open(this@MainActivity) },
+                onAgree = onPrivacyAgree,
+            )
+        }
         when {
             // Экран разрешений EMUI (SKL-14): запуск, на котором с разрешениями
             // непорядок, начинается с него — но только пока человек этого экрана
@@ -807,3 +854,11 @@ class MainActivity : ComponentActivity() {
         openHistory = rootNavigation::openHistory,
     )
 }
+
+/**
+ * Признаки первого запуска, прочитанные вместе (Р-89).
+ *
+ * Один объект, а не два поля: решение о первом кадре принимается по обоим сразу, и пара
+ * состояний, обновлённая наполовину, дала бы кадр без политики или без онбординга.
+ */
+private data class StartupFlags(val onboardingUnseen: Boolean = false, val privacyConsentUnseen: Boolean = false)

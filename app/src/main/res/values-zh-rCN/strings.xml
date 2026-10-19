@@ -2,6 +2,11 @@
 <resources>
     <string name="app_name">Sklyanka</string>
 
+    <string name="privacy_consent_title">隐私政策</string>
+    <string name="privacy_consent_message">“Sklyanka” 将所有数据仅保存在本设备上，不会传输到任何地方。请在使用前阅读隐私政策。</string>
+    <string name="privacy_consent_open_policy">打开隐私政策</string>
+    <string name="privacy_consent_agree">同意</string>
+
     <string name="profile_self_default_name">我</string>
 
     <string name="reminder_channel_regular_name">服药提醒</string>

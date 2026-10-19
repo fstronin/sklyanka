@@ -38,7 +38,7 @@ import ru.stohastika.sklyanka.ui.token.SklyankaMotion
  * в роли ([ru.stohastika.sklyanka.ui.token.SklyankaColors.scrim]), а не по месту.
  */
 @Composable
-internal fun AppDialogScrim(onDismiss: () -> Unit, modifier: Modifier = Modifier) {
+fun AppDialogScrim(onDismiss: () -> Unit, modifier: Modifier = Modifier) {
     val view = LocalView.current
     DisposableEffect(view) {
         // Окно диалога — чужое: своё затемнение включает приложение, поэтому у окна
