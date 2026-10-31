@@ -29,12 +29,17 @@ class PrivacyConsentDialogTest {
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
 
     @Test
-    fun theDialogNamesTheDocumentOpensItAndAcceptsIt() {
+    fun theDialogNamesTheDocumentOpensItAndOffersBothActions() {
         var opened = 0
         var agreed = 0
+        var declined = 0
         composeTestRule.setContent {
             SklyankaTheme {
-                PrivacyConsentDialog(onOpenPolicy = { opened++ }, onAgree = { agreed++ })
+                PrivacyConsentDialog(
+                    onOpenPolicy = { opened++ },
+                    onAgree = { agreed++ },
+                    onDecline = { declined++ },
+                )
             }
         }
 
@@ -42,12 +47,17 @@ class PrivacyConsentDialogTest {
         composeTestRule.onNodeWithText(context.getString(R.string.privacy_consent_title)).assertIsDisplayed()
         composeTestRule.onNodeWithText(context.getString(R.string.privacy_consent_message)).assertIsDisplayed()
         composeTestRule.onNodeWithText(context.getString(R.string.privacy_consent_agree)).assertIsDisplayed()
+        composeTestRule.onNodeWithText(context.getString(R.string.privacy_consent_decline)).assertIsDisplayed()
 
         composeTestRule.onNodeWithTag(TAG_PRIVACY_CONSENT_POLICY).performClick()
         assertEquals("the link must open the policy", 1, opened)
         assertEquals("the link must not accept the policy", 0, agreed)
 
+        composeTestRule.onNodeWithTag(TAG_PRIVACY_CONSENT_DECLINE).performClick()
+        assertEquals("decline must be a separate action", 1, declined)
+        assertEquals("decline must not accept the policy", 0, agreed)
+
         composeTestRule.onNodeWithTag(TAG_PRIVACY_CONSENT_AGREE).performClick()
-        assertEquals("the only action accepts the policy", 1, agreed)
+        assertEquals("accept is a separate action", 1, agreed)
     }
 }

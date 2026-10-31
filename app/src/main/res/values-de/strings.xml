@@ -3,9 +3,10 @@
     <string name="app_name">Sklyanka</string>
 
     <string name="privacy_consent_title">Datenschutzerklärung</string>
-    <string name="privacy_consent_message">„Sklyanka“ speichert alle Daten nur auf diesem Gerät und gibt sie nicht weiter. Bitte lesen Sie die Datenschutzerklärung, bevor Sie beginnen.</string>
+    <string name="privacy_consent_message">„Sklyanka“ speichert alle Daten nur auf diesem Gerät und gibt sie nicht weiter. Bitte lesen Sie die Datenschutzerklärung, bevor Sie beginnen. Ohne Zustimmung zur Datenschutzerklärung startet die App nicht.</string>
     <string name="privacy_consent_open_policy">Datenschutzerklärung öffnen</string>
     <string name="privacy_consent_agree">Ich stimme zu</string>
+    <string name="privacy_consent_decline">Ablehnen</string>
 
     <string name="profile_self_default_name">Ich</string>
 

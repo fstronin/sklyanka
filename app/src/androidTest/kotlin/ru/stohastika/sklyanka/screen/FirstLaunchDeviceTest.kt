@@ -3,8 +3,10 @@ package ru.stohastika.sklyanka.screen
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.isDialog
 import dagger.hilt.android.testing.HiltAndroidTest
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import ru.stohastika.sklyanka.MainActivity
 import ru.stohastika.sklyanka.feature.onboarding.TAG_PERMISSIONS_SCREEN
 import ru.stohastika.sklyanka.feature.onboarding.TAG_SKIP
 import ru.stohastika.sklyanka.feature.today.TAG_TODAY_SCREEN
@@ -12,6 +14,7 @@ import ru.stohastika.sklyanka.screen.support.DeviceActivities
 import ru.stohastika.sklyanka.screen.support.DeviceTestSeed
 import ru.stohastika.sklyanka.startup.TAG_PRIVACY_CONSENT
 import ru.stohastika.sklyanka.startup.TAG_PRIVACY_CONSENT_AGREE
+import ru.stohastika.sklyanka.startup.TAG_PRIVACY_CONSENT_DECLINE
 
 /**
  * N — первый запуск на настоящем устройстве (SKL-97, TDD §8.2; ревизия SKL-100).
@@ -53,5 +56,20 @@ class FirstLaunchDeviceTest : DeviceScreenTest() {
         launchApp()
         waitForTag(TAG_TODAY_SCREEN, ROOT_TIMEOUT_MS).assertIsDisplayed()
         assertTrue("the policy dialog must not return", !exists(TAG_PRIVACY_CONSENT))
+    }
+
+    /** Отказ закрывает приложение и ничего не запоминает (Р-90). */
+    @Test
+    fun thePersonCanDeclineAndTheAppCloses() {
+        launchApp()
+
+        waitForTag(TAG_PRIVACY_CONSENT, ROOT_TIMEOUT_MS).assertIsDisplayed()
+        click(TAG_PRIVACY_CONSENT_DECLINE)
+        awaitScreenClosed(MainActivity::class.java)
+
+        assertFalse(
+            "decline must not be stored",
+            DeviceTestSeed.privacyAcknowledgedFlag(targetContext),
+        )
     }
 }

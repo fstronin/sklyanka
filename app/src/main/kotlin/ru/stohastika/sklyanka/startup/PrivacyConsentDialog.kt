@@ -19,7 +19,9 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import ru.stohastika.sklyanka.R
 import ru.stohastika.sklyanka.ui.component.AppDialogScrim
+import ru.stohastika.sklyanka.ui.component.ButtonForm
 import ru.stohastika.sklyanka.ui.component.PrimaryButton
+import ru.stohastika.sklyanka.ui.component.SecondaryButton
 import ru.stohastika.sklyanka.ui.modifier.minTouchTarget
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaShapes
@@ -34,20 +36,29 @@ import ru.stohastika.sklyanka.ui.token.SklyankaType
  * у продукта нет, поэтому страницы входа, на которой это можно было бы показать, тоже нет.
  * Отсюда единственная поверхность — диалог поверх первого экрана.
  *
- * **Закрыть его можно только кнопкой «Принимаю».** Системная «Назад» и тап вне окна
- * не закрывают диалог: иначе замечание проверки «нет явного согласия» осталось бы в силе,
- * а человек мог бы проскочить предложение, не прочитав его. Затемнение и фон окна —
- * роли дизайн-системы, а не чёрная подложка прошивки (`AppDialogScrim`).
+ * **Согласие или отказ, без обхода.** Системная «Назад» и тап вне окна не закрывают
+ * диалог: иначе замечание проверки «нет явного согласия» осталось бы в силе, а человек
+ * мог бы проскочить предложение, не прочитав его. В диалоге два действия: «Принимаю»
+ * записывает факт и открывает приложение, «Отказываюсь» закрывает его, не записывая
+ * ничего (Р-90). При следующем запуске отказник снова видит диалог — отказа нет.
+ * Затемнение и фон окна — роли дизайн-системы, а не чёрная подложка прошивки
+ * (`AppDialogScrim`).
  *
- * Ссылка — не второе действие: она открывает тот же документ, что и строка настроек,
+ * Ссылка — не действие согласия: она открывает тот же документ, что и строка настроек,
  * и не снимает диалог. Адрес и браузер остаются у `app` (`PolicyPage`), поэтому диалог
  * не знает ни URL, ни `Intent`.
  *
  * @param onOpenPolicy открыть политику; диалог остаётся на экране.
  * @param onAgree человек принял политику — записать факт и снять диалог.
+ * @param onDecline человек отказался — закрыть приложение, ничего не записывая.
  */
 @Composable
-fun PrivacyConsentDialog(onOpenPolicy: () -> Unit, onAgree: () -> Unit, modifier: Modifier = Modifier) {
+fun PrivacyConsentDialog(
+    onOpenPolicy: () -> Unit,
+    onAgree: () -> Unit,
+    onDecline: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Dialog(
         // Пустой обработчик, а не закрытие: диалог не закрывается ничем, кроме кнопки.
         onDismissRequest = { },
@@ -62,15 +73,21 @@ fun PrivacyConsentDialog(onOpenPolicy: () -> Unit, onAgree: () -> Unit, modifier
             PrivacySurface(
                 onOpenPolicy = onOpenPolicy,
                 onAgree = onAgree,
+                onDecline = onDecline,
                 modifier = modifier,
             )
         }
     }
 }
 
-/** Поверхность диалога: заголовок, честное объяснение, ссылка и единственное действие. */
+/** Поверхность диалога: заголовок, объяснение, ссылка, согласие и явный отказ. */
 @Composable
-private fun PrivacySurface(onOpenPolicy: () -> Unit, onAgree: () -> Unit, modifier: Modifier = Modifier) {
+private fun PrivacySurface(
+    onOpenPolicy: () -> Unit,
+    onAgree: () -> Unit,
+    onDecline: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val colors = SklyankaTheme.colors
     Surface(
         modifier = modifier
@@ -113,6 +130,14 @@ private fun PrivacySurface(onOpenPolicy: () -> Unit, onAgree: () -> Unit, modifi
                     .fillMaxWidth()
                     .testTag(TAG_PRIVACY_CONSENT_AGREE),
             )
+            SecondaryButton(
+                text = stringResource(R.string.privacy_consent_decline),
+                onClick = onDecline,
+                form = ButtonForm.Screen,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag(TAG_PRIVACY_CONSENT_DECLINE),
+            )
         }
     }
 }
@@ -123,3 +148,4 @@ const val TAG_PRIVACY_CONSENT_TITLE: String = "privacy_consent_title"
 const val TAG_PRIVACY_CONSENT_MESSAGE: String = "privacy_consent_message"
 const val TAG_PRIVACY_CONSENT_POLICY: String = "privacy_consent_policy"
 const val TAG_PRIVACY_CONSENT_AGREE: String = "privacy_consent_agree"
+const val TAG_PRIVACY_CONSENT_DECLINE: String = "privacy_consent_decline"

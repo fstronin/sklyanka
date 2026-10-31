@@ -35,7 +35,7 @@ class PrivacyConsentSnapshotTest {
         ) {
             SklyankaTheme {
                 Box(modifier = Modifier.fillMaxSize().background(SklyankaTheme.colors.background)) {
-                    PrivacyConsentDialog(onOpenPolicy = {}, onAgree = {})
+                    PrivacyConsentDialog(onOpenPolicy = {}, onAgree = {}, onDecline = {})
                 }
             }
         }

@@ -3,9 +3,10 @@
     <string name="app_name">Sklyanka</string>
 
     <string name="privacy_consent_title">隐私政策</string>
-    <string name="privacy_consent_message">“Sklyanka” 将所有数据仅保存在本设备上，不会传输到任何地方。请在使用前阅读隐私政策。</string>
+    <string name="privacy_consent_message">“Sklyanka” 将所有数据仅保存在本设备上，不会传输到任何地方。请在使用前阅读隐私政策。如不接受隐私政策，应用将无法启动。</string>
     <string name="privacy_consent_open_policy">打开隐私政策</string>
     <string name="privacy_consent_agree">同意</string>
+    <string name="privacy_consent_decline">拒绝</string>
 
     <string name="profile_self_default_name">我</string>
 

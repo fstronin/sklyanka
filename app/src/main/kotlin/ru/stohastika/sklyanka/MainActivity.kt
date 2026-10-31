@@ -407,6 +407,9 @@ class MainActivity : ComponentActivity() {
                         onPrivacyAgree = {
                             acknowledgePrivacy { startupFlags = startupFlags.copy(privacyConsentUnseen = false) }
                         },
+                        // Отказ закрывает приложение и ничего не записывает: при следующем
+                        // запуске диалог покажется снова (Р-90).
+                        onPrivacyDecline = { finishAndRemoveTask() },
                         theme = accentTheme ?: AccentTheme.DEFAULT,
                         dark = interfaceDark,
                     )
@@ -448,6 +451,7 @@ class MainActivity : ComponentActivity() {
         addMedicationRequested: Boolean,
         onOnboardingDone: () -> Unit,
         onPrivacyAgree: () -> Unit,
+        onPrivacyDecline: () -> Unit,
         /** Акцентная тема (§2.5) и тёмная среда интерфейса (§9) — для обёртки профиля. */
         theme: AccentTheme,
         dark: Boolean,
@@ -457,6 +461,7 @@ class MainActivity : ComponentActivity() {
                 // Адрес и браузер остаются у `app` (`PolicyPage`), диалог их не знает.
                 onOpenPolicy = { PolicyPage.open(this@MainActivity) },
                 onAgree = onPrivacyAgree,
+                onDecline = onPrivacyDecline,
             )
         }
         when {
