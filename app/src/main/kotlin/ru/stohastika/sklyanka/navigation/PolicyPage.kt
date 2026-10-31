@@ -4,7 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.util.Log
-import ru.stohastika.sklyanka.feature.settings.R as FeatureSettingsR
+import ru.stohastika.sklyanka.feature.settings.policyUrl
 
 /**
  * Открытие документа «Условия и политика» (SKL-122, ОВ-123).
@@ -25,7 +25,7 @@ object PolicyPage {
     fun open(context: Context): Boolean {
         val intent = Intent(
             Intent.ACTION_VIEW,
-            context.getString(FeatureSettingsR.string.settings_policy_url).let(Uri::parse),
+            policyUrl(context).let(Uri::parse),
         )
         // Экранный контекст открывает документ в своей задаче; контекст приложения
         // (фоновая точка) обязан попросить новую, иначе платформа откажет в запуске.

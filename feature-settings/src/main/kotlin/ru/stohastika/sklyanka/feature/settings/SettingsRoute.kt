@@ -5,8 +5,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.res.stringResource
 import ru.stohastika.sklyanka.domain.pro.ProPoint
 
 /**
@@ -20,7 +20,7 @@ import ru.stohastika.sklyanka.domain.pro.ProPoint
 fun SettingsRoute(viewModel: SettingsViewModel, navigation: SettingsNavigation, modifier: Modifier = Modifier) {
     val state by viewModel.state.collectAsState()
     val uriHandler = LocalUriHandler.current
-    val policyUrl = stringResource(R.string.settings_policy_url)
+    val policyUrl = policyUrl(LocalContext.current)
     // Сигнал «открыть витрину» из блока «Оформление» (SKL-120): нажатие платной строки
     // диалога без доступа ведёт в покупку, а не меняет выбор (§5.17, Р-67 пп. 2–3).
     // Шторку хостит `app` — поверхность покупки одна на все точки входа (Р-67), и второй

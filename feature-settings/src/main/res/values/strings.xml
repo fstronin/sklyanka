@@ -291,8 +291,15 @@
     <string name="cd_profile_colour_indigo">Индиго</string>
 
     <string name="settings_policy">Политика конфиденциальности</string>
-    <!-- Адрес страницы политики — внешний вход заказчика (ОВ-2), подтверждён 18.10.2026. -->
-    <string name="settings_policy_url" translatable="false">https://stohastika.ru/ru/projects/sklyanka/privacy</string>
+    <!--
+      Адреса политики — внешний вход заказчика (ОВ-2), подтверждён 18.10.2026.
+      Выбор по языку делает `policyUrl` (Р-91): RU, ZH и английский для всех остальных.
+      Ресурсы не помечены переводимыми: это адреса, а не текст интерфейса, и второй
+      копии выбора в локалях быть не должно.
+    -->
+    <string name="settings_policy_url_ru" translatable="false">https://stohastika.ru/ru/projects/sklyanka/privacy</string>
+    <string name="settings_policy_url_en" translatable="false">https://stohastika.ru/en/projects/sklyanka/privacy</string>
+    <string name="settings_policy_url_zh" translatable="false">https://stohastika.ru/zh/projects/sklyanka/privacy</string>
 
     <!-- Строка «Экспорт истории» в блоке «Данные» (SKL-119, §5.16); слова — из нормы дизайна. -->
     <string name="settings_export_history">Экспорт истории</string>

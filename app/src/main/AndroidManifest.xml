@@ -135,6 +135,20 @@
             <category android:name="android.intent.category.OPENABLE" />
             <data android:mimeType="text/csv" />
         </intent>
+
+        <!--
+          Браузер для политики конфиденциальности (Р-89, Р-91).
+
+          `PolicyPage` перед запуском проверяет `resolveActivity`, чтобы отсутствие
+          браузера было честным отказом. С Android 11 видимость пакетов фильтруется,
+          и без этого объявления проверка не видит браузер по умолчанию: ссылка
+          молча не открывается, хотя браузер на телефоне есть.
+        -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="https" />
+        </intent>
     </queries>
 
     <application
