@@ -2,9 +2,11 @@ package ru.stohastika.sklyanka.platform.notification
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.content.ContentResolver
 import android.content.Context
 import android.media.AudioAttributes
 import android.media.RingtoneManager
+import android.net.Uri
 import android.provider.Settings
 import dagger.hilt.android.qualifiers.ApplicationContext
 import ru.stohastika.sklyanka.R
@@ -20,9 +22,12 @@ import javax.inject.Singleton
  * Статичных — значит создаваемых один раз при старте с фиксированными идентификаторами
  * и **никогда не пересоздаваемых**. Причина не в аккуратности: параметры канала неизменяемы
  * после создания, а удаление канала и создание нового с тем же идентификатором
- * восстанавливает прежний канал со старыми настройками (ПЛ-10). Отсюда же следует, что
- * индивидуальный звук на лекарство невозможен без версионированных каналов и отложен
- * во вторую версию (НАП-27).
+ * восстанавливает прежний канал со старыми настройками (ПЛ-10). Там же причина версии
+ * у обычного канала: свой сигнал (Р-99) поставлен после публикации, поэтому новый звук живёт
+ * под новым идентификатором, а канал прежнего выпуска убирается.
+ *
+ * Индивидуальный звук на лекарство по-прежнему невозможен без канала на лекарство (НАП-27):
+ * версионируется звук продукта, а не лекарства.
  *
  * Канала тихих часов здесь нет: решение по НАП-28 не принято, а канал, который глушит
  * напоминание, прямо противоречит НАП-1.
@@ -56,6 +61,7 @@ class ReminderChannels @Inject constructor(@ApplicationContext applicationContex
     fun ensure() {
         manager.createNotificationChannel(regular())
         manager.createNotificationChannel(persistent())
+        removeRetiredRegularChannel()
     }
 
     private fun regular() = NotificationChannel(
@@ -64,14 +70,9 @@ class ReminderChannels @Inject constructor(@ApplicationContext applicationContex
         NotificationManager.IMPORTANCE_HIGH,
     ).apply {
         description = context.getString(R.string.reminder_channel_regular_description)
-        // Штатный сигнал уведомления: своего звукового файла у продукта нет (НАП-27 —
-        // общий звук в первой версии), а системный человек уже знает.
-        setSound(
-            RingtoneManager.getDefaultUri(
-                RingtoneManager.TYPE_NOTIFICATION,
-            ) ?: Settings.System.DEFAULT_NOTIFICATION_URI,
-            alarmAudio(),
-        )
+        // Свой короткий сигнал (Р-99): системный сигнал уведомления звучит у всех приложений,
+        // и на EMUI человек не отличал напоминание о приёме от любого другого уведомления.
+        setSound(ownSound(), alarmAudio())
         enableVibration(true)
         vibrationPattern = ReminderVibration.of(ReminderChannel.REGULAR)
         lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
@@ -98,6 +99,39 @@ class ReminderChannels @Inject constructor(@ApplicationContext applicationContex
         setBypassDnd(true)
         lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
         setShowBadge(false)
+    }
+
+    /**
+     * Свой сигнал продукта — короткий двухтоновый сигнал из `res/raw/reminder_chime.wav` (Р-99).
+     *
+     * URI собирается по имени ресурса, а не по числовому идентификатору: канал хранит строку
+     * и перечитывает её при каждом срабатывании, а числовой идентификатор меняется от сборки
+     * к сборке — после обновления приложения канал остался бы без звука.
+     *
+     * Схема `android.resource` читается системой из пакета приложения: файл лежит в APK,
+     * и ни разрешений, ни копии на диске не нужно.
+     */
+    private fun ownSound(): Uri = Uri.Builder()
+        .scheme(ContentResolver.SCHEME_ANDROID_RESOURCE)
+        .authority(context.packageName)
+        .appendPath(context.resources.getResourceTypeName(R.raw.reminder_chime))
+        .appendPath(context.resources.getResourceEntryName(R.raw.reminder_chime))
+        .build()
+
+    /**
+     * Убирает обычный канал прежнего выпуска (Р-99).
+     *
+     * Прежний канал звучит системным сигналом уведомления и больше не используется: иначе
+     * человек искал бы напоминание в двух пунктах системных настроек. Удаление канала снимает
+     * и его уведомления, поэтому висящее в шторке напоминание — повод отложить уборку
+     * до следующего запуска: показанное напоминание это обещание, а не мусор (НАП-1).
+     */
+    private fun removeRetiredRegularChannel() {
+        val retired = ReminderChannel.RETIRED_REGULAR_ID
+        if (manager.getNotificationChannel(retired) == null) return
+        val hasLiveNotification = manager.activeNotifications.any { it.notification?.channelId == retired }
+        if (hasLiveNotification) return
+        manager.deleteNotificationChannel(retired)
     }
 
     /**

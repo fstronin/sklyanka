@@ -81,7 +81,7 @@ class ExportReminderJournalUseCaseTest {
         val row = content.trim().lines()[1]
         assertEquals(
             "2026-09-25T09:00:00Z,shown,intake-1,med-1,profile-1," +
-                "2026-09-25T08:59:23Z,2026-09-25T09:00:00Z,37,reminders_regular,true,,,,,,true,,,,,,",
+                "2026-09-25T08:59:23Z,2026-09-25T09:00:00Z,37,reminders_regular_v2,true,,,,,,true,,,,,,",
             row,
         )
         // Медицинские данные продукта — текст, введённый человеком по-русски: название

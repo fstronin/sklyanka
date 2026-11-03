@@ -8,7 +8,8 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
-import ru.stohastika.sklyanka.acceptance.RepositoryLayout
+import ru.stohastika.sklyanka.acceptance.AnalyticsCatalogFacts
+import ru.stohastika.sklyanka.acceptance.NetworkContourFacts
 import ru.stohastika.sklyanka.acceptance.RussianDates
 import ru.stohastika.sklyanka.acceptance.RussianNames
 import ru.stohastika.sklyanka.acceptance.steps.dateOf
@@ -25,7 +26,6 @@ import ru.stohastika.sklyanka.domain.model.IntakeStatus
 import ru.stohastika.sklyanka.domain.model.Medication
 import ru.stohastika.sklyanka.domain.model.ScheduleMode
 import ru.stohastika.sklyanka.domain.schedule.PlanReason
-import java.io.File
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -424,45 +424,23 @@ class HistoryContextSteps(private val world: AcceptanceWorld) {
     }
 
     /**
-     * Сцены истории и отчёта сети не требуют, и это утверждение о сборке, а не о настроении.
+     * Отчёт и журнал наружу не уходят: сеть сборки — только контур аналитики (Р-93).
      *
-     * Сеть в продукте есть, но только у платного контура покупок (ПЛ-3, НФТ-15,
-     * `ADR-0010`, SKL-122): `INTERNET` объявляет единственный модуль — контур, а отчёт
-     * и журнал не уходят наружу ни при каких условиях.
-     * Разрешения состояния сети запрещены, конвейер требует `INTERNET` только вместе
-     * с контуром и только из его манифеста;
-     * разрешение, приехавшее из чужого манифеста, снимается явно (`tools:node="remove"`) —
-     * так обработано `ACCESS_NETWORK_STATE` из `androidx.work`.
+     * Утверждение о **сборке**, и проверяется оно данными гейта состава (`ADR-0017`):
+     * `INTERNET` объявляют только сетевые контуры, поставляемая сборка несёт лишь контур
+     * аналитики, а единственное, что этот контур способен передать, — события каталога
+     * без медицинских данных. Прямая проверка «запросов нет» на сценарном уровне была бы
+     * ложью: после Р-93 приложение действительно ходит в сеть — событиями, по согласию.
+     *
+     * Раньше шаг читал `app/src/main/AndroidManifest.xml`: после SKL-165 `INTERNET`
+     * приходит из манифеста контура, и «разрешения нет» проходило при любом поведении.
      */
-    @Then("^приложение не обращается в сеть ни на одном шаге$")
-    fun theApplicationNeverReachesTheNetwork() {
-        val manifest = File(RepositoryLayout.root, MANIFEST).readText()
-        val declarations = Regex(USES_PERMISSION).findAll(manifest)
-            .map { it.value }
-            .filterNot { it.contains(REMOVE_DIRECTIVE) }
-            .toList()
-        FORBIDDEN_NETWORK_PERMISSIONS.forEach { permission ->
-            assertFalse(
-                declarations.any { it.contains(permission) },
-                "the application manifest must not declare $permission (НФТ-15)",
-            )
-        }
-        assertFalse(
-            declarations.any { it.contains(NETWORK_PERMISSION) },
-            "the app manifest must not declare $NETWORK_PERMISSION — only the contour may (ADR-0010)",
-
-        )
-        val pipelineCheck = File(RepositoryLayout.root, CONTOUR_RULES).readText()
-        FORBIDDEN_NETWORK_PERMISSIONS.forEach { permission ->
-            assertTrue(
-                pipelineCheck.contains(permission),
-                "the build must still fail on $permission, otherwise the absence is not guarded",
-            )
-        }
-        assertTrue(
-            pipelineCheck.contains(NETWORK_PERMISSION),
-            "the build must keep $NETWORK_PERMISSION tied to the paid contour (ADR-0010)",
-        )
+    @Then("^сеть сборки объявлена только контуром аналитики, и события аналитики не несут медицинских данных$")
+    fun theBuildNetworkBelongsToTheAnalyticsContour() {
+        NetworkContourFacts.assertDeclaredOnlyByContours()
+        NetworkContourFacts.assertShippedContourIsAnalyticsOnly()
+        NetworkContourFacts.assertNoForbiddenDeclarations()
+        AnalyticsCatalogFacts.assertNoFreeTextInEvents()
     }
 
     @Then("^в локальном журнале приложения есть запись о формировании отчёта с периодом и числом записей$")
@@ -600,19 +578,6 @@ class HistoryContextSteps(private val world: AcceptanceWorld) {
         const val COURSE_DAYS = 10
         const val ARCHIVE_TIME = "12:00"
         const val SHORTEST_SENSITIVE = 1
-        const val MANIFEST = "app/src/main/AndroidManifest.xml"
-        const val CONTOUR_RULES =
-            "build-logic/convention/src/main/kotlin/ru/stohastika/sklyanka/gradle/AnalyticsContourRules.kt"
-        const val USES_PERMISSION = """<uses-permission[^>]*>"""
-        const val REMOVE_DIRECTIVE = """tools:node="remove""""
-
-        /** Разрешение платного контура: сеть в артефакте бывает только с ним (SKL-122). */
-        const val NETWORK_PERMISSION = "android.permission.INTERNET"
-
-        val FORBIDDEN_NETWORK_PERMISSIONS = listOf(
-            "android.permission.ACCESS_NETWORK_STATE",
-            "android.permission.ACCESS_WIFI_STATE",
-        )
         val REPORT_DETAIL = Regex("""records=\d+;medications=\d+""")
     }
 }

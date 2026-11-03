@@ -16,6 +16,7 @@ import ru.stohastika.sklyanka.data.room.DatabaseState
 import ru.stohastika.sklyanka.data.room.DatabaseUpgrade
 import ru.stohastika.sklyanka.data.room.SklyankaDatabase
 import ru.stohastika.sklyanka.data.room.SklyankaMigrations
+import ru.stohastika.sklyanka.data.room.dao.AnalyticsDao
 import ru.stohastika.sklyanka.data.room.dao.IntakeDao
 import ru.stohastika.sklyanka.data.room.dao.MedicationDao
 import ru.stohastika.sklyanka.data.room.dao.OpLogDao
@@ -97,6 +98,10 @@ object DataModule {
 
     @Provides
     fun provideOpLogDao(database: SklyankaDatabase): OpLogDao = database.opLogDao()
+
+    /** Очередь событий аналитики (SKL-165, АН-4); адаптер — `RoomAnalyticsQueue`. */
+    @Provides
+    fun provideAnalyticsDao(database: SklyankaDatabase): AnalyticsDao = database.analyticsDao()
 
     @Provides
     @Singleton

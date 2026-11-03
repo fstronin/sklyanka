@@ -1,5 +1,7 @@
 package ru.stohastika.sklyanka.acceptance.today
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
@@ -25,6 +27,7 @@ import ru.stohastika.sklyanka.domain.today.PartOfDay
 import ru.stohastika.sklyanka.domain.today.TodayAgenda
 import ru.stohastika.sklyanka.domain.today.TodayLayout
 import ru.stohastika.sklyanka.domain.undo.UndoableMark
+import ru.stohastika.sklyanka.feature.today.AnalyticsTestKit
 import ru.stohastika.sklyanka.feature.today.TodayUiState
 import ru.stohastika.sklyanka.feature.today.TodayViewModel
 import ru.stohastika.sklyanka.feature.today.UndoNotice
@@ -187,6 +190,9 @@ internal object TodayStand {
             time = time,
             readReliability = ReadReminderReliabilityUseCase(world.system),
             explainDatabaseReset = ExplainDatabaseResetUseCase(InMemoryDatabaseLife(), time),
+            // Стенд проверяет не события, а поведение экрана: подмены аналитики те же,
+            // что у модульных тестов модуля.
+            analytics = AnalyticsTestKit(CoroutineScope(Dispatchers.Unconfined)).recorder,
         )
     }
 }

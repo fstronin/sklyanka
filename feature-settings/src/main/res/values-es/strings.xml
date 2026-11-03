@@ -202,6 +202,12 @@
     <string name="cd_profile_colour_plum">Ciruela</string>
     <string name="cd_profile_colour_indigo">Índigo</string>
 
+    <!-- Строка «Аналитика» в блоке «Данные» (SKL-165, ПМ-25, Р-96). -->
+    <string name="settings_analytics">Analítica</string>
+    <string name="settings_analytics_caption">%1$s · Activarla ayuda a encontrar puntos incómodos</string>
+    <string name="settings_analytics_on">Activada</string>
+    <string name="settings_analytics_off">Desactivada</string>
+
     <string name="settings_policy">Política de privacidad</string>
 
     <!-- Строка «Экспорт истории» в блоке «Данные» (SKL-119, §5.16); слова — из нормы дизайна. -->

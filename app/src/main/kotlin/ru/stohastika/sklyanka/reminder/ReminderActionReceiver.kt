@@ -5,7 +5,12 @@ import android.content.Context
 import android.content.Intent
 import kotlinx.coroutines.launch
 import ru.stohastika.sklyanka.di.ReminderActionEntryPoint
-import ru.stohastika.sklyanka.domain.intake.MarkIntakeUseCase
+import ru.stohastika.sklyanka.domain.analytics.ActionSource
+import ru.stohastika.sklyanka.domain.analytics.AnalyticsRecorder
+import ru.stohastika.sklyanka.domain.analytics.IntakeAction
+import ru.stohastika.sklyanka.domain.analytics.IntakeActionKind
+import ru.stohastika.sklyanka.domain.analytics.ReminderSnoozed
+import ru.stohastika.sklyanka.domain.intake.MarkOutcome
 import ru.stohastika.sklyanka.domain.intake.MarkRequest
 import ru.stohastika.sklyanka.domain.intake.MarkResult
 import ru.stohastika.sklyanka.domain.model.IntakeSource
@@ -14,7 +19,7 @@ import ru.stohastika.sklyanka.domain.model.IntakeSource
  * Действие уведомления напоминания из шторки (RT-4, Р-87 п. 3).
  *
  * Три действия — «Принято», «Пропустить», «Отложить» — идут теми же сценариями отметки и
- * откладывания, что и карточка напоминания: [MarkIntakeUseCase] и `SnoozeReminderUseCase`.
+ * откладывания, что и карточка напоминания: `MarkIntakeUseCase` и `SnoozeReminderUseCase`.
  * Отметка из шторки **не открывает активность** и снимает уведомление — снятие делает сам
  * сценарий отметки (`DismissReminderUseCase` в последствиях отметки) и откладывания
  * (`notifications.cancel`), поэтому отдельного вызова снятия здесь нет: второй путь записи
@@ -33,12 +38,21 @@ class ReminderActionReceiver : BroadcastReceiver() {
         val command = parseCommand(context, intent) ?: return
 
         val pending = goAsync()
-        command.graph.reminderScope().launch {
+        val graph = command.graph
+        // Сценарии и подпись журнала читаются один раз на команду: внутри области
+        // напоминаний граф уже собран, и второй его сборки на действие не нужно.
+        val actions = ReminderActions(
+            mark = { request -> graph.markIntake()(request) },
+            snooze = { intakeId, minutes -> graph.snooze()(intakeId, minutes) },
+            snoozeMinutes = { graph.reminderSettings().read().snoozeMinutes },
+            recorder = graph.analytics(),
+        )
+        graph.reminderScope().launch {
             try {
                 when (command.action) {
-                    ACTION_TAKEN -> markAll(command.graph, command.intakeIds, MarkResult.TAKEN)
-                    ACTION_SKIP -> markAll(command.graph, command.intakeIds, MarkResult.SKIPPED)
-                    ACTION_SNOOZE -> snoozeAll(command.graph, command.intakeIds)
+                    ACTION_TAKEN -> actions.markAll(command.intakeIds, MarkResult.TAKEN)
+                    ACTION_SKIP -> actions.markAll(command.intakeIds, MarkResult.SKIPPED)
+                    ACTION_SNOOZE -> actions.snoozeAll(command.intakeIds)
                 }
             } finally {
                 pending.finish()
@@ -63,21 +77,6 @@ class ReminderActionReceiver : BroadcastReceiver() {
         }
     }
 
-    /** «Принято»/«Пропустить» относится ко всем приёмам слота, как на карточке (НАП-36). */
-    private suspend fun markAll(graph: ReminderActionEntryPoint, intakeIds: List<String>, result: MarkResult) {
-        val mark = graph.markIntake()
-        intakeIds.forEach { intakeId ->
-            mark(MarkRequest(intakeId = intakeId, result = result, source = IntakeSource.PHONE))
-        }
-    }
-
-    /** Откладывание переносит каждый приём слота на интервал настройки (НАП-30, НАП-31). */
-    private suspend fun snoozeAll(graph: ReminderActionEntryPoint, intakeIds: List<String>) {
-        val minutes = graph.reminderSettings().read().snoozeMinutes
-        val snooze = graph.snooze()
-        intakeIds.forEach { intakeId -> snooze(intakeId, minutes) }
-    }
-
     companion object {
         const val ACTION_TAKEN = "ru.stohastika.sklyanka.reminder.action.TAKEN"
         const val ACTION_SKIP = "ru.stohastika.sklyanka.reminder.action.SKIP"
@@ -85,6 +84,45 @@ class ReminderActionReceiver : BroadcastReceiver() {
 
         /** Идентификаторы приёмов слота — те же, что кладутся в дополнения уведомления. */
         const val EXTRA_INTAKE_IDS = "ru.stohastika.sklyanka.reminder.action.intake_ids"
+    }
+}
+
+/**
+ * Действия шторки над слотами напоминания (RT-4, SKL-165).
+ *
+ * Одно нажатие кнопки уведомления — одно событие: «Принято» отмечает все приёмы слота,
+ * но действие человека одно. Отметка пишется только состоявшейся — проигравшая часовой
+ * отметке (`Ignored`) нового действия не образует (ПР-2). Сценарии приходят функциями,
+ * поэтому проверяются без графа Hilt и без устройства.
+ */
+internal class ReminderActions(
+    private val mark: suspend (MarkRequest) -> MarkOutcome,
+    private val snooze: suspend (intakeId: String, minutes: Int) -> Unit,
+    private val snoozeMinutes: suspend () -> Int,
+    private val recorder: AnalyticsRecorder,
+) {
+
+    /** «Принято»/«Пропустить» относится ко всем приёмам слота, как на карточке (НАП-36). */
+    suspend fun markAll(intakeIds: List<String>, result: MarkResult) {
+        var applied = false
+        intakeIds.forEach { intakeId ->
+            val outcome = mark(MarkRequest(intakeId = intakeId, result = result, source = IntakeSource.PHONE))
+            if (outcome.isCompleted) applied = true
+        }
+        if (applied) recorder.record(IntakeAction(result.kind(), ActionSource.PHONE))
+    }
+
+    /** Откладывание переносит каждый приём слота на интервал настройки (НАП-30, НАП-31). */
+    suspend fun snoozeAll(intakeIds: List<String>) {
+        val minutes = snoozeMinutes()
+        intakeIds.forEach { intakeId -> snooze(intakeId, minutes) }
+        recorder.record(ReminderSnoozed(ActionSource.PHONE))
+    }
+
+    /** Вид отметки для каталога событий: у нажатия ровно два значения (АН-3). */
+    private fun MarkResult.kind(): IntakeActionKind = when (this) {
+        MarkResult.TAKEN -> IntakeActionKind.TAKEN
+        MarkResult.SKIPPED -> IntakeActionKind.SKIPPED
     }
 }
 

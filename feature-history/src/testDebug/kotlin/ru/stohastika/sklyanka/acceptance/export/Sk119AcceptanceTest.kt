@@ -22,6 +22,7 @@ import ru.stohastika.sklyanka.domain.history.MissedPatternRule
 import ru.stohastika.sklyanka.domain.history.ObserveAdherenceUseCase
 import ru.stohastika.sklyanka.domain.history.OnTimeRule
 import ru.stohastika.sklyanka.domain.history.TransferDoctorReportUseCase
+import ru.stohastika.sklyanka.feature.history.AnalyticsTestKit
 import ru.stohastika.sklyanka.feature.history.FakeRenderer
 import ru.stohastika.sklyanka.feature.history.FakeTransfer
 import ru.stohastika.sklyanka.feature.history.HistoryIntent
@@ -135,6 +136,8 @@ internal object ReportScopeStand {
             missedPattern = MissedPatternRule(),
             // Доступ — тем же сценарием, каким живёт продукт (Р-86: он всегда есть).
             proStatus = world.access.statusUseCase,
+            // Стенду события аналитики не проверяются, но шов обязан быть настоящим (SKL-165).
+            analytics = AnalyticsTestKit().recorderForStand(),
             time = world.clock.time,
         )
     }

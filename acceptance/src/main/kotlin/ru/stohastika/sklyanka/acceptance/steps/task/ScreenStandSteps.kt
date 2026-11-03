@@ -6,6 +6,7 @@ import io.cucumber.java.ru.Тогда
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
+import ru.stohastika.sklyanka.acceptance.NetworkContourFacts
 import ru.stohastika.sklyanka.acceptance.RepositoryLayout
 import java.io.File
 
@@ -369,20 +370,19 @@ class ScreenStandSteps {
         )
     }
 
-    @Тогда("сетевого разрешения в собранном приложении нет")
-    fun thereIsNoNetworkPermission() {
-        // После SKL-82 сеть разрешена ровно одному контуру (ПЛ-3, НФТ-15): проверка
-        // по-прежнему обязана требовать INTERNET и запрещать разрешения состояния сети.
-        // Список правил живёт одним местом — AnalyticsContourRules; стенд проверок
-        // не приносит в сборку ни одного своего разрешения.
-        val rules = File(RepositoryLayout.root, CONTOUR_RULES).readText()
-        FORBIDDEN_PERMISSIONS.forEach { permission ->
-            assertTrue(rules.contains(permission), "the contour rules must still forbid $permission")
-        }
-        assertTrue(
-            rules.contains(NETWORK_PERMISSION),
-            "the contour rules must require $NETWORK_PERMISSION",
-        )
+    /**
+     * Сеть в сборке приходит только от контуров и только из их манифестов (Р-93).
+     *
+     * Утверждение о составе артефакта, и читается оно так же, как его читает гейт:
+     * контуры берутся из правил сборки, объявления разрешений — из манифестов всех
+     * модулей. Прежде шаг назывался «сетевого разрешения в собранном приложении нет»
+     * и проверял лишь наличие `INTERNET` в тексте правил — то есть проходил при любом
+     * составе (SKL-165, аудит 01.11.2026).
+     */
+    @Тогда("сетевые разрешения приходят только от контуров и только из их манифестов")
+    fun networkPermissionsComeFromContoursOnly() {
+        NetworkContourFacts.assertDeclaredOnlyByContours()
+        NetworkContourFacts.assertRulesStillForbid()
     }
 
     @Тогда("артефактов сервисов Google в зависимостях нет")
@@ -695,13 +695,6 @@ class ScreenStandSteps {
         val KEY_SCREEN_MODULES = SCREEN_MODULES - "core-ui"
         val STAND_VERSIONS = listOf("robolectric", "robolectricAndroidAll", "roborazzi")
         val VERSION_LITERALS = listOf("org.robolectric:", "io.github.takahirom.roborazzi:")
-        val FORBIDDEN_PERMISSIONS = listOf(
-            "android.permission.ACCESS_NETWORK_STATE",
-            "android.permission.ACCESS_WIFI_STATE",
-        )
-
-        /** Разрешение платного контура: сеть в артефакте бывает только с ним (SKL-122). */
-        const val NETWORK_PERMISSION = "android.permission.INTERNET"
         val FORBIDDEN_GROUPS = listOf(
             "com.google.android.gms",
             "com.google.firebase",

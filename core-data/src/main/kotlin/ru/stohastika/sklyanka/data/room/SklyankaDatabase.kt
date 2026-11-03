@@ -2,6 +2,7 @@ package ru.stohastika.sklyanka.data.room
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
+import ru.stohastika.sklyanka.data.room.dao.AnalyticsDao
 import ru.stohastika.sklyanka.data.room.dao.DeferredReminderDao
 import ru.stohastika.sklyanka.data.room.dao.HistoryDao
 import ru.stohastika.sklyanka.data.room.dao.IntakeDao
@@ -10,6 +11,7 @@ import ru.stohastika.sklyanka.data.room.dao.OpLogDao
 import ru.stohastika.sklyanka.data.room.dao.ProfileDao
 import ru.stohastika.sklyanka.data.room.dao.ReminderDao
 import ru.stohastika.sklyanka.data.room.dao.ReminderLogDao
+import ru.stohastika.sklyanka.data.room.entity.AnalyticsEventEntity
 import ru.stohastika.sklyanka.data.room.entity.DeferredReminderEntity
 import ru.stohastika.sklyanka.data.room.entity.IntakeEntity
 import ru.stohastika.sklyanka.data.room.entity.MedicationEntity
@@ -34,7 +36,9 @@ import ru.stohastika.sklyanka.data.transfer.TransferDao
  * колонки `mirror_to_watch` у лекарства и `watch_result` у журнала уходят, таблицы
  * перестраиваются без потери строк (МГ-2); версия 9 добавила приёму признак снятия (Р-46,
  * SKL-127); версия 10 добавила лекарству вид расписания, а приёму — дозу за приём (SKL-117,
- * ПР-15, ПР-19). Схемы экспортируются в `core-data/schemas` и входят в ревью (МГ-1).
+ * ПР-15, ПР-19); версия 11 добавила очередь событий аналитики (SKL-165, АН-4) — отдельную
+ * таблицу без единого внешнего ключа. Схемы экспортируются в `core-data/schemas` и входят
+ * в ревью (МГ-1).
  *
  * Журнал операций лежит в той же базе намеренно: запись в него обязана идти той же
  * транзакцией, что и сама операция.
@@ -47,6 +51,7 @@ import ru.stohastika.sklyanka.data.transfer.TransferDao
         OpLogEntity::class,
         ReminderLogEntity::class,
         DeferredReminderEntity::class,
+        AnalyticsEventEntity::class,
     ],
     version = SklyankaDatabase.VERSION,
     exportSchema = true,
@@ -67,6 +72,14 @@ abstract class SklyankaDatabase : RoomDatabase() {
     /** Отложенные срабатывания, переживающие перезагрузку (SKL-35, ОВ-75). */
     abstract fun deferredReminderDao(): DeferredReminderDao
 
+    /**
+     * Очередь событий аналитики (SKL-165, АН-4).
+     *
+     * Лежит в той же базе, что и данные, но не касается их: у таблицы нет ни одного
+     * внешнего ключа, поэтому стирание профиля и перенос её не трогают.
+     */
+    abstract fun analyticsDao(): AnalyticsDao
+
     /** Выборки планировщика напоминаний (SKL-13, НАП-12). */
     abstract fun reminderDao(): ReminderDao
 
@@ -83,7 +96,7 @@ abstract class SklyankaDatabase : RoomDatabase() {
     abstract fun transferDao(): TransferDao
 
     companion object {
-        const val VERSION = 10
+        const val VERSION = 11
 
         /**
          * Имя файла базы.

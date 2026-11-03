@@ -24,8 +24,15 @@ import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import ru.stohastika.sklyanka.analytics.AnalyticsLaunchAnchor
 import ru.stohastika.sklyanka.data.room.DatabaseUpgrade
+import ru.stohastika.sklyanka.domain.analytics.AnalyticsConsentState
+import ru.stohastika.sklyanka.domain.analytics.AnalyticsRecorder
+import ru.stohastika.sklyanka.domain.analytics.ObserveAnalyticsConsentUseCase
+import ru.stohastika.sklyanka.domain.analytics.ScreenView
+import ru.stohastika.sklyanka.domain.analytics.ShouldShowAnalyticsConsentUseCase
 import ru.stohastika.sklyanka.domain.appearance.AccentTheme
 import ru.stohastika.sklyanka.domain.appearance.ObserveAccentThemeUseCase
 import ru.stohastika.sklyanka.domain.appearance.ObserveIconVariantUseCase
@@ -45,6 +52,8 @@ import ru.stohastika.sklyanka.feature.meds.archive.ArchiveViewModel
 import ru.stohastika.sklyanka.feature.meds.card.MedicationCardViewModel
 import ru.stohastika.sklyanka.feature.meds.form.MedicationFormViewModel
 import ru.stohastika.sklyanka.feature.meds.list.MedicationListViewModel
+import ru.stohastika.sklyanka.feature.onboarding.AnalyticsConsentRoute
+import ru.stohastika.sklyanka.feature.onboarding.AnalyticsConsentViewModel
 import ru.stohastika.sklyanka.feature.onboarding.DeliveryCheckEntry
 import ru.stohastika.sklyanka.feature.onboarding.OnboardingViewModel
 import ru.stohastika.sklyanka.feature.onboarding.PermissionsActivity
@@ -86,11 +95,14 @@ import ru.stohastika.sklyanka.pro.ProHost
 import ru.stohastika.sklyanka.reminder.DeliveryCheckAnnouncer
 import ru.stohastika.sklyanka.reminder.ReminderOutageAnnouncer
 import ru.stohastika.sklyanka.startup.DatabaseBlock
+import ru.stohastika.sklyanka.startup.LaunchStep
 import ru.stohastika.sklyanka.startup.PrivacyConsentDialog
 import ru.stohastika.sklyanka.startup.StartDestination
 import ru.stohastika.sklyanka.startup.StartupDecision
 import ru.stohastika.sklyanka.startup.StartupFrames
+import ru.stohastika.sklyanka.startup.launchStep
 import ru.stohastika.sklyanka.startup.startupFrame
+import ru.stohastika.sklyanka.ui.analytics.LocalScreenTracker
 import ru.stohastika.sklyanka.ui.locale.withInterfaceLocale
 import ru.stohastika.sklyanka.ui.motion.AnimatedLayer
 import ru.stohastika.sklyanka.ui.profile.ProfileChrome
@@ -173,6 +185,33 @@ class MainActivity : ComponentActivity() {
     /** Записать принятие политики: со следующего запуска диалог не показывается (Р-89). */
     @Inject
     lateinit var acknowledgePrivacyConsent: AcknowledgePrivacyConsentUseCase
+
+    /**
+     * Показывать ли экран согласия на аналитику (SKL-165, АН-2).
+     *
+     * Спрашивается при сборке маршрута запуска один раз: решение уже принято — экран
+     * не появляется ни при следующем запуске, ни через месяц.
+     */
+    @Inject
+    lateinit var shouldShowAnalyticsConsent: ShouldShowAnalyticsConsentUseCase
+
+    /** Текущее решение — им решается, можно ли уже привязывать запуск и доотправлять очередь. */
+    @Inject
+    lateinit var observeAnalyticsConsent: ObserveAnalyticsConsentUseCase
+
+    /** Шов записи событий: экраны сообщают о показе через `LocalScreenTracker`. */
+    @Inject
+    lateinit var analyticsRecorder: AnalyticsRecorder
+
+    /**
+     * Якорь запуска поставщика (SKL-165, TDD §14).
+     *
+     * Привязывается только при уже данном согласии: до него SDK в процессе нет, и `attach`
+     * адаптера всё равно ничего не делает (АН-4). Активность не знает ни имени SDK,
+     * ни его методов.
+     */
+    @Inject
+    lateinit var analyticsAnchor: AnalyticsLaunchAnchor
 
     /** Единственный источник контекста активного профиля на всё приложение (ПРФ-17). */
     @Inject
@@ -294,6 +333,14 @@ class MainActivity : ComponentActivity() {
      * принадлежит `feature-history`. Хостит её `app` поверх корня — тем же способом, что витрину.
      */
     private val exportHistory: ExportHistoryViewModel by viewModels()
+
+    /**
+     * Первый шаг первого запуска — вопрос об аналитике (SKL-165, АН-1).
+     *
+     * Живёт в активности, а не в экране онбординга: согласие стоит **до** онбординга
+     * разрешений, и маршрут между ними решает хозяин навигации.
+     */
+    private val analyticsConsent: AnalyticsConsentViewModel by viewModels()
     private val history: HistoryViewModel by viewModels()
     private val transfer: DataTransferViewModel by viewModels()
     private val deleteProfile: DeleteProfileViewModel by viewModels()
@@ -344,6 +391,13 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch {
             startupFlags = readStartupFlags()
             decision = startupRouter.resolve()
+            // Согласие уже дано — можно привязать запуск к активности и доотправить
+            // накопленное. До согласия не зовётся ни то, ни другое: поставщика в процессе
+            // нет вовсе, а `drain` без согласия всё равно ничего не отправит (АН-4).
+            if (observeAnalyticsConsent().first() == AnalyticsConsentState.ALLOWED) {
+                analyticsAnchor.attach(this@MainActivity)
+                analyticsRecorder.drain()
+            }
         }
 
         setContent {
@@ -384,44 +438,62 @@ class MainActivity : ComponentActivity() {
                 // до готовности первого экрана и ни кадром дольше. Пока заставка на
                 // экране, первый экран не компонуется вовсе, поэтому пустой кадр
                 // «Сегодня» (TodayUiState.Opening) мелькнуть не может (ОВ-87).
-                StartupFrames(
-                    frame = startupFrame(
-                        destination = decision?.destination,
-                        onboardingUnseen = startupFlags.onboardingUnseen,
-                        onboardingDone = onboardingDone,
-                        today = todayState,
-                        block = block,
-                        // Тема и иконка читаются из постоянных настроек; пока значения нет,
-                        // первый экран не готов — и на экране заставка. Иначе первый кадр
-                        // мелькнул бы базовой «Оливой» (§5.17, `TDD.md` §5).
-                        appearanceReady = accentTheme != null && iconVariant != null,
-                    ),
+                // Показ экрана сообщается одним приёмником на всё приложение (SKL-165,
+                // TDD §5.4): экран знает только строку каталога, а согласие, очередь
+                // и провайдер остаются в домене и composition root.
+                CompositionLocalProvider(
+                    LocalScreenTracker provides { screen ->
+                        analyticsRecorder.record(ScreenView(screen))
+                    },
                 ) {
-                    LaunchRouting(
-                        decision = decision,
-                        onboardingUnseen = startupFlags.onboardingUnseen,
-                        onboardingDone = onboardingDone,
-                        privacyConsentUnseen = startupFlags.privacyConsentUnseen,
-                        addMedicationRequested = addMedicationRequested,
-                        onOnboardingDone = { onboardingDone = true },
-                        onPrivacyAgree = {
-                            acknowledgePrivacy { startupFlags = startupFlags.copy(privacyConsentUnseen = false) }
-                        },
-                        // Отказ закрывает приложение и ничего не записывает: при следующем
-                        // запуске диалог покажется снова (Р-90).
-                        onPrivacyDecline = { finishAndRemoveTask() },
-                        theme = accentTheme ?: AccentTheme.DEFAULT,
-                        dark = interfaceDark,
-                    )
+                    StartupFrames(
+                        frame = startupFrame(
+                            destination = decision?.destination,
+                            onboardingUnseen = startupFlags.onboardingUnseen,
+                            onboardingDone = onboardingDone,
+                            analyticsConsentUnseen = startupFlags.analyticsConsentUnseen,
+                            today = todayState,
+                            block = block,
+                            // Тема и иконка читаются из постоянных настроек; пока значения нет,
+                            // первый экран не готов — и на экране заставка. Иначе первый кадр
+                            // мелькнул бы базовой «Оливой» (§5.17, `TDD.md` §5).
+                            appearanceReady = accentTheme != null && iconVariant != null,
+                        ),
+                    ) {
+                        LaunchRouting(
+                            decision = decision,
+                            onboardingUnseen = startupFlags.onboardingUnseen,
+                            onboardingDone = onboardingDone,
+                            privacyConsentUnseen = startupFlags.privacyConsentUnseen,
+                            analyticsConsentUnseen = startupFlags.analyticsConsentUnseen,
+                            addMedicationRequested = addMedicationRequested,
+                            onOnboardingDone = { onboardingDone = true },
+                            onPrivacyAgree = {
+                                acknowledgePrivacy {
+                                    startupFlags = startupFlags.copy(privacyConsentUnseen = false)
+                                }
+                            },
+                            // Отказ закрывает приложение и ничего не записывает: при следующем
+                            // запуске диалог покажется снова (Р-90).
+                            onPrivacyDecline = { finishAndRemoveTask() },
+                            onAnalyticsConsentDone = {
+                                startupFlags = startupFlags.copy(analyticsConsentUnseen = false)
+                            },
+                            analyticsConsent = analyticsConsent,
+                            theme = accentTheme ?: AccentTheme.DEFAULT,
+                            dark = interfaceDark,
+                        )
+                    }
                 }
             }
         }
     }
 
-    /** Признаки первого запуска — онбординг и политика — одним чтением (Р-89). */
+    /** Признаки первого запуска — онбординг, политика и согласие — одним чтением (Р-89, SKL-165). */
     private suspend fun readStartupFlags(): StartupFlags = StartupFlags(
         onboardingUnseen = shouldShowOnboarding(),
         privacyConsentUnseen = shouldShowPrivacyConsent(),
+        analyticsConsentUnseen = shouldShowAnalyticsConsent(),
     )
 
     /** Записать принятие политики и снять диалог после успешной записи, а не до неё. */
@@ -448,10 +520,16 @@ class MainActivity : ComponentActivity() {
         onboardingUnseen: Boolean,
         onboardingDone: Boolean,
         privacyConsentUnseen: Boolean,
+        /** Решение об аналитике ещё не принято (SKL-165, АН-1). */
+        analyticsConsentUnseen: Boolean,
         addMedicationRequested: Boolean,
         onOnboardingDone: () -> Unit,
         onPrivacyAgree: () -> Unit,
         onPrivacyDecline: () -> Unit,
+        /** Согласие закрыто — решение записано или спрашивать нечего. */
+        onAnalyticsConsentDone: () -> Unit,
+        /** Модель вопроса об аналитике: живёт в активности, а не в экране. */
+        analyticsConsent: AnalyticsConsentViewModel,
         /** Акцентная тема (§2.5) и тёмная среда интерфейса (§9) — для обёртки профиля. */
         theme: AccentTheme,
         dark: Boolean,
@@ -464,16 +542,31 @@ class MainActivity : ComponentActivity() {
                 onDecline = onPrivacyDecline,
             )
         }
+        // Порядок «политика → аналитика → надёжность» — правило, а не следствие ветвлений
+        // (`LaunchStep`, АН-1, ПМ-25). Диалог политики живёт поверх любого шага и до него.
+        val step = launchStep(
+            analyticsConsentUnseen = analyticsConsentUnseen && !privacyConsentUnseen,
+            onboardingDestination = decision?.destination == StartDestination.Onboarding,
+            onboardingUnseen = onboardingUnseen,
+            onboardingDone = onboardingDone,
+            addMedicationRequested = addMedicationRequested,
+        )
         when {
+            // Аналитика — отдельный шаг после диалога политики и до онбординга разрешений.
+            // Ярлык «Добавить лекарство» сильнее самопоказа (ПМ-25 п. 5): человек уже
+            // сказал, зачем пришёл, а вопрос дождётся следующего обычного запуска.
+            step == LaunchStep.ANALYTICS_CONSENT ->
+                AnalyticsConsentRoute(
+                    viewModel = analyticsConsent,
+                    onDone = onAnalyticsConsentDone,
+                )
+
             // Экран разрешений EMUI (SKL-14): запуск, на котором с разрешениями
             // непорядок, начинается с него — но только пока человек этого экрана
             // не видел. Решение и его причина уже записаны в журнал запуска.
             // Ярлык «Добавить лекарство» перебивает самопоказ (SKL-80): человек
             // уже сказал, зачем пришёл; разрешения остаются баннером и настройками.
-            decision?.destination == StartDestination.Onboarding &&
-                onboardingUnseen &&
-                !onboardingDone &&
-                !addMedicationRequested ->
+            step == LaunchStep.ONBOARDING ->
                 PermissionsRoute(
                     viewModel = onboarding,
                     source = OnboardingSource.FIRST_LAUNCH,
@@ -866,4 +959,9 @@ class MainActivity : ComponentActivity() {
  * Один объект, а не два поля: решение о первом кадре принимается по обоим сразу, и пара
  * состояний, обновлённая наполовину, дала бы кадр без политики или без онбординга.
  */
-private data class StartupFlags(val onboardingUnseen: Boolean = false, val privacyConsentUnseen: Boolean = false)
+private data class StartupFlags(
+    val onboardingUnseen: Boolean = false,
+    val privacyConsentUnseen: Boolean = false,
+    /** Согласие на аналитику ещё не спрошено; после решения флаг снимается до перезапуска. */
+    val analyticsConsentUnseen: Boolean = false,
+)

@@ -10,8 +10,9 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
+import ru.stohastika.sklyanka.acceptance.AnalyticsCatalogFacts
 import ru.stohastika.sklyanka.acceptance.MedicationUnits
-import ru.stohastika.sklyanka.acceptance.RepositoryLayout
+import ru.stohastika.sklyanka.acceptance.NetworkContourFacts
 import ru.stohastika.sklyanka.acceptance.RussianDates
 import ru.stohastika.sklyanka.acceptance.steps.dateOf
 import ru.stohastika.sklyanka.acceptance.steps.localMoment
@@ -36,7 +37,6 @@ import ru.stohastika.sklyanka.domain.reminder.ReminderChannel
 import ru.stohastika.sklyanka.domain.reminder.ReminderEvent
 import ru.stohastika.sklyanka.domain.reminder.RescheduleReason
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPermission
-import java.io.File
 import java.math.BigDecimal
 import java.time.Duration
 import java.time.Instant
@@ -619,33 +619,21 @@ class ReminderScheduleSteps(private val world: AcceptanceWorld) {
     }
 
     /**
-     * Журнал не покидает устройство — утверждение о сборке, а не о настроении.
+     * Запись журнала в события аналитики не попадает — утверждение о сборке (НФТ-19).
      *
-     * Сеть в продукте есть, но только у платного контура покупок (ПЛ-3, НФТ-15,
-     * `ADR-0010`, SKL-122): `INTERNET` объявляет единственный модуль — контур, а журнал
-     * наружу не уходит ни при каких условиях (НФТ-19). Та же проверка, что у настроек
-     * (`SettingsContextSteps.theAppNeverReachesTheNetwork`) и истории: запрещены только
-     * разрешения состояния сети, и они же снимаются из чужих манифестов. Копия здесь
-     * потому, что строка сценария другая, а правило сборки одно.
+     * Сеть в продукте есть, но только у своего контура (Р-93, `ADR-0017`), и способен
+     * этот контур передать только события каталога. Проверяются обе стороны: сетевое
+     * разрешение объявляют лишь контуры, а конструктор события не принимает ни строки,
+     * ни идентификатора — значит название лекарства, доза и имя профиля в событие
+     * не пролезают конструкцией, а не обещанием.
+     *
+     * Прежде шаг читал `app/src/main/AndroidManifest.xml` и потому зеленел при ложном
+     * тексте: после SKL-165 `INTERNET` приходит из манифеста контура.
      */
-    @Тогда("^ни одна запись журнала не передаётся за пределы устройства$")
-    fun theJournalNeverLeavesTheDevice() {
-        val manifest = File(RepositoryLayout.root, MANIFEST).readText()
-        val declarations = Regex(USES_PERMISSION).findAll(manifest)
-            .map { it.value }
-            .filterNot { it.contains(REMOVE_DIRECTIVE) }
-            .toList()
-        FORBIDDEN_NETWORK_PERMISSIONS.forEach { permission ->
-            assertFalse(
-                declarations.any { it.contains(permission) },
-                "the application manifest must not declare $permission (НФТ-15)",
-            )
-        }
-        assertFalse(
-            declarations.any { it.contains(NETWORK_PERMISSION) },
-            "the app manifest must not declare $NETWORK_PERMISSION — only the contour may (ADR-0010)",
-
-        )
+    @Тогда("^ни одна запись журнала не попадает в события аналитики$")
+    fun theJournalNeverEntersTheAnalyticsEvents() {
+        NetworkContourFacts.assertDeclaredOnlyByContours()
+        AnalyticsCatalogFacts.assertNoFreeTextInEvents()
     }
 
     @Но("^повторного списания остатка не происходит$")
@@ -729,17 +717,5 @@ class ReminderScheduleSteps(private val world: AcceptanceWorld) {
         const val ON_TIME_SECONDS = 120L
         const val PERSISTENT_ON = "включена"
         const val STOCK = 30
-
-        const val MANIFEST = "app/src/main/AndroidManifest.xml"
-        const val USES_PERMISSION = "<uses-permission[^>]*>"
-        const val REMOVE_DIRECTIVE = "tools:node=\"remove\""
-
-        /** Разрешение платного контура: сеть в артефакте бывает только с ним (SKL-122). */
-        const val NETWORK_PERMISSION = "android.permission.INTERNET"
-
-        val FORBIDDEN_NETWORK_PERMISSIONS = listOf(
-            "android.permission.ACCESS_NETWORK_STATE",
-            "android.permission.ACCESS_WIFI_STATE",
-        )
     }
 }

@@ -9,7 +9,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import ru.stohastika.sklyanka.domain.analytics.AnalyticsRecorder
+import ru.stohastika.sklyanka.domain.analytics.DeliveryCheckResult
 import ru.stohastika.sklyanka.domain.reminder.BuildReminderDiagnosticsUseCase
+import ru.stohastika.sklyanka.domain.reminder.DeliveryCheckOutcome
 import ru.stohastika.sklyanka.domain.reminder.DeliveryCheckState
 import ru.stohastika.sklyanka.domain.reminder.ExportReminderJournalUseCase
 import ru.stohastika.sklyanka.domain.reminder.ReminderDiagnostics
@@ -24,6 +27,7 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
+import ru.stohastika.sklyanka.domain.analytics.DeliveryCheckOutcome as AnalyticsCheckOutcome
 
 /** Что показывает экран проверки напоминаний (НАП-37, ОВ-126). */
 data class DiagnosticsUiState(
@@ -81,10 +85,21 @@ class DiagnosticsViewModel @Inject constructor(
      */
     private val exportJournal: ExportReminderJournalUseCase,
     private val time: TimeSource,
+    /**
+     * Запись исхода самопроверки (SKL-165, АН-1).
+     *
+     * Событие ставится там, где проверка **признана завершённой и объявлена человеку**,
+     * а не при входе на экран: повторный вход на ту же проверку дубля не даёт —
+     * завершённость опознаётся по моменту срабатывания (`dueAt`).
+     */
+    private val analytics: AnalyticsRecorder,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(DiagnosticsUiState(zone = time.zone(), today = today()))
     val state: StateFlow<DiagnosticsUiState> = _state.asStateFlow()
+
+    /** Проверка, исход которой уже записан: «одна проверка — одно событие». */
+    private var reportedCheck: Instant? = null
 
     init {
         refresh()
@@ -97,6 +112,7 @@ class DiagnosticsViewModel @Inject constructor(
             // журнал ему нельзя, поэтому закрытие идёт здесь.
             deliveryCheck.finish()
             val snapshot = diagnostics()
+            reportDeliveryCheck(snapshot.deliveryCheck, snapshot.deliveryCheckAcknowledged)
             _state.value = _state.value.copy(
                 snapshot = snapshot,
                 today = today(),
@@ -107,6 +123,33 @@ class DiagnosticsViewModel @Inject constructor(
                 },
             )
         }
+    }
+
+    /**
+     * Исход завершённой самопроверки — ровно один раз на проверку.
+     *
+     * Проверка опознаётся моментом срабатывания: перечитывание снимка, повторный вход
+     * и поворот экрана видят ту же завершённую проверку и второго события не дают.
+     * Подтверждённая проверка не пишется ещё и после перезапуска экрана: человек её
+     * уже видел, и признак подтверждения переживает смерть процесса.
+     */
+    private fun reportDeliveryCheck(state: DeliveryCheckState, acknowledged: Boolean) {
+        val finished = state as? DeliveryCheckState.Finished ?: return
+        if (acknowledged || reportedCheck == finished.dueAt) return
+        reportedCheck = finished.dueAt
+        analytics.record(DeliveryCheckResult(finished.outcome.toAnalytics()))
+    }
+
+    /**
+     * Исход проверки в каталоге событий: у продукта четыре исхода, у события три (ПМ-26).
+     *
+     * «Не дошло» и «не завершена» сводятся к `failed`: для воронки обе — проверка,
+     * которая не подтвердила надёжность доставки, а различает их экран, не аналитика.
+     */
+    private fun DeliveryCheckOutcome.toAnalytics(): AnalyticsCheckOutcome = when (this) {
+        DeliveryCheckOutcome.ON_TIME -> AnalyticsCheckOutcome.PASSED
+        DeliveryCheckOutcome.LATE -> AnalyticsCheckOutcome.LATE
+        DeliveryCheckOutcome.NOT_DELIVERED, DeliveryCheckOutcome.NOT_COMPLETED -> AnalyticsCheckOutcome.FAILED
     }
 
     /** Сегодняшняя дата в поясе человека из подменяемых часов (НФТ-48). */

@@ -4,11 +4,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.runComposeUiTest
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
+import ru.stohastika.sklyanka.domain.analytics.AnalyticsRecorder
+import ru.stohastika.sklyanka.domain.analytics.DecideAnalyticsConsentUseCase
+import ru.stohastika.sklyanka.domain.analytics.ObserveAnalyticsConsentUseCase
 import ru.stohastika.sklyanka.domain.appearance.ObserveAccentThemeUseCase
 import ru.stohastika.sklyanka.domain.appearance.ObserveIconVariantUseCase
 import ru.stohastika.sklyanka.domain.appearance.SetAccentThemeUseCase
@@ -44,6 +48,7 @@ internal object SettingsRemindersStand {
         if (lastWorld !== world) {
             lastWorld = world
             viewModel = null
+            analyticsRecorder = null
             soundOpened = 0
             Dispatchers.setMain(UnconfinedTestDispatcher())
         }
@@ -105,10 +110,26 @@ internal object SettingsRemindersStand {
             setTheme = SetAccentThemeUseCase(appearance, world.access.statusUseCase),
             setIcon = SetIconVariantUseCase(appearance, world.access.statusUseCase),
         ),
+        // Аналитика (SKL-165): та же строка раздела данных, что в продукте; подменены
+        // только порты согласия, очереди и поставщика.
+        observeAnalyticsConsent = ObserveAnalyticsConsentUseCase(world.analytics.store),
+        decideAnalyticsConsent = DecideAnalyticsConsentUseCase(world.analytics.store, recorder(world)),
+        analytics = recorder(world),
     )
 
     /** Настройки оформления стенда: базовые «Олива» и «Ледяная» (Р-20, Р-56). */
     private val appearance = FakeAppearancePreferences()
+
+    /**
+     * Рекордер стенда — рекордер сценария: согласие, очередь и поставщик те же, что у шагов.
+     *
+     * Стенд не держит второй мир аналитики: иначе «выключение прекращает отправку»
+     * проверялось бы на другом хранилище согласия, чем то, которое выключали.
+     */
+    private var analyticsRecorder: AnalyticsRecorder? = null
+
+    private fun recorder(world: AcceptanceWorld): AnalyticsRecorder =
+        analyticsRecorder ?: world.analytics.recorder(CoroutineScope(Dispatchers.Main)).also { analyticsRecorder = it }
 
     /** Забыть подменённый главный диспетчер: стенд не должен влиять на соседние тесты. */
     fun dropMainDispatcher() {

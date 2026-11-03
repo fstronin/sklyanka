@@ -17,6 +17,7 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ApplicationProvider
 import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
@@ -178,7 +179,9 @@ class SettingsScreenSteps(private val world: AcceptanceWorld) {
     @Тогда("^строка «Настойчивое напоминание» с подписью «(.+?)» показывает, включено оно или выключено$")
     fun thePersistentRowShowsItsState(caption: String) {
         SettingsScreenProbe.ask(world) {
-            val node = onNodeWithTag(TAG_SWITCH_ROW, useUnmergedTree = true).fetchSemanticsNode()
+            // Переключателей на экране два (напоминание и аналитика, SKL-165): настойчивое
+            // напоминание стоит первым — в блоке «Напоминания» до блока «Данные».
+            val node = onAllNodesWithTag(TAG_SWITCH_ROW, useUnmergedTree = true)[0].fetchSemanticsNode()
             assertTrue(textsOf(node).contains(caption), "the row must carry the caption «$caption»")
             assertEquals(
                 SettingsScreenProbe.state(world).reminders.persistentEnabled,
@@ -202,13 +205,18 @@ class SettingsScreenSteps(private val world: AcceptanceWorld) {
 
     /**
      * «Тихие часы» — зафиксированное расхождение макета и продукта (решение по `ОВ-11`):
-     * настройка, глушащая напоминание, противоречит НАП-1. Проверяется отсутствием
-     * второго переключателя, а не поиском строки, которой нет ни в ресурсах, ни в коде.
+     * настройка, глушащая напоминание, противоречит НАП-1.
+     *
+     * Переключателей на экране ровно два — настойчивое напоминание и аналитика (SKL-165);
+     * тихих часов среди них нет. Проверяется составом строк, а не поиском строки, которой
+     * нет ни в ресурсах, ни в коде.
      */
     @Тогда("^строки «Тихие часы» на экране нет$")
     fun thereIsNoQuietHoursRow() {
         SettingsScreenProbe.ask(world) {
-            assertEquals(1, onAllNodesWithTag(TAG_SWITCH_ROW, useUnmergedTree = true).fetchSemanticsNodes().size)
+            assertEquals(TWO, onAllNodesWithTag(TAG_SWITCH_ROW, useUnmergedTree = true).fetchSemanticsNodes().size)
+            onNodeWithText(string(R.string.settings_persistent), useUnmergedTree = true).assertExists()
+            onNodeWithText(string(R.string.settings_analytics), useUnmergedTree = true).assertExists()
         }
     }
 
@@ -241,7 +249,10 @@ class SettingsScreenSteps(private val world: AcceptanceWorld) {
 
     @Когда("^человек выключает настойчивое напоминание$")
     fun thePersonTurnsThePersistentReminderOff() {
-        SettingsScreenProbe.act(world) { onNodeWithTag(TAG_SWITCH_ROW, useUnmergedTree = true).performClick() }
+        // Первый переключатель — настойчивое напоминание; аналитика стоит ниже, в «Данных».
+        SettingsScreenProbe.act(world) {
+            onAllNodesWithTag(TAG_SWITCH_ROW, useUnmergedTree = true)[0].performClick()
+        }
     }
 
     @Тогда("^строка показывает его выключенным без перезахода на экран$")

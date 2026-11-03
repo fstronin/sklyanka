@@ -154,6 +154,36 @@ class StartupFrameTest {
         )
     }
 
+    @Test
+    fun `the analytics consent screen is shown instead of the splash`() {
+        // Экран согласия — первый экран первого запуска: ему нечего ждать, и пустой кадр
+        // «Сегодня» под ним заставку не держит (SKL-165, АН-1).
+        assertEquals(
+            StartupFrame.FirstScreen,
+            startupFrame(
+                destination = StartDestination.Onboarding,
+                onboardingUnseen = true,
+                onboardingDone = false,
+                today = TodayUiState.Opening,
+                analyticsConsentUnseen = true,
+            ),
+        )
+    }
+
+    @Test
+    fun `a decided analytics question leaves the ordinary frames`() {
+        assertEquals(
+            StartupFrame.AppSplash,
+            startupFrame(
+                destination = StartDestination.Today,
+                onboardingUnseen = false,
+                onboardingDone = true,
+                today = TodayUiState.Opening,
+                analyticsConsentUnseen = false,
+            ),
+        )
+    }
+
     private companion object {
         val DATE: LocalDate = LocalDate.of(2026, 10, 12)
     }

@@ -5,6 +5,7 @@ import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
+import ru.stohastika.sklyanka.domain.analytics.AnalyticsRecorder
 import ru.stohastika.sklyanka.domain.appearance.ObserveAccentThemeUseCase
 import ru.stohastika.sklyanka.domain.intake.MarkIntakeUseCase
 import ru.stohastika.sklyanka.domain.intake.SweepMissedIntakesUseCase
@@ -34,6 +35,14 @@ interface WidgetEntryPoint {
 
     /** Отметка из виджета — тот же сценарий, что у кнопки в приложении (ПР-22). */
     fun markIntake(): MarkIntakeUseCase
+
+    /**
+     * Запись события нажатия плиты (SKL-165).
+     *
+     * Тот же доменный шов, что у экранов: гейт согласия и очередь живут в нём, а плита
+     * сообщает только, какое действие человека случилось.
+     */
+    fun analytics(): AnalyticsRecorder
 
     /** Перевод просроченных приёмов в «пропущено без отметки» перед отрисовкой (ПР-1). */
     fun sweepMissed(): SweepMissedIntakesUseCase

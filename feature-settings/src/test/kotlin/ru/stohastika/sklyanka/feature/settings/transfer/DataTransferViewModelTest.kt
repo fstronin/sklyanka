@@ -1,5 +1,6 @@
 package ru.stohastika.sklyanka.feature.settings.transfer
 
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -12,6 +13,11 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import ru.stohastika.sklyanka.domain.analytics.AnalyticsConsentState
+import ru.stohastika.sklyanka.domain.analytics.AnalyticsEventName
+import ru.stohastika.sklyanka.domain.analytics.AnalyticsProperty
+import ru.stohastika.sklyanka.domain.analytics.OperationResult
+import ru.stohastika.sklyanka.domain.analytics.TransferDirection
 import ru.stohastika.sklyanka.domain.time.FixedTimeSource
 import ru.stohastika.sklyanka.domain.transfer.AppStamp
 import ru.stohastika.sklyanka.domain.transfer.ApplyTransferUseCase
@@ -25,6 +31,7 @@ import ru.stohastika.sklyanka.domain.transfer.TransferMode
 import ru.stohastika.sklyanka.domain.transfer.TransferReject
 import ru.stohastika.sklyanka.domain.transfer.TransferRejectReason
 import ru.stohastika.sklyanka.domain.transfer.ValidateSnapshot
+import ru.stohastika.sklyanka.feature.settings.AnalyticsTestKit
 import java.time.ZoneId
 
 /**
@@ -53,6 +60,10 @@ class DataTransferViewModelTest {
     private val replanner = FakeReplanner()
     private val ids = FixedIds()
     private val codec = FakeCodec(TransferDecoded.Loaded(TransferData.snapshot(), emptyList()))
+
+    /** События переноса: согласие дано, очередь и поставщик — в памяти (SKL-165). */
+    private val analyticsScope = CoroutineScope(dispatcher)
+    private val analyticsKit = AnalyticsTestKit(consent = AnalyticsConsentState.ALLOWED)
 
     @Before
     fun replaceMainDispatcher() {
@@ -333,6 +344,100 @@ class DataTransferViewModelTest {
         assertEquals(false, journal.contains(TransferData.STRENGTH_UNIT))
     }
 
+    // --- События переноса (SKL-165, ПМ-26) -----------------------------------------------------
+
+    /** Успешная выгрузка — `transfer_result(export, success)`: только направление и исход. */
+    @Test
+    fun `a successful export sends a success event for the export direction`() = runTest(dispatcher) {
+        val model = viewModel()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        model.onIntent(TransferIntent.SaveTo("content://target"))
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(listOf(AnalyticsEventName.TRANSFER_RESULT), analyticsKit.transport.deliveredNames())
+        val event = analyticsKit.transport.delivered.single()
+        assertEquals(TransferDirection.EXPORT.wire, event.properties[AnalyticsProperty.DIRECTION])
+        assertEquals(OperationResult.SUCCESS.wire, event.properties[AnalyticsProperty.RESULT])
+    }
+
+    /** Сорванная запись — `transfer_result(export, error)`. */
+    @Test
+    fun `a failed export sends an error event for the export direction`() = runTest(dispatcher) {
+        files.failOnWrite = true
+        val model = viewModel()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        model.onIntent(TransferIntent.SaveTo("content://target"))
+        dispatcher.scheduler.advanceUntilIdle()
+
+        val event = analyticsKit.transport.delivered.single()
+        assertEquals(TransferDirection.EXPORT.wire, event.properties[AnalyticsProperty.DIRECTION])
+        assertEquals(OperationResult.ERROR.wire, event.properties[AnalyticsProperty.RESULT])
+    }
+
+    /** Отмена выбора места — `transfer_result(export, cancelled)`, а не отказ. */
+    @Test
+    fun `a cancelled export is recorded as a cancellation`() = runTest(dispatcher) {
+        val model = viewModel()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        model.onIntent(TransferIntent.ExportCancelled)
+        dispatcher.scheduler.advanceUntilIdle()
+
+        val event = analyticsKit.transport.delivered.single()
+        assertEquals(TransferDirection.EXPORT.wire, event.properties[AnalyticsProperty.DIRECTION])
+        assertEquals(OperationResult.CANCELLED.wire, event.properties[AnalyticsProperty.RESULT])
+    }
+
+    /** Загрузка, применённая к данным, — `transfer_result(import, success)`. */
+    @Test
+    fun `an applied import sends a success event for the import direction`() = runTest(dispatcher) {
+        val model = viewModel()
+        dispatcher.scheduler.advanceUntilIdle()
+        model.onIntent(TransferIntent.FileChosen("content://file"))
+        dispatcher.scheduler.advanceUntilIdle()
+        model.onIntent(TransferIntent.ContinueFromSummary)
+        dispatcher.scheduler.advanceUntilIdle()
+
+        model.onIntent(TransferIntent.Apply)
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(listOf(AnalyticsEventName.TRANSFER_RESULT), analyticsKit.transport.deliveredNames())
+        val event = analyticsKit.transport.delivered.single()
+        assertEquals(TransferDirection.IMPORT.wire, event.properties[AnalyticsProperty.DIRECTION])
+        assertEquals(OperationResult.SUCCESS.wire, event.properties[AnalyticsProperty.RESULT])
+    }
+
+    /** Файл прочитан и не принят — `transfer_result(import, error)`: сводки не было. */
+    @Test
+    fun `a rejected file sends an error event for the import direction`() = runTest(dispatcher) {
+        codec.outcome = TransferDecoded.Rejected(TransferReject(TransferRejectReason.NOT_JSON, "root"))
+        val model = viewModel()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        model.onIntent(TransferIntent.FileChosen("content://file"))
+        dispatcher.scheduler.advanceUntilIdle()
+
+        val event = analyticsKit.transport.delivered.single()
+        assertEquals(TransferDirection.IMPORT.wire, event.properties[AnalyticsProperty.DIRECTION])
+        assertEquals(OperationResult.ERROR.wire, event.properties[AnalyticsProperty.RESULT])
+    }
+
+    /** Файл не выбран — `transfer_result(import, cancelled)`. */
+    @Test
+    fun `a cancelled import is recorded as a cancellation`() = runTest(dispatcher) {
+        val model = viewModel()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        model.onIntent(TransferIntent.ImportCancelled)
+        dispatcher.scheduler.advanceUntilIdle()
+
+        val event = analyticsKit.transport.delivered.single()
+        assertEquals(TransferDirection.IMPORT.wire, event.properties[AnalyticsProperty.DIRECTION])
+        assertEquals(OperationResult.CANCELLED.wire, event.properties[AnalyticsProperty.RESULT])
+    }
+
     /** Экран подтверждения замены: файл выбран, слово ещё не введено (ОВ-67). */
     private fun replacementConfirmation(): DataTransferViewModel {
         val model = viewModel()
@@ -379,6 +484,7 @@ class DataTransferViewModelTest {
             settings = settings,
             files = files,
             ids = ids,
+            analytics = analyticsKit.recorder(analyticsScope),
             time = time,
         )
     }

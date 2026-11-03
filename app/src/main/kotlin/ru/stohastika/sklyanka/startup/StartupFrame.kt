@@ -51,6 +51,7 @@ sealed interface StartupFrame {
  * а не получает событий готовности из экранов: иначе каждый экран завёл бы свой
  * сигнал, и один из них однажды не позвали бы.
  */
+@Suppress("LongParameterList")
 fun startupFrame(
     destination: StartDestination?,
     onboardingUnseen: Boolean,
@@ -68,10 +69,23 @@ fun startupFrame(
      * Для стенда и тестов, где оформление читать неоткуда, значение по умолчанию «готово».
      */
     appearanceReady: Boolean = true,
+    /**
+     * Решение об аналитике ещё не принято (SKL-165, АН-1).
+     *
+     * Экран согласия показывает своё содержимое сразу, как и экран разрешений: ждать
+     * ему нечего. Поэтому «Сегодня» в `Opening` под ним заставку не держит — иначе
+     * человек, который впервые открыл приложение, видел бы заставку вместо вопроса.
+     * Ветка стоит **после** диалога политики в `LaunchRouting`: кадр здесь только
+     * решает «заставка или первый экран», а порядок шагов задаёт маршрут.
+     */
+    analyticsConsentUnseen: Boolean = false,
 ): StartupFrame = when {
     block != null -> StartupFrame.DatabaseBlocked(block)
     destination == null -> StartupFrame.AppSplash
     !appearanceReady -> StartupFrame.AppSplash
+    // Согласие на аналитику — до онбординга и до готовности «Сегодня»: экран готов
+    // сразу, и пустой кадр за ним не нужен.
+    analyticsConsentUnseen -> StartupFrame.FirstScreen
     destination == StartDestination.Onboarding && onboardingUnseen && !onboardingDone -> StartupFrame.FirstScreen
     today is TodayUiState.Opening -> StartupFrame.AppSplash
     else -> StartupFrame.FirstScreen

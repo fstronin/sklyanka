@@ -4,7 +4,7 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
-import org.gradle.api.provider.Property
+import org.gradle.api.provider.MapProperty
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.OutputFile
@@ -13,15 +13,16 @@ import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 
 /**
- * ПЛ-4, НФТ-15/16/39: состав сетевых зависимостей варианта.
+ * ПЛ-4, НФТ-15/16/39: состав сетевых зависимостей варианта (SKL-165, TDD §6.3).
  *
- * Три правила в одном отчёте:
+ * Три правила в одном отчёте, все — в [NetworkContourRules]:
  * 1. запрещённые группы — GMS, Firebase, реклама и чужая аналитика — отсутствуют
  *    и в разрешённом classpath, и в каталоге версий;
- * 2. ни одна координата `com.huawei.*` не проезжает мимо белого списка
- *    (`AnalyticsContourRules`): в релизе без сетевого контура список пуст (ПМ-31);
- * 3. если платный контур входит в артефакт, его обязательные координаты присутствуют
- *    в classpath; в `free` контура нет, и требовать их не с чего (Р-86, ADR-0016).
+ * 2. ни одна координата охраняемой группы (`com.huawei.*`, `com.my.tracker.*`) не проезжает
+ *    мимо белого списка (`AnalyticsContourRules`);
+ * 3. обязательные координаты контура присутствуют, только если контур входит в артефакт:
+ *    `free` обязан нести провайдера аналитики и не обязан нести клиент магазина
+ *    (Р-86, ADR-0016; снятие связки — `ADR-0017` п. 3).
  *
  * Правила вынесены в общий объект, чтобы проверка манифеста и проверка графа не разошлись.
  */
@@ -31,14 +32,14 @@ abstract class VerifyDependencyCompositionTask : DefaultTask() {
     abstract val coordinates: ListProperty<String>
 
     /**
-     * Входит ли платный контур в артефакт (SKL-153, Р-86).
+     * Входит ли каждый сетевой контур в артефакт (SKL-165).
      *
-     * `free`-вариант контура не содержит, и требовать от него вендорских координат нельзя:
-     * обязательная координата — обещание, что покупка работает, а не свойство любого APK.
-     * `pro`-вариант контур содержит, и для него проверка остаётся прежней.
+     * `free` несёт контур аналитики и не несёт платёжный; `pro` несёт оба. Требовать
+     * обязательные координаты контура, которого в артефакте нет, нельзя: обязательная
+     * координата — обещание, что контур работает, а не свойство любого APK.
      */
     @get:Input
-    abstract val paidContourPresent: Property<Boolean>
+    abstract val contoursInArtifact: MapProperty<String, Boolean>
 
     @get:InputFile
     @get:PathSensitive(PathSensitivity.RELATIVE)
@@ -50,35 +51,18 @@ abstract class VerifyDependencyCompositionTask : DefaultTask() {
     @TaskAction
     fun verify() {
         val resolved = coordinates.get().sorted()
-        val catalogText = versionCatalog.get().asFile.readText()
+        val present = contoursInArtifact.get()
 
-        val problems = mutableListOf<String>()
-        AnalyticsContourRules.FORBIDDEN_GROUPS.forEach { group ->
-            resolved.filter { it.contains(group) }.forEach { hit ->
-                problems += "resolved dependency '$hit' belongs to the forbidden group '$group' " +
-                    "(PLATFORM-4, NFR-39, NFR-16)"
-            }
-            if (catalogText.contains(group)) {
-                problems += "version catalog mentions the forbidden group '$group'"
-            }
-        }
+        val problems = NetworkContourRules.validateDependencies(
+            coordinates = resolved,
+            versionCatalog = versionCatalog.get().asFile.readText(),
+            contoursInArtifact = present,
+        )
 
-        val huawei = resolved.filter { it.startsWith("com.huawei.") }
-        huawei.filterNot(AnalyticsContourRules::allows).forEach { hit ->
-            problems += "resolved dependency '$hit' is outside the contour white list " +
-                "(SKL-100, ADR-0011). Add it to AnalyticsContourRules consciously, or remove it."
-        }
-
-        val missing = if (paidContourPresent.get()) {
-            AnalyticsContourRules.REQUIRED_COORDINATES.filterNot { required ->
-                huawei.any { it.startsWith(required) }
-            }
-        } else {
-            emptyList()
-        }
-        if (missing.isNotEmpty()) {
-            problems += "the contour is missing required coordinates ${missing.joinToString()} " +
-                "(PLATFORM-3, NFR-15)"
+        val guarded = resolved.filter(AnalyticsContourRules::guards)
+        val contoursPresent = AnalyticsContourRules.NETWORK_CONTOURS.filter { present[it.module] == true }
+        val requiredCoordinates = contoursPresent.flatMap { contour ->
+            contour.requiredCoordinates.map { "${contour.module}: $it" }
         }
 
         val reportFile = report.get().asFile
@@ -89,15 +73,12 @@ abstract class VerifyDependencyCompositionTask : DefaultTask() {
                 resolved.forEach { appendLine("  $it") }
                 appendLine()
                 appendLine("Forbidden groups checked: ${AnalyticsContourRules.FORBIDDEN_GROUPS.joinToString()}")
+                appendLine("Contours in the artifact: ${contoursPresent.joinToString { it.module }.ifEmpty { "none" }}")
                 appendLine(
                     "Contour required coordinates: " +
-                        if (paidContourPresent.get()) {
-                            AnalyticsContourRules.REQUIRED_COORDINATES.joinToString().ifEmpty { "none" }
-                        } else {
-                            "none (no paid contour in this artifact)"
-                        },
+                        requiredCoordinates.joinToString().ifEmpty { "none (no network contour in this artifact)" },
                 )
-                appendLine("Huawei coordinates resolved: ${huawei.joinToString().ifEmpty { "none" }}")
+                appendLine("Guarded coordinates resolved: ${guarded.joinToString().ifEmpty { "none" }}")
                 problems.forEach { appendLine("  FAIL $it") }
             },
         )
@@ -105,7 +86,8 @@ abstract class VerifyDependencyCompositionTask : DefaultTask() {
         logger.lifecycle(
             "  [dependencies] OK   ${resolved.size} artifacts, none from " +
                 AnalyticsContourRules.FORBIDDEN_GROUPS.joinToString() +
-                "; huawei coordinates resolved: ${huawei.size}",
+                "; guarded coordinates resolved: ${guarded.size}; " +
+                "contours: ${contoursPresent.joinToString { it.module }.ifEmpty { "none" }}",
         )
 
         if (problems.isNotEmpty()) {

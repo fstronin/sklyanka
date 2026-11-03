@@ -21,7 +21,7 @@ import org.junit.runner.RunWith
  * версия 8 вырезала часовой шов обратно (Р-3, SKL-106): обе колонки часового шва уходят,
  * таблицы перестраиваются; версия 9 добавила приёму признак снятия записи «по потребности»
  * (Р-46, SKL-127); версия 10 добавила лекарству вид расписания, а приёму — дозу за приём
- * (SKL-117, ПР-15, ПР-19).
+ * (SKL-117, ПР-15, ПР-19); версия 11 добавила очередь событий аналитики (SKL-165, АН-4).
  * Тест доказывает заодно, что экспорт схемы действительно работает: без файлов
  * в `core-data/schemas` помощник не смог бы создать базу предыдущей версии.
  *
@@ -348,7 +348,7 @@ class MigrationTest {
 
         val migrated = helper.runMigrationsAndValidate(
             TEST_DB,
-            SklyankaDatabase.VERSION,
+            10,
             true,
             SklyankaMigrations.MIGRATION_9_10,
         )
@@ -367,6 +367,56 @@ class MigrationTest {
                     assertEquals("the moment must stay untouched", "2026-09-12T08:00", cursor.getString(1))
                     assertTrue("an old intake takes the dose of its medication", cursor.isNull(2))
                 }
+        }
+    }
+
+    /**
+     * Версия 10 → 11 на реальной базе с данными (МГ-3, SKL-165, АН-4).
+     *
+     * Очередь аналитики появляется отдельной таблицей и ничего не трогает: лекарство,
+     * его времена и приём прошлого остаются ровно теми же. Таблица приходит пустой —
+     * выдуманных событий миграция не пишет. Внешних ключей у неё нет, поэтому связать
+     * событие с лекарством или профилем нельзя по схеме, а `foreign_key_check` пуст.
+     */
+    @Test
+    fun theAnalyticsQueueTableArrivesEmptyWithoutTouchingAnyRow() {
+        helper.createDatabase(TEST_DB, 10).use { old ->
+            old.execSQL(INSERT_PROFILE)
+            old.execSQL(INSERT_MEDICATION)
+            old.execSQL(INSERT_INTAKE)
+        }
+
+        val migrated = helper.runMigrationsAndValidate(
+            TEST_DB,
+            SklyankaDatabase.VERSION,
+            true,
+            SklyankaMigrations.MIGRATION_10_11,
+        )
+
+        migrated.use { db ->
+            assertTrue("the analytics queue table must appear", tableExists(db, "analytics_event"))
+            db.query("SELECT COUNT(*) FROM `analytics_event`").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals("the migration must not invent events", 0, cursor.getInt(0))
+            }
+            db.query("SELECT COUNT(*) FROM pragma_foreign_key_list('analytics_event')").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals("the queue may not reference any table", 0, cursor.getInt(0))
+            }
+            db.query("SELECT `times`, `schedule_rule` FROM `medication` WHERE `id` = 'medication-1'")
+                .use { cursor ->
+                    assertTrue("the medication row must survive the migration", cursor.moveToFirst())
+                    assertEquals("the times must stay untouched", "08:00", cursor.getString(0))
+                    assertTrue("the schedule of an old course must stay untouched", cursor.isNull(1))
+                }
+            db.query("SELECT `status`, `dose_amount` FROM `intake` WHERE `id` = 'intake-1'").use { cursor ->
+                assertTrue("the intake row must survive the migration", cursor.moveToFirst())
+                assertEquals("the status must stay untouched", "PENDING", cursor.getString(0))
+                assertTrue("the dose of an old intake must stay untouched", cursor.isNull(1))
+            }
+            db.query("PRAGMA foreign_key_check").use { cursor ->
+                assertEquals("foreign_key_check must come back empty", 0, cursor.count)
+            }
         }
     }
 

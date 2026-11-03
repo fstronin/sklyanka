@@ -8,6 +8,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import ru.stohastika.sklyanka.domain.analytics.AnalyticsScreen
+import ru.stohastika.sklyanka.ui.analytics.TrackScreenView
 
 /**
  * Карточка лекарства вместе с её состоянием.
@@ -33,6 +35,8 @@ fun MedicationCardRoute(
     modifier: Modifier = Modifier,
 ) {
     LaunchedEffect(medicationId) { viewModel.open(medicationId) }
+    // Показ экрана — один раз на вход: повторная композиция события не плодит (TDD §5.4).
+    TrackScreenView(AnalyticsScreen.MEDICATION_CARD)
     val state by viewModel.state.collectAsState()
 
     var wasOpen by remember(medicationId) { mutableStateOf(false) }

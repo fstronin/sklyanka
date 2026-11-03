@@ -16,6 +16,9 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import ru.stohastika.sklyanka.domain.analytics.AnalyticsRecorder
+import ru.stohastika.sklyanka.domain.analytics.MedicationAction
+import ru.stohastika.sklyanka.domain.analytics.MedicationActionKind
 import ru.stohastika.sklyanka.domain.medication.ArchiveGrouping
 import ru.stohastika.sklyanka.domain.medication.MedicationListRules
 import ru.stohastika.sklyanka.domain.medication.RestoreMedicationUseCase
@@ -45,6 +48,7 @@ import javax.inject.Inject
  */
 @HiltViewModel
 @OptIn(ExperimentalCoroutinesApi::class)
+@Suppress("LongParameterList")
 class ArchiveViewModel @Inject constructor(
     activeProfile: ActiveProfileRepository,
     private val medications: MedicationRepository,
@@ -55,6 +59,13 @@ class ArchiveViewModel @Inject constructor(
     private val undoDelete: UndoDeleteMedicationUseCase,
     /** Общая ячейка «последнее действие» (SKL-30/99). */
     private val undoActions: UndoableActionStore,
+    /**
+     * Запись отмены удаления (SKL-165, АН-1).
+     *
+     * Возврат через снэкбар — то же действие человека, что и отмена на «Сегодня»:
+     * событие одно на нажатие, имя лекарства в него не попадает (АН-3).
+     */
+    private val analytics: AnalyticsRecorder,
 ) : ViewModel() {
 
     private val notice = MutableStateFlow<ArchiveNotice?>(null)
@@ -121,6 +132,7 @@ class ArchiveViewModel @Inject constructor(
         deletionJob = null
         deletion.value = null
         undoActions.clear()
+        analytics.record(MedicationAction(MedicationActionKind.UNDO))
         viewModelScope.launch { undoDelete(medicationId) }
     }
 

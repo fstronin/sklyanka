@@ -10,6 +10,7 @@ import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.runComposeUiTest
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -202,6 +203,7 @@ internal object UndoAppProbe {
         snooze = world.reminders.snoozeReminder(),
         settings = world.reminders.settingsStore,
         undoActions = world.undoActions,
+        analytics = world.analytics.recorder(CoroutineScope(Dispatchers.Unconfined)),
     )
 
     /** Язык интерфейса закреплён: склонения и даты читаются по-русски при любом телефоне. */

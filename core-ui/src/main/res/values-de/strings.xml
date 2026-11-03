@@ -174,4 +174,10 @@
     <string name="pro_restore_failed">Der Kauf konnte nicht wiederhergestellt werden. Versuchen Sie es später</string>
     <string name="pro_restore_nothing_found">Im Store wurden keine Käufe gefunden</string>
     <string name="pro_date_pattern">d. MMMM yyyy</string>
+
+    <string name="analytics_consent_title">Helfen Sie, die App zu verbessern?</string>
+    <string name="analytics_consent_body">Die App sendet die Namen von Bildschirmen und Aktionen — genug, um holprige Stellen zu finden. Nichts von dem, was Sie eintragen, wird gesendet.</string>
+    <string name="analytics_consent_allow">Erlauben</string>
+    <string name="analytics_consent_decline">Jetzt nicht</string>
+    <string name="analytics_consent_policy">Datenschutzrichtlinie</string>
 </resources>

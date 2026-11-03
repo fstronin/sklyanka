@@ -139,7 +139,7 @@ SKL_TEST_TASK="connectedDebugAndroidTest"
 SKL_APP_TEST_TASK="connectedFreeDebugAndroidTest"
 
 SKL_GROUP_FAST_PACKAGES="ru.stohastika.sklyanka.data.repository"
-SKL_GROUP_DATA_PACKAGES="ru.stohastika.sklyanka.data.room,ru.stohastika.sklyanka.data.transfer,ru.stohastika.sklyanka.data.reminder,ru.stohastika.sklyanka.data.history,ru.stohastika.sklyanka.feature.history,ru.stohastika.sklyanka.screen"
+SKL_GROUP_DATA_PACKAGES="ru.stohastika.sklyanka.data.room,ru.stohastika.sklyanka.data.analytics,ru.stohastika.sklyanka.data.transfer,ru.stohastika.sklyanka.data.reminder,ru.stohastika.sklyanka.data.history,ru.stohastika.sklyanka.feature.history,ru.stohastika.sklyanka.screen"
 # Объёмные и гоночные проверки: тысяча повторов в двух потоках и база годового объёма.
 SKL_GROUP_HEAVY_CLASSES="ru.stohastika.sklyanka.data.room.VolumeTest,ru.stohastika.sklyanka.data.room.ConcurrencyTest,ru.stohastika.sklyanka.data.history.HistoryQueriesTest,ru.stohastika.sklyanka.data.room.MigrationVolumeTest"
 # Миграции — отдельной группой: они поднимают базу предыдущей версии из экспортированных

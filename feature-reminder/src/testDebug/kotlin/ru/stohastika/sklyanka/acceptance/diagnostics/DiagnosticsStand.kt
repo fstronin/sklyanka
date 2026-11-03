@@ -7,12 +7,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.runComposeUiTest
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
+import ru.stohastika.sklyanka.domain.analytics.AnalyticsRecorder
 import ru.stohastika.sklyanka.domain.model.IntakeStatus
 import ru.stohastika.sklyanka.domain.model.ScheduleMode
 import ru.stohastika.sklyanka.domain.reminder.BuildReminderDiagnosticsUseCase
@@ -25,6 +27,7 @@ import ru.stohastika.sklyanka.domain.reminder.ReminderSlot
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPermission
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPlanSource
 import ru.stohastika.sklyanka.domain.time.TimeSource
+import ru.stohastika.sklyanka.feature.reminder.AnalyticsTestKit
 import ru.stohastika.sklyanka.feature.reminder.DeliveryCheckController
 import ru.stohastika.sklyanka.feature.reminder.DeliveryCheckNotice
 import ru.stohastika.sklyanka.feature.reminder.DeliveryCheckScreen
@@ -85,6 +88,11 @@ internal object DiagnosticsStand {
     var announcement: DeliveryCheckState.Finished? = null
         private set
 
+    /** Подмена записи для шагов, которым события не важны: собирается один раз. */
+    private val silentAnalytics: AnalyticsRecorder by lazy {
+        AnalyticsTestKit(CoroutineScope(Dispatchers.Unconfined)).recorder
+    }
+
     fun reset(world: AcceptanceWorld) {
         if (lastWorld !== world) {
             lastWorld = world
@@ -99,9 +107,15 @@ internal object DiagnosticsStand {
         }
     }
 
-    fun model(world: AcceptanceWorld): DiagnosticsViewModel {
+    /**
+     * Собранная модель экрана.
+     *
+     * @param analytics запись событий: тест событий передаёт свой мир аналитики,
+     *   остальные шаги получают безразличную подмену — экрану она не видна.
+     */
+    fun model(world: AcceptanceWorld, analytics: AnalyticsRecorder = silentAnalytics): DiagnosticsViewModel {
         reset(world)
-        return viewModel ?: build(world).also { viewModel = it }
+        return viewModel ?: build(world, analytics).also { viewModel = it }
     }
 
     fun state(world: AcceptanceWorld): DiagnosticsUiState = model(world).state.value
@@ -256,7 +270,7 @@ internal object DiagnosticsStand {
     @Suppress("UNUSED_PARAMETER")
     fun expandSupport(world: AcceptanceWorld) = Unit
 
-    private fun build(world: AcceptanceWorld): DiagnosticsViewModel {
+    private fun build(world: AcceptanceWorld, analytics: AnalyticsRecorder): DiagnosticsViewModel {
         // Перерыв, названный Предысторией, стенд превращает в ожидавшееся срабатывание,
         // которого не было: экран считает перерыв тем же `OutageDetector`, что и продукт.
         val outage = world.outageSince
@@ -288,6 +302,7 @@ internal object DiagnosticsStand {
                 time = world.clock.time,
             ),
             time = world.clock.time,
+            analytics = analytics,
         )
     }
 

@@ -51,6 +51,13 @@ class ProjectChecksConventionPlugin : Plugin<Project> {
             description = "Proves the module dependency rule fires on deliberate violations (TDD 5.2)."
         }
 
+        // Правила сетевых контуров проверяются на заведомых нарушениях (SKL-165, TDD §6.4):
+        // без этого «правило работает и нарушений нет» неотличимо от «правило молчит».
+        val networkContourRule = tasks.register<VerifyNetworkContourRuleTask>("verifyNetworkContourRule") {
+            group = VERIFICATION_GROUP
+            description = "Proves the network contour rules fire on deliberate violations (TDD 6.4)."
+        }
+
         // Заведомо нарушающие фрагменты живут вне модулей и не входят в основную
         // сборку: они не компилируются и не попадают ни в один артефакт.
         val samples = tasks.register<Detekt>("detektViolationSamples") {
@@ -92,7 +99,7 @@ class ProjectChecksConventionPlugin : Plugin<Project> {
         }
 
         tasks.named("check") {
-            dependsOn(moduleGraph, moduleGraphRule, rulesFire)
+            dependsOn(moduleGraph, moduleGraphRule, rulesFire, networkContourRule)
         }
 
         // Единый проверочный прогон одной командой (НФТ-49, TODO §25).
@@ -114,7 +121,7 @@ class ProjectChecksConventionPlugin : Plugin<Project> {
             // оба debug-варианта, а эти строки делают требование видимым и не зависящим
             // от состава агрегата `check`.
             dependsOn(":app:testFreeDebugUnitTest", ":app:testProDebugUnitTest")
-            dependsOn(moduleGraph, moduleGraphRule, rulesFire)
+            dependsOn(moduleGraph, moduleGraphRule, rulesFire, networkContourRule)
             dependsOn(gradle.includedBuild("detekt-rules").task(":test"))
             // Проверка словаря шагов приёмки — часть единого прогона, а не отдельная
             // команда, которую никто не запускает (SKL-23, НФТ-49).
@@ -153,6 +160,9 @@ class ProjectChecksConventionPlugin : Plugin<Project> {
             // и походы обязаны хотя бы компилироваться этим же прогоном.
             ":feature-pro",
             ":billing-appgallery",
+            // Сетевой контур аналитики (SKL-165): unit-тесты адаптера и его граф Hilt
+            // обязаны собираться и проверяться единым прогоном.
+            ":core-analytics",
             // Виджеты домашнего экрана (SKL-118): провайдеры и экран настройки виджета
             // проверяются устройством, и их инструментальный набор обязан компилироваться.
             ":feature-widgets",

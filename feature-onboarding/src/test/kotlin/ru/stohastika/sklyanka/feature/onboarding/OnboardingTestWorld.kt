@@ -1,5 +1,10 @@
 package ru.stohastika.sklyanka.feature.onboarding
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestCoroutineScheduler
+import ru.stohastika.sklyanka.domain.analytics.AnalyticsConsentState
 import ru.stohastika.sklyanka.domain.onboarding.ConfirmReliabilityStepUseCase
 import ru.stohastika.sklyanka.domain.onboarding.LeaveOnboardingUseCase
 import ru.stohastika.sklyanka.domain.onboarding.OnboardingOutcome
@@ -27,7 +32,13 @@ import java.time.ZoneId
  * Сценарии собираются настоящими — из домена, — а подменяются только порты: расчёт состояния
  * цепочки проверяется тот же, что работает в продукте, а не его копия в тесте.
  */
-internal class OnboardingTestWorld(now: Instant = NOW, zone: ZoneId = ZoneId.of("Europe/Moscow")) {
+@OptIn(ExperimentalCoroutinesApi::class)
+internal class OnboardingTestWorld(
+    scheduler: TestCoroutineScheduler,
+    now: Instant = NOW,
+    zone: ZoneId = ZoneId.of("Europe/Moscow"),
+    analyticsConsent: AnalyticsConsentState = AnalyticsConsentState.ALLOWED,
+) {
 
     val time = FixedTimeSource(now, zone)
     val permissions = FakePermissions()
@@ -37,6 +48,12 @@ internal class OnboardingTestWorld(now: Instant = NOW, zone: ZoneId = ZoneId.of(
     val vendor = FakeVendor()
     val navigator = FakeNavigator()
     val log = RecordingLog()
+
+    /** Аналитика по умолчанию разрешена: иначе проверять было бы нечего (АН-2). */
+    val analytics = AnalyticsWorld(analyticsConsent)
+
+    /** Запись асинхронна и идёт в планировщик прогона: события видны после `advanceUntilIdle()`. */
+    private val recorder = analytics.recorder(CoroutineScope(StandardTestDispatcher(scheduler)))
 
     private val readChecklist = ReadPermissionChecklistUseCase(
         permissions = permissions,
@@ -53,6 +70,7 @@ internal class OnboardingTestWorld(now: Instant = NOW, zone: ZoneId = ZoneId.of(
         leaveOnboarding = LeaveOnboardingUseCase(store, log),
         navigator = navigator,
         log = log,
+        recorder = recorder,
         time = time,
     )
 

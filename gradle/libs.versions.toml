@@ -60,13 +60,23 @@ kotlinpoet = "1.18.1"
 # контура «Склянки Про» (Р-37, Р-38, SKL-122): его координаты вносятся в каталог вместе
 # с задачей биллинга.
 #
-# Клиент магазина AppGallery (SKL-122). Единственная вендорская координата продукта;
+# Клиент магазина AppGallery (SKL-122). Вендорская координата платёжного контура;
 # её замыкание (base → ui, stats, device, log, baselegacyapi, availableupdate; hmf:tasks)
 # внесено в белый список состава артефакта осознанно (`AnalyticsContourRules`).
 # Названные следствия: `com.huawei.hms:stats` — телеметрия вендорского клиента, не наша
 # аналитика (Р-4); замыкание объявляет `ACCESS_NETWORK_STATE`, и оно снимается манифестом
 # app (`tools:node="remove"`) — запрет НФТ-15 не ослабляется.
 huaweiIap = "6.16.6.305"
+# Провайдер клиентской аналитики (Р-93 п. 2, Р-98, SKL-165): MyTracker. Координата —
+# единственный артефакт группы на Maven Central, варианта «без GMS» у неё нет.
+# Замыкание SDK объявляет `play-services-ads-identifier`, `play-services-appset`, клиент
+# Google Play Billing (а через него — GMS и Firebase) и Play Install Referrer. Платёжная
+# часть продукту не нужна вовсе (события покупок — вне рамок задачи, Р-94), и SDK умеет
+# работать без неё: `GooglePlayProductHelper` проверяет наличие классов через
+# `Class.forName` и гаснет, не падая. Поэтому запрещённые группы и клиент Billing
+# снимаются объявлением зависимости в `core-analytics` (см. его build-файл), а не
+# правкой правил состава.
+mytracker = "3.6.0"
 
 [libraries]
 # --- Домен: чистый Kotlin, без Android ---
@@ -127,6 +137,12 @@ androidx-datastore-preferences = { module = "androidx.datastore:datastore-prefer
 # зависимость от вендора закрыта портом `ProStore`, и ядро о ней не знает (ADR-0010 п. 2).
 # Репозитория двери открыты только для групп `com.huawei.*` (settings.gradle.kts).
 huawei-iap = { module = "com.huawei.hms:iap", version.ref = "huaweiIap" }
+
+# --- Аналитика по согласию: провайдер за портом (SKL-165, Р-93) ---
+#
+# SDK провайдера подключается только модулем контура `core-analytics`: зависимость от
+# MyTracker закрыта портом `AnalyticsTransport`, и никто, кроме адаптера, о нём не знает.
+mytracker-sdk = { module = "com.my.tracker:mytracker-sdk", version.ref = "mytracker" }
 
 # --- Фоновая работа: задача перепланирования будильников (SKL-13, НАП-13) ---
 #

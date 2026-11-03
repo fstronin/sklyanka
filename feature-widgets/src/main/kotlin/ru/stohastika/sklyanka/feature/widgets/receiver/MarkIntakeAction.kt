@@ -31,7 +31,11 @@ class MarkIntakeAction : ActionCallback {
         // Перерисовку плит делает сам сценарий отметки своими последствиями
         // (продакшн `MarkSideEffects`, который приходит с графом): второй вызов
         // `updateAll` здесь был бы лишним запуском сессии на то же событие.
-        WidgetMarking.mark(intakeId = intakeId, mark = { request -> graph.markIntake()(request) })
+        WidgetMarking.mark(
+            intakeId = intakeId,
+            analytics = graph.analytics(),
+            mark = { request -> graph.markIntake()(request) },
+        )
     }
 
     companion object {

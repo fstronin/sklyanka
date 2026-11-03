@@ -16,9 +16,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.CompletableDeferred
+import ru.stohastika.sklyanka.domain.analytics.AnalyticsScreen
 import ru.stohastika.sklyanka.domain.history.ReportShare
 import ru.stohastika.sklyanka.domain.history.ReportShareLauncher
 import ru.stohastika.sklyanka.domain.history.ReportShareResult
+import ru.stohastika.sklyanka.ui.analytics.TrackScreenView
 
 /**
  * Экран истории вместе с его состоянием и системными диалогами.
@@ -54,6 +56,9 @@ fun HistoryRoute(
      */
     onOpenPro: () -> Unit = {},
 ) {
+    // Показ экрана ровно один за вход: `LaunchedEffect` внутри `TrackScreenView` не плодит
+    // событий на рекомпозиции (SKL-165, TDD §5.4).
+    TrackScreenView(AnalyticsScreen.HISTORY)
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
     val mediaType = stringResource(R.string.report_media_type)

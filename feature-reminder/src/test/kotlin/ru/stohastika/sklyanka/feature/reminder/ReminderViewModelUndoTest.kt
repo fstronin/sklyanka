@@ -1,5 +1,6 @@
 package ru.stohastika.sklyanka.feature.reminder
 
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -164,13 +165,16 @@ class ReminderViewModelUndoTest {
 }
 
 /** Мир карточки напоминания в памяти: те же правила перехода, что в домене. */
-private class ReminderTestWorld(withSecondRow: Boolean = false) {
+internal class ReminderTestWorld(withSecondRow: Boolean = false) {
 
     val profileId = "profile-self"
     val scheduledAt: LocalDateTime = LocalDateTime.of(2026, 9, 25, 14, 0)
     val zone: ZoneId = ZoneId.of("Europe/Moscow")
     val clock = FixedTimeSource(scheduledAt.atZone(zone).toInstant(), zone)
     val undoActions = UndoableActionStore(clock)
+
+    /** Аналитика в памяти: запись идёт сразу, виртуальное время ей не нужно. */
+    val analytics = AnalyticsTestKit(CoroutineScope(Dispatchers.Unconfined))
 
     private val intakes = linkedMapOf<String, Intake>(
         "i-1" to pending("i-1", "m-1"),
@@ -206,6 +210,7 @@ private class ReminderTestWorld(withSecondRow: Boolean = false) {
         snooze = SnoozeReminderUseCase(NoSnoozePlan(), NoAlarms(), NoNotifications(), NoJournal(), NoDeferred(), clock),
         settings = FakeSettings(),
         undoActions = undoActions,
+        analytics = analytics.recorder,
     )
 
     private fun pending(id: String, medicationId: String) = Intake(

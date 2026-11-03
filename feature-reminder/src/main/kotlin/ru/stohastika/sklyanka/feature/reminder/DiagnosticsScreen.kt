@@ -28,6 +28,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.style.TextAlign
+import ru.stohastika.sklyanka.domain.analytics.AnalyticsScreen
 import ru.stohastika.sklyanka.domain.reminder.DeliveryCheckOutcome
 import ru.stohastika.sklyanka.domain.reminder.DeliveryCheckState
 import ru.stohastika.sklyanka.domain.reminder.PermissionGroup
@@ -42,6 +43,7 @@ import ru.stohastika.sklyanka.domain.reminder.ReminderWarning
 import ru.stohastika.sklyanka.domain.reminder.ReminderWeekSummary
 import ru.stohastika.sklyanka.domain.reminder.port.PermissionState
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPermission
+import ru.stohastika.sklyanka.ui.analytics.TrackScreenView
 import ru.stohastika.sklyanka.ui.component.Banner
 import ru.stohastika.sklyanka.ui.component.BannerKind
 import ru.stohastika.sklyanka.ui.component.ButtonForm
@@ -106,6 +108,8 @@ fun DiagnosticsScreen(
     toLocal: (Instant) -> LocalDateTime,
     modifier: Modifier = Modifier,
 ) {
+    // Показ экрана — один раз на вход: повторная композиция события не плодит (TDD §5.4).
+    TrackScreenView(AnalyticsScreen.REMINDERS_CHECK)
     val colors = SklyankaTheme.colors
     val snapshot = state.snapshot
     if (state.checkSheetOpen) {

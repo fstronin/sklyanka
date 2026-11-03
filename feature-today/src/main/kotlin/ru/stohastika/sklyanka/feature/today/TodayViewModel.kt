@@ -16,6 +16,12 @@ import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import ru.stohastika.sklyanka.domain.analytics.ActionSource
+import ru.stohastika.sklyanka.domain.analytics.AnalyticsRecorder
+import ru.stohastika.sklyanka.domain.analytics.IntakeAction
+import ru.stohastika.sklyanka.domain.analytics.IntakeActionKind
+import ru.stohastika.sklyanka.domain.analytics.MedicationAction
+import ru.stohastika.sklyanka.domain.analytics.MedicationActionKind
 import ru.stohastika.sklyanka.domain.intake.CreatePrnIntakeUseCase
 import ru.stohastika.sklyanka.domain.intake.MarkIntakeUseCase
 import ru.stohastika.sklyanka.domain.intake.MarkRequest
@@ -81,6 +87,15 @@ class TodayViewModel @Inject constructor(
      * спрашивает, не пересоздана ли база на жившей отметке, и показывает баннер один раз.
      */
     private val explainDatabaseReset: ExplainDatabaseResetUseCase,
+    /**
+     * Запись событий отметки и отмены удаления (SKL-165, АН-1).
+     *
+     * Событие ставится здесь, рядом с решением «действие состоялось»: отброшенная отметка
+     * (`Ignored`, `NotFound`) нового действия человека не образует, и записи у неё нет.
+     * Свободного текста в событии не бывает — конструктор принимает только перечисления
+     * каталога, поэтому имя лекарства и доза сюда не попадают (АН-3).
+     */
+    private val analytics: AnalyticsRecorder,
 ) : ViewModel() {
 
     private val view = MutableStateFlow(ViewState())
@@ -208,6 +223,7 @@ class TodayViewModel @Inject constructor(
                     // не новое действие, и снимать в нём нечего (Р-46, SKL-127).
                     val outcome = createPrn(intent.medicationId, IntakeSource.PHONE)
                     if (outcome is PrnOutcome.Created) {
+                        analytics.record(IntakeAction(IntakeActionKind.TAKEN, ActionSource.PHONE))
                         undoActions.publishMark(
                             intakeIds = listOf(outcome.intake.id),
                             result = MarkResult.TAKEN,
@@ -300,6 +316,9 @@ class TodayViewModel @Inject constructor(
             // и срок снэкбара идёт от единственной состоявшейся (приёмка, строка 203).
             if (outcome.isCompleted) {
                 val recorded = outcome.intake?.status?.let(MarkResult::of) ?: result
+                // Событие называет нажатое действие: при замещении записанный исход
+                // расходится с нажатием, а воронка измеряет шаг человека.
+                analytics.record(IntakeAction(result.kind(), ActionSource.PHONE))
                 undoActions.publishMark(
                     intakeIds = listOf(intakeId),
                     // Текст говорит о записанном исходе, а не о нажатой кнопке: при
@@ -316,6 +335,8 @@ class TodayViewModel @Inject constructor(
             // Отменяются ровно изменившиеся приёмы: отмеченный часами в действие
             // не входит, и снять чужое решение отмена не имеет права (ПР-3).
             is GroupMarkOutcome.Applied -> if (outcome.changedIntakeIds.isNotEmpty()) {
+                // Групповая отметка — одно нажатие человека, а не событие на каждый приём.
+                analytics.record(IntakeAction(IntakeActionKind.TAKEN, ActionSource.PHONE))
                 undoActions.publishMark(
                     intakeIds = outcome.changedIntakeIds,
                     result = MarkResult.TAKEN,
@@ -339,6 +360,9 @@ class TodayViewModel @Inject constructor(
         undoJob = null
         undoActions.clear()
         view.update { it.copy(undo = null) }
+        // Отмена — самостоятельное действие человека: событие ставится до возврата,
+        // потому что классифицируется нажатие, а не исход сценария.
+        analytics.record(IntakeAction(IntakeActionKind.UNDO, ActionSource.PHONE))
         viewModelScope.launch {
             undoMark(UndoRequest(intakeIds = intakeIds, source = IntakeSource.PHONE))
         }
@@ -392,6 +416,7 @@ class TodayViewModel @Inject constructor(
         undoJob = null
         view.update { it.copy(deletion = null) }
         undoActions.clear()
+        analytics.record(MedicationAction(MedicationActionKind.UNDO))
         viewModelScope.launch { undoDelete(medicationId) }
     }
 
@@ -415,6 +440,18 @@ class TodayViewModel @Inject constructor(
         ?.firstOrNull { it.id == intakeId }
         ?.medication
         ?.name
+
+    /**
+     * Вид отметки для каталога событий: у нажатия ровно два значения (АН-3).
+     *
+     * Отдельной подмены `when` по всему экрану нет: перечисление домена и каталог
+     * сопоставлены в одном месте, поэтому новое значение отметки не разойдётся
+     * с событием молча.
+     */
+    private fun MarkResult.kind(): IntakeActionKind = when (this) {
+        MarkResult.TAKEN -> IntakeActionKind.TAKEN
+        MarkResult.SKIPPED -> IntakeActionKind.SKIPPED
+    }
 
     private fun UndoableMark.toNotice(): UndoNotice = UndoNotice(
         intakeIds = intakeIds,

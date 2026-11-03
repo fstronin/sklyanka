@@ -1,5 +1,6 @@
 package ru.stohastika.sklyanka.feature.settings
 
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
@@ -17,6 +18,14 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import ru.stohastika.sklyanka.domain.analytics.AnalyticsConsentState
+import ru.stohastika.sklyanka.domain.analytics.AnalyticsEventName
+import ru.stohastika.sklyanka.domain.analytics.AnalyticsProperty
+import ru.stohastika.sklyanka.domain.analytics.AnalyticsScreen
+import ru.stohastika.sklyanka.domain.analytics.ConsentShownSource
+import ru.stohastika.sklyanka.domain.analytics.DecideAnalyticsConsentUseCase
+import ru.stohastika.sklyanka.domain.analytics.ObserveAnalyticsConsentUseCase
+import ru.stohastika.sklyanka.domain.analytics.ScreenView
 import ru.stohastika.sklyanka.domain.appearance.AccentTheme
 import ru.stohastika.sklyanka.domain.appearance.IconVariant
 import ru.stohastika.sklyanka.domain.appearance.ObserveAccentThemeUseCase
@@ -61,6 +70,10 @@ class SettingsViewModelTest {
 
     /** Постоянные настройки оформления в памяти (SKL-120, §5.17). */
     private val appearance = FakeAppearancePreferences()
+
+    /** Аналитика: согласие в памяти и рекордер на диспетчере проверки (SKL-165). */
+    private val analyticsScope = CoroutineScope(dispatcher)
+    private val analyticsKit = AnalyticsTestKit()
 
     /** Доступ «Про» — один на все гейты экрана: и на профили, и на оформление. */
     private val proStatus = ObserveProStatusUseCase(cache = proCache, time = FixedTimeSource(Instant.EPOCH))
@@ -336,6 +349,126 @@ class SettingsViewModelTest {
         assertEquals(ProfileCreationDecision.Allowed, model.state.value.profileCreation)
     }
 
+    // --- Аналитика: строка, вопрос и решение (SKL-165, ПМ-25, Р-96) -------------------------
+
+    /**
+     * Отказ виден строкой «Выключено» и не «отрастает» со временем.
+     *
+     * Решение живёт в хранилище, а не в кадре экрана: новый экземпляр экрана над тем же
+     * хранилищем обязан показать тот же отказ — этим и проверяется «и через месяц тоже».
+     */
+    @Test
+    fun theRefusalShowsTheRowOffAndItStaysOff() = runTest(dispatcher) {
+        analyticsKit.store.decide(AnalyticsConsentState.DECLINED)
+        val model = viewModel()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(AnalyticsConsentState.DECLINED, model.state.value.analytics)
+
+        val anotherVisit = viewModel()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(AnalyticsConsentState.DECLINED, anotherVisit.state.value.analytics)
+    }
+
+    /**
+     * Включение открывает вопрос и пишет показ, но согласия не даёт (Р-96).
+     *
+     * Показ копится в очереди до решения: до него ни одно событие не уходит, а «Разрешить»
+     * человек ещё не нажимал.
+     */
+    @Test
+    fun enablingOpensTheQuestionAndRecordsTheShowWithoutConsent() = runTest(dispatcher) {
+        val model = viewModel()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        model.onIntent(SettingsIntent.SetAnalyticsEnabled(enabled = true))
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertTrue(model.state.value.analyticsPromptVisible)
+        assertEquals(AnalyticsConsentState.NOT_ASKED, model.state.value.analytics)
+        assertEquals(listOf(AnalyticsEventName.CONSENT_SHOWN), analyticsKit.queue.names)
+        assertTrue("nothing may leave before the decision", analyticsKit.transport.delivered.isEmpty())
+    }
+
+    /**
+     * «Разрешить» даёт согласие и отправляет показ вместе с включением.
+     *
+     * Показ ровно один: подтверждение не дублирует событие, записанное при открытии вопроса,
+     * и порядок в журнале поставщика — показ, выбор, включение.
+     */
+    @Test
+    fun confirmingTheQuestionAllowsAnalyticsAndSendsTheShowWithTheChoice() = runTest(dispatcher) {
+        val model = viewModel()
+        dispatcher.scheduler.advanceUntilIdle()
+        model.onIntent(SettingsIntent.SetAnalyticsEnabled(enabled = true))
+        dispatcher.scheduler.advanceUntilIdle()
+
+        model.onIntent(SettingsIntent.ConfirmAnalytics)
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertFalse(model.state.value.analyticsPromptVisible)
+        assertEquals(AnalyticsConsentState.ALLOWED, model.state.value.analytics)
+        assertEquals(
+            listOf(
+                AnalyticsEventName.CONSENT_SHOWN,
+                AnalyticsEventName.CONSENT_CHOICE,
+                AnalyticsEventName.ANALYTICS_ENABLED,
+            ),
+            analyticsKit.transport.deliveredNames(),
+        )
+        assertEquals(
+            ConsentShownSource.SETTINGS.wire,
+            analyticsKit.transport.delivered.first().properties[AnalyticsProperty.SOURCE],
+        )
+    }
+
+    /**
+     * Вопрос закрыт без решения — выбор не меняется (АН-2).
+     *
+     * Показ остаётся в очереди, но решения нет: отправлять его не вместе с чем, и строка
+     * по-прежнему выключена.
+     */
+    @Test
+    fun dismissingTheQuestionKeepsTheChoiceUnchanged() = runTest(dispatcher) {
+        val model = viewModel()
+        dispatcher.scheduler.advanceUntilIdle()
+        model.onIntent(SettingsIntent.SetAnalyticsEnabled(enabled = true))
+        dispatcher.scheduler.advanceUntilIdle()
+
+        model.onIntent(SettingsIntent.DismissAnalyticsPrompt)
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertFalse(model.state.value.analyticsPromptVisible)
+        assertEquals(AnalyticsConsentState.NOT_ASKED, model.state.value.analytics)
+        assertEquals(AnalyticsConsentState.NOT_ASKED, analyticsKit.store.current)
+        assertTrue(analyticsKit.transport.delivered.isEmpty())
+    }
+
+    /**
+     * Выключение мгновенное: ни диалога, ни события, а накопленное стирается (АН-2).
+     *
+     * Очередь заполняется без сети — именно её и обязан опустошить отказ.
+     */
+    @Test
+    fun switchingAnalyticsOffDeclinesAtOnceAndClearsTheQueue() = runTest(dispatcher) {
+        val kit = AnalyticsTestKit(consent = AnalyticsConsentState.ALLOWED, available = false)
+        val model = viewModel(kit)
+        dispatcher.scheduler.advanceUntilIdle()
+        kit.recorder(analyticsScope).record(ScreenView(AnalyticsScreen.TODAY))
+        dispatcher.scheduler.advanceUntilIdle()
+        assertEquals(1, kit.queue.size)
+
+        model.onIntent(SettingsIntent.SetAnalyticsEnabled(enabled = false))
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(AnalyticsConsentState.DECLINED, model.state.value.analytics)
+        assertFalse(model.state.value.analyticsPromptVisible)
+        assertEquals(0, kit.queue.size)
+        assertEquals(1, kit.transport.stops)
+        assertTrue(kit.transport.delivered.isEmpty())
+    }
+
     /** Пять заведённых профилей: предел ПРФ-32. */
     private fun fiveProfiles(): List<Profile> = listOf(SettingsFixtures.self()) +
         (1..4).map { index -> SettingsFixtures.foreign("Guest $index").copy(id = "guest-$index") }
@@ -481,29 +614,36 @@ class SettingsViewModelTest {
         return points
     }
 
-    private fun viewModel() = SettingsViewModel(
-        profiles = profiles,
-        context = FakeProfileContext(profiles, active),
-        medications = medications,
-        switchProfile = SwitchProfileUseCase(profiles = profiles, active = active),
-        environment = SettingsEnvironment(
-            system = SettingsSystemStateReader(
-                reminders = reminders,
-                permissions = permissions,
+    private fun viewModel(kit: AnalyticsTestKit = analyticsKit): SettingsViewModel {
+        val analytics = kit.recorder(analyticsScope)
+        return SettingsViewModel(
+            profiles = profiles,
+            context = FakeProfileContext(profiles, active),
+            medications = medications,
+            switchProfile = SwitchProfileUseCase(profiles = profiles, active = active),
+            environment = SettingsEnvironment(
+                system = SettingsSystemStateReader(
+                    reminders = reminders,
+                    permissions = permissions,
+                ),
+                stamp = AppStamp(versionName = VERSION, versionCode = VERSION_CODE),
+                proStatus = proStatus,
             ),
-            stamp = AppStamp(versionName = VERSION, versionCode = VERSION_CODE),
-            proStatus = proStatus,
-        ),
-        // Подписка по умолчанию не оформлена: строка блока «Склянка Про» показывает
-        // «Не оформлена», и её значение не мешает проверкам списка профилей (SKL-122).
-        // Оформление (SKL-120): те же швы, что у продукта, — «Олива» и «Ледяная» по умолчанию.
-        appearance = SettingsAppearance(
-            observeTheme = ObserveAccentThemeUseCase(appearance),
-            observeIcon = ObserveIconVariantUseCase(appearance),
-            setTheme = SetAccentThemeUseCase(appearance, proStatus),
-            setIcon = SetIconVariantUseCase(appearance, proStatus),
-        ),
-    )
+            // Подписка по умолчанию не оформлена: строка блока «Склянка Про» показывает
+            // «Не оформлена», и её значение не мешает проверкам списка профилей (SKL-122).
+            // Оформление (SKL-120): те же швы, что у продукта, — «Олива» и «Ледяная» по умолчанию.
+            appearance = SettingsAppearance(
+                observeTheme = ObserveAccentThemeUseCase(appearance),
+                observeIcon = ObserveIconVariantUseCase(appearance),
+                setTheme = SetAccentThemeUseCase(appearance, proStatus),
+                setIcon = SetIconVariantUseCase(appearance, proStatus),
+            ),
+            // Согласие и запись — тем же швом домена, что у продукта (SKL-165, Р-96).
+            observeAnalyticsConsent = ObserveAnalyticsConsentUseCase(kit.store),
+            decideAnalyticsConsent = DecideAnalyticsConsentUseCase(kit.store, analytics),
+            analytics = analytics,
+        )
+    }
 
     private companion object {
         const val SELF_MEDICATIONS = 2

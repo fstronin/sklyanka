@@ -6,6 +6,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineScope
+import ru.stohastika.sklyanka.domain.analytics.AnalyticsRecorder
 import ru.stohastika.sklyanka.domain.intake.MarkIntakeUseCase
 import ru.stohastika.sklyanka.domain.reminder.SnoozeReminderUseCase
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderSettings
@@ -30,6 +31,14 @@ interface ReminderActionEntryPoint {
 
     /** Настройка «Отложить на N минут» — интервал откладывания из шторки тот же, что у карточки. */
     fun reminderSettings(): ReminderSettings
+
+    /**
+     * Запись событий действия из шторки (SKL-165).
+     *
+     * Тот же доменный шов, что у экранов: гейт согласия и очередь живут в нём, а приёмник
+     * решает только, какое действие человека записывается.
+     */
+    fun analytics(): AnalyticsRecorder
 
     @ReminderScope
     fun reminderScope(): CoroutineScope

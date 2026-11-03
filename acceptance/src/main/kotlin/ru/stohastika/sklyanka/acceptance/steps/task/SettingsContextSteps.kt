@@ -8,13 +8,12 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
-import ru.stohastika.sklyanka.acceptance.RepositoryLayout
+import ru.stohastika.sklyanka.acceptance.NetworkContourFacts
 import ru.stohastika.sklyanka.acceptance.steps.localMoment
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
 import ru.stohastika.sklyanka.domain.profile.SwitchOutcome
 import ru.stohastika.sklyanka.domain.profile.SwitchReason
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPermission
-import java.io.File
 import java.time.LocalTime
 
 /**
@@ -108,48 +107,22 @@ class SettingsContextSteps(private val world: AcceptanceWorld) {
     // --- Приватность ---------------------------------------------------------------------------
 
     /**
-     * Настройки наружу ничего не отправляют — утверждение о сборке, а не о настроении.
+     * Настройки наружу не ходят: сеть сборки — только контур аналитики (Р-93, `ADR-0017`).
      *
-     * Сеть в продукте есть, но только у платного контура покупок (ПЛ-3, НФТ-15,
-     * `ADR-0010`, SKL-122): `INTERNET` объявляет единственный модуль — контур, и он же
-     * единственный, кто может его объявить; разрешения состояния сети запрещены
-     * и проверяются конвейером. Разрешение, приехавшее из чужого манифеста, снимается
-     * явно (`tools:node="remove"`); та же проверка, что у истории и журнала.
+     * Утверждение о **сборке**, и читаются в нём те же данные, что у гейта состава:
+     * список сетевых контуров и манифесты всех модулей. Прежде шаг смотрел один
+     * `app/src/main/AndroidManifest.xml`; после SKL-165 `INTERNET` приходит из манифеста
+     * контура, и такая проверка зеленела бы при любом поведении.
      */
-    @Тогда("^приложение не делает ни одного сетевого обращения$")
-    fun theAppNeverReachesTheNetwork() {
-        val manifest = File(RepositoryLayout.root, MANIFEST).readText()
-        val declarations = Regex(USES_PERMISSION).findAll(manifest)
-            .map { it.value }
-            .filterNot { it.contains(REMOVE_DIRECTIVE) }
-            .toList()
-        FORBIDDEN_NETWORK_PERMISSIONS.forEach { permission ->
-            assertFalse(
-                declarations.any { it.contains(permission) },
-                "the application manifest must not declare $permission (НФТ-15)",
-            )
-        }
-        assertFalse(
-            declarations.any { it.contains(NETWORK_PERMISSION) },
-            "the app manifest must not declare $NETWORK_PERMISSION — only the contour may (ADR-0010)",
-
-        )
+    @Тогда("^сеть сборки объявлена только контуром аналитики$")
+    fun theBuildNetworkBelongsToTheAnalyticsContour() {
+        NetworkContourFacts.assertDeclaredOnlyByContours()
+        NetworkContourFacts.assertShippedContourIsAnalyticsOnly()
+        NetworkContourFacts.assertNoForbiddenDeclarations()
     }
 
     private companion object {
         const val FOUR = 4
-
-        const val MANIFEST = "app/src/main/AndroidManifest.xml"
-        const val USES_PERMISSION = "<uses-permission[^>]*>"
-        const val REMOVE_DIRECTIVE = "tools:node=\"remove\""
-
-        /** Разрешение платного контура: сеть в артефакте бывает только с ним (SKL-122). */
-        const val NETWORK_PERMISSION = "android.permission.INTERNET"
-
-        val FORBIDDEN_NETWORK_PERMISSIONS = listOf(
-            "android.permission.ACCESS_NETWORK_STATE",
-            "android.permission.ACCESS_WIFI_STATE",
-        )
 
         val OWN_INTAKE_TIME: LocalTime = LocalTime.of(12, 0)
         val FOREIGN_INTAKE_TIME: LocalTime = LocalTime.of(20, 0)

@@ -6,10 +6,12 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import ru.stohastika.sklyanka.domain.analytics.AnalyticsScreen
 import ru.stohastika.sklyanka.feature.meds.list.MedicationListScreen
 import ru.stohastika.sklyanka.feature.meds.list.MedicationListViewModel
 import ru.stohastika.sklyanka.feature.meds.list.MedsIntent
 import ru.stohastika.sklyanka.feature.meds.list.MedsTab
+import ru.stohastika.sklyanka.ui.analytics.TrackScreenView
 import ru.stohastika.sklyanka.ui.component.BottomBar
 import ru.stohastika.sklyanka.ui.component.BottomBarTab
 
@@ -38,6 +40,8 @@ fun MedsRoute(
     onOpenSettings: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
+    // Показ экрана — один раз на вход: повторная композиция события не плодит (TDD §5.4).
+    TrackScreenView(AnalyticsScreen.MEDICATIONS)
     val listState by listViewModel.state.collectAsState()
     // Уход с экрана закрывает окно удаления (SKL-30, ОВ-124): точка выхода одна.
     DisposableEffect(Unit) {

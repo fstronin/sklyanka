@@ -1,6 +1,9 @@
 package ru.stohastika.sklyanka.acceptance.world
 
 import kotlinx.coroutines.runBlocking
+import ru.stohastika.sklyanka.domain.analytics.ActionSource
+import ru.stohastika.sklyanka.domain.analytics.IntakeAction
+import ru.stohastika.sklyanka.domain.analytics.IntakeActionKind
 import ru.stohastika.sklyanka.domain.intake.CreatePrnIntakeUseCase
 import ru.stohastika.sklyanka.domain.intake.MarkIntakeUseCase
 import ru.stohastika.sklyanka.domain.intake.MarkOutcome
@@ -105,6 +108,15 @@ class AcceptanceWorld {
 
     /** Виджеты домашнего экрана и их гейт (SKL-118). */
     val widgets = ScenarioWidgets()
+
+    /**
+     * Контур аналитики сценария (SKL-165): согласие, очередь и поставщик в памяти.
+     *
+     * Живёт рядом с остальным миром, потому что аналитика — состояние на установку, а не
+     * свойство экрана: событие отметки пишется из той же точки записи, что у продукта
+     * (`TodayViewModel`), и проверяется тем же журналом поставщика.
+     */
+    val analytics = ScenarioAnalytics(clock)
 
     /** Сценарий отказа: ручная проверка напоминаний не может завершиться (SKL-79). */
     var failReminderCheck: Boolean = false
@@ -363,11 +375,26 @@ class AcceptanceWorld {
         }
         intakes.outcomes += outcome
         when (outcome) {
-            is MarkOutcome.Applied -> intakes.appliedMarks[outcome.intake.id] = outcome.intake
-            is MarkOutcome.Superseded -> intakes.appliedMarks[outcome.intake.id] = outcome.intake
+            is MarkOutcome.Applied -> {
+                intakes.appliedMarks[outcome.intake.id] = outcome.intake
+                // Событие отметки — из той же точки, что у `TodayViewModel`: домен считает
+                // исход, а запись события делает точка действия. Без согласия рекордер
+                // его не пишет вовсе (АН-2), поэтому прочие сценарии не меняются.
+                analytics.record(IntakeAction(kindOf(result), ActionSource.PHONE))
+            }
+            is MarkOutcome.Superseded -> {
+                intakes.appliedMarks[outcome.intake.id] = outcome.intake
+                analytics.record(IntakeAction(kindOf(result), ActionSource.PHONE))
+            }
             else -> Unit
         }
         return outcome
+    }
+
+    /** Вид действия каталога по исходу отметки — так же, как `TodayViewModel.kind()`. */
+    private fun kindOf(result: MarkResult): IntakeActionKind = when (result) {
+        MarkResult.TAKEN -> IntakeActionKind.TAKEN
+        MarkResult.SKIPPED -> IntakeActionKind.SKIPPED
     }
 
     fun markCurrent(result: MarkResult, source: IntakeSource, at: LocalDateTime): MarkOutcome {

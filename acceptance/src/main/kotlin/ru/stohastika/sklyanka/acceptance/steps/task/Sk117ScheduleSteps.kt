@@ -650,9 +650,17 @@ class Sk117ScheduleSteps(private val world: AcceptanceWorld) {
             migrations.contains("MIGRATION_9_10"),
             "the upgrade must be declared as MIGRATION_9_10 (SKL-117, МГ-3)",
         )
+        // Версия базы с тех пор выросла (SKL-165: 11), и «последняя версия» — не то,
+        // что утверждает сценарий: он говорит, что версия с видами расписания существует
+        // и закреплена. Поэтому проверяется снимок схемы 10 и то, что база до неё дошла.
+        val version = Regex("""const val VERSION = (\d+)""").find(sourceOf(DATABASE_FILE))
         assertTrue(
-            sourceOf(DATABASE_FILE).contains("const val VERSION = 10"),
-            "the schema of the version with schedule kinds must be 10 (SKL-117)",
+            version != null && version.groupValues[1].toInt() >= SCHEDULE_KINDS_VERSION,
+            "the database must be at least version $SCHEDULE_KINDS_VERSION with schedule kinds (SKL-117)",
+        )
+        assertTrue(
+            File(RepositoryLayout.root, SCHEMA_SCHEDULE_KINDS).isFile,
+            "the schema of the version with schedule kinds must be exported ($SCHEMA_SCHEDULE_KINDS)",
         )
         val migrationTest = sourceOf(MIGRATION_TEST_FILE)
         assertTrue(
@@ -991,6 +999,11 @@ class Sk117ScheduleSteps(private val world: AcceptanceWorld) {
         const val FILE_SELF = "файловый свой"
 
         const val MIGRATIONS_FILE = "core-data/src/main/kotlin/ru/stohastika/sklyanka/data/room/SklyankaMigrations.kt"
+
+        /** Версия схемы, в которой появились виды расписания (SKL-117). */
+        const val SCHEDULE_KINDS_VERSION = 10
+        const val SCHEMA_SCHEDULE_KINDS =
+            "core-data/schemas/ru.stohastika.sklyanka.data.room.SklyankaDatabase/10.json"
         const val DATABASE_FILE = "core-data/src/main/kotlin/ru/stohastika/sklyanka/data/room/SklyankaDatabase.kt"
         const val MIGRATION_TEST_FILE =
             "core-data/src/androidTest/kotlin/ru/stohastika/sklyanka/data/room/MigrationTest.kt"

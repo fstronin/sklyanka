@@ -1,5 +1,6 @@
 package ru.stohastika.sklyanka.feature.meds
 
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -16,6 +17,8 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import ru.stohastika.sklyanka.domain.analytics.AnalyticsEventName
+import ru.stohastika.sklyanka.domain.analytics.AnalyticsProperty
 import ru.stohastika.sklyanka.domain.medication.ArchiveCaption
 import ru.stohastika.sklyanka.domain.medication.RestoreMedicationUseCase
 import ru.stohastika.sklyanka.domain.medication.UndoDeleteMedicationUseCase
@@ -50,6 +53,9 @@ class ArchiveViewModelTest {
     private val transactor = DirectTransactor()
     private val undoActions = UndoableActionStore(clock)
 
+    /** Аналитика в памяти: запись идёт в планировщике теста, видна после `advanceUntilIdle`. */
+    private val analytics = AnalyticsTestKit(CoroutineScope(dispatcher))
+
     private fun viewModel() = ArchiveViewModel(
         activeProfile = activeProfile,
         medications = medications,
@@ -58,6 +64,7 @@ class ArchiveViewModelTest {
         time = clock,
         undoDelete = UndoDeleteMedicationUseCase(medications, planner),
         undoActions = undoActions,
+        analytics = analytics.recorder,
     )
 
     @Before
@@ -267,5 +274,23 @@ class ArchiveViewModelTest {
 
         assertNull(model.state.value.deletion)
         assertNull(undoActions.live())
+    }
+
+    // --- Аналитика (SKL-165) ----------------------------------------------------------------
+
+    @Test
+    fun `undoing a deletion in the archive is one medication undo`() = runTest(dispatcher) {
+        medications.put(finished("finished-1"))
+        val model = viewModel()
+        advanceUntilIdle()
+        undoActions.publishDeletion(medicationId = "finished-1", medicationName = "med-finished-1")
+        runCurrent()
+
+        model.onIntent(ArchiveIntent.UndoDeletion("finished-1"))
+        runCurrent()
+
+        val record = analytics.queue.recorded.single()
+        assertEquals(AnalyticsEventName.MEDICATION_ACTION, record.name)
+        assertEquals(mapOf(AnalyticsProperty.ACTION to "undo"), record.properties)
     }
 }

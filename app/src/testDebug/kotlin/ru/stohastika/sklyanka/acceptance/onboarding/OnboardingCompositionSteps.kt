@@ -112,12 +112,22 @@ class OnboardingCompositionSteps(private val world: AcceptanceWorld) {
         assertEquals(indices.sorted(), indices, "the cards must follow the fixed order of ОВ-106")
     }
 
-    @И("^внизу кнопки «([^»]+)» и «([^»]+)»$")
-    fun theFooterButtons(final: String, skip: String) {
-        assertTrue(permissionsShowsTag(TAG_NEXT), "the «$final» button must be on the screen")
-        assertTrue(permissionsShowsTag(TAG_SKIP), "the «$skip» button must be on the screen")
-        assertTrue(permissionsShows(final), "the «$final» button must say exactly that")
-        assertTrue(permissionsShows(skip), "the «$skip» button must say exactly that")
+    /**
+     * Кнопки нижнего блока — дословно своими словами.
+     *
+     * Выражение называет их именно так, как их называет экран разрешений: шаг проверяет
+     * этот экран и не вправе отвечать за кнопки другого экрана (SKL-165 добавил второй
+     * нижний блок — на экране согласия, и у него свой шаг).
+     */
+    @И("^внизу кнопки «Дальше» и «Пропустить, настрою позже»$")
+    fun theFooterButtons() {
+        assertTrue(permissionsShowsTag(TAG_NEXT), "the «Дальше» button must be on the screen")
+        assertTrue(permissionsShowsTag(TAG_SKIP), "the «Пропустить, настрою позже» button must be on the screen")
+        assertTrue(permissionsShows("Дальше"), "the «Дальше» button must say exactly that")
+        assertTrue(
+            permissionsShows("Пропустить, настрою позже"),
+            "the «Пропустить, настрою позже» button must say exactly that",
+        )
     }
 
     // --- Пропуск онбординга --------------------------------------------------------------------

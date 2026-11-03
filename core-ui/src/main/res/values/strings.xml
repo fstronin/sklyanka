@@ -266,4 +266,14 @@
     <string name="pro_restore_failed">Восстановить покупку не удалось. Попробуйте позже</string>
     <string name="pro_restore_nothing_found">Покупок в магазине не нашлось</string>
     <string name="pro_date_pattern">d MMMM yyyy</string>
+
+    <!--
+      Согласие на аналитику (SKL-165, АН-1). Текст называет суть и ничего не обещает
+      о счётчиках: слова «обезличенные» и «собираем» в интерфейсе не появляются (Р-97 п. 2).
+    -->
+    <string name="analytics_consent_title">Помочь сделать приложение лучше?</string>
+    <string name="analytics_consent_body">Приложение отправит названия экранов и действий в нём — этого достаточно, чтобы найти неудобные места. Ничего из того, что вы записываете, не отправляется.</string>
+    <string name="analytics_consent_allow">Разрешить</string>
+    <string name="analytics_consent_decline">Сейчас не надо</string>
+    <string name="analytics_consent_policy">Политика конфиденциальности</string>
 </resources>

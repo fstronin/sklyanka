@@ -13,6 +13,7 @@ import ru.stohastika.sklyanka.data.di.DirectBootModule
 import ru.stohastika.sklyanka.data.di.DirectBootPreferences
 import ru.stohastika.sklyanka.data.room.DatabaseUpgrade
 import ru.stohastika.sklyanka.data.room.SklyankaDatabase
+import ru.stohastika.sklyanka.data.room.dao.AnalyticsDao
 import ru.stohastika.sklyanka.data.room.dao.IntakeDao
 import ru.stohastika.sklyanka.data.room.dao.MedicationDao
 import ru.stohastika.sklyanka.data.room.dao.OpLogDao
@@ -65,6 +66,16 @@ internal object DeviceStorageModule {
 
     @Provides
     fun provideOpLogDao(database: SklyankaDatabase): OpLogDao = database.opLogDao()
+
+    /**
+     * Очередь событий аналитики (SKL-165).
+     *
+     * Модуль заменяет `DataModule` целиком (`replaces`), поэтому каждый его провайдер
+     * обязан быть здесь: иначе очередь аналитики и всё, что от неё зависит, выпадает
+     * из графа проверок устройства — ровно так это и всплыло первым прогоном `verifyAll`.
+     */
+    @Provides
+    fun provideAnalyticsDao(database: SklyankaDatabase): AnalyticsDao = database.analyticsDao()
 
     @Provides
     @Singleton

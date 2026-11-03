@@ -14,6 +14,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -26,6 +27,7 @@ import ru.stohastika.sklyanka.domain.onboarding.PermissionStep
 import ru.stohastika.sklyanka.domain.onboarding.ReadPermissionChecklistUseCase
 import ru.stohastika.sklyanka.domain.onboarding.StepOpenResult
 import ru.stohastika.sklyanka.domain.onboarding.VendorProfile
+import ru.stohastika.sklyanka.feature.onboarding.AnalyticsWorld
 import ru.stohastika.sklyanka.feature.onboarding.OnboardingUiState
 import ru.stohastika.sklyanka.feature.onboarding.OnboardingViewModel
 import ru.stohastika.sklyanka.feature.onboarding.PermissionsActions
@@ -216,6 +218,7 @@ internal object PermissionsStand {
         leaveOnboarding = LeaveOnboardingUseCase(world.onboarding, world.onboarding),
         navigator = navigator,
         log = world.onboarding,
+        recorder = AnalyticsWorld().recorder(CoroutineScope(Dispatchers.Main)),
         time = world.clock.time,
     )
 

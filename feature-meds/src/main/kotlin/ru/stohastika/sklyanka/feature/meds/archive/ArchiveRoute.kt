@@ -6,6 +6,8 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import ru.stohastika.sklyanka.domain.analytics.AnalyticsScreen
+import ru.stohastika.sklyanka.ui.analytics.TrackScreenView
 import ru.stohastika.sklyanka.ui.component.BottomBar
 import ru.stohastika.sklyanka.ui.component.BottomBarTab
 
@@ -28,6 +30,8 @@ fun ArchiveRoute(
     onOpenSettings: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
+    // Показ экрана — один раз на вход: повторная композиция события не плодит (TDD §5.4).
+    TrackScreenView(AnalyticsScreen.ARCHIVE)
     val state by viewModel.state.collectAsState()
     DisposableEffect(Unit) {
         onDispose { viewModel.onScreenLeft() }

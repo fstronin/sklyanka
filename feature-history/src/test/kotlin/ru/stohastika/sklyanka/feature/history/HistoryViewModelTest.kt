@@ -1,6 +1,7 @@
 package ru.stohastika.sklyanka.feature.history
 
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
@@ -18,6 +19,10 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import ru.stohastika.sklyanka.domain.analytics.AnalyticsConsentState
+import ru.stohastika.sklyanka.domain.analytics.AnalyticsEventName
+import ru.stohastika.sklyanka.domain.analytics.AnalyticsProperty
+import ru.stohastika.sklyanka.domain.analytics.OperationResult
 import ru.stohastika.sklyanka.domain.history.AdherenceCalculator
 import ru.stohastika.sklyanka.domain.history.BuildDoctorReportUseCase
 import ru.stohastika.sklyanka.domain.history.BuildExtendedSectionsUseCase
@@ -46,6 +51,7 @@ import java.time.YearMonth
  * (`src/testDebug`).
  */
 @OptIn(ExperimentalCoroutinesApi::class)
+@Suppress("LargeClass")
 class HistoryViewModelTest {
 
     private val dispatcher = StandardTestDispatcher()
@@ -62,6 +68,10 @@ class HistoryViewModelTest {
 
     /** Доступ «Про»: им решается, доступен ли расширенный состав (Р-85 п. 1, Р-22). */
     private val subscriptions = FakeSubscriptionCache()
+
+    /** События отчёта: согласие дано, очередь и поставщик — в памяти (SKL-165). */
+    private val analyticsScope = CoroutineScope(dispatcher)
+    private val analyticsKit = AnalyticsTestKit(consent = AnalyticsConsentState.ALLOWED)
 
     @Before
     fun useTestDispatcher() {
@@ -510,6 +520,72 @@ class HistoryViewModelTest {
     }
 
     /**
+     * SKL-165, ПМ-26: успешный обмен — событие `report_exported(success)`.
+     *
+     * Одно событие на нажатие: пути «поделиться» и «сохранить» сходятся в одной точке,
+     * и второго значения на тот же исход не появляется.
+     */
+    @Test
+    fun `a shared report sends one success event`() = runTest(dispatcher) {
+        fillSeptember()
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        viewModel.onIntent(HistoryIntent.ReportRequested)
+        advanceUntilIdle()
+
+        viewModel.onIntent(HistoryIntent.ShareReport)
+        advanceUntilIdle()
+
+        assertEquals(listOf(AnalyticsEventName.REPORT_EXPORTED), analyticsKit.transport.deliveredNames())
+        assertEquals(
+            OperationResult.SUCCESS.wire,
+            analyticsKit.transport.delivered.single().properties[AnalyticsProperty.RESULT],
+        )
+    }
+
+    /** Отмена выбора места — `cancelled`: событие различает её и отказ (SKL-165). */
+    @Test
+    fun `a cancelled export is recorded as a cancellation`() = runTest(dispatcher) {
+        fillSeptember()
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        viewModel.onIntent(HistoryIntent.ReportRequested)
+        advanceUntilIdle()
+
+        viewModel.onIntent(HistoryIntent.SaveCancelled)
+        advanceUntilIdle()
+
+        assertEquals(
+            OperationResult.CANCELLED.wire,
+            analyticsKit.transport.delivered.single().properties[AnalyticsProperty.RESULT],
+        )
+    }
+
+    /**
+     * Отказ записи — `error`, и в событии нет ни пути файла, ни имени лекарства (АН-3).
+     *
+     * Проверка идёт по свойствам записи: конструктор события принимает только значения
+     * каталога, поэтому свободный текст в него не проходит по построению.
+     */
+    @Test
+    fun `a failed save is recorded as an error without the file name`() = runTest(dispatcher) {
+        fillSeptember()
+        transfer.next = ReportTransferOutcome.Failed("write_failed")
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        viewModel.onIntent(HistoryIntent.ReportRequested)
+        advanceUntilIdle()
+
+        viewModel.onIntent(HistoryIntent.SaveTo("content://place"))
+        advanceUntilIdle()
+
+        val event = analyticsKit.transport.delivered.single()
+        assertEquals(OperationResult.ERROR.wire, event.properties[AnalyticsProperty.RESULT])
+        assertEquals(setOf(AnalyticsProperty.RESULT), event.properties.keys)
+        assertFalse(event.properties.values.any { it.contains("content://place") })
+    }
+
+    /**
      * Сохранить некому — честный отказ, а не падение (SKL-46).
      *
      * Шторка остаётся открытой: человек хотел сохранить и попробует снова там, где
@@ -781,6 +857,7 @@ class HistoryViewModelTest {
         renderer = renderer,
         missedPattern = MissedPatternRule(),
         proStatus = ObserveProStatusUseCase(subscriptions, clock),
+        analytics = analyticsKit.recorder(analyticsScope),
         time = clock,
     ).apply {
         // По умолчанию системный выбор отвечает «выбран»: проверкам, которым важен

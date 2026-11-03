@@ -7,7 +7,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
+import ru.stohastika.sklyanka.domain.analytics.AnalyticsScreen
 import ru.stohastika.sklyanka.domain.pro.ProPoint
+import ru.stohastika.sklyanka.ui.analytics.TrackScreenView
 
 /**
  * Экран настроек вместе с его состоянием.
@@ -18,6 +20,9 @@ import ru.stohastika.sklyanka.domain.pro.ProPoint
  */
 @Composable
 fun SettingsRoute(viewModel: SettingsViewModel, navigation: SettingsNavigation, modifier: Modifier = Modifier) {
+    // Показ экрана — один раз за вход: значение привязано к экрану, а не к композиции
+    // (SKL-165, TDD §5.4).
+    TrackScreenView(AnalyticsScreen.SETTINGS)
     val state by viewModel.state.collectAsState()
     val uriHandler = LocalUriHandler.current
     val policyUrl = policyUrl(LocalContext.current)

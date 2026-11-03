@@ -4,6 +4,7 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
@@ -14,31 +15,33 @@ import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 
 /**
- * Проверка состава СОБРАННОГО артефакта (TDD §5.4).
+ * Проверка состава СОБРАННОГО артефакта (SKL-165, TDD §6.2).
  *
  * Смотрит слитый манифест, а не исходный: разрешение способна добавить зависимость
- * при слиянии манифестов, и проверка исходника этого не увидит.
+ * при слиянии манифестов, и проверка исходника этого не увидит. Решения о сети принимает
+ * [NetworkContourRules]: задача только читает файлы и передаёт текст, поэтому те же правила
+ * прогоняются на образцах нарушений отдельной задачей.
  *
- * Два правила:
+ * Что проверяется кроме сети:
  *
  * 1. **Запрещённые разрешения** — состояние сети и рекламный идентификатор — не проходят
- *    никогда, даже если их принесла зависимость (ПЛ-3, НФТ-15).
- * 2. **Разрешения платного контура** (`INTERNET`) проходят, только если контур есть
- *    в артефакте, объявляет их сам и не объявляет никто другой (`ADR-0010` п. 1 и п. 5, ИИ-24).
- *    Раньше здесь стоял безусловный запрет; он перестал быть правдой с появлением контура,
- *    и правило заменено на адресное — «сеть только вместе с контуром», а не «сеть ни при
- *    каких условиях».
+ *    никогда, даже если их принесла зависимость (ПЛ-3, НФТ-15). Именно так они и приходят:
+ *    SDK MyTracker объявляет `ACCESS_NETWORK_STATE` и `AD_ID` в своём манифесте,
+ *    и манифест `app` снимает оба через `tools:node="remove"`.
+ * 2. **Сеть только вместе с контуром** (`ADR-0017` п. 2): разрешение законно, если его
+ *    объявил контур, входящий в артефакт, и никто вне контуров. Обратная сторона тоже
+ *    обязательна: контур в артефакте без своего разрешения — нарушение.
  *
  * Происхождение проверяется по исходникам манифестов **всех** модулей и **всех** наборов
- * (все наборы исходников, а не только `src/main`): разрешение, объявленное нашим модулем мимо контура,
+ * исходников (не только `src/main`): разрешение, объявленное нашим модулем мимо контура,
  * различимо и называется нарушением.
  *
  * **Чего правило не видит** (названный предел, а не обещание): разрешение, добавленное
- * слиянием из чужого AAR при живом контуре. Это принятая цена решения `ADR-0010` п. 5:
- * сама вендорская библиотека объявляет `INTERNET`, и отличить её от «случайной» библиотеки
+ * слиянием из чужого AAR при живом контуре. Это принятая цена решения `ADR-0017` п. 2:
+ * сама библиотека провайдера объявляет `INTERNET`, и отличить её от «случайной» библиотеки
  * можно было бы только разбором отчёта слияния. Гарантия от этого не размывается:
- * **без контура в артефакте сеть не появляется вовсе**, и ни один наш модуль, кроме
- * контура, сеть не объявляет.
+ * **без контура в артефакте сеть не появляется вовсе**, и ни один наш модуль, кроме контуров,
+ * сеть не объявляет.
  */
 abstract class VerifyMergedManifestTask : DefaultTask() {
 
@@ -52,42 +55,42 @@ abstract class VerifyMergedManifestTask : DefaultTask() {
     @get:Input
     abstract val expectedMinSdk: Property<Int>
 
-    /** Манифест модуля платного контура: единственный источник сетевых разрешений. */
-    @get:InputFile
+    /** Манифесты сетевых контуров: по ним видно, кто объявил разрешение. */
+    @get:InputFiles
     @get:PathSensitive(PathSensitivity.RELATIVE)
-    abstract val contourManifest: RegularFileProperty
+    abstract val contourManifests: ConfigurableFileCollection
 
-    /** Исходные манифесты всех модулей сборки: по ним видно, кто ещё объявил сетевое разрешение. */
+    /** Исходные манифесты всех модулей сборки мимо контуров. */
     @get:InputFiles
     @get:PathSensitive(PathSensitivity.RELATIVE)
     abstract val moduleManifests: ConfigurableFileCollection
 
-    /** Входит ли платный контур в собираемый артефакт. */
+    /** Входит ли каждый сетевой контур в собираемый артефакт: имя модуля → признак. */
     @get:Input
-    abstract val paidContourPresent: Property<Boolean>
+    abstract val contoursInArtifact: MapProperty<String, Boolean>
 
     @get:OutputFile
     abstract val report: RegularFileProperty
 
     @TaskAction
     fun verify() {
-        val manifest = mergedManifest.get().asFile.readText()
-        val problems = mutableListOf<String>()
+        val manifestFile = mergedManifest.get().asFile
+        val manifest = manifestFile.readText()
+        val present = contoursInArtifact.get()
+        val contourTexts = contourManifests.files.mapNotNull { file ->
+            contourModuleOf(file)?.let { module -> module to file.readText() }
+        }.toMap()
+        val contourPaths = contourManifests.files.map { it.canonicalPath }.toSet()
+
+        val problems = NetworkContourRules.validate(
+            mergedManifest = manifest,
+            contourManifests = contourTexts,
+            contoursInArtifact = present,
+            moduleManifests = moduleManifests.files
+                .filterNot { it.canonicalPath in contourPaths }
+                .associate { it.path to it.readText() },
+        ).toMutableList()
         val notes = mutableListOf<String>()
-
-        // ПЛ-3, НФТ-15: разрешения состояния сети и рекламный идентификатор запрещены всегда.
-        // Правила объявлены одним местом — AnalyticsContourRules.
-        AnalyticsContourRules.FORBIDDEN_PERMISSIONS.forEach { permission ->
-            if (manifest.contains("\"$permission\"")) {
-                problems += "forbidden permission $permission is present in the merged manifest " +
-                    "(PLATFORM-3, NFR-15). A dependency may have merged it in; remove it with " +
-                    "tools:node=\"remove\" or return it with the contour decision (PM-31)."
-            } else {
-                notes += "no $permission"
-            }
-        }
-
-        verifyContourPermissions(manifest, problems, notes)
 
         // ПЛ-2: имя пакета неизменяемо — к нему привязаны записи магазинов.
         val packageName = PACKAGE.find(manifest)?.groupValues?.get(1)
@@ -107,11 +110,16 @@ abstract class VerifyMergedManifestTask : DefaultTask() {
             else -> notes += "minSdkVersion $minSdk"
         }
 
+        notes += contourNotes(manifest, contourTexts, present)
+        AnalyticsContourRules.FORBIDDEN_PERMISSIONS.forEach { permission ->
+            if (!manifest.contains(permission)) notes += "no $permission"
+        }
+
         val reportFile = report.get().asFile
         reportFile.parentFile.mkdirs()
         reportFile.writeText(
             buildString {
-                appendLine("Artifact composition check for ${mergedManifest.get().asFile.path}")
+                appendLine("Artifact composition check for ${manifestFile.path}")
                 notes.forEach { appendLine("  OK   $it") }
                 problems.forEach { appendLine("  FAIL $it") }
             },
@@ -125,66 +133,57 @@ abstract class VerifyMergedManifestTask : DefaultTask() {
                 buildString {
                     appendLine("Artifact composition check failed:")
                     problems.forEach { appendLine("  - $it") }
+                    appendLine("Full report: ${reportFile.path}")
                 },
             )
         }
     }
 
-    /**
-     * Сеть только вместе с контуром и только из него (`ADR-0010` п. 1 и п. 5).
-     *
-     * Разрешение контура законно, когда выполняются все три условия: контур входит
-     * в артефакт, объявляет разрешение его собственный манифест и ни один другой модуль
-     * его не объявляет. Обратная сторона проверяется тоже и целиком: если контур в артефакте
-     * есть, а разрешения нет **в слитом манифесте или в манифесте самого контура** — сетевой
-     * путь пропал, и это нарушение, а не «повезло».
-     */
-    private fun verifyContourPermissions(
+    /** Что именно пришло из какого контура — видно в отчёте, а не только «всё хорошо». */
+    private fun contourNotes(
         manifest: String,
-        problems: MutableList<String>,
-        notes: MutableList<String>,
-    ) {
-        val contour = contourManifest.get().asFile
-        val contourText = contour.readText()
-        val contourPresent = paidContourPresent.get()
-
-        AnalyticsContourRules.PAID_CONTOUR_PERMISSIONS.forEach { permission ->
-            val inMerged = manifest.contains("\"$permission\"")
-            val inContour = contourText.contains("\"$permission\"")
-            val elsewhere = moduleManifests.files
-                .filter { it != contour && it.readText().contains("\"$permission\"") }
-                .map { it.path }
-
-            when {
-                // Контур в артефакте — разрешение обязано быть и в слитом манифесте,
-                // и в манифесте контура: исчезновение любой из двух половин пути — нарушение.
-                !inMerged && contourPresent -> problems +=
-                    "the paid contour is part of the artifact but $permission is missing from the " +
-                        "merged manifest: the network point disappeared (ADR-0010 §1)"
-
-                !inMerged -> notes += "no $permission"
-
-                !contourPresent -> problems +=
-                    "$permission is in the merged manifest while the paid contour " +
-                        "(${AnalyticsContourRules.PAID_CONTOUR_MODULE}) is not part of the artifact " +
-                        "(PLATFORM-3, NFR-15, ADR-0010 §5)"
-
-                !inContour -> problems +=
-                    "$permission is in the merged manifest but the contour manifest " +
-                        "(${contour.path}) does not declare it: the network point must name itself " +
-                        "(ADR-0010 §1)"
-
-                elsewhere.isNotEmpty() -> problems +=
-                    "$permission is declared by ${elsewhere.joinToString()} — the network point " +
-                        "belongs to the paid contour alone (ADR-0010 §1)"
-
-                else -> notes += "$permission from the paid contour"
+        contourTexts: Map<String, String>,
+        present: Map<String, Boolean>,
+    ): List<String> {
+        val notes = mutableListOf<String>()
+        AnalyticsContourRules.NETWORK_CONTOURS.forEach { contour ->
+            val inArtifact = present[contour.module] == true
+            contour.permissions.forEach { permission ->
+                when {
+                    !inArtifact -> notes += "${contour.module} contour is not part of the artifact"
+                    manifest.declares(permission) ->
+                        notes += "$permission from the ${contour.module} contour"
+                    else -> Unit // нарушение уже названо правилом
+                }
+            }
+            if (inArtifact) {
+                notes += "${contour.module} contour is part of the artifact"
+            }
+            contourTexts[contour.module]?.let { text ->
+                if (contour.permissions.any { !text.declares(it) }) {
+                    notes += "${contour.module} contour manifest declares no network permission of its own"
+                }
             }
         }
+        return notes
+    }
+
+    /**
+     * Имя контура по пути его манифеста.
+     *
+     * Модуль называется так же, как его каталог: другого способа связать файл с контуром
+     * задача не имеет — путь и есть адрес модуля в дереве.
+     */
+    private fun contourModuleOf(file: java.io.File): String? {
+        val path = file.invariantSeparatorsPath
+        return AnalyticsContourRules.NETWORK_CONTOURS
+            .map { it.module }
+            .filter { path.contains("/$it/") }
+            .maxByOrNull { it.length }
     }
 
     private companion object {
         val PACKAGE = Regex("package=\"([^\"]+)\"")
-        val MIN_SDK = Regex("android:minSdkVersion=\"(\\d+)\"")
+        val MIN_SDK = Regex("minSdkVersion=\"(\\d+)\"")
     }
 }

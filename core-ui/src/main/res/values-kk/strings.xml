@@ -173,4 +173,10 @@
     <string name="pro_restore_failed">Сатып алуды қалпына келтіру мүмкін болмады. Кейінірек көріңіз</string>
     <string name="pro_restore_nothing_found">Дүкенде сатып алулар табылмады</string>
     <string name="pro_date_pattern">d MMMM yyyy</string>
+
+    <string name="analytics_consent_title">Қолданбаны жақсартуға көмектесесіз бе?</string>
+    <string name="analytics_consent_body">Қолданба экрандар мен әрекеттердің атауларын жібереді — ыңғайсыз жерлерді табу үшін осы жеткілікті. Сіз жазған ештеңе жіберілмейді.</string>
+    <string name="analytics_consent_allow">Рұқсат ету</string>
+    <string name="analytics_consent_decline">Қазір қажет емес</string>
+    <string name="analytics_consent_policy">Құпиялылық саясаты</string>
 </resources>

@@ -8,6 +8,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import ru.stohastika.sklyanka.domain.analytics.AnalyticsRecorder
+import ru.stohastika.sklyanka.domain.analytics.OnboardingEntry
+import ru.stohastika.sklyanka.domain.analytics.OnboardingFinished
+import ru.stohastika.sklyanka.domain.analytics.OnboardingStarted
+import ru.stohastika.sklyanka.domain.analytics.OnboardingStep
+import ru.stohastika.sklyanka.domain.analytics.OnboardingStepResult
+import ru.stohastika.sklyanka.domain.analytics.StepResult
 import ru.stohastika.sklyanka.domain.onboarding.ConfirmReliabilityStepUseCase
 import ru.stohastika.sklyanka.domain.onboarding.LeaveOnboardingUseCase
 import ru.stohastika.sklyanka.domain.onboarding.OnboardingOutcome
@@ -23,6 +30,7 @@ import ru.stohastika.sklyanka.domain.time.TimeSource
 import java.time.Instant
 import java.time.LocalDateTime
 import javax.inject.Inject
+import ru.stohastika.sklyanka.domain.analytics.OnboardingOutcome as AnalyticsOutcome
 
 /**
  * Экран «Настроить надёжность» (НАП-19 … НАП-21, ОВ-106, ОВ-107).
@@ -33,6 +41,10 @@ import javax.inject.Inject
  * и при каждом возврате приложения на передний план: человек уходит выдавать разрешение
  * в системные настройки и возвращается, и карточка обязана измениться без перезахода
  * (критерий приёмки 12). Разрешение, отозванное через месяц, замечается тем же способом.
+ *
+ * **Воронка считается по входу, шагу и уходу.** События пишутся ровно в этих трёх точках,
+ * а отображение домена в каталог собрано в одном месте внизу файла: имя входа в старте
+ * и уходе не может разойтись, а шаг называется одинаково у разрешения и у подтверждения.
  */
 @HiltViewModel
 class OnboardingViewModel @Inject constructor(
@@ -41,6 +53,7 @@ class OnboardingViewModel @Inject constructor(
     private val leaveOnboarding: LeaveOnboardingUseCase,
     private val navigator: SystemSettingsNavigator,
     private val log: OnboardingLog,
+    private val recorder: AnalyticsRecorder,
     time: TimeSource,
 ) : ViewModel() {
 
@@ -68,6 +81,9 @@ class OnboardingViewModel @Inject constructor(
         // значение, и LaunchedEffect(exit) не перезапускается (ОВ-86).
         _exit.value = null
         _state.update { it.copy(source = source, outageSince = outageSince, focusStep = null) }
+        // Вход, а не показ: событие принадлежит открытию экрана, поэтому [refresh] на возврате
+        // из системных настроек его не повторяет (TDD §4).
+        recorder.record(OnboardingStarted(source.analyticsEntry))
         refresh(logOpening = true, focus = source.focusesFirstUnresolved)
     }
 
@@ -150,6 +166,8 @@ class OnboardingViewModel @Inject constructor(
     /** Результат системного диалога разрешения: состояние перечитывается у системы, а не берётся из ответа. */
     fun onPermissionResult(step: PermissionStep, granted: Boolean) {
         log.permissionResult(step, granted)
+        val result = if (granted) StepResult.GRANTED else StepResult.SKIPPED
+        recorder.record(OnboardingStepResult(step.analyticsStep, result))
         // Отказ не закрывает экран и не мешает пройти остальные шаги (НАП-18).
         refresh()
     }
@@ -158,6 +176,9 @@ class OnboardingViewModel @Inject constructor(
     fun onManualConfirmed(step: PermissionStep, confirmed: Boolean) {
         viewModelScope.launch {
             confirmStep(step, confirmed)
+            // Запись — после подтверждения: шаг, который домен отверг, событием не становится.
+            val result = if (confirmed) StepResult.CONFIRMED else StepResult.SKIPPED
+            recorder.record(OnboardingStepResult(step.analyticsStep, result))
             refresh()
         }
     }
@@ -181,6 +202,8 @@ class OnboardingViewModel @Inject constructor(
         viewModelScope.launch {
             val checklist = _state.value.checklist ?: readChecklist()
             leaveOnboarding(outcome, checklist)
+            val entry = _state.value.source.analyticsEntry
+            recorder.record(OnboardingFinished(entry, outcome.analyticsOutcome))
             _exit.value = Unit
         }
     }
@@ -197,3 +220,46 @@ class OnboardingViewModel @Inject constructor(
         }
     }
 }
+
+/**
+ * Вход экрана → вход онбординга в каталоге (`TDD.md §4`).
+ *
+ * Единственное место отображения: и старт, и уход берут `entry` отсюда, поэтому имя входа
+ * не может разойтись между двумя событиями одной воронки. Каталог знает больше входов, чем
+ * домен: `DELIVERY_CHECK` открывает другой экран, и в цепочке разрешений такого значения нет.
+ */
+private val OnboardingSource.analyticsEntry: OnboardingEntry
+    get() = when (this) {
+        OnboardingSource.FIRST_LAUNCH -> OnboardingEntry.FIRST_LAUNCH
+        OnboardingSource.SETTINGS -> OnboardingEntry.SETTINGS
+        OnboardingSource.TODAY_WARNING -> OnboardingEntry.TODAY_BANNER
+        OnboardingSource.OUTAGE_BANNER -> OnboardingEntry.BREAK_BANNER
+    }
+
+/**
+ * Шаг цепочки → шаг онбординга в каталоге.
+ *
+ * Шаг читается системой или подтверждается человеком — для каталога это один и тот же шаг:
+ * различие несут `result` (`granted`/`confirmed`/`skipped`), а не имя шага.
+ */
+private val PermissionStep.analyticsStep: OnboardingStep
+    get() = when (this) {
+        PermissionStep.NOTIFICATIONS -> OnboardingStep.NOTIFICATIONS
+        PermissionStep.EXACT_ALARMS -> OnboardingStep.EXACT_ALARMS
+        PermissionStep.APP_STARTUP -> OnboardingStep.APP_LAUNCH
+        PermissionStep.BATTERY_SAVING -> OnboardingStep.BATTERY
+        PermissionStep.RECENTS_PIN -> OnboardingStep.RECENTS
+    }
+
+/**
+ * Исход ухода → исход онбординга.
+ *
+ * В домене исходов два: «Дальше» и «Пропустить» — и им соответствуют `completed` и `skipped`.
+ * «Готово» на повторном входе и системная «Назад» идут путём «Пропустить» и получают тот же
+ * `skipped`: молчаливого третьего исхода у каталога нет.
+ */
+private val OnboardingOutcome.analyticsOutcome: AnalyticsOutcome
+    get() = when (this) {
+        OnboardingOutcome.NEXT -> AnalyticsOutcome.COMPLETED
+        OnboardingOutcome.SKIPPED -> AnalyticsOutcome.SKIPPED
+    }

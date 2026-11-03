@@ -1,5 +1,6 @@
 package ru.stohastika.sklyanka.feature.settings
 
+import ru.stohastika.sklyanka.domain.analytics.AnalyticsConsentState
 import ru.stohastika.sklyanka.domain.pro.ProStatus
 import ru.stohastika.sklyanka.domain.pro.ProSubscription
 import ru.stohastika.sklyanka.domain.profile.ProfileCreationGate
@@ -44,6 +45,9 @@ internal object SettingsScreenFixtures {
      * @param pro доступ сборки: по умолчанию — бесплатная, где доступ есть всегда
      *   (`ProSubscription.Active(null, LocalDate.MAX)`), поэтому гейт закрывает создание
      *   только на пределе пяти (Р-86, ПРФ-32).
+     * @param analytics решение об аналитике: по умолчанию «ещё не спрашивали», и строка
+     *   показывает «Выключено» — отправки нет ни в этом состоянии, ни при отказе (АН-2).
+     * @param analyticsPromptVisible открыт ли вопрос о согласии поверх настроек (ПМ-25 п. 4).
      */
     fun state(
         denied: Int = 1,
@@ -53,6 +57,8 @@ internal object SettingsScreenFixtures {
         snoozePickerVisible: Boolean = false,
         foreignProfiles: Int = 1,
         pro: ProStatus = FREE_ACCESS,
+        analytics: AnalyticsConsentState = AnalyticsConsentState.NOT_ASKED,
+        analyticsPromptVisible: Boolean = false,
     ): SettingsUiState {
         val profiles = listOf(ownerRow(activeIsSelf)) + foreignRows(activeIsSelf, foreignProfiles)
         return SettingsUiState(
@@ -66,6 +72,8 @@ internal object SettingsScreenFixtures {
             pro = pro,
             // Тем же правилом, что `SettingsViewModel`: по числу строк и доступу (ПРФ-33, ПРФ-34).
             profileCreation = ProfileCreationGate.decide(profiles.size, pro.included),
+            analytics = analytics,
+            analyticsPromptVisible = analyticsPromptVisible,
         )
     }
 
