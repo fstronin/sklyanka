@@ -1,143 +1,33 @@
-# Документация «Склянки»
+# Documentation
 
-Единственное место, где описана раскладка документации и правила её ведения. Остальные
-документы (`AGENTS.md`, `docs/plan.md` §6, `docs/agents/domain.md`, скиллы `.omp/skills/`)
-ссылаются сюда, а не пересказывают раскладку: пересказов было четыре, и все они разошлись.
+The documentation of Sklyanka is small on purpose: a normative specification, the architecture
+decisions, and the original customer materials.
 
-## 1. Слои
-
-| Слой | Что содержит | Кто ведёт |
-|---|---|---|
-| `docs/norm/` | Нормативный слой: только действующие правила продукта, поведения, качества и дизайна | ведущая сессия, по решению Р-N |
-| `docs/journal/decisions.md` | Журнал решений Р-N — единственная история решений | ведущая сессия |
-| `docs/findings/visual-findings.md` | Реестр находок прогонов (коды V-N) | роль `visual-verifier` |
-| `docs/research/` | Не норматив: снимок «как есть», варианты стратегии, карта переноса прежнего слоя | не развивается |
-| `docs/adr/` | Архитектурные решения `00NN-slug.md` (формат domain-modeling) | любая задача, меняющая архитектуру |
-| `docs/agents/` | Документы для агентных инструментов: домен, трекер задач, триаж-метки. **Не путать с `.omp/agents/`** — там роли | ведущая сессия |
-| `docs/tasks/SKL-NN/` | Артефакты активной задачи (`task.md`, `TDD.md`, `TODO.md`, `run/`) | задача |
-| `docs/release/` | Предрелизные планы и отчёты первой публикации; **не норматив** | ведущая сессия |
-| `docs/archive/` | История: журналы ПМ/ОВ/дизайна, артефакты закрытых задач, прежние конвенции | **не редактируется** |
-| `docs/archive/norm/` | Архивные версии нормативных документов, снятых с действия (монетизация, ИИ-ввод). **Не норматив**: действующих правил здесь нет | **не редактируется** |
-| `docs/plan.md` | План: фазы и гейты (§1–§3), реестр задач со статусами (§4), открытые вопросы (§5) | ведущая сессия |
-| `CONTEXT.md` (корень) | Глоссарий контекста: термины, избегаемые синонимы, коды значений домена | domain-modeling |
-| `docs/design-proposals/` | Листы вариантов интерфейса (HTML) с доказательствами; индекс — в каталоге | роль `designer` |
-| `acceptance/src/main/resources/features/` | Приёмочные Gherkin-сценарии `SKL-NN.feature` | задача |
-| `design/` | Неприкосновенный исходник заказчика: спека и макеты | **не редактируется** |
-
-`CONTEXT.md` живёт в корне, а не в `docs/`: так требует конвенция скилла `domain-modeling`
-(глоссарий контекста рядом с `docs/adr/`), и на неё ссылаются все слои.
-
-## 2. Нормативный слой
-
-Номер файла — порядок чтения, а не важность: от «что это за продукт» к «как его выпускать».
-Продукт бесплатный навсегда (Р-86), поэтому монетизации и ИИ-ввода в действующем нормативе нет:
-их прежние версии — в `docs/archive/norm/`. Номера файлов устойчивы (§3.5), поэтому в нумерации
-остаются пропуски.
-
-| Файл | О чём |
+| Path | Content |
 |---|---|
-| `docs/norm/01-product.md` | Продукт: цели, принципы, состав, приватность, платформа, признаки успеха |
-| `docs/norm/03-roadmap.md` | Фазы, гейты, состав работ, правило переезда документации |
-| `docs/norm/04-behavior.md` | Поведение: данные и инварианты, расписание и приём, напоминания, экраны, профили, перенос |
-| `docs/norm/05-quality.md` | Качество: порог → метод проверки → фактический статус |
-| `docs/norm/06-design.md` | Дизайн-система: токены, компоненты, доступность, движение, локализация вёрстки |
-| `docs/norm/08-implementation-plan.md` | Порядок исполнения фаз: волны, срезы, общие ресурсы |
+| [`spec/product.md`](spec/product.md) | what the product is, who it serves, goals, principles, composition, privacy, platform, success signals |
+| [`spec/behavior.md`](spec/behavior.md) | data and invariants, schedule and intake, reminders, permissions and reliability onboarding, screens, profiles, transfer |
+| [`spec/design-system.md`](spec/design-system.md) | the design system: tokens, colour, typography, geometry, components, accessibility |
+| [`spec/design-screens.md`](spec/design-screens.md) | screen header and scrolling, motion, dark environment, layout localization, prohibitions |
+| [`spec/quality.md`](spec/quality.md) | verification levels, build gates, quality requirements and their status |
+| [`spec/architecture.md`](spec/architecture.md) | the stack, the module map and the data flow |
+| [`spec/glossary.md`](spec/glossary.md) | domain terms, avoided synonyms, domain value codes |
+| [`spec/privacy.md`](spec/privacy.md) | what the app does with information |
+| [`adr/`](adr/) | architecture decision records, `0001` to `0017` |
+| [`screenshots/`](screenshots/) | screen frames used by the README |
 
-## 3. Правила
+The customer's original specification and the screen mockups live in [`../design/`](../design/).
+They are the untouched source and are written in Russian, the language the product was specified
+in; the English specification above is the current description of the behaviour.
 
-1. Нормативный документ содержит только действующее правило. Отмена решения — правка правила
-   плюс запись в `docs/journal/decisions.md`; датированных «ревизий» внутри правила не бывает.
-   Список изменений документа живёт не в его шапке, а разделом «Изменения» в конце либо
-   в журнале.
-2. Один факт живёт в одном месте; остальные документы ссылаются на него по коду (Р-N, НФТ-,
-   ИНВ-, V-N, SKL-NN), а не пересказывают.
-3. Требование без метода проверки не публикуется.
-4. Статус задачи — только в реестре `docs/plan.md` §4. Шапка постановки (`task.md`) статус
-   не дублирует и строки «Статус» не содержит.
-5. Коды требований устойчивы: номер не переиспользуется и не перенумеровывается. Раскладка
-   файлов может меняться — коды и комментарии кода при этом не переписываются.
-6. История не редактируется: `docs/archive/**` сохраняет формулировки и пути на момент записи.
-   Пути в ней читаются по карте переноса (§6).
-7. Новый документ заводится в один из слоёв таблицы §1; слой, которого не хватает, добавляется
-   сюда, а не заводится мимоходом.
-8. **Утверждение о состоянии сборки несёт источник.** «В сборке есть/нет X», «канал один»,
-   «монетизации нет» — это состояние, а не правило: оно обязано ссылаться на решение Р-N или
-   на задачу SKL-NN в том же предложении. Фраза без источника — кандидат в устаревшие
-   (01.11.2026 так разошлась запись Р-92 по пяти документам, и Р-93 оставил в них ложь).
-9. **Текст, описывающий уже опубликованную сборку, помечается «до SKL-NN».** Пока решение
-   не выпущено, правда о сборке — старая; переписывать её заранее нельзя (П-7), поэтому
-   пометка вместо переписывания.
-10. **ADR не переписывается.** Снятое решение получает надгробную надпись в «Статус» со ссылкой
-    на заменяющий ADR или Р-N; тело остаётся историей. Образец — `ADR-0010` и `ADR-0011`.
-11. **Приёмочный шаг читает тот же источник, что и гейт.** Сценарий, утверждающий состояние
-    сборки, обязан иметь реализованный шаг, который смотрит на слитый манифест варианта, а не
-    на исходник одного модуля. Шаг, проходящий при ложном утверждении, — дефект, а не покрытие.
-12. Механическая страховка правил 8–9 — `tools/docs/check-claims.sh`: список фраз, которые
-    были правдой и перестали ею быть. Намеренную цитату истории помечают
-    `<!-- docs-check: allow -->` в той же строке. Список пополняется при каждом развороте
-    решения.
+## Rules for this layer
 
-## 4. Шаблон шапки
-
-Каждый документ начинается строкой, которая называет его роль в слое, и строкой истории:
-
-```
-# Склянка — <предмет>
-
-Нормативный документ · версия N · <дата>. История решений — `docs/journal/decisions.md` (Р-N).
-```
-
-Роль называется одним из слов: `Нормативный документ` · `Журнал` · `Реестр` · `Снимок`
-(не норматив) · `Разведка` · `Карта` · `План`. У документа с одной версией номер не придумывается:
-пишется `версия 1.0` только тогда, когда версия действительно ведётся.
-
-## 5. Пути, которые читают проверки
-
-Переименование этих файлов — не только правка ссылок, но и правка кода приёмки:
-
-| Путь | Кто читает |
-|---|---|
-| `docs/norm/04-behavior.md` | `acceptance/.../steps/task/JourneyHarnessSteps.kt` (`BEHAVIOR_DOC`) — карта экранов §5.1 |
-| `docs/norm/06-design.md` | `acceptance/.../steps/task/Sk139MarkSteps.kt`, `core-ui/.../palette/Sk109PaletteSteps.kt` (`NORMATIVE_DOCUMENT`) — палитра знака и токены |
-| `docs/plan.md` | `acceptance/.../steps/task/FindingSteps.kt` (`PLAN`) — строки реестра §4 |
-| `docs/archive/tasks/SKL-24/TDD.md`, `docs/archive/tasks/SKL-96/TDD.md`, `docs/tasks/SKL-140/TDD.md` | шаги оснастки: реестры инструментальных проверок и походов |
-
-## 6. Карта переноса путей
-
-Раскладка менялась трижды. Прежние пути живы в истории (`docs/archive/**`) и в датированных
-листах `docs/design-proposals/`; чтобы прочитать такую ссылку, найти путь в этой таблице.
-
-**17.10.2026 — архив норматива (`docs/norm/` → `docs/archive/norm/`, решение Р-86):**
-
-| Прежний путь | Новый путь |
-|---|---|
-| `docs/norm/02-monetization.md` | `docs/archive/norm/02-monetization.md` |
-| `docs/norm/07-ai-entry.md` | `docs/archive/norm/07-ai-entry.md` |
-
-Ссылка на прежний путь в истории читается по этой таблице; действующих правил в архивных
-версиях нет. Цепочка вида `docs/v2/03-monetization.md` → `docs/norm/02-monetization.md`
-доводится до конца записью 17.10.2026: конечный путь — архивный, под тем же именем файла.
-
-**12.10.2026 — слои (`docs/v2/` → по слоям, `PLAN.md` → `docs/plan.md`):**
-
-| Прежний путь | Новый путь |
-|---|---|
-| `docs/v2/00-product.md` | `docs/norm/01-product.md` |
-| `docs/v2/03-monetization.md` | `docs/norm/02-monetization.md` |
-| `docs/v2/04-roadmap.md` | `docs/norm/03-roadmap.md` |
-| `docs/v2/10-behavior.md` | `docs/norm/04-behavior.md` |
-| `docs/v2/11-quality.md` | `docs/norm/05-quality.md` |
-| `docs/v2/12-design.md` | `docs/norm/06-design.md` |
-| `docs/v2/14-ai-entry.md` | `docs/norm/07-ai-entry.md` |
-| `docs/v2/16-implementation-plan.md` | `docs/norm/08-implementation-plan.md` |
-| `docs/v2/02-decisions.md` | `docs/journal/decisions.md` |
-| `docs/v2/15-visual-findings.md` | `docs/findings/visual-findings.md` |
-| `docs/v2/00-as-is.md` | `docs/research/as-is.md` |
-| `docs/v2/01-strategy-options.md` | `docs/research/strategy-options.md` |
-| `docs/v2/05-code-map.md` | `docs/research/spec-migration-map.md` |
-| `PLAN.md` | `docs/plan.md` (в корне остался указатель) |
-| `docs/v2/13-adr/` (до 08.10.2026) | `docs/adr/` |
-
-**08.10.2026 — переезд SKL-111 (`docs/spec/` → `docs/v2/`):** соответствие документов
-и кодов требований — `docs/research/spec-migration-map.md`; прежний реестр задач и конвенции —
-`docs/archive/tasks-README.md`.
+1. A normative document states the rule that holds, not the history of how it was reached.
+   A replaced rule is rewritten in place; the record of the decision lives in `adr/`.
+2. One fact lives in one place. Other documents refer to it by its section number
+   (`behavior.md` §5.1) instead of restating it.
+3. Section numbers are stable: Kotlin KDoc cites them, so a section keeps its number when its
+   text changes.
+4. A requirement without a method of verification is not published in `quality.md`.
+5. The interface is Russian; when a rule is about a specific label, the label is quoted in
+   Russian with an English gloss: `«Принято»` ("Taken").

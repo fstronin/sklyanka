@@ -11,4 +11,4 @@ SPIKE_MEDICATIONS=5
 SPIKE_TIMES="06:00,08:00,11:00,14:00,17:00,20:00,23:55,00:05"
 
 # Файл нагрузки, который загружает заказчик («Перенос данных → Загрузить»).
-SPIKE_SEED="docs/archive/tasks/SKL-03/run/sklyanka-seed-stand.json"
+SPIKE_SEED="tools/spike/seed-stand.json"

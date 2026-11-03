@@ -1,0 +1,152 @@
+{
+  "format": "sklyanka-export",
+  "format_version": 1,
+  "exported_at": "2026-09-30T15:52:45+02:00",
+  "app": {
+    "version_name": "0.1.0",
+    "version_code": 1,
+    "platform": "android"
+  },
+  "counts": {
+    "profiles": 1,
+    "medications": 5,
+    "archived": 0,
+    "intakes": 0
+  },
+  "profiles": [
+    {
+      "id": "profile-stand",
+      "name": "Стенд",
+      "is_self": true,
+      "mirror_reminders": false
+    }
+  ],
+  "medications": [
+    {
+      "id": "med-1",
+      "profile_id": "profile-stand",
+      "name": "Стенд 1",
+      "form": "tablet",
+      "dose_amount": 1,
+      "dose_unit": "tablet",
+      "food_relation": "any",
+      "schedule_mode": "scheduled",
+      "times": [
+        "06:00",
+        "08:00",
+        "11:00",
+        "14:00",
+        "17:00",
+        "20:00",
+        "23:55",
+        "00:05"
+      ],
+      "start_date": "2026-09-30",
+      "stock_left": 500,
+      "stock_threshold_days": 3
+    },
+    {
+      "id": "med-2",
+      "profile_id": "profile-stand",
+      "name": "Стенд 2",
+      "form": "tablet",
+      "dose_amount": 1,
+      "dose_unit": "tablet",
+      "food_relation": "any",
+      "schedule_mode": "scheduled",
+      "times": [
+        "06:00",
+        "08:00",
+        "11:00",
+        "14:00",
+        "17:00",
+        "20:00",
+        "23:55",
+        "00:05"
+      ],
+      "start_date": "2026-09-30",
+      "stock_left": 500,
+      "stock_threshold_days": 3
+    },
+    {
+      "id": "med-3",
+      "profile_id": "profile-stand",
+      "name": "Стенд 3",
+      "form": "tablet",
+      "dose_amount": 1,
+      "dose_unit": "tablet",
+      "food_relation": "any",
+      "schedule_mode": "scheduled",
+      "times": [
+        "06:00",
+        "08:00",
+        "11:00",
+        "14:00",
+        "17:00",
+        "20:00",
+        "23:55",
+        "00:05"
+      ],
+      "start_date": "2026-09-30",
+      "stock_left": 500,
+      "stock_threshold_days": 3
+    },
+    {
+      "id": "med-4",
+      "profile_id": "profile-stand",
+      "name": "Стенд 4",
+      "form": "tablet",
+      "dose_amount": 1,
+      "dose_unit": "tablet",
+      "food_relation": "any",
+      "schedule_mode": "scheduled",
+      "times": [
+        "06:00",
+        "08:00",
+        "11:00",
+        "14:00",
+        "17:00",
+        "20:00",
+        "23:55",
+        "00:05"
+      ],
+      "start_date": "2026-09-30",
+      "stock_left": 500,
+      "stock_threshold_days": 3
+    },
+    {
+      "id": "med-5",
+      "profile_id": "profile-stand",
+      "name": "Стенд 5",
+      "form": "tablet",
+      "dose_amount": 1,
+      "dose_unit": "tablet",
+      "food_relation": "any",
+      "schedule_mode": "scheduled",
+      "times": [
+        "06:00",
+        "08:00",
+        "11:00",
+        "14:00",
+        "17:00",
+        "20:00",
+        "23:55",
+        "00:05"
+      ],
+      "start_date": "2026-09-30",
+      "stock_left": 500,
+      "stock_threshold_days": 3
+    }
+  ],
+  "intakes": [],
+  "settings": {
+    "reminders": {
+      "persistent_enabled": false,
+      "snooze_minutes": 10
+    },
+    "watch": {
+      "enabled": false,
+      "snooze_button": false
+    }
+  }
+}

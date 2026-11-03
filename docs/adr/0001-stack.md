@@ -1,44 +1,46 @@
-# ADR-0001. Стек: Kotlin, Jetpack Compose, Room, Hilt, minSdk 26
+# 0001 — Stack: Kotlin, Jetpack Compose, Room, Hilt, minSdk 26
 
-## Статус
+Status: Accepted
 
-Действует. Из состава стека выпал Wear Engine SDK — решение Р-3.
+## Context
 
-## Решение
+The product has to deliver a reminder at an appointed minute on stock Android 8.0 and newer, with
+no server, no account and no Google services. Everything the reminder depends on, exact scheduling,
+notification channels, permission state, is a platform API, so any cross-platform layer would turn
+the most fragile part of the product into a hand-made bridge.
 
-Нативное Android-приложение без промежуточного слоя: Kotlin, Jetpack Compose, Room, Hilt,
-`AlarmManager`. `minSdk 26`, `targetSdk = compileSdk = 35`. Сервисы Google не используются
-и в зависимостях отсутствуют (ПЛ-4).
+## Decision
 
-- **Kotlin** — язык платформы; корутины дают внятную модель работы приёмников и базы.
-- **Jetpack Compose** — интерфейс: токены дизайн-системы становятся объектами
-  (`SklyankaColors`, `SklyankaType`, `SklyankaShapes`, `SklyankaSpacing`), компоненты —
-  функциями с перечислимым состоянием, акцент на цвет профиля — темой (`docs/norm/06-design.md`).
-- **Room** — хранение: типизированные миграции с тестами (МГ-1…МГ-3, `ADR-0012`), доступ
-  из корутин, проверка запросов на этапе компиляции.
-- **Hilt** — связывание: приёмники будильников и уведомлений получают зависимости штатным
-  способом (`@AndroidEntryPoint`), источник времени подменяется в тестах (НФТ-48).
-- **`AlarmManager`** — единственный механизм напоминаний (`ADR-0003`): канала доставки
-  уведомлений с сервера нет, потому что нет ни сети в ядре, ни сервисов Google (`ADR-0002`, ПЛ-4).
+A native Android application without an intermediate layer: Kotlin, Jetpack Compose, Room, Hilt,
+`AlarmManager`. `minSdk 26`, `targetSdk = compileSdk = 35`. Google services are not used and are
+absent from the dependencies.
 
-## Основание
+- **Kotlin** is the platform language; coroutines give the receiver and database work one model.
+- **Jetpack Compose** builds the interface: design tokens become objects (`SklyankaColors`,
+  `SklyankaType`, `SklyankaShapes`, `SklyankaSpacing`), components become functions with an
+  enumerable state, the profile accent becomes a theme.
+- **Room** stores data: typed migrations with tests (ADR-0012), coroutine access, queries checked at
+  compile time.
+- **Hilt** wires dependencies: alarm and notification receivers receive theirs through
+  `@AndroidEntryPoint`, and the time source is replaceable in tests.
+- **`AlarmManager`** is the only reminder mechanism (ADR-0003). There is no server-side delivery
+  channel: the core has no network, and Google services are absent.
 
-Точные будильники, каналы уведомлений и дизайн-система из токенов работают только
-с платформенными API напрямую: любой кроссплатформенный слой превращает самую хрупкую часть
-продукта в самодельный мост. `minSdk 26` задан дважды: каналы уведомлений появились в API 26,
-и с API 26 действует Doze, ради которого существует `setExactAndAllowWhileIdle`.
+`minSdk 26` is set for two reasons at once: notification channels appeared in API 26, and Doze,
+the reason `setExactAndAllowWhileIdle` exists, starts at API 26.
 
-## Следствия
+## Consequences
 
-- Доменный слой свободен от Android и тестируется на JVM (НФТ-46, `ADR-0007`).
-- Токены не хардкодятся по месту — это проверяется правилом линта, а не обзором (НФТ-47).
-- Время и часовой пояс берутся из подменяемого источника (НФТ-48, `ADR-0013`).
-- Холодный старт на Android 8.0 измеряется, а не предполагается (НФТ-21).
-- Числа версий объявлены одним источником — `build-logic/.../ProjectDefaults.kt`; состав
-  слитого манифеста проверяют гейты `verifyManifest*` (ПЛ-1, НФТ-38, НФТ-41).
-- Версии для iOS нет: стек привязан к одной платформе осознанно.
+- The domain layer is free of Android and is tested on the JVM (ADR-0007).
+- Design tokens are never hardcoded at the point of use; a lint rule enforces this.
+- Time and time zone come from a replaceable source (ADR-0013).
+- Cold start on Android 8.0 is measured, not assumed.
+- Version numbers have one source, `build-logic/.../ProjectDefaults.kt`; the merged manifest is
+  checked by the `verifyManifest*` tasks.
+- There is no iOS version: the stack is tied to one platform deliberately.
 
-## Пересмотры
+## Alternatives
 
-- 07.10.2026 · Wear Engine SDK исключён из стека вместе с интеграцией часов; требования
-  ЧАС-* сняты · решение Р-3 (`docs/journal/decisions.md`, `docs/research/spec-migration-map.md`).
+A cross-platform framework was rejected: exact alarms, notification channels and a token-based
+design system work only against the platform APIs directly, and the reminder cannot be expressed
+as "run at least every fifteen minutes".

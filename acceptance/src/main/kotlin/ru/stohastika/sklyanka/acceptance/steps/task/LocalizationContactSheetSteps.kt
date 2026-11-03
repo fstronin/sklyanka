@@ -82,6 +82,9 @@ class LocalizationContactSheetSteps {
         const val REVIEW_DIRECTORY = "build/visual-review"
         const val REVIEW_ARTIFACT_WORD = "visual-review"
         const val SNAPSHOT_DIRECTORY = "screenshots"
+
+        /** The number of snapshot baselines the repository is allowed to carry. */
+        const val GOLDEN_LIMIT = 148
         const val VISUAL_REVIEW_PROPERTY = "sklyanka.visualReview"
         const val PNG = "png"
     }

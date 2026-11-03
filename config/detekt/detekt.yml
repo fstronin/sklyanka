@@ -39,8 +39,8 @@ sklyanka:
 
   RussianTextInCode:
     active: true
-    # Шаги приёмки обязаны дословно совпадать с русским Gherkin из docs/tasks:
-    # это ключевые слова сценария, а не текст интерфейса.
+    # Acceptance steps quote interface labels verbatim, and a label is a Russian string,
+    # not interface text of the code's own.
     allowedPackages: 'ru.stohastika.sklyanka.acceptance'
     allowedFiles: ''
 

@@ -1,48 +1,42 @@
-# ADR-0016. Бесплатный продукт: платный контур только за сборочным флагом
+# 0016 — Free product: paid code behind a build flag
 
-## Статус
+Status: Accepted. `free` is the only shipped build and no paid tier exists. The network part is
+governed by ADR-0017: the shipped build declares `INTERNET` through the analytics contour only.
 
-Действует в части состава продукта: `free` — единственная поставляемая сборка, платного слоя
-нет (17.10.2026, Р-86; подтверждено Р-94). Сетевая часть пересмотрена 01.11.2026: `free`
-объявляет `INTERNET` контуром аналитики (Р-93, `ADR-0017`), поэтому пункт 1 и Следствия
-в части «сети нет» больше не действуют.
+## Context
 
-## Решение
+The product is free forever. A paid model would pull in a network, billing, a legal framework for
+personal data and a storefront inside a treatment scenario, contradicting both the promise that the
+core works without a network and the priority of reminder reliability. Deleting the paid code that was
+already written would lose a future option with no benefit for the shipped build; leaving it in `free`
+would drag a network and dead entry points into the APK. A build flag gives the third option: neither
+network nor entry points in the artifact, and the code kept.
 
-**Поставляется только бесплатная сборка. Платёжный код не удаляется, а остаётся за сборочным
-флагом.** Решение состоит из четырёх частей.
+## Decision
 
-1. **`free` — единственная поставляемая сборка.** В ней нет модулей `feature-pro` и
-   `billing-appgallery`, нет точек входа в покупку, метки «Про», витрины и разрешения `INTERNET`.
-   Сеть в продукте отсутствует; «ядро работает без сети» действует безусловно.
-2. **`pro` — сборочный вариант для будущего возврата.** Он собирается и проходит в CI компиляцию
-   и unit-тесты, но не поставляется и не публикуется. Платёжная приёмка (`@pro`-сценарии,
-   экранные шаги, эталоны платных поверхностей) удалена: dormant-код не держит живой контракт.
-3. **Доменный шов «доступ» сохраняется.** Гейты состава продолжают читать `ProStatus`; в `free`
-   он всегда «доступ есть», поэтому сложные расписания, виджеты, отчёт, CSV, акценты и профили
-   3–5 работают без изменений. Метка `ProMark` и входы в витрину скрываются флагом интерфейса,
-   а не удалением кода.
-4. **Возврат платной модели — только новой записью Р-N** и пересмотром этого ADR. Идентификаторы
-   товаров `sklyanka.pro.monthly`/`yearly` сохраняются в консоли, но не публикуются.
+1. **`free` is the only shipped build.** It contains no `feature-pro` and no `billing-appgallery`
+   module, no purchase entry points, no «Про» ("Pro") mark and no storefront. Network appears in the
+   shipped artifact only through the analytics contour (ADR-0017); "the core works without a network"
+   holds unconditionally.
+2. **`pro` is a build variant for a possible return.** It compiles and passes compilation, dependency
+   injection and unit tests in CI, but is not shipped or published. Paid acceptance (`@pro` scenarios,
+   screen steps, golden frames of paid surfaces) is removed: dormant code keeps no live contract.
+3. **The "access" domain seam is retained.** Composition checks keep reading `ProStatus`; in `free` it
+   always reports access granted, so complex schedules, widgets, the report, CSV, accent themes and
+   profiles three through five work unchanged. The `ProMark` label and storefront entries are hidden
+   by an interface flag, not deleted.
+4. **Returning a paid model requires a new ADR** and a revision of this one. Product identifiers
+   `sklyanka.pro.monthly` and `sklyanka.pro.yearly` stay in the store console but are not published.
 
-## Основание
+## Consequences
 
-Заказчик решил, что продукт бесплатный навсегда (Р-86). Платная модель тянула сеть, биллинг,
-юридический контур 152-ФЗ и витрину в лечебном сценарии — всё это противоречит обещанию
-«ядро работает без сети» и приоритету надёжности напоминания (П-1, П-3). Удалять уже написанный
-платёжный слой целиком значило бы потерять будущую возможность без выгоды для поставляемой
-сборки; оставлять его в free значило бы тащить `INTERNET` и мёртвые входы в APK. Сборочный флаг
-даёт третье: в артефакте нет ни сети, ни входов, а код сохранён.
-
-## Следствия
-
-- Гейты состава артефакта проверяют оба варианта: `free` без `INTERNET` и без контура, `pro`
-  с контуром и сетью; `ACCESS_NETWORK_STATE`, GMS, Firebase и аналитика запрещены всегда.
-- `free`-сборка не содержит `feature-pro` и `billing-appgallery`; доменные типы «Про» и `ProMark`
-  остаются скомпилированными, но недостижимы. Это принятая цена сохранения кода.
-- `pro`-вариант не покрыт приёмкой и может отставать; CI ловит только компиляцию, DI и unit-тесты.
-  Перед возвратом платной модели его придётся восстанавливать как новую задачу, а не «включать».
-- Метрики продукта — надёжность, приверженность и удержание; денежные метрики и `install→paid`
-  из норматива удалены.
-- Прежние ADR-0010 (платный сетевой контур) и ADR-0015 (магазин — единственный источник подписки)
-  сняты; их история остаётся в документах со статусом «снят».
+- Artifact composition checks cover both variants: `free` without the paid contour, `pro` with it.
+  GMS, Firebase and analytics SDKs other than the declared provider are forbidden always, and so are
+  `ACCESS_WIFI_STATE` and `AD_ID`; `INTERNET` and `ACCESS_NETWORK_STATE` are legal only together with
+  a contour present in the artifact.
+- `free` does not contain the paid modules; paid domain types and `ProMark` remain compiled but
+  unreachable. This is the accepted price of keeping the code.
+- `pro` is not covered by acceptance and may lag: CI catches only compilation, injection and unit
+  tests. Restoring a paid model means rebuilding it as new work, not flipping a switch.
+- Product metrics are reliability, adherence and retention. Monetary metrics do not exist.
+- ADR-0010 and ADR-0015 are superseded and remain as records of decisions that no longer apply.

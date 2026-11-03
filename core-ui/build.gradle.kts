@@ -18,9 +18,9 @@ android {
 dependencies {
     implementation(project(":core-domain"))
 
-    // Обработчик системного возврата шторки: `BackHandler` живёт в activity-compose,
-    // и правило «возврат закрывает шторку» обязано стоять в самой шторке, а не в каждом
-    // её вызывающем по месту (SKL-143, `docs/norm/04-behavior.md` §5.3).
+    // The system-back handler of a sheet: `BackHandler` lives in activity-compose, and the
+    // rule "back closes the sheet" belongs to the sheet itself, not to every caller
+    // (see `docs/spec/behavior.md` §5.3).
     implementation(libs.androidx.activity.compose)
 
     // Расчёт контраста, тонирование и полнота наборов проверяются на JVM: эмулятор

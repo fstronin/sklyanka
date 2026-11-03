@@ -1,68 +1,54 @@
-# ADR-0004. Два статичных канала уведомлений
+# 0004 — Two static notification channels
 
-## Статус
+Status: Accepted
 
-Действует.
+## Context
 
-## Решение
+Since Android 8 the channel owns sound, vibration and importance, and those settings are immutable
+after creation: recreating a channel with the same `id` restores the old channel with its old
+settings. The reminder must be louder and more visible than an ordinary notification, yet the
+product refuses a per-medication sound.
 
-Ровно два канала уведомлений, создаваемых один раз при первом запуске и не пересоздаваемых
+## Decision
+
+There are exactly two notification channels, created once on first launch and never recreated
 (`app/.../platform/notification/ReminderChannels.kt`):
 
-| Канал | `id` | Важность | Звук | Обход «Не беспокоить» |
+| Channel | `id` | Importance | Sound | Bypasses "Do not disturb" |
 |---|---|---|---|---|
-| Обычный | `reminders_regular_v2` | `IMPORTANCE_HIGH` | свой короткий сигнал (`res/raw/reminder_chime.wav`), `USAGE_ALARM` | нет |
-| Настойчивый | `reminders_persistent` | `IMPORTANCE_HIGH` | системный сигнал будильника, `USAGE_ALARM` | да |
+| Regular | `reminders_regular_v2` | `IMPORTANCE_HIGH` | the product's own short signal (`res/raw/reminder_chime.wav`), `USAGE_ALARM` | no |
+| Persistent | `reminders_persistent` | `IMPORTANCE_HIGH` | the system alarm signal, `USAGE_ALARM` | yes |
 
-- У обычного канала собственный сигнал продукта (Р-99), у настойчивого — системный сигнал
-  будильника: системный сигнал уведомления на целевых прошивках неотличим от любого другого
-  уведомления.
-- Оба звучат по громкости будильника — иначе напоминание глушится вместе с уведомлениями
-  и теряется в потоке сообщений (НАП-1).
-- Настойчивый канал даёт длинный паттерн вибрации и обход «Не беспокоить»; повторов не более
-  двух, интервал — настройка «Отложить на» (НАП-24, НАП-25, НАП-26).
-- Строка «Звук» в настройках ведёт в системные настройки уведомлений приложения (ПМ-15, ОВ-98).
-- Индивидуальный звук на каждое лекарство в продукт не входит
-  (`docs/norm/01-product.md` §5.3).
+- The regular channel plays the product's own signal; the persistent one plays the system alarm
+  signal, because a system notification sound is indistinguishable from any other notification on
+  the target firmware.
+- Both play at alarm volume. Otherwise a reminder is muted together with notifications and lost in
+  the stream of messages.
+- The persistent channel has the long vibration pattern and bypasses "Do not disturb". Repeats are
+  limited to two, with the interval taken from the `«Отложить на»` ("Defer by") setting.
+- The `«Звук»` ("Sound") row in settings opens the system notification settings of the app. It does
+  not choose a sound itself.
+- A per-medication sound is not part of the product.
 
-## Основание
+## Consequences
 
-С Android 8 настройки канала — звук, вибрация, важность — неизменяемы после создания,
-а пересоздание канала с тем же `id` восстанавливает старый канал со старыми настройками.
-Индивидуальный звук потребовал бы либо канала на лекарство с версионированным `id` (мусор
-в системных настройках, настройки не переносятся), либо собственного проигрывателя поверх
-молчаливого канала — нового источника беззвучного напоминания в самой чувствительной части
-продукта.
+- Channel identifiers are part of compatibility: after the first publication they do not change
+  without a reason, or the person receives a channel with default settings and possibly a silent
+  reminder. A sound change is such a reason: the regular channel moved to `reminders_regular_v2`,
+  and the former `reminders_regular` is deleted at startup when the shade holds no notification of
+  it.
+- Vibration patterns are frozen before publication.
+- The channel list in system settings stays short: two items instead of one channel per medication,
+  and sound behavior lives where the person is used to looking for it.
+- A full-screen reminder requires `USE_FULL_SCREEN_INTENT`. Android 14 and newer restrict that
+  permission by app category, so degradation to a heads-up notification is mandatory. A banner
+  counts as a presentation and does not fail the delivery self-check.
+- The difference between the channels is own signal versus system alarm signal: the system sound
+  differs across firmware, the product's own sounds the same everywhere.
 
-## Следствия
+## Alternatives
 
-- Идентификаторы каналов — часть совместимости: после первой публикации они не меняются
-  без причины, иначе человек получит канал с настройками по умолчанию и, возможно, беззвучное
-  напоминание (ПЛ-10, НАП-24). Смена звука — причина: обычный канал переехал на
-  `reminders_regular_v2` (Р-99), прежний `reminders_regular` удаляется при старте, когда в шторке
-  нет его уведомлений.
-- Паттерны вибрации заморожены до публикации (НАП-24).
-- Список каналов в системных настройках остаётся коротким: два пункта вместо канала
-  на лекарство; поведение звука — в руках человека там, где он привык его искать.
-- Полноэкранное напоминание требует `USE_FULL_SCREEN_INTENT`; на Android 14+ право ограничено
-  категорией приложения, поэтому обязательна деградация до heads-up (ПЛ-11, ПЛ-17) —
-  фаза 1 `docs/norm/03-roadmap.md` [не реализовано].
-- Различие каналов — свой сигнал против системного будильника: системный звук на разных прошивках
-  звучит по-разному, свой — одинаково. Опора на системный сигнал уведомления как на «знакомый»
-  отвергнута практикой EMUI 16 (Р-99).
-
-## Пересмотры
-
-- 02.11.2026 · у обычного канала собственный короткий сигнал; идентификатор
-  `reminders_regular` заменён на `reminders_regular_v2`, прежний канал удаляется при старте
-  без живых уведомлений · Р-99, SKL-168, `docs/norm/04-behavior.md` §3.4.
-- 01.10.2026 · идентификаторы `reminder_default`/`reminder_insistent` заменены на
-  `reminders_regular`/`reminders_persistent`; «один общий звук» заменён системными сигналами
-  двух видов · ОВ-76, проверка на устройстве с EMUI 15, НАП-24.
-- 07.10.2026 · индивидуальный звук на лекарство исключён из продукта вместо переноса
-  «во вторую версию» · `docs/norm/01-product.md` §5.3, `docs/norm/03-roadmap.md` §3.
-- 09.10.2026 · ярлык строки в настройках уточнён: заголовок «Системные настройки уведомлений»
-  называет экран, в который строка ведёт, подпись «Звук, важность, вибрация» — его содержимое.
-  Существо решения (переход в системный экран, своего выбора звука и своего экрана выбора
-  в продукте нет) не изменилось, изменилась формулировка в интерфейсе · Р-52, SKL-134,
-  `docs/norm/04-behavior.md` §5.6.
+A per-medication sound would need either a channel per medication with a versioned `id`, which
+litters system settings and does not survive a transfer, or the app's own player over a silent
+channel, which adds a second source of silent reminders in the most sensitive part of the product.
+Both were rejected.

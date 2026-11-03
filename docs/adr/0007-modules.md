@@ -1,65 +1,50 @@
-# ADR-0007. Модульность: виды модулей, зависимости внутрь, домен — чистый Kotlin
+# 0007 — Module layout: module kinds, dependencies inward, pure Kotlin domain
 
-## Статус
+Status: Accepted. There are two network modules, each its own network contour (ADR-0017):
+`core-analytics` for the analytics contour, present in free and pro; `billing-appgallery` for the
+paid contour, present only in the paid variant, which is not shipped. Network access without its own
+contour is forbidden by the artifact checks.
 
-Действует. Сетевых модулей два (Р-93, `ADR-0017`): `core-analytics` — контур аналитики,
-есть в `free` и `pro`; `billing-appgallery` — платёжный контур, только в невыпускаемом `pro`
-(Р-94). Сеть без своего контура запрещена гейтами состава.
+## Context
 
-## Решение
+The product rests on the reliability of the reminder. Errors in the intake window calculation, in
+the `pending` to `missed` transition, at the midnight boundary or on a time-zone change are exactly
+what hurts. Those calculations must be covered by tests that run on a developer machine in seconds,
+which is possible only if the domain neither pulls in the emulator nor depends on Android.
 
-1. **Виды модулей.**
+## Decision
 
-| Модуль | Тип | Содержание |
+1. **Module kinds.**
+
+| Module | Kind | Content |
 |---|---|---|
-| `core-domain` | Kotlin/JVM, не Android | сущности, состояния, правила, расчёт расписания и окон, абстракция часов |
-| `core-data` | Android library | Room (сущности, DAO, миграции), репозитории, мапперы, файл переноса |
-| `core-ui` | Android library | дизайн-система: токены, типографика, компоненты, общие строки, локаль |
-| `feature-*` | Android library | экраны; модуль заводится вместе с экраном, а не заранее |
-| `app` | application | граф Hilt, навигация, манифест, приёмники, уведомления, планировщик |
-| `acceptance` | Kotlin/JVM | сценарный уровень приёмки: общий мир, словарь шагов, обвязка прогона |
+| `core-domain` | Kotlin/JVM, not Android | entities, states, rules, schedule and window calculation, clock abstraction |
+| `core-data` | Android library | Room (entities, DAO, migrations), repositories, mappers, transfer file |
+| `core-ui` | Android library | design system: tokens, typography, components, shared strings, locale |
+| `feature-*` | Android library | screens; a module is created together with a screen, not in advance |
+| `app` | application | Hilt graph, navigation, manifest, receivers, notifications, scheduler |
+| `acceptance` | Kotlin/JVM | acceptance scenario layer: shared world, step vocabulary, run harness |
 
-2. **Зависимости идут внутрь:** `app → feature-* → core-ui / core-data → core-domain`.
-   `core-domain` не зависит ни от чего; `feature-*` не зависят друг от друга — общее уезжает
-   в `core-*`.
-3. **Платформенные механизмы** (`AlarmManager`, уведомления, файловая система, часы)
-   объявляются интерфейсами в `core-domain`, реализуются в `app` или `core-data`
-   и подставляются через Hilt.
-4. **`core-domain` — чистый Kotlin, а не Android library без зависимостей:** `android.*`
-   физически отсутствует в classpath, поэтому НФТ-46 и НФТ-48 выполняются конструкцией,
-   а не дисциплиной.
-5. **Правило проверяется сборкой:** задача `verifyModuleDependencies` падает на любом ребре
-   «наружу»; сама логика правила проверена на заведомо нарушающих графах задачей
+2. **Dependencies point inward:** `app → feature-* → core-ui / core-data → core-domain`.
+   `core-domain` depends on nothing; `feature-*` modules do not depend on each other, and anything
+   shared moves into a `core-*` module.
+3. **Platform mechanisms** (`AlarmManager`, notifications, file system, clock) are declared as
+   interfaces in `core-domain`, implemented in `app` or `core-data`, and bound through Hilt.
+4. **`core-domain` is pure Kotlin, not an Android library with no dependencies:** `android.*` is
+   physically absent from its classpath, so the purity of the domain holds by construction and not by
+   discipline.
+5. **The rule is checked by the build:** the `verifyModuleDependencies` task fails on any outward
+   edge; the rule logic itself is verified against deliberately violating graphs by
    `verifyModuleDependencyRule`.
 
-Фактический состав на 07.10.2026 — 12 модулей (`settings.gradle.kts:46-57`): `app`, шесть `feature-*`,
-`core-ui`, `core-data`, `core-domain`, `core-analytics` (удаляется решением Р-4), `acceptance`.
+## Consequences
 
-## Основание
-
-Продукт держится на надёжности напоминания (П-1): ошибки в расчёте окна приёма, в переходе
-`pending → missed`, в полуночной границе и в смене часового пояса стоят именно этого.
-Эти расчёты обязаны быть покрыты тестами, которые идут на машине разработчика за секунды
-(НФТ-45: покрытие домена не ниже 85 %), а это возможно, только если домен не тянет эмулятор
-и не зависит от доброй воли (НФТ-46, НФТ-48, ПЛ-4).
-
-## Следствия
-
-- Доменный код не пользуется Android-типами: мапперы домен↔Room живут в `core-data`,
-  домен↔экран — в `feature-*`.
-- `core-domain` не подключает Hilt: привязки объявляются в модулях-потребителях.
-- Новый экран — новый `feature-*`; общая для двух экранов деталь переезжает в `core-*` до
-  появления ребра между экранами.
-- Сетевой код существует только в отдельном модуле `billing-appgallery`, который входит
-  в невыпускаемый `pro`-вариант; free его не содержит, `core-domain` и `core-data` сетевых
-  зависимостей не получают (Р-86, `ADR-0016`).
-- Проверки направления зависимостей входят в `check` и в единый прогон `verifyAll` (НФТ-49).
-
-## Пересмотры
-
-- 07.10.2026 · модуль `core-analytics` выводится из состава продукта · Р-4
-  (`docs/norm/03-roadmap.md` фаза 0).
-- 07.10.2026 · в состав добавляется сетевой модуль платного контура · Р-1, `ADR-0010`
-  [не реализовано].
-- 17.10.2026 · платный контур снят; сетевой модуль остаётся только в `pro`-варианте,
-  free его не содержит · Р-86, `ADR-0016`.
+- Domain code uses no Android types: domain to Room mappers live in `core-data`, domain to screen
+  mappers in `feature-*`.
+- `core-domain` does not use Hilt; bindings are declared in consuming modules.
+- A new screen means a new `feature-*`; a detail shared by two screens moves to `core-*` before an
+  edge between screens appears.
+- Network code exists only in contour modules. `free` contains only `core-analytics`, so the shipped
+  artifact carries the analytics contour and not the store client.
+- No network dependency reaches `core-domain` or `core-data`.
+- Dependency direction checks are part of `check` and of the single `verifyAll` run.

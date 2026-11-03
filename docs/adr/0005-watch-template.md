@@ -1,38 +1,35 @@
-# ADR-0005. Шаблон уведомления Wear Engine вместо приложения на часах
+# 0005 — Watch notification template instead of a watch app
 
-## Статус
+Status: Withdrawn. Watches and wearables are not part of the product, so this decision does not
+apply. No watch app, watch notification template or mark from a watch exists.
 
-Снят решением Р-3 (07.10.2026): часы и носимые устройства вырезаны из продукта.
+## Context
 
-## Решение
+Huawei watches were once considered as a second surface for the reminder. A watch app would have
+needed its own project, pairing flow and store listing, while the target device, a lite wearable,
+already mirrors phone notifications without any app code. Marks had to stay on the phone anyway:
+the phone owns the database.
 
-Не действует. Интеграции с часами в продукте нет: ни шаблона уведомления Wear Engine,
-ни приложения на часах, ни отметки с часов (`docs/norm/01-product.md` §5.3, §7).
+## Decision
 
-## Основание
+Instead of an app on the watch, the reminder was to be mirrored through a Wear Engine notification
+template, with the watch as a read-only surface. Marking stayed on the phone, and the interface
+never offered a watch mark.
 
-Интеграция не была начата: заявка на права Wear Engine не подана, карточка и экран подключения
-не написаны. HUAWEI Watch GT 6 Pro — lite wearable, которому хватает системного зеркалирования
-уведомления без нашего кода, а сохранённый доменный шов стоил сопровождения и создавал иллюзию
-поддерживаемой функции (Р-3, П-7).
+## Consequences
 
-## Следствия
+- The domain seam for the watch was deleted rather than kept dormant: the gateway port and its
+  no-watch implementation, the `WATCH` mark source, the mirroring flag on a medication, the setup
+  intent and the unpaired-link reader are gone.
+- The mark source has two values, `PHONE` and `AUTO`. Concurrent marking from two devices does not
+  exist as a scenario.
+- The 28-character package name limit required by Wear Engine templates is no longer a requirement.
+  `applicationId` stays immutable for a different reason: store records.
+- The transfer file has no watch field and never carried one.
+- Returning watches requires a new ADR, not a revival of this one.
 
-- Требования ЧАС-1…ЧАС-9 сняты решением Р-3; содержание не переносится
-  (`docs/research/spec-migration-map.md`).
-- Доменный шов удалён, а не законсервирован: порт `WatchGateway` и `NoWatchGateway`,
-  источник отметки `WATCH`, поле `mirror_to_watch`, намерение `OpenWatchSetup`,
-  `UnpairedWatchLinkReader`, сценарии приёмки ЧАС-*, заготовки задач SKL-01/16/17/37.
-- Источник отметки остаётся двух значений: `PHONE`, `AUTO`; гонка «часы против телефона»
-  (ПР-3) теряет второй источник.
-- Ограничение имени пакета в 28 символов под шаблоны Wear Engine перестаёт быть требованием;
-  неизменяемость `applicationId` сохраняется по другой причине — записи в магазинах (ПЛ-2).
-- Файл переноса теряет поле `mirror_to_watch`, которое в него и не писалось: дефект 3
-  `docs/research/as-is.md` §4.3 закрывается сам (ПЕР-*).
-- Возврат часов возможен только новым решением Р-N в `docs/journal/decisions.md`.
+## Alternatives
 
-## Пересмотры
-
-- 28.09.2026 · поставка интеграции отложена до пост-MVP, шов сохранён как основание возврата ·
-  прежний `ADR-0009`.
-- 07.10.2026 · решение снято целиком вместе с швом · Р-3 (`docs/journal/decisions.md`).
+A watch app was rejected as unnecessary for a lite wearable that mirrors notifications by itself.
+Keeping the seam "for later" would have cost maintenance and supported the illusion of a working
+feature, so the seam was removed instead of postponed.

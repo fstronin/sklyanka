@@ -1,74 +1,53 @@
-# ADR-0014. Сквозные походы: канал, файловое состояние, место в воротах
+# 0014 — End-to-end journeys: channel, file state, place in the run
 
-## Статус
+Status: Accepted
 
-Действует. Решение принято 11.10.2026 (Р-58), задача SKL-140.
+## Context
 
-## Решение
+Screen checks run against an in-memory database, and the acceptance layer runs on the JVM with
+neither a screen nor a platform. Neither can testify that a person closed the app and came back, that
+a completed setting survived process death, or that the alarm snapshot was restored from
+device-protected storage. Those claims need the real platform and a real file.
 
-Приложение получает **четвёртый уровень проверки — походы**: сквозные проходы человека по
-приложению на настоящей платформе. Решение состоит из трёх частей, и каждая выбрана против
-альтернативы, которая выглядела дешевле.
+## Decision
 
-**1. Канал — инструментальный слой `app/src/androidTest`, новый пакет `screen/journey`.**
-Настоящий `MainActivity`, настоящая навигация, настоящая вёрстка, настоящее хранилище.
-Альтернативы: экранный стенд на Robolectric (нет платформы) и сценарный прогон приёмки на JVM
-(нет ни экрана, ни платформы) — оба уже покрыты и новых свидетельств о поведении человека
-не дают; живое устройство остаётся ручному прогону.
+The application gets a fourth verification level, journeys: end-to-end passes of a person through the
+app on the real platform. Each part was chosen against an alternative that looked cheaper.
 
-**2. Состояние — настоящий файл базы и файл `DataStore`, только для походов.** Экранные
-проверки остаются на базе в памяти, как были. Что решает, что открыть, — **аргумент
-инструментовки** `journeyStorage=file`, а не имя класса: один APK служит обоим наборам,
-и граф собирается одинаково. Прогон класса похода без аргумента падает с внятным отказом,
-а не тихо уходит в память.
+1. **Channel: the instrumentation layer `app/src/androidTest`, package `screen/journey`.** Real
+   `MainActivity`, real navigation, real layout, real storage. Rejected: a Robolectric screen harness,
+   which has no platform, and a JVM acceptance run, which has neither screen nor platform; both exist
+   already and add no evidence about human behavior. A live device remains a manual run.
+2. **State: a real database file and a real `DataStore` file, for journeys only.** Screen checks stay
+   on the in-memory database. The instrumentation argument `journeyStorage=file` decides the storage,
+   not the class name: one APK serves both suites and the graph is assembled identically. A journey
+   class started without the argument fails with a clear refusal instead of silently running in
+   memory.
+3. **Place: the `journey` group of the emulator harness, a pre-release run.** Every push runs
+   `verifyAll`, which only compiles instrumentation checks; journeys are not and cannot be part of it,
+   because `verifyAll` runs without a device (ADR-0007) and a journey run lasts tens of minutes. A
+   green journey set is a condition of the release build, not of every commit.
 
-**3. Место в воротах — группа `journey` оснастки эмулятора, предвыпускной прогон.**
-Каждый push прогоняет `verifyAll`, который инструментальные проверки **только компилирует**;
-походы в него не входят и входить не могут: `verifyAll` идёт без устройства (ADR-0007), а прогон
-походов длится десятки минут. Зелёный набор — условие выпускной сборки, а не каждого коммита.
+Process death cannot be reproduced inside one process, so the survival relay is two runs: the first
+writes state, the second, a separate instrumentation launch, reads it. A second Hilt graph was
+rejected: it would require uninstalling modules for journey classes and keeping two similar graph
+descriptions, while the argument describes exactly one difference, where the database lives.
 
-## Основание
+One honesty rule overrides convenience: a defect found by a journey is not hidden. The assertion is
+written as the requirement demands and stays red until fixed; the suite never adapts to current
+behavior.
 
-**Почему не память.** Поход обещает то, чего память не проверяет: «человек закрыл приложение
-и вернулся», «признак пройденной настройки пережил смерть процесса», «снимок будильников
-восстановлен из DE-хранилища». На памяти эти утверждения были бы пересказом кода: они
-зеленеют независимо от того, что записано на диск. Эстафета выживания (фаза 1 пишет состояние,
-фаза 2 идёт **отдельным запуском инструментовки**) существует ровно потому, что внутри одного
-процесса смерть процесса не воспроизводится.
+## Consequences
 
-**Почему аргумент инструментовки, а не второй граф.** Второй набор Hilt-модулей потребовал бы
-снять подмены у классов походов (`@UninstallModules`) и держать два похожих описания графа;
-аргумент же описывает ровно одно отличие — где лежит база — и не касается уже зелёных проверок.
-Цена честная и названа: выбор хранилища — ветка в тестовой подмене, поэтому её стерегут
-и шаг приёмки (аргумент передаётся каждым запуском группы), и отказ в базе походов.
-
-**Почему не в `verifyAll`.** Единый прогон обязан оставаться возможным на машине без эмулятора:
-он собирает, а не исполняет. Добавление туда группы походов сделало бы `verifyAll` зависящим
-от образа и удлинило бы его на десятки минут — то есть обесценило бы его как быструю проверку
-перед отправкой.
-
-Правило честности поверх всего: **дефект, найденный походом, не прячется**. Утверждение
-записывается так, как требует норма, и остаётся красным до отдельной задачи — набор не
-подстраивается под текущее поведение продукта.
-
-## Следствия
-
-- Реестр поверхностей ведётся в `docs/tasks/SKL-140/TDD.md` §6–§7; полноту стерегут шаги приёмки
-  (`JourneyHarnessSteps`): поверхность без строки, поход без класса, класс без кадра — красный
-  прогон. Новый экран обязан получить строку в том же коммите, что и сам экран.
-- Каждый новый файл походов обязан быть назван в реестре инструментальных проверок
-  (`docs/archive/tasks/SKL-24/TDD.md` §13) — правило SKL-96/97/98 на походы не отменилось.
-- Походы исключены из групп `ui` и `data` (`notPackage`): экранная группа остаётся быстрой,
-  иначе «одна команда экранного прогона» перестала бы быть минутной.
-- Системные события (перезагрузка, Doze, смена пояса и часов, полночь, обновление, фактическая
-  доставка) походами не проверяются: это испытания И-1…И-16 оснастки. Разделение зафиксировано
-  строками «вне набора» с причинами, чтобы пробел читался как названный, а не как забытый.
-- Обстановка, которую ставит не человек (выдача и отзыв прав, масштаб шрифта, локаль устройства),
-  ставится скриптом группы: у состояния «права не выданы» и «масштаб шрифта и чужая локаль» свои
-  запуски, иначе падение нельзя было бы отнести ни к классу, ни к обстановке.
-- Группа `journey` имеет свой отчёт и сводку (`build/emulator/api<N>/journey-summary.txt`) рядом
-  с отчётами других групп.
-
-## Пересмотры
-
-- прочерк
+- The surface registry is kept with the journeys. Acceptance steps guard completeness: a surface
+  without a row, a journey without a class, a class without a frame means a red run. A new screen gets
+  a row in the same commit.
+- Each new journey file is named in the instrumentation registry of checks.
+- Journeys are excluded from the `ui` and `data` groups, so the screen group stays a one-minute run.
+- System events (reboot, Doze, time-zone and clock change, midnight, update, actual delivery) are not
+  covered by journeys; they remain harness trials. The split is recorded as explicit "out of suite"
+  rows with reasons, so a gap reads as named rather than forgotten.
+- Environment that a person does not set (permission grant and revoke, font scale, device locale) is
+  set by a group script, with a separate run per state, so a failure is attributable to the class or to
+  the environment.
+- The `journey` group has its own report and summary next to those of the other groups.

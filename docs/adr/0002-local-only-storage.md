@@ -1,53 +1,38 @@
-# ADR-0002. Хранение только на устройстве
+# 0002 — Local-only storage of tracking data
 
-## Статус
+Status: Accepted. Tracking data is stored on the device only. Network access in the artifact is
+allowed solely through declared network contours (ADR-0017); it carries no health content.
 
-Действует в части «данные учёта хранятся только на устройстве». Сетевая часть пересмотрена
-01.11.2026: сеть в сборке появилась контуром аналитики (Р-93), серверный присмотр выносит
-на сервер зашифрованное содержание (Р-95); архитектура сети — `ADR-0017`. Прежнее сужение Р-1
-допускало сеть только в платном контуре; платного контура нет (Р-94), `ADR-0010` снят.
+## Context
 
-## Решение
+The data is medical: medication names, doses and schedules reconstruct a diagnosis. Cloud
+synchronization would pull in a server, accounts, consent, encryption, two store jurisdictions and
+liability for a leak, while moving to a new phone is solved by a single file. The owner of the phone
+is also often the caregiver of the person whose intakes are tracked, so the content has to stay on
+one device by design.
 
-- Все данные хранятся в локальной базе Room на устройстве.
-- Резервное копирование Android отключено (`android:allowBackup="false"`,
-  `app/src/main/AndroidManifest.xml:125`) — иначе копия ушла бы в облако в обход решения
-  (НФТ-20).
-- Единственный способ переместить данные — файл переноса в двух режимах, «добавить к текущим»
-  и «заменить всё» (ПЕР-1…ПЕР-37).
-- Сетевого кода в free-сборке нет: `INTERNET` в её манифесте отсутствует и запрещён гейтом
-  (`build-logic/.../AnalyticsContourRules.kt`). Разрешение может появиться только в `pro`-варианте,
-  который не поставляется (`ADR-0016`, Р-86).
-- Названия лекарств, дозировки, расписания, времена, статусы приёмов, остаток, профили,
-  история, файл переноса и журнал срабатываний не покидают устройство никогда. ИИ-ввода
-  в продукте нет (Р-86), поэтому наружу не уходит ничего.
+## Decision
 
-## Основание
+- All tracking data is stored in the local Room database on the device.
+- Android backup is disabled (`android:allowBackup="false"`): otherwise a copy would leave for the
+  cloud around this decision.
+- The only way to move data is the transfer file, in two modes: "add to current" and "replace
+  everything".
+- The tracking core has no network code. `INTERNET` is declared only by a network contour present in
+  the artifact: the analytics contour (ADR-0017), and in the paid build variant also the store
+  client. The analytics contour sends no medication names, doses, schedules, times, intake statuses,
+  stock, profiles, history, transfer file or delivery log.
+- Those values never leave the device in any build. There is no account, no synchronization and no
+  AI input.
 
-Данные приложения медицинские: по названиям, дозам и расписанию восстанавливается диагноз.
-Облачная синхронизация потянула бы сервер, учётные записи, согласия, шифрование, юрисдикции
-двух магазинов и ответственность за утечку — при том, что переезд решается одним файлом
-(Ц-6, П-3, П-5).
+## Consequences
 
-## Следствия
-
-- Резервной копии не существует: потеря телефона — потеря истории, если файл не выгружен.
-  Экран переноса говорит об этом прямо и не создаёт впечатления «данные где-то сохранены»
-  (НФТ-13, П-7).
-- Перенос данных — обязательная функция, а не удобство: некорректная выгрузка стоит данных
-  (ПЕР-16, ПЕР-27, ПЕР-36).
-- Файл переноса не шифруется (ПЕР-33), предупреждение при выгрузке обязательно (ПЕР-34).
-- Синхронизации между устройствами нет: профили живут на одном телефоне по замыслу (П-2).
-- Политика конфиденциальности раскрывает фактическое: приложение не отправляет ничего.
-- Нулевой трафик free-сборки проверяем: отсутствие `INTERNET` в слитом манифесте — гейт
-  `verifyManifestFree` (НФТ-14, НФТ-15, НФТ-16).
-
-## Пересмотры
-
-- 01.10.2026 · аналитический контур с `INTERNET` во всех сборках · прежнее ПМ-19
-  (`docs/archive/product-decisions.md`), механизм — прежняя редакция `ADR-0011`.
-- 04.10.2026 · вендор аналитики убран из релиза, `INTERNET` снова запрещён · прежнее ПМ-31.
-- 07.10.2026 · аналитический контур вырезан целиком (Р-4); сеть — только платный контур
-  ИИ-ввода и проверка подписки (Р-1, Р-7, `ADR-0010`).
-- 17.10.2026 · платный контур и ИИ-ввод сняты; сеть в free отсутствует, `pro` не поставляется
-  (Р-86, `ADR-0016`).
+- No backup exists: losing the phone loses the history unless the transfer file was exported. The
+  transfer screen says so plainly and never suggests that data is stored somewhere else.
+- Data transfer is a mandatory feature, not a convenience: a failed export costs data.
+- The transfer file is not encrypted, so a warning during export is mandatory.
+- There is no synchronization between devices: profiles live on one phone by design.
+- The privacy policy states the facts: tracking content is not sent anywhere; the only outgoing
+  traffic is the analytics contour, which carries no health content.
+- "The tracking core makes no network call" is verified on the merged artifact by the manifest
+  checks, not by review.

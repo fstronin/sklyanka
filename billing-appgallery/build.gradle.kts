@@ -1,13 +1,13 @@
-// billing-appgallery — платный сетевой контур «Склянки Про» (SKL-122, ADR-0010).
+// billing-appgallery holds the paid network contour of the pro variant (ADR-0010).
 //
-// Модуль знает вендора и не знает продукта: он исполняет порт `ProStore` из `core-domain`
-// (товары, покупка, восстановление, состояние) поверх AppGallery IAP. Ни экраны, ни домен
-// Huawei не видят — иначе витрину нельзя было бы проверить приёмкой без магазина,
-// а песочница перестала бы быть ручной проверкой (docs/tasks/SKL-122/task.md).
+// The module knows the vendor and not the product: it implements the `ProStore` port of
+// `core-domain` (products, purchase, restore, state) over AppGallery IAP. Neither the screens
+// nor the domain see Huawei; otherwise the storefront could not be verified by acceptance
+// without the store, and the sandbox would stop being a manual check.
 //
-// Один из двух сетевых контуров сборки (SKL-165, ADR-0017 п. 1): `INTERNET` объявляют
-// этот модуль и `core-analytics`, и только они. `core-domain` и `core-data` о контуре
-// не знают вовсе.
+// One of the two network contours of the build (ADR-0017 item 1): `INTERNET` is declared by this
+// module and by `core-analytics`, and by nothing else. `core-domain` and `core-data` do not know
+// the contour at all.
 
 plugins {
     id("sklyanka.android.library")

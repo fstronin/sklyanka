@@ -1,10 +1,10 @@
-# Обязательный гейт (Р-19, docs/norm/03-roadmap.md): единый проверочный прогон
-# на каждый push и pull_request в main. Задача verifyAll собирается в
-# build-logic/convention (ProjectChecksConventionPlugin): сборка всех модулей,
-# статический анализ, проверки состава артефактов, все уровни тестов JVM и
-# приёмочные сценарии. Инструментальные тесты здесь только компилируются
-# (assembleFreeDebugAndroidTest/assembleProDebugAndroidTest); их запуск на эмуляторе —
-# отдельный необязательный workflow android-test.yml по явному запуску.
+# The mandatory gate: one verification run on every push and pull_request to main.
+#
+# The `verifyAll` task is assembled in `build-logic/convention` (ProjectChecksConventionPlugin):
+# the build of every module, static analysis, the artifact composition checks, all JVM test
+# levels and the acceptance scenarios. Instrumented tests are only compiled here
+# (assembleFreeDebugAndroidTest/assembleProDebugAndroidTest); running them on an emulator is a
+# separate optional workflow, android-test.yml, started explicitly.
 name: verify
 
 on:
@@ -13,7 +13,7 @@ on:
   pull_request:
     branches: [main]
 
-# Один прогон на ветку: новый push отменяет устаревший, а не встаёт в очередь рядом.
+# One run per branch: a new push cancels the outdated run instead of queueing next to it.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -27,7 +27,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # JDK 17 — целевая версия JVM всего проекта (ProjectDefaults.JVM_TARGET).
+      # JDK 17 is the JVM target of the whole project (ProjectDefaults.JVM_TARGET).
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:

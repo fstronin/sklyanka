@@ -1,48 +1,31 @@
-# ADR-0011. Аналитический сетевой контур во всех сборках
+# 0011 — Analytics network contour in all builds
 
-## Статус
+Status: Superseded by ADR-0017. The client analytics contour was withdrawn and later returned in a
+different form: consent-based analytics without A/B experiments, described in ADR-0017. This
+document records a decision that is no longer a rule of the product.
 
-Снят решением Р-4 (07.10.2026) и **возвращён в другой редакции** 01.11.2026: клиентскую
-аналитику вернуло решение Р-93, архитектура сети — `ADR-0017` (два сетевых контура, согласие,
-запрет GMS/Firebase). Тело документа остаётся историей: A/B-эксперименты по-прежнему сняты.
+## Context
 
-## Решение
+An analytics contour with a vendor SDK, a consent check and A/B experiments was once planned for every
+build from the first publication. The vendors did not support it: HUAWEI Analytics was closed to new
+projects on 30.06.2024, and A/B Testing was removed from AppGallery Connect version 15.0.1 on
+27.03.2025. No event was ever collected, the implementation ran behind a no-op sink, and the dead
+contour cost maintenance and confused the composition of the artifact.
 
-Не действует. Аналитического контура в продукте нет: ни сбора событий, ни согласия
-на аналитику, ни A/B-экспериментов, ни вендора (`docs/norm/01-product.md` §5.3, §6).
-Сетевого контура в продукте тоже нет (Р-86); прежний платный контур снят, `ADR-0010` заменён
-`ADR-0016`.
+## Decision
 
-## Основание
+Analytics, a consent check and A/B experiments were to be part of every build: an `Analytics` port
+with a sink, a sixteen-event catalog, a consent check with its own storage, a consent screen, an
+"Analytics" row in settings, and vendor SDK behind the port.
 
-Вендора не существует: HUAWEI Analytics закрыт для новых проектов (30.06.2024), A/B Testing
-снят из AppGallery Connect глобально (15.0.1, 27.03.2025). Ни одного события не собиралось,
-реализация была отдана заглушке `NoOpAnalytics`, а мёртвый контур стоил сопровождения
-и путал состав сборки (Р-4).
+## Consequences
 
-## Следствия
-
-- Удаляются: порт `Analytics` и `AnalyticsSink`, `NoOpAnalytics`, каталог из 16 событий,
-  гейт `ConsentedAnalytics`, хранилище согласия `sklyanka_analytics_consent`, модуль
-  `core-analytics`, экран согласия, строка «Аналитика» в настройках, зарезервированные
-  события воронки подписки (Р-4, `docs/norm/03-roadmap.md` фаза 0).
-- Признаки успеха измеряются без клиентской аналитики: журнал срабатываний и ручной прогон
-  для У-1…У-5, история на устройстве для приверженности, консоль AppGallery для оценки
-  и удержания (`docs/norm/01-product.md` §8).
-- `INTERNET` в free-манифесте отсутствует и запрещён гейтом
-  (`build-logic/.../AnalyticsContourRules.kt`); белый список координат пуст.
-  Разрешение возможно только в невыпускаемом `pro`-варианте (`ADR-0016`, Р-86).
-- Отчёта разработчику в продукте нет (Р-86); заглушка, отвечавшая «отправлено» без отправки,
-  удалена (П-7).
-- Возврат аналитики возможен только новым решением Р-N с названным провайдером, политикой,
-  согласием и уведомлением Роскомнадзора (Р-4).
-
-## Пересмотры
-
-- 01.10.2026 · принято: аналитика во всех сборках с первой публикации · прежнее ПМ-19
-  (`docs/archive/product-decisions.md`).
-- 01.10.2026 · в тот же контур включены A/B-эксперименты · прежнее ПМ-20.
-- 04.10.2026 · вендор и A/B убраны из релиза, механизм сохранён с заглушкой, `INTERNET`
-  снова запрещён · прежнее ПМ-31, задача SKL-100.
-- 07.10.2026 · контур вырезан целиком вместе с механизмом · Р-4 (`docs/journal/decisions.md`).
-- 17.10.2026 · сетевой контур снят вместе с платной моделью · Р-86, `ADR-0016`.
+- The whole mechanism was removed: the port and its no-op implementation, the event catalog, the
+  consent check and its storage, the `core-analytics` module, the consent screen and the settings row.
+- A stub that answered "sent" without sending was removed: a status "sent" may only mean the sending
+  happened.
+- A/B experiments remain out of scope in the current contour as well.
+- The current analytics arrangement is defined by ADR-0017: consent-based, no health content, with
+  an explicit provider and a declared network contour.
+- Any return of a different analytics arrangement requires a new ADR naming the provider, the
+  policy, the consent flow and the notification to the regulator.

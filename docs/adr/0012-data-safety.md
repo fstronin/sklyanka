@@ -1,76 +1,53 @@
-# ADR-0012. Сохранность данных: миграции, копия перед обновлением, проверки целостности
+# 0012 — Data safety: migrations, a copy before upgrade, integrity checks
 
-## Статус
+Status: Accepted
 
-Принят 09.10.2026 (Р-44). Ранее — черновик от 02.10.2026 (задача SKL-94). Пункты, видимые
-человеку (экран нехватки места, диагностика данных), — за заказчиком.
+## Context
 
-## Решение
+The database is the only copy: there is no cloud, Android backup is disabled, and the transfer file
+is the only other one. A transaction guarantees all or nothing, not correctness: a migration over a
+misread schema, or a build that accepts a newer database, destroys history without a visible error.
 
-1. **Миграции только вперёд.** Изменение схемы — новая версия базы, новый `Migration(N, N+1)` и новый
-   JSON в `core-data/schemas/`; выпущенный JSON не редактируется и не удаляется, цепочка без пропусков,
-   обратных миграций нет, единственный откат — восстановление копии (п. 3) с предыдущей сборкой. Каждый
-   переход проверяется на реальной базе предыдущей версии и на объёмной базе профиля НФТ-9 со сравнением
-   записей и контрольных значений до и после, плюс цепочкой с любой выпущенной версии (НФТ-14, МГ-1, МГ-3).
-2. **Запрещено:** `fallbackToDestructiveMigration*` (МГ-2, линт `DestructiveRoomMigration`);
-   `DROP TABLE` для таблиц с данными человека; миграции-«чистки» косметических расхождений;
-   пересчёт истории «для порядка» без требования и отдельного теста; сеть, системные часы
-   по месту, медицинские данные в журналах (НФТ-19, НФТ-42, НФТ-48).
-3. **Копия перед миграцией.** До первого открытия Room проверяется `PRAGMA user_version`; если предстоит
-   миграция, после `PRAGMA wal_checkpoint(FULL)` снимается одна копия базы в `noBackupFilesDir` с версией
-   «от» в имени. Резервной она не называется, в файл переноса не входит (НФТ-13, ПЕР-36) и живёт до
-   следующей миграции. Места не хватило — миграция не выполняется, человек видит число недостающих мегабайт.
-4. **След и проверки.** Применение миграции пишется в журнал операций (`MIGRATION_APPLIED`:
-   версии, длительность, факт копии, исход) без медицинских данных (НФТ-19). После миграции —
-   `PRAGMA quick_check` и `foreign_key_check`; не чаще раза в сутки и вне главного потока —
-   дешёвые проверки ИНВ-*. Реакция: сообщить и сохранить, не чинить молча; автоматический
-   ремонт запрещён (МГ-6), напоминания проверка не блокирует (П-1).
-5. **Деструктивные операции — только мягкое удаление.** Лекарство не удаляется физически никогда: архив
-   (`archived_at` + причина) и удаление до первой отметки «принято» (`deleted_at`, ИНВ-22). `DELETE` допустим
-   в исчерпывающем списке: замена всех данных при переносе (ПЕР-16, ПЕР-27), удаление чужого профиля,
-   пересоздание будущих `PENDING` при правке расписания; новая операция начинается с правки этого ADR. Снятие записи «по потребности» (Р-46, SKL-127) списка не расширяет: запись помечается моментом `revoked_at` и остаётся в базе — это третий мягкий признак рядом с `archived_at` и `deleted_at`, а не удаление.
-   Перенос атомарен: проверка файла до единой записи, инварианты снимка до применения, одна транзакция
-   на всю загрузку, перевыдача идентификаторов внутри неё (ПЕР-27); состояние вне базы пишется после коммита.
-6. **Регламент выпуска.** При изменении `SklyankaDatabase.VERSION` до выпуска обязательны: новый JSON
-   закоммичен и старые не изменены, сгенерированная схема совпадает с закоммиченной, группа `migration`
-   оснастки эмулятора зелёная, объёмный и цепочный тесты пройдены, `DestructiveRoomMigration` — ноль
-   срабатываний, обновление «поверх релизной сборки» проверено вручную.
+## Decision
 
-7. **Установка старой сборки поверх новой базы.** Перед открытием Room сравнивается фактическая
-   `PRAGMA user_version` с версией, которую знает сборка. Если база новее ожидаемой, схема не
-   открывается и данные не меняются: показывается блокирующий экран «база новее, обновите
-   приложение». Разрушающая деградация запрещена (п. 2). Будильники, сработавшие в этом состоянии,
-   отметок не создают и карточку приёма не показывают: они сообщают о необходимости обновления
-   (П-7) — напоминание, не способное отработать честно, не лжёт.
+1. **Forward-only migrations.** A schema change means a new version, a new `Migration(N, N+1)` and a
+   new JSON in `core-data/schemas/`; a released JSON is never edited or deleted, the chain has no
+   gaps, and down migrations do not exist. The only rollback is restoring the copy from item 3 with
+   the previous build. Every transition is tested on a real database of the previous version and on
+   the volume database by comparing records and check values, plus a chain test from any released
+   version.
+2. **Forbidden:** `fallbackToDestructiveMigration*` (lint `DestructiveRoomMigration`), `DROP TABLE`
+   for tables with person data, cosmetic-only migrations, history recalculation without a requirement
+   and a test, network access, reading the system clock in place, medical data in the log.
+3. **Copy before migration.** `PRAGMA user_version` is read before the first Room open. If a
+   migration is pending, one copy is taken into `noBackupFilesDir` after
+   `PRAGMA wal_checkpoint(FULL)`, with the "from" version in the name; it is not a backup, is not in
+   the transfer file, and lives until the next migration. Without space the migration does not run
+   and the person sees the number of missing megabytes.
+4. **Trace and checks.** `MIGRATION_APPLIED` is logged with versions, duration, whether a copy was
+   taken and the outcome, without medical data. `PRAGMA quick_check` and `foreign_key_check` run
+   after a migration, and cheap checks at most once a day off the main thread. Findings are reported
+   and data is preserved: automatic repair is forbidden, checks never block reminders.
+5. **Soft deletion only.** A medication is never physically deleted: archive (`archived_at` with a
+   reason) or deletion before the first "taken" mark (`deleted_at`). `DELETE` is allowed only for
+   replacing all data during a transfer, deleting a foreign profile, and recreating future pending
+   intakes after a schedule change; any new operation starts with an amendment to this ADR.
+   Withdrawing a PRN record sets `revoked_at` and keeps the row. A transfer is atomic: validation
+   before a single record, snapshot invariants before applying, one transaction for the load,
+   identifiers reissued inside it, external state written after commit.
+6. **Release procedure.** A version change ships one package: the new JSON committed and the old ones
+   unchanged, the generated schema equal to the committed one, the harness migration group green,
+   volume and chain tests passing, zero `DestructiveRoomMigration` hits, and a manual upgrade over
+   the release build.
+7. **Old build over a newer database.** The actual `PRAGMA user_version` is compared with the version
+   the build knows before Room opens. A newer database is not opened and its data is untouched: a
+   blocking screen says the database is newer and the app must be updated, and destructive
+   degradation is forbidden. Alarms firing in this state create no marks, show no intake card, and
+   report that an update is needed.
 
-## Основание
+## Consequences
 
-Приложение хранит единственную копию того, что нельзя восстановить по памяти: облака нет, резервное
-копирование Android отключено (НФТ-20), пользовательская копия одна — файл переноса. Транзакционность
-миграции гарантирует «всё или ничего», но не «правильно».
-
-## Следствия
-
-- Работает: экспорт схемы на каждую версию, миграции и их тесты, линты `DestructiveRoomMigration`
-  и `MedicalDataInJournal`, объёмная база НФТ-9 (`VolumeTest`), внешние ключи `RESTRICT` (`IntegrityTest`),
-  страховочная выгрузка перед «Заменить всё» (ПЕР-16, ПЕР-36), журнал операций в той же транзакции (НФТ-19).
-- Реализовано: отказ от работы на базе новее ожидаемой (п. 7, SKL-128): версия читается
-  до открытия Room, схема не открывается, экран и уведомление называют причину, будильники
-  отметок не создают.
-- Реализовано: копия перед миграцией с проверкой места и отказом при нехватке (блокирующий экран
-  называет число мегабайт), след `MIGRATION_APPLIED` с версиями, длительностью и фактом копии,
-  проверки `quick_check` и `foreign_key_check` после миграции и не чаще раза в сутки, объёмный
-  и цепочный тесты (пп. 3, 4, 6, SKL-94): `data/room/{MigrationCopyStore,DatabaseUpgrade,DatabaseMaintenance,DatabaseIntegrityCheck,MigrationCopyBudget}.kt`,
-  `startup/DatabaseNotEnoughSpaceScreen.kt`.
-- Не реализовано: показ находок проверки человеку (экран диагностики данных) — за заказчиком.
-- Изменение схемы — один неделимый пакет: версия + JSON + `Migration` + тест перехода + объёмный
-  тест + запись в журнал + правка нормативного документа; список ревью — в скилле
-  `.claude/skills/sklyanka-android`, требования МГ-1…МГ-7 — в `docs/norm/04-behavior.md` §1.6.
-
-## Пересмотры
-
-- 07.10.2026 · перенесён в `docs/v2/13-adr/` без изменения статуса; схема на эту дату — версия 7, семь JSON, шесть миграций · сверка `docs/research/as-is.md` §2.
-- 08.10.2026 · каталог действующих ADR — `docs/adr/`, файл `0012-data-safety.md` (реструктуризация документации по domain-modeling) ·
-- 09.10.2026 · принят как норматив (Р-44); добавлен п. 7 об установке старой сборки поверх новой базы ·
-- 09.10.2026 · п. 7 реализован задачей SKL-128 ·
-- 09.10.2026 · пп. 3, 4, 6 реализованы задачей SKL-94 ·
+- Schema export per version, migration tests, volume and integrity tests, both lints, a safety export
+  before "replace everything", and the operation log written in the same transaction.
+- A schema change is one indivisible package: version, JSON, `Migration`, transition test, volume
+  test, log entry and the amendment to this ADR.

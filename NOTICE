@@ -1,0 +1,12 @@
+Sklyanka
+Copyright 2026 Stohastika
+
+This product includes software developed at Stohastika
+(https://stohastika.ru).
+
+Sklyanka is a medication tracker for Android. It is not a medical device: it does
+not give treatment recommendations, does not select dosages and does not check
+drug interactions. Nothing in this repository is medical advice.
+
+Health data entered into the app is stored on the device of its user. The
+repository contains no user data.

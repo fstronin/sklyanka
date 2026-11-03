@@ -1,122 +1,132 @@
-# Скриптовый визуальный прогон — порядок запуска
+# Scripted visual run
 
-Оснастка задачи SKL-92 поверх контактных листов SKL-91. Адресовано человеку, который
-хочет снять листы, утвердить эталон и понять, что изменилось, не читая Gradle-команды
-и не сравнивая сто тридцать восемь картинок глазами. Дизайн и обоснования — `docs/archive/tasks/SKL-92/TDD.md`.
+This harness lives on top of the localization contact sheets: it captures a run, approves a
+baseline, and shows what changed, without reading Gradle commands or comparing a hundred
+images by eye. It covers the localization matrix in `docs/spec/quality.md` §1: six interface
+languages across the screens.
 
-**Граница, о которой нельзя забыть.** Листы рисует Robolectric — имитация Android, а не
-EMUI. Шрифты, CJK, системные вставки и вендорские особенности на JVM не проверяются;
-совпадение с эталоном не доказывает правильность, а лишь фиксирует отсутствие изменений.
-Контактные листы — артефакт визревью, а не проверка продукта. Эталоны Roborazzi из
-`*/screenshots/` (SKL-24) к этому прогону отношения не имеют и не трогаются.
+**The boundary to keep in mind.** The sheets are drawn by Robolectric, a simulation of
+Android, not by EMUI. Fonts, CJK, system insets and vendor behavior are not checked on the
+JVM; a match with the baseline does not prove correctness, it only records that nothing
+changed. A contact sheet is a review artifact, not a product check. The Roborazzi baselines
+in `*/screenshots/` are a separate mechanism and are not touched by this harness.
 
-## 1. Быстрый цикл
+## 1. Short cycle
 
 ```bash
 cd tools/visual
 
-./capture.sh                          # снять прогон (имя — отметка времени)
-./capture.sh --run i18n-check         # снять прогон с именем
-./capture.sh --run i18n-check --force # заменить уже снятый прогон
+./capture.sh                          # capture a run (the name is a timestamp)
+./capture.sh --run i18n-check         # capture a run with a name
+./capture.sh --run i18n-check --force # replace an existing run
 
-./approve.sh i18n-check               # после просмотра: сделать прогон эталоном
-./diff.sh                             # сравнить последний прогон с эталоном
-./diff.sh i18n-check                  # сравнить конкретный прогон
+./approve.sh i18n-check               # after review: make the run the baseline
+./diff.sh                             # compare the latest run with the baseline
+./diff.sh i18n-check                  # compare a specific run
 ```
 
-`diff.sh` печатает путь отчёта и возвращает код: `0` — различий нет, `1` — есть
-`changed`/`new`/`missing`, `2` — отказ (эталон не утверждён, прогонов нет, прогон
-не найден). Отчёт и картинки различий — в `<прогон>/diff/`.
+`diff.sh` prints the report path and returns a code: `0` means no differences, `1` means
+there are `changed`, `new` or `missing` sheets, and `2` means a refusal (baseline not
+approved, no runs, run not found). The report and the difference images are written under
+`<run>/diff/`.
 
-Перед `approve.sh` прогон обязан быть просмотрен — человеком или визуальным проверяющим
-(`.opencode/agent/visual-verifier.md`): утверждение эталона без просмотра легализует дефект.
+A run must be reviewed before `approve.sh`: by a person or by a visual verifier. Approving a
+baseline that nobody looked at legalizes a defect.
 
-## 2. Где что лежит
+## 2. Layout
 
-| Путь | Что это | В git |
+| Path | What it is | In git |
 |---|---|---|
-| `tools/visual/runs/<имя>/` | снятый прогон: PNG по языкам, `manifest.sha256`, `meta.txt` | нет, игнорируется |
-| `tools/visual/runs/<имя>/diff/` | отчёт `report.md` и картинки различий | нет, игнорируется |
-| `tools/visual/baselines/<язык>/*.png` | утверждённые эталоны | нет, игнорируется |
-| `tools/visual/baselines/manifest.sha256` | манифест эталона: sha256 + путь | **да** |
-| `app/build/visual-review/<язык>/*.png` | свежие листы теста SKL-91 | вне git (в `build/`) |
+| `tools/visual/runs/<name>/` | a captured run: PNG per language, `manifest.sha256`, `meta.txt` | no, ignored |
+| `tools/visual/runs/<name>/diff/` | `report.md` and difference images | no, ignored |
+| `tools/visual/baselines/<language>/*.png` | approved baselines | no, ignored |
+| `tools/visual/baselines/manifest.sha256` | baseline manifest: sha256 and path | **yes** |
+| `app/build/visual-review/<language>/*.png` | fresh sheets from the generator test | outside git (`build/`) |
 
-**Почему PNG эталонов локальны.** Сто тридцать восемь картинок весят десятки мегабайт и
-в диффе ревью не читаются. В git едет манифест: по нему видно, что эталон менялся, и
-заметно, если PNG поправили в обход `approve.sh` (тогда манифест расходится с файлами —
-`diff.sh` пишет об этом в «Замечаниях»).
+**Why baseline PNGs are local.** The images weigh tens of megabytes and are not readable in
+a review diff. Git carries the manifest: it shows that the baseline changed and makes a PNG
+edited around `approve.sh` noticeable, because the manifest then disagrees with the files and
+`diff.sh` says so under "Notes".
 
-Формат манифеста — строки `<sha256>  <относительный путь>`, отсортированные по пути:
+The manifest format is one line per sheet, `<sha256>  <relative path>`, sorted by path:
 
 ```
 9f2c…  de/splash.png
 1a04…  en-US/history.png
 ```
 
-## 3. Что делает каждая команда
+`meta.txt` records the run name, capture time, git revision, Java version, sheet count and
+the language list.
 
-- `capture.sh` удаляет прежние листы в `app/build/visual-review`, запускает **только**
-  тест `LocalizationContactSheetTest` с `-Psklyanka.visualReview=true` и `--rerun`,
-  копирует результат в `runs/<имя>`, пишет манифест и `meta.txt` (дата, ревизия git,
-  версия Java, число листов, языки). Существующий прогон без `--force` не затирается.
-- `approve.sh` заменяет эталон целиком: PNG прогона копируются в `baselines/`
-  с сохранением языковых подкаталогов, манифест пересобирается по файлам. Лишние PNG
-  прежнего эталона исчезают — иначе удалённый экран навсегда оставался бы в `missing`.
-- `diff.sh` пересчитывает хеши обеих сторон заново (подменённый вручную PNG обязан быть
-  найден), классифицирует листы и при наличии инструмента допуска делает попиксельное
-  сравнение изменённых. Последний прогон без аргумента выбирается по времени снятия из
-  `meta.txt` (фолбэк — время каталога с предупреждением): запись `diff/` не делает
-  старый прогон «последним».
+## 3. What each command does
 
-## 4. Инструмент допуска
+- `capture.sh [--run NAME] [--force]` deletes the previous sheets in
+  `app/build/visual-review`, runs **only** `LocalizationContactSheetTest` through
+  `:app:testFreeDebugUnitTest` with `-Psklyanka.visualReview=true` and `--rerun`, copies the
+  result to `runs/<name>`, writes the manifest, and checks that the manifest line count
+  matches the PNG count. An existing run is not overwritten without `--force`.
+- `approve.sh <run>` replaces the baseline as a whole: the PNGs are copied to `baselines/`
+  keeping the language subdirectories, and the manifest is rebuilt from the files. Extra
+  PNGs of the previous baseline disappear; otherwise a removed screen would stay in
+  `missing` forever. It warns when the run manifest disagrees with its files.
+- `diff.sh [<run>]` recomputes the hashes of both sides (a PNG edited by hand must be
+  found), classifies the sheets as `changed`, `new` or `missing`, and runs a pixel
+  comparison of changed sheets when a tolerance tool is available. Without an argument the
+  latest run is chosen by the capture time in `meta.txt`, with the directory time as a
+  fallback and a warning; writing `diff/` does not make an old run "latest".
 
-| Инструмент | Когда используется | Что даёт |
+## 4. Tolerance tool
+
+| Tool | When it is used | What it gives |
 |---|---|---|
-| `python3` + Pillow | если `python3 -c "import PIL"` проходит | число различившихся пикселей, доля, максимум разницы; `diff/<язык>/<экран>.diff.png` — текущий лист с красной подсветкой |
-| `magick` / `compare` (ImageMagick) | если Pillow нет | `compare -metric AE -fuzz <порог>%`, картинка различий |
-| ничего | если нет ни того, ни другого | сравнение только по sha256; отчёт прямо говорит, что допуск не применён |
+| `python3` + Pillow | when `python3 -c "import PIL"` succeeds | changed pixel count, share, maximum channel difference; `diff/<language>/<screen>.diff.png` with the significant pixels highlighted in red |
+| `magick` or `compare` (ImageMagick) | when Pillow is absent | `compare -metric AE -fuzz <threshold>%` and a difference image |
+| none | when neither is available | sha256 comparison only; the report says the tolerance was not applied |
 
-Порог по умолчанию — 8 из 255 на канал (`SKL_PIXEL_TOLERANCE`), он отсекает шум
-антиалиасинга и округления. Порог меняется переменной среды:
+The default tolerance is 8 out of 255 per channel (`SKL_PIXEL_TOLERANCE`), which filters
+anti-aliasing and rounding noise. Change it through the environment:
 
 ```bash
 SKL_PIXEL_TOLERANCE=16 ./diff.sh i18n-check
 ```
 
-Различие размеров листа (например, менялась высота состояния) попиксельно не
-сравнивается: `pixel_diff.py` сохраняет пару «эталон / текущий» и помечает различие
-значимым.
+A size mismatch (for example, a state whose height changed) is not compared pixel by pixel:
+`pixel_diff.py` saves a vertical pair of baseline and current sheet and marks the difference
+as significant. The tool can also be called directly with `--baseline`, `--current`, `--out`
+and `--threshold`.
 
-## 5. Ловушки
+## 5. Traps
 
-- **`./gradlew clean`** стирает `app/build` вместе со свежими листами, но не `runs/`
-  и не `baselines/`: снятые прогоны и утверждённые эталоны переживают очистку.
-- **Смена версии Robolectric/Roborazzi или шрифтов стенда** меняет хеши всех листов
-  сразу. Это не дефект вёрстки: такой diff разбирают и утверждают эталон заново
-  осознанно, с объяснением в коммите манифеста.
-- **Повторное снятие без `--force`** отказывает намеренно: прогон мог быть уже
-  просмотрен и утверждён.
-- **Манифест крошечный, PNG большие** — при переносе эталонов на другую машину копируйте
-  каталог `baselines/` целиком, иначе `diff.sh` покажет `missing` на весь эталон.
-- **Java.** Нужна Java 17 или новее. Скрипты ищут её в `JAVA_HOME`, `/usr/libexec/java_home`,
-  Homebrew (`openjdk@17`, `openjdk@21`, `openjdk`) и в `PATH`; отсутствие — отказ до Gradle
-  с подсказкой.
+- **`./gradlew clean`** erases `app/build` together with the fresh sheets, but not `runs/`
+  or `baselines/`: captured runs and approved baselines survive a clean.
+- **A change of Robolectric, Roborazzi or stand fonts** changes the hashes of every sheet at
+  once. That is not a layout defect: such a diff is reviewed and the baseline is approved
+  again deliberately, with the reason in the manifest commit.
+- **A repeated capture without `--force`** refuses on purpose: the run may already have been
+  reviewed and approved.
+- **The manifest is tiny, the PNGs are large.** When moving baselines to another machine,
+  copy the whole `baselines/` directory; otherwise `diff.sh` reports the entire baseline as
+  `missing`.
+- **Java.** Java 17 or newer is required. The scripts look in `JAVA_HOME`,
+  `/usr/libexec/java_home`, Homebrew (`openjdk@17`, `openjdk@21`, `openjdk`) and `PATH`, and
+  refuse before Gradle with a hint when nothing is found.
 
-## 6. Типовые отказы
+## 6. Common failures
 
-| Симптом | Причина | Что делать |
+| Symptom | Cause | What to do |
 |---|---|---|
-| `Java не найдена` | нет `JAVA_HOME` и JDK 17+ в обычных местах | задать `JAVA_HOME`, например `export JAVA_HOME=/opt/homebrew/opt/openjdk@21` |
-| `тест-генератор не найден` | тест SKL-91 переименован или удалён | вернуть тест либо поправить `SKL_CAPTURE_TEST_FILE` и фильтр в `config.sh` |
-| `каталог листов пуст` | флаг визревью не дошёл до теста или тест упал | смотреть вывод Gradle; проверить `-Psklyanka.visualReview=true` в `config.sh` |
-| `прогон уже есть` | имя занято | другое имя или `--force`, если прежний прогон не нужен |
-| `эталон не утверждён` | `approve.sh` ещё не запускали | `./approve.sh <прогон>` после просмотра |
-| `прогонов нет` | ни одного `capture.sh` | `./capture.sh` |
-| diff показал весь эталон как `missing` | эталоны не перенесены или очищены | восстановить `baselines/` из локальной копии и утвердить прогон заново |
+| `Java not found` | no `JAVA_HOME` and no JDK 17+ in the usual places | set `JAVA_HOME`, for example `export JAVA_HOME=/opt/homebrew/opt/openjdk@21` |
+| `generator test not found` | the contact sheet test was renamed or removed | restore the test or update `SKL_CAPTURE_TEST_FILE` and the filter in `config.sh` |
+| `sheet directory is empty` | the review property did not reach the test or the test failed | read the Gradle output; check `-Psklyanka.visualReview=true` in `config.sh` |
+| `run already exists` | the name is taken | choose another name, or `--force` when the previous run is not needed |
+| `baseline is not approved` | `approve.sh` has not run yet | `./approve.sh <run>` after review |
+| `no runs` | `capture.sh` has not run | `./capture.sh` |
+| the diff reports the whole baseline as `missing` | baselines were moved or cleaned | restore `baselines/` from the local copy and approve the run again |
 
-## 7. Обслуживание
+## 7. Maintenance
 
-- Все параметры — в `config.sh`: задача Gradle, фильтр и путь теста, флаг визревью,
-  каталоги, порог. Дублировать их по скриптам нельзя.
-- Синтаксис проверяется `bash -n` по каждому скрипту и `python3 -m py_compile pixel_diff.py`.
-- Новый общий шаг добавляется в `lib.sh`, а не копией по трём скриптам.
+- All parameters are in `config.sh`: the Gradle task, the test filter and file, the review
+  property, the directories and the tolerance. Do not duplicate them in the scripts.
+- Syntax is checked with `bash -n` on every script and
+  `python3 -m py_compile pixel_diff.py`.
+- A new shared step goes into `lib.sh`, not as a copy in three scripts.

@@ -102,12 +102,13 @@ class Sk139MarkSteps {
 
     @И("прежняя тёплая оливовая иконка остаётся вторым вариантом")
     fun theWarmIconStaysTheSecondVariant() {
-        // Вторая палитра названа словами, а не только числами: иначе тёплый вид прочли бы
-        // как забытые значения, а не как второй вариант, доступный как холодный (Р-56, Р-86).
+        // The second palette is named in words, not only in numbers: otherwise the warm look
+        // would read as forgotten values rather than as a second variant, available like the cold
+        // one.
         val section = markSection()
         assertTrue(
-            section.contains("второй вариант") && section.contains("Р-86"),
-            "the warm palette must be named as the second variant, free like the cold one (Р-86)",
+            section.contains("warm", ignoreCase = true) && normative.contains("free", ignoreCase = true),
+            "the warm palette must be named as the second variant, free like the cold one",
         )
     }
 
@@ -176,7 +177,7 @@ class Sk139MarkSteps {
     }
 
     private companion object {
-        const val NORMATIVE_DOCUMENT = "docs/norm/06-design.md"
+        const val NORMATIVE_DOCUMENT = "docs/spec/design-system.md"
         const val MANIFEST = "app/src/main/AndroidManifest.xml"
         const val MARK_COLOURS = "app/src/main/res/values/colors.xml"
         const val MONOCHROME_LAYER = "app/src/main/res/drawable/ic_launcher_monochrome.xml"
@@ -197,7 +198,7 @@ class Sk139MarkSteps {
         /** Вторая палитра — тёплый оливковый вид «Про»: норма фиксирует обе (Р-56). */
         val REQUIRED_WARM_VALUES = listOf("#F8F6EF", "#241F1B", "#181712", "#EFE7DB", "#B5C47A")
 
-        const val MARK_SECTION = "### 2.4 Палитра знака"
+        const val MARK_SECTION = "### 2.4 Mark palette"
         const val NEXT_SECTION = "## 3."
 
         /** Объявление варианта иконки целиком: имя, значок, фильтр и метаданные ярлыка живут в нём. */

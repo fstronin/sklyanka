@@ -1,53 +1,34 @@
-# ADR-0006. Без справочника лекарств и проверки взаимодействий
+# 0006 — No medication directory and no interaction checks
 
-## Статус
+Status: Accepted
 
-Действует; граница уточнена решением Р-5 — сверка с реестром в ИИ-вводе рекомендацией не
-является.
+## Context
 
-## Решение
+Checking drug compatibility or selecting a dose is clinical decision support. That makes the product
+a medical device, with registration, conformity assessment and lifecycle obligations. Both failure
+modes harm the person: a false warning makes them cancel a prescribed medication, a missed warning
+lets a real interaction pass. An on-device directory needs a license, updates and a network, and a
+built-in one is outdated from the first day.
 
-- Справочника лекарств в продукте нет: ни на устройстве, ни как функции. Проверки
-  взаимодействий нет (НЦ-1).
-- Название лекарства вводит человек, хранится как текст. Узнавание лекарства держится на форме
-  выпуска, виде таблетки и дозировке, которые человек задаёт сам.
-- Формулировка «не является медицинским изделием, не даёт рекомендаций по лечению и не
-  подбирает дозировки» видна в разделе «О приложении» дословно и сопровождает отчёт врачу
-  (`docs/norm/01-product.md` §1, §6).
-- Приложение фиксирует назначенное врачом и помогает выполнить его вовремя; назначение
-  не обсуждается (П-4).
-- Единственная работа со справочными данными — детерминированная сверка названия, формы выпуска
-  и дозировки препарата с реестром (ГРЛС; Vidal или РЛС при доступной лицензии) на сервере
-  платного контура в ИИ-вводе (ИИ-11, ИИ-25). Сверка нормализацией и нечётким сопоставлением,
-  а не второй моделью; несовпадение показывается явной пометкой, а не тихой заменой
-  и не блокировкой сохранения.
+## Decision
 
-## Основание
+- There is no medication directory in the product, neither on the device nor as a service, and no
+  interaction check.
+- The person types the medication name; it is stored as text. Recognition relies on the release
+  form, tablet appearance and dose, all set by the person.
+- The statement "the application is not a medical device, gives no treatment recommendations and
+  does not select dosages" is shown verbatim in `«О приложении»` ("About") and accompanies the
+  report for the doctor.
+- The app records what a doctor prescribed and helps carry it out on time. It does not discuss the
+  prescription.
+- Reference data is not consulted anywhere. Nothing in the product normalizes a medication name
+  against a registry, and nothing is filled in automatically.
 
-Проверка совместимости и подбор дозы — функция поддержки принятия врачебных решений, то есть
-признак медицинского изделия со всеми последствиями: регистрация, оценка соответствия,
-требования к жизненному циклу. Ложноположительное предупреждение заставит человека отменить
-назначенный препарат, несработавшее — пропустить реальное взаимодействие; оба исхода — вред.
-Справочник на устройстве требует лицензии, обновления и сети, а зашитый устаревает с первого
-дня (`ADR-0002`).
+## Consequences
 
-## Следствия
-
-- Ни одного текста интерфейса, который читается как рекомендация (П-4, ИИ-21).
-- Итог ИИ-ввода — черновик, который человек просматривает и подтверждает; прямой записи
-  лекарства в базу без подтверждения нет (ИИ-1, Р-5).
-- Значения, противоречащие инвариантам модели, в черновик не подставляются: поле приходит
-  пустым с пометкой (ИИ-8, ИИ-13).
-- Проверка совместимости лекарств на модели в продукт не входит (`docs/norm/03-roadmap.md` §3).
-- Опечатки в названиях возможны, поэтому режим ручного разбора совпадений при переносе
-  обязателен: нормализованные название и дозировка в пределах сопоставленного профиля
-  (ПЕР-20, ПЕР-21).
-- Размер приложения и объём базы остаются малыми: справочник в артефакт не входит (НФТ-24).
-
-## Пересмотры
-
-- 07.10.2026 · добавлена граница ИИ-ввода: перенос назначенного врачом с серверной сверкой
-  с реестром не превращает продукт в медицинское изделие · Р-1, Р-5, Р-11
-  (прежний норматив — `docs/archive/norm/07-ai-entry.md`).
-- 17.10.2026 · ИИ-ввод заморожен и в продукт не входит; граница остаётся на случай возврата
-  отдельным решением · Р-86.
+- No interface text may read as a recommendation.
+- Misspellings in names are possible, so manual match review during a transfer is mandatory: the
+  normalized name and dose are compared inside the matched profile, and the person confirms the
+  match.
+- Application size and database volume stay small: no directory ships in the artifact.
+- No feature compares medications with each other, in any build variant.

@@ -1,110 +1,76 @@
-# Склянка — соглашения проекта (для любого агентного инструмента)
+# Sklyanka: repository conventions
 
-Этот файл — единственная точка входа в соглашения проекта для всех агентных инструментов
-(Claude Code, Codex, opencode, omp и прочих). Вендорно-специфичных файлов конфигурации
-в репозитории нет: проектные скиллы лежат в `.omp/skills/`, роли мультиагентных сессий —
-в `.omp/agents/`, и любой инструмент читает их как обычные инструкции.
+This file is the entry point for any agentic tool working in this repository. The project
+conventions are the same for a human contributor and for an agent.
 
-Мобильное приложение для учёта приёма лекарств. Android, русский язык интерфейса.
-Исходная спецификация заказчика — `design/SPEC-original.md`, макеты — `design/screens/`.
+Sklyanka is an Android medication tracker. The interface is Russian. The product is free in
+full, works without a network and does not ask for an account.
 
-## Где что лежит
+## Where things live
 
-| Путь | Содержание |
+| Path | Content |
 |---|---|
-| `docs/README.md` | **Карта документации**: какой слой за что отвечает, правила ведения, шаблон шапки, карта переноса путей |
-| `PLAN.md` | Указатель на план: фазы, гейты, единый реестр статусов задач, открытые вопросы — `docs/plan.md` |
-| `docs/plan.md` | План ревизии 2.0 (реестр статусов задач — §4) |
-| `docs/norm/` | Нормативный слой: продукт, маршрут, поведение, качество, дизайн, план реализации |
-| `docs/journal/decisions.md` | Журнал решений Р-N — единственная история решений |
-| `docs/findings/` | Реестры находок прогонов (коды V-N) |
-| `docs/research/` | Разведка и переосмысление: снимок «как есть», варианты стратегии, карта переноса прежнего слоя |
-| `CONTEXT.md` | Глоссарий контекста: единый язык, избегаемые синонимы, коды значений домена |
-| `docs/adr/` | ADR: действующие архитектурные решения, нумерация 00NN |
-| `docs/agents/` | Документы для агентных инструментов: домен, трекер задач, триаж-метки |
-| `docs/tasks/SKL-NN/` | Артефакты активных задач; после закрытия — `docs/archive/tasks/SKL-NN/` |
-| `docs/archive/` | История: журналы ПМ/ОВ, артефакты закрытых задач, прежние конвенции (после переезда SKL-111), архивные версии нормативных документов — `docs/archive/norm/` |
-| `acceptance/src/main/resources/features/` | Приёмочные Gherkin-сценарии (после переезда SKL-111) |
-| `.omp/skills/` | Проектные скиллы omp: skl-task (жизненный цикл задачи), sklyanka-android (инженерные правила) |
-| `.omp/agents/` | Роли omp: product-manager, designer, visual-verifier |
-| `design/` | Неприкосновенный исходник: спека заказчика и HTML-макеты |
-| `app/`, `core-*`, `feature-*` | Код |
+| `README.md` | what the product is, how to build and test it |
+| `docs/README.md` | the documentation layer and its rules |
+| `docs/spec/` | the normative specification: product, behavior, design, quality, architecture, glossary, privacy |
+| `docs/adr/` | architecture decision records `0001` to `0017` |
+| `acceptance/src/main/resources/features/` | Gherkin acceptance scenarios, grouped by topic |
+| `design/` | the customer's original specification and the mockups; untouched, Russian |
+| `app/`, `core-*`, `feature-*`, `billing-*` | the code |
+| `build-logic/` | Gradle convention plugins and the project checks |
+| `tools/` | the emulator and visual harnesses |
 
-Слои документации описаны один раз — в `docs/README.md`; остальные документы ссылаются на неё,
-а не пересказывают раскладку.
+## Stack
 
-`design/` не редактируется. Всё уточнённое и изменённое живёт в `docs/`; история — в
-`docs/archive/`. Исключение — агент-дизайнер (`.omp/agents/designer.md`): он работает с макетами
-`design/screens/` и может их редактировать только с явного разрешения (пользователь попросил,
-либо ведущая сессия предложила и пользователь одобрил).
+Kotlin, Jetpack Compose, Room, Hilt, AlarmManager. Minimum API 26. Google services (GMS,
+Firebase) are forbidden by an artifact composition check. See `docs/adr/0001-stack.md`.
 
-**Продуктовые решения проходят через агента продакт-менеджера** (`.omp/agents/product-manager.md`):
-он — точка ответов «что входит в продукт», «что снимаем или откладываем», «стоит ли делать фичу».
-С 07.10.2026 решения фиксируются записями Р-N в `docs/journal/decisions.md`; нормативные документы
-ведутся в `docs/norm/`. Продукт бесплатный навсегда, платного контура и монетизации нет (Р-86),
-ИИ-ввод заморожен и в продукт не входит; архивные версии этих документов — в `docs/archive/norm/`.
-Журналы ПМ- и ОВ- заморожены как архив.
-Перед принятием продуктового решения — спроси продакт-менеджера, если заказчик не решил лично.
+## Language
 
-## Стек
+- Documentation, identifiers, test names, comments and commit messages: American English.
+- The interface: Russian, with translations into English, Spanish, German, Chinese and Kazakh.
+- Acceptance scenarios and their step patterns: Russian, because they assert the Russian
+  interface and Russian demo data verbatim.
+- Domain terms are used exactly as `docs/spec/glossary.md` defines them.
 
-Kotlin, Jetpack Compose, Room, Hilt, AlarmManager. Минимум API 26. Часы и Wear Engine не поддерживаются (Р-3).
-Обоснование и альтернативы — `docs/adr/0001-stack.md`.
+## Rules that are not negotiable
 
-## Язык
+- **Reliability of a reminder comes before everything else.** A missed reminder is a product
+  failure, not a convenience defect.
+- **Profiles never mix.** The interface is always in the context of exactly one profile.
+- **Accounting works without a network, always.** Accounting, reminders, marks, history and the
+  report do not depend on a network, an account or an external service.
+- **Health data does not leave the device in the clear.** The analytics contour needs an explicit
+  consent and sends no medical data. Ads and data sale are out of scope.
+- **The app is not a medical device.** No treatment recommendations, no dose selection, no
+  drug-interaction checks.
+- **Design tokens are never hardcoded.** Colour, typography, geometry and motion come from
+  `core-ui/token/`; the detekt rules enforce it.
 
-- Документация, задачи, Gherkin-сценарии, тексты интерфейса — **русский**.
-- Код, идентификаторы, имена тестов, сообщения коммитов — **английский**.
-- Доменные термины пишутся одинаково везде, см. `CONTEXT.md` (глоссарий контекста).
+## Order of work
 
-## Порядок работы над задачей
+1. Read the specification of the area: `docs/spec/behavior.md` (behaviour) or
+   `docs/spec/design-system.md` (visual language). Section numbers are cited by Kotlin KDoc, so
+   a rule is found by its number.
+2. Read the acceptance scenario of the area in `acceptance/src/main/resources/features/`.
+3. Write the failing scenario or test first, then the code, then refactor.
+4. A change is done when `./gradlew verifyAll` is green and the manual checks of the area have
+   been done on an emulator or a device.
 
-1. Прочитать постановку задачи в реестре `docs/plan.md` §4 и артефакты задачи: пока она
-   активна — `docs/tasks/SKL-NN/`, после закрытия — `docs/archive/tasks/SKL-NN/`.
-2. Прочитать приёмочный сценарий: `acceptance/src/main/resources/features/SKL-NN.feature`.
-3. Идти по TDD: сначала падающий тест, потом код, потом рефакторинг.
-4. Задача закрыта, когда все сценарии зелёные и ручные пункты пройдены по назначению
-   (эмулятор или устройство матрицы).
-5. Обновить статус задачи в реестре `docs/plan.md` §4 (единственное место статуса).
+## Shared resources: one writer at a time
 
-## Исполнение и общие ресурсы
+- **The Gradle build.** Two implementations in one working tree break compilation. Run one build
+  at a time.
+- **The snapshot baselines** of `tools/visual/`. Re-record them only in the dedicated order.
+- **The acceptance step vocabulary.** A step pattern and a scenario line must match exactly;
+  `:acceptance:verifyAcceptanceSteps` checks it and names both declaration points of a duplicate.
 
-- Исполнение плана — установленным скиллом omp `implement` (спека/задачи → TDD на согласованных
-  швах → typecheck по ходу → полный прогон в конце → `code-review` → коммит). Проектные правила
-  подставляют скиллы `.omp/skills/`, продуктовые развилки — роль product-manager, визуальную
-  приёмку кадров — роль visual-verifier.
-- Общие ресурсы с правилом одного писателя: сборка Gradle и `verifyAll` (два параллельных
-  имплементера в одном дереве ломают компиляцию); эталоны Roborazzi и `tools/visual` (пересъём
-  только выделенной задачей в фиксированном порядке волн); реестр `docs/plan.md` §4 и журнал Р-N
-  (ведущая сессия); сеансы на устройствах и чек-листы (заказчик).
-- Параллелятся только непересекающиеся срезы; карта волн и срезов — `docs/norm/08-implementation-plan.md` §6.
+## Commits
 
-## Правила, которые не обсуждаются
+Conventional Commits with an area scope, in English:
 
-- **Надёжность напоминания важнее всего остального.** Пропущенное напоминание — отказ продукта, а не дефект удобства.
-- **Профили не смешиваются.** Интерфейс всегда в контексте ровно одного профиля.
-- **Учёт работает без сети — всегда.** Учёт, напоминания, отметки, история и отчёт не зависят от сети, учётной записи и внешних сервисов: сеть не становится условием ни одной функции (П-3, П-6). Отказ сети или сервера отказывает явно и не задерживает ручной ввод.
-  Сеть в поставляемой сборке **есть начиная со SKL-165** (Р-93): разрешение `INTERNET` объявляется контуром аналитики, клиентская аналитика MyTracker работает только по явному согласию и без медицинских данных; опубликованная версия `2026.10.2(3)` сети не содержит. Серверный присмотр (Р-95) выносит на сервер **содержание в зашифрованном виде** (E2E) и метаданные планирования открыто (плановое время, факт отметки — Р-95 п. 2); локальные будильники остаются единственным механизмом времени, push уходит только ухаживающему и только про состояние. Данные о здоровье не покидают устройство в открытом виде; реклама и продажа данных запрещены. GMS и Firebase запрещены гейтом состава сборки.
-- **Приложение не медицинское изделие.** Никаких рекомендаций по лечению и подбору доз. Проверка совместимости лекарств в продукт не входит (Р-5); ИИ-ввода в продукте нет.
-- Токены визуального языка не хардкодятся по месту — только через дизайн-систему (`core-ui/token/`, норматив — `docs/norm/06-design.md`; палитра — «олива на бумаге», Р-20).
-
-## Agent skills
-
-### Issue tracker
-
-GitHub Issues (`github.com/fstronin/sklyanka`, `gh` CLI); реестр SKL-NN в `docs/plan.md` §4 —
-единственный источник статусов, лейблы Issues его зеркалят. См. `docs/agents/issue-tracker.md`.
-
-### Triage labels
-
-Пять триаж-ролей маппятся на словарь проекта: кандидат / ждёт заказчика / не начата /
-на проверке / снята. См. `docs/agents/triage-labels.md`.
-
-### Domain docs
-
-Single-context: глоссарий `CONTEXT.md` и ADR в `docs/adr/` в корне. См. `docs/agents/domain.md`.
-
-## Коммиты
-
-Conventional Commits на английском, с идентификатором задачи:
-`feat(SKL-06): generate intake rows for scheduled medications`
+```
+feat(reminders): keep a deferred reminder across a reboot
+fix(intake): do not spend stock on a skipped intake
+docs(spec): describe the transfer conflict decisions
+```

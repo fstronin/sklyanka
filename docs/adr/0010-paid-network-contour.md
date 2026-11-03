@@ -1,82 +1,48 @@
-# ADR-0010. Платный сетевой контур
+# 0010 — Paid network contour
 
-## Статус
+Status: Superseded by ADR-0017. No paid network contour is shipped: the paid build variant is
+compiled but not released, and the shipped free build carries only the analytics contour. Product
+composition is governed by ADR-0016, network architecture by ADR-0017. This document records a
+decision that is no longer a rule of the product.
 
-Снят 17.10.2026 решением Р-86; сетевая часть пересмотрена 01.11.2026. Платного сетевого контура
-в продукте нет: `free` не содержит `feature-pro` и `billing-appgallery`, pro-вариант собирается,
-но не поставляется (Р-94). Документ сохраняется как история; действующая архитектура сети —
-`ADR-0017` (два сетевых контура: аналитика и платёжный), состав продукта — `ADR-0016`.
-Прежний контур был внесён в сборку 15.10.2026 (SKL-122).
+## Context
 
-## Решение
+AI-assisted input cost money per call, so unlimited use was to be sold as a subscription, and both
+the subscription and the extraction had a server side. Reminder reliability must not depend on
+someone else's service, so the contour had to be isolated from the core and had to degrade in favor
+of the person.
 
-1. **`INTERNET` — только в платном контуре.** Разрешение объявляется единственно для двух сетевых точек
-   продукта: ИИ-ввод и проверка подписки. Функции учёта — расписание, напоминания, отметка, история,
-   остаток, перенос, отчёт врачу, диагностика — работают без сети и без учётной записи всегда (Р-7, П-3, ИИ-23).
-2. **Изоляция от ядра.** Контур — отдельный Gradle-модуль вне `core-domain` и `core-data`; направление
-   зависимостей `ADR-0007` сохраняется, ядро о контуре не знает. Зависимость от провайдера модели закрыта
-   портом на сервере (ИИ-22); ключи провайдера живут только на сервере, клиент обращается к API-прокси
-   студии минимальным по составу запросом (ИИ-20, ИИ-6, ИИ-7).
-3. **Деградация и кэш подписки.** Отказ сервера, сети или магазина не блокирует ни одной функции учёта
-   и не блокирует ручной ввод лекарства; исход называется словами и не имитирует успех (ИИ-2, ИИ-17, П-6, П-7).
-   Состояние подписки кэшируется на устройстве: проверить не удалось — доступ сохраняется, а не закрывается,
-   кэш продлевается до следующей проверки (Р-7, ИИ-15); в файл переноса он не входит (ПЕР-37).
-4. **Квота и биллинг.** Три успешных заполнения на установку; серверный счётчик по идентификатору установки
-   плюс локальная копия; при расхождении или недоступности сервера лимит считается неисчерпанным (Р-6, Р-10,
-   ИИ-14, ИИ-15). Продажа — RuStore Billing и AppGallery IAP, товары `sklyanka.pro.monthly`
-   и `sklyanka.pro.yearly` едины для обоих магазинов и неизменяемы после создания; восстановление покупки
-   и лимита — через подтверждение в магазине (Р-9, Р-10).
-5. **Гейты сборки.** `INTERNET` допускается в слитом манифесте только вместе с платным контуром
-   и только из его манифеста: `verifyManifest<Вариант>` читает и слитый манифест, и исходники
-   манифестов всех модулей и всех наборов (`src/**`); предел назван — разрешение, добавленное
-   слиянием из чужого AAR при живом контуре, от вендорского неотличимо, поэтому гарантия
-   формулируется иначе: без контура в артефакте сеть не появляется вовсе, а `AnalyticsContourRules` делит разрешения на «контура» и «запрещённые
-   безусловно». Белый список координат заполнен замыканием клиента магазина (17 координат
-   `com.huawei.*`, включая сетевое ядро и телеметрию вендора) осознанно, а запреты GMS,
-   Firebase, рекламы и сторонних аналитических SDK сохраняются; `ACCESS_NETWORK_STATE`,
-   `ACCESS_WIFI_STATE` и `com.google.gms.permission.AD_ID` остаются запрещёнными всегда
-   (ПЛ-3, ПЛ-4, ИИ-24, НФТ-16) — замыкание клиента объявляет `ACCESS_NETWORK_STATE`,
-   и манифест `app` снимает его `tools:node="remove"`.
-6. **Приватность.** Сведения о здоровье уходят только в ИИ-вводе, по явному действию человека, после
-   отдельного согласия и только на сервер в пределах РФ; снимок не хранится после обработки, в журналах
-   сервера нет изображений, названий лекарств и дозировок; сверка с реестром — на сервере
-   по версионированному справочнику (ИИ-16, ИИ-18, ИИ-19, ИИ-25). Юридический контур — предусловие
-   первого платного запроса (`docs/norm/02-monetization.md` §6).
+## Decision
 
-## Основание
+1. **`INTERNET` only in the paid contour**, declared for exactly two network points: AI input and
+   subscription check. Tracking worked without a network and without an account at all times.
+2. **Isolation from the core.** A separate Gradle module outside `core-domain` and `core-data`, with
+   the dependency direction of ADR-0007 intact; the core did not know about the contour. Provider
+   keys lived only on the server, and the client called an API proxy with a minimal request.
+3. **Degradation and cache.** A server, network or store failure blocked no tracking function and no
+   manual medication entry; the outcome was named in words and never imitated success. Subscription
+   state was cached on the device: when it could not be verified, access was kept, not closed. It was
+   not part of the transfer file.
+4. **Quota and billing.** Three successful fills per installation, counted by a server counter per
+   installation identifier plus a local copy; on a mismatch or without the server the limit counted
+   as not exhausted. Sales went through RuStore Billing and AppGallery IAP, with products
+   `sklyanka.pro.monthly` and `sklyanka.pro.yearly` identical for both stores and immutable after
+   creation.
+5. **Build checks.** `INTERNET` was allowed in the merged manifest only with the paid contour and
+   only from its manifest. The coordinate whitelist was the closure of the store client, including
+   vendor telemetry that the product never calls. GMS, Firebase, advertising, third-party analytics,
+   `ACCESS_NETWORK_STATE`, `ACCESS_WIFI_STATE` and `AD_ID` stayed forbidden.
+6. **Privacy.** Health content left the device only in AI input, on an explicit action after a
+   separate consent, and only to a server within the country; the snapshot was not stored after
+   processing and server logs held no images, medication names or dosages.
 
-У ИИ-заполнения есть себестоимость на каждый вызов, поэтому неограниченное использование
-продаётся подпиской (Р-9), а у подписки и у извлечения есть серверная часть (Р-1). Надёжность
-напоминания — обещание продукта (П-1) и не может зависеть от доступности чужого сервиса:
-отсюда изоляция контура и деградация в сторону человека (Р-7, П-6).
+## Consequences
 
-## Следствия
-
-- Ядро остаётся проверяемо офлайновым: отсутствие сетевого трафика ядра — гейт
-  `verifyManifestRelease` (НФТ-14, НФТ-15).
-- Политика конфиденциальности публикуется до первого платного запроса и раскрывает серверную
-  обработку и идентификатор установки как персональные данные (Р-10, ИИ-19).
-- Экран согласия на обработку сведений о здоровье и дисклеймер «не медицинское изделие»
-  в экране ИИ-ввода обязательны (ИИ-16, ИИ-21).
-- Витрина подписки — в точке выбора платной функции (для ИИ-ввода — «Заполнить с помощью ИИ»),
-  никогда в лечебном сценарии (ИИ-4, Р-67).
-- Покупка подписки — единственный источник магазин: состояние кэшируется на устройстве, при
-  недоступности доступ сохраняется (`ADR-0015`, Р-68).
-- Возврат ИИ-ввода (когда он вернётся, Р-16) ждёт решения Р-12 о юридической форме: серверный
-  контур обработки сведений о здоровье требует оператора персональных данных.
-- Измерение — серверные счётчики и консоли магазинов; клиентской аналитики в продукте нет (Р-4, У-6…У-9). <!-- docs-check: allow -->
-
-## Пересмотры
-
-- 08.10.2026 · решение принято впервые · Р-1, Р-7, Р-9, Р-11 (`docs/journal/decisions.md`).
-- 13.10.2026 · пересмотрен: витрина — в точках выбора платных функций, не только в ИИ-вводе;
-  покупка без сервера выделена в `ADR-0015` · Р-67, Р-68.
-- 15.10.2026 · контур внесён в сборку (SKL-122): `INTERNET` перешёл из безусловного запрета
-  в разрешение платного контура с проверкой происхождения, белый список координат заполнен
-  замыканием клиента AppGallery IAP. Заказчик принял названное следствие: в артефакте
-  появляются `com.huawei.hms:stats` и `com.huawei.hms:hatool` — телеметрия вендорского клиента,
-  а `network-*` — его сетевая библиотека. Ни одна из этих координат продуктом не зовётся,
-  своя клиентская аналитика не заводится (Р-4), сторонние аналитические SDK остаются
-  запрещёнными (НФТ-16). Альтернатива — исключить телеметрию из classpath — отвергнута:
-  работу клиента магазина после исключения проверить нечем, покупка автопрогоном не проверяется,
-  а цена ошибки — отказ оплаты у человека.
+- The core stayed verifiable offline: no network traffic from the core was checked on the artifact.
+- The privacy policy had to precede the first paid request and had to disclose server processing and
+  the installation identifier as personal data.
+- A consent screen for health data and the "not a medical device" disclaimer were mandatory on the
+  AI input screen. The storefront sat at the point of choosing a paid function, never in a treatment
+  scenario.
+- A subscription came only from the store, with its state cached and access preserved when the store
+  was unreachable. Measurement used server counters and store consoles, not client analytics.

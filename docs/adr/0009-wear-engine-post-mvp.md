@@ -1,36 +1,25 @@
-# ADR-0009. Wear Engine откладывается до пост-MVP
+# 0009 — Wear Engine postponed beyond the first release
 
-## Статус
+Status: Withdrawn. Watch integration does not return: watches and wearables are excluded from the
+product and the domain seam was removed.
 
-Снят решением Р-3 (07.10.2026): интеграция с часами не возвращается, доменный шов удалён.
+## Context
 
-## Решение
+This ADR once recorded a postponement: integration with Huawei watches was moved beyond the first
+release, and the domain seam was kept as the basis for returning to the work later. A postponed
+integration never returned, while the seam stayed in the model as a second mark source, cost
+maintenance and supported the illusion of a supported feature in the documentation.
 
-Не действует. Прежнее правило «поставка интеграции отложена, доменный шов сохраняется,
-`ADR-0005` и требования ЧАС-* остаются основанием пост-MVP-работы» отменено целиком: часы
-и носимые устройства исключены из продукта (`docs/norm/01-product.md` §5.3, §7).
+## Decision
 
-## Основание
+The postponement is cancelled entirely. Watches and wearables are not part of the product in any
+variant. See ADR-0005 for the surface that this ADR used to justify.
 
-Отложенная интеграция в план не вернулась, а сохранённый «на будущее» шов оказался мёртвым
-грузом: он стоил сопровождения, удерживал в модели второй источник отметки и поддерживал
-в документации иллюзию поддерживаемой функции (Р-3, П-7).
+## Consequences
 
-## Следствия
-
-- Требования ЧАС-1…ЧАС-9 сняты решением Р-3, содержание не переносится
-  (`docs/research/spec-migration-map.md`).
-- Доменный шов удалён, а не законсервирован: состав — в Р-3 и в `ADR-0005`.
-- Задачи SKL-01, SKL-16, SKL-17, SKL-37 сняты; их артефакты уходят в `docs/archive/tasks/`.
-- Заявка на права Wear Engine и привязка SHA-256 подписи к ней исключены из критериев
-  готовности выпуска; релизный ключ нужен только магазинам (ПЛ-5).
-- Матрица поддержки устройств больше не содержит строки про часы; состав матрицы определяет
-  Р-13 (`docs/norm/05-quality.md`).
-- Возврат часов — новое решение Р-N, а не возобновление этого.
-
-## Пересмотры
-
-- 30.09.2026 · часы возвращены в базовую разработку этапом 10, «пост-MVP» сведено
-  к реализации SKL-01/16/17 · прежние ПМ-2, ПМ-9.
-- 07.10.2026 · решение снято вместе с возвратом в план: шов вырезан из кода · Р-3
-  (`docs/journal/decisions.md`).
+- The watch and wearable requirements are withdrawn and their content is not carried forward.
+- The domain seam is deleted, not preserved in a dormant state.
+- An application for Wear Engine rights and the signature SHA-256 binding to it are excluded from
+  release readiness criteria: the release key is needed only for the stores.
+- The device support matrix has no watch row.
+- Returning watches requires a new ADR, not a revival of this one.

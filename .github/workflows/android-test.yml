@@ -1,22 +1,21 @@
-# Необязательный гейт (Р-19): инструментальные тесты на эмуляторе запускаются
-# только явно (workflow_dispatch) и не блокируют push/pull_request — обязательный
-# контур живёт в verify.yml, где androidTest-исходники хотя бы компилируются
-# (вариантные assembleFreeDebugAndroidTest/assembleProDebugAndroidTest входят в verifyAll).
+# Optional gate: instrumented tests on an emulator run only when started explicitly
+# (workflow_dispatch) and do not block push/pull_request. The mandatory contour lives in
+# verify.yml, where androidTest sources are at least compiled (the variant tasks
+# assembleFreeDebugAndroidTest/assembleProDebugAndroidTest are part of verifyAll).
 #
-# Образ эмулятора — AOSP без Google APIs (target: default): продукт живёт без
-# GMS (ПЛ-4, НФТ-39), и локальная оснастка tools/emulator/ использует те же
-# образы. Уровни API локальной матрицы — 26, 31, 35 (tools/emulator/config.sh);
-# по умолчанию здесь 35 — уровень compileSdk.
+# The emulator image is AOSP without Google APIs (target: default): the product lives without
+# GMS, and the local harness in tools/emulator/ uses the same images. The API levels of the
+# local matrix are 26, 31 and 35; the default here is 35, the compileSdk level.
 #
-# KVM включается вручную: без аппаратной виртуализации x86_64-эмулятор на
-# ubuntu-latest либо не стартует, либо стартует неприемлемо долго.
+# KVM is enabled by hand: without hardware virtualisation an x86_64 emulator on ubuntu-latest
+# either does not start or starts unacceptably slowly.
 name: android-test
 
 on:
   workflow_dispatch:
     inputs:
       api-level:
-        description: 'Уровень API эмулятора (26, 31 или 35)'
+        description: 'Emulator API level (26, 31 or 35)'
         required: false
         default: '35'
 
@@ -53,6 +52,6 @@ jobs:
           target: default
           arch: x86_64
           disable-animations: true
-          # У app есть измерение контура (Р-86, ADR-0016): unflavored-задачи
-          # connectedDebugAndroidTest у него нет, и поставляемый вариант — `free`.
+          # The app module has a product variant dimension, so it has no unflavored
+          # connectedDebugAndroidTest task; the shipped variant is `free`.
           script: ./gradlew :app:connectedFreeDebugAndroidTest :core-data:connectedDebugAndroidTest :feature-history:connectedDebugAndroidTest --no-daemon --stacktrace

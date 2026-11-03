@@ -517,7 +517,7 @@ class Sk109PaletteSteps {
 
     private companion object {
         const val REPO_ROOT_PROPERTY = "sklyanka.repo.root"
-        const val NORMATIVE_DOCUMENT = "docs/norm/06-design.md"
+        const val NORMATIVE_DOCUMENT = "docs/spec/design-system.md"
         const val ICON_COLOURS = "app/src/main/res/values/colors.xml"
 
         /** Профиль, которым живёт «чужой» контекст сценариев: любая пара набора, кроме акцента. */

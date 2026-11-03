@@ -1,60 +1,54 @@
-# ADR-0013. Хранение времени: назначенное — локальные стенные часы, факт — момент UTC
+# 0013 — Time storage: scheduled time as local wall clock, facts as UTC instants
 
-## Статус
+Status: Accepted
 
-Действует. Зафиксировано 07.10.2026 ретроспективно: раскладка реализована 26.09.2026 в задаче
-SKL-04, и на ней уже стоят НФТ-34…НФТ-37, ПР-3, ИНВ-13/14.
+## Context
 
-## Решение
+The model holds two kinds of time, and a time-zone change pulls them apart. The scheduled time is an
+intention in wall-clock terms ("at 8:00"). The moment of a mark happened once. Storing everything in
+UTC breaks the first: an intake scheduled for 8:00 would arrive at 11:00 after a flight. Storing
+everything in local time breaks the second: the order of marks becomes ambiguous across a zone
+change.
 
-**Назначенное время хранится локальным текстом без пояса, момент факта — числом epoch millis
-в UTC** (`core-data/.../room/SklyankaConverters.kt`).
+## Decision
 
-| Поле | Хранение | Доменный тип |
+**Scheduled time is stored as local text without a zone; a fact moment is stored as epoch millis in
+UTC** (`core-data/.../room/SklyankaConverters.kt`).
+
+| Field | Storage | Domain type |
 |---|---|---|
-| `Medication.times` | `TEXT`, отсортированная строка `HH:mm,HH:mm`; пустая строка у курса «по потребности» | `List<LocalTime>` |
-| `Medication.start_date`, `end_date` | `TEXT`, `YYYY-MM-DD`; `end_date = NULL` — бессрочный курс (ПР-6) | `LocalDate`, `LocalDate?` |
-| `Intake.scheduled_at` | `TEXT`, `YYYY-MM-DDTHH:mm`, локальные дата и время без пояса | `LocalDateTime` |
-| `Intake.acted_at` | `INTEGER`, epoch millis UTC; `NULL` у ожидающего приёма (ИНВ-10) | `Instant?` |
-| Прочие моменты факта (`archived_at`, `deleted_at`, `op_log.at`, время журнала) | `INTEGER`, epoch millis UTC | `Instant` |
+| `Medication.times` | `TEXT`, sorted string `HH:mm,HH:mm`; empty string for a PRN course | `List<LocalTime>` |
+| `Medication.start_date`, `end_date` | `TEXT`, `YYYY-MM-DD`; `end_date = NULL` means an indefinite course | `LocalDate`, `LocalDate?` |
+| `Intake.scheduled_at` | `TEXT`, `YYYY-MM-DDTHH:mm`, local date and time without a zone | `LocalDateTime` |
+| `Intake.acted_at` | `INTEGER`, epoch millis UTC; `NULL` for a pending intake | `Instant?` |
+| Other fact moments (`archived_at`, `deleted_at`, operation and delivery log times) | `INTEGER`, epoch millis UTC | `Instant` |
 
-Четыре механизма, которые из правила следуют:
+Four mechanisms follow from the rule:
 
-1. **Момент срабатывания будильника вычисляется, а не хранится:** планирование переводит локальное
-   назначенное время в момент текущего пояса (`scheduledAt.atZone(zone).toInstant()`), пояс отдаёт
-   `TimeSource.zone()`; смена пояса или системного времени — событие полной пересборки окна
-   (`RescheduleReason.TIMEZONE_CHANGED`, `ADR-0003`, НФТ-4).
-2. **Перелёт не переписывает созданные записи** (ОВ-29): планировщик календарный, смена пояса не меняет
-   ни состав приёмов, ни их время — пересчитывается только очередь будильников.
-3. **Более поздняя отметка не замещает более раннюю** — сравнение по абсолютному `acted_at`, моменту
-   действия человека, а не доставки события (ПР-3, ИНВ-10).
-4. **Граница суток — локальная полночь пояса**, а не «минус 24 часа от момента» (НФТ-37): в сутках
-   с переводом времени 23 или 25 часов календарная группировка не едет.
+1. **The alarm trigger moment is computed, not stored.** Scheduling converts the local scheduled
+   time with the current zone (`scheduledAt.atZone(zone).toInstant()`), and the zone comes from
+   `TimeSource.zone()`. A zone or system-time change is a full window rebuild
+   (`RescheduleReason.TIMEZONE_CHANGED`, ADR-0003).
+2. **Travel does not rewrite created records.** The scheduler is calendar-based: a zone change
+   changes neither the set of intakes nor their times, only the alarm queue is recomputed.
+3. **A later mark does not replace an earlier one.** Comparison uses the absolute `acted_at`, the
+   moment the person acted, not the moment the event was delivered.
+4. **The day boundary is local midnight of the zone**, not "24 hours before the moment". On a day
+   with a clock change, 23 or 25 hours long, calendar grouping does not drift.
 
-`scheduled_at` — текст, а не число: лексикографический порядок формата совпадает с хронологическим,
-сутки выбираются диапазоном через индекс (основной запрос «Сегодня» и группировка истории), а число
-пришлось бы пересчитывать при каждой смене пояса, то есть переписывать историю (НФТ-34). Уникальный
-индекс `intake(medication_id, scheduled_at, schedule_slot)` — защита от повторной генерации (ИНВ-13,
-ИНВ-14); частичный индекс SQLite не используется: Room о нём не знает. У приёма «по потребности»
-назначенного времени нет: `scheduled_at` выводится из момента создания в поясе с обрезкой до минуты.
+`scheduled_at` is text, not a number: the lexical order of the format matches the chronological
+order, a day is selected by range through an index (the "Today" query and history grouping), and a
+number would have to be recomputed on every zone change, rewriting history. The unique index
+`intake(medication_id, scheduled_at, schedule_slot)` prevents duplicate generation; a partial SQLite
+index is not used because Room does not know about it. A PRN intake has no scheduled time:
+`scheduled_at` is derived from the creation moment in the zone, truncated to the minute.
 
-## Основание
+## Consequences
 
-В модели два разных вида времени, и смена часового пояса разводит их в стороны: назначенное время —
-намерение в терминах стенных часов («в 8:00»), факт отметки — момент, произошедший один раз. Всё в UTC
-ломает НФТ-34 (приём «в 8:00» пришёл бы в 11:00); всё в локальном времени — порядок отметок (ПР-3).
-
-## Следствия
-
-- База не знает часового пояса вовсе: пояс приходит из `TimeSource` в момент вычисления, поэтому
-  перепланирование по `TIMEZONE_CHANGED` обязательно (НФТ-4, НФТ-35). Форматы хранения нейтральны
-  (`Locale.ROOT`) и те же в файле переноса (`core-data/.../transfer/TransferValues.kt`, `ADR-0008` п. 5).
-- НФТ-34, НФТ-35 и НФТ-37 покрыты тестами; **НФТ-36 не проверяется ничем**: теста с приёмом внутри
-  переводимого часа нет, поведение опирается на семантику `atZone` и индекс [не реализовано] (`docs/research/as-is.md` §4.3).
-- Чтение испорченной строки времени не роняет приложение: конвертер возвращает `null`, исход
-  решает вызывающий слой (МГ-6). Нормативное описание полей — `docs/norm/04-behavior.md` §1.4.
-
-## Пересмотры
-
-- 07.10.2026 · гонка «часы против телефона» (ПР-3) теряет второй источник: отметка с часов вырезана ·
-  Р-3; сравнение по абсолютному моменту сохраняется для отметок с телефона и автоматических.
+- The database knows no time zone: the zone arrives from `TimeSource` when a value is calculated,
+  which makes rescheduling on `TIMEZONE_CHANGED` mandatory. Storage formats are neutral
+  (`Locale.ROOT`) and the same in the transfer file (ADR-0008 item 5).
+- A corrupted time string does not crash the app: the converter returns `null` and the calling layer
+  decides the outcome.
+- The window around a clock change is covered by tests wherever the conversion and the index are
+  used.

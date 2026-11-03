@@ -205,7 +205,7 @@ SKL_PERMISSIONS_ACTIVITY="ru.stohastika.sklyanka.feature.onboarding.PermissionsA
 
 # --- Нагрузка синтетического курса (И-16) --------------------------------------
 #
-# Пять лекарств, восемь приёмов в сутки — нагрузка И-16 из docs/norm/04-behavior.md.
+# Пять лекарств, восемь приёмов в сутки — the I-16 load from docs/spec/behavior.md.
 SKL_LOAD_MEDICATIONS=5
 SKL_LOAD_TIMES_PER_DAY=8
 # Ускоренный прогон: те же восемь приёмов, но с шагом в минутах, а не в часах.

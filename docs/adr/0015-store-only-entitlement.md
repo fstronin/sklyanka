@@ -1,67 +1,42 @@
-# ADR-0015. Подписка: единственный источник — магазин
+# 0015 — Subscription: the store is the only source of entitlement
 
-## Статус
+Status: Superseded by ADR-0016. There is no subscription in the product, and the product is free. This
+document records a decision that is no longer a rule of the product and has no bearing on the current
+network architecture (ADR-0017).
 
-Снят 17.10.2026 решением Р-86: подписки в продукте нет; Р-94 подтвердил, что монетизация
-не возвращается. Документ сохраняется как история; состав продукта — `ADR-0016`, архитектура
-сети — `ADR-0017` (к сети этот документ отношения больше не имеет). Решение было принято
-13.10.2026 (Р-68), код — SKL-122.
+## Context
 
-## Решение
+Once a paid tier existed, its entitlement state had to come from somewhere. A server for entitlements
+would have given purchase stitching across stores and resistance to reinstalling, but it would have
+required an account or an installation identifier as personal data, a server, a legal processing
+framework and money for maintenance, all to protect revenue that a subscription without AI input did
+not yet have. Reminder reliability must not pass through someone else's service either.
 
-**Источник правды о подписке — магазин, и только он.** Сервера энтитлментов нет, учётной записи
-нет, сшивки покупок между магазинами нет. Решение состоит из четырёх частей.
+## Decision
 
-1. **Состояние кэшируется на устройстве.** Подписка проверяется запросом к магазину
-   (`obtainOwnedPurchases` — он же обязательный пункт предвыпускной проверки AppGallery) при
-   каждом запуске с сетью; результат ложится в локальное состояние, из которого живут все гейты
-   состава «Про».
-2. **Срока давности у кэша нет.** Магазин недоступен — доступ сохраняется, и это не «до N дней»:
-   бессрочно (П-6). Принятый риск назван честно: человек, отменивший подписку и не выходящий
-   в сеть, остаётся с доступом.
-3. **Покупка не переносится между магазинами.** Восстановление — только внутри своего магазина
-   (Р-39); при возврате RuStore (SKL-124) правило не меняется, у каждого магазина своя покупка.
-4. **Отмена — платформенная.** Отменяет магазин (экран управления подписками); приложение
-   показывает состояние и ведёт туда (`startIapActivity`), само ничего не отменяет и не
-   комментирует отмену человеком. Отказ магазина не блокирует ни одну функцию учёта.
+The source of truth about a subscription was the store, and only the store. There was no entitlement
+server, no account and no stitching of purchases between stores. Four parts:
 
-## Основание
+1. **State cached on the device.** The subscription was checked by a store query
+   (`obtainOwnedPurchases`, also a mandatory item of AppGallery pre-release review) at every launch
+   with a network; the result went into local state, from which every paid-tier composition check
+   lived.
+2. **The cache had no expiry.** With the store unreachable, access was preserved, and not "for N
+   days" but indefinitely. The accepted risk was named: a person who cancelled the subscription and
+   never went online kept access.
+3. **A purchase did not move between stores.** Restoration worked only inside the store that sold the
+   purchase; each store had its own purchase.
+4. **Cancellation was the platform's.** The store cancelled on its subscription management screen; the
+   app showed the state and led there (`startIapActivity`), cancelling nothing itself. A store refusal
+   blocked no tracking function.
 
-**Почему без сервера.** Надёжность напоминания — обещание продукта (П-1), и платный слой не имеет
-права её касаться: серверная проверка подписки — точка отказа, из-за которой отметка приёма или
-показ напоминания упёрлись бы в чужой сервис (Р-7, П-6).
+## Consequences
 
-**Почему кэш бессрочный, а не «30/90 дней».** Продукт офлайновый по обещанию; любой срок — это
-отключение доступа за то, что человек не выходил в интернет. Отказ в доступе из-за неудачной
-проверки — отказ продукта в его главном обещании, поэтому деградация возможна только в сторону
-«доступ сохранён» (П-6).
-
-**Альтернатива, которая выглядела дешевле и отвергнута — сервер энтитлментов** (описана
-в `docs/norm/02-monetization.md` §4.4). Она дала бы сшивку покупок между магазинами и защиту от
-обхода «переустановил приложение», но требует учётной записи или идентификатора установки как
-персональных данных, сервера, юридического контура обработки и денег на сопровождение — всё это
-ради защиты выручки, которой у подписки без ИИ-ввода ещё нет.
-
-**Почему решение совместимо с ревью магазина.** Требование AppGallery вызывать
-`obtainOwnedPurchases` при запуске и вести человека в экран управления подписками ложится ровно
-на эту схему: источник один — магазин.
-
-## Следствия
-
-- Проверка подписки — часть платного сетевого контура: `INTERNET` объявляется только там, гейты
-  состава артефакта пересматриваются вместе с задачей (`ADR-0010` §1, §5).
-- Витрина и её состояния — общая шторка (Р-67); поведение — `docs/norm/04-behavior.md` §5.9, вид
-  и тексты — `docs/norm/06-design.md` §5.9 и §10, коммерческая сторона —
-  `docs/norm/02-monetization.md` §11.
-- В файл переноса данных состояние подписки не входит (ПЕР-37): покупка не переносится ни между
-  магазинами, ни между установками.
-- Возврат к серверу энтитлментов возможен только новой записью Р-N и пересмотром этого ADR:
-  тогда у подписки станет два источника, и правило деградации придётся формулировать заново.
-
-## Пересмотры
-
-- 13.10.2026 · решение принято впервые · Р-7, П-6, Р-39, Р-68 (`docs/journal/decisions.md`).
-- 15.10.2026 · реализовано задачей SKL-122: контур в сборке (`billing-appgallery` поверх
-  `com.huawei.hms:iap`), состояние кэшируется в постоянных настройках устройства без срока
-  давности, восстановление — внутри своего магазина, отмена — платформенная (`startIapActivity`).
-  Решение не пересматривалось: сервера энтитлментов не появилось, второго источника правды нет.
+- The subscription check was part of the paid network contour: `INTERNET` was declared only there, and
+  artifact composition checks were revised with it (ADR-0010 items 1 and 5).
+- The storefront and its states were one shared surface; the storefront sat at the point of choosing a
+  paid function.
+- Subscription state was not part of the transfer file: a purchase moved neither between stores nor
+  between installations.
+- Returning to an entitlement server would have required a new ADR: the subscription would have had
+  two sources, and the degradation rule would have had to be formulated anew.

@@ -1,65 +1,50 @@
-# ADR-0003. Точные будильники `AlarmManager` вместо `WorkManager`
+# 0003 — Exact alarms through `AlarmManager`, not `WorkManager`
 
-## Статус
+Status: Accepted. Intake reminders use `setAlarmClock`.
 
-Действует. Механизм напоминаний о приёмах — `setAlarmClock` (пересмотр 01.10.2026).
+## Context
 
-## Решение
+A reminder must arrive within ±2 minutes of the appointed time, and that promise has to survive
+reboot, Doze, time-zone change and vendor power management. `WorkManager` means "no earlier than"
+with a window of tens of minutes under Doze; `setRepeating` has been inexact since API 19; a
+foreground service keeps a permanent notification and drains the battery; push needs a server, which
+the core does not have.
 
-1. **Напоминания о приёмах** ставятся через `AlarmManager.setAlarmClock` (`AlarmClockInfo` с моментом
-   срабатывания и интентом показа `PendingIntent`) — `app/.../platform/reminder/AlarmManagerGateway.kt`.
-   Обычная сборка всегда использует этот механизм; сохранённую стратегию читает только измерительная.
-2. **Служебные будильники** — якорь перепланирования (НАП-8, 03:17 локально) и граница суток —
-   остаются на `setExactAndAllowWhileIdle`: системный индикатор будильника обязан показывать
-   только ближайшее напоминание о приёме (НАП-42).
-3. Планируется окно вперёд на 48 часов (НАП-7, `ReminderWindow.HORIZON`), а не весь курс.
-4. Перепланирование выполняется по `BOOT_COMPLETED` (НФТ-2), до разблокировки по
-   `LOCKED_BOOT_COMPLETED` из device-protected хранилища (НАП-11, НАП-44), при смене часового
-   пояса и системного времени (НФТ-4, НФТ-35, `ADR-0013`), после изменения расписания,
-   архивации и смены профиля (НФТ-6), после каждого сработавшего будильника (НФТ-7)
-   и при старте приложения (НФТ-5).
-5. Объявлены оба разрешения: `USE_EXACT_ALARM` — основное, `SCHEDULE_EXACT_ALARM` — запасное
-   (`app/src/main/AndroidManifest.xml:79-80`). Перед планированием проверяется `canScheduleExactAlarms()`,
-   выдачу права ловит приёмник `ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED`. Молчаливая деградация
-   до неточных будильников запрещена: без права напоминания не ставятся вовсе, человек видит предупреждение
-   (НАП-16).
-6. Онбординг разрешений обязателен (НАП-19); самопроверку доставки человек запускает сам,
-   идёт она боевым путём (НАП-43).
+Exact alarms are not immune to the environment either. On EMUI 15 nine exact alarms and the anchor
+were held until the app was opened, with deviations of 2321 to 14921 s. `setExactAndAllowWhileIdle`
+frees a firing from Doze but does not oblige the system to deliver it at that moment.
 
-## Основание
+## Decision
 
-Окно ±2 минуты (НФТ-1) недостижимо ни через `WorkManager` («не раньше чем», окно в десятки минут в Doze),
-ни через `setRepeating` (неточен с API 19), ни через службу переднего плана (постоянное уведомление
-и расход батареи), ни через пуш-уведомления (сеть — `ADR-0002`). Инцидент пилота 01.10.2026 на EMUI 15:
-среда удержала девять точных будильников и якорь до открытия приложения, отклонения 2321…14921 с —
-`setExactAndAllowWhileIdle` освобождает срабатывание от Doze, но не обязывает систему доставить его в момент.
+1. **Intake reminders** are scheduled with `AlarmManager.setAlarmClock` (`AlarmClockInfo` carrying
+   the trigger moment and the show `PendingIntent`), in
+   `app/.../platform/reminder/AlarmManagerGateway.kt`. The regular build always uses this mechanism;
+   only the measurement build reads a saved strategy.
+2. **Service alarms**, the reschedule anchor (03:17 local) and the day boundary, stay on
+   `setExactAndAllowWhileIdle`: the system alarm indicator must show only the nearest intake
+   reminder.
+3. Scheduling covers a window 48 hours ahead (`ReminderWindow.HORIZON`), not the whole course.
+4. Rescheduling runs on `BOOT_COMPLETED`, on `LOCKED_BOOT_COMPLETED` before unlock from
+   device-protected storage, on a time-zone or system-time change, after a schedule change,
+   archival or profile switch, after every fired alarm, and at app start.
+5. Both permissions are declared: `USE_EXACT_ALARM` as the primary one, `SCHEDULE_EXACT_ALARM` as
+   the fallback. `canScheduleExactAlarms()` is checked before scheduling, and the grant is caught by
+   the receiver of `ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED`. Silent degradation to
+   inexact alarms is forbidden: without the permission no reminders are scheduled at all and the
+   person sees a warning.
+6. Permission onboarding is mandatory. The delivery self-check is started by the person and runs
+   through the production path.
 
-## Следствия
+## Consequences
 
-- Системный индикатор будильника виден на экране блокировки и в статус-баре; скрыть его,
-  оставаясь на `setAlarmClock`, нельзя. Приложение объясняет его словами на экранах
-  «Настроить надёжность» и «Проверка напоминаний» (НАП-42).
-- Расход батареи выше, чем у `setExactAndAllowWhileIdle`: приоритет надёжности над экономией зафиксирован
-  (НАП-1), расход измеряется (НФТ-27).
-- Очередь будильников — состояние вне базы: перепланирование идемпотентно и проверяется
-  тестом, сравнивающим множество базы и множество очереди (НФТ-6).
-- Каждое срабатывание обязано планировать следующее (НФТ-7); факты пишутся в журнал
-  срабатываний (НФТ-50…НФТ-52).
-- Гейт надёжности (≥95 % в окне ±2 мин за непрерывный прогон) на одном эталоне не пройден
-  (`docs/research/as-is.md` §7); гейт переносится на матрицу устройств, правило арифметики окна
-  `outage` фиксируется до старта прогона (Р-13).
-- Пересмотр схемы разрешений (`SCHEDULE_EXACT_ALARM` с запросом у человека как основной путь)
-  и обязательная деградация полноэкранного напоминания на Android 14+ — фаза 1
-  `docs/norm/03-roadmap.md`. Деградация до баннера решена и проверена (SKL-112: баннер считается
-  предъявлением, самопроверка им не валится); пересмотр «основное право» решением Р-59 отложен
-  до первой подачи в магазин и решается по его ответу — до этого основное право `USE_EXACT_ALARM`.
-
-## Пересмотры
-
-- 01.10.2026 · механизм напоминаний заменён `setExactAndAllowWhileIdle` → `setAlarmClock`, служебные
-  будильники оставлены на прежнем · инцидент пилота (`docs/archive/tasks/SKL-03/pilot-findings-2026-10-01.md`), SKL-85.
-- 07.10.2026 · онбординг из пяти шагов EMUI пересматривается на универсальный с вендорными
-  ветками Xiaomi, Samsung, Huawei · Р-1, фаза 1 `docs/norm/03-roadmap.md`.
-- 12.10.2026 · вендорские ветки реализованы: три профиля с таблицей шагов, словами и адресами
-  разделов — SKL-112; шаг «Точные будильники» следует за ответом системы, диалога у права нет,
-  баннер вместо карточки считается предъявлением · Р-59, Р-60.
+- The system alarm indicator is visible on the lock screen and in the status bar; it cannot be
+  hidden while staying on `setAlarmClock`. The screens `«Настроить надёжность»` ("Set up
+  reliability") and `«Проверка напоминаний»` ("Check reminders") explain it in words.
+- Battery use is higher than with `setExactAndAllowWhileIdle`: reliability outranks economy, and the
+  consumption is measured.
+- The alarm queue is state outside the database. Rescheduling is idempotent and is tested by
+  comparing the database set with the queue set.
+- Every firing must schedule the next one; otherwise the chain breaks silently. Each firing is
+  recorded in the delivery log.
+- Reliability is measured per device on the device matrix: at least 95 % of deliveries within
+  ±2 minutes over a continuous run. A firing delayed by the environment counts as late.
