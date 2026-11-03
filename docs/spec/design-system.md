@@ -341,7 +341,7 @@ Five `IntakeCardState` values; the component owns the dictionary and screens add
 
 ### 5.7 Confirming a destructive action by a typed word
 
-The action is confirmed by typing a sample word, part of the sentence «Введите слово «%1$s», чтобы подтвердить» ("Type «%1$s» to confirm"), one resource for all actions; the field is `SklyankaTextField` at `FieldHeight` 50 dp; the button is a `PrimaryButton` of kind `Danger`.
+The action is confirmed by typing a sample word, part of the sentence «Введите слово %1$s, чтобы подтвердить» ("Type %1$s to confirm"), one resource for all actions; the field is `SklyankaTextField` at `FieldHeight` 50 dp; the button is a `PrimaryButton` of kind `Danger`.
 
 - **Input.** Plain text, caret in the field, autocorrection and auto-capitalization off, since the system must not "improve" a copied word. Comparison ignores case; the field never enters an error state, and wrong input is visible through the unavailable button.
 - **Sample word** stands as a visible line above the field, so it is copied by eye; comparison uses the same resource. Matching is `trim()`-ed, case-insensitive, with inner spaces significant.
