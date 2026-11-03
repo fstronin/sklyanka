@@ -5,8 +5,6 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsScreen
-import ru.stohastika.sklyanka.ui.analytics.TrackScreenView
 
 /**
  * Экран «Сегодня» вместе с его состоянием.
@@ -18,8 +16,6 @@ import ru.stohastika.sklyanka.ui.analytics.TrackScreenView
 @Composable
 fun TodayRoute(viewModel: TodayViewModel, navigation: TodayNavigation, modifier: Modifier = Modifier) {
     val state by viewModel.state.collectAsState()
-    // Показ экрана — один раз на вход: повторная композиция события не плодит (TDD §5.4).
-    TrackScreenView(AnalyticsScreen.TODAY)
     // Уход с экрана любым путём — конец окна отмены (SKL-30): один механизм на все
     // маршруты вместо пяти вызовов по местам навигации, где шестой о нём забыл бы.
     DisposableEffect(Unit) {

@@ -22,14 +22,10 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsConsentState
 import ru.stohastika.sklyanka.domain.pro.ProNotice
 import ru.stohastika.sklyanka.domain.pro.ProStatus
 import ru.stohastika.sklyanka.domain.profile.ProfileCreationDecision
 import ru.stohastika.sklyanka.domain.reminder.SnoozeIntervals
-import ru.stohastika.sklyanka.ui.analytics.AnalyticsConsentSurface
 import ru.stohastika.sklyanka.ui.component.BottomBar
 import ru.stohastika.sklyanka.ui.component.BottomBarTab
 import ru.stohastika.sklyanka.ui.component.CheckGlyph
@@ -102,7 +98,7 @@ fun SettingsScreen(state: SettingsUiState, onIntent: (SettingsIntent) -> Unit, m
                 // «Оформление» — между «Системой» и «Данными» (Р-67 п. 6, §5.17): оформление
                 // принадлежит приложению, а не данным, и под строку «Склянка Про» ему не место.
                 appearanceBlock(state, onIntent)
-                dataBlock(state, onIntent)
+                dataBlock(onIntent)
                 // Строка «Склянка Про» — только в платном варианте (Р-86): в бесплатной
                 // сборке входа в покупку нет, и блока нет вовсе, а не «пустого».
                 if (proUiEnabled) {
@@ -134,9 +130,9 @@ fun SettingsScreen(state: SettingsUiState, onIntent: (SettingsIntent) -> Unit, m
 }
 
 /**
- * Модальные слои настроек: откладывание, оформление и вопрос об аналитике.
+ * Модальные слои настроек: откладывание и оформление.
  *
- * Вынесены отдельной функцией, а не четырьмя `if` в экране: экран от этого перестаёт
+ * Вынесены отдельной функцией, а не тремя `if` в экране: экран от этого перестаёт
  * быть ветвлением на каждый диалог, а порядок слоёв остаётся в одном месте — затемнение
  * одно на все модальные поверхности (§2.3).
  */
@@ -153,12 +149,6 @@ private fun SettingsModals(state: SettingsUiState, onIntent: (SettingsIntent) ->
     }
     if (state.iconPickerVisible) {
         IconPickerDialog(state, onIntent)
-    }
-    // Вопрос о согласии на аналитику — поверх настроек (ПМ-25 п. 4): строка лишь
-    // просит его открыть, а согласие даётся в общей поверхности, одной на первый
-    // запуск и настройки.
-    if (state.analyticsPromptVisible) {
-        AnalyticsConsentDialog(onIntent)
     }
 }
 
@@ -429,8 +419,8 @@ private fun PermissionsRow(permissions: PermissionsSummary, onClick: () -> Unit)
     )
 }
 
-/** Раздел «Данные»: история приёмов (SKL-18), перенос данных (SKL-19), аналитика и политика. */
-private fun LazyListScope.dataBlock(state: SettingsUiState, onIntent: (SettingsIntent) -> Unit) {
+/** Раздел «Данные»: история приёмов (SKL-18), перенос данных (SKL-19) и политика. */
+private fun LazyListScope.dataBlock(onIntent: (SettingsIntent) -> Unit) {
     item {
         SettingsBlock(stringResource(R.string.settings_rubric_data)) {
             SettingsRow(
@@ -459,66 +449,12 @@ private fun LazyListScope.dataBlock(state: SettingsUiState, onIntent: (SettingsI
                 modifier = Modifier.testTag(TAG_TRANSFER_ROW),
             )
             RowDivider()
-            // «Аналитика» — перед политикой и последней настраиваемой строкой блока (ПМ-25):
-            // политика читается, а не настраивается, и переключатель перед ней закрывает
-            // настройки данных, не разрывая их ссылкой наружу.
-            AnalyticsRow(state.analytics) { enabled ->
-                onIntent(SettingsIntent.SetAnalyticsEnabled(enabled))
-            }
-            RowDivider()
             SettingsRow(
                 title = stringResource(R.string.settings_policy),
                 onClick = { onIntent(SettingsIntent.OpenPolicy) },
                 modifier = Modifier.testTag(TAG_POLICY_ROW),
             )
         }
-    }
-}
-
-/**
- * Строка «Аналитика»: текущий выбор и короткое пояснение (ПМ-25, Р-96).
- *
- * Отмечено ровно «Включено»: «ещё не спрашивали» и «отказался» выглядят одинаково —
- * выключенным переключателем, — и это честно: отправки нет ни в одном из этих состояний.
- * Слово выбора стоит в подписи, потому что переключатель его не называет словами, а статус
- * не передаётся одним положением бегунка (НФТ-30, НФТ-33).
- */
-@Composable
-private fun AnalyticsRow(analytics: AnalyticsConsentState, onCheckedChange: (Boolean) -> Unit) {
-    val allowed = analytics == AnalyticsConsentState.ALLOWED
-    val stateWord = stringResource(if (allowed) R.string.settings_analytics_on else R.string.settings_analytics_off)
-    // Тег — на обёртке, а не на строке: `SklyankaSwitchRow` носит собственный тег, и второй
-    // тег того же узла читался бы не гарантированно. По этому тегу стенд и приёмка находят строку.
-    Box(modifier = Modifier.testTag(TAG_ANALYTICS_ROW)) {
-        SklyankaSwitchRow(
-            label = stringResource(R.string.settings_analytics),
-            caption = stringResource(R.string.settings_analytics_caption, stateWord),
-            checked = allowed,
-            onCheckedChange = onCheckedChange,
-        )
-    }
-}
-
-/**
- * Вопрос о согласии поверх настроек — та же поверхность, что на первом запуске (ПМ-25 п. 4).
- *
- * Ссылка на политику здесь есть: при включении из настроек человек вправе перечитать её
- * до решения (ПМ-25 п. 4), а на первом запуске её только что приняли отдельным диалогом.
- * Закрытие вопроса без решения выбор не меняет (АН-2).
- */
-@Composable
-private fun AnalyticsConsentDialog(onIntent: (SettingsIntent) -> Unit) {
-    Dialog(
-        onDismissRequest = { onIntent(SettingsIntent.DismissAnalyticsPrompt) },
-        // Поверхность занимает окно целиком, как на первом запуске: собственные поля
-        // диалога разрезали бы её на «карточку», которой в макете нет (SKL-165, §5.4).
-        properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnBackPress = true),
-    ) {
-        AnalyticsConsentSurface(
-            onAllow = { onIntent(SettingsIntent.ConfirmAnalytics) },
-            onDecline = { onIntent(SettingsIntent.DismissAnalyticsPrompt) },
-            onOpenPolicy = { onIntent(SettingsIntent.OpenPolicy) },
-        )
     }
 }
 
@@ -660,14 +596,6 @@ internal const val TAG_HISTORY_ROW = "settings_history_row"
  */
 internal const val TAG_EXPORT_ROW = "settings_export_row"
 internal const val TAG_TRANSFER_ROW = "settings_transfer_row"
-
-/**
- * Строка «Аналитика» (ПМ-25, Р-96).
- *
- * Отдельный тег: по нему поход и экранный стенд находят выбор согласия, и он же называет
- * поверхность в реестре `docs/tasks/SKL-140/TDD.md` §7.
- */
-internal const val TAG_ANALYTICS_ROW = "settings_analytics_row"
 
 internal const val TAG_POLICY_ROW = "settings_policy_row"
 

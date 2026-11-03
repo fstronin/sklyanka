@@ -7,11 +7,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import ru.stohastika.sklyanka.domain.analytics.ActionSource
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsRecorder
-import ru.stohastika.sklyanka.domain.analytics.IntakeAction
-import ru.stohastika.sklyanka.domain.analytics.IntakeActionKind
-import ru.stohastika.sklyanka.domain.analytics.ReminderSnoozed
 import ru.stohastika.sklyanka.domain.intake.MarkIntakeUseCase
 import ru.stohastika.sklyanka.domain.intake.MarkRequest
 import ru.stohastika.sklyanka.domain.intake.MarkResult
@@ -45,14 +40,6 @@ class ReminderViewModel @Inject constructor(
     private val settings: ReminderSettings,
     /** Носитель последнего действия: снэкбар покажет «Сегодня» (ОВ-81, SKL-30). */
     private val undoActions: UndoableActionStore,
-    /**
-     * Запись событий отметки и откладывания (SKL-165, АН-1).
-     *
-     * Одно нажатие карточки — одно событие: «Принято для всех» отмечает несколько
-     * приёмов, но действие человека одно. Событие ставится только по состоявшейся
-     * отметке: проигравшая (`Ignored`) нового действия не образует.
-     */
-    private val analytics: AnalyticsRecorder,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<ReminderUiState>(ReminderUiState.Loading)
@@ -89,8 +76,6 @@ class ReminderViewModel @Inject constructor(
         val current = _state.value as? ReminderUiState.Card ?: return
         viewModelScope.launch {
             current.items.forEach { snooze(it.intakeId, current.snoozeMinutes) }
-            // Откладывание — самостоятельное действие: у действия своё имя в каталоге.
-            analytics.record(ReminderSnoozed(ActionSource.PHONE))
             _state.value = ReminderUiState.Closed
         }
     }
@@ -106,7 +91,6 @@ class ReminderViewModel @Inject constructor(
         val name = state.items.firstOrNull { it.intakeId == intakeId }?.name
         viewModelScope.launch {
             val outcome = mark(MarkRequest(intakeId = intakeId, result = result, source = IntakeSource.PHONE))
-            if (outcome.isCompleted) analytics.record(IntakeAction(result.kind(), ActionSource.PHONE))
             val closed = reload()
             if (!closed || !outcome.isCompleted) return@launch
             undoActions.publishMark(
@@ -132,9 +116,6 @@ class ReminderViewModel @Inject constructor(
                 )
             }
             val completed = outcomes.filter { (_, outcome) -> outcome.isCompleted }
-            // Одно нажатие на несколько строк — одно событие, а не событие на приём.
-            // Записывается оно по состоявшимся отметкам, а не по закрытию карточки.
-            if (completed.isNotEmpty()) analytics.record(IntakeAction(result.kind(), ActionSource.PHONE))
             val closed = reload()
             if (!closed || completed.isEmpty()) return@launch
             undoActions.publishMark(
@@ -143,12 +124,6 @@ class ReminderViewModel @Inject constructor(
                 medicationNames = completed.mapNotNull { (intakeId, _) -> names[intakeId] },
             )
         }
-    }
-
-    /** Вид отметки для каталога событий: у нажатия ровно два значения (АН-3). */
-    private fun MarkResult.kind(): IntakeActionKind = when (this) {
-        MarkResult.TAKEN -> IntakeActionKind.TAKEN
-        MarkResult.SKIPPED -> IntakeActionKind.SKIPPED
     }
 
     /**

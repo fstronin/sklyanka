@@ -3,7 +3,6 @@ package ru.stohastika.sklyanka.feature.settings
 import androidx.compose.ui.test.SemanticsNodeInteractionsProvider
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
@@ -11,7 +10,6 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.assertEquals
@@ -20,11 +18,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsConsentState
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderSettingsValues
-import ru.stohastika.sklyanka.ui.analytics.TAG_ANALYTICS_CONSENT_ALLOW
-import ru.stohastika.sklyanka.ui.analytics.TAG_ANALYTICS_CONSENT_DECLINE
-import ru.stohastika.sklyanka.ui.analytics.TAG_ANALYTICS_CONSENT_SCREEN
 import ru.stohastika.sklyanka.ui.component.TAG_BOTTOM_BAR
 import ru.stohastika.sklyanka.ui.component.TAG_LIST_PICKER_OPTION
 import ru.stohastika.sklyanka.ui.component.TAG_LIST_PICKER_SELECTED
@@ -183,18 +177,16 @@ class SettingsScreenTest {
     /**
      * `ОВ-11`: «Тихие часы» из макета в продукт не идут.
      *
-     * Переключателей на экране ровно два — настойчивое напоминание и аналитика (SKL-165);
-     * тихих часов среди них нет. Проверяется составом строк, а не отсутствием текста:
-     * строки нет ни в ресурсах, ни в коде, и искать её по названию значило бы проверять
-     * опечатку.
+     * Переключатель на экране один — настойчивое напоминание; тихих часов среди строк нет.
+     * Проверяется составом строк, а не отсутствием текста: строки нет ни в ресурсах,
+     * ни в коде, и искать её по названию значило бы проверять опечатку.
      */
     @Test
-    fun theOnlySwitchesOnTheScreenAreThePersistentReminderAndAnalytics() {
+    fun theOnlySwitchOnTheScreenIsThePersistentReminder() {
         show()
 
-        assertEquals(TWO, composeRule.onAllNodesWithTag(TAG_SWITCH_ROW).fetchSemanticsNodes().size)
+        assertEquals(1, composeRule.onAllNodesWithTag(TAG_SWITCH_ROW).fetchSemanticsNodes().size)
         composeRule.onNodeWithText(string(R.string.settings_persistent), useUnmergedTree = true).assertExists()
-        composeRule.onNodeWithText(string(R.string.settings_analytics), useUnmergedTree = true).assertExists()
     }
 
     /** НАП-27: звук один на всё приложение, второго выбора на экране нет. */
@@ -256,64 +248,6 @@ class SettingsScreenTest {
         composeRule.onNodeWithTag(TAG_TRANSFER_ROW).performClick()
 
         assertEquals(listOf(SettingsIntent.OpenHistory, SettingsIntent.OpenDataTransfer), intents)
-    }
-
-    /**
-     * ПМ-25, Р-96: строка «Аналитика» показывает решение словами и просит вопрос.
-     *
-     * Отказ на экране выглядит выключенным переключателем и словом «Выключено»: состояние
-     * не передаётся одним положением бегунка (НФТ-30, НФТ-33). Нажатие только просит
-     * открыть вопрос — согласие экран не даёт.
-     */
-    @Test
-    fun theAnalyticsRowStatesTheRefusalAndStartsTheQuestion() {
-        val intents = mutableListOf<SettingsIntent>()
-        show(SettingsScreenFixtures.state(analytics = AnalyticsConsentState.DECLINED), onIntent = intents::add)
-
-        composeRule.onNodeWithTag(TAG_ANALYTICS_ROW).assertExists()
-        val caption = context.getString(
-            R.string.settings_analytics_caption,
-            string(R.string.settings_analytics_off),
-        )
-        composeRule.onNodeWithText(caption, useUnmergedTree = true).assertExists()
-
-        composeRule.onNodeWithText(string(R.string.settings_analytics)).performScrollTo().performClick()
-
-        assertEquals(listOf(SettingsIntent.SetAnalyticsEnabled(true)), intents)
-    }
-
-    /** Согласие видно словом «Включено», и переключатель стоит во включённом положении. */
-    @Test
-    fun theAnalyticsRowShowsTheEnabledChoice() {
-        show(SettingsScreenFixtures.state(analytics = AnalyticsConsentState.ALLOWED))
-
-        val caption = context.getString(
-            R.string.settings_analytics_caption,
-            string(R.string.settings_analytics_on),
-        )
-        composeRule.onNodeWithText(caption, useUnmergedTree = true).assertExists()
-        composeRule.onNodeWithText(string(R.string.settings_analytics)).assertIsOn()
-    }
-
-    /**
-     * Вопрос о согласии открывается поверх настроек и не решает за человека (ПМ-25 п. 4).
-     *
-     * Обе кнопки поверхности уходят намерениями: «Разрешить» — согласие, тихое «не надо» —
-     * закрытие без решения.
-     */
-    @Test
-    fun theAnalyticsQuestionOpensOverTheSettings() {
-        val intents = mutableListOf<SettingsIntent>()
-        show(SettingsScreenFixtures.state(analyticsPromptVisible = true), onIntent = intents::add)
-
-        composeRule.onNodeWithTag(TAG_ANALYTICS_CONSENT_SCREEN).assertExists()
-        composeRule.onNodeWithTag(TAG_ANALYTICS_CONSENT_ALLOW).performClick()
-        composeRule.onNodeWithTag(TAG_ANALYTICS_CONSENT_DECLINE).performClick()
-
-        assertEquals(
-            listOf(SettingsIntent.ConfirmAnalytics, SettingsIntent.DismissAnalyticsPrompt),
-            intents,
-        )
     }
 
     /** Строка «Разрешения и автозапуск» ведёт в диагностику напоминаний (решение по `ОВ-48`). */

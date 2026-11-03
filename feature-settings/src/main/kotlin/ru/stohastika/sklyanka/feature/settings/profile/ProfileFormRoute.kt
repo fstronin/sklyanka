@@ -8,8 +8,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsScreen
-import ru.stohastika.sklyanka.ui.analytics.TrackScreenView
 
 /**
  * Форма профиля вместе с её состоянием: мастер и правка (SKL-121).
@@ -35,9 +33,6 @@ fun ProfileFormRoute(
     modifier: Modifier = Modifier,
     onOpenPro: () -> Unit = {},
 ) {
-    // Мастер и правка — один экран профилей: показ пишется один раз за вход
-    // (SKL-165, TDD §5.4).
-    TrackScreenView(AnalyticsScreen.PROFILES)
     var opened by rememberSaveable(mode) { mutableStateOf(false) }
     LaunchedEffect(mode) {
         if (!opened || viewModel.state.value == null) {

@@ -8,8 +8,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
-import ru.stohastika.sklyanka.acceptance.AnalyticsCatalogFacts
-import ru.stohastika.sklyanka.acceptance.NetworkContourFacts
 import ru.stohastika.sklyanka.acceptance.RussianDates
 import ru.stohastika.sklyanka.acceptance.RussianNames
 import ru.stohastika.sklyanka.acceptance.steps.dateOf
@@ -421,26 +419,6 @@ class HistoryContextSteps(private val world: AcceptanceWorld) {
         assertEquals(SEPTEMBER.lengthOfMonth(), report.period.days.size, "the report must hold every day of the month")
         assertTrue(report.profileName.isNotEmpty(), "the report must name its profile")
         assertNotNull(report.generatedAt, "the report must carry the moment it was built")
-    }
-
-    /**
-     * Отчёт и журнал наружу не уходят: сеть сборки — только контур аналитики (Р-93).
-     *
-     * Утверждение о **сборке**, и проверяется оно данными гейта состава (`ADR-0017`):
-     * `INTERNET` объявляют только сетевые контуры, поставляемая сборка несёт лишь контур
-     * аналитики, а единственное, что этот контур способен передать, — события каталога
-     * без медицинских данных. Прямая проверка «запросов нет» на сценарном уровне была бы
-     * ложью: после Р-93 приложение действительно ходит в сеть — событиями, по согласию.
-     *
-     * Раньше шаг читал `app/src/main/AndroidManifest.xml`: после SKL-165 `INTERNET`
-     * приходит из манифеста контура, и «разрешения нет» проходило при любом поведении.
-     */
-    @Then("^сеть сборки объявлена только контуром аналитики, и события аналитики не несут медицинских данных$")
-    fun theBuildNetworkBelongsToTheAnalyticsContour() {
-        NetworkContourFacts.assertDeclaredOnlyByContours()
-        NetworkContourFacts.assertShippedContourIsAnalyticsOnly()
-        NetworkContourFacts.assertNoForbiddenDeclarations()
-        AnalyticsCatalogFacts.assertNoFreeTextInEvents()
     }
 
     @Then("^в локальном журнале приложения есть запись о формировании отчёта с периодом и числом записей$")

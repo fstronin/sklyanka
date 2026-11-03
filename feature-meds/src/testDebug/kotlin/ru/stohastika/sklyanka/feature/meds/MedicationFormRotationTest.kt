@@ -18,8 +18,6 @@ import androidx.compose.ui.test.performTextInput
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -96,7 +94,6 @@ class MedicationFormRotationTest {
         ),
         time = clock,
         proStatus = ObserveProStatusUseCase(FakeProCache(), clock),
-        analytics = AnalyticsTestKit(CoroutineScope(Dispatchers.Unconfined)).recorder,
     )
 
     @After

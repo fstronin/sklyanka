@@ -1,6 +1,6 @@
 # Sklyanka: Architecture Specification
 
-The stack, the fifteen Gradle modules and their allowed dependencies, the build checks that hold
+The stack, the fourteen Gradle modules and their allowed dependencies, the build checks that hold
 the module and artifact rules, the path of an intake from schedule to report, and the boundaries
 enforced by the build.
 
@@ -21,26 +21,24 @@ depend on platform APIs directly.
 and `targetSdk` 35, application ID `ru.stohastika.sklyanka`, and interface locales with Russian as
 default.
 
-There is no Google Play Services, Firebase, server, account or synchronization; the analytics
-contour of §5 is the only network path in the shipped build.
+There is no Google Play Services, Firebase, server, account, synchronization, advertising or client analytics; the shipped `free` build contains no network module and declares no network permission. The paid contour of §5 is the only network module and is not shipped.
 
 ## 2. Module map
 
-Fifteen Gradle modules exist; `build-logic` and `config/detekt/rules` are included builds. Below,
+Fourteen Gradle modules exist; `build-logic` and `config/detekt/rules` are included builds. Below,
 `screen` = `core-domain`, `core-ui`, `core-data`; `view` = `core-domain`, `core-ui`.
 
 | Module | Type | Responsibility | Allowed dependencies |
 |---|---|---|---|
-| `:app` | application | Hilt graph, navigation, manifest, receivers, channels, alarm scheduler, platform adapters | `core-domain`, `core-ui`, `core-data`, `core-analytics`, all `feature-*` except `feature-pro`; `pro` adds `feature-pro`, `billing-appgallery`; `testDebug` adds `acceptance` |
+| `:app` | application | Hilt graph, navigation, manifest, receivers, channels, alarm scheduler, platform adapters | `core-domain`, `core-ui`, `core-data`, all `feature-*` except `feature-pro`; `pro` adds `feature-pro`, `billing-appgallery`; `testDebug` adds `acceptance` |
 | `:core-domain` | Kotlin/JVM | Entities, statuses, invariants, schedule expansion, windows, use cases, adherence and report model, repository interfaces, ports | none |
 | `:core-data` | Android lib | Room entities, DAOs, migrations and schemas, repositories, mappers, DataStore stores, journals, transfer file | `core-domain` |
 | `:core-ui` | Android lib | Tokens, typography, theme, base components, shared strings, locale, previews | `core-domain` |
-| `:core-analytics` | Android lib | Analytics contour: `AnalyticsTransport` over MyTracker and its permissions | `core-domain` |
 | `:billing-appgallery` | Android lib | Paid contour: `ProStore` over AppGallery IAP and its permission | `core-domain` |
 | `:feature-today` | Android lib | Today: intake lanes, as-needed section, marking with undo, remainder of the day | screen |
 | `:feature-meds` | Android lib | Medication list, form, card, course archive | screen |
 | `:feature-reminder` | Android lib | Reminder card and actions, deferral, diagnostics, delivery self-check | view |
-| `:feature-onboarding` | Android lib | Reliability onboarding, permissions, privacy policy, analytics consent | view |
+| `:feature-onboarding` | Android lib | Reliability onboarding, permissions, privacy policy | view |
 | `:feature-history` | Android lib | History, adherence month, breakdown, report for the doctor, PDF, CSV export | screen |
 | `:feature-settings` | Android lib | Settings, accent theme, profiles, data transfer | screen |
 | `:feature-pro` | Android lib | The single Pro showcase surface | view |
@@ -56,10 +54,10 @@ Dependencies point inward: `app -> feature-* -> core-ui / core-data -> core-doma
 
 - `core-domain` depends on no project module and has no Android plugin.
 - A `feature-*` never depends on another `feature-*`; shared detail moves into `core-*`.
-- `core-ui`, `core-data` and `core-analytics` depend on `core-domain` only.
+- `core-ui` and `core-data` depend on `core-domain` only.
 - Nothing depends on `:app`; `:acceptance` is a test dependency only.
 - Platform mechanisms are interfaces in `core-domain`, implemented outside it: alarms,
-  notifications, file system, clock and zone, analytics transport, store, report transfer,
+  notifications, file system, clock and zone, store, report transfer,
   journals. Hilt is not applied to `core-domain`.
 
 `verifyModuleDependencies` fails on any outward edge, and `verifyModuleDependencyRule` proves the
@@ -95,25 +93,24 @@ module, rule and contour checks, the rule tests and the acceptance run.
 keeps paid code compiling and unit-tested; it is neither signed nor shipped.
 
 A network contour is data in `build-logic`: a module, its permissions and the coordinates it needs.
+There is one, the paid contour, and it exists only in the `pro` variant.
 
 | Contour | Module | Permissions | Required coordinate | Variants |
 |---|---|---|---|---|
-| Analytics | `:core-analytics` | `INTERNET`, `ACCESS_NETWORK_STATE` | `com.my.tracker:mytracker-sdk` | `free`, `pro` |
 | Paid | `:billing-appgallery` | `INTERNET` | `com.huawei.hms:iap` | `pro` |
 
 Merged manifests are checked per variant. A contour permission is legal only when the contour is in
-the artifact and the declaring manifest belongs to it; a contour in the artifact must declare its
-permission, and a permission declared by both contours is legal when both are present.
-`ACCESS_WIFI_STATE` and `com.google.android.gms.permission.AD_ID` are forbidden always.
+the artifact and the declaring manifest belongs to it, and a contour in the artifact must declare
+its permission. `free` carries no contour, so its merged manifest declares no network permission at
+all: `INTERNET` and `ACCESS_NETWORK_STATE` are absent. `ACCESS_NETWORK_STATE`, `ACCESS_WIFI_STATE`
+and `com.google.android.gms.permission.AD_ID` are forbidden always.
 
 The resolved runtime classpath is checked too: `com.google.android.gms`, `com.google.firebase`,
-`com.google.android.play`, `com.crashlytics`, `io.fabric` and `com.google.mlkit` never appear, and
-the guarded groups `com.huawei` and `com.my.tracker` must match an explicit white list. The
-analytics module excludes the transitive `play-services-*`, Billing and Firebase encoders declared
-by MyTracker, and removes its `ACCESS_WIFI_STATE` and `AD_ID` from the manifest.
+`com.google.android.play`, `com.crashlytics`, `io.fabric`, `com.google.mlkit` and
+`com.my.tracker` never appear, and the guarded group `com.huawei` must match an explicit white list.
 
-Network code exists only in the contour modules; events carry no medical data and the provider
-starts only after consent.
+Network code exists only in the paid contour module, which is not shipped. No variant carries a
+client analytics SDK, and `free` has no network path at all.
 
 ## 6. Data flow
 
@@ -214,8 +211,8 @@ transaction, and identifiers are reissued inside it.
 
 ### 7.4 Offline first, no Google services
 
-No Google Play Services, Firebase, advertising SDK or third-party analytics may appear on any
-variant's runtime classpath. Network permissions exist only in the two contours, and a variant
-without a contour has no network path at all. Schedule, reminders, marks, history, stock, transfer,
-profiles and the report work with no network. Analytics is the only consented network path in the
-shipped build and sends nothing before consent. No medical data leaves the device.
+No Google Play Services, Firebase, advertising SDK or client analytics SDK may appear on any
+variant's runtime classpath. `free` carries no network contour: its manifest declares no network
+permission and the variant has no network path. The paid contour is the only network module and is
+not shipped. Schedule, reminders, marks, history, stock, transfer, profiles and the report work with
+no network. Nothing leaves the device.

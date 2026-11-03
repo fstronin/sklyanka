@@ -35,7 +35,6 @@ import ru.stohastika.sklyanka.domain.transfer.TransferCounts
 import ru.stohastika.sklyanka.domain.transfer.TransferFormat
 import ru.stohastika.sklyanka.domain.transfer.TransferMode
 import ru.stohastika.sklyanka.domain.transfer.ValidateSnapshot
-import ru.stohastika.sklyanka.feature.settings.AnalyticsTestKit
 import ru.stohastika.sklyanka.feature.settings.R
 import ru.stohastika.sklyanka.feature.settings.transfer.DataTransferScreen
 import ru.stohastika.sklyanka.feature.settings.transfer.DataTransferViewModel
@@ -320,8 +319,6 @@ internal object TransferScreenProbe {
             settings = transfer.settings,
             files = transfer.files,
             ids = ids,
-            // Стенду события аналитики не проверяются, но шов обязан быть настоящим (SKL-165).
-            analytics = AnalyticsTestKit().recorderForStand(),
             time = world.clock.time,
         )
     }

@@ -1,12 +1,10 @@
 package ru.stohastika.sklyanka.feature.today
 
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestCoroutineScheduler
 import ru.stohastika.sklyanka.domain.Transactor
 import ru.stohastika.sklyanka.domain.intake.CreatePrnIntakeUseCase
@@ -110,12 +108,6 @@ internal class TodayTestWorld(scheduler: TestCoroutineScheduler, startAt: LocalD
     val undoMark = UndoMarkUseCase(intakes, medications, profiles)
     val undoActions = UndoableActionStore(clock)
 
-    /**
-     * Аналитика в памяти (SKL-165): запись идёт в области планировщика теста,
-     * поэтому видна после `advanceUntilIdle()`.
-     */
-    val analytics = AnalyticsTestKit(CoroutineScope(StandardTestDispatcher(scheduler)))
-
     init {
         profiles.put(
             Profile(id = TodayTest.PROFILE, name = "self", color = 0, isSelf = true, mirrorReminders = false),
@@ -141,7 +133,6 @@ internal class TodayTestWorld(scheduler: TestCoroutineScheduler, startAt: LocalD
         time = clock,
         readReliability = ReadReminderReliabilityUseCase(permissionReader),
         explainDatabaseReset = ExplainDatabaseResetUseCase(InMemoryDatabaseLife(), clock),
-        analytics = analytics.recorder,
     )
 }
 

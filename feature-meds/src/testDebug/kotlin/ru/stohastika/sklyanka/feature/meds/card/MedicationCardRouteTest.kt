@@ -7,8 +7,6 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -19,7 +17,6 @@ import ru.stohastika.sklyanka.domain.medication.DeleteMedicationUseCase
 import ru.stohastika.sklyanka.domain.medication.RestoreMedicationUseCase
 import ru.stohastika.sklyanka.domain.stock.RefillStockUseCase
 import ru.stohastika.sklyanka.domain.undo.UndoableActionStore
-import ru.stohastika.sklyanka.feature.meds.AnalyticsTestKit
 import ru.stohastika.sklyanka.feature.meds.DirectTransactor
 import ru.stohastika.sklyanka.feature.meds.FakeActiveProfile
 import ru.stohastika.sklyanka.feature.meds.FakeIntakes
@@ -73,7 +70,6 @@ class MedicationCardRouteTest {
         ),
         time = clock,
         undoActions = undoActions,
-        analytics = AnalyticsTestKit(CoroutineScope(Dispatchers.Unconfined)).recorder,
     )
 
     @Test

@@ -650,7 +650,7 @@ class Sk117ScheduleSteps(private val world: AcceptanceWorld) {
             migrations.contains("MIGRATION_9_10"),
             "the upgrade must be declared as MIGRATION_9_10 (SKL-117, МГ-3)",
         )
-        // Версия базы с тех пор выросла (SKL-165: 11), и «последняя версия» — не то,
+        // Версия базы могла вырасти после видов расписания, и «последняя версия» — не то,
         // что утверждает сценарий: он говорит, что версия с видами расписания существует
         // и закреплена. Поэтому проверяется снимок схемы 10 и то, что база до неё дошла.
         val version = Regex("""const val VERSION = (\d+)""").find(sourceOf(DATABASE_FILE))

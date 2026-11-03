@@ -13,9 +13,6 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsRecorder
-import ru.stohastika.sklyanka.domain.analytics.MedicationAction
-import ru.stohastika.sklyanka.domain.analytics.MedicationActionKind
 import ru.stohastika.sklyanka.domain.medication.CourseCompletion
 import ru.stohastika.sklyanka.domain.medication.CourseProgress
 import ru.stohastika.sklyanka.domain.medication.DayCell
@@ -66,14 +63,6 @@ class MedicationCardViewModel @Inject constructor(
      * которое показывает экран-источник.
      */
     private val undoActions: UndoableActionStore,
-    /**
-     * Запись архивации и удаления (SKL-165, АН-1).
-     *
-     * Одной операцией карточки — одно событие: архив вследствие закончившегося курса
-     * нажимает человек, а не таймер, поэтому событие одно на обе кнопки. Удаление
-     * пишется только состоявшимся: отказ (`HasTakenIntakes`) записи не заводит.
-     */
-    private val analytics: AnalyticsRecorder,
 ) : ViewModel() {
 
     private val medicationId = MutableStateFlow<String?>(null)
@@ -179,7 +168,6 @@ class MedicationCardViewModel @Inject constructor(
         val id = medicationId.value ?: return
         viewModelScope.launch {
             operations.archive(id, reason)
-            analytics.record(MedicationAction(MedicationActionKind.ARCHIVED))
             // Человек возвращается в список лекарств; карточку закрывает маршрут.
             local.value = local.value.copy(closed = true)
         }
@@ -212,7 +200,6 @@ class MedicationCardViewModel @Inject constructor(
         viewModelScope.launch {
             when (operations.delete(id)) {
                 is DeleteOutcome.Deleted -> {
-                    analytics.record(MedicationAction(MedicationActionKind.DELETED))
                     if (name != null) undoActions.publishDeletion(medicationId = id, medicationName = name)
                     local.value = local.value.copy(closed = true)
                 }

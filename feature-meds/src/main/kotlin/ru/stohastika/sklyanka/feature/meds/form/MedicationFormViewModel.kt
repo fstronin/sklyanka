@@ -10,10 +10,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsRecorder
-import ru.stohastika.sklyanka.domain.analytics.MedicationAction
-import ru.stohastika.sklyanka.domain.analytics.MedicationActionKind
-import ru.stohastika.sklyanka.domain.analytics.MedicationMode
 import ru.stohastika.sklyanka.domain.medication.MedicationDraft
 import ru.stohastika.sklyanka.domain.medication.SaveMedicationUseCase
 import ru.stohastika.sklyanka.domain.medication.SaveResult
@@ -22,7 +18,6 @@ import ru.stohastika.sklyanka.domain.medication.ValidateMedicationDraft
 import ru.stohastika.sklyanka.domain.medication.applicability
 import ru.stohastika.sklyanka.domain.medication.effectiveSchedule
 import ru.stohastika.sklyanka.domain.medication.normalized
-import ru.stohastika.sklyanka.domain.model.ScheduleMode
 import ru.stohastika.sklyanka.domain.model.ScheduleRule
 import ru.stohastika.sklyanka.domain.model.Stage
 import ru.stohastika.sklyanka.domain.pro.ComplexScheduleGate
@@ -53,15 +48,6 @@ class MedicationFormViewModel @Inject constructor(
     private val time: TimeSource,
     /** Доступ «Про» по кэшу подписки: гейт состава читает его, а не магазин (Р-22, Р-7). */
     private val proStatus: ObserveProStatusUseCase,
-    /**
-     * Запись заведения лекарства (SKL-165, АН-1).
-     *
-     * Событие ставится только по **состоявшемуся** сохранению нового курса: правка
-     * заведённого лекарства — не добавление, а отказ формы и открытие витрины записью
-     * не сопровождаются. Одно нажатие «Сохранить» даёт одну запись: повтор во время
-     * записи отсекается признаком [MedFormUiState.saving].
-     */
-    private val analytics: AnalyticsRecorder,
 ) : ViewModel() {
 
     private val validate = ValidateMedicationDraft()
@@ -451,9 +437,6 @@ class MedicationFormViewModel @Inject constructor(
         viewModelScope.launch {
             when (val result = saveMedication(state.draft)) {
                 is SaveResult.Saved -> {
-                    if (state.mode is FormMode.Create) {
-                        analytics.record(MedicationAction(MedicationActionKind.ADDED, state.draft.scheduleMode.mode()))
-                    }
                     _state.value = _state.value?.copy(saving = false)
                     _closed.tryEmit(Unit)
                 }
@@ -508,12 +491,6 @@ class MedicationFormViewModel @Inject constructor(
     }
 
     private fun BigDecimal?.plain(): String = this?.stripTrailingZeros()?.toPlainString().orEmpty()
-
-    /** Режим приёма для каталога событий: у добавления он обязателен (ПМ-26). */
-    private fun ScheduleMode.mode(): MedicationMode = when (this) {
-        ScheduleMode.SCHEDULED -> MedicationMode.SCHEDULED
-        ScheduleMode.PRN -> MedicationMode.PRN
-    }
 
     /**
      * Время новой строки расписания.

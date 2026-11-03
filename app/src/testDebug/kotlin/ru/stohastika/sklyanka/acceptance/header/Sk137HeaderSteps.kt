@@ -47,8 +47,6 @@ import io.cucumber.java.ru.И
 import io.cucumber.java.ru.Когда
 import io.cucumber.java.ru.Но
 import io.cucumber.java.ru.Тогда
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -310,7 +308,6 @@ class Sk137HeaderSteps(private val world: AcceptanceWorld) {
         ),
         time = world.clock.time,
         proStatus = ObserveProStatusUseCase(StandProCache, world.clock.time),
-        analytics = world.analytics.recorder(CoroutineScope(Dispatchers.Unconfined)),
     )
 
     /** Прогнать очередь главного looper'а и кадры композиции: маршрут открывает форму корутиной. */

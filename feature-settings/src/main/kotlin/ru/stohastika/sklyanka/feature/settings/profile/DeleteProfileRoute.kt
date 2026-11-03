@@ -8,10 +8,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsScreen
 import ru.stohastika.sklyanka.feature.settings.transfer.MIME_JSON
 import ru.stohastika.sklyanka.feature.settings.transfer.withPicker
-import ru.stohastika.sklyanka.ui.analytics.TrackScreenView
 
 /**
  * Экран удаления профиля вместе с системным выбором места выгрузки (ОВ-7, SKL-36).
@@ -28,8 +26,6 @@ import ru.stohastika.sklyanka.ui.analytics.TrackScreenView
  */
 @Composable
 fun DeleteProfileRoute(viewModel: DeleteProfileViewModel, onLeave: () -> Unit, modifier: Modifier = Modifier) {
-    // Экран удаления профиля — тот же раздел профилей (SKL-165, TDD §5.4).
-    TrackScreenView(AnalyticsScreen.PROFILES)
     val state by viewModel.state.collectAsState()
 
     val saveLauncher = rememberLauncherForActivityResult(

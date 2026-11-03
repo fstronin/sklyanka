@@ -10,7 +10,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsRecorder
 import ru.stohastika.sklyanka.domain.history.BuildHistoryCsvTableUseCase
 import ru.stohastika.sklyanka.domain.history.ExportHistoryCsvUseCase
 import ru.stohastika.sklyanka.domain.history.HistoryCsvSaveOutcome
@@ -47,13 +46,6 @@ class ExportHistoryViewModel @Inject constructor(
     private val composer: HistoryCsvComposer,
     private val export: ExportHistoryCsvUseCase,
     private val proStatus: ObserveProStatusUseCase,
-    /**
-     * Запись выгрузки истории (SKL-165, ПМ-26).
-     *
-     * Тем же швом домена, что у отчёта врачу: экран не знает поставщика, а без согласия
-     * запись ничего не делает (АН-2).
-     */
-    private val analytics: AnalyticsRecorder,
     private val time: TimeSource,
 ) : ViewModel() {
 
@@ -251,9 +243,6 @@ class ExportHistoryViewModel @Inject constructor(
 
     private fun apply(outcome: ExportOutcome) {
         _state.value = _state.value.copy(outcome = outcome)
-        // Одна точка на обмен, запись, отмену и отказ: второго события на нажатие нет
-        // (SKL-165, TDD §4).
-        analytics.recordReportExported(outcome)
     }
 
     /** Выбранный период шторки: пресет и границы «Другого периода». */

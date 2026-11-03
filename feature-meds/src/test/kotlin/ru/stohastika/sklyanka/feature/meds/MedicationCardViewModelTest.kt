@@ -1,6 +1,5 @@
 package ru.stohastika.sklyanka.feature.meds
 
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -17,8 +16,6 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsEventName
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsProperty
 import ru.stohastika.sklyanka.domain.medication.ArchiveMedicationUseCase
 import ru.stohastika.sklyanka.domain.medication.CourseProgress
 import ru.stohastika.sklyanka.domain.medication.DeleteMedicationUseCase
@@ -56,9 +53,6 @@ class MedicationCardViewModelTest {
     private val log = RecordingLog()
     private val planner = RecordingPlanner(created = 4, deleted = 2)
     private val undoActions = UndoableActionStore(clock)
-
-    /** Аналитика в памяти: запись идёт в планировщике теста, видна после `advanceUntilIdle`. */
-    private val analytics = AnalyticsTestKit(CoroutineScope(dispatcher))
     private val transactor = DirectTransactor()
 
     private fun viewModel() = MedicationCardViewModel(
@@ -73,7 +67,6 @@ class MedicationCardViewModelTest {
         ),
         time = clock,
         undoActions = undoActions,
-        analytics = analytics.recorder,
     )
 
     @Before
@@ -286,68 +279,6 @@ class MedicationCardViewModelTest {
     }
 
     /** Открыть карточку и дать потокам дойти до первого значения. */
-
-    // --- Аналитика (SKL-165) ----------------------------------------------------------------
-
-    @Test
-    fun `archiving a course is one archived action without details`() = runTest(dispatcher) {
-        medications.put(scheduled())
-        val model = viewModel()
-        advanceUntilIdle()
-        model.open(MEDICATION_ID)
-        advanceUntilIdle()
-
-        model.onIntent(MedCardIntent.Archive)
-        advanceUntilIdle()
-
-        val record = analytics.queue.recorded.single()
-        assertEquals(AnalyticsEventName.MEDICATION_ACTION, record.name)
-        assertEquals(mapOf(AnalyticsProperty.ACTION to "archived"), record.properties)
-    }
-
-    @Test
-    fun `the finished course offer is the same archived action`() = runTest(dispatcher) {
-        medications.put(scheduled(endDate = MedsTestData.TODAY.minusDays(1)))
-        val model = viewModel()
-        advanceUntilIdle()
-        model.open(MEDICATION_ID)
-        advanceUntilIdle()
-
-        model.onIntent(MedCardIntent.ArchiveFinishedCourse)
-        advanceUntilIdle()
-
-        assertEquals(mapOf(AnalyticsProperty.ACTION to "archived"), analytics.queue.recorded.single().properties)
-    }
-
-    @Test
-    fun `a confirmed deletion is one deleted action`() = runTest(dispatcher) {
-        medications.put(scheduled())
-        val model = viewModel()
-        advanceUntilIdle()
-        model.open(MEDICATION_ID)
-        advanceUntilIdle()
-
-        model.onIntent(MedCardIntent.DeleteRequested)
-        model.onIntent(MedCardIntent.DeleteConfirmed)
-        advanceUntilIdle()
-
-        assertEquals(mapOf(AnalyticsProperty.ACTION to "deleted"), analytics.queue.recorded.single().properties)
-    }
-
-    @Test
-    fun `restoring a course records nothing`() = runTest(dispatcher) {
-        medications.put(scheduled(archivedAt = clock.now()))
-        val model = viewModel()
-        advanceUntilIdle()
-        model.open(MEDICATION_ID)
-        advanceUntilIdle()
-
-        model.onIntent(MedCardIntent.Restore)
-        advanceUntilIdle()
-
-        assertTrue("a restore is not one of the catalog actions", analytics.queue.recorded.isEmpty())
-    }
-
     private fun TestScope.open(): MedCardUiState? {
         val model = viewModel()
         advanceUntilIdle()

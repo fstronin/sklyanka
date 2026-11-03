@@ -1,6 +1,5 @@
 package ru.stohastika.sklyanka.feature.meds
 
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.toList
@@ -20,9 +19,6 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsConsentState
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsEventName
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsProperty
 import ru.stohastika.sklyanka.domain.medication.CourseEndPreset
 import ru.stohastika.sklyanka.domain.medication.DoseUnit
 import ru.stohastika.sklyanka.domain.medication.DraftField
@@ -73,9 +69,6 @@ class MedicationFormViewModelTest {
     /** Кэш подписки: доступ «Про» для гейта формы (Р-22, Р-28). */
     private val proCache = FakeProCache()
 
-    /** Аналитика в памяти: запись идёт в планировщике теста, видна после `advanceUntilIdle`. */
-    private val analytics = AnalyticsTestKit(CoroutineScope(dispatcher))
-
     /** Сколько раз сценарий сохранения переспрашивал план приёмов: дубль виден числом. */
     private var plannedSaves = 0
 
@@ -105,7 +98,6 @@ class MedicationFormViewModelTest {
         ),
         time = clock,
         proStatus = ObserveProStatusUseCase(proCache, clock),
-        analytics = analytics.recorder,
     )
 
     @Before
@@ -899,69 +891,6 @@ class MedicationFormViewModelTest {
         model.onIntent(MedFormIntent.TimeAdded)
 
         assertTrue(model.state.value!!.proReasonVisible)
-    }
-
-    // --- Аналитика (SKL-165) ----------------------------------------------------------------
-
-    @Test
-    fun `a saved scheduled course is an added action with the scheduled mode`() = runTest(dispatcher) {
-        open()
-        fillValidSchedule()
-
-        model.onIntent(MedFormIntent.Save)
-        advanceUntilIdle()
-
-        val record = analytics.queue.recorded.single()
-        assertEquals(AnalyticsEventName.MEDICATION_ACTION, record.name)
-        assertEquals(
-            mapOf(
-                AnalyticsProperty.ACTION to "added",
-                AnalyticsProperty.MODE to "scheduled",
-            ),
-            record.properties,
-        )
-    }
-
-    @Test
-    fun `a saved as needed course carries the as needed mode`() = runTest(dispatcher) {
-        open()
-        model.onIntent(MedFormIntent.NameChanged("med-a"))
-        model.onIntent(MedFormIntent.DoseAmountChanged("2"))
-        model.onIntent(MedFormIntent.ModeChanged(ScheduleMode.PRN))
-        model.onIntent(MedFormIntent.MaxPerDayIncreased)
-
-        model.onIntent(MedFormIntent.Save)
-        advanceUntilIdle()
-
-        assertEquals(
-            mapOf(AnalyticsProperty.ACTION to "added", AnalyticsProperty.MODE to "prn"),
-            analytics.queue.recorded.single().properties,
-        )
-    }
-
-    @Test
-    fun `editing a stored course is not an addition`() = runTest(dispatcher) {
-        medications.put(MedsTestData.medication(id = "magnesium", name = "med-a"))
-        model.open("magnesium")
-        advanceUntilIdle()
-        model.onIntent(MedFormIntent.NameChanged("med-b"))
-
-        model.onIntent(MedFormIntent.Save)
-        advanceUntilIdle()
-
-        assertTrue("an edit is not an added medication", analytics.queue.recorded.isEmpty())
-    }
-
-    @Test
-    fun `a declined consent leaves the queue empty`() = runTest(dispatcher) {
-        analytics.store.decide(AnalyticsConsentState.DECLINED)
-        open()
-        fillValidSchedule()
-
-        model.onIntent(MedFormIntent.Save)
-        advanceUntilIdle()
-
-        assertTrue(analytics.queue.recorded.isEmpty())
     }
 
     private fun open() {

@@ -202,12 +202,6 @@
     <string name="cd_profile_colour_plum">Plum</string>
     <string name="cd_profile_colour_indigo">Indigo</string>
 
-    <!-- Строка «Аналитика» в блоке «Данные» (SKL-165, ПМ-25, Р-96). -->
-    <string name="settings_analytics">Analytics</string>
-    <string name="settings_analytics_caption">%1$s · Turning it on helps find rough spots</string>
-    <string name="settings_analytics_on">On</string>
-    <string name="settings_analytics_off">Off</string>
-
     <string name="settings_policy">Privacy policy</string>
 
     <!-- Строка «Экспорт истории» в блоке «Данные» (SKL-119, §5.16); слова — из нормы дизайна. -->

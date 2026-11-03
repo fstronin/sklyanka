@@ -180,23 +180,32 @@ object SklyankaMigrations {
     }
 
     /**
-     * Версия 10 → 11: появляется очередь событий аналитики (SKL-165, АН-4).
+     * Версия 10 → 12: снимок схемы, в котором таблицей больше, схлопнут.
      *
-     * Новая таблица рядом с существующими: добавление таблицы не переносит данные
-     * и не перестраивает индексы, поэтому ни история приёмов, ни лекарства физически
-     * пострадать не могут (МГ-2). Разрушающей миграции здесь нет и не будет.
-     *
-     * Внешних ключей у таблицы нет намеренно: очередь не должна ни тянуть за собой
-     * данные человека при очистке профиля, ни мешать переносу. DDL — дословно `SCHEMA_11`,
-     * потому что Room сверяет схему при открытии базы (МГ-3).
+     * Версия 11 добавляла только очередь клиентских событий, а версия 12 её убирает:
+     * продукт полностью офлайновый. Поэтому для базы версии 10 перехода по существу нет —
+     * продуктовые таблицы у неё те же, что у 12, — и миграция ничего не делает. База
+     * версии 11 проходит через [MIGRATION_11_12] и теряет очередь.
      */
-    val MIGRATION_10_11 = object : Migration(10, 11) {
+    val MIGRATION_10_12 = object : Migration(10, 12) {
+        override fun migrate(db: SupportSQLiteDatabase) = Unit
+    }
+
+    /**
+     * Версия 11 → 12: очередь клиентских событий уходит из схемы.
+     *
+     * В таблице лежали только события измерений — ни профиля, ни лекарства, ни приёма
+     * в ней не было по схеме. Продукт больше не отправляет событий, поэтому таблица
+     * удаляется целиком, а не остаётся мусором: держать чужие данные без потребителя
+     * хуже, чем их отсутствие. Имя таблицы — историческое; идентификаторы SQL
+     * нечувствительны к регистру.
+     */
+    val MIGRATION_11_12 = object : Migration(11, 12) {
         override fun migrate(db: SupportSQLiteDatabase) {
-            SCHEMA_11.forEach(db::execSQL)
+            db.execSQL("DROP TABLE IF EXISTS `ANALYTICS_EVENT`")
         }
     }
 
-    /** Все миграции по порядку. Room выбирает путь сам; пропусков в цепочке быть не должно. */
     val ALL: Array<Migration> = arrayOf(
         MIGRATION_1_2,
         MIGRATION_2_3,
@@ -207,7 +216,8 @@ object SklyankaMigrations {
         MIGRATION_7_8,
         MIGRATION_8_9,
         MIGRATION_9_10,
-        MIGRATION_10_11,
+        MIGRATION_10_12,
+        MIGRATION_11_12,
     )
 
     /**
@@ -358,25 +368,5 @@ object SklyankaMigrations {
         "ALTER TABLE `reminder_log_new` RENAME TO `reminder_log`",
         "CREATE INDEX IF NOT EXISTS `index_reminder_log_occurred_at` ON `reminder_log` (`occurred_at`)",
         "CREATE INDEX IF NOT EXISTS `index_reminder_log_intake_id` ON `reminder_log` (`intake_id`)",
-    ).map { it.trimIndent() }
-
-    /**
-     * DDL версии 11 — очередь событий аналитики (SKL-165, АН-4).
-     *
-     * Порядок и типы колонок дословно те, что ожидает Room: расхождение остановит
-     * инструментальный тест миграции на сверке схемы, а не человека на ревью (МГ-3).
-     * Ни одного `FOREIGN KEY` здесь нет — и это требование схемы, а не упущение.
-     */
-    private val SCHEMA_11 = listOf(
-        """
-        CREATE TABLE IF NOT EXISTS `analytics_event` (
-            `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL,
-            `properties` TEXT NOT NULL, `scope` TEXT NOT NULL, `occurred_at` INTEGER NOT NULL
-        )
-        """,
-        """
-        CREATE INDEX IF NOT EXISTS `index_analytics_event_occurred_at`
-            ON `analytics_event` (`occurred_at`)
-        """,
     ).map { it.trimIndent() }
 }

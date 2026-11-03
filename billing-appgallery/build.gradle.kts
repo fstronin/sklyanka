@@ -5,9 +5,8 @@
 // nor the domain see Huawei; otherwise the storefront could not be verified by acceptance
 // without the store, and the sandbox would stop being a manual check.
 //
-// One of the two network contours of the build (ADR-0017 item 1): `INTERNET` is declared by this
-// module and by `core-analytics`, and by nothing else. `core-domain` and `core-data` do not know
-// the contour at all.
+// The only network contour of the build (ADR-0017 item 1): `INTERNET` is declared by this
+// module and by nothing else. `core-domain` and `core-data` do not know the contour at all.
 
 plugins {
     id("sklyanka.android.library")

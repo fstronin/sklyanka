@@ -4,14 +4,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.runComposeUiTest
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
 import ru.stohastika.sklyanka.domain.intake.MarkIntakeUseCase
-import ru.stohastika.sklyanka.feature.reminder.AnalyticsTestKit
 import ru.stohastika.sklyanka.feature.reminder.ReminderActions
 import ru.stohastika.sklyanka.feature.reminder.ReminderScreen
 import ru.stohastika.sklyanka.feature.reminder.ReminderUiState
@@ -109,7 +107,6 @@ internal object ReminderStand {
         snooze = world.reminders.snoozeReminder(),
         settings = world.reminders.settingsStore,
         undoActions = world.undoActions,
-        analytics = AnalyticsTestKit(CoroutineScope(Dispatchers.Unconfined)).recorder,
     )
 
     /** Забыть подменённый главный диспетчер: стенд не должен влиять на соседние тесты. */

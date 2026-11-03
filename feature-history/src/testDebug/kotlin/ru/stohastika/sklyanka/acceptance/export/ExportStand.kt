@@ -15,7 +15,6 @@ import ru.stohastika.sklyanka.domain.history.ExportHistoryCsvUseCase
 import ru.stohastika.sklyanka.domain.history.HistoryCsvDocument
 import ru.stohastika.sklyanka.domain.history.OnTimeRule
 import ru.stohastika.sklyanka.domain.history.ReportPreset
-import ru.stohastika.sklyanka.feature.history.AnalyticsTestKit
 import ru.stohastika.sklyanka.feature.history.ExportHistoryIntent
 import ru.stohastika.sklyanka.feature.history.ExportHistorySheet
 import ru.stohastika.sklyanka.feature.history.ExportHistoryUiState
@@ -118,8 +117,6 @@ internal object ExportStand {
                 log = world.log,
             ),
             proStatus = world.access.statusUseCase,
-            // Стенду события аналитики не проверяются, но шов обязан быть настоящим (SKL-165).
-            analytics = AnalyticsTestKit().recorderForStand(),
             time = world.clock.time,
         )
     }

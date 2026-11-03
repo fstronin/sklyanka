@@ -13,7 +13,7 @@ decisions, and the original customer materials.
 | [`spec/architecture.md`](spec/architecture.md) | the stack, the module map and the data flow |
 | [`spec/glossary.md`](spec/glossary.md) | domain terms, avoided synonyms, domain value codes |
 | [`spec/privacy.md`](spec/privacy.md) | what the app does with information |
-| [`adr/`](adr/) | architecture decision records, `0001` to `0017` |
+| [`adr/`](adr/) | architecture decision records, `0001` to `0018` |
 | [`screenshots/`](screenshots/) | screen frames used by the README |
 
 The customer's original specification and the screen mockups live in [`../design/`](../design/).

@@ -1,6 +1,5 @@
 package ru.stohastika.sklyanka.feature.meds
 
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -17,8 +16,6 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsEventName
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsProperty
 import ru.stohastika.sklyanka.domain.medication.TrailingLine
 import ru.stohastika.sklyanka.domain.medication.UndoDeleteMedicationUseCase
 import ru.stohastika.sklyanka.domain.model.MedicationForm
@@ -49,9 +46,6 @@ class MedicationListViewModelTest {
     private val taken = mutableListOf<String>()
     private val undoActions = UndoableActionStore(clock)
 
-    /** Аналитика в памяти: запись идёт в планировщике теста, видна после `advanceUntilIdle`. */
-    private val analytics = AnalyticsTestKit(CoroutineScope(dispatcher))
-
     private fun viewModel() = MedicationListViewModel(
         activeProfile = activeProfile,
         medications = medications,
@@ -60,7 +54,6 @@ class MedicationListViewModelTest {
         takePrn = TakePrnAction { medicationId -> taken += medicationId },
         undoDelete = UndoDeleteMedicationUseCase(medications, RecordingPlanner()),
         undoActions = undoActions,
-        analytics = analytics.recorder,
     )
 
     @Before
@@ -328,23 +321,5 @@ class MedicationListViewModelTest {
 
         assertNull(model.state.value.deletion)
         assertNull(undoActions.live())
-    }
-
-    // --- Аналитика (SKL-165) ----------------------------------------------------------------
-
-    @Test
-    fun `undoing a deletion from the list is one medication undo`() = runTest(dispatcher) {
-        medications.put(MedsTestData.medication(id = "scheduled"))
-        val model = viewModel()
-        advanceUntilIdle()
-        undoActions.publishDeletion(medicationId = "scheduled", medicationName = "med-scheduled")
-        runCurrent()
-
-        model.onIntent(MedsIntent.UndoDeletion("scheduled"))
-        runCurrent()
-
-        val record = analytics.queue.recorded.single()
-        assertEquals(AnalyticsEventName.MEDICATION_ACTION, record.name)
-        assertEquals(mapOf(AnalyticsProperty.ACTION to "undo"), record.properties)
     }
 }

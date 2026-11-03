@@ -14,14 +14,13 @@ object NetworkContourRules {
     /**
      * Сеть только вместе со своим контуром и только из него (`ADR-0017` п. 2).
      *
-     * Четыре правила на каждое разрешение контуров:
+     * Три правила на каждое разрешение контуров:
      *
      * 1. разрешение запрещено безусловно (состояние сети, рекламный идентификатор) —
      *    нарушение, откуда бы оно ни пришло;
      * 2. ни один модуль вне контуров не объявляет сетевое разрешение;
      * 3. если контур входит в артефакт, его разрешение обязано быть в слитом манифесте
-     *    (иначе сетевой путь пропал, а не «повезло»), и объявить его обязан сам контур;
-     * 4. объявление двумя контурами законно: в `pro` сеть нужна и аналитике, и покупкам.
+     *    (иначе сетевой путь пропал, а не «повезло»), и объявить его обязан сам контур.
      *
      * @param mergedManifest текст слитого манифеста собираемого артефакта
      * @param contourManifests манифесты контуров: имя модуля → текст
@@ -38,7 +37,7 @@ object NetworkContourRules {
     ): List<String> {
         val problems = mutableListOf<String>()
 
-        AnalyticsContourRules.FORBIDDEN_PERMISSIONS.forEach { permission ->
+        NetworkContourCatalog.FORBIDDEN_PERMISSIONS.forEach { permission ->
             if (mergedManifest.declares(permission)) {
                 problems += "forbidden permission $permission is present in the merged manifest " +
                     "(PLATFORM-3, NFR-15). A dependency may have merged it in; remove it with " +
@@ -46,7 +45,7 @@ object NetworkContourRules {
             }
         }
 
-        val contours = AnalyticsContourRules.NETWORK_CONTOURS
+        val contours = NetworkContourCatalog.NETWORK_CONTOURS
         val presentContours = contours.filter { contoursInArtifact[it.module] == true }
         val permissionNames = contours.flatMap { it.permissions }.distinct()
 
@@ -98,9 +97,8 @@ object NetworkContourRules {
      *
      * Три правила: запрещённые группы отсутствуют и в classpath, и в каталоге версий;
      * ни одна координата охраняемой группы не проезжает мимо белого списка; обязательные
-     * координаты контура присутствуют, **только** если контур входит в артефакт. Последнее
-     * и есть снятие связки «сеть = платный контур»: `free` обязан нести провайдера
-     * аналитики и не обязан нести клиент магазина.
+     * координаты контура присутствуют, **только** если контур входит в артефакт: `pro`
+     * обязан нести клиент магазина, `free` — нет.
      */
     fun validateDependencies(
         coordinates: List<String>,
@@ -109,7 +107,7 @@ object NetworkContourRules {
     ): List<String> {
         val problems = mutableListOf<String>()
 
-        AnalyticsContourRules.FORBIDDEN_GROUPS.forEach { group ->
+        NetworkContourCatalog.FORBIDDEN_GROUPS.forEach { group ->
             coordinates.filter { it.contains(group) }.forEach { hit ->
                 problems += "resolved dependency '$hit' belongs to the forbidden group '$group' " +
                     "(PLATFORM-4, NFR-39, NFR-16)"
@@ -120,14 +118,14 @@ object NetworkContourRules {
         }
 
         coordinates
-            .filter(AnalyticsContourRules::guards)
-            .filterNot(AnalyticsContourRules::allows)
+            .filter(NetworkContourCatalog::guards)
+            .filterNot(NetworkContourCatalog::allows)
             .forEach { hit ->
                 problems += "resolved dependency '$hit' is outside the contour white list " +
-                    "(SKL-100, ADR-0017 §3). Add it to AnalyticsContourRules consciously, or remove it."
+                    "(SKL-100, ADR-0017 §3). Add it to NetworkContourCatalog consciously, or remove it."
             }
 
-        AnalyticsContourRules.NETWORK_CONTOURS.forEach { contour ->
+        NetworkContourCatalog.NETWORK_CONTOURS.forEach { contour ->
             if (contoursInArtifact[contour.module] != true) return@forEach
             val missing = contour.requiredCoordinates.filterNot { required ->
                 coordinates.any { it.startsWith(required) }

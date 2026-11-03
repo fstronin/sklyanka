@@ -8,10 +8,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsRecorder
-import ru.stohastika.sklyanka.domain.analytics.OperationResult
-import ru.stohastika.sklyanka.domain.analytics.TransferDirection
-import ru.stohastika.sklyanka.domain.analytics.TransferResult
 import ru.stohastika.sklyanka.domain.time.TimeSource
 import ru.stohastika.sklyanka.domain.transfer.ApplyTransferUseCase
 import ru.stohastika.sklyanka.domain.transfer.ExportDataUseCase
@@ -57,13 +53,6 @@ class DataTransferViewModel @Inject constructor(
     private val settings: TransferSettingsStore,
     private val files: TransferFiles,
     private val ids: TransferIdSource,
-    /**
-     * Запись исхода переноса (SKL-165, ПМ-26).
-     *
-     * Пишется только направление и результат: ни пути файла, ни имён лекарств в событии
-     * нет по построению — конструктор события принимает одни перечисления (АН-3).
-     */
-    private val analytics: AnalyticsRecorder,
     private val time: TimeSource,
 ) : ViewModel() {
 
@@ -79,8 +68,8 @@ class DataTransferViewModel @Inject constructor(
     }
 
     fun onIntent(intent: TransferIntent) {
-        // Отмена системного выбора — исход переноса, а не молчание (SKL-165): событие
-        // отличается от отказа, и файл при отмене не создавался вовсе.
+        // Мелкие ответы экрана исполняются до шагов: у отказа и выбора без обработчика
+        // нет ни файла, ни перехода.
         if (handleImmediate(intent)) return
         when (intent) {
             TransferIntent.Refresh -> refreshOverview()
@@ -95,30 +84,19 @@ class DataTransferViewModel @Inject constructor(
             TransferIntent.Apply -> apply()
             TransferIntent.AcknowledgeReport -> reset()
             TransferIntent.Leave -> reset()
-            // Отмена, отказ и выбор без обработчика уже исполнены выше; ветки нужны,
+            // Отказ и выбор без обработчика уже исполнены выше; ветка нужна,
             // чтобы `when` остался исчерпывающим без перечисления каждого такого намерения.
             else -> Unit
         }
     }
 
     /**
-     * Намерения без шага: отмена выбора файла и мелкие ответы экрана.
+     * Намерения без шага: мелкие ответы экрана.
      *
-     * Отдельный проход, а не ветки общего `when`: у отмены нет ни файла, ни шага —
-     * только направление и исход, а у отказа и выбора без обработчика — только признак
-     * на экране. Рядом с переходами они читались бы как переходы.
+     * Отдельный проход, а не ветки общего `when`: у отказа и выбора без обработчика —
+     * только признак на экране. Рядом с переходами они читались бы как переходы.
      */
     private fun handleImmediate(intent: TransferIntent): Boolean = when (intent) {
-        TransferIntent.ExportCancelled -> {
-            recordTransfer(TransferDirection.EXPORT, OperationResult.CANCELLED)
-            true
-        }
-
-        TransferIntent.ImportCancelled -> {
-            recordTransfer(TransferDirection.IMPORT, OperationResult.CANCELLED)
-            true
-        }
-
         TransferIntent.DismissFailure -> {
             mutable.update { it.copy(failure = null) }
             true
@@ -165,7 +143,6 @@ class DataTransferViewModel @Inject constructor(
         viewModelScope.launch {
             mutable.update { it.copy(busy = true, failure = null) }
             val outcome = exportData(target)
-            recordTransfer(TransferDirection.EXPORT, outcome.result())
             mutable.update { current ->
                 when (outcome) {
                     is ExportOutcome.Saved -> current.copy(
@@ -197,8 +174,6 @@ class DataTransferViewModel @Inject constructor(
             when (val decoded = readFile(source, mutable.value.mode)) {
                 is TransferDecoded.Rejected -> {
                     pending = null
-                    // Файл прочитан и не принят — отказ загрузки, а не «ничего не было».
-                    recordTransfer(TransferDirection.IMPORT, OperationResult.ERROR)
                     mutable.update {
                         it.copy(
                             busy = false,
@@ -275,7 +250,6 @@ class DataTransferViewModel @Inject constructor(
             }
             when (outcome) {
                 is TransferOutcome.Applied -> {
-                    recordTransfer(TransferDirection.IMPORT, OperationResult.SUCCESS)
                     pending = null
                     mutable.update {
                         it.copy(
@@ -300,9 +274,6 @@ class DataTransferViewModel @Inject constructor(
                         it.copy(busy = false, step = TransferStep.OVERVIEW, failure = TransferFailure.ImportNotApplied)
                     }
             }
-            if (outcome !is TransferOutcome.Applied) {
-                recordTransfer(TransferDirection.IMPORT, OperationResult.ERROR)
-            }
         }
     }
 
@@ -319,24 +290,6 @@ class DataTransferViewModel @Inject constructor(
             )
         }
         refreshOverview()
-    }
-
-    /**
-     * Исход переноса — в событие аналитики (SKL-165, ПМ-26).
-     *
-     * Одно место на оба направления: пишутся только направление и результат, а путь файла
-     * и имена лекарств в событие не попадают по построению — конструктор события принимает
-     * одни перечисления (АН-3).
-     */
-    private fun recordTransfer(direction: TransferDirection, result: OperationResult) {
-        analytics.record(TransferResult(direction, result))
-    }
-
-    /** Исход выгрузки: записанный файл — успех, нехватка места и сбой записи — отказ. */
-    private fun ExportOutcome.result(): OperationResult = when (this) {
-        is ExportOutcome.Saved -> OperationResult.SUCCESS
-        is ExportOutcome.NotEnoughSpace -> OperationResult.ERROR
-        ExportOutcome.Failed -> OperationResult.ERROR
     }
 
     /**

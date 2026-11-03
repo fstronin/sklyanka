@@ -55,7 +55,6 @@ abstract class VerifyModuleGraphRuleTask : DefaultTask() {
             ":core-domain" to emptyList<String>(),
             ":core-ui" to listOf(":core-domain"),
             ":core-data" to listOf(":core-domain"),
-            ":core-analytics" to listOf(":core-domain"),
             ":feature-today" to listOf(":core-domain", ":core-ui", ":core-data"),
             ":app" to listOf(":core-domain", ":core-ui", ":core-data", ":feature-today"),
         )

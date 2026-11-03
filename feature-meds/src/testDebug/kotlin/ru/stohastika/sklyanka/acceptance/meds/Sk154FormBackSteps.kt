@@ -25,8 +25,6 @@ import androidx.test.core.app.ApplicationProvider
 import io.cucumber.java.ru.Допустим
 import io.cucumber.java.ru.Когда
 import io.cucumber.java.ru.Тогда
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -38,7 +36,6 @@ import ru.stohastika.sklyanka.domain.medication.SaveMedicationUseCase
 import ru.stohastika.sklyanka.domain.medication.ValidateMedicationDraft
 import ru.stohastika.sklyanka.domain.pro.ObserveProStatusUseCase
 import ru.stohastika.sklyanka.domain.pro.ProSubscription
-import ru.stohastika.sklyanka.feature.meds.AnalyticsTestKit
 import ru.stohastika.sklyanka.feature.meds.FakeProCache
 import ru.stohastika.sklyanka.feature.meds.form.MedicationFormRoute
 import ru.stohastika.sklyanka.feature.meds.form.MedicationFormViewModel
@@ -254,7 +251,6 @@ class Sk154FormBackSteps(private val world: AcceptanceWorld) {
             FakeProCache(ProSubscription.Active(productId = null, until = LocalDate.MAX)),
             world.clock.time,
         ),
-        analytics = AnalyticsTestKit(CoroutineScope(Dispatchers.Unconfined)).recorder,
     )
 
     /** Прогнать очередь главного looper'а и кадры композиции: модель открывается корутиной. */

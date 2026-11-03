@@ -174,9 +174,4 @@
     <string name="pro_restore_nothing_found">No purchases were found in the store</string>
     <string name="pro_date_pattern">MMMM d, yyyy</string>
 
-    <string name="analytics_consent_title">Help make the app better?</string>
-    <string name="analytics_consent_body">The app will send the names of screens and actions in it — enough to find the awkward spots. Nothing you record is sent.</string>
-    <string name="analytics_consent_allow">Allow</string>
-    <string name="analytics_consent_decline">Not now</string>
-    <string name="analytics_consent_policy">Privacy policy</string>
 </resources>

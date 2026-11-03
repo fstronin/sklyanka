@@ -18,10 +18,11 @@ processes it only in its private storage on the device. Nothing in this reposito
 
 ## 2. What leaves the device
 
-- **Analytics.** The build declares the `INTERNET` permission for one contour: client analytics
-  that runs only after an explicit consent and is described in ADR-0017. It sends no medical
-  data: no medication names, doses, marks or profile names. Consent can be withdrawn, and the
-  contour then stops.
+Nothing is sent anywhere. The app has no account, no cloud, no sync, no advertising and no
+analytics, and the shipped build declares no network permission. No information about the person,
+the medication or the use of the app leaves the app's private storage on its own. Three artifacts
+can leave the device, and only when the person moves them:
+
 - **A transfer file.** The person creates it on their own action, saves it where they choose and
   moves it themselves. The file is not encrypted and is a medical document; a folder synced with
   a cloud will take it to the cloud through that folder, not through the app.
@@ -43,8 +44,8 @@ used, data is not sold, and no data is transferred to third parties.
 | Boot (`RECEIVE_BOOT_COMPLETED`) | restore the schedule after a restart | access to files |
 | Do Not Disturb policy access | explain why a reminder may be silent and help with the setup | reading or controlling notifications without the person's action |
 | Vibration | a tactile reminder signal | nothing beyond the signal |
-| `INTERNET` | the consent-gated analytics contour | access to any health data |
 
+The shipped build declares no network permission: neither `INTERNET` nor `ACCESS_NETWORK_STATE`.
 The app does not request location, camera, microphone, contacts, calendar, SMS or full storage
 access.
 

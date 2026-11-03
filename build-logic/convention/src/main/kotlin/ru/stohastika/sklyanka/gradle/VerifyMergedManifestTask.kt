@@ -26,8 +26,8 @@ import org.gradle.api.tasks.TaskAction
  *
  * 1. **Запрещённые разрешения** — состояние сети и рекламный идентификатор — не проходят
  *    никогда, даже если их принесла зависимость (ПЛ-3, НФТ-15). Именно так они и приходят:
- *    SDK MyTracker объявляет `ACCESS_NETWORK_STATE` и `AD_ID` в своём манифесте,
- *    и манифест `app` снимает оба через `tools:node="remove"`.
+ *    библиотеки объявляют их в своих манифестах, и манифест `app` снимает оба через
+ *    `tools:node="remove"`.
  * 2. **Сеть только вместе с контуром** (`ADR-0017` п. 2): разрешение законно, если его
  *    объявил контур, входящий в артефакт, и никто вне контуров. Обратная сторона тоже
  *    обязательна: контур в артефакте без своего разрешения — нарушение.
@@ -38,7 +38,7 @@ import org.gradle.api.tasks.TaskAction
  *
  * **Чего правило не видит** (названный предел, а не обещание): разрешение, добавленное
  * слиянием из чужого AAR при живом контуре. Это принятая цена решения `ADR-0017` п. 2:
- * сама библиотека провайдера объявляет `INTERNET`, и отличить её от «случайной» библиотеки
+ * библиотека контура объявляет `INTERNET` сама, и отличить её от «случайной» библиотеки
  * можно было бы только разбором отчёта слияния. Гарантия от этого не размывается:
  * **без контура в артефакте сеть не появляется вовсе**, и ни один наш модуль, кроме контуров,
  * сеть не объявляет.
@@ -111,7 +111,7 @@ abstract class VerifyMergedManifestTask : DefaultTask() {
         }
 
         notes += contourNotes(manifest, contourTexts, present)
-        AnalyticsContourRules.FORBIDDEN_PERMISSIONS.forEach { permission ->
+        NetworkContourCatalog.FORBIDDEN_PERMISSIONS.forEach { permission ->
             if (!manifest.contains(permission)) notes += "no $permission"
         }
 
@@ -146,7 +146,7 @@ abstract class VerifyMergedManifestTask : DefaultTask() {
         present: Map<String, Boolean>,
     ): List<String> {
         val notes = mutableListOf<String>()
-        AnalyticsContourRules.NETWORK_CONTOURS.forEach { contour ->
+        NetworkContourCatalog.NETWORK_CONTOURS.forEach { contour ->
             val inArtifact = present[contour.module] == true
             contour.permissions.forEach { permission ->
                 when {
@@ -176,7 +176,7 @@ abstract class VerifyMergedManifestTask : DefaultTask() {
      */
     private fun contourModuleOf(file: java.io.File): String? {
         val path = file.invariantSeparatorsPath
-        return AnalyticsContourRules.NETWORK_CONTOURS
+        return NetworkContourCatalog.NETWORK_CONTOURS
             .map { it.module }
             .filter { path.contains("/$it/") }
             .maxByOrNull { it.length }

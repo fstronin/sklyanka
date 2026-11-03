@@ -1,9 +1,9 @@
 # 0007 — Module layout: module kinds, dependencies inward, pure Kotlin domain
 
-Status: Accepted. There are two network modules, each its own network contour (ADR-0017):
-`core-analytics` for the analytics contour, present in free and pro; `billing-appgallery` for the
-paid contour, present only in the paid variant, which is not shipped. Network access without its own
-contour is forbidden by the artifact checks.
+Status: Accepted. There is one network module, `billing-appgallery`, the paid contour (ADR-0010,
+ADR-0016), present only in the paid variant, which is not shipped. Network access without its own
+contour is forbidden by the artifact checks. The shipped `free` build contains no network module and
+declares no network permission (ADR-0018).
 
 ## Context
 
@@ -44,7 +44,8 @@ which is possible only if the domain neither pulls in the emulator nor depends o
 - `core-domain` does not use Hilt; bindings are declared in consuming modules.
 - A new screen means a new `feature-*`; a detail shared by two screens moves to `core-*` before an
   edge between screens appears.
-- Network code exists only in contour modules. `free` contains only `core-analytics`, so the shipped
-  artifact carries the analytics contour and not the store client.
+- Network code exists only in contour modules. `free` contains no contour module, so the shipped
+  artifact carries no network path and declares no network permission; `pro` carries the store client
+  and is not shipped.
 - No network dependency reaches `core-domain` or `core-data`.
 - Dependency direction checks are part of `check` and of the single `verifyAll` run.

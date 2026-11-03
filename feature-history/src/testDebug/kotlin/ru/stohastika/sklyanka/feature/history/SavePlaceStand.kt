@@ -98,8 +98,6 @@ internal class SavePlaceStand {
         // Доступ «Про» есть: стенд проверяет исходы передачи базового документа, и гейт
         // состава ему безразличен (SKL-119).
         proStatus = ObserveProStatusUseCase(FakeSubscriptionCache().apply { own(PRO_UNTIL) }, clock),
-        // Стенду события аналитики не проверяются, но шов обязан быть настоящим (SKL-165).
-        analytics = AnalyticsTestKit().recorderForStand(),
         time = clock,
     )
 

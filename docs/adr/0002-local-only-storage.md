@@ -1,7 +1,8 @@
 # 0002 — Local-only storage of tracking data
 
 Status: Accepted. Tracking data is stored on the device only. Network access in the artifact is
-allowed solely through declared network contours (ADR-0017); it carries no health content.
+allowed solely through declared network contours (ADR-0018); nothing leaves the device, and the
+shipped build declares no network permission.
 
 ## Context
 
@@ -18,10 +19,9 @@ one device by design.
   cloud around this decision.
 - The only way to move data is the transfer file, in two modes: "add to current" and "replace
   everything".
-- The tracking core has no network code. `INTERNET` is declared only by a network contour present in
-  the artifact: the analytics contour (ADR-0017), and in the paid build variant also the store
-  client. The analytics contour sends no medication names, doses, schedules, times, intake statuses,
-  stock, profiles, history, transfer file or delivery log.
+- The tracking core has no network code. `INTERNET` is declared only by the paid network contour,
+  which exists only in the paid build variant and is not shipped; the shipped `free` build declares
+  no network permission.
 - Those values never leave the device in any build. There is no account, no synchronization and no
   AI input.
 
@@ -32,7 +32,7 @@ one device by design.
 - Data transfer is a mandatory feature, not a convenience: a failed export costs data.
 - The transfer file is not encrypted, so a warning during export is mandatory.
 - There is no synchronization between devices: profiles live on one phone by design.
-- The privacy policy states the facts: tracking content is not sent anywhere; the only outgoing
-  traffic is the analytics contour, which carries no health content.
+- The privacy policy states the facts: tracking content is not sent anywhere and there is no
+  outgoing traffic at all.
 - "The tracking core makes no network call" is verified on the merged artifact by the manifest
   checks, not by review.

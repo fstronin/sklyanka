@@ -13,7 +13,7 @@ full, works without a network and does not ask for an account.
 | `README.md` | what the product is, how to build and test it |
 | `docs/README.md` | the documentation layer and its rules |
 | `docs/spec/` | the normative specification: product, behavior, design, quality, architecture, glossary, privacy |
-| `docs/adr/` | architecture decision records `0001` to `0017` |
+| `docs/adr/` | architecture decision records `0001` to `0018` |
 | `acceptance/src/main/resources/features/` | Gherkin acceptance scenarios, grouped by topic |
 | `design/` | the customer's original specification and the mockups; untouched, Russian |
 | `app/`, `core-*`, `feature-*`, `billing-*` | the code |
@@ -23,7 +23,8 @@ full, works without a network and does not ask for an account.
 ## Stack
 
 Kotlin, Jetpack Compose, Room, Hilt, AlarmManager. Minimum API 26. Google services (GMS,
-Firebase) are forbidden by an artifact composition check. See `docs/adr/0001-stack.md`.
+Firebase) and analytics SDKs are forbidden by an artifact composition check. The shipped build
+declares no network permission. See `docs/adr/0001-stack.md`.
 
 ## Language
 
@@ -40,8 +41,10 @@ Firebase) are forbidden by an artifact composition check. See `docs/adr/0001-sta
 - **Profiles never mix.** The interface is always in the context of exactly one profile.
 - **Accounting works without a network, always.** Accounting, reminders, marks, history and the
   report do not depend on a network, an account or an external service.
-- **Health data does not leave the device in the clear.** The analytics contour needs an explicit
-  consent and sends no medical data. Ads and data sale are out of scope.
+- **Nothing leaves the device.** There is no account, no cloud, no sync, no ads and no analytics,
+  and the shipped build declares no network permission. Health data, the transfer file, the report
+  and the delivery log stay in the app's private storage. The paid `pro` contour is the only network
+  module and is not shipped.
 - **The app is not a medical device.** No treatment recommendations, no dose selection, no
   drug-interaction checks.
 - **Design tokens are never hardcoded.** Colour, typography, geometry and motion come from

@@ -42,11 +42,8 @@ dosages and does not check drug interactions.
 
 Privacy is a property of the product, not a setting. Health data — medications, schedules,
 marks, profiles — is stored only on the device, in the app's private storage. There is no
-account, no cloud and no sync.
-
-The build in this repository declares the `INTERNET` permission for a single contour: client
-analytics that runs only after an explicit consent and sends no medical data — no medication
-names, doses, marks or profile names. Ads, data sale and transfer of health data to third
+account, no cloud, no sync, no ads and no analytics: nothing leaves the device. The shipped
+build declares no network permission at all. Data sale and transfer of health data to third
 parties are out of scope for the product. See [`docs/spec/privacy.md`](docs/spec/privacy.md).
 
 ## Platform
@@ -56,6 +53,7 @@ parties are out of scope for the product. See [`docs/spec/privacy.md`](docs/spec
 | Minimum Android | 8.0 (API 26) |
 | Language of the interface | Russian, English, Spanish, German, Chinese, Kazakh |
 | Google services | not used: no GMS, no Firebase |
+| Network | not used: the shipped build declares no network permission |
 | Storage | Room, on device |
 | Time | exact alarms through `AlarmManager` |
 
@@ -69,7 +67,6 @@ UI reads design tokens only from `core-ui`.
 | `core-domain` | domain model and rules: schedules, marks, stock, profiles, transfer, adherence |
 | `core-data` | Room database, repositories, migrations, transfer file codec |
 | `core-ui` | design system: tokens, typography, components, theme |
-| `core-analytics` | consent-gated client analytics contour |
 | `feature-today` | the Today screen |
 | `feature-meds` | medications list and the medication form |
 | `feature-reminder` | reminders, full-screen reminder, deferral |

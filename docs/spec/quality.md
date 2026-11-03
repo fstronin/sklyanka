@@ -31,8 +31,8 @@ Statuses in section 3: **automated** runs inside `./gradlew verifyAll`; **automa
 | `verifyStaticAnalysisRules` | each rule must fire on a deliberate violation from `tools/violations/kotlin/` | `ProjectChecksConventionPlugin.kt` |
 | ktlint 1.3.1 | formatting; a finding fails the build | `QualityConventionPlugin.kt` |
 | Android Lint | `NewApi`, `InlinedApi`, `HardcodedText`, `ManifestOrder` at `error`; `GradleDependency` and `OldTargetApi` ignored; only product sources analyzed | `config/lint/lint.xml` |
-| `verifyManifest<Variant>` | the merged manifest: `INTERNET` only from a contour manifest in the artifact (analytics in `free` and `pro`, payment in `pro`); `ACCESS_NETWORK_STATE` only from analytics; `ACCESS_WIFI_STATE` and `AD_ID` always forbidden; package name, `minSdk 26` | `VerifyMergedManifestTask.kt`, `NetworkContourRules` |
-| `verifyDependencies<Variant>` | resolved composition and version catalog: GMS, Firebase, Play, Crashlytics, Fabric, ML Kit and foreign analytics forbidden; allowed list is the contour coordinates | `VerifyDependencyCompositionTask.kt` |
+| `verifyManifest<Variant>` | the merged manifest: `INTERNET` only from the paid contour manifest in `pro` and never in `free`; `ACCESS_NETWORK_STATE`, `ACCESS_WIFI_STATE` and `AD_ID` always forbidden; package name, `minSdk 26` | `VerifyMergedManifestTask.kt`, `NetworkContourRules` |
+| `verifyDependencies<Variant>` | resolved composition and version catalog: GMS, Firebase, Play, Crashlytics, Fabric, ML Kit and any analytics SDK forbidden; the allowed list is the paid contour coordinate | `VerifyDependencyCompositionTask.kt` |
 | `verifyModuleDependencies`, `verifyModuleDependencyRule` | direction inward (`app` → `feature-*` → `core-*` → `core-domain`); `core-domain` has no outgoing edges; the rule must fire on a violating graph | `ModuleGraphRules.kt` |
 | `verifyNetworkContourRule` | the contour rule must fire on a violating input | `VerifyNetworkContourRuleTask.kt` |
 | `verifyAcceptanceSteps` | duplicate step definitions | `acceptance/build.gradle.kts` |
@@ -45,8 +45,8 @@ Both composition gates are part of `assemble<Variant>`; the debug one is also pa
 
 - Two variants, `free` and `pro`; only `free` is shipped, with no payment entry point, no `feature-pro` module and no billing module.
 - `pro` keeps the payment contour compiling and covered: built and unit tested in CI, not signed, not published, never in a store.
-- Network access belongs to a contour, not a variant. Analytics (`:core-analytics`) is in both variants; payment (`:billing-appgallery`) is `pro` only. `INTERNET` is allowed only when a contour in the artifact declares it; a contour without its own permission is also a violation.
-- GMS, Firebase, advertising and foreign analytics SDKs are forbidden in both variants. Client analytics is MyTracker only, with consent and without medical data.
+- Network access belongs to a contour, not a variant, and the paid contour (`:billing-appgallery`) is the only one. `INTERNET` is allowed only with that contour in the `pro` artifact, and only from its manifest. `free` declares no network permission and contains no network code.
+- GMS, Firebase, advertising and any analytics SDK are forbidden in both variants. The paid contour is the only network module.
 
 ## 3. Quality requirements
 
@@ -77,20 +77,20 @@ Both composition gates are part of `assemble<Variant>`; the debug one is also pa
 
 | Requirement and threshold | Verification method | Status |
 |---|---|---|
-| Medical data does not leave the device in clear; analytics events carry no medical data | `verifyManifest`, `verifyDependencies`, `MedicalDataInJournal`, privacy scenarios | automated |
-| `INTERNET` comes exactly from the analytics contour or the `pro` payment contour; network state, Wi-Fi state and `AD_ID` are always forbidden | `AnalyticsContourRules`, `VerifyMergedManifestTask.kt` on the merged manifest | automated |
+| The app sends no medical data anywhere; the shipped build has no network path | `verifyManifest`, `verifyDependencies`, `MedicalDataInJournal`, privacy scenarios | automated |
+| `INTERNET` appears only in the `pro` paid contour; `free` declares no network permission; `ACCESS_NETWORK_STATE`, `ACCESS_WIFI_STATE` and `AD_ID` never appear | `NetworkContourRules`, `VerifyMergedManifestTask.kt` on the merged manifest | automated |
 | The transfer file is created through the system picker, stays out of public directories, and needs no storage permission | `TransferScreenSteps.kt` against the source manifest | automated (partial) |
 | The transfer file holds medical data in clear, without a password, and export warns about it | `DataTransferScreenTest.kt`, `transfer_privacy_content`, `transfer_privacy_place` | automated |
 | Release logs carry no medication names, doses, profile names or transfer content; pre-unlock snapshots carry only identifiers, moments and service numbers | `MedicalDataInJournal` with a sample and firing gate | automated (partial) |
 | The database is excluded from Android backup: `allowBackup="false"` | Declared in the manifest; no gate checks the attribute | none |
 
-### 3.4 Analytics and network
+### 3.4 Network
 
 | Requirement and threshold | Verification method | Status |
 |---|---|---|
-| Client analytics is MyTracker only, starts only after explicit consent, uses only the fixed domain catalog, sends no medical data | `AnalyticsCatalogTest.kt`, `AnalyticsConsentTest.kt`, the `MedicalDataInJournal` rule | automated |
-| Before consent the provider SDK is not initialized; after withdrawal it is not called; a build without a key runs and sends nothing | `MyTrackerTransportTest.kt`, `AnalyticsConsentTest.kt` | automated |
-| An analytics failure never blocks a user action and never loses a queued record | `AnalyticsQueueTest.kt` on real Room | automated, emulator |
+| The shipped `free` build declares no network permission and its merged manifest contains no `INTERNET` | `VerifyMergedManifestTask.kt`, `NetworkContourRules` | automated |
+| `INTERNET` appears only with the paid contour in `pro`; network-state, Wi-Fi-state and `AD_ID` never appear in any variant | `NetworkContourRules`, `verifyManifest<Variant>` | automated |
+| No GMS, Firebase, advertising or analytics coordinate reaches a variant's runtime classpath | `verifyDependencies<Variant>`, `gradle/libs.versions.toml` | automated |
 
 ### 3.5 Performance
 
@@ -135,7 +135,7 @@ Both composition gates are part of `assemble<Variant>`; the debug one is also pa
 |---|---|---|
 | `minSdk 26`, `targetSdk = compileSdk = 35`; functionality unavailable on API 26 degrades instead of failing | `ProjectDefaults.kt`; `verifyManifest` checks `minSdk`; lint `NewApi`, `InlinedApi` at `error` | automated |
 | `applicationId = ru.stohastika.sklyanka`, immutable | `VerifyMergedManifestTask.kt`: merged package name must match | automated |
-| `INTERNET` in `free` comes only from analytics, in `pro` from analytics and payment; `ACCESS_NETWORK_STATE`, `ACCESS_WIFI_STATE` and `AD_ID` never appear | `NetworkContourRules`, `verifyManifest<Variant>`; section 2.1 | automated |
+| `free` declares no `INTERNET`; in `pro` `INTERNET` comes only from the paid contour; `ACCESS_NETWORK_STATE`, `ACCESS_WIFI_STATE` and `AD_ID` never appear | `NetworkContourRules`, `verifyManifest<Variant>`; section 2.1 | automated |
 | No GMS, Firebase or derived artifacts in dependencies | `verifyDependencies<Variant>`, `gradle/libs.versions.toml` | automated |
 | Release is signed with the project keystore, with R8 and resource shrinking; without secrets release variants are disabled | `ReleaseSigningConventionPlugin.kt` | automated |
 | Minimum version Android 8.0 (API 26), target current at release; APIs above 26 only behind a version check | As in the `minSdk` row | automated |
@@ -176,7 +176,7 @@ No quality requirements exist for these capabilities; the gates in section 2 enf
 - **AI input.** No model runs on the device or over the network, and no screen offers an entry for free-form input.
 - **Payment, purchase, subscription.** The shipped `free` build has no payment entry point, no `feature-pro` module and no billing module. `pro` compiles the payment contour for coverage only, not signed, not published, never in a store.
 - **Wearable companion.** No Wear module, watch permission or watch dependency, and no screen promises a watch card.
-- **Experiments and developer reporting.** No A/B SDK and no reporting contour.
+- **Experiments, developer reporting and client analytics.** No A/B SDK, no reporting contour and no analytics contour: no provider SDK, no event queue, no analytics consent step, no analytics settings row and no usage tracking. The shipped build declares no network permission.
 - **Cloud backup and accounts.** No account system and no server-side storage of user data; data leaves the device only as the transfer file.
 - **Medical advice.** No treatment recommendations, no dose selection, no drug interaction checks.
 
@@ -196,7 +196,7 @@ A verification exists, but the threshold is not covered in full: reboot recovery
 - **CI covers the JVM level.** `.github/workflows/verify.yml` runs `verifyAll` on every push and pull request to main. Instrumented tests are only compiled; they run separately through `android-test.yml`.
 - **Coverage is not collected.** No coverage tool exists, so 85% is not verified: the test count is known, the covered share is not.
 - **There are no benchmarks.** No macrobenchmark module and no baseline profiles, so cold start, frame timing, database size and battery use are not measured. Screen response and history opening are covered by database query timing only, which verifies the data layer, not the interface.
-- **Product success indicators** are measured only by manual runs and the on-device journal. Adherence is the share of planned intakes taken within ±2 h over 30 days, target at least 80%. Retention is 30 days of personal use, checked by a personal run and the store console. Reminder reliability is the 14-day, 95%, ±2 min gate. Client analytics does not measure these indicators: it answers where people leave.
+- **Product success indicators** are measured only by manual runs and the on-device journal. Adherence is the share of planned intakes taken within ±2 h over 30 days, target at least 80%. Retention is 30 days of personal use, checked by a personal run and the store console. Reminder reliability is the 14-day, 95%, ±2 min gate.
 - **Everything firmware dependent** cannot be reproduced on an emulator: battery optimization and autostart, extreme power saving, a full screen reminder over the lock screen, channel sound, actual Doze delivery, the long gate run. Trials 12, 13 and 16 are not replaced by an emulator; trials 2, 8 and 15 only in part.
 - **The reliability gate is not passed.** A continuous 14-day run on matrix devices has not been completed, and the arithmetic rule for the `outage` window is not fixed before a run starts.
 

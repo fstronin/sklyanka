@@ -8,8 +8,6 @@ import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -81,7 +79,6 @@ class MedicationFormBackTest {
         ),
         time = clock,
         proStatus = ObserveProStatusUseCase(FakeProCache(), clock),
-        analytics = AnalyticsTestKit(CoroutineScope(Dispatchers.Unconfined)).recorder,
     )
 
     private val controllers = mutableListOf<ActivityController<MedsFormHost>>()

@@ -16,13 +16,13 @@ import org.gradle.api.tasks.TaskAction
  * ПЛ-4, НФТ-15/16/39: состав сетевых зависимостей варианта (SKL-165, TDD §6.3).
  *
  * Три правила в одном отчёте, все — в [NetworkContourRules]:
- * 1. запрещённые группы — GMS, Firebase, реклама и чужая аналитика — отсутствуют
+ * 1. запрещённые группы — GMS, Firebase, реклама и чужие SDK — отсутствуют
  *    и в разрешённом classpath, и в каталоге версий;
  * 2. ни одна координата охраняемой группы (`com.huawei.*`, `com.my.tracker.*`) не проезжает
- *    мимо белого списка (`AnalyticsContourRules`);
+ *    мимо белого списка (`NetworkContourCatalog`);
  * 3. обязательные координаты контура присутствуют, только если контур входит в артефакт:
- *    `free` обязан нести провайдера аналитики и не обязан нести клиент магазина
- *    (Р-86, ADR-0016; снятие связки — `ADR-0017` п. 3).
+ *    `pro` несёт клиент магазина, поставляемая сборка `free` — нет (Р-86, ADR-0016;
+ *    `ADR-0017` п. 3).
  *
  * Правила вынесены в общий объект, чтобы проверка манифеста и проверка графа не разошлись.
  */
@@ -34,9 +34,9 @@ abstract class VerifyDependencyCompositionTask : DefaultTask() {
     /**
      * Входит ли каждый сетевой контур в артефакт (SKL-165).
      *
-     * `free` несёт контур аналитики и не несёт платёжный; `pro` несёт оба. Требовать
-     * обязательные координаты контура, которого в артефакте нет, нельзя: обязательная
-     * координата — обещание, что контур работает, а не свойство любого APK.
+     * `free` не несёт сетевых контуров; `pro` несёт платёжный. Требовать обязательные
+     * координаты контура, которого в артефакте нет, нельзя: обязательная координата —
+     * обещание, что контур работает, а не свойство любого APK.
      */
     @get:Input
     abstract val contoursInArtifact: MapProperty<String, Boolean>
@@ -59,8 +59,8 @@ abstract class VerifyDependencyCompositionTask : DefaultTask() {
             contoursInArtifact = present,
         )
 
-        val guarded = resolved.filter(AnalyticsContourRules::guards)
-        val contoursPresent = AnalyticsContourRules.NETWORK_CONTOURS.filter { present[it.module] == true }
+        val guarded = resolved.filter(NetworkContourCatalog::guards)
+        val contoursPresent = NetworkContourCatalog.NETWORK_CONTOURS.filter { present[it.module] == true }
         val requiredCoordinates = contoursPresent.flatMap { contour ->
             contour.requiredCoordinates.map { "${contour.module}: $it" }
         }
@@ -72,7 +72,7 @@ abstract class VerifyDependencyCompositionTask : DefaultTask() {
                 appendLine("Resolved runtime dependencies (${resolved.size}):")
                 resolved.forEach { appendLine("  $it") }
                 appendLine()
-                appendLine("Forbidden groups checked: ${AnalyticsContourRules.FORBIDDEN_GROUPS.joinToString()}")
+                appendLine("Forbidden groups checked: ${NetworkContourCatalog.FORBIDDEN_GROUPS.joinToString()}")
                 appendLine("Contours in the artifact: ${contoursPresent.joinToString { it.module }.ifEmpty { "none" }}")
                 appendLine(
                     "Contour required coordinates: " +
@@ -85,7 +85,7 @@ abstract class VerifyDependencyCompositionTask : DefaultTask() {
 
         logger.lifecycle(
             "  [dependencies] OK   ${resolved.size} artifacts, none from " +
-                AnalyticsContourRules.FORBIDDEN_GROUPS.joinToString() +
+                NetworkContourCatalog.FORBIDDEN_GROUPS.joinToString() +
                 "; guarded coordinates resolved: ${guarded.size}; " +
                 "contours: ${contoursPresent.joinToString { it.module }.ifEmpty { "none" }}",
         )

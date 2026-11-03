@@ -28,7 +28,7 @@ class ArtifactChecksConventionPlugin : Plugin<Project> {
                         .map(ResolvedComponentResult::getId)
                         .map { it.displayName }
                         .toSet()
-                    AnalyticsContourRules.NETWORK_CONTOURS.associate { contour ->
+                    NetworkContourCatalog.NETWORK_CONTOURS.associate { contour ->
                         contour.module to modules.any { it.startsWith("project ${contour.project}") }
                     }
                 }
@@ -44,7 +44,7 @@ class ArtifactChecksConventionPlugin : Plugin<Project> {
                     expectedMinSdk.set(ProjectDefaults.MIN_SDK)
                     contourManifests.from(
                         provider {
-                            AnalyticsContourRules.NETWORK_CONTOURS.map { contour ->
+                            NetworkContourCatalog.NETWORK_CONTOURS.map { contour ->
                                 rootProject.layout.projectDirectory
                                     .file("${contour.module}/src/main/AndroidManifest.xml")
                             }
@@ -69,7 +69,7 @@ class ArtifactChecksConventionPlugin : Plugin<Project> {
                     tasks.register<VerifyDependencyCompositionTask>("verifyDependencies$suffix") {
                         group = VERIFICATION_GROUP
                         description = "Checks that the $suffix runtime classpath carries no Google " +
-                            "Play Services, Firebase, ads or third-party analytics; no guarded " +
+                            "Play Services, Firebase, ads or crash reporting; no guarded " +
                             "coordinate rides outside the white list, and each network contour " +
                             "present carries its client (PLATFORM-4, NFR-15/16/39, ADR-0017 §3)."
                         coordinates.set(

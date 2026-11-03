@@ -27,7 +27,6 @@ import ru.stohastika.sklyanka.domain.transfer.ReadTransferFileUseCase
 import ru.stohastika.sklyanka.domain.transfer.TransferDecoded
 import ru.stohastika.sklyanka.domain.transfer.TransferMode
 import ru.stohastika.sklyanka.domain.transfer.ValidateSnapshot
-import ru.stohastika.sklyanka.feature.settings.AnalyticsTestKit
 import ru.stohastika.sklyanka.feature.settings.R
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 
@@ -180,8 +179,6 @@ class DataTransferRouteTest {
             settings = settings,
             files = files,
             ids = ids,
-            // Шов аналитики настоящий, но события этому стенду не проверяются (SKL-165).
-            analytics = AnalyticsTestKit().recorderForStand(),
             time = time,
         )
     }

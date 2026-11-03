@@ -12,7 +12,7 @@ Manual intake journal with reminders: no treatment advice, no dose selection, no
 
 Entities: **Profile** (who), **Medication** (what and when), **Intake** (what happened). Adherence, stock, and course progress are derived, never stored. Profile 1 to N Medication 1 to N Intake. An intake has no profile field; its profile comes through its medication. `actor_profile_id` records who marked when that was not the medication's profile.
 
-Storage: `sklyanka.db`, schema 11, tables `profile`, `medication`, `intake`, service tables `op_log`, `reminder_log`, `deferred_reminder`, and an analytics queue without foreign keys.
+Storage: `sklyanka.db`, schema 12, tables `profile`, `medication`, `intake`, service tables `op_log`, `reminder_log`, `deferred_reminder`.
 
 ### 1.1 Entity fields
 
@@ -73,7 +73,7 @@ Index `(profile_id, archived_at)` serves the list, archive, and Today.
 
 Indexes: unique `(medication_id, scheduled_at, schedule_slot)`; `(scheduled_at, status)` for Today and the overdue sweep; `(actor_profile_id)`. No partial index: Room would refuse to open the database.
 
-Service tables. `op_log`: `at`, `event`, ids, before and after values, source, note. `reminder_log`: `occurred_at`, `event`, ids, `scheduled_at`, `fired_at`, `deviation_seconds`, `channel`, `delivered`, `reason`, `alarms_cancelled`, `alarms_scheduled`, `attempt`, `snooze_minutes`; no names, doses, or person names. `deferred_reminder`: `intake_id` key with CASCADE, `fire_at`, `attempt`. Analytics queue: no FKs, never mixed with product data.
+Service tables. `op_log`: `at`, `event`, ids, before and after values, source, note. `reminder_log`: `occurred_at`, `event`, ids, `scheduled_at`, `fired_at`, `deviation_seconds`, `channel`, `delivered`, `reason`, `alarms_cancelled`, `alarms_scheduled`, `attempt`, `snooze_minutes`; no names, doses, or person names. `deferred_reminder`: `intake_id` key with CASCADE, `fire_at`, `attempt`. No table holds anything but product data.
 
 ### 1.2 Enumerations and storage
 
@@ -165,7 +165,7 @@ At `end_date` the app **offers** archiving with "course finished"; the person co
 | Newer database | Not opened, data unchanged: a blocking screen asks to update. Alarms create no marks, show no card, only the update notice |
 | Corrupted database | If opening recreates the database while a "database was alive" marker exists (outside the file, in settings), Today shows a one-time non-modal explanation that data was corrupted and reset, with a close action. It does not return until the next recreation; a clean install and a normal opening stay silent; clearing app data erases the marker |
 
-Migrations: 1 to 2 replaces the marker table with the whole schema; 2 to 3 watch mirroring; 3 to 4 the firing log; 4 to 5 `package_size`; 5 to 6 deferred firings; 6 to 7 `deleted_at`; 7 to 8 removes the watch seam; 8 to 9 `revoked_at`; 9 to 10 `schedule_rule` and intake `dose_amount`; 10 to 11 the analytics queue. Free space is checked and a copy taken into the no-backup directory with the source version in the name; insufficient space stops the migration with a dedicated screen. A maintenance trace and integrity checks are written at most once per day.
+Migrations: 1 to 2 replaces the marker table with the whole schema; 2 to 3 watch mirroring; 3 to 4 the firing log; 4 to 5 `package_size`; 5 to 6 deferred firings; 6 to 7 `deleted_at`; 7 to 8 removes the watch seam; 8 to 9 `revoked_at`; 9 to 10 `schedule_rule` and intake `dose_amount`; 10 to 11 the client event queue; 11 to 12 drops the client event queue. Free space is checked and a copy taken into the no-backup directory with the source version in the name; insufficient space stops the migration with a dedicated screen. A maintenance trace and integrity checks are written at most once per day.
 
 ---
 
@@ -359,7 +359,7 @@ Without the permission reminders are **not set at all**: the exception is caught
 
 ### 4.2 Permissions
 
-`INTERNET` is declared for analytics; `ACCESS_NETWORK_STATE` and `AD_ID` are removed from the merged manifest.
+The shipped build declares no network permission: `INTERNET` and `ACCESS_NETWORK_STATE` are absent from the merged manifest, and so are `ACCESS_WIFI_STATE` and `AD_ID`.
 
 | Permission | Purpose | On refusal |
 |---|---|---|
@@ -391,9 +391,6 @@ Package visibility covers vendor managers (Huawei, Xiaomi, both Samsung builds),
 - The link opens the same document as the settings row; no second address. Page language follows the app: RU `/ru/`, EN `/en/`, ZH `/zh/`; DE, ES, KK, and unknown get English. Opening the link does not dismiss the dialog.
 - Acceptance is one key, `privacy_acknowledged`, dismissing the dialog forever. Without it the dialog appears at every launch, including after a process death before the press.
 - «Отказываюсь» closes the app and records nothing; the next launch shows the dialog again.
-- Analytics consent is a separate step after the dialog and gates nothing; "not now" continues onboarding. Remembered forever under one key, not asked again at launch, toggled in settings; turning it off stops sending immediately.
-- Analytics receives only catalog events with closed enum properties. Medical data, ids, free text, intake times, and schedules never leave the device.
-- Before consent the provider is not initialized: no network call, no installation id. Analytics is not in the product path; a failure is neither shown nor delaying.
-- Unsent events wait in a bounded queue, then are dropped. Release logs contain no medication names, doses, profile names, or file contents.
+- Release logs contain no medication names, doses, profile names, or file contents.
 
 ---

@@ -113,7 +113,6 @@ abstract class VerifyNetworkContourRuleTask : DefaultTask() {
 
     private companion object {
         const val INTERNET = "android.permission.INTERNET"
-        const val ANALYTICS = "core-analytics"
         const val PAID = "billing-appgallery"
 
         /** Манифест с названным разрешением и без ничего лишнего. */
@@ -125,117 +124,100 @@ abstract class VerifyNetworkContourRuleTask : DefaultTask() {
             appendLine("</manifest>")
         }
 
-        /** Разрешения контура аналитики — берём из правил, а не переписываем руками. */
-        val ANALYTICS_PERMISSIONS = AnalyticsContourRules.ANALYTICS_CONTOUR.permissions.toTypedArray()
+        /** Разрешения платёжного контура — берём из правил, а не переписываем руками. */
+        val PAID_PERMISSIONS = NetworkContourCatalog.PAID_CONTOUR.permissions.toTypedArray()
 
-        val ANALYTICS_MANIFEST = manifest(*ANALYTICS_PERMISSIONS)
-        val PAID_MANIFEST = manifest(INTERNET)
+        val PAID_MANIFEST = manifest(*PAID_PERMISSIONS)
         val EMPTY_MANIFEST = manifest()
 
-        /** Состав свободной сборки: контур аналитики есть, платёжного нет. */
-        val FREE_PRESENT = mapOf(ANALYTICS to true, PAID to false)
+        /** Состав сборки `pro`: единственный сетевой контур в артефакте. */
+        val PRO_PRESENT = mapOf(PAID to true)
 
-        /** Состав сборки `pro`: оба сетевых контура. */
-        val PRO_PRESENT = mapOf(ANALYTICS to true, PAID to true)
-
-        val NO_CONTOURS = mapOf(ANALYTICS to false, PAID to false)
+        /** Состав поставляемой сборки: сетевых контуров в артефакте нет. */
+        val NO_CONTOURS = mapOf(PAID to false)
 
         val MUTATIONS = linkedMapOf(
             "network without any contour" to ManifestSample(
                 merged = manifest(INTERNET, "android.permission.POST_NOTIFICATIONS"),
-                contours = mapOf(ANALYTICS to EMPTY_MANIFEST, PAID to EMPTY_MANIFEST),
+                contours = mapOf(PAID to EMPTY_MANIFEST),
                 present = NO_CONTOURS,
             ),
             "network declared by a module outside the contours" to ManifestSample(
                 merged = manifest(INTERNET),
-                contours = mapOf(ANALYTICS to ANALYTICS_MANIFEST, PAID to PAID_MANIFEST),
-                present = FREE_PRESENT,
+                contours = mapOf(PAID to PAID_MANIFEST),
+                present = PRO_PRESENT,
                 modules = mapOf("feature-today/src/main/AndroidManifest.xml" to manifest(INTERNET)),
             ),
             "contour in the artifact but its permission missing" to ManifestSample(
                 merged = manifest("android.permission.POST_NOTIFICATIONS"),
-                contours = mapOf(ANALYTICS to ANALYTICS_MANIFEST, PAID to PAID_MANIFEST),
-                present = FREE_PRESENT,
+                contours = mapOf(PAID to PAID_MANIFEST),
+                present = PRO_PRESENT,
             ),
             "permission without a declaring contour in the artifact" to ManifestSample(
                 merged = manifest(INTERNET),
-                contours = mapOf(ANALYTICS to EMPTY_MANIFEST, PAID to PAID_MANIFEST),
-                present = FREE_PRESENT,
-            ),
-            "contour present, its own manifest silent, the neighbour declares" to ManifestSample(
-                merged = manifest(INTERNET),
-                contours = mapOf(ANALYTICS to ANALYTICS_MANIFEST, PAID to EMPTY_MANIFEST),
+                contours = mapOf(PAID to EMPTY_MANIFEST),
                 present = PRO_PRESENT,
             ),
             "forbidden wi-fi state permission merged in" to ManifestSample(
                 merged = manifest(INTERNET, "android.permission.ACCESS_WIFI_STATE"),
-                contours = mapOf(ANALYTICS to ANALYTICS_MANIFEST, PAID to PAID_MANIFEST),
-                present = FREE_PRESENT,
+                contours = mapOf(PAID to PAID_MANIFEST),
+                present = PRO_PRESENT,
             ),
             "advertising identifier merged in" to ManifestSample(
                 merged = manifest(INTERNET, "com.google.android.gms.permission.AD_ID"),
-                contours = mapOf(ANALYTICS to ANALYTICS_MANIFEST, PAID to PAID_MANIFEST),
-                present = FREE_PRESENT,
+                contours = mapOf(PAID to PAID_MANIFEST),
+                present = PRO_PRESENT,
             ),
         )
 
         val COHERENT = linkedMapOf(
-            // Поставляемая сборка: сеть объявлена контуром аналитики и только им.
+            // Поставляемая сборка: сеть не объявлена вовсе, контура в артефакте нет.
             "free build" to ManifestSample(
-                merged = manifest(*ANALYTICS_PERMISSIONS),
-                contours = mapOf(ANALYTICS to ANALYTICS_MANIFEST, PAID to PAID_MANIFEST),
-                present = FREE_PRESENT,
-            ),
-            // `pro`: оба контура в артефакте и оба объявили сеть — законный случай.
-            "pro build" to ManifestSample(
-                merged = manifest(*ANALYTICS_PERMISSIONS),
-                contours = mapOf(ANALYTICS to ANALYTICS_MANIFEST, PAID to PAID_MANIFEST),
-                present = PRO_PRESENT,
-            ),
-            // Сборка без сетевых контуров сети не объявляет вовсе.
-            "no contours" to ManifestSample(
                 merged = manifest("android.permission.POST_NOTIFICATIONS"),
-                contours = mapOf(ANALYTICS to ANALYTICS_MANIFEST, PAID to PAID_MANIFEST),
+                contours = mapOf(PAID to PAID_MANIFEST),
                 present = NO_CONTOURS,
+            ),
+            // `pro`: контур в артефакте и объявил сеть сам — законный случай.
+            "pro build" to ManifestSample(
+                merged = manifest(*PAID_PERMISSIONS),
+                contours = mapOf(PAID to PAID_MANIFEST),
+                present = PRO_PRESENT,
             ),
         )
 
-        val FREE_COORDINATES = listOf("com.my.tracker:mytracker-sdk:3.6.0")
-
-        val PRO_COORDINATES = FREE_COORDINATES + listOf("com.huawei.hms:iap:6.16.6.305")
+        val PRO_COORDINATES = listOf("com.huawei.hms:iap:6.16.6.305")
 
         const val CATALOG = """
             [versions]
-            mytracker = "3.6.0"
+            huaweiIap = "6.16.6.305"
 
             [libraries]
-            mytracker-sdk = { module = "com.my.tracker:mytracker-sdk", version.ref = "mytracker" }
+            huawei-iap = { module = "com.huawei.hms:iap", version.ref = "huaweiIap" }
         """
 
         val MUTATIONS_DEPENDENCIES = linkedMapOf(
             "forbidden group in the classpath" to CompositionSample(
-                coordinates = FREE_COORDINATES + "com.google.android.gms:play-services-appset:16.1.0",
-                present = FREE_PRESENT,
+                coordinates = PRO_COORDINATES + "com.google.android.gms:play-services-appset:16.1.0",
+                present = PRO_PRESENT,
             ),
             "forbidden group in the version catalog" to CompositionSample(
-                coordinates = FREE_COORDINATES,
-                present = FREE_PRESENT,
+                coordinates = PRO_COORDINATES,
+                present = PRO_PRESENT,
                 catalog = CATALOG + "com.google.firebase:firebase-encoders",
             ),
             "guarded coordinate outside the white list" to CompositionSample(
-                coordinates = FREE_COORDINATES + "com.my.tracker:mytracker-plugins:1.0",
-                present = FREE_PRESENT,
+                coordinates = PRO_COORDINATES + "com.huawei.hms:ads:1.0",
+                present = PRO_PRESENT,
             ),
             "contour in the artifact without its client" to CompositionSample(
                 coordinates = emptyList(),
-                present = FREE_PRESENT,
+                present = PRO_PRESENT,
             ),
         )
 
         val COHERENT_DEPENDENCIES = linkedMapOf(
-            "free build" to CompositionSample(coordinates = FREE_COORDINATES, present = FREE_PRESENT),
+            "free build" to CompositionSample(coordinates = emptyList(), present = NO_CONTOURS),
             "pro build" to CompositionSample(coordinates = PRO_COORDINATES, present = PRO_PRESENT),
-            "no contours" to CompositionSample(coordinates = emptyList(), present = NO_CONTOURS),
         )
     }
 }

@@ -42,7 +42,7 @@ object ModuleGraphRules {
                 "(otherwise the module boundary exists only on paper)"
 
         module in CORE_MODULES && dependency !in setOf(CORE_DOMAIN) ->
-            "core-ui, core-data and core-analytics may depend on core-domain only"
+            "core-ui and core-data may depend on core-domain only"
 
         dependency == APP -> "nothing may depend on the application module"
 
@@ -52,5 +52,5 @@ object ModuleGraphRules {
     private const val APP = "app"
     private const val CORE_DOMAIN = "core-domain"
     private const val FEATURE_PREFIX = "feature-"
-    private val CORE_MODULES = setOf("core-ui", "core-data", "core-analytics")
+    private val CORE_MODULES = setOf("core-ui", "core-data")
 }

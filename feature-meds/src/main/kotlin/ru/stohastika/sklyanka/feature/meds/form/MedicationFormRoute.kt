@@ -13,9 +13,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsScreen
 import ru.stohastika.sklyanka.feature.meds.R
-import ru.stohastika.sklyanka.ui.analytics.TrackScreenView
 import ru.stohastika.sklyanka.ui.component.ConfirmDialog
 import ru.stohastika.sklyanka.ui.component.ConfirmDialogTexts
 import ru.stohastika.sklyanka.ui.component.DateTimePickerDialog
@@ -61,8 +59,6 @@ fun MedicationFormRoute(
      */
     onOpenPro: () -> Unit = {},
 ) {
-    // Показ экрана — один раз на вход: повторная композиция события не плодит (TDD §5.4).
-    TrackScreenView(AnalyticsScreen.MEDICATION_FORM)
     // Открытие — один раз на заход, а не на сборку композиции. Поворот пересобирает
     // композицию целиком, и безусловный `open()` затирал бы черновик человека: он живёт
     // в ViewModel, который пересоздание переживает, а признак «форма уже открыта» —

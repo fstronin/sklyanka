@@ -1,8 +1,8 @@
 # 0010 — Paid network contour
 
-Status: Superseded by ADR-0017. No paid network contour is shipped: the paid build variant is
-compiled but not released, and the shipped free build carries only the analytics contour. Product
-composition is governed by ADR-0016, network architecture by ADR-0017. This document records a
+Status: Superseded by ADR-0017 and ADR-0018. No paid network contour is shipped: the paid build
+variant is compiled but not released, and the shipped free build contains no network contour. Product
+composition is governed by ADR-0016, network architecture by ADR-0018. This document records a
 decision that is no longer a rule of the product.
 
 ## Context

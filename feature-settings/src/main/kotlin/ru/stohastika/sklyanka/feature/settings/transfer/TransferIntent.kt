@@ -25,20 +25,8 @@ sealed interface TransferIntent {
     /** Место сохранения выбрано системой; путь нигде не сохраняется (ПЕР-36). */
     data class SaveTo(val target: String) : TransferIntent
 
-    /**
-     * Системный выбор места закрыт без выбора (SKL-165).
-     *
-     * Отмена — не ошибка и не молчание: в событии она отличается от отказа, а файл при
-     * отмене не создаётся вовсе. Исход приходит сюда от системного диалога, потому что
-     * получить его умеет только экран.
-     */
-    data object ExportCancelled : TransferIntent
-
     /** Файл выбран системой: дальше проверка и показ сводки, и ничего больше (ПЕР-15 п. 2). */
     data class FileChosen(val source: String) : TransferIntent
-
-    /** Системный выбор файла закрыт без выбора: загрузка не начиналась (SKL-165). */
-    data object ImportCancelled : TransferIntent
 
     /** Сводка прочитана: дальше разбор совпадений либо подтверждение замены. */
     data object ContinueFromSummary : TransferIntent

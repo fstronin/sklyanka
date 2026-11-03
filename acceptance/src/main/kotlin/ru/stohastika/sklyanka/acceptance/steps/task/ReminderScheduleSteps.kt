@@ -10,9 +10,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
-import ru.stohastika.sklyanka.acceptance.AnalyticsCatalogFacts
 import ru.stohastika.sklyanka.acceptance.MedicationUnits
-import ru.stohastika.sklyanka.acceptance.NetworkContourFacts
 import ru.stohastika.sklyanka.acceptance.RussianDates
 import ru.stohastika.sklyanka.acceptance.steps.dateOf
 import ru.stohastika.sklyanka.acceptance.steps.localMoment
@@ -616,24 +614,6 @@ class ReminderScheduleSteps(private val world: AcceptanceWorld) {
             MedicationDraft.of(device).copy(times = device.times.map { it.plusHours(HOURS) }),
         )
         assertTrue(result is SaveResult.Saved, "the schedule edit must be saved: $result")
-    }
-
-    /**
-     * Запись журнала в события аналитики не попадает — утверждение о сборке (НФТ-19).
-     *
-     * Сеть в продукте есть, но только у своего контура (Р-93, `ADR-0017`), и способен
-     * этот контур передать только события каталога. Проверяются обе стороны: сетевое
-     * разрешение объявляют лишь контуры, а конструктор события не принимает ни строки,
-     * ни идентификатора — значит название лекарства, доза и имя профиля в событие
-     * не пролезают конструкцией, а не обещанием.
-     *
-     * Прежде шаг читал `app/src/main/AndroidManifest.xml` и потому зеленел при ложном
-     * тексте: после SKL-165 `INTERNET` приходит из манифеста контура.
-     */
-    @Тогда("^ни одна запись журнала не попадает в события аналитики$")
-    fun theJournalNeverEntersTheAnalyticsEvents() {
-        NetworkContourFacts.assertDeclaredOnlyByContours()
-        AnalyticsCatalogFacts.assertNoFreeTextInEvents()
     }
 
     @Но("^повторного списания остатка не происходит$")

@@ -14,13 +14,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsConsentSource
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsConsentState
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsRecorder
-import ru.stohastika.sklyanka.domain.analytics.ConsentShown
-import ru.stohastika.sklyanka.domain.analytics.ConsentShownSource
-import ru.stohastika.sklyanka.domain.analytics.DecideAnalyticsConsentUseCase
-import ru.stohastika.sklyanka.domain.analytics.ObserveAnalyticsConsentUseCase
 import ru.stohastika.sklyanka.domain.appearance.AccentTheme
 import ru.stohastika.sklyanka.domain.appearance.AppearanceOutcome
 import ru.stohastika.sklyanka.domain.appearance.IconVariant
@@ -81,23 +74,6 @@ class SettingsViewModel @Inject constructor(
      * только называет намерение.
      */
     private val appearance: SettingsAppearance,
-    /**
-     * Согласие на аналитику: поток текущего решения и единственная точка его изменения
-     * (ПМ-18, ПМ-25, TDD §7.4).
-     *
-     * Решение живёт в домене и в хранилище, а не в состоянии экрана: строку обязаны видеть
-     * и первый запуск, и повторный вход, и снятое согласие не должно «отрастать» при
-     * перезапуске (АН-2). Экран только называет намерение.
-     */
-    private val observeAnalyticsConsent: ObserveAnalyticsConsentUseCase,
-    private val decideAnalyticsConsent: DecideAnalyticsConsentUseCase,
-    /**
-     * Запись показа вопроса (Р-96).
-     *
-     * Открытие поверхности из настроек — это событие показа, и оно пишется до согласия:
-     * накопленный показ уходит вместе с выбором, а при отказе стирается вместе с очередью.
-     */
-    private val analytics: AnalyticsRecorder,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(SettingsUiState(version = environment.stamp.versionName))
@@ -117,20 +93,7 @@ class SettingsViewModel @Inject constructor(
     init {
         observeProfiles(profiles, context, medications)
         observeAppearance()
-        observeAnalytics()
         refresh()
-    }
-
-    /**
-     * Решение об аналитике — потоком: его меняет и этот экран, и первый запуск.
-     *
-     * Поле состояния повторяет хранилище, а не нажатие: вопрос, закрытый без решения,
-     * оставляет строку прежней, и это видно без перезахода (ПМ-25, АН-2).
-     */
-    private fun observeAnalytics() {
-        viewModelScope.launch {
-            observeAnalyticsConsent().collect { consent -> _state.value = _state.value.copy(analytics = consent) }
-        }
     }
 
     /** Тема и вариант иконки: потоком, потому что их меняет и диалог, и другая сборка. */
@@ -179,9 +142,6 @@ class SettingsViewModel @Inject constructor(
     )
 
     fun onIntent(intent: SettingsIntent) {
-        // Согласие на аналитику — отдельный маленький проход: три намерения вопроса не
-        // раздувают ветвление экрана и живут рядом с решением, а не среди переходов.
-        if (handleAnalytics(intent)) return
         when (intent) {
             is SettingsIntent.SelectProfile -> switchTo(intent.profileId)
             is SettingsIntent.SetPersistentReminder -> setPersistent(intent.enabled)
@@ -200,32 +160,6 @@ class SettingsViewModel @Inject constructor(
             // Остальные намерения — переходы; их исполняет тот, кто собрал маршруты.
             else -> Unit
         }
-    }
-
-    /**
-     * Намерения вопроса об аналитике (ПМ-25, Р-96).
-     *
-     * Включение открывает вопрос, выключение и отказ в вопросе исполняются сразу —
-     * диалога у выключения нет. Возвращает «намерение моё», чтобы экранный `when`
-     * не обрастал тремя ветками, не относящимися к переходам.
-     */
-    private fun handleAnalytics(intent: SettingsIntent): Boolean = when (intent) {
-        is SettingsIntent.SetAnalyticsEnabled -> {
-            setAnalytics(intent.enabled)
-            true
-        }
-
-        SettingsIntent.DismissAnalyticsPrompt -> {
-            _state.value = _state.value.copy(analyticsPromptVisible = false)
-            true
-        }
-
-        SettingsIntent.ConfirmAnalytics -> {
-            confirmAnalytics()
-            true
-        }
-
-        else -> false
     }
 
     /**
@@ -335,39 +269,6 @@ class SettingsViewModel @Inject constructor(
             // Причина уходит в журнал: «почему я оказался в мамином профиле» — вопрос,
             // ответ на который обязан быть восстановим (ПРФ-30).
             switchProfile(profileId, SwitchReason.USER_SETTINGS)
-        }
-    }
-
-    /**
-     * Переключатель строки «Аналитика» (ПМ-25, Р-96).
-     *
-     * Включение **не даёт согласия**: оно открывает вопрос и пишет показ — человек ещё
-     * ничего не решил, и согласием считается только «Разрешить». Показ пишется здесь,
-     * а не при подтверждении: вопрос уже задан, и событие принадлежит нажатию (Р-96).
-     *
-     * Выключение — мгновенное и без диалога: отказ не спрашивает подтверждения, а очередь
-     * очищается в единственном месте, где решение превращается в записи (АН-2, TDD §7.4).
-     */
-    private fun setAnalytics(enabled: Boolean) {
-        if (!enabled) {
-            viewModelScope.launch { decideAnalyticsConsent(AnalyticsConsentState.DECLINED) }
-            return
-        }
-        analytics.recordConsent(ConsentShown(ConsentShownSource.SETTINGS))
-        _state.value = _state.value.copy(analyticsPromptVisible = true)
-    }
-
-    /**
-     * «Разрешить» в вопросе: согласие даётся один раз и одним сценарием домена.
-     *
-     * Вопрос закрывается сразу, а состояние строки приходит потоком решения: `ALLOWED`
-     * в состоянии, поставленный «по нажатию», мог бы разойтись с хранилищем, если запись
-     * не состоялась.
-     */
-    private fun confirmAnalytics() {
-        _state.value = _state.value.copy(analyticsPromptVisible = false)
-        viewModelScope.launch {
-            decideAnalyticsConsent(AnalyticsConsentState.ALLOWED, AnalyticsConsentSource.SETTINGS)
         }
     }
 

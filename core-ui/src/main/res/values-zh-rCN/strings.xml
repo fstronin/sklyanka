@@ -166,9 +166,4 @@
     <string name="pro_restore_nothing_found">商店中没有找到购买记录</string>
     <string name="pro_date_pattern">yyyy年M月d日</string>
 
-    <string name="analytics_consent_title">帮助改进应用？</string>
-    <string name="analytics_consent_body">应用会发送页面和操作的名称，这足以找出不顺手的地方。您记录的任何内容都不会发送。</string>
-    <string name="analytics_consent_allow">允许</string>
-    <string name="analytics_consent_decline">现在不要</string>
-    <string name="analytics_consent_policy">隐私政策</string>
 </resources>

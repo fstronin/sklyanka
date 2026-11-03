@@ -1,8 +1,9 @@
 # 0011 — Analytics network contour in all builds
 
-Status: Superseded by ADR-0017. The client analytics contour was withdrawn and later returned in a
-different form: consent-based analytics without A/B experiments, described in ADR-0017. This
-document records a decision that is no longer a rule of the product.
+Status: Superseded by ADR-0018. The client analytics contour was withdrawn, returned in a
+consent-based form (ADR-0017) and was then removed altogether: the product ships with no analytics
+contour, no provider SDK, no event queue and no network permission (ADR-0018). This document records
+a decision that is no longer a rule of the product.
 
 ## Context
 

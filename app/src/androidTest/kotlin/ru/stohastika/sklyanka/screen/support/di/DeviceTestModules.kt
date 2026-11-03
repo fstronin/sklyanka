@@ -13,7 +13,6 @@ import ru.stohastika.sklyanka.data.di.DirectBootModule
 import ru.stohastika.sklyanka.data.di.DirectBootPreferences
 import ru.stohastika.sklyanka.data.room.DatabaseUpgrade
 import ru.stohastika.sklyanka.data.room.SklyankaDatabase
-import ru.stohastika.sklyanka.data.room.dao.AnalyticsDao
 import ru.stohastika.sklyanka.data.room.dao.IntakeDao
 import ru.stohastika.sklyanka.data.room.dao.MedicationDao
 import ru.stohastika.sklyanka.data.room.dao.OpLogDao
@@ -74,9 +73,6 @@ internal object DeviceStorageModule {
      * обязан быть здесь: иначе очередь аналитики и всё, что от неё зависит, выпадает
      * из графа проверок устройства — ровно так это и всплыло первым прогоном `verifyAll`.
      */
-    @Provides
-    fun provideAnalyticsDao(database: SklyankaDatabase): AnalyticsDao = database.analyticsDao()
-
     @Provides
     @Singleton
     fun providePreferences(@ApplicationContext context: Context): DataStore<Preferences> =

@@ -12,10 +12,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsScreen
 import ru.stohastika.sklyanka.domain.transfer.TransferCounts
 import ru.stohastika.sklyanka.domain.transfer.TransferFormat
-import ru.stohastika.sklyanka.ui.analytics.TrackScreenView
 import ru.stohastika.sklyanka.ui.motion.layerTransform
 
 /**
@@ -37,9 +35,6 @@ fun DataTransferRoute(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // Показ экрана — один раз за вход: переход между шагами переноса остаётся тем же экраном
-    // и второго события не даёт (SKL-165, TDD §5.4).
-    TrackScreenView(AnalyticsScreen.DATA_TRANSFER)
     val state by viewModel.state.collectAsState()
 
     val saveLauncher = rememberLauncherForActivityResult(
@@ -47,11 +42,9 @@ fun DataTransferRoute(
         // не контролирует, куда попадёт файл, и не сохраняет выбранный путь (ПЕР-36).
         contract = ActivityResultContracts.CreateDocument(MIME_JSON),
     ) { uri ->
-        // Отмена системного выбора — тоже исход: она приходит в событие отдельным
-        // значением, а файл при ней не создаётся вовсе (SKL-165).
-        if (uri == null) {
-            viewModel.onIntent(TransferIntent.ExportCancelled)
-        } else {
+        // Файл при отмене не создаётся вовсе, и сказать о ней нечего: состояние экрана
+        // не меняется.
+        if (uri != null) {
             viewModel.onIntent(TransferIntent.SaveTo(uri.toString()))
         }
     }
@@ -59,11 +52,8 @@ fun DataTransferRoute(
     val pickLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument(),
     ) { uri ->
-        // Файл не выбран — загрузка не начиналась, и сказать об этом событием честнее,
-        // чем молчанием (SKL-165).
-        if (uri == null) {
-            viewModel.onIntent(TransferIntent.ImportCancelled)
-        } else {
+        // Файл не выбран — загрузка не начиналась, и состояние экрана не меняется.
+        if (uri != null) {
             viewModel.onIntent(TransferIntent.FileChosen(uri.toString()))
         }
     }

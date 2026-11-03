@@ -8,7 +8,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
-import ru.stohastika.sklyanka.acceptance.NetworkContourFacts
 import ru.stohastika.sklyanka.acceptance.steps.localMoment
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
 import ru.stohastika.sklyanka.domain.profile.SwitchOutcome
@@ -102,23 +101,6 @@ class SettingsContextSteps(private val world: AcceptanceWorld) {
     fun thereWasNoSilentReturnToTheOwnProfile() {
         val self = requireNotNull(world.profiles.self()) { "the scenario must have an own profile" }
         assertNotEquals(self.id, runBlocking { world.profileSession.activeStore.current() })
-    }
-
-    // --- Приватность ---------------------------------------------------------------------------
-
-    /**
-     * Настройки наружу не ходят: сеть сборки — только контур аналитики (Р-93, `ADR-0017`).
-     *
-     * Утверждение о **сборке**, и читаются в нём те же данные, что у гейта состава:
-     * список сетевых контуров и манифесты всех модулей. Прежде шаг смотрел один
-     * `app/src/main/AndroidManifest.xml`; после SKL-165 `INTERNET` приходит из манифеста
-     * контура, и такая проверка зеленела бы при любом поведении.
-     */
-    @Тогда("^сеть сборки объявлена только контуром аналитики$")
-    fun theBuildNetworkBelongsToTheAnalyticsContour() {
-        NetworkContourFacts.assertDeclaredOnlyByContours()
-        NetworkContourFacts.assertShippedContourIsAnalyticsOnly()
-        NetworkContourFacts.assertNoForbiddenDeclarations()
     }
 
     private companion object {

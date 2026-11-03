@@ -33,7 +33,6 @@ class MarkIntakeAction : ActionCallback {
         // `updateAll` здесь был бы лишним запуском сессии на то же событие.
         WidgetMarking.mark(
             intakeId = intakeId,
-            analytics = graph.analytics(),
             mark = { request -> graph.markIntake()(request) },
         )
     }

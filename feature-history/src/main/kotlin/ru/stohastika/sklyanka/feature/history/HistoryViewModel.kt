@@ -14,7 +14,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsRecorder
 import ru.stohastika.sklyanka.domain.history.AdherencePeriod
 import ru.stohastika.sklyanka.domain.history.BuildDoctorReportUseCase
 import ru.stohastika.sklyanka.domain.history.BuildExtendedSectionsUseCase
@@ -73,13 +72,6 @@ class HistoryViewModel @Inject constructor(
      * не ходит (Р-7, Р-22).
      */
     private val proStatus: ObserveProStatusUseCase,
-    /**
-     * Запись использования отчёта (SKL-165, ПМ-26).
-     *
-     * Приходит швом домена, а не адаптером поставщика: экран не знает, куда и как уходит
-     * событие, и без согласия запись ничего не делает (АН-2).
-     */
-    private val analytics: AnalyticsRecorder,
     private val time: TimeSource,
 ) : ViewModel() {
 
@@ -337,9 +329,6 @@ class HistoryViewModel @Inject constructor(
     private fun outcome(outcome: ReportTransferOutcome, onFailure: ReportOutcome) {
         val shown = outcomeOf(outcome, onFailure)
         local.value = local.value.copy(outcome = shown)
-        // Единственная точка сходимости обмена, записи, отмены и отказа: событие одно
-        // на нажатие, каким бы путём исход ни пришёл (SKL-165, TDD §4).
-        analytics.recordReportExported(shown)
     }
 
     private fun outcomeOf(outcome: ReportTransferOutcome, onFailure: ReportOutcome): ReportOutcome = when (outcome) {

@@ -9,7 +9,6 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.runComposeUiTest
 import androidx.test.core.app.ApplicationProvider
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -318,9 +317,6 @@ internal object OnboardingAppProbe {
         leaveOnboarding = LeaveOnboardingUseCase(world.onboarding, world.onboarding),
         navigator = navigator,
         log = world.onboarding,
-        // Аналитика стенду не подотчётна: настоящий рекордер поверх подмен в памяти,
-        // чтобы проверяемое поведение экрана осталось тем же, что в продукте.
-        recorder = world.analytics.recorder(CoroutineScope(Dispatchers.Main)),
         time = world.clock.time,
     )
 
@@ -351,8 +347,6 @@ internal object OnboardingAppProbe {
             time = world.clock.time,
         ),
         time = world.clock.time,
-        // Стенд проверяет экран, а не события: подмены те же, что у соседних экранов.
-        analytics = world.analytics.recorder(CoroutineScope(Dispatchers.Unconfined)),
     )
 
     /** Забыть подменённый главный диспетчер: стенд не должен влиять на соседние тесты. */

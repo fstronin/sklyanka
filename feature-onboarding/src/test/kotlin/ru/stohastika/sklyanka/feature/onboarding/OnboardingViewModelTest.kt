@@ -14,12 +14,6 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsConsentState
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsEventName
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsProperty
-import ru.stohastika.sklyanka.domain.analytics.OnboardingEntry
-import ru.stohastika.sklyanka.domain.analytics.OnboardingStep
-import ru.stohastika.sklyanka.domain.analytics.StepResult
 import ru.stohastika.sklyanka.domain.onboarding.ManualStepHint
 import ru.stohastika.sklyanka.domain.onboarding.OnboardingSource
 import ru.stohastika.sklyanka.domain.onboarding.PermissionStep
@@ -27,7 +21,6 @@ import ru.stohastika.sklyanka.domain.onboarding.StepOpenResult
 import ru.stohastika.sklyanka.domain.onboarding.VendorProfile
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPermission
 import java.time.Instant
-import ru.stohastika.sklyanka.domain.analytics.OnboardingOutcome as AnalyticsOutcome
 
 /**
  * Поведение экрана «Настроить надёжность» (НАП-18 … НАП-21, НФТ-52, ОВ-106, ОВ-107).
@@ -41,7 +34,7 @@ import ru.stohastika.sklyanka.domain.analytics.OnboardingOutcome as AnalyticsOut
 class OnboardingViewModelTest {
 
     private val dispatcher = StandardTestDispatcher()
-    private val world = OnboardingTestWorld(dispatcher.scheduler)
+    private val world = OnboardingTestWorld()
 
     @Before
     fun replaceMainDispatcher() {
@@ -474,140 +467,4 @@ class OnboardingViewModelTest {
         assertEquals(listOf(null, Unit, null, Unit), exits)
         observer.cancel()
     }
-
-    @Test
-    fun `each entry reports its own onboarding entry`() = runTest(dispatcher) {
-        val entries = mapOf(
-            OnboardingSource.FIRST_LAUNCH to OnboardingEntry.FIRST_LAUNCH,
-            OnboardingSource.SETTINGS to OnboardingEntry.SETTINGS,
-            OnboardingSource.TODAY_WARNING to OnboardingEntry.TODAY_BANNER,
-            OnboardingSource.OUTAGE_BANNER to OnboardingEntry.BREAK_BANNER,
-        )
-
-        entries.keys.forEach { started(it) }
-
-        // Каталог знает входы под своими именами: баннер «Сегодня» — это today_banner,
-        // а баннер перерыва — break_banner. Отображение живёт в одном месте модели.
-        assertEquals(
-            entries.values.map { it.wire },
-            world.analytics.records()
-                .filter { it.name == AnalyticsEventName.ONBOARDING_STARTED }
-                .map { it.properties[AnalyticsProperty.ENTRY] },
-        )
-    }
-
-    @Test
-    fun `a return to the screen does not repeat the entry event`() = runTest(dispatcher) {
-        val model = started(OnboardingSource.TODAY_WARNING)
-
-        model.refresh()
-        model.settle()
-
-        // Событие принадлежит входу, а не показу: возврат из системных настроек его не повторяет.
-        assertEquals(
-            1,
-            world.analytics.names().count { it == AnalyticsEventName.ONBOARDING_STARTED },
-        )
-    }
-
-    @Test
-    fun `a granted permission is reported as granted and a refusal as skipped`() = runTest(dispatcher) {
-        val model = started()
-
-        model.onPermissionResult(PermissionStep.NOTIFICATIONS, granted = true)
-        model.settle()
-        model.onPermissionResult(PermissionStep.EXACT_ALARMS, granted = false)
-        model.settle()
-
-        assertEquals(
-            listOf(
-                OnboardingStep.NOTIFICATIONS.wire to StepResult.GRANTED.wire,
-                OnboardingStep.EXACT_ALARMS.wire to StepResult.SKIPPED.wire,
-            ),
-            stepResults(),
-        )
-    }
-
-    @Test
-    fun `a manual confirmation is reported as confirmed and its withdrawal as skipped`() = runTest(dispatcher) {
-        val model = started()
-
-        model.onManualConfirmed(PermissionStep.APP_STARTUP, confirmed = true)
-        model.settle()
-        model.onManualConfirmed(PermissionStep.BATTERY_SAVING, confirmed = false)
-        model.settle()
-
-        assertEquals(
-            listOf(
-                OnboardingStep.APP_LAUNCH.wire to StepResult.CONFIRMED.wire,
-                OnboardingStep.BATTERY.wire to StepResult.SKIPPED.wire,
-            ),
-            stepResults(),
-        )
-    }
-
-    @Test
-    fun `opening a system screen without a result reports nothing`() = runTest(dispatcher) {
-        world.permissions.deny(ReminderPermission.EXACT_ALARMS)
-        val model = started()
-
-        model.onStepAction(PermissionStep.EXACT_ALARMS)
-        model.onStepAction(PermissionStep.APP_STARTUP)
-        model.settle()
-
-        assertEquals(listOf(FakeNavigator.EXACT_ALARMS, FakeNavigator.APP_STARTUP), world.navigator.opened)
-        // У открытия системного экрана результата ещё нет: событие — про исход шага.
-        assertTrue(stepResults().isEmpty())
-    }
-
-    @Test
-    fun `leaving by next is reported as completed and by skip as skipped`() = runTest(dispatcher) {
-        allVendorConfirmed()
-        val passed = started(OnboardingSource.FIRST_LAUNCH)
-        passed.onNext()
-        passed.settle()
-
-        val skipped = started(OnboardingSource.TODAY_WARNING)
-        skipped.onSkip()
-        skipped.settle()
-
-        assertEquals(
-            listOf(
-                OnboardingEntry.FIRST_LAUNCH.wire to AnalyticsOutcome.COMPLETED.wire,
-                OnboardingEntry.TODAY_BANNER.wire to AnalyticsOutcome.SKIPPED.wire,
-            ),
-            world.analytics.records()
-                .filter { it.name == AnalyticsEventName.ONBOARDING_FINISHED }
-                .map { it.properties[AnalyticsProperty.ENTRY] to it.properties[AnalyticsProperty.OUTCOME] },
-        )
-    }
-
-    @Test
-    fun `without consent not a single product event is written`() = runTest(dispatcher) {
-        listOf(AnalyticsConsentState.NOT_ASKED, AnalyticsConsentState.DECLINED).forEach { consent ->
-            val quiet = OnboardingTestWorld(dispatcher.scheduler, analyticsConsent = consent)
-            val model = quiet.viewModel()
-
-            model.start(OnboardingSource.OUTAGE_BANNER)
-            model.onPermissionResult(PermissionStep.NOTIFICATIONS, granted = true)
-            model.onManualConfirmed(PermissionStep.APP_STARTUP, confirmed = true)
-            model.onSkip()
-            dispatcher.scheduler.advanceUntilIdle()
-
-            // АН-2: гейт согласия — в записи, а не в точках вызова, поэтому молчит всё.
-            assertTrue(
-                "$consent: ${quiet.analytics.queue.records}",
-                quiet.analytics.queue.records.isEmpty(),
-            )
-            assertTrue(
-                "$consent: ${quiet.analytics.transport.delivered}",
-                quiet.analytics.transport.delivered.isEmpty(),
-            )
-        }
-    }
-
-    /** Пары «шаг → результат» в порядке записи. */
-    private fun stepResults(): List<Pair<String?, String?>> = world.analytics.records()
-        .filter { it.name == AnalyticsEventName.ONBOARDING_STEP_RESULT }
-        .map { it.properties[AnalyticsProperty.STEP] to it.properties[AnalyticsProperty.RESULT] }
 }

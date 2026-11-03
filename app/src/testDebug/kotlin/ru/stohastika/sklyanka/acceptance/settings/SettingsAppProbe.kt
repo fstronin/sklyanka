@@ -1,21 +1,15 @@
 package ru.stohastika.sklyanka.acceptance.settings
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.runComposeUiTest
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import ru.stohastika.sklyanka.acceptance.profile.TodayFromWorld
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsRecorder
-import ru.stohastika.sklyanka.domain.analytics.DecideAnalyticsConsentUseCase
-import ru.stohastika.sklyanka.domain.analytics.ObserveAnalyticsConsentUseCase
-import ru.stohastika.sklyanka.domain.analytics.ScreenView
 import ru.stohastika.sklyanka.domain.appearance.ObserveAccentThemeUseCase
 import ru.stohastika.sklyanka.domain.appearance.ObserveIconVariantUseCase
 import ru.stohastika.sklyanka.domain.appearance.SetAccentThemeUseCase
@@ -29,7 +23,6 @@ import ru.stohastika.sklyanka.feature.settings.SettingsSystemStateReader
 import ru.stohastika.sklyanka.feature.settings.SettingsViewModel
 import ru.stohastika.sklyanka.feature.today.TodayScreen
 import ru.stohastika.sklyanka.feature.today.TodayUiState
-import ru.stohastika.sklyanka.ui.analytics.LocalScreenTracker
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 
 /**
@@ -49,9 +42,6 @@ internal object SettingsAppProbe {
 
     private var lastWorld: AcceptanceWorld? = null
 
-    /** Рекордер сценария: тот же, что у доменных шагов, — иначе проверка читала бы другую очередь. */
-    private var analyticsRecorder: AnalyticsRecorder? = null
-
     val navigation = NavigationRecorder()
 
     /** Что экран попросил открыть: переходы считаются, а не исполняются. */
@@ -67,7 +57,6 @@ internal object SettingsAppProbe {
             navigation.diagnostics = 0
             navigation.history = 0
             navigation.transfer = 0
-            analyticsRecorder = null
             Dispatchers.setMain(UnconfinedTestDispatcher())
         }
     }
@@ -90,7 +79,7 @@ internal object SettingsAppProbe {
     fun askSettings(world: AcceptanceWorld, question: ComposeUiTest.() -> Unit) {
         reset(world)
         runComposeUiTest {
-            setContent { Content(model(world), recorder(world)) }
+            setContent { Content(model(world)) }
             question()
             waitForIdle()
         }
@@ -99,7 +88,7 @@ internal object SettingsAppProbe {
     fun actSettings(world: AcceptanceWorld, action: ComposeUiTest.() -> Unit) {
         reset(world)
         runComposeUiTest {
-            setContent { Content(model(world), recorder(world)) }
+            setContent { Content(model(world)) }
             action(this)
             waitForIdle()
         }
@@ -117,25 +106,18 @@ internal object SettingsAppProbe {
     }
 
     @Composable
-    private fun Content(viewModel: SettingsViewModel, recorder: AnalyticsRecorder) {
-        // Показ экрана идёт тем же путём, что в приложении: маршрут сообщает о показе,
-        // а рекордер решает по согласию. Без этого «следующие действия попадают в события»
-        // проверялось бы пересказом, а не кодом.
-        CompositionLocalProvider(
-            LocalScreenTracker provides { screen -> recorder.record(ScreenView(screen)) },
-        ) {
-            SklyankaTheme {
-                SettingsRoute(
-                    viewModel = viewModel,
-                    navigation = SettingsNavigation(
-                        // Экран добавления профиля — `ОВ-3`: в продукте его нет, и сценарии
-                        // его не трогают.
-                        openDiagnostics = { navigation.diagnostics += 1 },
-                        openHistory = { navigation.history += 1 },
-                        openDataTransfer = { navigation.transfer += 1 },
-                    ),
-                )
-            }
+    private fun Content(viewModel: SettingsViewModel) {
+        SklyankaTheme {
+            SettingsRoute(
+                viewModel = viewModel,
+                navigation = SettingsNavigation(
+                    // Экран добавления профиля — `ОВ-3`: в продукте его нет, и сценарии
+                    // его не трогают.
+                    openDiagnostics = { navigation.diagnostics += 1 },
+                    openHistory = { navigation.history += 1 },
+                    openDataTransfer = { navigation.transfer += 1 },
+                ),
+            )
         }
     }
 
@@ -162,21 +144,7 @@ internal object SettingsAppProbe {
             setTheme = SetAccentThemeUseCase(appearance, world.access.statusUseCase),
             setIcon = SetIconVariantUseCase(appearance, world.access.statusUseCase),
         ),
-        // Согласие и запись (SKL-165, Р-96): те же доменные сценарии, что у продукта,
-        // на мире аналитики сценария.
-        observeAnalyticsConsent = ObserveAnalyticsConsentUseCase(world.analytics.store),
-        decideAnalyticsConsent = DecideAnalyticsConsentUseCase(world.analytics.store, recorder(world)),
-        analytics = recorder(world),
     )
-
-    /** Рекордер стенда — один на сценарий: события нажатия обязана увидеть проверка. */
-    private fun recorder(world: AcceptanceWorld): AnalyticsRecorder {
-        reset(world)
-        analyticsRecorder?.let { return it }
-        val created = world.analytics.recorder(CoroutineScope(Dispatchers.Unconfined))
-        analyticsRecorder = created
-        return created
-    }
 
     /** Настройки оформления стенда: базовые «Олива» и «Ледяная» (Р-20, Р-56). */
     private val appearance = FakeAppearancePreferences()

@@ -1,6 +1,5 @@
 package ru.stohastika.sklyanka.feature.settings
 
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsConsentState
 import ru.stohastika.sklyanka.domain.appearance.AccentTheme
 import ru.stohastika.sklyanka.domain.appearance.IconVariant
 import ru.stohastika.sklyanka.domain.pro.ProStatus
@@ -84,22 +83,6 @@ data class SettingsUiState(
     val themePickerVisible: Boolean = false,
     /** Открыт ли выбор иконки. */
     val iconPickerVisible: Boolean = false,
-    /**
-     * Текущее решение об аналитике (ПМ-18, ПМ-25).
-     *
-     * Приходит потоком, а не запоминается по нажатию: выбор меняет и экран настроек,
-     * и первый запуск, и снятое согласие обязано быть видно без перезахода (АН-2).
-     * «Ещё не спрашивали» — не то же самое, что «отказался»: первое покажет вопрос,
-     * второе оставит строку выключенной и ничего не отправит.
-     */
-    val analytics: AnalyticsConsentState = AnalyticsConsentState.NOT_ASKED,
-    /**
-     * Открыт ли вопрос о согласии поверх настроек (ПМ-25 п. 4, Р-96).
-     *
-     * Видимость живёт в состоянии, а не в `remember` композиции: стенд приёмки пересобирает
-     * композицию на каждом шаге, и `remember` терял бы вопрос между «включил» и «разрешил».
-     */
-    val analyticsPromptVisible: Boolean = false,
 )
 
 /**

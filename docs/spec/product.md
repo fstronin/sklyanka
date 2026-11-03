@@ -40,7 +40,7 @@ Each goal is a statement about an observable result, not about a feature being p
 |---|---|
 | Reminder reliability outranks everything else | A missed reminder is a product failure, not a convenience defect. Features are sacrificed for reliability, never the reverse. |
 | Profiles never mix | The interface is always in the context of exactly one profile. A combined list of intakes across profiles does not exist. Indication of a foreign profile is deliberately redundant. |
-| Tracking works without a network; health data never leaves the device | Tracking, reminders, history and the report work without a network and without an account at all times. Health content, meaning names, doses, schedules, intake times, marks and stock, never leaves the device. Only anonymous usage events leave, and only after explicit consent (§6). Neither advertising nor data sale exists. |
+| Tracking works without a network; nothing leaves the device | Tracking, reminders, history and the report work without a network and without an account at all times. Health content, meaning names, doses, schedules, intake times, marks and stock, never leaves the device. Nothing about usage is collected either: there is no analytics, no advertising and no data sale. |
 | The app is not a medical device | No treatment recommendations, no dose selection, no symptom interpretation. |
 | The person owns their data | All content is exported as one file and loaded back. Nothing is locked inside the app. |
 | Service failure never blocks treatment | Tracking, reminders and the report depend on neither a network nor an external service. |
@@ -60,19 +60,17 @@ The limit of five profiles is a product constraint, not a paywall: the sixth pro
 
 ### 5.3 Explicitly out of scope
 
-Cloud synchronization and accounts for tracking · a medication reference and interaction checking · any treatment recommendations, dose selection or symptom interpretation · advertising · a per-medication custom sound · quiet hours · Huawei watches and wearables · A/B experiments inside the app · a paid tier, subscription, purchases, storefront or paid-tier label · AI-assisted input. The only network access in the product is the consent-based analytics contour described in §6 and §7. There is no cloud, no account, no synchronization and no server-side supervision.
+Cloud synchronization and accounts for tracking · a medication reference and interaction checking · any treatment recommendations, dose selection or symptom interpretation · advertising · client analytics and usage tracking · a per-medication custom sound · quiet hours · Huawei watches and wearables · A/B experiments inside the app · a paid tier, subscription, purchases, storefront or paid-tier label · AI-assisted input. The app makes no network call at all: there is no cloud, no account, no synchronization and no server-side supervision.
 
 ## 6. Data and privacy
 
-**What never leaves the device:** medication names, dosages, schedules, times, intake statuses, stock, profiles, history, the transfer file, the delivery log.
+**What never leaves the device:** all of it. Medication names, dosages, schedules, times, intake statuses, stock, profiles, history, the transfer file and the delivery log stay in the app's private storage.
 
-**What can leave the device:** anonymous usage events only. The app contains one analytics provider, MyTracker, inert until the person consents explicitly. Before consent the provider is not initialized and no event is produced; withdrawal stops transmission and clears the events still queued. An event carries the screen, the action and technical fields; never medication names, dosages, schedules, intake times, marks, profile identifiers or any other health content. Refusing analytics changes nothing: tracking, reminders, history and the report work the same.
-
-**What does not exist:** an account, a cloud, synchronization, server-side supervision, advertising identifiers (`AD_ID` is not declared), data sale, third-party marketing, subscription and billing. GMS and Firebase are not used.
+**What leaves the device:** nothing. There is no account, no cloud, no sync, no ads, no analytics and no server-side supervision. `AD_ID` is not declared, GMS and Firebase are not used, and the shipped build declares no network permission. Data is not sold and is not transferred to third parties.
 
 **Required texts:**
 
-- A privacy policy, a minimal honest public page at `stohastika.ru` in Russian and English: the basis for processing, the exact list of analytics data, the recipients (the analytics provider), retention, withdrawal of consent, deletion, and the statement that no medical data is collected. Presented as a dialog on first launch, in the interface language.
+- A privacy policy, a minimal honest public page at `stohastika.ru` in Russian and English: the statement that no data is collected and everything stays on the device, that there is no account, cloud, sync, advertising or analytics, and how the person deletes the data. Presented as a dialog on first launch, in the interface language.
 - The disclaimer `«Приложение не является медицинским изделием»` ("The application is not a medical device").
 
 ## 7. Platform and reach
@@ -85,13 +83,13 @@ Cloud synchronization and accounts for tracking · a medication reference and in
 | Stores | RuStore and AppGallery, the free build only, with no paid release or subscriptions; RuStore launches first, AppGallery follows. Google Play is not a channel |
 | Languages | `ru` (base and fallback), `en-US`, `es`, `de`, `zh-CN`, `kk` |
 | Watches and wearables | Not supported |
-| Network | Declared only by the analytics contour: `INTERNET` and `ACCESS_NETWORK_STATE`, belonging to the provider MyTracker and to no other module. Consent-gated, with no medical data. No GMS, no Firebase, no `AD_ID`. Tracking, reminders, history and the report work with no network at all |
+| Network | Not used: the shipped build declares no network permission and makes no network call. No GMS, no Firebase, no `AD_ID`. Tracking, reminders, history and the report work with no network at all. The paid `pro` contour declares `INTERNET` for AppGallery IAP, and that variant is not shipped |
 
 Reminder reliability depends on the power management of the firmware. The product does not promise equal survival on every device: it promises setup guidance, a measured delivery self-check and an honest statement when reminders are unreliable.
 
 ## 8. Success signals
 
-The signals below are measured by a personal run, the delivery log and history on the device, and the store console. Analytics answers other questions, such as where people leave and which features they use, and replaces none of these sources. There are no monetary signals: the product is free.
+The signals below are measured by a personal run, the delivery log and history on the device, and the store console. There are no monetary signals: the product is free.
 
 | Signal | Threshold | Measurement source |
 |---|---|---|

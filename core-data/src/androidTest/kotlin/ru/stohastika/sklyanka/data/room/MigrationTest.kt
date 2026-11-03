@@ -21,8 +21,9 @@ import org.junit.runner.RunWith
  * версия 8 вырезала часовой шов обратно (Р-3, SKL-106): обе колонки часового шва уходят,
  * таблицы перестраиваются; версия 9 добавила приёму признак снятия записи «по потребности»
  * (Р-46, SKL-127); версия 10 добавила лекарству вид расписания, а приёму — дозу за приём
- * (SKL-117, ПР-15, ПР-19); версия 11 добавила очередь событий аналитики (SKL-165, АН-4).
- * Тест доказывает заодно, что экспорт схемы действительно работает: без файлов
+ * (SKL-117, ПР-15, ПР-19); версия 11 добавила очередь клиентских событий, а версия 12 её
+ * убрала — продукт работает без сети. Тест доказывает заодно, что экспорт схемы
+ * действительно работает: без файлов
  * в `core-data/schemas` помощник не смог бы создать базу предыдущей версии.
  *
  * Прогон требует устройства или эмулятора; в контейнере сборки тест компилируется,
@@ -371,38 +372,33 @@ class MigrationTest {
     }
 
     /**
-     * Версия 10 → 11 на реальной базе с данными (МГ-3, SKL-165, АН-4).
+     * Версия 11 → 12 на реальной базе с данными (МГ-3).
      *
-     * Очередь аналитики появляется отдельной таблицей и ничего не трогает: лекарство,
-     * его времена и приём прошлого остаются ровно теми же. Таблица приходит пустой —
-     * выдуманных событий миграция не пишет. Внешних ключей у неё нет, поэтому связать
-     * событие с лекарством или профилем нельзя по схеме, а `foreign_key_check` пуст.
+     * Очередь клиентских событий уходит целиком: продукт больше не отправляет событий,
+     * и держать их без потребителя незачем. Профиль, лекарство и приём остаются ровно
+     * теми же — миграция не переписывает ни одной продуктовой строки.
      */
     @Test
-    fun theAnalyticsQueueTableArrivesEmptyWithoutTouchingAnyRow() {
-        helper.createDatabase(TEST_DB, 10).use { old ->
+    fun theEventQueueTableLeavesWithoutTouchingAnyRow() {
+        helper.createDatabase(TEST_DB, 11).use { old ->
             old.execSQL(INSERT_PROFILE)
             old.execSQL(INSERT_MEDICATION)
             old.execSQL(INSERT_INTAKE)
+            old.execSQL(
+                "INSERT INTO `ANALYTICS_EVENT` (`name`, `properties`, `scope`, `occurred_at`) " +
+                    "VALUES ('screen_view', 'screen=today', 'product', 1000)",
+            )
         }
 
         val migrated = helper.runMigrationsAndValidate(
             TEST_DB,
             SklyankaDatabase.VERSION,
             true,
-            SklyankaMigrations.MIGRATION_10_11,
+            SklyankaMigrations.MIGRATION_11_12,
         )
 
         migrated.use { db ->
-            assertTrue("the analytics queue table must appear", tableExists(db, "analytics_event"))
-            db.query("SELECT COUNT(*) FROM `analytics_event`").use { cursor ->
-                cursor.moveToFirst()
-                assertEquals("the migration must not invent events", 0, cursor.getInt(0))
-            }
-            db.query("SELECT COUNT(*) FROM pragma_foreign_key_list('analytics_event')").use { cursor ->
-                cursor.moveToFirst()
-                assertEquals("the queue may not reference any table", 0, cursor.getInt(0))
-            }
+            assertTrue("the event queue table must be gone", !tableExists(db, "ANALYTICS_EVENT"))
             db.query("SELECT `times`, `schedule_rule` FROM `medication` WHERE `id` = 'medication-1'")
                 .use { cursor ->
                     assertTrue("the medication row must survive the migration", cursor.moveToFirst())

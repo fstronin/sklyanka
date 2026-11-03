@@ -23,7 +23,6 @@ import androidx.test.core.app.ApplicationProvider
 import io.cucumber.java.ru.Допустим
 import io.cucumber.java.ru.Когда
 import io.cucumber.java.ru.Тогда
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -226,7 +225,6 @@ class HistoryNavigationSteps(private val world: AcceptanceWorld) {
         missedPattern = MissedPatternRule(),
         // Доступ «Про» — тем же чтением кэша, каким живёт продукт (SKL-119, Р-22).
         proStatus = world.access.statusUseCase,
-        analytics = world.analytics.recorder(CoroutineScope(Dispatchers.Unconfined)),
         time = world.clock.time,
     )
 
@@ -287,8 +285,6 @@ class HistoryNavigationSteps(private val world: AcceptanceWorld) {
             time = time,
             readReliability = ReadReminderReliabilityUseCase(world.system),
             explainDatabaseReset = ExplainDatabaseResetUseCase(InMemoryDatabaseLife(), time),
-            // Шаг проверяет навигацию, а не события: аналитика — подмены тестов `app`.
-            analytics = world.analytics.recorder(CoroutineScope(Dispatchers.Unconfined)),
         )
     }
 

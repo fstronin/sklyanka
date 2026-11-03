@@ -13,7 +13,6 @@ import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.runComposeUiTest
 import androidx.core.app.ActivityOptionsCompat
 import androidx.test.core.app.ApplicationProvider
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -270,8 +269,6 @@ internal object TransferAppProbe {
             settings = transfer.settings,
             files = transfer.files,
             ids = ids,
-            // События переноса стенду не проверяются, но шов настоящий (SKL-165).
-            analytics = world.analytics.recorder(CoroutineScope(Dispatchers.Unconfined)),
             time = world.clock.time,
         )
     }

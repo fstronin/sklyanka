@@ -1,6 +1,5 @@
 package ru.stohastika.sklyanka.feature.reminder
 
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -173,9 +172,6 @@ internal class ReminderTestWorld(withSecondRow: Boolean = false) {
     val clock = FixedTimeSource(scheduledAt.atZone(zone).toInstant(), zone)
     val undoActions = UndoableActionStore(clock)
 
-    /** Аналитика в памяти: запись идёт сразу, виртуальное время ей не нужно. */
-    val analytics = AnalyticsTestKit(CoroutineScope(Dispatchers.Unconfined))
-
     private val intakes = linkedMapOf<String, Intake>(
         "i-1" to pending("i-1", "m-1"),
     ).apply {
@@ -210,7 +206,6 @@ internal class ReminderTestWorld(withSecondRow: Boolean = false) {
         snooze = SnoozeReminderUseCase(NoSnoozePlan(), NoAlarms(), NoNotifications(), NoJournal(), NoDeferred(), clock),
         settings = FakeSettings(),
         undoActions = undoActions,
-        analytics = analytics.recorder,
     )
 
     private fun pending(id: String, medicationId: String) = Intake(

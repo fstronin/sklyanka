@@ -174,9 +174,4 @@
     <string name="pro_restore_nothing_found">No se encontró ninguna compra en la tienda</string>
     <string name="pro_date_pattern">d \'de\' MMMM \'de\' yyyy</string>
 
-    <string name="analytics_consent_title">¿Ayudarnos a mejorar la aplicación?</string>
-    <string name="analytics_consent_body">La aplicación enviará los nombres de las pantallas y acciones: es suficiente para encontrar los puntos incómodos. Nada de lo que usted anota se envía.</string>
-    <string name="analytics_consent_allow">Permitir</string>
-    <string name="analytics_consent_decline">Ahora no</string>
-    <string name="analytics_consent_policy">Política de privacidad</string>
 </resources>

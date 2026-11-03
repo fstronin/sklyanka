@@ -9,16 +9,12 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
-import ru.stohastika.sklyanka.domain.analytics.AnalyticsRecorder
-import ru.stohastika.sklyanka.domain.analytics.DecideAnalyticsConsentUseCase
-import ru.stohastika.sklyanka.domain.analytics.ObserveAnalyticsConsentUseCase
 import ru.stohastika.sklyanka.domain.appearance.ObserveAccentThemeUseCase
 import ru.stohastika.sklyanka.domain.appearance.ObserveIconVariantUseCase
 import ru.stohastika.sklyanka.domain.appearance.SetAccentThemeUseCase
 import ru.stohastika.sklyanka.domain.appearance.SetIconVariantUseCase
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderSettings
 import ru.stohastika.sklyanka.domain.transfer.AppStamp
-import ru.stohastika.sklyanka.feature.settings.AnalyticsTestKit
 import ru.stohastika.sklyanka.feature.settings.FakeAppearancePreferences
 import ru.stohastika.sklyanka.feature.settings.SettingsAppearance
 import ru.stohastika.sklyanka.feature.settings.SettingsEnvironment
@@ -55,8 +51,6 @@ internal object SettingsScreenProbe {
             lastWorld = world
             viewModel = null
             appearance = FakeAppearancePreferences()
-            analyticsKit = AnalyticsTestKit()
-            analyticsRecorder = null
             builds = 0
             Dispatchers.setMain(UnconfinedTestDispatcher())
         }
@@ -147,26 +141,7 @@ internal object SettingsScreenProbe {
             setTheme = SetAccentThemeUseCase(appearance, world.access.statusUseCase),
             setIcon = SetIconVariantUseCase(appearance, world.access.statusUseCase),
         ),
-        // Согласие и запись (SKL-165, Р-96): доменные сценарии те же, что у продукта.
-        observeAnalyticsConsent = ObserveAnalyticsConsentUseCase(analyticsKit.store),
-        decideAnalyticsConsent = DecideAnalyticsConsentUseCase(analyticsKit.store, recorder()),
-        analytics = recorder(),
     )
-
-    /**
-     * Мир аналитики стенда: согласие, очередь и поставщик в памяти.
-     *
-     * Стенду настроек события не проверяются — проверяет приёмка; шов всё равно настоящий,
-     * иначе повторялся бы гейт согласия, а не он.
-     */
-    fun analytics(): AnalyticsTestKit = analyticsKit
-
-    private fun recorder(): AnalyticsRecorder =
-        analyticsRecorder ?: analyticsKit.recorderForStand().also { analyticsRecorder = it }
-
-    /** Мир аналитики и рекордер стенда: пересобираются на новый мир сценария (SKL-165). */
-    private var analyticsKit = AnalyticsTestKit()
-    private var analyticsRecorder: AnalyticsRecorder? = null
 
     /**
      * Настройки оформления стенда: базовые «Олива» и «Ледяная» (Р-20, Р-56).
