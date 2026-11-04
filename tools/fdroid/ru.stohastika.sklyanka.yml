@@ -1,0 +1,56 @@
+# F-Droid metadata for Sklyanka.
+#
+# This file is the payload of a merge request to
+# https://gitlab.com/fdroid/fdroiddata — replace the version block on every release
+# and keep `commit` equal to the release tag.
+Categories:
+  - Health and Fitness
+License: Apache-2.0
+AuthorName: Sklyanka contributors
+SourceCode: https://github.com/fstronin/sklyanka
+IssueTracker: https://github.com/fstronin/sklyanka/issues
+Changelog: https://github.com/fstronin/sklyanka/releases
+Summary: Medication reminders, history and a doctor's report, offline
+Description: |
+  A medication tracker for Android. A person sets up a course: schedule, dose,
+  relation to meals, course period and package stock. The app reminds at the
+  scheduled minute, takes a one-tap mark and keeps a history that can be shown
+  to a doctor as a PDF report.
+
+  Reminders survive a reboot, Doze, a time-zone change and the battery
+  optimisation of the firmware, and a delivery self-check tests the real path.
+  History and adherence come by day, week and month; a calendar, a PDF report
+  for the doctor and CSV export are included. Up to five profiles keep a
+  caregiver's own medications apart from a dependant's. Three home-screen
+  widgets, six interface languages, and moving to another device with a single
+  file the person creates and keeps.
+
+  The product is free in full: no paid tier, no subscription, no purchases. No
+  account, no cloud, no sync, no ads and no analytics: the shipped build
+  declares no network permission and the health data stays on the device. The
+  app is not a medical device: it gives no treatment recommendations, selects
+  no dosages and checks no drug interactions.
+
+  The interface is Russian, with English, Spanish, German, Chinese and Kazakh
+  translations.
+RepoType: git
+Repo: https://github.com/fstronin/sklyanka.git
+
+Builds:
+  - versionName: '2026.11'
+    versionCode: 4
+    commit: v2026.11
+    gradle:
+      - free
+    output: app/build/outputs/apk/free/release/app-free-release-unsigned.apk
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags
+CurrentVersion: '2026.11'
+CurrentVersionCode: 4
+
+MaintainerNotes: |
+  The release build tolerates absent signing secrets and produces an unsigned
+  APK, which is what the F-Droid build server needs. No Gradle property or
+  keystore is required. The `pro` flavour is disabled in release on purpose and
+  is not shipped.

@@ -2,7 +2,6 @@ package ru.stohastika.sklyanka.gradle
 
 import com.android.build.api.dsl.ApplicationExtension
 import com.android.build.api.variant.ApplicationAndroidComponentsExtension
-import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.configure
@@ -20,8 +19,10 @@ import org.gradle.kotlin.dsl.configure
  * freeWatchTest            — релизная подпись при возможности отладки: именно этот
  *                            вариант идёт на испытания карточки Wear Engine (SKL-03, SKL-16).
  *
- * Без секретов релизные варианты не собираются вовсе, а попытка их собрать
- * заканчивается внятным отказом, а не отладочной подписью.
+ * Без секретов релизный артефакт остаётся неподписанным: так его собирает F-Droid
+ * и так его может собрать контрибьютор без хранилища ключей. Отладочный ключ
+ * вместо релизного не подставляется никогда: такая сборка выглядела бы релизной,
+ * но не встала бы поверх опубликованной.
  */
 class ReleaseSigningConventionPlugin : Plugin<Project> {
 
@@ -78,8 +79,15 @@ class ReleaseSigningConventionPlugin : Plugin<Project> {
         disableProReleaseVariants()
 
         if (secrets == null) {
-            disableReleaseVariants()
-            registerRefusingStubs()
+            // An unsigned release artifact is a legitimate outcome: F-Droid builds from
+            // source and signs with its own key, and a contributor without the release
+            // keystore still has to be able to build the shipped variant. The artifact is
+            // left unsigned; the debug key is never substituted, because that would look
+            // like a release build and would not install over a published one.
+            logger.warn(
+                "Release signing secrets are absent: release artifacts are left unsigned " +
+                    "(provide ${SigningSecrets.PROPERTIES_FILE} or the SKLYANKA_KEYSTORE_* variables to sign).",
+            )
         }
     }
 
@@ -101,31 +109,6 @@ class ReleaseSigningConventionPlugin : Plugin<Project> {
         }
     }
 
-    /**
-     * Варианты с релизной подписью выключаются, чтобы `./gradlew build` на чистой
-     * машине без ключа оставался зелёным: требование НФТ-49 — одна команда без
-     * ручной правки файлов, а ключ появляется только в SKL-01.
-     */
-    private fun Project.disableReleaseVariants() {
-        extensions.configure<ApplicationAndroidComponentsExtension> {
-            beforeVariants(selector().withBuildType(RELEASE)) { it.enable = false }
-            beforeVariants(selector().withBuildType(WATCH_TEST)) { it.enable = false }
-        }
-    }
-
-    /** Явный отказ вместо «задача не найдена»: сообщение должно называть причину. */
-    private fun Project.registerRefusingStubs() {
-        REFUSED_TASKS.forEach { name ->
-            tasks.register(name) {
-                group = "build"
-                description = "Refuses to build a release artifact without signing secrets."
-                doLast {
-                    throw GradleException(SigningSecrets.describeMissing(project))
-                }
-            }
-        }
-    }
-
     private companion object {
         const val DEBUG = "debug"
         const val RELEASE = "release"
@@ -134,25 +117,5 @@ class ReleaseSigningConventionPlugin : Plugin<Project> {
         /** Измерение контура и непоставляемый вариант (Р-86, ADR-0016 п. 2). */
         const val CONTOUR_DIMENSION = "contour"
         const val PRO_FLAVOR = "pro"
-
-        /**
-         * Варианты контура (Р-86, ADR-0016): `free` — поставляемый, `pro` — запасной.
-         *
-         * Список имён повторяет фактические задачи AGP с измерением `contour`
-         * (`assembleFreeRelease`, `assembleProRelease`, …): у неflavored-сборки были
-         * `assembleRelease`/`bundleRelease`, и после введения вариантов они перестали
-         * существовать. Без этого списка release без секретов падал бы «задачей не найдено»
-         * или, хуже, собирался бы без явного отказа.
-         */
-        val REFUSED_TASKS = listOf(
-            "assembleFreeRelease",
-            "bundleFreeRelease",
-            "assembleProRelease",
-            "bundleProRelease",
-            "assembleFreeWatchTest",
-            "bundleFreeWatchTest",
-            "assembleProWatchTest",
-            "bundleProWatchTest",
-        )
     }
 }

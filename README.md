@@ -88,8 +88,14 @@ Requirements: JDK 17 and the Android SDK with API 35.
 
 ```bash
 ./gradlew :app:assembleFreeDebug      # debug build of the shipped variant
+./gradlew :app:assembleFreeRelease    # release build of the shipped variant
 ./gradlew verifyAll                   # the full gate: build, static analysis, all JVM tests
 ```
+
+A release build without signing secrets (`keystore.properties` or the
+`SKLYANKA_KEYSTORE_*` variables) produces an unsigned APK. That is the build F-Droid makes:
+it signs the artifact with its own key. A signed release is published on GitHub Releases,
+which is what the store builds use.
 
 `verifyAll` runs the build of every module, detekt with the project's own rules, ktlint, Android
 Lint, the artifact composition checks, all JVM test levels (unit and the Robolectric screen
