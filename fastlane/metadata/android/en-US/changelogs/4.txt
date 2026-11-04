@@ -1,0 +1,1 @@
+Removed the client analytics contour: the app sends nothing and declares no network permission. The database upgrades in place.

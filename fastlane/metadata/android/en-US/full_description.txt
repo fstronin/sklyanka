@@ -1,0 +1,16 @@
+A medication tracker for Android. A person sets up a course: schedule, dose, relation to meals, course period and package stock. The app reminds at the scheduled minute, takes a one-tap mark and keeps a history that can be shown to a doctor as a PDF report.
+
+Reminders survive a reboot, Doze, a time-zone change and the battery optimisation of the firmware, and a delivery self-check tests the real path.
+
+* History and adherence by day, week and month, with a calendar
+* A PDF report for the doctor and CSV export
+* Up to five profiles: a caregiver's own medications stay apart from a dependant's
+* Three home-screen widgets
+* Six interface languages
+* Moving to another device with a single file the person creates and keeps
+
+The product is free in full: no paid tier, no subscription, no purchases. No account, no cloud, no sync, no ads and no analytics. The shipped build declares no network permission and the health data stays on the device.
+
+The app is not a medical device: it gives no treatment recommendations, selects no dosages and checks no drug interactions.
+
+The interface is Russian, with English, Spanish, German, Chinese and Kazakh translations.
