@@ -7,7 +7,6 @@ IssueTracker: https://github.com/fstronin/sklyanka/issues
 Changelog: https://github.com/fstronin/sklyanka/releases
 
 AutoName: Склянка
-Summary: Medication reminders, history and a doctor's report, offline
 Description: |
   A medication tracker for Android. A person sets up a course: schedule, dose,
   relation to meals, course period and package stock. The app reminds at the
@@ -35,9 +34,9 @@ RepoType: git
 Repo: https://github.com/fstronin/sklyanka.git
 
 Builds:
-  - versionName: '2026.11'
-    versionCode: 4
-    commit: v2026.11
+  - versionName: 2026.11.1
+    versionCode: 5
+    commit: v2026.11.1
     gradle:
       - free
     output: app/build/outputs/apk/free/release/app-free-release-unsigned.apk
@@ -46,6 +45,6 @@ AutoUpdateMode: Version
 UpdateCheckMode: Tags
 UpdateCheckData: 
   build-logic/convention/src/main/kotlin/ru/stohastika/sklyanka/gradle/AndroidApplicationConventionPlugin.kt|versionCode
-  = (\d+)|.|versionName = "(.*?)"
-CurrentVersion: '2026.11'
-CurrentVersionCode: 4
+  = (\d+)|.|versionName = \"(.*?)\"
+CurrentVersion: 2026.11.1
+CurrentVersionCode: 5
