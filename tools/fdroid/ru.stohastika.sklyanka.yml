@@ -1,15 +1,12 @@
-# F-Droid metadata for Sklyanka.
-#
-# This file is the payload of a merge request to
-# https://gitlab.com/fdroid/fdroiddata — replace the version block on every release
-# and keep `commit` equal to the release tag.
 Categories:
-  - Health and Fitness
+  - Medication
 License: Apache-2.0
 AuthorName: Sklyanka contributors
 SourceCode: https://github.com/fstronin/sklyanka
 IssueTracker: https://github.com/fstronin/sklyanka/issues
 Changelog: https://github.com/fstronin/sklyanka/releases
+
+AutoName: Склянка
 Summary: Medication reminders, history and a doctor's report, offline
 Description: |
   A medication tracker for Android. A person sets up a course: schedule, dose,
@@ -33,6 +30,7 @@ Description: |
 
   The interface is Russian, with English, Spanish, German, Chinese and Kazakh
   translations.
+
 RepoType: git
 Repo: https://github.com/fstronin/sklyanka.git
 
@@ -46,11 +44,8 @@ Builds:
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
+UpdateCheckData: 
+  build-logic/convention/src/main/kotlin/ru/stohastika/sklyanka/gradle/AndroidApplicationConventionPlugin.kt|versionCode
+  = (\d+)|.|versionName = "(.*?)"
 CurrentVersion: '2026.11'
 CurrentVersionCode: 4
-
-MaintainerNotes: |
-  The release build tolerates absent signing secrets and produces an unsigned
-  APK, which is what the F-Droid build server needs. No Gradle property or
-  keystore is required. The `pro` flavour is disabled in release on purpose and
-  is not shipped.
