@@ -21,7 +21,6 @@ import ru.stohastika.sklyanka.domain.history.MissedPatternRule
 import ru.stohastika.sklyanka.domain.history.ObserveAdherenceUseCase
 import ru.stohastika.sklyanka.domain.history.OnTimeRule
 import ru.stohastika.sklyanka.domain.history.TransferDoctorReportUseCase
-import ru.stohastika.sklyanka.domain.pro.ObserveProStatusUseCase
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import java.time.LocalDate
 
@@ -78,9 +77,6 @@ internal class ReportShareStand {
         ),
         renderer = renderer,
         missedPattern = MissedPatternRule(),
-        // Доступ «Про» есть: стенд проверяет исходы передачи базового документа, и гейт
-        // состава ему безразличен (SKL-119).
-        proStatus = ObserveProStatusUseCase(FakeSubscriptionCache().apply { own(PRO_UNTIL) }, clock),
         time = clock,
     )
 
@@ -157,6 +153,3 @@ internal class ReportShareStand {
         }
     }
 }
-
-/** Срок подписки стенда: доступ есть, и до него ещё далеко. */
-private val PRO_UNTIL = java.time.LocalDate.of(2026, 11, 13)

@@ -69,15 +69,6 @@ class AcceptanceWorld {
 
     val log = ScenarioLog(clock)
 
-    /**
-     * Доступ к возможностям, которые раньше были платными (SKL-153, Р-86, ADR-0016).
-     *
-     * Поставляется бесплатная сборка, и доступа не покупают: кэш подписки всегда отвечает
-     * действующей записью, поэтому гейты состава проходят без изменения доменных правил.
-     * Сценарии говорят о том же доступе, каким живёт продукт, — [ScenarioAccess.status].
-     */
-    val access = ScenarioAccess(clock)
-
     /** Репозитории поверх состояния: под ними гоняются настоящие доменные сценарии. */
     val repositories = ScenarioRepositories(profiles, medications, intakes, clock, log)
 

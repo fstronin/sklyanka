@@ -9,21 +9,14 @@ import ru.stohastika.sklyanka.feature.meds.R
  * Вид расписания, выбранный в строке вида (`docs/norm/06-design.md` §5.10, ПР-15…ПР-19).
  *
  * Пять значений и ровно пять: «Каждый день» по умолчанию и четыре сложных вида.
- * Порядок объявления — порядок нормы, а не цены (ПР-15): список не сортируется
- * по платности, иначе «от простого к сложному» читалось бы подсовыванием (П-7).
- *
- * [proMarked] — признак **платного варианта** для платного контура (`pro`, ADR-0016).
- * В бесплатной сборке он ни на что не влияет: метки «Про» в списке нет (Р-86), а доступ
- * открыт всем. Свойство сохранено вместе с платным путём формы — точкой выбора витрины
- * в `MedicationFormViewModel`; снятие «По дням недели» с метки (Р-24) там же: первый
- * день недели не открывает витрину.
+ * Порядок объявления — порядок нормы (ПР-15).
  */
-enum class ScheduleKind(private val label: Int, val proMarked: Boolean) {
-    DAILY(R.string.schedule_kind_daily, proMarked = false),
-    WEEKDAYS(R.string.schedule_kind_weekdays, proMarked = false),
-    INTERVAL(R.string.schedule_kind_interval, proMarked = true),
-    CYCLES(R.string.schedule_kind_cycle, proMarked = true),
-    STAGES(R.string.schedule_kind_steps, proMarked = true),
+enum class ScheduleKind(private val label: Int) {
+    DAILY(R.string.schedule_kind_daily),
+    WEEKDAYS(R.string.schedule_kind_weekdays),
+    INTERVAL(R.string.schedule_kind_interval),
+    CYCLES(R.string.schedule_kind_cycle),
+    STAGES(R.string.schedule_kind_steps),
     ;
 
     /** Имя вида в строке и в списке (`schedule_kind_*`, §10). */

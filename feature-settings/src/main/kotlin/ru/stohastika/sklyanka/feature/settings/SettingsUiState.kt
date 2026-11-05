@@ -2,8 +2,6 @@ package ru.stohastika.sklyanka.feature.settings
 
 import ru.stohastika.sklyanka.domain.appearance.AccentTheme
 import ru.stohastika.sklyanka.domain.appearance.IconVariant
-import ru.stohastika.sklyanka.domain.pro.ProStatus
-import ru.stohastika.sklyanka.domain.pro.ProSubscription
 import ru.stohastika.sklyanka.domain.profile.ProfileCreationDecision
 import ru.stohastika.sklyanka.domain.reminder.port.PermissionState
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderPermission
@@ -44,24 +42,13 @@ data class SettingsUiState(
     /** Версия приложения — та, что собрана, а не та, что нарисована в макете. */
     val version: String = "",
     /**
-     * Состояние подписки «Склянка Про» для строки блока (SKL-122, Р-67 п. 6).
+     * Исход гейта на **следующее** заведение профиля (SKL-121, ПРФ-32, ПРФ-34).
      *
-     * Читается из кэша последнего ответа магазина по `SettingsViewModel.refresh` — при показе
-     * экрана, при возвращении в приложение и при закрытии шторки витрины: после покупки или
-     * восстановления человек возвращается на этот же экран, не покидая приложения, и строка
-     * обязана назвать новое состояние, а не то, что было на момент открытия (`ADR-0015`, SKL-122).
-     */
-    val pro: ProStatus = ProStatus(ProSubscription.None),
-    /**
-     * Исход гейта на **следующее** заведение профиля (SKL-121, ПРФ-33, Р-84 п. 3).
-     *
-     * Строка «Добавить профиль» показывает метку «Про» тогда и только тогда, когда
-     * следующее создание платное ([ProfileCreationDecision.BlockedByPro]) **и** сборка
-     * показывает платный контур; в поставляемой бесплатной сборке метки нет, а доступ есть
-     * всегда (Р-86). Предел пяти называет причину словами до нажатия
-     * ([ProfileCreationDecision.BlockedByLimit], ПРФ-34).
-     * Решение принимает доменный [ru.stohastika.sklyanka.domain.profile.ProfileCreationGate]
-     * по числу заведённых профилей и доступу — не экран.
+     * Строка «Добавить профиль» называет причину словами до нажатия, когда заведено пять
+     * профилей ([ProfileCreationDecision.BlockedByLimit]): предел — правило продукта,
+     * а не платная граница. Решение принимает доменный
+     * [ru.stohastika.sklyanka.domain.profile.ProfileCreationGate] по числу заведённых
+     * профилей — не экран.
      */
     val profileCreation: ProfileCreationDecision = ProfileCreationDecision.Allowed,
     /**

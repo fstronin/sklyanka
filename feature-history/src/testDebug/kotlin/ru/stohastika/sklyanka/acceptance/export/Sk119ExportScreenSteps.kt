@@ -20,7 +20,6 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
-import ru.stohastika.sklyanka.acceptance.RepositoryLayout
 import ru.stohastika.sklyanka.acceptance.RussianDates
 import ru.stohastika.sklyanka.acceptance.steps.medicationNamed
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
@@ -53,7 +52,6 @@ import ru.stohastika.sklyanka.feature.history.TAG_REPORT_COMPOSITION_BASE
 import ru.stohastika.sklyanka.feature.history.TAG_REPORT_COMPOSITION_EXTENDED
 import ru.stohastika.sklyanka.feature.history.TAG_REPORT_COMPOSITION_SECTION
 import ru.stohastika.sklyanka.feature.history.documentText
-import java.io.File
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalTime
@@ -109,18 +107,16 @@ class Sk119ExportScreenSteps(private val world: AcceptanceWorld) {
      * «Базовый» выбран по умолчанию — и это видно разметке, а не только состоянию.
      *
      * Проверяется семантика `selected` строк (НФТ-30, §6.4): снятие отрисовки выбора сценарий
-     * обязан заметить, поэтому поля состояния мало. Метки «Про» в шторке нет ни у одной строки:
-     * платного контура в поставляемой сборке не существует (Р-86, ADR-0016).
+     * обязан заметить, поэтому поля состояния мало.
      */
-    @Тогда("^«Базовый» выбран по умолчанию и метки «Про» в шторке нет$")
-    fun theBaseRowIsSelectedAndUnmarked() {
+    @Тогда("^«Базовый» выбран по умолчанию$")
+    fun theBaseRowIsSelected() {
         assertEquals(ReportScope.BASE, scope())
         ReportScopeStand.ask(world) { test ->
             test.onNodeWithTag(TAG_REPORT_COMPOSITION_BASE, useUnmergedTree = true)
                 .assert(SemanticsMatcher.expectValue(SemanticsProperties.Selected, true))
             test.onNodeWithTag(TAG_REPORT_COMPOSITION_EXTENDED, useUnmergedTree = true)
                 .assert(SemanticsMatcher.expectValue(SemanticsProperties.Selected, false))
-            test.onAllNodesWithText(proMark(), useUnmergedTree = true).assertCountEquals(0)
         }
     }
 
@@ -245,7 +241,7 @@ class Sk119ExportScreenSteps(private val world: AcceptanceWorld) {
         ExportStand.open(world)
     }
 
-    /** Шторка выгрузки открыта и файл собран: доступ в поставляемой сборке есть всегда (Р-86). */
+    /** Шторка выгрузки открыта и файл собран. */
     @Тогда("^шторка выгрузки открыта и файл собран$")
     fun theExportSheetIsOpenAndTheFileIsBuilt() {
         val sheet = ExportStand.state(world).sheet
@@ -262,8 +258,6 @@ class Sk119ExportScreenSteps(private val world: AcceptanceWorld) {
                 .assertExists()
             test.onNodeWithText(context.getString(R.string.history_report_label_format), useUnmergedTree = true)
                 .assertExists()
-            // Метки «Про» на шторке выгрузки нет: платного контура не существует (Р-86).
-            test.onAllNodesWithText(proMark(), useUnmergedTree = true).assertCountEquals(0)
             // «Записей» несёт число строк, а пустой период — фразу вместо числа (Р-33):
             // карточка состава есть в обоих состояниях, и состояние называет себя словами.
             val records = test.onAllNodesWithText(
@@ -459,18 +453,6 @@ class Sk119ExportScreenSteps(private val world: AcceptanceWorld) {
 
     private fun scope(): ReportScope =
         requireNotNull(ReportScopeStand.state(world).report) { "the report sheet must be open" }.scope
-
-    private fun proMark(): String = proCatalog().getValue("pro_mark")
-
-    private fun proCatalog(): Map<String, String> = catalog("core-ui/src/main/res/values/strings.xml")
-
-    /** Каталог русского языка модуля: им сверяются слова, которые сценарий называет вслух. */
-    private fun catalog(path: String): Map<String, String> {
-        val file = File(RepositoryLayout.root, path)
-        return Regex("""<string name="([^"]+)"[^>]*>([^<]*)</string>""")
-            .findAll(file.readText())
-            .associate { match -> match.groupValues[1] to match.groupValues[2] }
-    }
 
     private fun windowOf(period: String): HistoryWindow {
         val parts = period.split("—").map { it.trim() }

@@ -9,7 +9,6 @@ import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertEquals
 import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
 import ru.stohastika.sklyanka.domain.appearance.AccentTheme
-import ru.stohastika.sklyanka.domain.appearance.AppearanceOutcome
 import ru.stohastika.sklyanka.domain.appearance.AppearancePreferences
 import ru.stohastika.sklyanka.domain.appearance.IconVariant
 import ru.stohastika.sklyanka.domain.appearance.ObserveAccentThemeUseCase
@@ -39,10 +38,7 @@ class Sk120ThemeSteps(private val world: AcceptanceWorld) {
     private val appearance = InMemoryAppearance()
 
     private val observeTheme = ObserveAccentThemeUseCase(appearance)
-    private val setTheme = SetAccentThemeUseCase(appearance, world.access.statusUseCase)
-
-    /** Последний исход выбора: им сценарий говорит «выбор применён». */
-    private var outcome: AppearanceOutcome? = null
+    private val setTheme = SetAccentThemeUseCase(appearance)
 
     // --- Предыстория ---------------------------------------------------------------
 
@@ -74,7 +70,7 @@ class Sk120ThemeSteps(private val world: AcceptanceWorld) {
     /** Выбор темы в диалоге: правило исполняет домен, а не шаг (Р-22, §5.17). */
     @Когда("^человек выбирает тему «([^»]+)»$")
     fun thePersonChoosesTheTheme(name: String) {
-        outcome = runBlocking { setTheme(themeNamed(name)) }
+        runBlocking { setTheme(themeNamed(name)) }
     }
 
     // --- Проверки: выбор и его сохранение -------------------------------------------
@@ -82,7 +78,6 @@ class Sk120ThemeSteps(private val world: AcceptanceWorld) {
     /** Выбор применяется сразу: приложение несёт акцент темы, а не прежний (§5.17). */
     @Тогда("^приложение несёт акцент «([^»]+)» сразу$")
     fun theApplicationCarriesThatAccentAtOnce(name: String) {
-        assertEquals(AppearanceOutcome.APPLIED, outcome, "the choice must be applied")
         assertAccent(name)
     }
 
@@ -101,7 +96,6 @@ class Sk120ThemeSteps(private val world: AcceptanceWorld) {
     /** Выбор записан — тот, который человек нажал. */
     @Тогда("^выбор записан «([^»]+)»$")
     fun theChoiceIsStoredAs(name: String) {
-        assertEquals(AppearanceOutcome.APPLIED, outcome, "the choice must be applied")
         assertEquals(themeNamed(name), runBlocking { observeTheme.current() }, "the choice must be stored")
     }
 

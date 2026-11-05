@@ -89,21 +89,20 @@ internal object SettingsRemindersStand {
         context = world.profileSession.contextProvider,
         medications = world.repositories.medicationStore,
         switchProfile = world.profileSession.switch,
-        // Внешние ответы — одним узлом (НФТ-52, SKL-122): стенд собирает ту же модель, что продукт.
+        // Внешние ответы — одним узлом (НФТ-52): стенд собирает ту же модель, что продукт.
         environment = SettingsEnvironment(
             system = SettingsSystemStateReader(
                 reminders = world.reminders.settingsStore,
                 permissions = world.system,
             ),
             stamp = AppStamp(versionName = "1.0", versionCode = 1),
-            proStatus = world.access.statusUseCase,
         ),
         // Оформление (SKL-120, §5.17): стенд собирает ту же модель, что продукт.
         appearance = SettingsAppearance(
             observeTheme = ObserveAccentThemeUseCase(appearance),
             observeIcon = ObserveIconVariantUseCase(appearance),
-            setTheme = SetAccentThemeUseCase(appearance, world.access.statusUseCase),
-            setIcon = SetIconVariantUseCase(appearance, world.access.statusUseCase),
+            setTheme = SetAccentThemeUseCase(appearance),
+            setIcon = SetIconVariantUseCase(appearance),
         ),
     )
 

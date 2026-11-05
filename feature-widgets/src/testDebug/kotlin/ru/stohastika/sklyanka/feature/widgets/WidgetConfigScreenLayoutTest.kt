@@ -45,11 +45,10 @@ class WidgetConfigScreenLayoutTest {
             ProfileChrome(state = ProfileChromeState.Owner) {
                 SklyankaTheme {
                     WidgetConfigScreen(
-                        state = WidgetConfigState(type = WidgetType.MEDICATION, proIncluded = true),
+                        state = WidgetConfigState(type = WidgetType.MEDICATION),
                         onSelectType = {},
                         onSelectMedication = {},
                         onComplete = {},
-                        onOpenPro = {},
                     )
                 }
             }

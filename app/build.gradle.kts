@@ -3,8 +3,6 @@
 // Варианты сборки и подпись — sklyanka.release.signing (TDD §4.3).
 // Проверки состава собранного артефакта — sklyanka.artifact.checks (TDD §5.5).
 
-import java.util.Properties
-
 plugins {
     id("sklyanka.android.application")
     id("sklyanka.android.compose")
@@ -25,85 +23,20 @@ plugins {
 val reminderMeasurement: Boolean =
     (project.findProperty("sklyanka.reminderMeasurement") as String?)?.toBoolean() ?: false
 
-/**
- * Конфигурация вендора для биллингового контура (Р-37, Р-38, SKL-122).
- *
- * `agconnect-services.json` — идентификаторы проекта AppGallery Connect; файл лежит вне git
- * и подкладывается извне. Путь задаётся Gradle-свойством
- * `sklyanka.agconnect.servicesDir` или ключом `agconnect.servicesDir` в `local.properties`.
- * В первой публикации сетевого контура нет: файл сохранён для биллинга,
- * его отсутствие — не отказ сборки.
- */
-val agconnectServicesDir: File? = resolveAgconnectServicesDir()
-val agconnectServicesFile: File? = agconnectServicesDir?.resolve("agconnect-services.json")
-
-fun resolveAgconnectServicesDir(): File? {
-    val raw = providers.gradleProperty("sklyanka.agconnect.servicesDir").orNull
-        ?: rootProject.file("local.properties")
-            .takeIf { it.isFile }
-            ?.let { file ->
-                Properties().apply { file.inputStream().use { load(it) } }
-                    .getProperty("agconnect.servicesDir")
-            }
-        ?: return null
-    return rootProject.file(raw)
-}
-
-/**
- * Один файл конфигурации вендора как источник assets.
- *
- * Задача копирует **только** `agconnect-services.json`: содержимое его каталога в артефакт
- * не попадает. Соседние файлы называются в журнале сборки вслух — если человек положил
- * конфигурацию в папку с ключами, он узнает об этом до выпуска, а не после (SKL-122).
- */
-val vendorAssets: TaskProvider<Copy>? = agconnectServicesFile
-    ?.takeIf { it.isFile }
-    ?.let { config ->
-        val strays = agconnectServicesDir?.listFiles()
-            ?.filter { it.name != config.name }
-            ?: emptyList()
-        if (strays.isNotEmpty()) {
-            logger.lifecycle(
-                "vendor config dir has ${strays.size} other file(s); they will NOT ship in the APK: " +
-                    strays.joinToString { it.name },
-            )
-        }
-        tasks.register<Copy>("vendorAssets") {
-            from(config)
-            into(layout.buildDirectory.dir("vendor-assets"))
-        }
-    }
-
-if (agconnectServicesFile?.isFile != true) {
-    logger.lifecycle(
-        "vendor config is absent: kept for the billing contour only " +
-            "(provide sklyanka.agconnect.servicesDir when billing ships; see SKL-122)",
-    )
-}
-
 android {
     namespace = "ru.stohastika.sklyanka"
     buildFeatures {
         buildConfig = true
     }
-    // Контур продукта (Р-86, ADR-0016): `free` — единственная поставляемая сборка,
-    // `pro` — запасной вариант для будущего возврата платной модели. Измерение одно,
-    // поэтому варианты называются `freeDebug`/`proDebug`, `freeRelease`/`proRelease`.
-    // Подписанного `proRelease` нет: платная модель не поставляется (release-вариант
-    // pro выключает sklyanka.release.signing), `pro` живёт отладочной сборкой и тестами.
-    //
-    // Платёжные модули подключены только к `pro` (§2 TDD): в `free` их нет ни в графе
-    // зависимостей, ни в слитом манифесте. Сеть приносит единственный контур — платёжный,
-    // и только в `pro`; `free` не объявляет `INTERNET` вовсе. Приёмка и эталоны платных
-    // поверхностей удалены (Р-86 п. 3): `pro` держится компиляцией, DI-графом и unit-тестами.
+    // Контур продукта (Р-86, ADR-0016): `free` — единственная поставляемая сборка.
+    // Измерение сохранено ради имени вариантов: `freeDebug`/`freeRelease` — часть
+    // сборочного контракта F-Droid и релизного конвейера, и переименование задач
+    // сломало бы обе выкладки.
     flavorDimensions += "contour"
     productFlavors {
         create("free") {
             dimension = "contour"
             isDefault = true
-        }
-        create("pro") {
-            dimension = "contour"
         }
     }
     defaultConfig {
@@ -111,15 +44,6 @@ android {
         // Стенд устройства (SKL-97): приложение тестов и Hilt-граф на проверку.
         // Конвенция оставляет стандартный раннер модулям core-data/feature-history.
         testInstrumentationRunner = "ru.stohastika.sklyanka.screen.support.DeviceTestRunner"
-    }
-    sourceSets {
-        getByName("main") {
-            // В assets едет ровно файл конфигурации: каталог утащил бы в публикуемый APK
-            // всё, что лежит рядом с ним, — включая ключ подписи, если конфигурация лежит
-            // в папке с ключами (SKL-122, критика F12). Поэтому файл сначала копируется
-            // в отдельный каталог сборки, а в assets объявляется уже он.
-            vendorAssets?.let { assets.srcDir(it) }
-        }
     }
 }
 
@@ -140,14 +64,6 @@ dependencies {
     implementation(project(":feature-history"))
     // Экран разрешений EMUI (SKL-14).
     implementation(project(":feature-onboarding"))
-    // Витрина «Склянки Про»: одна модальная поверхность покупки (SKL-122, Р-67).
-    // Только для контура `pro` (Р-86, ADR-0016 п. 1–2): в `free` витрины нет, и модуль
-    // не попадает ни в граф зависимостей, ни в артефакт.
-    "proImplementation"(project(":feature-pro"))
-    // Платный сетевой контур: реализация порта магазина и единственное место сборки,
-    // которому разрешена сеть (SKL-122, ADR-0010 п. 1–2). Подключён только к `pro`,
-    // поэтому `INTERNET` объявляется исключительно в про-варианте.
-    "proImplementation"(project(":billing-appgallery"))
     // Виджеты домашнего экрана (SKL-118): провайдеры и экран настройки приезжают слиянием
     // манифеста модуля, а обновление виджетов по событиям — точками графа в app.
     implementation(project(":feature-widgets"))

@@ -186,7 +186,7 @@
     <string name="schedule_kind_cycle">In cycles</string>
     <string name="schedule_kind_steps">In steps</string>
     <string name="form_label_weekdays">Weekdays</string>
-    <string name="form_weekdays_pro_note">More than one day</string>
+    <string name="form_weekdays_note">More than one day</string>
     <string name="form_interval_row">Interval (days)</string>
     <string name="form_schedule_count_from_start">Counted from the course start date</string>
     <string name="form_cycle_on_row">Days on in a row</string>
@@ -198,5 +198,4 @@
     <string name="cd_stage_dose">Dose of step %1$d</string>
     <string name="cd_stage_days">Duration of step %1$d</string>
     <string name="cd_stage_delete">Delete step %1$d</string>
-    <string name="form_save_blocked_pro">Complex schedules come with Sklyanka Pro</string>
 </resources>

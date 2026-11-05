@@ -161,8 +161,6 @@ internal fun ScheduleKindBlock(state: MedFormUiState, onIntent: (MedFormIntent) 
             options = ScheduleKind.entries,
             selected = state.shownScheduleKind,
             label = { kind -> kind.label() },
-            // Метки «Про» у вариантов нет: продукт бесплатный (Р-86), а вид расписания —
-            // предметное свойство курса, а не признак подписки.
             onSelect = { kind ->
                 onIntent(MedFormIntent.ScheduleKindChanged(kind))
                 pickerOpen = false
@@ -222,10 +220,9 @@ private fun WeekdayParams(state: MedFormUiState, onIntent: (MedFormIntent) -> Un
                 )
             }
         }
-        // «Больше одного дня» — нейтральная подпись под рядом, без метки «Про» (Р-86):
-        // она называет то, что выбирают, а не то, за что платят.
+        // Подпись под рядом называет то, что выбирают: дни недели курса.
         Text(
-            text = stringResource(R.string.form_weekdays_pro_note),
+            text = stringResource(R.string.form_weekdays_note),
             style = SklyankaType.CaptionSmall,
             color = SklyankaTheme.colors.textMuted,
             modifier = Modifier.testTag(TAG_WEEKDAYS_NOTE),
@@ -251,7 +248,7 @@ private fun IntervalParams(state: MedFormUiState, onIntent: (MedFormIntent) -> U
         )
         BlockHint(stringResource(R.string.form_schedule_count_from_start))
         // «Один день — это ежедневное расписание»: не отказ, а предложение базового вида
-        // (ПР-15, §10). Вид при этом уже вырожден в ежедневный, и метки «Про» у него нет.
+        // (ПР-15, §10). Вид при этом уже вырожден в ежедневный.
         if (state.inputs.interval.trim().toIntOrNull() == ONE_DAY_INTERVAL) {
             BlockHint(
                 text = stringResource(R.string.error_interval_one_day),

@@ -19,37 +19,15 @@ class ArtifactChecksConventionPlugin : Plugin<Project> {
         extensions.configure<ApplicationAndroidComponentsExtension> {
             onVariants { variant ->
                 val suffix = variant.name.replaceFirstChar { it.uppercase() }
-                // Один признак на контур, и он общий для обеих проверок: манифест и граф
-                // зависимостей обязаны судить о контурах одинаково (SKL-165). Без этого
-                // free-вариант требовал бы вендорскую координату, которой у него нет,
-                // или, наоборот, пропускал `INTERNET` без своего контура.
-                val contoursInArtifactProvider = provider {
-                    val modules = variant.runtimeConfiguration.incoming.resolutionResult.allComponents
-                        .map(ResolvedComponentResult::getId)
-                        .map { it.displayName }
-                        .toSet()
-                    NetworkContourCatalog.NETWORK_CONTOURS.associate { contour ->
-                        contour.module to modules.any { it.startsWith("project ${contour.project}") }
-                    }
-                }
 
                 val manifestCheck = tasks.register<VerifyMergedManifestTask>("verifyManifest$suffix") {
                     group = VERIFICATION_GROUP
-                    description = "Checks the merged manifest of the $suffix artifact: network " +
-                        "permissions only together with their network contours and only from them, " +
-                        "network state forbidden always, package name and minSdk " +
+                    description = "Checks the merged manifest of the $suffix artifact: no network " +
+                        "permission, no forbidden permission, package name and minSdk " +
                         "(PLATFORM-1..3, NFR-15/38, ADR-0017 §2)."
                     mergedManifest.set(variant.artifacts.get(SingleArtifact.MERGED_MANIFEST))
                     expectedPackageName.set(ProjectDefaults.APPLICATION_ID)
                     expectedMinSdk.set(ProjectDefaults.MIN_SDK)
-                    contourManifests.from(
-                        provider {
-                            NetworkContourCatalog.NETWORK_CONTOURS.map { contour ->
-                                rootProject.layout.projectDirectory
-                                    .file("${contour.module}/src/main/AndroidManifest.xml")
-                            }
-                        },
-                    )
                     moduleManifests.from(
                         provider {
                             rootProject.allprojects.flatMap { project ->
@@ -60,7 +38,6 @@ class ArtifactChecksConventionPlugin : Plugin<Project> {
                             }
                         },
                     )
-                    contoursInArtifact.set(contoursInArtifactProvider)
                     report.set(layout.buildDirectory.file("reports/composition/manifest-${variant.name}.txt"))
                 }
 
@@ -69,9 +46,8 @@ class ArtifactChecksConventionPlugin : Plugin<Project> {
                     tasks.register<VerifyDependencyCompositionTask>("verifyDependencies$suffix") {
                         group = VERIFICATION_GROUP
                         description = "Checks that the $suffix runtime classpath carries no Google " +
-                            "Play Services, Firebase, ads or crash reporting; no guarded " +
-                            "coordinate rides outside the white list, and each network contour " +
-                            "present carries its client (PLATFORM-4, NFR-15/16/39, ADR-0017 §3)."
+                            "Play Services, Firebase, ads or crash reporting (PLATFORM-4, " +
+                            "NFR-15/16/39, ADR-0017 §3)."
                         coordinates.set(
                             provider {
                                 runtimeConfiguration.incoming.resolutionResult.allComponents
@@ -81,7 +57,6 @@ class ArtifactChecksConventionPlugin : Plugin<Project> {
                             },
                         )
                         versionCatalog.set(rootProject.layout.projectDirectory.file("gradle/libs.versions.toml"))
-                        contoursInArtifact.set(contoursInArtifactProvider)
                         report.set(
                             layout.buildDirectory.file("reports/composition/dependencies-${variant.name}.txt"),
                         )
@@ -92,9 +67,8 @@ class ArtifactChecksConventionPlugin : Plugin<Project> {
                 tasks.matching { it.name == "assemble$suffix" }.configureEach {
                     dependsOn(manifestCheck, dependencyCheck)
                 }
-                // `check` обязан видеть гейт у отладочного варианта и после введения контуров:
-                // вариант называется `freeDebug`/`proDebug`, поэтому сравнение идёт
-                // по типу сборки, а не по полному имени (SKL-153).
+                // `check` обязан видеть гейт у отладочного варианта: вариант называется
+                // `freeDebug`, поэтому сравнение идёт по типу сборки, а не по полному имени.
                 if (variant.buildType == "debug") {
                     tasks.matching { it.name == "check" }.configureEach {
                         dependsOn(manifestCheck, dependencyCheck)

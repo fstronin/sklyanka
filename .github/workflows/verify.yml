@@ -3,7 +3,7 @@
 # The `verifyAll` task is assembled in `build-logic/convention` (ProjectChecksConventionPlugin):
 # the build of every module, static analysis, the artifact composition checks, all JVM test
 # levels and the acceptance scenarios. Instrumented tests are only compiled here
-# (assembleFreeDebugAndroidTest/assembleProDebugAndroidTest); running them on an emulator is a
+# (assembleFreeDebugAndroidTest); running them on an emulator is a
 # separate optional workflow, android-test.yml, started explicitly.
 name: verify
 

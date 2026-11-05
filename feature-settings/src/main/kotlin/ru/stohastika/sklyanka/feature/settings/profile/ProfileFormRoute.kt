@@ -17,11 +17,6 @@ import androidx.compose.ui.Modifier
  * пересоздание переживает, а признак «форма уже открыта» лежит в сохранённом состоянии
  * композиции (образец формы лекарства, SKL-142).
  *
- * Пока причина — платная граница, то же нажатие просит витрину ([ProfileFormViewModel.showcase]):
- * поверхность покупки одна на все точки входа (Р-67), и показывает её `app`. После закрытия
- * витрины `app` зовёт [ProfileFormViewModel.refreshProAccess], и создание завершает та же
- * кнопка — второго входа в мастер не требуется (§5.13, Р-84 п. 2).
- *
  * @param mode `Add` — мастер; `Edit` — правка названного профиля.
  * @param onLeave уход с экрана: системный «Назад» и успешное сохранение ведут в настройки.
  */
@@ -31,7 +26,6 @@ fun ProfileFormRoute(
     mode: ProfileFormMode,
     onLeave: () -> Unit,
     modifier: Modifier = Modifier,
-    onOpenPro: () -> Unit = {},
 ) {
     var opened by rememberSaveable(mode) { mutableStateOf(false) }
     LaunchedEffect(mode) {
@@ -46,7 +40,6 @@ fun ProfileFormRoute(
     // потоком, и перечитывать его отдельно не нужно. Событие не повторяется при новой
     // подписке, поэтому открытие формы после сохранения закрыться от него не может (SKL-57).
     LaunchedEffect(Unit) { viewModel.closed.collect { onLeave() } }
-    LaunchedEffect(Unit) { viewModel.showcase.collect { onOpenPro() } }
 
     val current = state ?: return
     ProfileFormScreen(state = current, onIntent = viewModel::onIntent, modifier = modifier)

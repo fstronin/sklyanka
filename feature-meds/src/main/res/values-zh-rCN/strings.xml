@@ -186,7 +186,7 @@
     <string name="schedule_kind_cycle">周期服药</string>
     <string name="schedule_kind_steps">阶梯服药</string>
     <string name="form_label_weekdays">星期</string>
-    <string name="form_weekdays_pro_note">一天以上</string>
+    <string name="form_weekdays_note">一天以上</string>
     <string name="form_interval_row">间隔（天）</string>
     <string name="form_schedule_count_from_start">从疗程开始日算起</string>
     <string name="form_cycle_on_row">连续服药天数</string>
@@ -198,5 +198,4 @@
     <string name="cd_stage_dose">第 %1$d 阶段剂量</string>
     <string name="cd_stage_days">第 %1$d 阶段时长</string>
     <string name="cd_stage_delete">删除第 %1$d 阶段</string>
-    <string name="form_save_blocked_pro">复杂服药计划需订阅 Sklyanka Pro</string>
 </resources>

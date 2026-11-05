@@ -3,7 +3,6 @@ package ru.stohastika.sklyanka.feature.settings
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.runtime.Composable
@@ -17,11 +16,9 @@ import ru.stohastika.sklyanka.domain.appearance.AccentTheme
 import ru.stohastika.sklyanka.domain.appearance.IconVariant
 import ru.stohastika.sklyanka.ui.component.FlatMark
 import ru.stohastika.sklyanka.ui.component.ListPickerDialog
-import ru.stohastika.sklyanka.ui.component.ProMark
 import ru.stohastika.sklyanka.ui.token.MarkEnvironment
 import ru.stohastika.sklyanka.ui.token.SklyankaShapes
 import ru.stohastika.sklyanka.ui.token.SklyankaSizes
-import ru.stohastika.sklyanka.ui.token.SklyankaSpacing
 import ru.stohastika.sklyanka.ui.token.flatMarkColor
 import ru.stohastika.sklyanka.ui.token.lightColors
 import ru.stohastika.sklyanka.ui.token.markTileBackground
@@ -30,22 +27,16 @@ import ru.stohastika.sklyanka.ui.token.markTileBackground
  * Блок «Оформление» — две строки между «Системой» и «Данными» (§5.17, SKL-120).
  *
  * Строки собраны той же сборкой, что прочие строки настроек: подпись, значение справа
- * и шеврон. В платном варианте сборки за подписью стоит метка «Про» (Р-67 п. 5); в
- * поставляемой бесплатной её нет, потому что `ProMark` при выключенном флаге не рисует
- * ничего (Р-86, ADR-0016).
+ * и шеврон.
  *
- * Блок выше «Данных» намеренно: оформление принадлежит приложению, а не данным, и под
- * строку «Склянка Про» ему не место — та отвечает за подписку, а не за выбор оформления
- * (Р-67 п. 6).
+ * Блок выше «Данных» намеренно: оформление принадлежит приложению, а не данным.
  *
  * **Строки «Тёмная тема» здесь нет и не будет.** Среда интерфейса следует системной
  * настройке и принадлежит базе (Р-23, §9), а второй переключатель того же состояния
  * расходился бы с системой и обещал бы управление, которого нет (§5.17).
  *
- * Доступ строкам не проверяется: обе открывают диалог, а выбор решает домен
- * ([ru.stohastika.sklyanka.domain.appearance.AppearanceGate.choose]) — экран лишь называет
- * намерение. В бесплатной сборке доступ есть всегда, поэтому все четыре темы и оба варианта
- * иконки выбираются (§5.17, Р-86).
+ * Доступ строкам не проверяется: обе открывают диалог, а выбор применяется сразу —
+ * экран лишь называет намерение. Все четыре темы и оба варианта иконки выбираются.
  */
 internal fun LazyListScope.appearanceBlock(state: SettingsUiState, onIntent: (SettingsIntent) -> Unit) {
     item {
@@ -53,8 +44,6 @@ internal fun LazyListScope.appearanceBlock(state: SettingsUiState, onIntent: (Se
             SettingsRow(
                 title = stringResource(R.string.settings_theme_row),
                 value = stringResource(state.accentTheme.nameRes()),
-                // Зазор между последним словом подписи и меткой — `Small` (§5.9).
-                titleTrailing = { ProMark(modifier = Modifier.padding(start = SklyankaSpacing.Small)) },
                 onClick = { onIntent(SettingsIntent.OpenThemePicker) },
                 modifier = Modifier.testTag(TAG_THEME_ROW),
             )
@@ -62,7 +51,6 @@ internal fun LazyListScope.appearanceBlock(state: SettingsUiState, onIntent: (Se
             SettingsRow(
                 title = stringResource(R.string.settings_icon_row),
                 value = stringResource(state.iconVariant.nameRes()),
-                titleTrailing = { ProMark(modifier = Modifier.padding(start = SklyankaSpacing.Small)) },
                 onClick = { onIntent(SettingsIntent.OpenIconPicker) },
                 modifier = Modifier.testTag(TAG_ICON_ROW),
             )
@@ -76,8 +64,7 @@ internal fun LazyListScope.appearanceBlock(state: SettingsUiState, onIntent: (Se
  * Четыре строки высотой не меньше 44 dp (это держит сам `ListPickerDialog`), слева —
  * образец цвета `IconPlate` 40 dp, залитый **светлым** акцентом темы: тема выбирается
  * по своему виду в светлой среде, и подменять образец текущей средой значило бы показывать
- * не то, что человек выбирает. «Олива» идёт первой; метки «Про» у неё нет — это тема базы
- * (Р-20). В бесплатной сборке меток нет ни у одной темы: все четыре выбираются (Р-86).
+ * не то, что человек выбирает. «Олива» идёт первой — это тема базы (Р-20).
  *
  * Выбор применяется сразу и закрывает диалог: человек видит новую тему на целом экране,
  * а не сквозь затемнение. Второго экрана предпросмотра не заводится.
@@ -90,7 +77,6 @@ internal fun ThemePickerDialog(state: SettingsUiState, onIntent: (SettingsIntent
         selected = state.accentTheme,
         label = { theme -> stringResource(theme.nameRes()) },
         leading = { theme -> ThemeSample(theme) },
-        mark = { theme -> if (!theme.isBase) ProMark(modifier = Modifier.padding(start = SklyankaSpacing.Small)) },
         onSelect = { theme -> onIntent(SettingsIntent.SelectTheme(theme)) },
         onDismiss = { onIntent(SettingsIntent.DismissThemePicker) },
         modifier = Modifier.testTag(TAG_THEME_DIALOG),
@@ -102,8 +88,7 @@ internal fun ThemePickerDialog(state: SettingsUiState, onIntent: (SettingsIntent
  *
  * Две строки, и слева не образец цвета, а **миниатюра иконки** 40 dp: иконку выбирают
  * глазами, и подпись «Тёплая» без картинки заставляла бы человека представлять её самому.
- * «Ледяная» — базовая (Р-56). В бесплатной сборке оба варианта выбираются, и метки «Про»
- * нет ни у одного (Р-86).
+ * «Ледяная» — базовая (Р-56).
  *
  * После выбора строка настроек показывает новое значение, а лончер обновляет иконку,
  * когда сочтёт нужным: приложение этого не обещает и слова «готово» не показывает
@@ -117,7 +102,6 @@ internal fun IconPickerDialog(state: SettingsUiState, onIntent: (SettingsIntent)
         selected = state.iconVariant,
         label = { variant -> stringResource(variant.nameRes()) },
         leading = { variant -> IconMiniature(variant) },
-        mark = { variant -> if (!variant.isBase) ProMark(modifier = Modifier.padding(start = SklyankaSpacing.Small)) },
         onSelect = { variant -> onIntent(SettingsIntent.SelectIconVariant(variant)) },
         onDismiss = { onIntent(SettingsIntent.DismissIconPicker) },
         modifier = Modifier.testTag(TAG_ICON_DIALOG),

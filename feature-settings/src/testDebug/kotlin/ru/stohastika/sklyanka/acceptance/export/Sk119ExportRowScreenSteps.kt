@@ -20,7 +20,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import ru.stohastika.sklyanka.acceptance.run.ScreenAcceptanceRun
-import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
 import ru.stohastika.sklyanka.feature.settings.R
 import ru.stohastika.sklyanka.feature.settings.SettingsIntent
 import ru.stohastika.sklyanka.feature.settings.SettingsScreen
@@ -35,13 +34,13 @@ import java.util.Locale
  *
  * Шаги живут в `feature-settings`, потому что говорят об одной строке этого модуля: её тег
  * `TAG_EXPORT_ROW` объявлен `internal`, и увидеть его может только прогон самого модуля
- * (`SKL-26/TDD.md §4.3`). Строка не решает о подписке и шторки не рисует: нажатие отдаёт
- * намерение, а шторку выгрузки хостит `app` — второй поверхности выгрузки в продукте нет.
+ * (`SKL-26/TDD.md §4.3`). Строка шторки не рисует: нажатие отдаёт намерение, а шторку
+ * выгрузки хостит `app` — второй поверхности выгрузки в продукте нет.
  *
  * Русский текст в аннотации — ключевое слово Gherkin, а не текст интерфейса.
  */
 @OptIn(ExperimentalTestApi::class)
-class Sk119ExportRowScreenSteps(private val world: AcceptanceWorld) {
+class Sk119ExportRowScreenSteps {
 
     private val context: Context = ApplicationProvider.getApplicationContext()
 
@@ -81,7 +80,7 @@ class Sk119ExportRowScreenSteps(private val world: AcceptanceWorld) {
             setContent {
                 Stand {
                     SettingsScreen(
-                        state = SettingsUiState(pro = world.access.status(), version = VERSION),
+                        state = SettingsUiState(version = VERSION),
                         onIntent = { intent -> intents = intents + intent },
                     )
                 }

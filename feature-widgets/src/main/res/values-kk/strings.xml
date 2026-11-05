@@ -26,5 +26,4 @@
     <string name="widget_medication_none">Таңдалмаған</string>
     <string name="widget_medication_empty">Бейінде әзірге дәрі жоқ</string>
     <string name="widget_action_add">Виджет қосу</string>
-    <string name="widget_pro_required">Виджеттер — Sklyanka Pro жазылымында</string>
 </resources>

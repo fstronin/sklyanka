@@ -194,7 +194,6 @@
     <string name="profile_switch_mirror">重复提醒</string>
     <string name="profile_switch_mirror_hint">该档案的服药提醒会发送到这台手机</string>
     <string name="profile_blocked_name">请输入档案名称</string>
-    <string name="profile_add_blocked_pro">两个以上的档案需订阅 Sklyanka Pro</string>
     <string name="profile_add_blocked_limit">档案不超过五个</string>
     <string name="cd_profile_colour_terracotta">陶土色</string>
     <string name="cd_profile_colour_teal">蓝绿色</string>

@@ -32,8 +32,9 @@ tests need a device or an emulator:
   report must not depend on a network, an account or an external service.
 - **Nothing leaves the device.** There is no account, no cloud, no sync, no ads and no analytics,
   and the shipped build declares no network permission. Health data, the transfer file, the report
-  and the delivery log stay on the device. The paid `pro` contour is the only network module and is
-  not shipped.
+  and the delivery log stay on the device. The product has no network module at all: the artifact
+  composition check forbids `INTERNET` and `ACCESS_NETWORK_STATE` in the merged manifest and in every
+  module manifest.
 - **The app is not a medical device.** No treatment recommendations, no dose selection, no
   drug-interaction checks.
 - **Design tokens are not hardcoded.** Colour, typography, geometry and motion come from

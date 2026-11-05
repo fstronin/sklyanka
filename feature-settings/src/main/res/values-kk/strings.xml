@@ -194,7 +194,6 @@
     <string name="profile_switch_mirror">Еске салғыштарды қайталау</string>
     <string name="profile_switch_mirror_hint">Бұл бейіннің қабылдаулары туралы еске салғыштар осы телефонға келеді</string>
     <string name="profile_blocked_name">Бейін атауын жазыңыз</string>
-    <string name="profile_add_blocked_pro">Екіден көп бейін — Sklyanka Pro жазылымында</string>
     <string name="profile_add_blocked_limit">Бейін саны бестен аспайды</string>
     <string name="cd_profile_colour_terracotta">Терракота</string>
     <string name="cd_profile_colour_teal">Көгілдір</string>

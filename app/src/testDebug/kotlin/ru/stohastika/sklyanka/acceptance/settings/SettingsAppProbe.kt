@@ -126,23 +126,22 @@ internal object SettingsAppProbe {
         context = world.profileSession.contextProvider,
         medications = world.repositories.medicationStore,
         switchProfile = world.profileSession.switch,
-        // Внешние ответы — одним узлом (НФТ-52, SKL-122): состояние системы, версия пакета
-        // и кэш подписки тем же сценарием мира, что у продукта.
+        // Внешние ответы — одним узлом (НФТ-52): состояние системы и версия пакета
+        // тем же сценарием мира, что у продукта.
         environment = SettingsEnvironment(
             system = SettingsSystemStateReader(
                 reminders = world.reminders.settingsStore,
                 permissions = world.system,
             ),
             stamp = AppStamp(versionName = "1.0", versionCode = 1),
-            proStatus = world.access.statusUseCase,
         ),
         // Оформление (SKL-120, §5.17): те же доменные швы, что у продукта; носитель выбора
         // подменён памятью, правило выбора — нет.
         appearance = SettingsAppearance(
             observeTheme = ObserveAccentThemeUseCase(appearance),
             observeIcon = ObserveIconVariantUseCase(appearance),
-            setTheme = SetAccentThemeUseCase(appearance, world.access.statusUseCase),
-            setIcon = SetIconVariantUseCase(appearance, world.access.statusUseCase),
+            setTheme = SetAccentThemeUseCase(appearance),
+            setIcon = SetIconVariantUseCase(appearance),
         ),
     )
 

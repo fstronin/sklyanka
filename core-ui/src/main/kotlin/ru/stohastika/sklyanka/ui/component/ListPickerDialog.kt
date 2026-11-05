@@ -59,14 +59,6 @@ public fun <T> ListPickerDialog(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
     /**
-     * Площадка метки «Про» между подписью варианта и галочкой выбранного (§5.9, §5.10).
-     *
-     * Метка — свойство варианта, а не подписки: она стоит у платного варианта и тогда,
-     * когда подписка активна (Р-67 п. 5). Дизайн-система знает только место, состав
-     * метки приносит вызывающий (метка «Про» — `ProMark`).
-     */
-    mark: (@Composable (T) -> Unit)? = null,
-    /**
      * Образец варианта слева от подписи (§5.13, §5.17).
      *
      * У выбора темы здесь круг 40 dp, залитый светлым акцентом; у выбора иконки —
@@ -114,7 +106,6 @@ public fun <T> ListPickerDialog(
                             text = label(option),
                             selected = option == selected,
                             onClick = { onSelect(option) },
-                            mark = mark?.let { slot -> { slot(option) } },
                             leading = leading?.let { slot -> { slot(option) } },
                         )
                     }
@@ -144,7 +135,6 @@ private fun OptionRow(
     text: String,
     selected: Boolean,
     onClick: () -> Unit,
-    mark: (@Composable () -> Unit)? = null,
     leading: (@Composable () -> Unit)? = null,
 ) {
     val colors = SklyankaTheme.colors
@@ -167,16 +157,10 @@ private fun OptionRow(
             text = text,
             style = if (selected) SklyankaType.BodyDefaultStrong else SklyankaType.BodyDefault,
             color = if (selected) colors.accent else colors.text,
-            // Подпись занимает свою ширину, а не всю строку: метка «Про» встаёт сразу
-            // за последним словом варианта, а не у правого края (V-69, V-76).
+            // Подпись занимает свою ширину, а не всю строку: галочка выбранного встаёт
+            // сразу за последним словом варианта, а не у правого края (V-69, V-76).
             modifier = Modifier.weight(1f, fill = false),
         )
-        // Метка стоит между подписью и галочкой (§5.9, §5.10): у платного варианта
-        // человек узнаёт о плате до нажатия, а не после открытия витрины (П-7).
-        if (mark != null) {
-            Spacer(modifier = Modifier.width(SklyankaSpacing.Small))
-            mark()
-        }
         if (selected) {
             Spacer(modifier = Modifier.width(SklyankaSpacing.Small))
             CheckGlyph(

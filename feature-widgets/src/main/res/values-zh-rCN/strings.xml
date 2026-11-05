@@ -26,5 +26,4 @@
     <string name="widget_medication_none">未选择</string>
     <string name="widget_medication_empty">档案中暂无药品</string>
     <string name="widget_action_add">添加小组件</string>
-    <string name="widget_pro_required">小组件需订阅 Sklyanka Pro</string>
 </resources>

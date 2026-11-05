@@ -4,7 +4,6 @@ import androidx.glance.LocalContext
 import androidx.glance.appwidget.testing.unit.runGlanceAppWidgetUnitTest
 import androidx.glance.testing.unit.hasContentDescription
 import androidx.glance.testing.unit.hasText
-import androidx.glance.testing.unit.hasTextEqualTo
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Assert.assertNotEquals
@@ -101,7 +100,7 @@ class WidgetMarkupTest {
     }
 
     @Test
-    fun theForeignProfileCarriesNameColourAndNoProMark() = runGlanceAppWidgetUnitTest {
+    fun theForeignProfileCarriesNameAndColour() = runGlanceAppWidgetUnitTest {
         // Контекст даёт стенду ресурсы: доза, время и слова состояний собираются из них.
         setContext(ApplicationProvider.getApplicationContext())
         provideComposable {
@@ -117,8 +116,6 @@ class WidgetMarkupTest {
         }
 
         onNode(hasText(profileLabelFor("mother"))).assertExists()
-        // Метки «Про» на плите нет: виджет — уже открытая платная зона (§5.11).
-        onNode(hasTextEqualTo("Про")).assertDoesNotExist()
         // Акцент плиты приходит ролью палитры профиля (ПРФ-15): у чужого профиля он
         // не совпадает с акцентом владельца — цвет в дереве узлов не виден, поэтому
         // проверяется его источник, а кадр плиты с цветом сверяет визуальная проверка.

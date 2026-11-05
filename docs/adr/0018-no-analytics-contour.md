@@ -1,7 +1,8 @@
 # 0018 — No analytics contour in the product
 
-Status: Accepted. It supersedes ADR-0011 and ADR-0017. The shipped build contains no analytics
-contour, no provider SDK, no event queue, no consent screen and no network permission.
+Status: Accepted. It supersedes ADR-0011 and ADR-0017. Item 4 is superseded by ADR-0019: the paid
+store client is gone as well, so no network contour remains. The build contains no analytics contour,
+no provider SDK, no event queue, no consent screen and no network module.
 
 ## Context
 

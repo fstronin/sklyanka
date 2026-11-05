@@ -2,7 +2,6 @@ package ru.stohastika.sklyanka.domain.appearance
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
-import ru.stohastika.sklyanka.domain.pro.ObserveProStatusUseCase
 
 /**
  * Действующая акцентная тема (§2.5, Р-31).
@@ -10,10 +9,6 @@ import ru.stohastika.sklyanka.domain.pro.ObserveProStatusUseCase
  * Читается и потоком — экран обязан перекраситься сразу, — и разово, на старте: тема
  * применяется **до первой композиции**, иначе первый кадр мелькнул бы «Оливой» и человек
  * с «Аметистом» увидел бы чужой цвет на своём экране (`TDD.md` §5).
- *
- * Доступ «Про» на действующую тему не влияет: выбранное остаётся применённым и после
- * отмены подписки (Р-22, В-120-3). Поэтому этот шов о подписке не спрашивает вовсе —
- * снимается выбор нового, а не показ заведённого.
  */
 class ObserveAccentThemeUseCase(private val preferences: AppearancePreferences) {
 
@@ -37,42 +32,29 @@ class ObserveIconVariantUseCase(private val preferences: AppearancePreferences) 
 }
 
 /**
- * Выбор акцентной темы (§5.17, Р-22).
+ * Выбор акцентной темы (§5.17).
  *
- * Платный выбор проходит только с доступом; без него открывается витрина, и запись
- * не меняется — «применение выбранной темы при этом не меняется, выбор ждёт доступа»
- * (§5.17). Базовая «Олива» проходит всегда: она тема базы (Р-20), а не покупка.
- *
- * Доступ читается из кэша последнего ответа магазина ([ObserveProStatusUseCase]) и не
- * ходит в сеть: выбор оформления не имеет права оказаться между человеком и приложением
- * из-за недоступного магазина (П-6, Р-68 п. 7).
+ * Продукт бесплатен, поэтому выбор применяется сразу и сохраняется: границы доступа
+ * у оформления больше нет (Р-86). Правило записи осталось доменным, а не переехало
+ * в экран, — иначе вторая поверхность, однажды выбравшая тему, завела бы свой путь
+ * записи и обошла хранилище.
  */
-class SetAccentThemeUseCase(
-    private val preferences: AppearancePreferences,
-    private val proStatus: ObserveProStatusUseCase,
-) {
+class SetAccentThemeUseCase(private val preferences: AppearancePreferences) {
 
-    suspend operator fun invoke(theme: AccentTheme): AppearanceOutcome {
-        val outcome = AppearanceGate.choose(isBase = theme.isBase, included = proStatus().included)
-        if (outcome == AppearanceOutcome.APPLIED) preferences.setAccentTheme(theme)
-        return outcome
+    suspend operator fun invoke(theme: AccentTheme) {
+        preferences.setAccentTheme(theme)
     }
 }
 
 /**
- * Выбор варианта иконки (§5.17, Р-22) — тем же правилом, что и тема.
+ * Выбор варианта иконки (§5.17) — тем же швом, что и тема.
  *
- * Тем же гейтом, а не вторым: оба выбора — возможности «Про» (Р-31), и разойтись в том,
- * где проходит платное, им нельзя.
+ * Тем же правилом, а не вторым: оба выбора — свойства оформления устройства (Р-31),
+ * и разойтись в том, как они записываются, им нельзя.
  */
-class SetIconVariantUseCase(
-    private val preferences: AppearancePreferences,
-    private val proStatus: ObserveProStatusUseCase,
-) {
+class SetIconVariantUseCase(private val preferences: AppearancePreferences) {
 
-    suspend operator fun invoke(variant: IconVariant): AppearanceOutcome {
-        val outcome = AppearanceGate.choose(isBase = variant.isBase, included = proStatus().included)
-        if (outcome == AppearanceOutcome.APPLIED) preferences.setIconVariant(variant)
-        return outcome
+    suspend operator fun invoke(variant: IconVariant) {
+        preferences.setIconVariant(variant)
     }
 }

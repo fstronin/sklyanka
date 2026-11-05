@@ -1,10 +1,9 @@
 # 0017 — Network contours: consent-based analytics and the paid contour
 
-Status: Superseded by ADR-0018. The client analytics contour was removed: the product ships with no
-analytics, and the shipped build declares no network permission (ADR-0018). The contour mechanism
-itself survives for the paid contour only: `PAID_CONTOUR` (`:billing-appgallery`, `INTERNET`, the
-store client) is the single contour, it exists only in the `pro` variant, and that variant is not
-shipped.
+Status: Superseded by ADR-0019. Both contours are gone: the analytics contour was removed by ADR-0018
+and the paid contour, its module and its permission by ADR-0019, so no contour mechanism exists and
+the product has no network module. This document records a decision that is no longer a rule of the
+product.
 
 ## Context
 

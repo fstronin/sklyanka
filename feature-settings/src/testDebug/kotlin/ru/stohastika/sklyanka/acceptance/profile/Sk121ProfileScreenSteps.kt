@@ -47,8 +47,8 @@ import java.util.Locale
  * их может только прогон самого модуля (`SKL-26/TDD.md §4.3`).
  *
  * Состояние берётся из мира сценария, а не пересказывается: число профилей — `world.profiles.all()`,
- * доступ — `world.access.status()`, а исход гейта считает тот же [ProfileCreationGate], что у продукта
- * (ПРФ-32, ПРФ-34). Стенд только собирает ту же форму и ту же строку, что продукт.
+ * а исход гейта считает тот же [ProfileCreationGate], что у продукта (ПРФ-32, ПРФ-34).
+ * Стенд только собирает ту же форму и ту же строку, что продукт.
  *
  * Выражение кончается на «на стенде»: словарь шагов общий на прогон, и второе объявление
  * выражения сценарного шага из общего артефакта было бы дублем (`SKL-26/TDD.md §4.4`).
@@ -158,7 +158,7 @@ class Sk121ProfileScreenSteps(private val world: AcceptanceWorld) {
         colour = freeColour(),
         mirrorReminders = true,
         isSelf = false,
-        creation = ProfileCreationGate.decide(world.profiles.all().size, world.access.status().included),
+        creation = ProfileCreationGate.decide(world.profiles.all().size),
     )
 
     /** Экран настроек из мира: строки профилей и исход гейта, тем же правилом, что у ViewModel. */
@@ -177,8 +177,7 @@ class Sk121ProfileScreenSteps(private val world: AcceptanceWorld) {
         }
         return SettingsUiState(
             profiles = rows,
-            pro = world.access.status(),
-            profileCreation = ProfileCreationGate.decide(profiles.size, world.access.status().included),
+            profileCreation = ProfileCreationGate.decide(profiles.size),
             version = VERSION,
         )
     }

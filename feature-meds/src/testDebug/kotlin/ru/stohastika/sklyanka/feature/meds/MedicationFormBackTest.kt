@@ -20,7 +20,6 @@ import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
 import ru.stohastika.sklyanka.domain.medication.SaveMedicationUseCase
 import ru.stohastika.sklyanka.domain.medication.ValidateMedicationDraft
-import ru.stohastika.sklyanka.domain.pro.ObserveProStatusUseCase
 import ru.stohastika.sklyanka.domain.schedule.IntakeGenerationPolicy
 import ru.stohastika.sklyanka.domain.schedule.MedicationPlanner
 import ru.stohastika.sklyanka.domain.schedule.PlanIntakesUseCase
@@ -78,7 +77,6 @@ class MedicationFormBackTest {
             newId = { NEW_ID },
         ),
         time = clock,
-        proStatus = ObserveProStatusUseCase(FakeProCache(), clock),
     )
 
     private val controllers = mutableListOf<ActivityController<MedsFormHost>>()

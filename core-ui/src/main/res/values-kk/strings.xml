@@ -131,47 +131,4 @@
     <string name="catalog_mark">Белгі және оның нұсқалары</string>
     <string name="catalog_lockup">Атауы бар логотип</string>
 
-    <!-- «Sklyanka Pro» витринасы (SKL-122): жолдар docs/norm/06-design.md §10 бойынша, ал
-         дүкеннің бас тарту сөздерін норма тапсырмаға қалдырған. %1$s — дүкеннің дайын баға жолы. -->
-    <string name="pro_sheet_title">Sklyanka Pro</string>
-    <string name="pro_benefit_schedules_short">Күрделі кестелер</string>
-    <string name="pro_benefit_schedules_example">күнара, циклдар, сатылы схемалар</string>
-    <string name="pro_benefit_widgets_short">Виджеттер</string>
-    <string name="pro_benefit_report_short">Кеңейтілген есеп</string>
-    <string name="pro_benefit_accent_short">Акцент және белгішелер</string>
-    <string name="pro_benefit_export_short">Тарихты экспорттау</string>
-    <string name="pro_benefit_profiles_short">Көбірек бейін</string>
-    <string name="pro_period_month">Ай</string>
-    <string name="pro_period_year">Жыл</string>
-    <string name="pro_period_month_short">ай</string>
-    <string name="pro_period_year_short">жыл</string>
-    <string name="pro_year_ribbon">Тиімдірек</string>
-    <string name="pro_year_cheaper">Жылы арзан</string>
-    <string name="pro_action_buy">Рәсімдеу</string>
-    <string name="pro_action_restore">Сатып алуды қалпына келтіру</string>
-    <string name="pro_action_manage">Жазылымды басқару</string>
-    <string name="pro_action_cancel">Жазылымды тоқтату</string>
-    <string name="pro_terms_row">Шарттар мен саясат</string>
-    <string name="pro_renew_auto">Жазылым автоматты түрде ұзартылады</string>
-    <string name="pro_renew_terms_short">Ұзарту — %1$s, тоқтату дүкенде</string>
-    <string name="pro_renew_price">Ұзарту — %1$s</string>
-    <string name="pro_renew_charge">Ұзарту күні алынады; 5 күн бұрын хабарлама келеді</string>
-    <string name="pro_renew_cancel">Дүкеннің жазылымдар бөлімінде тоқтатуға болады</string>
-    <string name="pro_disclosure_more">Толығырақ</string>
-    <string name="pro_state_active_until">%1$s дейін белсенді</string>
-    <string name="pro_state_inactive">Рәсімделмеген</string>
-    <string name="pro_store_unavailable">Бағалар мен сатып алу дүкен қолжетімді болғанда пайда болады</string>
-    <string name="pro_mark">Про</string>
-    <string name="pro_purchase_confirming">Дүкен сатып алудан бас тартқан жоқ — күйі нақтыланып жатыр. Кейінірек сатып алуды қалпына келтіріп көріңіз</string>
-    <string name="pro_restore_not_active">Дүкен жазылымды біледі, бірақ ол белсенді емес. Дүкеннің жазылымдар бөлімін тексеріңіз</string>
-    <string name="pro_manage_failed">Дүкеннің жазылымдар бөлімі ашылмады — жазылым тоқтатылған жоқ. Тағы бір рет көріңіз</string>
-    <string name="pro_purchase_failed_network">Байланыс жоқ — сатып алу өтпеді. Кейінірек көріңіз</string>
-    <string name="pro_purchase_failed_unavailable">Бұл құрылғыда дүкен қолжетімсіз — сатып алу өтпеді</string>
-    <string name="pro_purchase_failed_declined">Дүкен сатып алудан бас тартты. Ақша алынбады</string>
-    <string name="pro_purchase_failed_product">Бұл тауар қазір дүкенде жоқ</string>
-    <string name="pro_purchase_failed_store">Дүкен қате қайтарды — сатып алу өтпеді</string>
-    <string name="pro_restore_failed">Сатып алуды қалпына келтіру мүмкін болмады. Кейінірек көріңіз</string>
-    <string name="pro_restore_nothing_found">Дүкенде сатып алулар табылмады</string>
-    <string name="pro_date_pattern">d MMMM yyyy</string>
-
 </resources>

@@ -5,60 +5,34 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 
 /**
- * Таблица границы «сверх двух» и предела пяти (ПРФ-32, ПРФ-33, ПРФ-34, Р-84 пп. 1–3).
+ * Таблица предела пяти профилей (ПРФ-32, ПРФ-34).
  *
  * Проверка на JVM без Android и без базы: правило предметное, и экран обязан показывать
- * ровно тот ответ, который даёт домен. Порядок исходов здесь — часть правила: предел пяти
- * проверяется первым, потому что доступ не должен открывать дверь в тупик (П-7).
+ * ровно тот ответ, который даёт домен. Предел — продуктовое ограничение, а не платная
+ * граница (Р-86): он закрыт при любом доступе, и продавать здесь нечего (П-7).
  */
-@DisplayName("Creating a profile is closed by the count of profiles, not by the subscription alone")
+@DisplayName("Creating a profile is closed by the count of profiles only")
 class ProfileCreationGateTest {
 
     @Test
-    fun `the first two profiles are free`() {
-        assertEquals(ProfileCreationDecision.Allowed, ProfileCreationGate.decide(created = 0, includesPro = false))
-        assertEquals(ProfileCreationDecision.Allowed, ProfileCreationGate.decide(created = 1, includesPro = false))
+    fun `profiles up to the fifth are allowed`() {
+        assertEquals(ProfileCreationDecision.Allowed, ProfileCreationGate.decide(created = 0))
+        assertEquals(ProfileCreationDecision.Allowed, ProfileCreationGate.decide(created = 1))
+        assertEquals(ProfileCreationDecision.Allowed, ProfileCreationGate.decide(created = 2))
+        assertEquals(ProfileCreationDecision.Allowed, ProfileCreationGate.decide(created = 3))
+        assertEquals(ProfileCreationDecision.Allowed, ProfileCreationGate.decide(created = 4))
     }
 
+    /** ПРФ-34: при пяти профилях добавление закрыто, и предел не продаётся. */
     @Test
-    fun `a third profile is closed without a subscription`() {
-        assertEquals(ProfileCreationDecision.BlockedByPro, ProfileCreationGate.decide(created = 2, includesPro = false))
+    fun `five profiles are the limit`() {
+        assertEquals(ProfileCreationDecision.BlockedByLimit, ProfileCreationGate.decide(created = 5))
+        assertEquals(ProfileCreationDecision.BlockedByLimit, ProfileCreationGate.decide(created = 6))
     }
 
+    /** ПРФ-33: порог считается по числу заведённых, а не по факту удаления. */
     @Test
-    fun `a third profile passes with a subscription`() {
-        assertEquals(ProfileCreationDecision.Allowed, ProfileCreationGate.decide(created = 2, includesPro = true))
-    }
-
-    @Test
-    fun `four profiles with a subscription still allow a fifth`() {
-        assertEquals(ProfileCreationDecision.Allowed, ProfileCreationGate.decide(created = 4, includesPro = true))
-    }
-
-    /** ПРФ-34: при пяти профилях добавление закрыто при любой подписке, и предел не продаётся. */
-    @Test
-    fun `five profiles are the limit under any subscription`() {
-        assertEquals(
-            ProfileCreationDecision.BlockedByLimit,
-            ProfileCreationGate.decide(created = 5, includesPro = true),
-        )
-        assertEquals(
-            ProfileCreationDecision.BlockedByLimit,
-            ProfileCreationGate.decide(created = 5, includesPro = false),
-        )
-    }
-
-    /**
-     * ПРФ-33: порог считается по числу заведённых, а не по факту удаления.
-     *
-     * Четыре профиля, удалённый лишний — заведённых стало три, и без доступа добавление
-     * по-прежнему закрыто: удаление не возвращает право добавить, иначе граница обходилась
-     * бы парой «удалил — завёл».
-     */
-    @Test
-    fun `deleting down to two does not unlock adding`() {
-        assertEquals(ProfileCreationDecision.BlockedByPro, ProfileCreationGate.decide(created = 3, includesPro = false))
-        assertEquals(ProfileCreationDecision.BlockedByPro, ProfileCreationGate.decide(created = 2, includesPro = false))
-        assertEquals(ProfileCreationDecision.Allowed, ProfileCreationGate.decide(created = 1, includesPro = false))
+    fun `deleting down to four unlocks adding again`() {
+        assertEquals(ProfileCreationDecision.Allowed, ProfileCreationGate.decide(created = 4))
     }
 }

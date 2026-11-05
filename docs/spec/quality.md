@@ -31,22 +31,29 @@ Statuses in section 3: **automated** runs inside `./gradlew verifyAll`; **automa
 | `verifyStaticAnalysisRules` | each rule must fire on a deliberate violation from `tools/violations/kotlin/` | `ProjectChecksConventionPlugin.kt` |
 | ktlint 1.3.1 | formatting; a finding fails the build | `QualityConventionPlugin.kt` |
 | Android Lint | `NewApi`, `InlinedApi`, `HardcodedText`, `ManifestOrder` at `error`; `GradleDependency` and `OldTargetApi` ignored; only product sources analyzed | `config/lint/lint.xml` |
-| `verifyManifest<Variant>` | the merged manifest: `INTERNET` only from the paid contour manifest in `pro` and never in `free`; `ACCESS_NETWORK_STATE`, `ACCESS_WIFI_STATE` and `AD_ID` always forbidden; package name, `minSdk 26` | `VerifyMergedManifestTask.kt`, `NetworkContourRules` |
-| `verifyDependencies<Variant>` | resolved composition and version catalog: GMS, Firebase, Play, Crashlytics, Fabric, ML Kit and any analytics SDK forbidden; the allowed list is the paid contour coordinate | `VerifyDependencyCompositionTask.kt` |
+| `verifyManifest<Variant>` | the merged manifest and every source manifest of every module: `INTERNET` and `ACCESS_NETWORK_STATE` are never allowed; `ACCESS_WIFI_STATE` and `AD_ID` always forbidden; package name, `minSdk 26` | `VerifyMergedManifestTask.kt`, `ArtifactCompositionRules`, `ArtifactCompositionCatalog` |
+| `verifyDependencies<Variant>` | resolved composition and version catalog: GMS, Firebase, Play, Crashlytics, Fabric and ML Kit forbidden in the classpath and in the catalog | `VerifyDependencyCompositionTask.kt`, `ArtifactCompositionRules`, `ArtifactCompositionCatalog` |
 | `verifyModuleDependencies`, `verifyModuleDependencyRule` | direction inward (`app` → `feature-*` → `core-*` → `core-domain`); `core-domain` has no outgoing edges; the rule must fire on a violating graph | `ModuleGraphRules.kt` |
-| `verifyNetworkContourRule` | the contour rule must fire on a violating input | `VerifyNetworkContourRuleTask.kt` |
+| `verifyArtifactCompositionRule` | the manifest and dependency rules must fire on violating inputs | `VerifyArtifactCompositionRuleTask.kt` |
 | `verifyAcceptanceSteps` | duplicate step definitions | `acceptance/build.gradle.kts` |
 | Release signing | without secrets release variants are disabled and `assembleRelease`/`bundleRelease` fail clearly, not with debug signing | `ReleaseSigningConventionPlugin.kt` |
 | `verifyAll` | `build` of all modules, `assembleDebugAndroidTest` of all Android modules (compile only), all gates above, `:detekt-rules:test`, `:acceptance:acceptanceRun`, `acceptanceChecklist`, `verifyAcceptanceSteps`, `acceptanceScreenList`, `acceptanceDeviceList`, `acceptanceJourneyList` | `ProjectChecksConventionPlugin.kt` |
 
 Both composition gates are part of `assemble<Variant>`; the debug one is also part of `check`.
 
-### 2.1 Build variants and network contours
+### 2.1 Build variants and network
 
-- Two variants, `free` and `pro`; only `free` is shipped, with no payment entry point, no `feature-pro` module and no billing module.
-- `pro` keeps the payment contour compiling and covered: built and unit tested in CI, not signed, not published, never in a store.
-- Network access belongs to a contour, not a variant, and the paid contour (`:billing-appgallery`) is the only one. `INTERNET` is allowed only with that contour in the `pro` artifact, and only from its manifest. `free` declares no network permission and contains no network code.
-- GMS, Firebase, advertising and any analytics SDK are forbidden in both variants. The paid contour is the only network module.
+- One flavor, `free`, and one variant per build type: `freeDebug` and `freeRelease`. The flavor is
+  kept for its name, because those task names are part of the release pipeline and of the F-Droid
+  build. No other variant of the product exists.
+- There is no paid build, no store client and no entitlement code: a payment path does not exist in
+  the tree, so no variant compiles one and no test covers one.
+- The product has no network module. `INTERNET` and `ACCESS_NETWORK_STATE` are forbidden
+  unconditionally, in the merged manifest and in every source manifest of every module, by
+  `ArtifactCompositionCatalog` and `ArtifactCompositionRules`. `ACCESS_WIFI_STATE` and `AD_ID` are
+  forbidden as before.
+- GMS, Firebase, advertising and analytics SDKs are forbidden in the resolved runtime classpath and
+  in the version catalog by the same rules.
 
 ## 3. Quality requirements
 
@@ -77,8 +84,8 @@ Both composition gates are part of `assemble<Variant>`; the debug one is also pa
 
 | Requirement and threshold | Verification method | Status |
 |---|---|---|
-| The app sends no medical data anywhere; the shipped build has no network path | `verifyManifest`, `verifyDependencies`, `MedicalDataInJournal`, privacy scenarios | automated |
-| `INTERNET` appears only in the `pro` paid contour; `free` declares no network permission; `ACCESS_NETWORK_STATE`, `ACCESS_WIFI_STATE` and `AD_ID` never appear | `NetworkContourRules`, `VerifyMergedManifestTask.kt` on the merged manifest | automated |
+| The app sends no medical data anywhere; it has no network path | `verifyManifest`, `verifyDependencies`, `MedicalDataInJournal`, privacy scenarios | automated |
+| No network permission appears anywhere: `INTERNET` and `ACCESS_NETWORK_STATE` are absent from the merged manifest and from every module manifest; `ACCESS_WIFI_STATE` and `AD_ID` never appear | `ArtifactCompositionRules`, `VerifyMergedManifestTask.kt` on the merged and module manifests | automated |
 | The transfer file is created through the system picker, stays out of public directories, and needs no storage permission | `TransferScreenSteps.kt` against the source manifest | automated (partial) |
 | The transfer file holds medical data in clear, without a password, and export warns about it | `DataTransferScreenTest.kt`, `transfer_privacy_content`, `transfer_privacy_place` | automated |
 | Release logs carry no medication names, doses, profile names or transfer content; pre-unlock snapshots carry only identifiers, moments and service numbers | `MedicalDataInJournal` with a sample and firing gate | automated (partial) |
@@ -88,9 +95,9 @@ Both composition gates are part of `assemble<Variant>`; the debug one is also pa
 
 | Requirement and threshold | Verification method | Status |
 |---|---|---|
-| The shipped `free` build declares no network permission and its merged manifest contains no `INTERNET` | `VerifyMergedManifestTask.kt`, `NetworkContourRules` | automated |
-| `INTERNET` appears only with the paid contour in `pro`; network-state, Wi-Fi-state and `AD_ID` never appear in any variant | `NetworkContourRules`, `verifyManifest<Variant>` | automated |
-| No GMS, Firebase, advertising or analytics coordinate reaches a variant's runtime classpath | `verifyDependencies<Variant>`, `gradle/libs.versions.toml` | automated |
+| The app declares no network permission and its merged manifest contains neither `INTERNET` nor `ACCESS_NETWORK_STATE` | `ArtifactCompositionRules`, `VerifyMergedManifestTask.kt` on the merged manifest | automated |
+| No module manifest declares a network permission, so the permission has no source to come back from | `VerifyMergedManifestTask.kt` over every `src/**/AndroidManifest.xml` in the build | automated |
+| No GMS, Firebase, advertising or analytics coordinate reaches the runtime classpath or waits in the version catalog | `VerifyDependencyCompositionTask.kt`, `ArtifactCompositionRules`, `gradle/libs.versions.toml` | automated |
 
 ### 3.5 Performance
 
@@ -135,7 +142,7 @@ Both composition gates are part of `assemble<Variant>`; the debug one is also pa
 |---|---|---|
 | `minSdk 26`, `targetSdk = compileSdk = 35`; functionality unavailable on API 26 degrades instead of failing | `ProjectDefaults.kt`; `verifyManifest` checks `minSdk`; lint `NewApi`, `InlinedApi` at `error` | automated |
 | `applicationId = ru.stohastika.sklyanka`, immutable | `VerifyMergedManifestTask.kt`: merged package name must match | automated |
-| `free` declares no `INTERNET`; in `pro` `INTERNET` comes only from the paid contour; `ACCESS_NETWORK_STATE`, `ACCESS_WIFI_STATE` and `AD_ID` never appear | `NetworkContourRules`, `verifyManifest<Variant>`; section 2.1 | automated |
+| No network permission exists in any artifact: `INTERNET` and `ACCESS_NETWORK_STATE` never appear in a merged or module manifest; `ACCESS_WIFI_STATE` and `AD_ID` never appear | `ArtifactCompositionRules`, `verifyManifest<Variant>`; section 2.1 | automated |
 | No GMS, Firebase or derived artifacts in dependencies | `verifyDependencies<Variant>`, `gradle/libs.versions.toml` | automated |
 | Release is signed with the project keystore, with R8 and resource shrinking; without secrets release variants are disabled | `ReleaseSigningConventionPlugin.kt` | automated |
 | Minimum version Android 8.0 (API 26), target current at release; APIs above 26 only behind a version check | As in the `minSdk` row | automated |
@@ -174,9 +181,11 @@ Both composition gates are part of `assemble<Variant>`; the debug one is also pa
 No quality requirements exist for these capabilities; the gates in section 2 enforce their absence.
 
 - **AI input.** No model runs on the device or over the network, and no screen offers an entry for free-form input.
-- **Payment, purchase, subscription.** The shipped `free` build has no payment entry point, no `feature-pro` module and no billing module. `pro` compiles the payment contour for coverage only, not signed, not published, never in a store.
+- **Payment, purchase, subscription.** No payment entry point, no paid module, no store client and no entitlement code exist in the tree. The limit of five profiles is a product rule in `ProfileCreationGate`, not a paywall.
 - **Wearable companion.** No Wear module, watch permission or watch dependency, and no screen promises a watch card.
-- **Experiments, developer reporting and client analytics.** No A/B SDK, no reporting contour and no analytics contour: no provider SDK, no event queue, no analytics consent step, no analytics settings row and no usage tracking. The shipped build declares no network permission.
+- **Experiments, developer reporting and client analytics.** No A/B SDK and no analytics layer: no
+  provider SDK, no event queue, no analytics consent step, no analytics settings row and no usage
+  tracking. The app declares no network permission.
 - **Cloud backup and accounts.** No account system and no server-side storage of user data; data leaves the device only as the transfer file.
 - **Medical advice.** No treatment recommendations, no dose selection, no drug interaction checks.
 

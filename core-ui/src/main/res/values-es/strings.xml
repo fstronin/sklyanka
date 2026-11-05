@@ -131,47 +131,4 @@
     <string name="catalog_mark">La marca y sus variantes</string>
     <string name="catalog_lockup">Logotipo con el nombre</string>
 
-    <!-- El escaparate de Pro (SKL-122): cadenas de docs/norm/06-design.md §10 y las palabras
-         de rechazo que la norma dejó a la tarea. %1$s es el precio ya formateado de la tienda. -->
-    <string name="pro_sheet_title">Sklyanka Pro</string>
-    <string name="pro_benefit_schedules_short">Pautas complejas</string>
-    <string name="pro_benefit_schedules_example">día por medio, ciclos, esquemas escalonados</string>
-    <string name="pro_benefit_widgets_short">Widgets</string>
-    <string name="pro_benefit_report_short">Informe ampliado</string>
-    <string name="pro_benefit_accent_short">Acento e iconos</string>
-    <string name="pro_benefit_export_short">Exportar historial</string>
-    <string name="pro_benefit_profiles_short">Más perfiles</string>
-    <string name="pro_period_month">Mes</string>
-    <string name="pro_period_year">Año</string>
-    <string name="pro_period_month_short">mes</string>
-    <string name="pro_period_year_short">año</string>
-    <string name="pro_year_ribbon">Más ventajoso</string>
-    <string name="pro_year_cheaper">Año más barato</string>
-    <string name="pro_action_buy">Suscribirse</string>
-    <string name="pro_action_restore">Restaurar compra</string>
-    <string name="pro_action_manage">Gestionar suscripción</string>
-    <string name="pro_action_cancel">Cancelar suscripción</string>
-    <string name="pro_terms_row">Términos y política</string>
-    <string name="pro_renew_auto">La suscripción se renueva automáticamente</string>
-    <string name="pro_renew_terms_short">Renovación: %1$s, cancelación en la tienda</string>
-    <string name="pro_renew_price">Renovación: %1$s</string>
-    <string name="pro_renew_charge">Se cobra el día de la renovación; 5 días antes llega un aviso</string>
-    <string name="pro_renew_cancel">Puedes cancelar en la sección de suscripciones de la tienda</string>
-    <string name="pro_disclosure_more">Más detalles</string>
-    <string name="pro_state_active_until">Activa hasta el %1$s</string>
-    <string name="pro_state_inactive">Sin suscripción</string>
-    <string name="pro_store_unavailable">Los precios y la compra aparecerán cuando la tienda esté disponible</string>
-    <string name="pro_mark">Pro</string>
-    <string name="pro_purchase_confirming">La tienda no ha rechazado la compra: su estado se está verificando. Prueba a restaurar la compra más tarde</string>
-    <string name="pro_restore_not_active">La tienda conoce la suscripción, pero no está activa. Consulta la sección de suscripciones de la tienda</string>
-    <string name="pro_manage_failed">La pantalla de suscripciones de la tienda no se abrió: la suscripción no se ha cancelado. Inténtalo de nuevo</string>
-    <string name="pro_purchase_failed_network">Sin conexión: la compra no se completó. Inténtalo más tarde</string>
-    <string name="pro_purchase_failed_unavailable">La tienda no está disponible en este dispositivo: la compra no se completó</string>
-    <string name="pro_purchase_failed_declined">La tienda rechazó la compra. No se ha cobrado nada</string>
-    <string name="pro_purchase_failed_product">Este producto no está disponible ahora en la tienda</string>
-    <string name="pro_purchase_failed_store">La tienda devolvió un error: la compra no se completó</string>
-    <string name="pro_restore_failed">No se pudo restaurar la compra. Inténtalo más tarde</string>
-    <string name="pro_restore_nothing_found">No se encontró ninguna compra en la tienda</string>
-    <string name="pro_date_pattern">d \'de\' MMMM \'de\' yyyy</string>
-
 </resources>

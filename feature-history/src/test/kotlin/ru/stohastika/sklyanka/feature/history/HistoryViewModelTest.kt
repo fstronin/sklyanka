@@ -22,7 +22,6 @@ import ru.stohastika.sklyanka.domain.history.AdherenceCalculator
 import ru.stohastika.sklyanka.domain.history.BuildDoctorReportUseCase
 import ru.stohastika.sklyanka.domain.history.BuildExtendedSectionsUseCase
 import ru.stohastika.sklyanka.domain.history.DayState
-import ru.stohastika.sklyanka.domain.history.ExtendedReportSections
 import ru.stohastika.sklyanka.domain.history.MissedPatternRule
 import ru.stohastika.sklyanka.domain.history.ObserveAdherenceUseCase
 import ru.stohastika.sklyanka.domain.history.OnTimeRule
@@ -34,7 +33,6 @@ import ru.stohastika.sklyanka.domain.history.ReportTransferOutcome
 import ru.stohastika.sklyanka.domain.history.TransferDoctorReportUseCase
 import ru.stohastika.sklyanka.domain.log.OpEvent
 import ru.stohastika.sklyanka.domain.model.IntakeStatus
-import ru.stohastika.sklyanka.domain.pro.ObserveProStatusUseCase
 import java.time.LocalDate
 import java.time.YearMonth
 
@@ -60,9 +58,6 @@ class HistoryViewModelTest {
     private val log = RecordingLog()
     private val renderer = FakeRenderer()
     private val transfer = FakeTransfer()
-
-    /** Доступ «Про»: им решается, доступен ли расширенный состав (Р-85 п. 1, Р-22). */
-    private val subscriptions = FakeSubscriptionCache()
 
     @Before
     fun useTestDispatcher() {
@@ -633,43 +628,17 @@ class HistoryViewModelTest {
         assertFalse(viewModel.state.value.period.byMedication.single().markedByOtherProfile)
     }
 
-    // --- Состав отчёта: выбор и гейт «Про» (SKL-119, Р-85 п. 1, Р-22) -------------------
+    // --- Состав отчёта: выбор (SKL-119) ------------------------------------------------
 
     /**
-     * Без активного доступа нажатие расширенной строки **выбор не меняет** (П-7, §5.15):
-     * открывается витрина, а печатается тот состав, который отмечен. Недоступное действие
-     * говорит «нельзя», а правда — «можно, по подписке».
+     * Выбор состава в шторке: расширенный состав собирается с разделами «Про».
+     *
+     * Документ печатается тем составом, который отмечен, и расширенные разделы считаются
+     * тем же расчётом, что экран истории — без единого условия об окружении.
      */
     @Test
-    fun `without access the extended composition asks for the showcase and keeps the base one`() = runTest(dispatcher) {
+    fun `the extended composition is chosen and the document carries the sections`() = runTest(dispatcher) {
         fillSeptemberAndAugust()
-        subscriptions.none()
-        val viewModel = viewModel()
-        advanceUntilIdle()
-        viewModel.onIntent(HistoryIntent.ReportRequested)
-        advanceUntilIdle()
-
-        val showcase = mutableListOf<Unit>()
-        val collector = launch(UnconfinedTestDispatcher(testScheduler)) {
-            viewModel.showcase.collect { showcase += it }
-        }
-        viewModel.onIntent(HistoryIntent.ReportScopeChosen(ReportScope.EXTENDED))
-        advanceUntilIdle()
-        collector.cancel()
-
-        assertEquals(1, showcase.size)
-        assertEquals(ReportScope.BASE, viewModel.state.value.report?.scope)
-        assertEquals(
-            "no unrequested document may be assembled",
-            ExtendedReportSections.NONE,
-            renderer.sections.last(),
-        )
-    }
-
-    @Test
-    fun `with access the extended composition is chosen and the document carries the sections`() = runTest(dispatcher) {
-        fillSeptemberAndAugust()
-        subscriptions.own(subscriptionUntil)
         val viewModel = viewModel()
         advanceUntilIdle()
         viewModel.onIntent(HistoryIntent.ReportRequested)
@@ -686,53 +655,6 @@ class HistoryViewModelTest {
         )
     }
 
-    /** После отмены подписки базовый состав работает, расширенный закрыт (Р-22). */
-    @Test
-    fun `after the subscription is cancelled the extended composition is closed again`() = runTest(dispatcher) {
-        fillSeptemberAndAugust()
-        subscriptions.none()
-        val viewModel = viewModel()
-        advanceUntilIdle()
-        viewModel.onIntent(HistoryIntent.ReportRequested)
-        advanceUntilIdle()
-        viewModel.onIntent(HistoryIntent.ReportScopeChosen(ReportScope.BASE))
-        advanceUntilIdle()
-
-        viewModel.onIntent(HistoryIntent.ReportScopeChosen(ReportScope.EXTENDED))
-        advanceUntilIdle()
-
-        assertEquals(ReportScope.BASE, viewModel.state.value.report?.scope)
-        assertNotNull("the base document must stay assembled", viewModel.state.value.report?.document)
-    }
-
-    /**
-     * Возвращение из витрины с оформленным доступом: повторное нажатие выбирает состав.
-     *
-     * Экран держит снимок доступа с момента открытия шторки, а покупка пишет кэш подписки:
-     * без перечитывания повторное нажатие снова открывало бы витрину (§5.15, SKL-117).
-     */
-    @Test
-    fun `refreshing the access after the showcase lets the extended composition be chosen`() = runTest(dispatcher) {
-        fillSeptemberAndAugust()
-        subscriptions.none()
-        val viewModel = viewModel()
-        advanceUntilIdle()
-        viewModel.onIntent(HistoryIntent.ReportRequested)
-        advanceUntilIdle()
-        viewModel.onIntent(HistoryIntent.ReportScopeChosen(ReportScope.EXTENDED))
-        advanceUntilIdle()
-        assertEquals(ReportScope.BASE, viewModel.state.value.report?.scope)
-
-        // Человек оформил подписку в витрине и вернулся: экран перечитывает доступ.
-        subscriptions.own(subscriptionUntil)
-        viewModel.refreshProAccess()
-        advanceUntilIdle()
-        viewModel.onIntent(HistoryIntent.ReportScopeChosen(ReportScope.EXTENDED))
-        advanceUntilIdle()
-
-        assertEquals(ReportScope.EXTENDED, viewModel.state.value.report?.scope)
-    }
-
     /** Сентябрь и август: у периода появляется предыдущий, с которым его сравнивают. */
     private fun fillSeptemberAndAugust() = history.put(
         profileId = HistoryTestData.PROFILE_ID,
@@ -742,8 +664,6 @@ class HistoryViewModelTest {
     )
 
     private fun sectionsOfSeptember(): Int = renderer.rendered.last().takenTotal
-
-    private val subscriptionUntil: LocalDate = LocalDate.of(2026, 11, 13)
 
     private fun fillSeptember() = history.put(
         profileId = HistoryTestData.PROFILE_ID,
@@ -781,7 +701,6 @@ class HistoryViewModelTest {
         ),
         renderer = renderer,
         missedPattern = MissedPatternRule(),
-        proStatus = ObserveProStatusUseCase(subscriptions, clock),
         time = clock,
     ).apply {
         // По умолчанию системный выбор отвечает «выбран»: проверкам, которым важен

@@ -33,7 +33,6 @@ import ru.stohastika.sklyanka.domain.onboarding.OnboardingSource
 import ru.stohastika.sklyanka.domain.onboarding.ShouldShowOnboardingUseCase
 import ru.stohastika.sklyanka.domain.privacy.AcknowledgePrivacyConsentUseCase
 import ru.stohastika.sklyanka.domain.privacy.ShouldShowPrivacyConsentUseCase
-import ru.stohastika.sklyanka.domain.pro.ProPoint
 import ru.stohastika.sklyanka.domain.profile.ProfileContextProvider
 import ru.stohastika.sklyanka.domain.time.TimeSource
 import ru.stohastika.sklyanka.domain.undo.UndoableActionStore
@@ -82,7 +81,6 @@ import ru.stohastika.sklyanka.navigation.WidgetLaunch
 import ru.stohastika.sklyanka.navigation.layer
 import ru.stohastika.sklyanka.platform.icon.LauncherIconSwitch
 import ru.stohastika.sklyanka.platform.startup.StartupRouter
-import ru.stohastika.sklyanka.pro.ProHost
 import ru.stohastika.sklyanka.reminder.DeliveryCheckAnnouncer
 import ru.stohastika.sklyanka.reminder.ReminderOutageAnnouncer
 import ru.stohastika.sklyanka.startup.DatabaseBlock
@@ -164,7 +162,7 @@ class MainActivity : ComponentActivity() {
     lateinit var shouldShowOnboarding: ShouldShowOnboardingUseCase
 
     /**
-     * Показывать ли политику конфиденциальности при запуске (Р-89, AppGallery 7.5).
+     * Показывать ли политику конфиденциальности при запуске (Р-89, правило магазина 7.5).
      *
      * Отдельный факт от онбординга: предложение прочитать политику не шаг настройки
      * надёжности, и пока человек не нажал «Принимаю», оно показывается на каждом запуске.
@@ -251,16 +249,6 @@ class MainActivity : ComponentActivity() {
     private val settings: SettingsViewModel by viewModels()
 
     /**
-     * Витрина «Про» (SKL-153, `ADR-0016`).
-     *
-     * В free это no-op (`FreeProHost`), в pro — настоящая шторка (`ProHostImpl`).
-     * `MainActivity` про `feature-pro` не знает вовсе: открыватель приходит из
-     * [ProHost.Content], а проверка подписки живёт в самом хосте.
-     */
-    @Inject
-    lateinit var proHost: ProHost
-
-    /**
      * Действующая акцентная тема и вариант иконки (§5.17, Р-31, SKL-120).
      *
      * Читаются потоком в композиции, а не разово в `onCreate`: выбор применяется сразу
@@ -293,7 +281,7 @@ class MainActivity : ComponentActivity() {
      * Шторка экспорта истории (SKL-119, Р-35).
      *
      * Живёт в активности, а не на экране: вход в неё — строка настроек, а поверхность выгрузки
-     * принадлежит `feature-history`. Хостит её `app` поверх корня — тем же способом, что витрину.
+     * принадлежит `feature-history`. Хостит её `app` поверх корня.
      */
     private val exportHistory: ExportHistoryViewModel by viewModels()
 
@@ -449,7 +437,7 @@ class MainActivity : ComponentActivity() {
      * Вынесено из `onCreate` отдельной функцией, потому что решений здесь несколько и каждое
      * со своей причиной; `onCreate` остаётся сборкой состояния. Диалог политики показывается
      * поверх любого первого экрана и до него: пока человек не нажал «Принимаю», он не может
-     * ни пройти онбординг, ни отметить приём (Р-89, AppGallery 7.5).
+     * ни пройти онбординг, ни отметить приём (Р-89, правило магазина 7.5).
      */
     @Composable
     @Suppress("LongParameterList")
@@ -678,66 +666,26 @@ class MainActivity : ComponentActivity() {
     @Composable
     private fun Root(onOpenPermissions: () -> Unit) {
         // Шторка экспорта истории — второй слой поверх корня (SKL-119): её открывает строка
-        // настроек, а показывает `app`, как витрину. Признак её видимости складывается
-        // с признаком витрины «Про» внутри хоста: оба обязаны выключать экранные
-        // обработчики возврата, и ни один не смеет затереть другой.
+        // настроек, а показывает `app`. Модальная поверхность забирает возврат себе
+        // (`TDD.md §8`): пока шторка открыта, экранные обработчики возврата выключены —
+        // иначе первое же нажатие «Назад» уводило бы на «Сегодня», оставив шторку висеть
+        // поверх чужого экрана.
         val exportSheet by exportHistory.state.collectAsState()
         val exportVisible = exportSheet.sheet != null
         BackHandler(enabled = exportVisible) {
             exportHistory.onIntent(ExportHistoryIntent.Dismissed)
         }
-        // Витрина «Про» и всё, что о ней знает приложение, живёт за `ProHost` (SKL-153):
-        // в free это no-op, в pro — шторка поверх корня. Поверхность покупки одна на все
-        // точки входа (Р-67), и она не должна уезжать вместе с экраном, из которого её
-        // открыли, поэтому хост обёрнут вокруг всего корня.
-        //
-        // Модальная поверхность поверх корня забирает возврат себе (`TDD.md §8`): пока
-        // витрина открыта, экранные обработчики возврата выключены — иначе первое же
-        // нажатие «Назад» уводило бы на «Сегодня», оставив шторку висеть поверх чужого
-        // экрана.
         CompositionLocalProvider(LocalModalSurfaceOpen provides exportVisible) {
-            proHost.Content(
-                onPolicy = ::openPolicy,
-                onClosed = ::onShowcaseClosed,
-            ) { openPro ->
-                Box(modifier = Modifier.fillMaxSize()) {
-                    // Сигнал шторки «открыть витрину»: так строка «Экспорт истории» ведёт
-                    // в покупку, не открывая шторки, — без доступа файл не формируется вовсе
-                    // (Р-22, П-7). В free CSV доступен всем, и сигнал не приходит.
-                    LaunchedEffect(Unit) {
-                        exportHistory.showcase.collect { openPro(ProPoint.HISTORY_EXPORT) }
-                    }
-                    Layers(onOpenPermissions = onOpenPermissions, openPro = openPro)
-                    ExportHistoryRoute(viewModel = exportHistory)
-                }
+            Box(modifier = Modifier.fillMaxSize()) {
+                Layers(onOpenPermissions = onOpenPermissions)
+                ExportHistoryRoute(viewModel = exportHistory)
             }
         }
     }
 
-    /**
-     * Витрина закрылась — экраны перечитывают доступ (SKL-122, Р-84, Р-85).
-     *
-     * Покупка и восстановление пишут кэш подписки, а `onResume` при закрытии шторки
-     * не наступает: без этого строка блока в настройках осталась бы «Не оформлена»,
-     * форма лекарства — с платной границей, мастер профиля — с прежним снимком доступа,
-     * а отчёт — с решением, принятым при открытии шторки.
-     *
-     * В free хост не вызывает обработчик ни разу: доступа не отнимает никто (SKL-153).
-     */
-    private fun onShowcaseClosed() {
-        settings.refresh()
-        medsForm.refreshProAccess()
-        // Покупка в витрине, открытой из мастера, обязана снять платную границу,
-        // не теряя набранное имя (Р-84 п. 2, SKL-121).
-        profileForm.refreshProAccess()
-        // Шторка отчёта держит снимок доступа с открытия: повторное нажатие расширенной
-        // строки обязано выбрать состав, а не снова открыть витрину (Р-85 п. 1, SKL-119).
-        history.refreshProAccess()
-    }
-
     /** Слои навигации одного корня: чем человек ходит по продукту. */
     @Composable
-    private fun Layers(onOpenPermissions: () -> Unit, openPro: (ProPoint) -> Unit) {
+    private fun Layers(onOpenPermissions: () -> Unit) {
         AnimatedLayer(
             layer = rootNavigation.layer(),
             motion = rootNavigation.rootMotion,
@@ -759,9 +707,6 @@ class MainActivity : ComponentActivity() {
                     viewModel = history,
                     origin = HistoryOrigin.TODAY,
                     onLeave = { rootNavigation.leaveHistory() },
-                    // Расширенный состав отчёта — вторая точка входа витрины (SKL-119, Р-85 п. 1):
-                    // та же шторка, с пунктом-поводом «Расширенный отчёт врачу».
-                    onOpenPro = { openPro(ProPoint.HISTORY) },
                 )
 
                 is RootLayer.SettingsScreen -> SettingsSection(
@@ -769,9 +714,6 @@ class MainActivity : ComponentActivity() {
                     viewModels = SettingsViewModels(history, transfer, deleteProfile, profileForm),
                     onLeave = rootNavigation::leaveSection,
                     onOpenPermissions = { startActivity(PermissionsActivity.intentFor(this)) },
-                    // Точку-повод называет экран: расширенный состав отчёта — `HISTORY`,
-                    // мастер профиля — `PROFILES` (Р-67 п. 2, Р-84 п. 2, SKL-121).
-                    onOpenPro = { point -> openPro(point) },
                 )
 
                 is RootLayer.Meds -> MedsSection(
@@ -791,14 +733,11 @@ class MainActivity : ComponentActivity() {
                         rootNavigation.openTab(RootTab.SETTINGS)
                     },
                     initial = layer.entry,
-                    // Форма лекарства — вторая точка входа витрины (SKL-117, Р-67 п. 2):
-                    // та же шторка, с пунктом-поводом «Сложные расписания».
-                    onOpenPro = { openPro(ProPoint.MEDICATION_FORM) },
                 )
 
                 RootLayer.Settings -> SettingsRoute(
                     viewModel = settings,
-                    navigation = settingsNavigation(openPro),
+                    navigation = settingsNavigation(),
                 )
 
                 RootLayer.Today -> TodayRoute(
@@ -809,25 +748,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    /**
-     * Открыть «Условия и политика» шторки витрины (SKL-122, ОВ-123).
-     *
-     * Открывает тот, кто собирает маршруты, — `app`: у экрана нет ни браузера, ни адреса
-     * (§5.9, ADR-0007). Одна точка на весь продукт — [PolicyPage].
-     */
-    private fun openPolicy() {
-        PolicyPage.open(this)
-    }
-
-    /**
-     * Открыть витрину «Про» из точки выбора функции (SKL-122, Р-67, SKL-153).
-     *
-     * Открыватель приходит из [ProHost.Content]: в `free` он пуст, в `pro` открывает шторку
-     * с названным пунктом-поводом. Из настроек приходит [ProPoint.SETTINGS] — там пункта-повода
-     * нет, и порядок выгод фиксированный; форма лекарства называет [ProPoint.MEDICATION_FORM]
-     * (SKL-117), отчёт — `HISTORY` (SKL-119), мастер профиля — `PROFILES` (SKL-121).
-     */
-    private fun settingsNavigation(openPro: (ProPoint) -> Unit): SettingsNavigation = SettingsNavigation(
+    private fun settingsNavigation(): SettingsNavigation = SettingsNavigation(
         // «Добавить профиль» открывает мастер, «Изменить» в строке профиля — экран правки:
         // оба — второй уровень настроек, и возврат ведёт в настройки (SKL-121, ПРФ-9, ПРФ-27).
         addProfile = { rootNavigation.openSection(SettingsDestination.AddProfile) },
@@ -841,17 +762,13 @@ class MainActivity : ComponentActivity() {
         // проходить цепочку заново, не сказав ему, сломано ли что-нибудь.
         openDiagnostics = { startActivity(DiagnosticsActivity.intentFor(this)) },
         openHistory = { rootNavigation.openSection(SettingsDestination.History) },
-        // «Экспорт истории»: шторку выгрузки хостит приложение (SKL-119, Р-35). Доступ
-        // проверяет её состояние: без подписки шторка не откроется, а файл не сформируется.
+        // «Экспорт истории»: шторку выгрузки хостит приложение (SKL-119, Р-35).
         openHistoryExport = { exportHistory.onIntent(ExportHistoryIntent.Requested) },
         openDataTransfer = { rootNavigation.openSection(SettingsDestination.Transfer) },
         // «Удалить профиль «Имя»» — экран второго уровня настроек (ОВ-7, SKL-36).
         // Строка появляется только у активного чужого профиля, и «Готово»
         // возвращает в настройки — туда, откуда человек пришёл.
         deleteProfile = { rootNavigation.openSection(SettingsDestination.DeleteProfile) },
-        // Строка блока «Склянка Про» открывает шторку витрины тем же жестом, каким её
-        // открывает точка выбора платной функции (Р-67 п. 6): поверхность одна.
-        openPro = { point -> openPro(point) },
         openToday = { rootNavigation.openTab(RootTab.TODAY) },
         openMedications = { rootNavigation.openMeds(MedsDestination.List) },
     )

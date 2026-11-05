@@ -198,7 +198,7 @@ class SettingsScreenTest {
     }
 
     /**
-     * Строки «Часы Huawei» на экране нет — отдельной проверкой.
+     * Строки «Часы» на экране нет — отдельной проверкой.
      *
      * Это решение Р-3 (SKL-106): часовой шов вырезан из сборки, и подпись
      * о связи, которая не может измениться, была бы ложью. Проверка идёт против строки,
@@ -321,23 +321,18 @@ class SettingsScreenTest {
     }
 
     /**
-     * Р-86, ADR-0016: в поставляемой бесплатной сборке нет ни строки «Склянка Про»,
-     * ни метки «Про».
+     * Строка «Экспорт истории» на месте и ведёт в шторку выгрузки (SKL-119, Р-35).
      *
-     * Проверка идёт тремя утверждениями: отсутствует тег блока подписки, отсутствует слово
-     * метки и отсутствует название блока. Строка «Экспорт истории» при этом на месте —
-     * выгрузка CSV доступна всем, а не спрятана вместе с меткой.
+     * Выгрузка CSV доступна всем: строка ведёт в шторку и ничего не спрашивает.
      */
     @Test
-    fun theFreeScreenHasNoProRowAndNoProMark() {
-        show()
+    fun theExportRowIsOnTheScreenAndLeadsToTheExportSheet() {
+        val intents = mutableListOf<SettingsIntent>()
+        show(onIntent = intents::add)
 
-        composeRule.onAllNodesWithTag(TAG_PRO_ROW).assertCountEquals(0)
-        val mark = context.getString(ru.stohastika.sklyanka.ui.R.string.pro_mark)
-        composeRule.onAllNodesWithText(mark, useUnmergedTree = true).assertCountEquals(0)
-        val proTitle = context.getString(ru.stohastika.sklyanka.ui.R.string.pro_sheet_title)
-        composeRule.onAllNodesWithText(proTitle, useUnmergedTree = true).assertCountEquals(0)
-        composeRule.onNodeWithTag(TAG_EXPORT_ROW).assertExists()
+        composeRule.onNodeWithTag(TAG_EXPORT_ROW).performClick()
+
+        assertEquals(listOf(SettingsIntent.OpenHistoryExport), intents)
     }
 
     /** НФТ-29: каждая цель нажатия на экране — не меньше 44 dp, включая строки списков. */
@@ -410,7 +405,7 @@ class SettingsScreenTest {
          * Заголовок вырезанной строки часов. Литерал намеренный: ресурс удалён вместе
          * с швом (Р-3, SKL-106), и проверить его отсутствие иначе нечем.
          */
-        const val WATCH_ROW_TITLE = "Часы Huawei"
+        const val WATCH_ROW_TITLE = "Часы"
 
         /** Округление плотности может отнять доли точки; одной точки запаса хватает. */
         val TOLERANCE = SklyankaSizes.BorderThin

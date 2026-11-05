@@ -194,7 +194,6 @@
     <string name="profile_switch_mirror">Duplicar recordatorios</string>
     <string name="profile_switch_mirror_hint">Los recordatorios de las tomas de este perfil llegarán a este teléfono</string>
     <string name="profile_blocked_name">Indica un nombre de perfil</string>
-    <string name="profile_add_blocked_pro">Más de dos perfiles son de Sklyanka Pro</string>
     <string name="profile_add_blocked_limit">No más de cinco perfiles</string>
     <string name="cd_profile_colour_terracotta">Terracota</string>
     <string name="cd_profile_colour_teal">Verde azulado</string>

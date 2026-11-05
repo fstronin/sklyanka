@@ -186,7 +186,7 @@
     <string name="schedule_kind_cycle">Циклдармен</string>
     <string name="schedule_kind_steps">Кезеңдермен</string>
     <string name="form_label_weekdays">Апта күндері</string>
-    <string name="form_weekdays_pro_note">Бір күннен көп</string>
+    <string name="form_weekdays_note">Бір күннен көп</string>
     <string name="form_interval_row">Аралық (күн)</string>
     <string name="form_schedule_count_from_start">Курс басталған күннен саналады</string>
     <string name="form_cycle_on_row">Қатарынан қабылдау күндері</string>
@@ -198,5 +198,4 @@
     <string name="cd_stage_dose">%1$d-кезең дозасы</string>
     <string name="cd_stage_days">%1$d-кезең ұзақтығы</string>
     <string name="cd_stage_delete">%1$d-кезеңді жою</string>
-    <string name="form_save_blocked_pro">Күрделі кестелер — Sklyanka Pro жазылымында</string>
 </resources>

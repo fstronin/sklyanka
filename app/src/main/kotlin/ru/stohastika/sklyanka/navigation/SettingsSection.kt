@@ -3,7 +3,6 @@ package ru.stohastika.sklyanka.navigation
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import ru.stohastika.sklyanka.domain.pro.ProPoint
 import ru.stohastika.sklyanka.feature.history.HistoryViewModel
 import ru.stohastika.sklyanka.feature.settings.profile.DeleteProfileRoute
 import ru.stohastika.sklyanka.feature.settings.profile.DeleteProfileViewModel
@@ -71,11 +70,6 @@ fun SettingsSection(
     onLeave: () -> Unit,
     onOpenPermissions: () -> Unit,
     modifier: Modifier = Modifier,
-    /**
-     * Витрина «Про»: точку-повод называет вызывающий (Р-67 п. 2) — расширенный состав отчёта
-     * (`ProPoint.HISTORY`) и мастер профиля (`ProPoint.PROFILES`).
-     */
-    onOpenPro: (ProPoint) -> Unit = {},
 ) {
     when (destination) {
         // История сама ставит перехват кнопки «Назад» и знает, откуда открыта.
@@ -84,7 +78,6 @@ fun SettingsSection(
             origin = HistoryOrigin.SETTINGS,
             onLeave = { onLeave() },
             modifier = modifier,
-            onOpenPro = { onOpenPro(ProPoint.HISTORY) },
         )
 
         SettingsDestination.Transfer -> {
@@ -115,7 +108,6 @@ fun SettingsSection(
                 mode = ProfileFormMode.Add,
                 onLeave = onLeave,
                 modifier = modifier,
-                onOpenPro = { onOpenPro(ProPoint.PROFILES) },
             )
         }
 
@@ -126,7 +118,6 @@ fun SettingsSection(
                 mode = ProfileFormMode.Edit(destination.profileId),
                 onLeave = onLeave,
                 modifier = modifier,
-                onOpenPro = { onOpenPro(ProPoint.PROFILES) },
             )
         }
     }

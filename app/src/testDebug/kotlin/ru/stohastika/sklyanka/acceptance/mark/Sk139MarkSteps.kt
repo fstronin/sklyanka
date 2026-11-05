@@ -164,9 +164,9 @@ class Sk139MarkSteps {
 
     // --- 3. Знак не берёт акцент темы -----------------------------------------------------------
 
-    @Допустим("знак собран в акцентной теме «Про»")
-    fun theMarkIsBuiltInTheProAccentTheme() {
-        // Акцентная тема «Про» — набор ролей, которым тема красит действия: у владельца
+    @Допустим("знак собран в акцентной теме")
+    fun theMarkIsBuiltInAnAccentTheme() {
+        // Акцентная тема — набор ролей, которым тема красит действия: у владельца
         // акцент один, в чужом профиле — цвет профиля (ПРФ-11). Обе темы и есть смена.
         themes = listOf(ProfileAccent.Owner, ProfileAccent.Foreign(ProfileColor.Plum))
         val accents = themes.map { lightColors().copy(accent = it.color).accent }

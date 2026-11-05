@@ -13,9 +13,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.TextUnit
 import ru.stohastika.sklyanka.ui.token.MarkVariant
 import ru.stohastika.sklyanka.ui.token.SklyankaSizes
 import ru.stohastika.sklyanka.ui.token.markVariantFor
@@ -48,7 +46,6 @@ private const val CHECK_END_Y = 0.27f
  * От неё зависит, читается ли искра звездой или превращается в кляксу: 0,12 даёт четыре
  * тонких луча, 0,3 — почти круг.
  */
-private const val SPARK_WAIST = 0.12f
 
 /** Треугольник предупреждения. */
 private const val TRIANGLE_APEX_X = 0.5f
@@ -494,37 +491,4 @@ fun FlatMark(color: Color, modifier: Modifier = Modifier, size: Dp = SklyankaSiz
     // требование §7, а не следствие размера. Ступень берётся ближайшая плоская.
     val variant = markVariantFor(size).takeUnless { it == MarkVariant.Glass } ?: MarkVariant.FlatRingsAndDot
     Canvas(modifier.size(size)) { drawFlatVariant(variant, color) }
-}
-
-/**
- * Искра — знак ценности перед словом метки «Про» (§5.9, Р-79 п. 2).
- *
- * Четырёхлучевая звезда: значение несут цвет и знак, а не кегль, поэтому искра стоит рядом
- * со служебным словом 13 sp и растёт вместе с ним (сторона задаётся [SklyankaSizes.ProMarkSpark]
- * в sp). Чтению с экрана искра не объявляется: смысл несёт слово «Про» рядом (НФТ-33),
- * и знак без слова не ставится вовсе.
- *
- * Рисуется на `Canvas`, как остальные глифы системы, а не подключается картинкой: цвет — это
- * роль интерфейса (`onAccentSoft`), и он обязан приходить из темы, а не быть зашитым в ресурс.
- */
-@Composable
-fun SparkGlyph(color: Color, modifier: Modifier = Modifier, size: TextUnit = SklyankaSizes.ProMarkSpark) {
-    val side = with(LocalDensity.current) { size.toDp() }
-    Canvas(modifier.size(side)) { drawSpark(color) }
-}
-
-private fun DrawScope.drawSpark(color: Color) {
-    val width = size.width
-    val height = size.height
-    val waistX = width * SPARK_WAIST
-    val waistY = height * SPARK_WAIST
-    val path = Path().apply {
-        moveTo(width / 2f, 0f)
-        cubicTo(width / 2f + waistX, height / 2f - waistY, width - waistX, height / 2f - waistY, width, height / 2f)
-        cubicTo(width - waistX, height / 2f + waistY, width / 2f + waistX, height / 2f + waistY, width / 2f, height)
-        cubicTo(width / 2f - waistX, height / 2f + waistY, waistX, height / 2f + waistY, 0f, height / 2f)
-        cubicTo(waistX, height / 2f - waistY, width / 2f - waistX, height / 2f - waistY, width / 2f, 0f)
-        close()
-    }
-    drawPath(path, color)
 }

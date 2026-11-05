@@ -34,9 +34,8 @@ import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
  * Стенд выбора состава отчёта — настоящий `HistoryViewModel` на мире сценария (SKL-119).
  *
  * Состояние собирает **продукт**, а не пересказ: приверженность считает настоящий
- * `ObserveAdherenceUseCase`, расширенные разделы — настоящий `BuildExtendedSectionsUseCase`,
- * доступ читает тот же сценарий, каким живёт продукт (Р-86: в поставляемой сборке он всегда
- * есть). Стенд только собирает композицию и передаёт намерения; правил гейта в нём нет —
+ * `ObserveAdherenceUseCase`, расширенные разделы — настоящий `BuildExtendedSectionsUseCase`.
+ * Стенд только собирает композицию и передаёт намерения; правил состава в нём нет —
  * иначе сценарий проверял бы стенд.
  *
  * Отрисовка документа — записывающая: настоящий PDF рисуется только на устройстве
@@ -133,8 +132,6 @@ internal object ReportScopeStand {
             ),
             renderer = renderer,
             missedPattern = MissedPatternRule(),
-            // Доступ — тем же сценарием, каким живёт продукт (Р-86: он всегда есть).
-            proStatus = world.access.statusUseCase,
             time = world.clock.time,
         )
     }

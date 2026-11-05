@@ -63,9 +63,6 @@ import ru.stohastika.sklyanka.domain.medication.ValidateMedicationDraft
 import ru.stohastika.sklyanka.domain.medication.normalized
 import ru.stohastika.sklyanka.domain.model.Medication
 import ru.stohastika.sklyanka.domain.model.MedicationForm
-import ru.stohastika.sklyanka.domain.pro.ObserveProStatusUseCase
-import ru.stohastika.sklyanka.domain.pro.ProSubscription
-import ru.stohastika.sklyanka.domain.pro.ProSubscriptionCache
 import ru.stohastika.sklyanka.feature.history.HistoryScreen
 import ru.stohastika.sklyanka.feature.history.HistoryUiState
 import ru.stohastika.sklyanka.feature.history.ReportComposition
@@ -99,7 +96,6 @@ import ru.stohastika.sklyanka.ui.profile.ProfileChrome
 import ru.stohastika.sklyanka.ui.profile.ProfileChromeState
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaType
-import java.time.LocalDate
 import java.time.LocalTime
 import java.time.YearMonth
 import java.util.Locale
@@ -307,7 +303,6 @@ class Sk137HeaderSteps(private val world: AcceptanceWorld) {
             newId = { "medication-sk137-${++savedForms}" },
         ),
         time = world.clock.time,
-        proStatus = ObserveProStatusUseCase(StandProCache, world.clock.time),
     )
 
     /** Прогнать очередь главного looper'а и кадры композиции: маршрут открывает форму корутиной. */
@@ -783,16 +778,4 @@ private class RecordingBackOwner :
     init {
         registry.currentState = Lifecycle.State.RESUMED
     }
-}
-
-/**
- * Доступ «Про» на стенде: продукт бесплатен (Р-86), и гейт состава в сценариях выхода
- * не участвует. Кэш держится у шагов, а не берётся из сборки: `testDebug` компилируется
- * для обоих флаворов, а `FreeProSubscriptionCache` живёт только в `free`.
- */
-private object StandProCache : ProSubscriptionCache {
-
-    override suspend fun read(): ProSubscription = ProSubscription.Active(productId = null, until = LocalDate.MAX)
-
-    override suspend fun write(subscription: ProSubscription) = Unit
 }

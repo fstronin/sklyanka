@@ -37,17 +37,15 @@ import java.time.YearMonth
  * `DeleteProfileUseCase` (`world.profileManagement`). Мир сценария подставляет только
  * хранилище в памяти (`ADR-0007`).
  *
- * **Платной границы больше нет.** Продукт бесплатный (Р-86, ADR-0016): доступ в сборке есть
- * всегда, поэтому третий, четвёртый и пятый профили заводятся без оплаты, а закрывает
- * создание только продуктовый предел пяти (ПРФ-32). Решение `BlockedByPro` осталось в домене
- * как код будущего платного варианта, и в этих сценариях оно недостижимо.
+ * **Создание закрывает только предел.** Продукт бесплатный (Р-86, ADR-0016): третий,
+ * четвёртый и пятый профили заводятся без оплаты, а закрывает создание продуктовый предел
+ * пяти (ПРФ-32). Платной границы в домене больше нет.
  *
  * **Состояние мастера живёт здесь.** Экрана добавления профиля у сценарного прогона нет
  * (`ОВ-3`), поэтому черновик формы держится полями этого класса — как у формы расписания
  * в `Sk117ScheduleSteps`: имя, цвет, вопрос о дублировании и доступ, перечитанный при
  * открытии. Шаг не пересказывает продукт, а спрашивает у домена те же величины, что видит
- * человек: границу — у `ProfileCreationGate`, доступ — у `ObserveProStatusUseCase`
- * (`world.access.status()`), причину — у каталога строк формы.
+ * человек: границу — у `ProfileCreationGate`, причину — у каталога строк формы.
  *
  * **«Названа словами» проверяется по каталогу формы.** В чистом JVM-модуле нет ни разметки,
  * ни ресурсов Android, поэтому «слова есть» значит: ключ существует в
@@ -68,8 +66,8 @@ class Sk121ProfileSteps(private val world: AcceptanceWorld) {
     /** Вопрос о дублировании в черновике мастера (по умолчанию включено, Р-29). */
     private var draftMirror: Boolean = false
 
-    /** Доступ, прочитанный формой при открытии (ПРФ-33). `null` — мастер не открывали. */
-    private var formAccess: Boolean? = null
+    /** Открыт ли мастер создания. `null` — мастер не открывали. */
+    private var masterOpen: Boolean? = null
 
     /** Чем форма заблокировала завершение в последний раз; `null` — не блокировала. */
     private var submitBlock: String? = null
@@ -185,14 +183,9 @@ class Sk121ProfileSteps(private val world: AcceptanceWorld) {
      *
      * Сначала предел по числу заведённых, потом имя:
      *
-     * - [ProfileCreationDecision.BlockedByLimit] — пять профилей: кнопка недоступна,
-     *   витрины нет вовсе (ПРФ-34);
+     * - [ProfileCreationDecision.BlockedByLimit] — пять профилей: кнопка недоступна (ПРФ-34);
      * - [ProfileCreationDecision.Allowed] и пустое имя — профиль не заводится, сказано «нужно имя»;
      * - [ProfileCreationDecision.Allowed] — профиль заводит настоящий `CreateProfileUseCase`.
-     *
-     * [ProfileCreationDecision.BlockedByPro] в бесплатной сборке недостижим: доступ есть
-     * всегда (Р-86), и шаг отвечает отказом, если домен всё же закрыл создание оплатой, —
-     * молча подставить витрину значило бы придумать поверхность, которой нет.
      */
     @Когда("^человек нажимает завершение$")
     fun thePersonFinishesTheMaster() {
@@ -309,13 +302,12 @@ class Sk121ProfileSteps(private val world: AcceptanceWorld) {
     /**
      * Мастер спрашивает о дублировании (ПРФ-9): вопрос есть, и он назван словами (П-7).
      *
-     * Проверяется, что мастер открыт (`formAccess` прочитан при открытии) и что строка вопроса
-     * — `profile_switch_mirror` — существует и непуста. Вёрстку переключателя держит экранный
-     * прогон.
+     * Проверяется, что мастер открыт, и что строка вопроса — `profile_switch_mirror` —
+     * существует и непуста. Вёрстку переключателя держит экранный прогон.
      */
     @Тогда("^мастер спрашивает, дублировать ли напоминания этому профилю$")
     fun theMasterAsksAboutMirroring() {
-        assertNotNull(formAccess, "the scenario must open the creation master first")
+        assertTrue(masterOpen == true, "the scenario must open the creation master first")
         assertWords("profile_switch_mirror")
     }
 
@@ -478,7 +470,7 @@ class Sk121ProfileSteps(private val world: AcceptanceWorld) {
         draftName = ""
         draftColour = firstFreeColour()
         draftMirror = true
-        formAccess = world.access.status().included
+        masterOpen = true
         submitBlock = null
         profilesBeforeSubmit = created()
     }
@@ -487,16 +479,11 @@ class Sk121ProfileSteps(private val world: AcceptanceWorld) {
     private fun submit() {
         profilesBeforeSubmit = created()
         // Порядок тот же, что у продукта: предел → пустое имя (`ProfileFormUiState.block`, §5.13).
-        // Платная граница в бесплатной сборке недостижима: доступ есть всегда (Р-86).
         submitBlock = when {
             gate() == ProfileCreationDecision.BlockedByLimit -> BLOCK_LIMIT
             draftName.isBlank() -> BLOCK_NAME
             else -> null
         }
-        assertTrue(
-            gate() != ProfileCreationDecision.BlockedByPro,
-            "the free build must not block creation by payment (Р-86)",
-        )
         when (submitBlock) {
             BLOCK_LIMIT, BLOCK_NAME -> Unit
             else -> {
@@ -507,14 +494,12 @@ class Sk121ProfileSteps(private val world: AcceptanceWorld) {
         }
     }
 
-    /** Предел создания по числу заведённых и доступу сборки (ПРФ-32, ПРФ-34). */
-    private fun gate(): ProfileCreationDecision =
-        ProfileCreationGate.decide(created(), formAccess ?: world.access.status().included)
+    /** Предел создания по числу заведённых (ПРФ-32, ПРФ-34). */
+    private fun gate(): ProfileCreationDecision = ProfileCreationGate.decide(created())
 
-    /** Видимая причина у кнопки: в бесплатной сборке такая одна — предел (ПРФ-34). */
+    /** Видимая причина у кнопки: такая одна — предел (ПРФ-34). */
     private fun visibleReason(): String? = when (gate()) {
         ProfileCreationDecision.BlockedByLimit -> BLOCK_LIMIT
-        ProfileCreationDecision.BlockedByPro -> BLOCK_PRO
         else -> null
     }
 
@@ -562,7 +547,6 @@ class Sk121ProfileSteps(private val world: AcceptanceWorld) {
         /** Индекс третьего профиля: владелец первый, за ним — подопечные. */
         const val THIRD_INDEX = 2
 
-        const val BLOCK_PRO = "pro"
         const val BLOCK_LIMIT = "limit"
         const val BLOCK_NAME = "name"
 

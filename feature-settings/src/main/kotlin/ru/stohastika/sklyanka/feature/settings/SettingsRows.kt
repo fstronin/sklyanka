@@ -104,13 +104,6 @@ internal fun SettingsRow(
     leading: @Composable (() -> Unit)? = null,
     trailing: @Composable (() -> Unit)? = null,
     /**
-     * Метка сразу за подписью строки — метка «Про» у платной возможности (§5.16).
-     *
-     * Слот стоит у самой подписи, а не в конце строки: метка называет **строку**, а не действие
-     * (Р-67 п. 5), и справа её место занимает шеврон перехода.
-     */
-    titleTrailing: @Composable (() -> Unit)? = null,
-    /**
      * Начертание и краска подписи. По умолчанию — обычная строка списка.
      *
      * Параметром, а не по месту: строка «Добавить профиль» набрана `BodyDefaultMedium`
@@ -130,7 +123,7 @@ internal fun SettingsRow(
     ) {
         StackingRow(
             leading = { leading?.invoke() },
-            text = { RowText(title, subtitle, titleTrailing, titleStyle, titleColor ?: colors.text) },
+            text = { RowText(title, subtitle, titleStyle, titleColor ?: colors.text) },
             action = { RowAction(value, trailing, colors.iconFaint) },
             gap = SklyankaSpacing.Medium,
             minTextWidth = SklyankaSizes.MinTextColumn,
@@ -169,30 +162,17 @@ private fun RowAction(value: String?, trailing: (@Composable () -> Unit)?, chevr
  */
 internal data class RowSubtitle(val text: String, val color: Color? = null)
 
-/** Текстовая колонка строки: заголовок, метка за ним и подпись состояния под ними. */
+/** Текстовая колонка строки: заголовок и подпись состояния под ним. */
 @Composable
 private fun RowText(
     title: String,
     subtitle: RowSubtitle?,
-    titleTrailing: (@Composable () -> Unit)? = null,
     titleStyle: TextStyle = SklyankaType.BodyDefault,
     titleColor: Color = SklyankaTheme.colors.text,
 ) {
     val colors = SklyankaTheme.colors
     Column(verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Hair)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            // Подпись берёт ровно нужное (`fill = false`) и переносится, метка держит свою ширину
-            // и стоит сразу за подписью (§5.16, макеты дают 10 px): и остаток, отданный метке,
-            // сжимал её до плашки без слова (§5.9, §6.3), и растянутая до края подпись отрывала
-            // метку от неё (V-69).
-            Text(
-                text = title,
-                style = titleStyle,
-                color = titleColor,
-                modifier = Modifier.weight(1f, fill = false),
-            )
-            titleTrailing?.invoke()
-        }
+        Text(text = title, style = titleStyle, color = titleColor)
         if (subtitle != null) {
             Text(
                 text = subtitle.text,

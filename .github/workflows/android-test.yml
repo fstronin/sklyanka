@@ -1,7 +1,7 @@
 # Optional gate: instrumented tests on an emulator run only when started explicitly
 # (workflow_dispatch) and do not block push/pull_request. The mandatory contour lives in
-# verify.yml, where androidTest sources are at least compiled (the variant tasks
-# assembleFreeDebugAndroidTest/assembleProDebugAndroidTest are part of verifyAll).
+# verify.yml, where androidTest sources are at least compiled (the variant task
+# assembleFreeDebugAndroidTest is part of verifyAll).
 #
 # The emulator image is AOSP without Google APIs (target: default): the product lives without
 # GMS, and the local harness in tools/emulator/ uses the same images. The API levels of the

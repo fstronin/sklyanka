@@ -53,7 +53,8 @@ parties are out of scope for the product. See [`docs/spec/privacy.md`](docs/spec
 | Minimum Android | 8.0 (API 26) |
 | Language of the interface | Russian, English, Spanish, German, Chinese, Kazakh |
 | Google services | not used: no GMS, no Firebase |
-| Network | not used: the shipped build declares no network permission |
+| Network | not used: the app declares no network permission and contains no network module |
+| Stores | RuStore and AppGallery |
 | Storage | Room, on device |
 | Time | exact alarms through `AlarmManager` |
 
@@ -64,20 +65,21 @@ UI reads design tokens only from `core-ui`.
 
 | Module | Responsibility |
 |---|---|
-| `core-domain` | domain model and rules: schedules, marks, stock, profiles, transfer, adherence |
-| `core-data` | Room database, repositories, migrations, transfer file codec |
-| `core-ui` | design system: tokens, typography, components, theme |
-| `feature-today` | the Today screen |
-| `feature-meds` | medications list and the medication form |
-| `feature-reminder` | reminders, full-screen reminder, deferral |
-| `feature-history` | history, adherence and the report |
-| `feature-settings` | settings |
-| `feature-onboarding` | first launch, permission setup and reliability onboarding |
-| `feature-widgets` | home-screen widgets |
-| `feature-pro`, `billing-appgallery` | the paid contour, kept behind a build flag and not shipped |
-| `app` | application module: navigation, DI, platform wiring |
-| `acceptance` | scenario acceptance tests and the shared step vocabulary |
-| `build-logic` | Gradle convention plugins and the project checks |
+| `:app` | application module: navigation, DI, platform wiring |
+| `:core-domain` | domain model and rules: schedules, marks, stock, profiles, transfer, adherence |
+| `:core-data` | Room database, repositories, migrations, transfer file codec |
+| `:core-ui` | design system: tokens, typography, components, theme |
+| `:feature-today` | the Today screen |
+| `:feature-meds` | medications list and the medication form |
+| `:feature-reminder` | reminders, full-screen reminder, deferral |
+| `:feature-history` | history, adherence and the report |
+| `:feature-settings` | settings |
+| `:feature-onboarding` | first launch, permission setup and reliability onboarding |
+| `:feature-widgets` | home-screen widgets |
+| `:acceptance` | scenario acceptance tests and the shared step vocabulary |
+
+`build-logic/` and `config/detekt/rules/` are included builds, not modules: the first holds the
+Gradle convention plugins and the project checks, the second the detekt rules.
 
 Architecture decisions are recorded in [`docs/adr/`](docs/adr/); the module map and the data flow
 are in [`docs/spec/architecture.md`](docs/spec/architecture.md).
@@ -87,8 +89,8 @@ are in [`docs/spec/architecture.md`](docs/spec/architecture.md).
 Requirements: JDK 17 and the Android SDK with API 35.
 
 ```bash
-./gradlew :app:assembleFreeDebug      # debug build of the shipped variant
-./gradlew :app:assembleFreeRelease    # release build of the shipped variant
+./gradlew :app:assembleFreeDebug      # debug build
+./gradlew :app:assembleFreeRelease    # release build
 ./gradlew verifyAll                   # the full gate: build, static analysis, all JVM tests
 ```
 

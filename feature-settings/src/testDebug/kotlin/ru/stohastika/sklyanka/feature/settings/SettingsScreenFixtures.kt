@@ -1,11 +1,8 @@
 package ru.stohastika.sklyanka.feature.settings
 
-import ru.stohastika.sklyanka.domain.pro.ProStatus
-import ru.stohastika.sklyanka.domain.pro.ProSubscription
 import ru.stohastika.sklyanka.domain.profile.ProfileCreationGate
 import ru.stohastika.sklyanka.domain.reminder.port.ReminderSettingsValues
 import ru.stohastika.sklyanka.ui.token.ProfileColor
-import java.time.LocalDate
 
 /**
  * Состояния экрана настроек для экранных проверок и снимков.
@@ -16,16 +13,13 @@ import java.time.LocalDate
  *
  * Строка «Добавить профиль» несёт исход гейта на **следующее** заведение (SKL-121):
  * он считается тем же [ProfileCreationGate] и по тем же числам, что у `SettingsViewModel`, —
- * число строк и доступ. Иначе фикстура показывала бы состояние, которого экран не увидит.
+ * по числу строк. Иначе фикстура показывала бы состояние, которого экран не увидит.
  */
 internal object SettingsScreenFixtures {
 
     const val FOREIGN_NAME = "Мама"
     const val FOREIGN_MEDICATIONS = 4
     const val VERSION = "0.1.0"
-
-    /** Доступ бесплатной сборки: подписки нет, но доступ есть всегда (Р-86, ADR-0016). */
-    val FREE_ACCESS: ProStatus = ProStatus(ProSubscription.Active(productId = null, until = LocalDate.MAX))
 
     /** Имена чужих профилей сверх первого: пять профилей — владелец и четыре чужих (ПРФ-32). */
     private val FOREIGN_NAMES = listOf(FOREIGN_NAME, "Папа", "Бабушка", "Сестра")
@@ -41,9 +35,6 @@ internal object SettingsScreenFixtures {
     /**
      * @param foreignProfiles сколько чужих профилей сверх владельца: 0 — один профиль,
      *   4 — предел пяти (ПРФ-32). По умолчанию — «Мама», как в остальных фикстурах модуля.
-     * @param pro доступ сборки: по умолчанию — бесплатная, где доступ есть всегда
-     *   (`ProSubscription.Active(null, LocalDate.MAX)`), поэтому гейт закрывает создание
-     *   только на пределе пяти (Р-86, ПРФ-32).
      */
     fun state(
         denied: Int = 1,
@@ -52,7 +43,6 @@ internal object SettingsScreenFixtures {
         activeIsSelf: Boolean = true,
         snoozePickerVisible: Boolean = false,
         foreignProfiles: Int = 1,
-        pro: ProStatus = FREE_ACCESS,
     ): SettingsUiState {
         val profiles = listOf(ownerRow(activeIsSelf)) + foreignRows(activeIsSelf, foreignProfiles)
         return SettingsUiState(
@@ -63,9 +53,8 @@ internal object SettingsScreenFixtures {
             snoozePickerVisible = snoozePickerVisible,
             permissions = PermissionsSummary(denied = denied, manual = manual),
             version = VERSION,
-            pro = pro,
-            // Тем же правилом, что `SettingsViewModel`: по числу строк и доступу (ПРФ-33, ПРФ-34).
-            profileCreation = ProfileCreationGate.decide(profiles.size, pro.included),
+            // Тем же правилом, что `SettingsViewModel`: по числу строк (ПРФ-32, ПРФ-34).
+            profileCreation = ProfileCreationGate.decide(profiles.size),
         )
     }
 

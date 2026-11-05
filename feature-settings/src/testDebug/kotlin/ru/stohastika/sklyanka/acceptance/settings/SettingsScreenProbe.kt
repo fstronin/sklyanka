@@ -124,22 +124,21 @@ internal object SettingsScreenProbe {
         medications = world.repositories.medicationStore,
         switchProfile = world.profileSession.switch,
         // Внешние ответы — одним узлом: состояние системы читается при каждом показе,
-        // версия взята из макета стенда, доступ — тем же сценарием мира (НФТ-52, SKL-153).
+        // версия взята из макета стенда (НФТ-52).
         environment = SettingsEnvironment(
             system = SettingsSystemStateReader(
                 reminders = world.reminders.settingsStore,
                 permissions = world.system,
             ),
             stamp = APP_STAMP,
-            proStatus = world.access.statusUseCase,
         ),
         // Оформление (SKL-120): стенд берёт те же швы, что и продукт; носитель выбора —
-        // в памяти, а правило выбора — доменное (`AppearanceGate`), как в приёмке.
+        // в памяти, а применяет и пишет выбор доменный сценарий.
         appearance = SettingsAppearance(
             observeTheme = ObserveAccentThemeUseCase(appearance),
             observeIcon = ObserveIconVariantUseCase(appearance),
-            setTheme = SetAccentThemeUseCase(appearance, world.access.statusUseCase),
-            setIcon = SetIconVariantUseCase(appearance, world.access.statusUseCase),
+            setTheme = SetAccentThemeUseCase(appearance),
+            setIcon = SetIconVariantUseCase(appearance),
         ),
     )
 

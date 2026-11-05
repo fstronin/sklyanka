@@ -26,18 +26,6 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        // Репозиторий вендора сохранён для биллингового контура «Склянки Про» (Р-37, Р-38,
-        // SKL-122); в первой публикации сетевого контура нет (Р-4). Репозиторий ограничен
-        // его группами, чтобы «случайная» библиотека не приехала отсюда молча.
-        maven {
-            url = uri("https://developer.huawei.com/repo/")
-            content {
-                includeGroup("com.huawei.hms")
-                includeGroup("com.huawei.agconnect")
-                includeGroup("com.huawei.android.hms")
-                includeGroup("com.huawei.hmf")
-            }
-        }
     }
 }
 
@@ -50,19 +38,9 @@ include(":feature-reminder")
 include(":feature-onboarding")
 include(":feature-history")
 include(":feature-settings")
-// Витрина «Склянки Про» (SKL-122): одна модальная поверхность покупки (Р-67).
-// Проект остаётся в сборке ради контура `pro` (Р-86, ADR-0016): free-вариант `app`
-// на него не ссылается, но `verifyAll` собирает модуль и его unit-тесты отдельно.
-include(":feature-pro")
 // Виджеты домашнего экрана: «Сегодня», неделя и по лекарству (SKL-118, Р-34).
-// Модуль объявляет провайдеров виджетов и экран настройки — точку гейта «Про» (Р-32).
+// Модуль объявляет провайдеров виджетов и экран настройки.
 include(":feature-widgets")
-// Платный контур: реализация порта магазина поверх AppGallery IAP (ADR-0010 п. 2).
-// Единственный сетевой контур сборки: объявляет `INTERNET` своим манифестом и
-// подключается только к `pro`-варианту `app` (Р-86, ADR-0016 п. 1), поэтому free-манифест
-// этой сети не получает; сам проект остаётся в сборке, чтобы его граф Hilt и unit-тесты
-// проверялись `verifyAll`.
-include(":billing-appgallery")
 include(":core-ui")
 include(":core-data")
 include(":core-domain")

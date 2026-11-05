@@ -11,7 +11,6 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import ru.stohastika.sklyanka.domain.pro.ObserveProStatusUseCase
 import ru.stohastika.sklyanka.domain.profile.CreateProfileOutcome
 import ru.stohastika.sklyanka.domain.profile.CreateProfileUseCase
 import ru.stohastika.sklyanka.domain.profile.ProfileCreationGate
@@ -27,14 +26,8 @@ import javax.inject.Inject
  * Форма профиля: мастер добавления и экран правки (SKL-121, §5.13–§5.14).
  *
  * Решение «можно ли завести профиль» считает домен ([ProfileCreationGate]) — по числу
- * **заведённых** профилей и доступу из кэша подписки, а не по подписке самой (ПРФ-33).
- * Форма лишь показывает исход словами и меткой и не ходит в магазин (Р-68 п. 7).
- *
- * Доступ читается снимком при открытии и перечитывается после закрытия витрины
- * ([refreshProAccess], образец формы лекарства SKL-117): покупка пишет кэш, и без
- * перечитывания то же нажатие снова открывало бы витрину вместо создания — человек
- * остался бы без набранного имени. Скрытого автопродолжения нет: создание завершает
- * та же кнопка (§5.13, Р-84 п. 2).
+ * **заведённых** профилей. Форма лишь показывает исход словами: предел пяти закрывает
+ * завершение, и это правило продукта, а не платная граница (ПРФ-32, ПРФ-34).
  *
  * Создание не делает новый профиль активным (ПРФ-18): активный профиль меняет только
  * осознанное переключение (ПРФ-19), и форма его не трогает.
@@ -46,8 +39,6 @@ class ProfileFormViewModel @Inject constructor(
     private val renameProfile: RenameProfileUseCase,
     private val setProfileColour: SetProfileColourUseCase,
     private val setMirrorReminders: SetMirrorRemindersUseCase,
-    /** Доступ «Про» по кэшу подписки: гейт читает его, а не магазин (Р-22, Р-68 п. 7). */
-    private val proStatus: ObserveProStatusUseCase,
 ) : ViewModel() {
 
     private val mutable = MutableStateFlow<ProfileFormUiState?>(null)
@@ -65,16 +56,6 @@ class ProfileFormViewModel @Inject constructor(
      */
     val closed: SharedFlow<Unit> = _closed.asSharedFlow()
 
-    private val _showcase = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
-
-    /**
-     * Сигнал «открыть витрину»: создание закрыто платной границей (ПРФ-33, Р-84 п. 2).
-     *
-     * Витрина — одна поверхность на все точки входа (Р-67): форма не рисует шторку сама,
-     * а просит `app` открыть её с [ru.stohastika.sklyanka.domain.pro.ProPoint.PROFILES].
-     */
-    val showcase: SharedFlow<Unit> = _showcase.asSharedFlow()
-
     /**
      * Открыть форму в названном режиме.
      *
@@ -84,19 +65,6 @@ class ProfileFormViewModel @Inject constructor(
     fun open(mode: ProfileFormMode) {
         mutable.value = null
         viewModelScope.launch { load(mode) }
-    }
-
-    /**
-     * Перечитать доступ «Про» после закрытия витрины (Р-84 п. 2).
-     *
-     * Форма держит снимок доступа с открытия, а покупка пишет кэш подписки: без
-     * перечитывания причина «больше двух профилей» не ушла бы, и создание не завершилось
-     * бы тем же нажатием. Состояние полей при этом не трогается — человек остаётся
-     * в той же форме с заполненным именем.
-     */
-    fun refreshProAccess() {
-        if (mutable.value == null) return
-        viewModelScope.launch { updateCreation() }
     }
 
     fun onIntent(intent: ProfileFormIntent) {
@@ -110,9 +78,8 @@ class ProfileFormViewModel @Inject constructor(
     }
 
     private suspend fun load(mode: ProfileFormMode) {
-        val included = proStatus().included
         val created = profiles.count()
-        val creation = ProfileCreationGate.decide(created, included)
+        val creation = ProfileCreationGate.decide(created)
         when (mode) {
             ProfileFormMode.Add -> {
                 mutable.value = ProfileFormUiState(
@@ -161,18 +128,11 @@ class ProfileFormViewModel @Inject constructor(
             ?: ProfilePalette.all.first().argb
     }
 
-    private suspend fun updateCreation() {
-        val current = mutable.value ?: return
-        val creation = ProfileCreationGate.decide(profiles.count(), proStatus().included)
-        mutable.value = current.copy(creation = creation)
-    }
-
     /**
      * Завершение формы.
      *
-     * Платная граница не создаёт профиль, а открывает витрину: кнопка остаётся нажимаемой,
-     * и причина над ней называет, что произойдёт (П-7, §5.10). Имя и предел сюда не
-     * доходят — кнопка в этих состояниях недоступна.
+     * Имя и предел не создают профиль: кнопка в этих состояниях недоступна, и причина
+     * над ней называет, чего не хватает (НФТ-29, §5.13).
      */
     private fun submit() {
         val current = mutable.value ?: return
@@ -180,7 +140,6 @@ class ProfileFormViewModel @Inject constructor(
             // Имя и предел ничего не делают: кнопка в этих состояниях недоступна, и попасть
             // сюда это не может (НФТ-29) — нажатие попросту не приходит.
             ProfileFormBlock.Name, ProfileFormBlock.Limit -> Unit
-            ProfileFormBlock.Pro -> _showcase.tryEmit(Unit)
             null -> write(current)
         }
     }

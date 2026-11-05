@@ -44,13 +44,6 @@ fun MedsSection(
     onOpenSettings: () -> Unit = {},
     initial: MedsDestination = MedsDestination.List,
     modifier: Modifier = Modifier,
-    /**
-     * Открыть витрину «Про» из формы лекарства (SKL-117, Р-67 п. 2).
-     *
-     * Поверхность покупки одна на все точки входа: раздел только передаёт сигнал формы
-     * в `app`, а шторку рисует он же.
-     */
-    onOpenPro: () -> Unit = {},
 ) {
     val stack = rememberMedsStack(initial)
     // Системная кнопка «Назад» обязана вести туда же, куда стрелка на экране: иначе
@@ -94,7 +87,6 @@ fun MedsSection(
                 medicationId = destination.medicationId,
                 onDone = { stack.pop() },
                 modifier = modifier,
-                onOpenPro = onOpenPro,
             )
 
             MedsDestination.NewMedication -> MedicationFormRoute(
@@ -102,7 +94,6 @@ fun MedsSection(
                 medicationId = null,
                 onDone = { if (!stack.pop()) onLeaveSection() },
                 modifier = modifier,
-                onOpenPro = onOpenPro,
             )
         }
     }

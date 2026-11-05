@@ -30,7 +30,6 @@ import ru.stohastika.sklyanka.ui.component.ScreenHeader
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderKind
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderLabels
 import ru.stohastika.sklyanka.ui.component.rememberScreenHeaderState
-import ru.stohastika.sklyanka.ui.pro.LocalProUiEnabled
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaSizes
 import ru.stohastika.sklyanka.ui.token.SklyankaSpacing
@@ -202,18 +201,6 @@ private fun SaveBar(state: MedFormUiState, onIntent: (MedFormIntent) -> Unit) {
     ) {
         if (!state.saveEnabled) {
             BlockHint(stringResource(R.string.form_save_blocked))
-        } else if (state.proReasonVisible && LocalProUiEnabled.current) {
-            // Причина недоступной кнопки и платная причина вместе не показываются: пока
-            // не заполнено название, кнопка недоступна и называет своё, а сложный вид ждёт
-            // следующего шага (§5.10). Нажатие открывает витрину вместо сохранения.
-            //
-            // В бесплатной сборке строки нет вовсе (Р-86): флаг платного интерфейса
-            // выключен, гейты состава пропускают всё, и сама причина остаётся кодом
-            // платного контура `pro`, а не достижимым состоянием free.
-            BlockHint(
-                text = stringResource(R.string.form_save_blocked_pro),
-                modifier = Modifier.testTag(TAG_SAVE_BLOCKED_PRO),
-            )
         }
         PrimaryButton(
             text = when (state.mode) {
@@ -247,6 +234,3 @@ private fun titleOf(state: MedFormUiState): String = when (val mode = state.mode
 
 const val TAG_MEDICATION_FORM = "medication_form"
 const val TAG_SAVE_BUTTON = "form_save"
-
-/** Причина закрытого создания сложного расписания над кнопкой (§5.10, ПР-20). */
-const val TAG_SAVE_BLOCKED_PRO = "form_save_blocked_pro"

@@ -1,13 +1,11 @@
 package ru.stohastika.sklyanka.feature.settings
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
-import ru.stohastika.sklyanka.domain.pro.ProPoint
 
 /**
  * Экран настроек вместе с его состоянием.
@@ -21,13 +19,6 @@ fun SettingsRoute(viewModel: SettingsViewModel, navigation: SettingsNavigation, 
     val state by viewModel.state.collectAsState()
     val uriHandler = LocalUriHandler.current
     val policyUrl = policyUrl(LocalContext.current)
-    // Сигнал «открыть витрину» из блока «Оформление» (SKL-120): нажатие платной строки
-    // диалога без доступа ведёт в покупку, а не меняет выбор (§5.17, Р-67 пп. 2–3).
-    // Шторку хостит `app` — поверхность покупки одна на все точки входа (Р-67), и второй
-    // её экземпляр в настройках был бы второй поверхностью.
-    LaunchedEffect(viewModel) {
-        viewModel.showcase.collect { point -> navigation.openPro(point) }
-    }
     SettingsScreen(
         state = state,
         onIntent = { intent ->
@@ -43,14 +34,11 @@ fun SettingsRoute(viewModel: SettingsViewModel, navigation: SettingsNavigation, 
                 SettingsIntent.OpenHistory -> navigation.openHistory()
                 SettingsIntent.OpenDataTransfer -> navigation.openDataTransfer()
                 // «Экспорт истории» открывает шторку выгрузки: файл формируется в
-                // `feature-history`, а показывает его `app` — поверх корня, как витрину.
+                // `feature-history`, а показывает его `app` — поверх корня.
                 SettingsIntent.OpenHistoryExport -> navigation.openHistoryExport()
                 // Политику открывает браузер системным действием: своего просмотрщика
                 // в приложении нет (ОВ-123).
                 SettingsIntent.OpenPolicy -> uriHandler.openUri(policyUrl)
-                // Строка блока «Склянка Про» ведёт в ту же шторку, что и точки выбора
-                // платных функций (Р-67 п. 6): поверхность покупки хостит `app`.
-                SettingsIntent.OpenPro -> navigation.openPro(ProPoint.SETTINGS)
                 SettingsIntent.OpenToday -> navigation.openToday()
                 SettingsIntent.OpenMedications -> navigation.openMedications()
                 else -> viewModel.onIntent(intent)
@@ -63,7 +51,7 @@ fun SettingsRoute(viewModel: SettingsViewModel, navigation: SettingsNavigation, 
 /**
  * Переходы экрана одним значением.
  *
- * Семь лямбд подряд в подписи маршрута путают местами на первом же вызове, а тип с именами
+ * Лямбды подряд в подписи маршрута путают местами на первом же вызове, а тип с именами
  * полей — нет. Значения по умолчанию ничего не делают: экран второго уровня, которого
  * в продукте ещё нет, не должен заставлять собирать заглушку на стороне вызывающего.
  */
@@ -110,19 +98,6 @@ data class SettingsNavigation(
      * `verifyModuleDependencies`).
      */
     val openHistoryExport: () -> Unit = {},
-    /**
-     * Витрина подписки: строка блока «Склянка Про» (SKL-122, Р-67 п. 6) и платный выбор
-     * в диалогах «Оформление» без доступа (SKL-120, §5.17).
-     *
-     * Точку-повод называет экран: `ProPoint.SETTINGS` у строки подписки,
-     * `ProPoint.ACCENT` у выбора темы и иконки, — и от неё зависит порядок состава
-     * на витрине (Р-75 п. 3).
-     *
-     * Шторку открывает тот, кто собирает маршруты, то есть `app`: поверхность покупки одна
-     * на все точки входа (Р-67), и второй её экземпляр в модуле настроек был бы второй
-     * поверхностью.
-     */
-    val openPro: (ProPoint) -> Unit = {},
     val openToday: () -> Unit = {},
     val openMedications: () -> Unit = {},
 )

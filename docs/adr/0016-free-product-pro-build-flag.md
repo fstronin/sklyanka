@@ -1,8 +1,8 @@
 # 0016 — Free product: paid code behind a build flag
 
-Status: Accepted. `free` is the only shipped build and no paid tier exists. The network part is
-governed by ADR-0018: the shipped build contains no network module and declares no network
-permission.
+Status: Superseded by ADR-0019. `free` is the only build, the paid code is deleted rather than kept
+behind a flag, and the product has no network module at all. This document records a decision that is
+no longer a rule of the product.
 
 ## Context
 

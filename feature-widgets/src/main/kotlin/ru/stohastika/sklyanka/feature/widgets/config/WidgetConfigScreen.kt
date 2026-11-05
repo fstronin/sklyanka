@@ -27,7 +27,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
-import ru.stohastika.sklyanka.domain.pro.ProPoint
 import ru.stohastika.sklyanka.feature.widgets.R
 import ru.stohastika.sklyanka.feature.widgets.glance.WidgetType
 import ru.stohastika.sklyanka.ui.component.ButtonState
@@ -36,11 +35,9 @@ import ru.stohastika.sklyanka.ui.component.ChevronGlyph
 import ru.stohastika.sklyanka.ui.component.ExpandedHeader
 import ru.stohastika.sklyanka.ui.component.ListPickerDialog
 import ru.stohastika.sklyanka.ui.component.PrimaryButton
-import ru.stohastika.sklyanka.ui.component.ProMark
 import ru.stohastika.sklyanka.ui.component.ScreenFrame
 import ru.stohastika.sklyanka.ui.component.ScreenHeaderLabels
 import ru.stohastika.sklyanka.ui.modifier.minTouchTarget
-import ru.stohastika.sklyanka.ui.pro.LocalProUiEnabled
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.SklyankaShapes
 import ru.stohastika.sklyanka.ui.token.SklyankaSizes
@@ -51,30 +48,24 @@ import ru.stohastika.sklyanka.ui.token.SklyankaType
 public const val TAG_WIDGET_CONFIG: String = "widget_config"
 public const val TAG_WIDGET_TYPE_ROW: String = "widget_type_row"
 public const val TAG_WIDGET_MEDICATION_ROW: String = "widget_medication_row"
-public const val TAG_WIDGET_PRO_REQUIRED: String = "widget_pro_required"
 public const val TAG_WIDGET_ADD: String = "widget_add"
 
 /**
- * Экран настройки виджета (`docs/norm/06-design.md` §5.12, Р-32).
+ * Экран настройки виджета (`docs/norm/06-design.md` §5.12).
  *
  * Экран открывается с домашнего экрана прошивки, и выхода у него два: системный «Назад»
  * (он же отмена установки — виджет не появляется) и завершение. Шеврона возврата и слова
  * «Отмена» у экрана нет: возвращаться внутри приложения некуда (Р-54).
  *
- * **В бесплатном продукте оплаты нет (Р-86).** Гейт состава проходит, и завершение доступно
- * сразу после выбора; метки «Про» не рисуются (`ProMark`), а слова причины не появляются
- * вместе с платным контуром (`LocalProUiEnabled`). В `pro`-варианте причина стоит словами
- * **над** кнопкой, а кнопка остаётся «Добавить виджет» и не приглушается: недоступное
- * действие говорит «нельзя», а правда — «можно, по подписке» (П-7). Нажатие открывает
- * витрину вместо завершения; вернувшись с покупкой, тот же экран завершает установку —
- * перезапуска и второго входа не требуется.
+ * Завершение доступно сразу после законченного выбора: кнопка «Добавить виджет» гаснет,
+ * пока обязательный выбор не сделан (у типа «по лекарству» — лекарство), и никогда
+ * не прячется.
  *
  * **Раскладка — две части, а не наложение** (§4.1): прокручиваемое содержимое с весом
  * и панель действия соседом снизу, в потоке. Панель обязана идти после содержимого:
  * при крупном шрифте содержимое растёт, и наложенная панель перекрыла бы рубрику и карточку.
  *
  * @param onComplete завершение установки (запись привязки и `RESULT_OK`).
- * @param onOpenPro открыть витрину с пунктом-поводом [ProPoint.WIDGETS].
  */
 @Composable
 fun WidgetConfigScreen(
@@ -82,7 +73,6 @@ fun WidgetConfigScreen(
     onSelectType: (WidgetType) -> Unit,
     onSelectMedication: (String) -> Unit,
     onComplete: () -> Unit,
-    onOpenPro: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var pickerOpen by remember { mutableStateOf(false) }
@@ -125,7 +115,7 @@ fun WidgetConfigScreen(
                     }
                 }
             }
-            ActionPanel(state = state, onComplete = onComplete, onOpenPro = onOpenPro)
+            ActionPanel(state = state, onComplete = onComplete)
         }
     }
     if (pickerOpen) {
@@ -159,7 +149,7 @@ private fun GroupCard(content: @Composable () -> Unit) {
     }
 }
 
-/** Карточка типов: три строки, у каждой метка «Про» в платном контуре, выбранная — акцентом и галочкой (§5.12). */
+/** Карточка типов: три строки, выбранная — акцентом и галочкой (§5.12). */
 @Composable
 private fun TypeCard(selected: WidgetType, onSelect: (WidgetType) -> Unit) {
     GroupCard {
@@ -189,7 +179,6 @@ private fun TypeRow(type: WidgetType, isSelected: Boolean, onSelect: () -> Unit)
             style = if (isSelected) SklyankaType.BodyDefaultStrong else SklyankaType.BodyDefault,
             color = if (isSelected) colors.accent else colors.text,
         )
-        ProMark(modifier = Modifier.padding(start = SklyankaSpacing.Small))
         Box(modifier = Modifier.weight(1f))
         if (isSelected) CheckGlyph(color = colors.accent)
     }
@@ -266,19 +255,13 @@ private fun MedicationPicker(state: WidgetConfigState, onSelect: (String) -> Uni
 }
 
 /**
- * Панель действия: слова причины и кнопка завершения (§5.12).
+ * Панель действия: кнопка завершения (§5.12).
  *
  * Идёт в потоке под прокруткой и содержимого не перекрывает (§4.1): при крупном шрифте
  * содержимое растёт, и наложение отняло бы у человека рубрику и карточку.
  */
 @Composable
-private fun ActionPanel(state: WidgetConfigState, onComplete: () -> Unit, onOpenPro: () -> Unit) {
-    val colors = SklyankaTheme.colors
-    val proUiEnabled = LocalProUiEnabled.current
-    // В бесплатном контуре оплаты нет (Р-86): доступ гарантирован, и ветка витрины не должна
-    // наступить даже в первый кадр, пока кэш ещё не прочитан, — иначе кнопка вела бы в никуда
-    // (П-7). Пока доступ не прочитан, кнопка просто недоступна, как при незаконченном выборе.
-    val access = state.proIncluded || !proUiEnabled
+private fun ActionPanel(state: WidgetConfigState, onComplete: () -> Unit) {
     Column(
         // Поля панели действия — §4.1: верх `Large` 14, бока `Section` 20, низ `Screen` 24.
         modifier = Modifier
@@ -291,20 +274,11 @@ private fun ActionPanel(state: WidgetConfigState, onComplete: () -> Unit, onOpen
             ),
         verticalArrangement = Arrangement.spacedBy(SklyankaSpacing.Small),
     ) {
-        if (proUiEnabled && !state.proIncluded) {
-            Text(
-                text = stringResource(R.string.widget_pro_required),
-                style = SklyankaType.BodyDefault,
-                color = colors.textMuted,
-                modifier = Modifier.testTag(TAG_WIDGET_PRO_REQUIRED),
-            )
-        }
         PrimaryButton(
             text = stringResource(R.string.widget_action_add),
-            onClick = if (access) onComplete else onOpenPro,
-            // Причина платная и от выбора не зависит: без завершённого выбора кнопка
-            // недоступна, а в платном контуре без подписки — ведёт в витрину (§5.12).
-            state = if (access && !state.printable) ButtonState.Disabled else ButtonState.Normal,
+            onClick = onComplete,
+            // Пока выбор не закончен, кнопка недоступна — правило установки, а не места (§5.12).
+            state = if (state.printable) ButtonState.Normal else ButtonState.Disabled,
             modifier = Modifier.fillMaxWidth().testTag(TAG_WIDGET_ADD),
         )
     }

@@ -9,15 +9,14 @@ import ru.stohastika.sklyanka.domain.appearance.ObserveAccentThemeUseCase
 import ru.stohastika.sklyanka.domain.appearance.ObserveIconVariantUseCase
 import ru.stohastika.sklyanka.domain.appearance.SetAccentThemeUseCase
 import ru.stohastika.sklyanka.domain.appearance.SetIconVariantUseCase
-import ru.stohastika.sklyanka.domain.pro.ObserveProStatusUseCase
 import javax.inject.Singleton
 
 /**
  * Сборка оформления: акцентная тема и вариант иконки (§2.5, §2.4, SKL-120).
  *
- * Домен о Hilt не знает (НФТ-46), поэтому чтение и запись выбора собираются здесь —
- * тем же приёмом, что платный контур в [ProModule]. Носитель выбора приезжает портом
- * [AppearancePreferences] из `core-data`; где именно он лежит, домен не знает.
+ * Домен о Hilt не знает (НФТ-46), поэтому чтение и запись выбора собираются здесь.
+ * Носитель выбора приезжает портом [AppearancePreferences] из `core-data`; где именно
+ * он лежит, домен не знает.
  *
  * Синглтоны намеренны: и чтение, и запись ходят в один и тот же файл постоянных настроек,
  * и второй экземпляр шва разошёлся бы с первым на первой же правке выбора.
@@ -36,23 +35,13 @@ object AppearanceModule {
     fun provideObserveIconVariant(preferences: AppearancePreferences): ObserveIconVariantUseCase =
         ObserveIconVariantUseCase(preferences)
 
-    /**
-     * Выбор темы — через тот же гейт, что и в настройках (§5.17, Р-22).
-     *
-     * Доступ берётся у [ObserveProStatusUseCase]: он читает кэш последнего ответа магазина
-     * и в сеть не ходит (П-6).
-     */
     @Provides
     @Singleton
-    fun provideSetAccentTheme(
-        preferences: AppearancePreferences,
-        proStatus: ObserveProStatusUseCase,
-    ): SetAccentThemeUseCase = SetAccentThemeUseCase(preferences = preferences, proStatus = proStatus)
+    fun provideSetAccentTheme(preferences: AppearancePreferences): SetAccentThemeUseCase =
+        SetAccentThemeUseCase(preferences)
 
     @Provides
     @Singleton
-    fun provideSetIconVariant(
-        preferences: AppearancePreferences,
-        proStatus: ObserveProStatusUseCase,
-    ): SetIconVariantUseCase = SetIconVariantUseCase(preferences = preferences, proStatus = proStatus)
+    fun provideSetIconVariant(preferences: AppearancePreferences): SetIconVariantUseCase =
+        SetIconVariantUseCase(preferences)
 }

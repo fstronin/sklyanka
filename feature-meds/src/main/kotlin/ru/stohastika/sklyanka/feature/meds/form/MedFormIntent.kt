@@ -45,7 +45,7 @@ sealed interface MedFormIntent {
     /** Выбор вида расписания в строке вида (§5.10, ПР-15). */
     data class ScheduleKindChanged(val kind: ScheduleKind) : MedFormIntent
 
-    /** День недели: выбор множественный, второй день и дальше — «Про» (ПР-16, Р-17, Р-24). */
+    /** День недели: выбор множественный (ПР-16, ПР-17). */
     data class WeekdayToggled(val day: DayOfWeek) : MedFormIntent
 
     /** «Интервал, дней» (ПР-17): значение приходит текстом, как и остальные числа. */

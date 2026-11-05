@@ -10,7 +10,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import ru.stohastika.sklyanka.domain.medication.MedicationListOrder
 import ru.stohastika.sklyanka.domain.model.Medication
-import ru.stohastika.sklyanka.domain.pro.ObserveProStatusUseCase
 import ru.stohastika.sklyanka.domain.profile.ProfileContextProvider
 import ru.stohastika.sklyanka.domain.repository.MedicationRepository
 import ru.stohastika.sklyanka.domain.time.TimeSource
@@ -25,22 +24,17 @@ import javax.inject.Inject
  *
  * @param medications лекарства **активного** профиля в порядке списка лекарств: у экземпляра
  *   виджета профиль не выбирается (ПР-24), а второго порядка лекарств продукт не заводит.
- * @param printable можно ли завершить установку: подписка действует и выбор закончен.
- *   Без подписки запрет не выражается этим признаком — кнопка остаётся нажимаемой и ведёт
- *   в витрину (П-7, §5.12).
  */
 data class WidgetConfigState(
     val type: WidgetType = WidgetType.TODAY,
     val medications: List<Medication> = emptyList(),
     val selectedMedicationId: String? = null,
-    val proIncluded: Boolean = false,
     val profile: ProfileChromeState = ProfileChromeState.Owner,
 ) {
 
-    /** Кнопка завершения доступна: правило установки, а не условие места (Р-32, §5.12). */
+    /** Кнопка завершения доступна: правило установки, а не условие места (§5.12). */
     val printable: Boolean
         get() = WidgetSetupGate.canComplete(
-            proIncluded = proIncluded,
             medicationRequired = type == WidgetType.MEDICATION,
             medicationChosen = selectedMedicationId != null,
         )
@@ -53,24 +47,19 @@ data class WidgetConfigState(
 }
 
 /**
- * Экран настройки виджета: выбор типа, лекарства и точка гейта «Про» (Р-32, ПР-23).
+ * Экран настройки виджета: выбор типа и лекарства (§5.12).
  *
  * Порядок лекарств — тот же, что в списке лекарств ([MedicationListOrder]): второго порядка
  * продукт не заводит, а архивные курсы в выбор не входят — плита показывает приёмы
  * действующего курса (§5.12).
  *
- * Доступ читается из кэша подписки ([ObserveProStatusUseCase], SKL-122): срока давности
- * у записи нет, и отказ проверки доступа его не отнимает (П-6). В бесплатном продукте кэш
- * отвечает «активна» (Р-86), поэтому гейт проходит и установка не продаётся. В платном
- * контуре после покупки из шторки экран перечитывает доступ и завершает установку без
- * второго жеста — поэтому состояние подписки собирается потоком, а не читается один раз
- * при открытии.
+ * Установка завершается только законченным выбором: у типа «по лекарству» лекарство
+ * обязательно ([WidgetSetupGate]).
  */
 @HiltViewModel
 class WidgetConfigViewModel @Inject constructor(
     private val medications: MedicationRepository,
     private val profiles: ProfileContextProvider,
-    private val proStatus: ObserveProStatusUseCase,
     private val bindings: WidgetBindingStore,
     private val time: TimeSource,
 ) : ViewModel() {
@@ -94,14 +83,6 @@ class WidgetConfigViewModel @Inject constructor(
                     ),
                 )
             }
-            refreshAccess()
-        }
-    }
-
-    /** Перечитать доступ: экран возвращается из витрины, и подписка могла появиться (§5.12). */
-    fun refreshAccess() {
-        viewModelScope.launch {
-            mutable.value = mutable.value.copy(proIncluded = proStatus().included)
         }
     }
 
@@ -116,8 +97,8 @@ class WidgetConfigViewModel @Inject constructor(
     /**
      * Завершить установку: запомнить привязку и разрешить платформе добавить плиту.
      *
-     * @return `false`, если завершать нечего: подписки нет или лекарство не выбрано.
-     *   Отмена в этих случаях — не заглушка, а исход: виджет не появляется (Р-32).
+     * @return `false`, если завершать нечего: лекарство не выбрано.
+     *   Отмена в этом случае — не заглушка, а исход: виджет не появляется (§5.12).
      */
     suspend fun complete(widgetId: Int): Boolean {
         val current = mutable.value

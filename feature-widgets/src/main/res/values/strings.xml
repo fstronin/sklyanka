@@ -41,5 +41,4 @@
     <string name="widget_medication_none">Не выбрано</string>
     <string name="widget_medication_empty">У профиля пока нет лекарств</string>
     <string name="widget_action_add">Добавить виджет</string>
-    <string name="widget_pro_required">Виджеты — в подписке «Склянка Про»</string>
 </resources>

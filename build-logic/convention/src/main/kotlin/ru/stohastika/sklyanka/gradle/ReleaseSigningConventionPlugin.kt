@@ -1,7 +1,6 @@
 package ru.stohastika.sklyanka.gradle
 
 import com.android.build.api.dsl.ApplicationExtension
-import com.android.build.api.variant.ApplicationAndroidComponentsExtension
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.configure
@@ -9,15 +8,13 @@ import org.gradle.kotlin.dsl.configure
 /**
  * Варианты сборки и подпись (TDD §4.3).
  *
- * Измерение `contour` (Р-86, ADR-0016) удваивает имена: `freeDebug`/`proDebug`,
- * `freeRelease`/`proRelease`, `freeWatchTest`/`proWatchTest`.
+ * Измерение `contour` (Р-86, ADR-0016) оставляет одно значение и удваивает имена:
+ * `freeDebug`, `freeRelease`, `freeWatchTest`.
  *
- * freeDebug / proDebug     — отладочный ключ; на часы ничего не отправит (ЧАС-9);
- * freeRelease              — релизный ключ; единственная поставляемая сборка;
- * proRelease / proWatchTest — выключены: подписанного артефакта у `pro` нет вовсе,
- *                            вариант живёт отладочной сборкой и unit-тестами;
- * freeWatchTest            — релизная подпись при возможности отладки: именно этот
- *                            вариант идёт на испытания карточки Wear Engine (SKL-03, SKL-16).
+ * freeDebug     — отладочный ключ; на часы ничего не отправит (ЧАС-9);
+ * freeRelease   — релизный ключ; единственная поставляемая сборка;
+ * freeWatchTest — релизная подпись при возможности отладки: именно этот вариант идёт
+ *                 на испытания карточки Wear Engine (SKL-03, SKL-16).
  *
  * Без секретов релизный артефакт остаётся неподписанным: так его собирает F-Droid
  * и так его может собрать контрибьютор без хранилища ключей. Отладочный ключ
@@ -73,11 +70,6 @@ class ReleaseSigningConventionPlugin : Plugin<Project> {
             }
         }
 
-        // `pro` не поставляется: подписанного релизного артефакта у него нет вовсе
-        // (Р-86, ADR-0016 п. 2). Компиляция и unit-тесты идут отладочным вариантом;
-        // freeRelease остаётся единственной подписываемой сборкой.
-        disableProReleaseVariants()
-
         if (secrets == null) {
             // An unsigned release artifact is a legitimate outcome: F-Droid builds from
             // source and signs with its own key, and a contributor without the release
@@ -91,31 +83,9 @@ class ReleaseSigningConventionPlugin : Plugin<Project> {
         }
     }
 
-    /**
-     * Выключить релизные варианты контура `pro`.
-     *
-     * Селектор назван измерением и значением, а не порядком: конвенция применяется только
-     * к `app`, где эти имена объявлены (Р-86, ADR-0016). `proWatchTest` выключен по той же
-     * причине — он тоже несёт релизную подпись.
-     */
-    private fun Project.disableProReleaseVariants() {
-        extensions.configure<ApplicationAndroidComponentsExtension> {
-            beforeVariants(selector().withFlavor(CONTOUR_DIMENSION, PRO_FLAVOR).withBuildType(RELEASE)) {
-                it.enable = false
-            }
-            beforeVariants(selector().withFlavor(CONTOUR_DIMENSION, PRO_FLAVOR).withBuildType(WATCH_TEST)) {
-                it.enable = false
-            }
-        }
-    }
-
     private companion object {
         const val DEBUG = "debug"
         const val RELEASE = "release"
         const val WATCH_TEST = "watchTest"
-
-        /** Измерение контура и непоставляемый вариант (Р-86, ADR-0016 п. 2). */
-        const val CONTOUR_DIMENSION = "contour"
-        const val PRO_FLAVOR = "pro"
     }
 }

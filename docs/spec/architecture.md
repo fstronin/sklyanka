@@ -1,6 +1,6 @@
 # Sklyanka: Architecture Specification
 
-The stack, the fourteen Gradle modules and their allowed dependencies, the build checks that hold
+The stack, the twelve Gradle modules and their allowed dependencies, the build checks that hold
 the module and artifact rules, the path of an intake from schedule to report, and the boundaries
 enforced by the build.
 
@@ -21,32 +21,32 @@ depend on platform APIs directly.
 and `targetSdk` 35, application ID `ru.stohastika.sklyanka`, and interface locales with Russian as
 default.
 
-There is no Google Play Services, Firebase, server, account, synchronization, advertising or client analytics; the shipped `free` build contains no network module and declares no network permission. The paid contour of §5 is the only network module and is not shipped.
+There is no Google Play Services, Firebase, server, account, synchronization, advertising or client
+analytics, and the product contains no network module at all: the app declares no network permission
+(§5).
 
 ## 2. Module map
 
-Fourteen Gradle modules exist; `build-logic` and `config/detekt/rules` are included builds. Below,
+Twelve Gradle modules exist; `build-logic` and `config/detekt/rules` are included builds. Below,
 `screen` = `core-domain`, `core-ui`, `core-data`; `view` = `core-domain`, `core-ui`.
 
 | Module | Type | Responsibility | Allowed dependencies |
 |---|---|---|---|
-| `:app` | application | Hilt graph, navigation, manifest, receivers, channels, alarm scheduler, platform adapters | `core-domain`, `core-ui`, `core-data`, all `feature-*` except `feature-pro`; `pro` adds `feature-pro`, `billing-appgallery`; `testDebug` adds `acceptance` |
+| `:app` | application | Hilt graph, navigation, manifest, receivers, channels, alarm scheduler, platform adapters | `core-domain`, `core-ui`, `core-data`, all `feature-*`; `testDebug` adds `acceptance` |
 | `:core-domain` | Kotlin/JVM | Entities, statuses, invariants, schedule expansion, windows, use cases, adherence and report model, repository interfaces, ports | none |
 | `:core-data` | Android lib | Room entities, DAOs, migrations and schemas, repositories, mappers, DataStore stores, journals, transfer file | `core-domain` |
 | `:core-ui` | Android lib | Tokens, typography, theme, base components, shared strings, locale, previews | `core-domain` |
-| `:billing-appgallery` | Android lib | Paid contour: `ProStore` over AppGallery IAP and its permission | `core-domain` |
 | `:feature-today` | Android lib | Today: intake lanes, as-needed section, marking with undo, remainder of the day | screen |
 | `:feature-meds` | Android lib | Medication list, form, card, course archive | screen |
 | `:feature-reminder` | Android lib | Reminder card and actions, deferral, diagnostics, delivery self-check | view |
-| `:feature-onboarding` | Android lib | Reliability onboarding, permissions, privacy policy | view |
 | `:feature-history` | Android lib | History, adherence month, breakdown, report for the doctor, PDF, CSV export | screen |
 | `:feature-settings` | Android lib | Settings, accent theme, profiles, data transfer | screen |
-| `:feature-pro` | Android lib | The single Pro showcase surface | view |
+| `:feature-onboarding` | Android lib | Reliability onboarding, permissions, privacy policy | view |
 | `:feature-widgets` | Android lib | Today, week and medication widgets, providers, marking receiver, settings | view |
 | `:acceptance` | Kotlin/JVM | Shared scenario world, Gherkin step dictionary, run harness | `core-domain` (API) |
 
-`feature-pro` and `billing-appgallery` enter the `pro` variant only; `free` contains neither in its
-dependency graph nor in its merged manifest.
+The module set is closed: there is no paid module, no store client and no network module, so no
+artifact carries a network dependency or a network permission.
 
 ## 3. Dependency rules
 
@@ -57,8 +57,8 @@ Dependencies point inward: `app -> feature-* -> core-ui / core-data -> core-doma
 - `core-ui` and `core-data` depend on `core-domain` only.
 - Nothing depends on `:app`; `:acceptance` is a test dependency only.
 - Platform mechanisms are interfaces in `core-domain`, implemented outside it: alarms,
-  notifications, file system, clock and zone, store, report transfer,
-  journals. Hilt is not applied to `core-domain`.
+  notifications, file system, clock and zone, report transfer, journals. Hilt is not applied to
+  `core-domain`.
 
 `verifyModuleDependencies` fails on any outward edge, and `verifyModuleDependencyRule` proves the
 same logic on synthetic violating graphs.
@@ -84,33 +84,30 @@ Seven rules live in the included build `config/detekt/rules`:
 `tools/violations/kotlin` and requires every rule to fire. The JVM screen stand runs Robolectric at
 API 35 with qualifiers `ru-rRU-w390dp-h844dp-mdpi` in `app`, `core-ui` and every feature module.
 
-`verifyAll` builds all modules, compiles instrumented tests, runs both `app` unit-test variants, the
-module, rule and contour checks, the rule tests and the acceptance run.
+`verifyAll` builds all modules, compiles instrumented tests, runs the `app` unit tests, the module,
+rule and artifact composition checks, the rule tests and the acceptance run.
 
-## 5. Variants and network contours
+## 5. Variants and network
 
-`app` has one flavor dimension, `contour`. `free` is the default and the only shipped build. `pro`
-keeps paid code compiling and unit-tested; it is neither signed nor shipped.
+`app` has one flavor dimension, `contour`, with a single flavor, `free`. The flavor is kept for its
+name only: `assembleFreeDebug` and `assembleFreeRelease` are part of the release pipeline and of the
+F-Droid build, so the variant names stay stable. There is no second variant, no paid build and no
+product flavor that differs in code.
 
-A network contour is data in `build-logic`: a module, its permissions and the coordinates it needs.
-There is one, the paid contour, and it exists only in the `pro` variant.
+There is no network contour and no contour mechanism. The product ships no network module, so the
+composition check does not grant a permission to a module; it forbids the permission outright.
+`ArtifactCompositionCatalog` holds the lists, `ArtifactCompositionRules` holds the logic as pure
+functions, and the manifest and dependency tasks read both:
 
-| Contour | Module | Permissions | Required coordinate | Variants |
-|---|---|---|---|---|
-| Paid | `:billing-appgallery` | `INTERNET` | `com.huawei.hms:iap` | `pro` |
+| Check | Rule |
+|---|---|
+| `verifyManifest<Variant>` → `ArtifactCompositionRules.validateManifest` | `INTERNET` and `ACCESS_NETWORK_STATE` fail in the merged manifest and in any source manifest of any module; a `tools:node="remove"` node does not count as a declaration, which is how `app` strips the network-state permission that `androidx.work` merges in. `ACCESS_WIFI_STATE` and `com.google.android.gms.permission.AD_ID` fail always. The package name and `minSdk 26` are checked in the same task |
+| `verifyDependencies<Variant>` → `ArtifactCompositionRules.validateDependencies` | `com.google.android.gms`, `com.google.firebase`, `com.google.android.play`, `com.crashlytics`, `io.fabric` and `com.google.mlkit` fail in the resolved runtime classpath and in the version catalog, so a coordinate cannot wait in `libs.versions.toml` for its first use |
+| `verifyArtifactCompositionRule` | the logic above must fire on deliberate violations, otherwise "the rule holds" is indistinguishable from "the rule is silent" |
 
-Merged manifests are checked per variant. A contour permission is legal only when the contour is in
-the artifact and the declaring manifest belongs to it, and a contour in the artifact must declare
-its permission. `free` carries no contour, so its merged manifest declares no network permission at
-all: `INTERNET` and `ACCESS_NETWORK_STATE` are absent. `ACCESS_NETWORK_STATE`, `ACCESS_WIFI_STATE`
-and `com.google.android.gms.permission.AD_ID` are forbidden always.
-
-The resolved runtime classpath is checked too: `com.google.android.gms`, `com.google.firebase`,
-`com.google.android.play`, `com.crashlytics`, `io.fabric`, `com.google.mlkit` and
-`com.my.tracker` never appear, and the guarded group `com.huawei` must match an explicit white list.
-
-Network code exists only in the paid contour module, which is not shipped. No variant carries a
-client analytics SDK, and `free` has no network path at all.
+The rules are part of `assemble<Variant>`; the debug variant is also part of `check`. Nothing in the
+repository needs a network: the merged manifest declares no network permission, no module manifest
+declares one, and no forbidden group reaches an artifact.
 
 ## 6. Data flow
 
@@ -211,8 +208,7 @@ transaction, and identifiers are reissued inside it.
 
 ### 7.4 Offline first, no Google services
 
-No Google Play Services, Firebase, advertising SDK or client analytics SDK may appear on any
-variant's runtime classpath. `free` carries no network contour: its manifest declares no network
-permission and the variant has no network path. The paid contour is the only network module and is
-not shipped. Schedule, reminders, marks, history, stock, transfer, profiles and the report work with
-no network. Nothing leaves the device.
+No Google Play Services, Firebase, advertising SDK or client analytics SDK may appear on the runtime
+classpath. The app has no network module: its merged manifest declares no network permission and no
+code path opens a connection. Schedule, reminders, marks, history, stock, transfer, profiles and the
+report work with no network. Nothing leaves the device.

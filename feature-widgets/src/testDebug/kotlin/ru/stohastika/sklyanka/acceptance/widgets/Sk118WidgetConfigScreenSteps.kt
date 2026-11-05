@@ -4,8 +4,6 @@ import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
-import androidx.compose.ui.test.assertCountEquals
-import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -18,11 +16,9 @@ import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
 import ru.stohastika.sklyanka.acceptance.world.ScenarioWidgets
 import ru.stohastika.sklyanka.feature.widgets.R
 import ru.stohastika.sklyanka.feature.widgets.config.TAG_WIDGET_MEDICATION_ROW
-import ru.stohastika.sklyanka.feature.widgets.config.TAG_WIDGET_PRO_REQUIRED
 import ru.stohastika.sklyanka.feature.widgets.config.WidgetConfigScreen
 import ru.stohastika.sklyanka.feature.widgets.config.WidgetConfigState
 import ru.stohastika.sklyanka.feature.widgets.glance.WidgetType
-import ru.stohastika.sklyanka.ui.component.TAG_PRO_MARK
 import ru.stohastika.sklyanka.ui.locale.withInterfaceLocale
 import ru.stohastika.sklyanka.ui.profile.ProfileChrome
 import ru.stohastika.sklyanka.ui.profile.ProfileChromeState
@@ -35,17 +31,17 @@ import java.util.Locale
  * Шаги живут в `feature-widgets`, потому что говорят об одной поверхности этого модуля
  * (`SKL-26/TDD.md §4.3`): экран собирается из компонентов `core-ui`, а состояние приходит
  * в него целиком, а не пересчитывается здесь. Состояние набирают глобальные шаги сценария
- * (лекарства профилей), а этот класс проверяет то, что видит человек: слова, отсутствие
- * меток «Про» и состав выбора лекарства.
+ * (лекарства профилей), а этот класс проверяет то, что видит человек: слова экрана
+ * и состав выбора лекарства.
  *
  * **Почему экран собирается на каждую проверку.** Сессия Compose живёт внутри блока
  * `runComposeUiTest`, а шаги Gherkin — отдельные вызовы: держать блок открытым между ними
  * нечем. Поэтому состояние копится в полях, а экран собирается заново в том шаге,
  * который его спрашивает.
  *
- * **Почему доступ к установке не проверяется словами причины.** В бесплатном продукте
- * оплаты нет (Р-86): гейт проходит, и слов о подписке экран не рисует. Платная копия
- * и витрина остаются кодом `pro`-контура и этой приёмкой не проверяются.
+ * **Почему завершение не проверяется нажатием.** Правило установки живёт в домене
+ * ([ru.stohastika.sklyanka.domain.widget.WidgetSetupGate]) и проверяется его тестом;
+ * стенд экрана держит то, что видно человеку.
  *
  * Русский текст в аннотациях — ключевые слова Gherkin, а не текст интерфейса; тексты
  * интерфейса берутся из ресурсов модуля с закреплённым языком (НФТ-43).
@@ -63,11 +59,6 @@ class Sk118WidgetConfigScreenSteps(private val world: AcceptanceWorld) {
         WidgetType.entries.forEach { onNodeWithText(string(it.label)).assertExists() }
     }
 
-    @И("у типов нет метки «Про»")
-    fun theTypesCarryNoProMark() = onScreen {
-        onAllNodesWithTag(TAG_PRO_MARK).assertCountEquals(0)
-    }
-
     @И("сказано, что виджет показывает приёмы активного профиля")
     fun theHintIsShown() = onScreen {
         onNodeWithText(string(R.string.widget_setup_hint)).assertExists()
@@ -76,12 +67,6 @@ class Sk118WidgetConfigScreenSteps(private val world: AcceptanceWorld) {
     @И("завершение названо словами «Добавить виджет»")
     fun theCompletionIsNamed() = onScreen {
         onNodeWithText(string(R.string.widget_action_add)).assertExists()
-    }
-
-    @И("о подписке экран не говорит")
-    fun theScreenSaysNothingAboutSubscription() = onScreen {
-        onNodeWithTag(TAG_WIDGET_PRO_REQUIRED).assertDoesNotExist()
-        onNodeWithText(string(R.string.widget_pro_required)).assertDoesNotExist()
     }
 
     @Тогда("^в выборе лекарства есть «([^»]+)»$")
@@ -117,7 +102,6 @@ class Sk118WidgetConfigScreenSteps(private val world: AcceptanceWorld) {
                     onSelectType = { world.widgets.type = scenarioType(it) },
                     onSelectMedication = { },
                     onComplete = { },
-                    onOpenPro = { },
                 )
             }
         }
@@ -130,8 +114,6 @@ class Sk118WidgetConfigScreenSteps(private val world: AcceptanceWorld) {
             type = type,
             medications = world.medications.all().filter { it.profileId == active.id },
             selectedMedicationId = null,
-            // Бесплатный продукт: доступ есть всегда (Р-86), его даёт мир свободной сборки.
-            proIncluded = world.access.status().included,
             profile = ProfileChromeState.of(active.name, active.color, active.isSelf),
         )
     }

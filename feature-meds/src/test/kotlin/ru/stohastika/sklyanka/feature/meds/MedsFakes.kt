@@ -23,8 +23,6 @@ import ru.stohastika.sklyanka.domain.model.MedicationForm
 import ru.stohastika.sklyanka.domain.model.Profile
 import ru.stohastika.sklyanka.domain.model.ScheduleMode
 import ru.stohastika.sklyanka.domain.model.TabletShape
-import ru.stohastika.sklyanka.domain.pro.ProSubscription
-import ru.stohastika.sklyanka.domain.pro.ProSubscriptionCache
 import ru.stohastika.sklyanka.domain.repository.ActiveProfileRepository
 import ru.stohastika.sklyanka.domain.repository.IntakeRepository
 import ru.stohastika.sklyanka.domain.repository.MedicationRepository
@@ -340,24 +338,4 @@ internal class RecordingLog : OperationLog {
     override suspend fun lastOccurredAt(event: OpEvent): Instant? = records.lastOrNull { it.event == event }?.at
 
     override suspend fun prune(keepDays: Long, keepRecords: Int) = Unit
-}
-
-/**
- * Кэш подписки в памяти: доступ «Про» для гейта формы (Р-22, Р-28).
- *
- * Пустое значение — «подписки нет», как у первого запуска; [grant] выдаёт действующий доступ
- * до названной даты.
- */
-internal class FakeProCache(private var subscription: ProSubscription = ProSubscription.None) : ProSubscriptionCache {
-
-    override suspend fun read(): ProSubscription = subscription
-
-    override suspend fun write(subscription: ProSubscription) {
-        this.subscription = subscription
-    }
-
-    /** Действующий доступ до даты включительно. */
-    fun grant(until: LocalDate) {
-        subscription = ProSubscription.Active(productId = null, until = until)
-    }
 }

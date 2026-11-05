@@ -27,9 +27,8 @@ import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
  * Стенд шторки выгрузки истории — настоящий `ExportHistoryViewModel` на мире сценария (SKL-119).
  *
  * Правил в стенде нет: таблицу выгрузки собирает `BuildHistoryCsvTableUseCase`, слова файла —
- * настоящий `HistoryCsvComposer`, доступ читает `ObserveProStatusUseCase` поверх кэша подписки
- * мира, а запись идёт файловым портом мира. Стенд собирает композицию шторки и передаёт
- * намерения — и только это.
+ * настоящий `HistoryCsvComposer`, а запись идёт файловым портом мира. Стенд собирает композицию
+ * шторки и передаёт намерения — и только это.
  *
  * Шторку стенд собирает **саму**, а не её маршрут: системные диалоги (выбор места и обмен)
  * умеет получить только `composable` в активности, и в прогоне им места нет — как и у стендов
@@ -48,7 +47,7 @@ internal object ExportStand {
 
     fun state(world: AcceptanceWorld): ExportHistoryUiState = model(world).state.value
 
-    /** Нажатие строки «Экспорт истории»: в поставляемой сборке всегда открывает шторку (Р-86). */
+    /** Нажатие строки «Экспорт истории»: шторка открывается, файл собирается. */
     fun open(world: AcceptanceWorld) {
         model(world)
         onIntent(world, ExportHistoryIntent.Requested)
@@ -116,7 +115,6 @@ internal object ExportStand {
                 activeProfile = world.profileSession.activeStore,
                 log = world.log,
             ),
-            proStatus = world.access.statusUseCase,
             time = world.clock.time,
         )
     }

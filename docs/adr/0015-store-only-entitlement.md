@@ -1,8 +1,8 @@
 # 0015 — Subscription: the store is the only source of entitlement
 
-Status: Superseded by ADR-0016. There is no subscription in the product, and the product is free. This
-document records a decision that is no longer a rule of the product and has no bearing on the current
-network architecture (ADR-0017).
+Status: Superseded by ADR-0019. There is no subscription and no entitlement in the product: it is free
+in full, ships no store client and has no network module. This document records a decision that is no
+longer a rule of the product and has no bearing on the current architecture (ADR-0018, ADR-0019).
 
 ## Context
 

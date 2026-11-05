@@ -53,8 +53,8 @@ import java.util.Locale
  * завершение несёт единственная нижняя кнопка (Д-3), а выхода из шапки нет: шеврона возврата
  * и действия в шапке не бывает, выход один — системный «Назад» (Р-54).
  *
- * Экран stateless: имя, цвет и доступ живут в состоянии, наружу уходят намерения. Причину
- * над кнопкой (пустое имя, платная граница, предел пяти) считает состояние, а не вёрстка:
+ * Экран stateless: имя, цвет и исход гейта живут в состоянии, наружу уходят намерения.
+ * Причину над кнопкой (пустое имя, предел пяти) считает состояние, а не вёрстка:
  * причины не показываются вместе (§5.13).
  */
 @Composable
@@ -224,9 +224,8 @@ private fun MirrorBlock(state: ProfileFormUiState, onIntent: (ProfileFormIntent)
 /**
  * Панель действия: причина словами, если она есть, и единственная нижняя кнопка (Д-3).
  *
- * Платная причина не переводит кнопку в недоступность: недоступное действие говорит
- * «нельзя», а правда — «можно, по подписке» (П-7, §5.10). Нажатие открывает витрину,
- * и создание завершает та же кнопка после покупки (§5.13, Р-84 п. 2).
+ * Предел пяти и пустое имя переводят кнопку в недоступность и называют причину словами:
+ * недоступное действие без объяснения человек читает как поломку (§5.13, П-7).
  */
 @Composable
 private fun ActionBar(state: ProfileFormUiState, onIntent: (ProfileFormIntent) -> Unit) {
@@ -263,7 +262,6 @@ private fun BlockReason(block: ProfileFormBlock) {
     Text(
         text = when (block) {
             ProfileFormBlock.Name -> stringResource(R.string.profile_blocked_name)
-            ProfileFormBlock.Pro -> stringResource(R.string.profile_add_blocked_pro)
             ProfileFormBlock.Limit -> stringResource(R.string.profile_add_blocked_limit)
         },
         style = SklyankaType.BodyDefault,
@@ -296,5 +294,5 @@ const val TAG_PROFILE_COLOURS = "profile_colours"
 const val TAG_PROFILE_MIRROR = "profile_mirror"
 const val TAG_PROFILE_SUBMIT = "profile_submit"
 
-/** Строка причины над кнопкой: «Укажите имя профиля», платная граница или предел. */
+/** Строка причины над кнопкой: «Укажите имя профиля» или предел. */
 const val TAG_PROFILE_BLOCK = "profile_block"

@@ -1,9 +1,9 @@
 # 0007 — Module layout: module kinds, dependencies inward, pure Kotlin domain
 
-Status: Accepted. There is one network module, `billing-appgallery`, the paid contour (ADR-0010,
-ADR-0016), present only in the paid variant, which is not shipped. Network access without its own
-contour is forbidden by the artifact checks. The shipped `free` build contains no network module and
-declares no network permission (ADR-0018).
+Status: Accepted. Superseded in part by ADR-0019: the paid contour and its module are gone, so the
+product has no network module and no contour mechanism. The module kinds and the dependency direction
+below still hold, and the artifact composition check forbids any network permission (ADR-0018,
+ADR-0019).
 
 ## Context
 

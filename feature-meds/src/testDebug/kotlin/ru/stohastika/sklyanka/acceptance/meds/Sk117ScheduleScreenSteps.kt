@@ -41,7 +41,6 @@ import ru.stohastika.sklyanka.feature.meds.form.TAG_WEEKDAYS_NOTE
 import ru.stohastika.sklyanka.feature.meds.form.TAG_WEEKDAYS_ROW
 import ru.stohastika.sklyanka.ui.component.TAG_CHIP
 import ru.stohastika.sklyanka.ui.component.TAG_LIST_PICKER_OPTION
-import ru.stohastika.sklyanka.ui.component.TAG_PRO_MARK
 import java.time.DayOfWeek
 
 /**
@@ -53,9 +52,8 @@ import java.time.DayOfWeek
  * ([Sk117ScheduleSteps]) — словарь шагов не допускает второго объявления. Она приходит сюда
  * доменным черновиком (`formDraft`, [ensureForm]).
  *
- * Проверяется то, что видит человек, а не копия разметки: отсутствие метки «Про» ищется
- * в собранных строках списка, ряд дней — по семантике выбора чипов. Продукт бесплатный
- * (Р-86): метки «Про», платной причины и витрины в форме нет. Русский текст в аннотациях —
+ * Проверяется то, что видит человек, а не копия разметки: строка вида открывает список
+ * из пяти вариантов, ряд дней — семантика выбора чипов. Русский текст в аннотациях —
  * ключевые слова Gherkin, а не текст интерфейса.
  */
 @OptIn(ExperimentalTestApi::class)
@@ -112,24 +110,6 @@ class Sk117ScheduleScreenSteps(private val world: AcceptanceWorld, private val s
         }
     }
 
-    @Тогда("^ни у одного вида нет метки «Про»$")
-    fun noKindCarriesTheProMark() {
-        askForm { test ->
-            openKindList(test)
-            assertEquals(
-                "the free kind list must offer the five kinds: ${options(test).map { labelOf(it) }}",
-                ScheduleKind.entries.size,
-                options(test).size,
-            )
-            // Метки «Про» нет ни у одного варианта (Р-86): список называет виды расписания,
-            // а не состав подписки. Проверяется собранная разметка, а не текст сценария.
-            test.onAllNodes(
-                hasTestTag(TAG_LIST_PICKER_OPTION) and hasAnyDescendant(hasTestTag(TAG_PRO_MARK)),
-                useUnmergedTree = true,
-            ).assertCountEquals(0)
-        }
-    }
-
     // --- Параметры видов ------------------------------------------------------------------
 
     @Когда("^выбирает вид «([^»]+)»$")
@@ -177,12 +157,6 @@ class Sk117ScheduleScreenSteps(private val world: AcceptanceWorld, private val s
         askForm { test ->
             val note = test.onNodeWithTag(TAG_WEEKDAYS_NOTE, useUnmergedTree = true).fetchSemanticsNode()
             assertTrue("the note must read «$words»: ${MedsProbe.textsOf(note)}", words in MedsProbe.textsOf(note))
-            // Подпись нейтральна (Р-86): она называет выбор, а не состав подписки, и метки
-            // «Про» при ней нет.
-            test.onAllNodes(
-                hasTestTag(TAG_WEEKDAYS_NOTE) and hasAnyDescendant(hasTestTag(TAG_PRO_MARK)),
-                useUnmergedTree = true,
-            ).assertCountEquals(0)
             val rowBottom = test.onNodeWithTag(TAG_WEEKDAYS_ROW, useUnmergedTree = true)
                 .fetchSemanticsNode().boundsInRoot.bottom
             assertTrue("the note must stand under the row", note.boundsInRoot.top >= rowBottom)

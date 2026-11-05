@@ -26,9 +26,6 @@ import ru.stohastika.sklyanka.domain.model.Medication
 import ru.stohastika.sklyanka.domain.model.MedicationForm
 import ru.stohastika.sklyanka.domain.model.Profile
 import ru.stohastika.sklyanka.domain.model.ScheduleMode
-import ru.stohastika.sklyanka.domain.pro.ProProductId
-import ru.stohastika.sklyanka.domain.pro.ProSubscription
-import ru.stohastika.sklyanka.domain.pro.ProSubscriptionCache
 import ru.stohastika.sklyanka.domain.repository.ActiveProfileRepository
 import ru.stohastika.sklyanka.domain.repository.HistoryRepository
 import ru.stohastika.sklyanka.domain.repository.ProfileRepository
@@ -199,7 +196,7 @@ internal class FakeRenderer : DoctorReportRenderer {
 
     val rendered: MutableList<DoctorReport> = mutableListOf()
 
-    /** Разделы «Про», с которыми документ собирали: по ним проверяется гейт состава (Р-22). */
+    /** Разделы «Про», с которыми документ собирали: по ним проверяется выбранный состав. */
     val sections: MutableList<ExtendedReportSections> = mutableListOf()
 
     /** Состав шторки: подставляется проверкой, а не собирается из ресурсов. */
@@ -287,32 +284,4 @@ internal class RecordingLog : OperationLog {
     override suspend fun lastOccurredAt(event: OpEvent): Instant? = records.lastOrNull { it.event == event }?.at
 
     override suspend fun prune(keepDays: Long, keepRecords: Int) = Unit
-}
-
-/**
- * Кэш состояния подписки в памяти: им подставляется доступ «Про» в проверках состава (SKL-119).
- *
- * Настоящий `ObserveProStatusUseCase` читает именно кэш последнего ответа магазина (Р-68 п. 7),
- * и подстановка повторяет его ровно в этом: правил доступа в проверке нет — есть состояние,
- * которым его настроили.
- */
-internal class FakeSubscriptionCache : ProSubscriptionCache {
-
-    private var stored: ProSubscription? = null
-
-    override suspend fun read(): ProSubscription? = stored
-
-    override suspend fun write(subscription: ProSubscription) {
-        stored = subscription
-    }
-
-    /** Подписка активна до [until]: доступ есть. */
-    fun own(until: LocalDate) {
-        stored = ProSubscription.Active(ProProductId.MONTHLY, until)
-    }
-
-    /** Подписки нет: доступ закрыт, расширенный состав и выгрузка не собираются (Р-22). */
-    fun none() {
-        stored = null
-    }
 }

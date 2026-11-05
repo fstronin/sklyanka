@@ -30,22 +30,16 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
 import ru.stohastika.sklyanka.domain.model.Profile
-import ru.stohastika.sklyanka.domain.pro.ObserveProStatusUseCase
 import ru.stohastika.sklyanka.domain.profile.CreateProfileUseCase
 import ru.stohastika.sklyanka.domain.profile.ProfileIdSource
 import ru.stohastika.sklyanka.domain.profile.ProfileSetReplanner
 import ru.stohastika.sklyanka.domain.profile.RenameProfileUseCase
 import ru.stohastika.sklyanka.domain.profile.SetMirrorRemindersUseCase
 import ru.stohastika.sklyanka.domain.profile.SetProfileColourUseCase
-import ru.stohastika.sklyanka.domain.time.TimeSource
-import ru.stohastika.sklyanka.feature.settings.FakeProCache
 import ru.stohastika.sklyanka.feature.settings.FakeProfiles
 import ru.stohastika.sklyanka.feature.settings.transfer.RecordingLog
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import ru.stohastika.sklyanka.ui.token.ProfilePalette
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneId
 
 /**
  * Поворот экрана не теряет ни мастер профиля, ни введённое в него (ПРФ-9, ПРФ-27, SKL-121).
@@ -72,7 +66,6 @@ class ProfileFormRotationTest {
 
     private val profiles = FakeProfiles(listOf(SELF, WARD))
     private val log = RecordingLog()
-    private val cache = FakeProCache()
     private val replan = ProfileSetReplanner { }
     private val ids = object : ProfileIdSource {
         private var next = 0
@@ -95,7 +88,6 @@ class ProfileFormRotationTest {
             log = log,
         ),
         setMirrorReminders = SetMirrorRemindersUseCase(profiles = profiles, replan = replan, log = log),
-        proStatus = ObserveProStatusUseCase(cache, FixedClock),
     )
 
     @After
@@ -246,14 +238,4 @@ class ProfileFormFactory(private val form: ProfileFormViewModel) : ViewModelProv
         modelClass.isAssignableFrom(ProfileFormViewModel::class.java) -> form as T
         else -> error("unexpected view model: ${modelClass.name}")
     }
-}
-
-/** Часы проверки: доступ «Про» читается из кэша, и срок давности у него отсутствует (П-6). */
-private object FixedClock : TimeSource {
-
-    override fun now(): Instant = Instant.parse("2026-10-13T09:00:00Z")
-
-    override fun zone(): ZoneId = ZoneId.of("Europe/Moscow")
-
-    override fun today(): LocalDate = LocalDate.of(2026, 10, 13)
 }

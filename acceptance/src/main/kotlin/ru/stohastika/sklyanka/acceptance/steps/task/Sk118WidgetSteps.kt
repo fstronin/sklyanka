@@ -399,9 +399,8 @@ class Sk118WidgetSteps(private val world: AcceptanceWorld) {
     /**
      * Завершение настройки: выбор закончен — плита появляется, иначе нет.
      *
-     * Гейт Р-32 остаётся правилом продукта: платформа не добавляет виджет, если настройка
-     * вернула отмену. Оплаты в продукте нет (Р-86), поэтому доступа хватает всегда,
-     * и незавершённым установку делает только невыбранное лекарство.
+     * Гейт §5.12 остаётся правилом продукта: платформа не добавляет виджет, если настройка
+     * вернула отмену. Незавершённой установку делает только невыбранное лекарство.
      */
     private fun completeSetup() {
         if (canComplete()) world.widgets.installed += 1
@@ -412,13 +411,10 @@ class Sk118WidgetSteps(private val world: AcceptanceWorld) {
      * Завершает ли установку этот экран — правило продукта, а не поле мира (Р-32, §5.12).
      *
      * Тем же `WidgetSetupGate` живёт кнопка экрана: сценарий проверяет решение продукта,
-     * а не свою же запись о том, что виджет «добавлен». Доступ берётся из мира бесплатной
-     * сборки ([ru.stohastika.sklyanka.acceptance.world.ScenarioAccess]): он отвечает
-     * «активна», как free-кэш подписки (Р-86, ADR-0016), а платное правило гейта остаётся
-     * в домене и проверяется `WidgetSetupGateTest`.
+     * а не свою же запись о том, что виджет «добавлен». Установку закрывает только
+     * невыбранное лекарство — платной границы в продукте нет (Р-86).
      */
     private fun canComplete(): Boolean = WidgetSetupGate.canComplete(
-        proIncluded = world.access.status().included,
         medicationRequired = world.widgets.type == ScenarioWidgets.Type.MEDICATION,
         medicationChosen = world.widgets.selectedMedication != null,
     )

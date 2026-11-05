@@ -186,7 +186,7 @@
     <string name="schedule_kind_cycle">In Zyklen</string>
     <string name="schedule_kind_steps">In Stufen</string>
     <string name="form_label_weekdays">Wochentage</string>
-    <string name="form_weekdays_pro_note">Mehr als ein Tag</string>
+    <string name="form_weekdays_note">Mehr als ein Tag</string>
     <string name="form_interval_row">Intervall (Tage)</string>
     <string name="form_schedule_count_from_start">Gezählt ab dem Kursbeginn</string>
     <string name="form_cycle_on_row">Einnahmetage am Stück</string>
@@ -198,5 +198,4 @@
     <string name="cd_stage_dose">Dosis der Stufe %1$d</string>
     <string name="cd_stage_days">Dauer der Stufe %1$d</string>
     <string name="cd_stage_delete">Stufe %1$d löschen</string>
-    <string name="form_save_blocked_pro">Komplexe Pläne gibt es mit Sklyanka Pro</string>
 </resources>

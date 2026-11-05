@@ -1,13 +1,11 @@
 package ru.stohastika.sklyanka.domain.widget
 
 /**
- * Правило завершения установки виджета (Р-32, ПР-23, `docs/norm/06-design.md` §5.12).
+ * Правило завершения установки виджета (ПР-23, `docs/norm/06-design.md` §5.12).
  *
- * Установка виджета — платная возможность, но продаётся именно установка, а не показ
- * и не отметка: после истечения подписки уже стоящая плита продолжает работать (Р-32).
- * Поэтому правило одно и живёт в домене: платформа не добавляет виджет, если настройка
- * вернула отмену, а настройка завершает установку только тогда, когда доступ есть
- * и выбор закончен.
+ * Установка закончена, когда выбор сделан: платформа не добавляет виджет, если настройка
+ * вернула отмену, и у типа «по лекарству» без выбранного лекарства показывать нечего.
+ * Доступа к «Про» продукт больше не спрашивает — виджеты бесплатны (Р-86).
  *
  * Отдельной функцией, а не условием внутри состояния экрана: это предметное правило,
  * и его обязаны видеть и экран, и приёмка — иначе «виджет добавлен» в сценарии проверяло бы
@@ -16,10 +14,9 @@ package ru.stohastika.sklyanka.domain.widget
 object WidgetSetupGate {
 
     /**
-     * @param proIncluded есть ли доступ «Склянка Про» сейчас (`ProStatus.included`)
      * @param medicationRequired требует ли тип выбора лекарства (у «по лекарству» — да)
      * @param medicationChosen сделан ли выбор
      */
-    fun canComplete(proIncluded: Boolean, medicationRequired: Boolean, medicationChosen: Boolean): Boolean =
-        proIncluded && (!medicationRequired || medicationChosen)
+    fun canComplete(medicationRequired: Boolean, medicationChosen: Boolean): Boolean =
+        !medicationRequired || medicationChosen
 }

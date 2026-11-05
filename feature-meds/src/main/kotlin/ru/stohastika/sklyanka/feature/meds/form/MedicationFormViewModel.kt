@@ -16,12 +16,9 @@ import ru.stohastika.sklyanka.domain.medication.SaveResult
 import ru.stohastika.sklyanka.domain.medication.StrengthUnit
 import ru.stohastika.sklyanka.domain.medication.ValidateMedicationDraft
 import ru.stohastika.sklyanka.domain.medication.applicability
-import ru.stohastika.sklyanka.domain.medication.effectiveSchedule
 import ru.stohastika.sklyanka.domain.medication.normalized
 import ru.stohastika.sklyanka.domain.model.ScheduleRule
 import ru.stohastika.sklyanka.domain.model.Stage
-import ru.stohastika.sklyanka.domain.pro.ComplexScheduleGate
-import ru.stohastika.sklyanka.domain.pro.ObserveProStatusUseCase
 import ru.stohastika.sklyanka.domain.repository.ActiveProfileRepository
 import ru.stohastika.sklyanka.domain.repository.MedicationRepository
 import ru.stohastika.sklyanka.domain.stock.StockThresholds
@@ -46,8 +43,6 @@ class MedicationFormViewModel @Inject constructor(
     private val medications: MedicationRepository,
     private val saveMedication: SaveMedicationUseCase,
     private val time: TimeSource,
-    /** Доступ «Про» по кэшу подписки: гейт состава читает его, а не магазин (Р-22, Р-7). */
-    private val proStatus: ObserveProStatusUseCase,
 ) : ViewModel() {
 
     private val validate = ValidateMedicationDraft()
@@ -69,18 +64,6 @@ class MedicationFormViewModel @Inject constructor(
      */
     val closed: SharedFlow<Unit> = _closed.asSharedFlow()
 
-    private val _showcase = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
-
-    /**
-     * Сигнал «открыть витрину»: сложное расписание закрыто без подписки (ПР-20, ПР-21).
-     *
-     * Событие, а не состояние: витрина — одна поверхность на все точки входа (Р-67), и
-     * показывает её `app`; форма только просит. Нажатие «Сохранить» на закрытом виде
-     * открывает витрину вместо сохранения — подсказка над кнопкой называет, что произойдёт
-     * (§5.10).
-     */
-    val showcase: SharedFlow<Unit> = _showcase.asSharedFlow()
-
     /**
      * Открыть форму.
      *
@@ -92,43 +75,18 @@ class MedicationFormViewModel @Inject constructor(
     fun open(medicationId: String? = null) {
         _state.value = null
         viewModelScope.launch {
-            // Доступ «Про» читается при открытии и перечитывается при возвращении из витрины
-            // ([refreshProAccess]): гейт состава решает по подписке, а не по нажатию, и форма
-            // не должна ходить в магазин (Р-7, Р-22).
-            val included = proStatus().included
             val existing = medicationId?.let { medications.get(it) }
             if (existing == null) {
                 val draft = MedicationDraft.new(profileId = activeProfile.current(), today = time.today())
-                _state.value = MedFormUiState.of(draft, FormMode.Create, FormInputs(), proIncluded = included)
+                _state.value = MedFormUiState.of(draft, FormMode.Create, FormInputs())
             } else {
                 val draft = MedicationDraft.of(existing)
                 _state.value = MedFormUiState.of(
                     draft = draft,
                     mode = FormMode.Edit(existing.name),
                     inputs = inputsOf(draft),
-                    proIncluded = included,
                 )
             }
-        }
-    }
-
-    /**
-     * Перечитать доступ «Про» после закрытия витрины (ПР-20, ПР-21, Р-28).
-     *
-     * Форма держит снимок доступа с момента открытия, а покупка в витрине пишет кэш
-     * подписки: без перечитывания повторное «Сохранить» снова открывало бы витрину вместо
-     * сохранения, и человек терял бы черновик вместе с уходом из формы — она живёт в слое
-     * раздела и уходит вместе с ним. Тот же заход, что у строки настроек (SKL-122):
-     * возвращение на поверхность обязано назвать новое состояние. Форма ещё не открыта —
-     * тихо ничего не делать: перечитывать нечего, а хранилище звать незачем.
-     */
-    fun refreshProAccess() {
-        if (_state.value == null) return
-        viewModelScope.launch {
-            val included = proStatus().included
-            // Состояние берётся заново внутри корутины: пока читался кэш, человек мог
-            // продолжить заполнять форму, и снимок доступа не имеет права откатить ввод.
-            _state.value = _state.value?.copy(proIncluded = included)
         }
     }
 
@@ -229,25 +187,11 @@ class MedicationFormViewModel @Inject constructor(
         return when (intent) {
             is MedFormIntent.ScheduleKindChanged -> {
                 val prepared = inputsForKind(intent.kind, inputs)
-                val next = state.with(
+                state.with(
                     draft = draft.copy(schedule = ruleFor(intent.kind, draft.schedule, prepared)),
                     inputs = prepared,
                     scheduleKind = intent.kind,
                 )
-                // Выбор платного вида — точка выбора платной функции: вид уже применён,
-                // параметры видны, и витрина открывается тут же (Р-67 п. 3, §5.10). Решает
-                // **вариант списка**: метка «Про» стоит у элемента (`ScheduleKind.proMarked`),
-                // а «через каждый день» вырождается в ежедневное позже — при вводе числа
-                // (ПР-15), и на выборе это ещё сложный вариант. «По дням недели» сюда не
-                // попадает: метки у него нет — первый день бесплатен (Р-24), и назначение
-                // в этот момент ещё собирается (§5.10); право открыть витрину возникает
-                // на следующем шаге, у «Сохранить». Правка заведённого сложного курса
-                // не просит ничего (Р-28). Нажатие «Сохранить» остаётся второй точкой входа.
-                val chosenAPaidKind = intent.kind.proMarked &&
-                    !next.proIncluded &&
-                    next.draft.originalSchedule?.isComplex != true
-                if (chosenAPaidKind) _showcase.tryEmit(Unit)
-                next
             }
 
             is MedFormIntent.WeekdayToggled -> {
@@ -353,7 +297,7 @@ class MedicationFormViewModel @Inject constructor(
      *
      * Пустое или непонятое поле даёт `EveryNDays(0)` — отказ «интервал не меньше двух дней».
      * «Через каждый день» (N = 1) вырождается в ежедневное расписание: сложного вида
-     * не возникает, и метки «Про» у него нет. Поле интервала при этом остаётся на экране
+     * не возникает. Поле интервала при этом остаётся на экране
      * (его держит [MedFormUiState.scheduleKind]), чтобы человек мог набрать второе число.
      */
     private fun intervalRule(text: String): ScheduleRule {
@@ -397,10 +341,6 @@ class MedicationFormViewModel @Inject constructor(
      * Перечень нарушений пересчитывается только после первой неудачной попытки
      * сохранить: до неё форма молчит, после — гаснет сама, как только правило выполнено.
      * Иначе пустая форма ругалась бы на поля, до которых человек ещё не дошёл.
-     *
-     * [MedFormUiState.draftViolations] пересчитывается наоборот — всегда: по нему решается,
-     * назовёт ли нажатие «Сохранить» отказ формы или откроет витрину, и устаревший
-     * перечень здесь стоил бы подсказки не о том (§5.10).
      */
     private fun MedFormUiState.with(
         draft: MedicationDraft,
@@ -415,7 +355,6 @@ class MedicationFormViewModel @Inject constructor(
             scheduleKind = scheduleKind,
             applicability = normalized.applicability(),
             violations = if (violations.isEmpty()) emptyList() else broken,
-            draftViolations = broken,
         )
     }
 
@@ -425,14 +364,6 @@ class MedicationFormViewModel @Inject constructor(
         // новый (SKL-141). Признак ставится синхронно, до запуска корутины: второе нажатие
         // приходит раньше, чем запись успевает начаться, и обязано увидеть «идёт запись».
         if (state.saving) return
-        // Платная граница проверяется до записи (ПР-20, ПР-21): если черновик правильно
-        // заполнен, но создаёт сложное расписание без подписки, сохранения нет, а нажатие
-        // открывает витрину (§5.10). Незаполненный вид доходит до сценария сохранения
-        // обычным путём и называет свои отказы: отказ формы важнее покупки.
-        if (blocksComplexCreation(state)) {
-            _showcase.tryEmit(Unit)
-            return
-        }
         _state.value = state.copy(saving = true)
         viewModelScope.launch {
             when (val result = saveMedication(state.draft)) {
@@ -450,22 +381,6 @@ class MedicationFormViewModel @Inject constructor(
             }
         }
     }
-
-    /**
-     * Закрыто ли сохранение платной границей (ПР-20, ПР-21, §5.10).
-     *
-     * Проверка параметров вида идёт первой: незаполненный вид — отказ формы, а не повод
-     * покупать, и подсказка над кнопкой говорит о том, чего человек ещё не доделал.
-     * Гейт решает по **сохранённому** виду курса ([MedicationDraft.originalSchedule]),
-     * а не по последнему состоянию черновика: иначе один и тот же черновик открывал
-     * и закрывал границу в зависимости от порядка нажатий.
-     */
-    private fun blocksComplexCreation(state: MedFormUiState): Boolean = validate(state.draft).isEmpty() &&
-        ComplexScheduleGate.isCreationOfComplex(
-            original = state.draft.originalSchedule,
-            next = state.draft.effectiveSchedule,
-            included = state.proIncluded,
-        )
 
     /**
      * Текст числовых полей при открытии правки: то, что уже записано.

@@ -52,8 +52,8 @@ private const val TEST_PREFIX = "test"
  * Хвост имени релизного прогона.
  *
  * У модуля без вариантов это `testReleaseUnitTest`, у `app` с измерением `contour`
- * (Р-86, ADR-0016) — `testFreeReleaseUnitTest` и `testProReleaseUnitTest`. Отключение
- * по хвосту имени снимает все три, а не только первый.
+ * (Р-86, ADR-0016) — `testFreeReleaseUnitTest`. Отключение по хвосту имени снимает оба,
+ * а не только первый.
  */
 private const val DUPLICATE_UNIT_TEST_SUFFIX = "ReleaseUnitTest"
 

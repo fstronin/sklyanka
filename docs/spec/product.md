@@ -80,10 +80,10 @@ Cloud synchronization and accounts for tracking · a medication reference and in
 | OS | Android 8.0+ (API 26), `targetSdk` 35 |
 | Devices | Any Android phone; verification priority is Xiaomi, Samsung and Huawei |
 | Google services | Not required or used; the app runs on devices without GMS |
-| Stores | RuStore and AppGallery, the free build only, with no paid release or subscriptions; RuStore launches first, AppGallery follows. Google Play is not a channel |
+| Stores | RuStore and AppGallery; RuStore launches first, AppGallery follows. Google Play is not a channel |
 | Languages | `ru` (base and fallback), `en-US`, `es`, `de`, `zh-CN`, `kk` |
 | Watches and wearables | Not supported |
-| Network | Not used: the shipped build declares no network permission and makes no network call. No GMS, no Firebase, no `AD_ID`. Tracking, reminders, history and the report work with no network at all. The paid `pro` contour declares `INTERNET` for AppGallery IAP, and that variant is not shipped |
+| Network | Not used: the app declares no network permission and makes no network call. No GMS, no Firebase, no `AD_ID`. Tracking, reminders, history and the report work with no network at all, and the product contains no network module |
 
 Reminder reliability depends on the power management of the firmware. The product does not promise equal survival on every device: it promises setup guidance, a measured delivery self-check and an honest statement when reminders are unreliable.
 

@@ -194,7 +194,6 @@
     <string name="profile_switch_mirror">Erinnerungen duplizieren</string>
     <string name="profile_switch_mirror_hint">Erinnerungen an die Einnahmen dieses Profils kommen auf dieses Telefon</string>
     <string name="profile_blocked_name">Geben Sie einen Profilnamen ein</string>
-    <string name="profile_add_blocked_pro">Mehr als zwei Profile gibt es mit Sklyanka Pro</string>
     <string name="profile_add_blocked_limit">Höchstens fünf Profile</string>
     <string name="cd_profile_colour_terracotta">Terrakotta</string>
     <string name="cd_profile_colour_teal">Petrol</string>

@@ -123,47 +123,4 @@
     <string name="catalog_mark">标记及其变体</string>
     <string name="catalog_lockup">带名称的标志组合</string>
 
-    <!-- Pro 展示页（SKL-122）：字符串取自 docs/norm/06-design.md §10，商店拒付的措辞由本任务拟定。
-         %1$s 是商店返回的现成价格字符串。 -->
-    <string name="pro_sheet_title">Sklyanka Pro</string>
-    <string name="pro_benefit_schedules_short">复杂服药计划</string>
-    <string name="pro_benefit_schedules_example">隔日、周期、阶梯方案</string>
-    <string name="pro_benefit_widgets_short">小组件</string>
-    <string name="pro_benefit_report_short">扩展报告</string>
-    <string name="pro_benefit_accent_short">强调色和图标</string>
-    <string name="pro_benefit_export_short">导出历史</string>
-    <string name="pro_benefit_profiles_short">更多档案</string>
-    <string name="pro_period_month">月</string>
-    <string name="pro_period_year">年</string>
-    <string name="pro_period_month_short">月</string>
-    <string name="pro_period_year_short">年</string>
-    <string name="pro_year_ribbon">更划算</string>
-    <string name="pro_year_cheaper">按年更便宜</string>
-    <string name="pro_action_buy">订购</string>
-    <string name="pro_action_restore">恢复购买</string>
-    <string name="pro_action_manage">管理订阅</string>
-    <string name="pro_action_cancel">取消订阅</string>
-    <string name="pro_terms_row">条款和政策</string>
-    <string name="pro_renew_auto">订阅将自动续订</string>
-    <string name="pro_renew_terms_short">续订价格 %1$s，可在商店取消</string>
-    <string name="pro_renew_price">续订价格：%1$s</string>
-    <string name="pro_renew_charge">在续订日扣款；提前 5 天会收到通知</string>
-    <string name="pro_renew_cancel">可在商店的订阅页面取消</string>
-    <string name="pro_disclosure_more">详情</string>
-    <string name="pro_state_active_until">有效期至 %1$s</string>
-    <string name="pro_state_inactive">未订购</string>
-    <string name="pro_store_unavailable">商店可用后将显示价格并开放购买</string>
-    <string name="pro_mark">Pro</string>
-    <string name="pro_purchase_confirming">商店未拒绝购买，状态正在确认。请稍后尝试恢复购买</string>
-    <string name="pro_restore_not_active">商店有此订阅记录，但它已不再有效。请查看商店的订阅页面</string>
-    <string name="pro_manage_failed">商店的订阅页面未能打开，订阅未被取消。请再试一次</string>
-    <string name="pro_purchase_failed_network">没有网络连接，购买未完成。请稍后再试</string>
-    <string name="pro_purchase_failed_unavailable">此设备上商店不可用，购买未完成</string>
-    <string name="pro_purchase_failed_declined">商店拒绝了购买，未扣款</string>
-    <string name="pro_purchase_failed_product">商店中目前没有该商品</string>
-    <string name="pro_purchase_failed_store">商店返回错误，购买未完成</string>
-    <string name="pro_restore_failed">无法恢复购买。请稍后再试</string>
-    <string name="pro_restore_nothing_found">商店中没有找到购买记录</string>
-    <string name="pro_date_pattern">yyyy年M月d日</string>
-
 </resources>

@@ -17,12 +17,11 @@ import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
 import java.io.File
 
 /**
- * Эталонные снимки экрана настройки виджета (SKL-118, §5.12, Р-86).
+ * Эталонные снимки экрана настройки виджета (SKL-118, §5.12).
  *
- * Снимков два — по одному на состояние бесплатного экрана: тип «Сегодня» (выбор
+ * Снимков два — по одному на состояние экрана: тип «Сегодня» (выбор
  * по умолчанию) и «По лекарству» с выбранным лекарством (завершение доступно).
- * Платной границы в бесплатном продукте нет: гейт проходит, метки «Про» и слов о подписке
- * экран не рисует. Плиты виджетов здесь не рисуются: Glance собирает RemoteViews, и кадры
+ * Плиты виджетов здесь не рисуются: Glance собирает RemoteViews, и кадры
  * типов приходят с устройства (фаза 6.2).
  *
  * Ширина окна — телефонная, как у настоящего экрана: он открывается системой поверх
@@ -63,7 +62,6 @@ class WidgetConfigSnapshotTest {
                         onSelectType = {},
                         onSelectMedication = {},
                         onComplete = {},
-                        onOpenPro = {},
                     )
                 }
             }
@@ -75,8 +73,6 @@ class WidgetConfigSnapshotTest {
             type = type,
             medications = listOf(magnesium()),
             selectedMedicationId = selectedMedicationId,
-            // Бесплатный продукт: доступ есть всегда (Р-86), платной границы на экране нет.
-            proIncluded = true,
             profile = ProfileChromeState.Owner,
         )
 

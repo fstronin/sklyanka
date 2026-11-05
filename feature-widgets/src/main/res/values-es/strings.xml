@@ -26,5 +26,4 @@
     <string name="widget_medication_none">Sin seleccionar</string>
     <string name="widget_medication_empty">El perfil aún no tiene medicamentos</string>
     <string name="widget_action_add">Añadir widget</string>
-    <string name="widget_pro_required">Los widgets son de Sklyanka Pro</string>
 </resources>

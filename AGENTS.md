@@ -13,10 +13,10 @@ full, works without a network and does not ask for an account.
 | `README.md` | what the product is, how to build and test it |
 | `docs/README.md` | the documentation layer and its rules |
 | `docs/spec/` | the normative specification: product, behavior, design, quality, architecture, glossary, privacy |
-| `docs/adr/` | architecture decision records `0001` to `0018` |
+| `docs/adr/` | architecture decision records `0001` to `0019` |
 | `acceptance/src/main/resources/features/` | Gherkin acceptance scenarios, grouped by topic |
 | `design/` | the customer's original specification and the mockups; untouched, Russian |
-| `app/`, `core-*`, `feature-*`, `billing-*` | the code |
+| `app/`, `core-*`, `feature-*`, `acceptance/` | the code |
 | `build-logic/` | Gradle convention plugins and the project checks |
 | `tools/` | the emulator and visual harnesses |
 
@@ -43,8 +43,9 @@ declares no network permission. See `docs/adr/0001-stack.md`.
   report do not depend on a network, an account or an external service.
 - **Nothing leaves the device.** There is no account, no cloud, no sync, no ads and no analytics,
   and the shipped build declares no network permission. Health data, the transfer file, the report
-  and the delivery log stay in the app's private storage. The paid `pro` contour is the only network
-  module and is not shipped.
+  and the delivery log stay in the app's private storage. The product has no network module at all:
+  the artifact composition check forbids `INTERNET` and `ACCESS_NETWORK_STATE` in the merged manifest
+  and in every module manifest.
 - **The app is not a medical device.** No treatment recommendations, no dose selection, no
   drug-interaction checks.
 - **Design tokens are never hardcoded.** Colour, typography, geometry and motion come from

@@ -186,7 +186,7 @@
     <string name="schedule_kind_cycle">Por ciclos</string>
     <string name="schedule_kind_steps">Por etapas</string>
     <string name="form_label_weekdays">Días de la semana</string>
-    <string name="form_weekdays_pro_note">Más de un día</string>
+    <string name="form_weekdays_note">Más de un día</string>
     <string name="form_interval_row">Intervalo (días)</string>
     <string name="form_schedule_count_from_start">Se cuenta desde la fecha de inicio</string>
     <string name="form_cycle_on_row">Días seguidos de toma</string>
@@ -198,5 +198,4 @@
     <string name="cd_stage_dose">Dosis de la etapa %1$d</string>
     <string name="cd_stage_days">Duración de la etapa %1$d</string>
     <string name="cd_stage_delete">Eliminar la etapa %1$d</string>
-    <string name="form_save_blocked_pro">Las pautas complejas son de Sklyanka Pro</string>
 </resources>

@@ -5,11 +5,8 @@ import ru.stohastika.sklyanka.domain.medication.DraftField
 import ru.stohastika.sklyanka.domain.medication.DraftViolation
 import ru.stohastika.sklyanka.domain.medication.FieldApplicability
 import ru.stohastika.sklyanka.domain.medication.MedicationDraft
-import ru.stohastika.sklyanka.domain.medication.ValidateMedicationDraft
 import ru.stohastika.sklyanka.domain.medication.applicability
 import ru.stohastika.sklyanka.domain.medication.dosePerIntakeVisible
-import ru.stohastika.sklyanka.domain.medication.effectiveSchedule
-import ru.stohastika.sklyanka.domain.pro.ComplexScheduleGate
 
 /**
  * Что делает форма: заводит курс или правит существующий.
@@ -78,30 +75,8 @@ data class MedFormUiState(
      * этот.
      */
     val scheduleKind: ScheduleKind = ScheduleKind.of(draft.schedule),
-    /**
-     * Есть ли доступ «Про» прямо сейчас (Р-22, Р-28).
-     *
-     * Читается у кэша подписки при открытии формы и перечитывается, когда закрывается
-     * витрина ([MedicationFormViewModel.refreshProAccess]): от него зависит только
-     * завершение создания сложного расписания, и ничего больше.
-     */
-    val proIncluded: Boolean = false,
     /** Нарушенные правила последней попытки сохранения; до неё список пуст. */
     val violations: List<DraftViolation> = emptyList(),
-    /**
-     * Нарушения **текущего** нормализованного черновика: то, по чему решается, будет ли
-     * нажатие «Сохранить» отказом формы (см. `save()` в [MedicationFormViewModel]).
-     *
-     * Отличается от [violations] ровно одним: [violations] — **записанные** нарушения
-     * последней попытки, и до первой попытки список пуст; по нему форма показывает
-     * подсказки под полями, и он же гасит их, как только правило выполнено. Здесь же
-     * считается всегда и по тому же черновику, что и в сохранении, поэтому подсказка
-     * над кнопкой называет то, что произойдёт при нажатии, а не то, что случилось
-     * когда-то (§5.10): «имя и вид „Циклами“ без времени приёма» — это отказ формы,
-     * а не повод покупать. Списки не смешиваются: править один вместо другого значит
-     * вернуть либо подсказку не о том, либо молчание формы о нарушении.
-     */
-    val draftViolations: List<DraftViolation> = DRAFT_VALIDATION(draft),
     /**
      * Идёт запись: кнопка сохранения занята, и повторное нажатие не проходит (SKL-141).
      *
@@ -150,25 +125,6 @@ data class MedFormUiState(
      */
     val dosePerIntakeVisible: Boolean get() = draft.dosePerIntakeVisible
 
-    /**
-     * Над кнопкой названа платная причина закрытого создания (ПР-20, ПР-21, §5.10).
-     *
-     * Причина и причина недоступной кнопки вместе не показываются: пока не заполнено
-     * название, кнопка недоступна и называет своё, а сложный вид ждёт следующего шага —
-     * две подсказки подряд читаются как ошибка (§5.10). Отказы параметров вида тоже
-     * идут первыми: незаполненный вид — отказ формы, а не повод покупать. Решает это
-     * [draftViolations] — нарушения **текущего** черновика, те же, по которым сохранение
-     * называет свои отказы, а не записанные нарушения прошлой попытки.
-     */
-    val proReasonVisible: Boolean
-        get() = saveEnabled &&
-            draftViolations.isEmpty() &&
-            ComplexScheduleGate.isCreationOfComplex(
-                original = draft.originalSchedule,
-                next = draft.effectiveSchedule,
-                included = proIncluded,
-            )
-
     /** Блок, к которому прокручивается экран при отказе. */
     val firstViolationField: DraftField? get() = violations.firstOrNull()?.field
 
@@ -177,28 +133,17 @@ data class MedFormUiState(
 
     companion object {
 
-        /**
-         * Проверка черновика без состояния: один экземпляр на все состояния формы.
-         *
-         * Заводить её на каждый пересчёт значило бы создавать объект ради самой же проверки,
-         * а держать в [MedicationFormViewModel] — терять доступ из поля по умолчанию, где
-         * нарушения и считаются по текущему черновику.
-         */
-        private val DRAFT_VALIDATION = ValidateMedicationDraft()
-
         fun of(
             draft: MedicationDraft,
             mode: FormMode,
             inputs: FormInputs,
             scheduleKind: ScheduleKind = ScheduleKind.of(draft.schedule),
-            proIncluded: Boolean = false,
         ): MedFormUiState = MedFormUiState(
             mode = mode,
             draft = draft,
             inputs = inputs,
             applicability = draft.applicability(),
             scheduleKind = scheduleKind,
-            proIncluded = proIncluded,
         )
     }
 }

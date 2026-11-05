@@ -194,7 +194,6 @@
     <string name="profile_switch_mirror">Duplicate reminders</string>
     <string name="profile_switch_mirror_hint">Reminders about this profile’s intakes will come to this phone</string>
     <string name="profile_blocked_name">Enter a profile name</string>
-    <string name="profile_add_blocked_pro">More than two profiles come with Sklyanka Pro</string>
     <string name="profile_add_blocked_limit">No more than five profiles</string>
     <string name="cd_profile_colour_terracotta">Terracotta</string>
     <string name="cd_profile_colour_teal">Teal</string>

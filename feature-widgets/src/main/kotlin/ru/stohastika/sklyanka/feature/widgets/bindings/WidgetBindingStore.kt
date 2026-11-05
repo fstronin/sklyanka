@@ -29,7 +29,7 @@ class WidgetBindingStore(context: Context) {
     /** Какое лекарство показывает этот экземпляр; `null` — привязки нет или плита не настроена. */
     suspend fun medicationId(widgetId: Int): String? = bindings()[widgetId]
 
-    /** Запомнить выбор человека. Вызов — часть завершения настройки плиты (Р-32). */
+    /** Запомнить выбор человека. Вызов — часть завершения настройки плиты (§5.12). */
     suspend fun bind(widgetId: Int, medicationId: String) {
         store.edit { preferences ->
             preferences[KEY] = withBinding(bindings(preferences), widgetId, medicationId)

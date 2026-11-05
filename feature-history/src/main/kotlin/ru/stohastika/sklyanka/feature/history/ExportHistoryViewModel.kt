@@ -3,11 +3,8 @@ package ru.stohastika.sklyanka.feature.history
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import ru.stohastika.sklyanka.domain.history.BuildHistoryCsvTableUseCase
@@ -18,7 +15,6 @@ import ru.stohastika.sklyanka.domain.history.ReportPeriodRules
 import ru.stohastika.sklyanka.domain.history.ReportPreset
 import ru.stohastika.sklyanka.domain.history.ReportShareLauncher
 import ru.stohastika.sklyanka.domain.history.ReportTransferOutcome
-import ru.stohastika.sklyanka.domain.pro.ObserveProStatusUseCase
 import ru.stohastika.sklyanka.domain.time.TimeSource
 import ru.stohastika.sklyanka.domain.transfer.ExportTarget
 import java.time.LocalDate
@@ -28,15 +24,8 @@ import javax.inject.Inject
  * Состояние шторки экспорта истории (SKL-119, Р-35, Р-85 п. 2).
  *
  * Шторка открывается **строкой настроек**, а не экраном: `app` собирает её поверх корня
- * и передаёт сюда намерения. Отсюда два правила, которых нет у шторки отчёта.
- *
- * Первое: **доступ проверяется в момент нажатия**. Снимок подписки не держится ни в одном
- * поле — гейт решает по подписке, а не по нажатию (Р-7), и второй заход после оформления
- * читает её заново без «перечитывания по возврату». Без активного доступа файл не формируется
- * вовсе: нажатие открывает витрину (Р-22, П-7). В поставляемой бесплатной сборке доступ есть
- * всегда (Р-86, ADR-0016), поэтому гейт остаётся спящим кодом для будущего `pro`-варианта.
- *
- * Второе: **период и состав — настройки одной выгрузки**, а не экрана. Границы «Другого периода»
+ * и передаёт сюда намерения. Отсюда правило, которого нет у шторки отчёта:
+ * **период и состав — настройки одной выгрузки**, а не экрана. Границы «Другого периода»
  * те же, что у отчёта, и считаются тем же правилом ([ReportPeriodRules]): второго набора
  * пресетов в продукте нет.
  */
@@ -45,7 +34,6 @@ class ExportHistoryViewModel @Inject constructor(
     private val buildTable: BuildHistoryCsvTableUseCase,
     private val composer: HistoryCsvComposer,
     private val export: ExportHistoryCsvUseCase,
-    private val proStatus: ObserveProStatusUseCase,
     private val time: TimeSource,
 ) : ViewModel() {
 
@@ -61,16 +49,6 @@ class ExportHistoryViewModel @Inject constructor(
     private var shareLauncher: ReportShareLauncher? = null
 
     private var selection: Selection? = null
-
-    private val _showcase = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
-
-    /**
-     * Сигнал «открыть витрину»: без активного доступа строка настроек ведёт туда (Р-22, §5.16).
-     *
-     * Событие, а не состояние: витрина — одна поверхность на все точки входа (Р-67), и показывает
-     * её `app`; шторка только просит. Второго экземпляра поверхности покупки в модуле нет.
-     */
-    val showcase: SharedFlow<Unit> = _showcase.asSharedFlow()
 
     /** Связать передачу с системным выбором получателя, который живёт на экране. */
     fun attachShareLauncher(launcher: ReportShareLauncher) {
@@ -94,22 +72,10 @@ class ExportHistoryViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Нажатие строки «Экспорт истории»: с доступом — шторка, без доступа — витрина.
-     *
-     * Доступ читается здесь, а не хранится в состоянии: он мог измениться, пока человек ходил
-     * в магазин, а `onResume` при закрытии шторки витрины не наступает (SKL-122). Без доступа
-     * файла нет вовсе — витрина не «показывается рядом» с ним (П-7).
-     */
+    /** Нажатие строки «Экспорт истории»: свежие даты на период по умолчанию. */
     private fun request() {
-        viewModelScope.launch {
-            if (!proStatus().included) {
-                _showcase.tryEmit(Unit)
-                return@launch
-            }
-            val defaults = ReportPeriodRules.customDefaults(time.today())
-            rebuild(Selection(preset = ReportPreset.THIS_MONTH, from = defaults.from, to = defaults.to))
-        }
+        val defaults = ReportPeriodRules.customDefaults(time.today())
+        rebuild(Selection(preset = ReportPreset.THIS_MONTH, from = defaults.from, to = defaults.to))
     }
 
     private fun close() {

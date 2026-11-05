@@ -51,11 +51,11 @@ class ProjectChecksConventionPlugin : Plugin<Project> {
             description = "Proves the module dependency rule fires on deliberate violations (TDD 5.2)."
         }
 
-        // Правила сетевых контуров проверяются на заведомых нарушениях (SKL-165, TDD §6.4):
+        // Правила состава артефакта проверяются на заведомых нарушениях (SKL-165, TDD §6.4):
         // без этого «правило работает и нарушений нет» неотличимо от «правило молчит».
-        val networkContourRule = tasks.register<VerifyNetworkContourRuleTask>("verifyNetworkContourRule") {
+        val compositionRule = tasks.register<VerifyArtifactCompositionRuleTask>("verifyArtifactCompositionRule") {
             group = VERIFICATION_GROUP
-            description = "Proves the network contour rules fire on deliberate violations (TDD 6.4)."
+            description = "Proves the artifact composition rules fire on deliberate violations (TDD 6.4)."
         }
 
         // Заведомо нарушающие фрагменты живут вне модулей и не входят в основную
@@ -99,7 +99,7 @@ class ProjectChecksConventionPlugin : Plugin<Project> {
         }
 
         tasks.named("check") {
-            dependsOn(moduleGraph, moduleGraphRule, rulesFire, networkContourRule)
+            dependsOn(moduleGraph, moduleGraphRule, rulesFire, compositionRule)
         }
 
         // Единый проверочный прогон одной командой (НФТ-49, TODO §25).
@@ -112,16 +112,14 @@ class ProjectChecksConventionPlugin : Plugin<Project> {
             // компилироваться: иначе сломанный androidTest обнаружится на устройстве.
             //
             // `app` носит измерение `contour` (Р-86, ADR-0016), и unflavored-задачи
-            // `assembleDebugAndroidTest` у него больше нет: вариантные задачи называются
-            // `assembleFreeDebugAndroidTest` и `assembleProDebugAndroidTest`. Остальные
-            // модули измерения не имеют и сохраняют прежнее имя.
+            // `assembleDebugAndroidTest` у него больше нет: вариантная задача называется
+            // `assembleFreeDebugAndroidTest`. Остальные модули измерения не имеют и
+            // сохраняют прежнее имя.
             dependsOn(ANDROID_TEST_ASSEMBLE_TASKS)
-            // Pro-вариант не поставляется, но обязан компилироваться и проходить unit-тесты
-            // в CI (Р-86 п. 3, ADR-0016). Оба прогона названы явно: `:app:build` собирает
-            // оба debug-варианта, а эти строки делают требование видимым и не зависящим
-            // от состава агрегата `check`.
-            dependsOn(":app:testFreeDebugUnitTest", ":app:testProDebugUnitTest")
-            dependsOn(moduleGraph, moduleGraphRule, rulesFire, networkContourRule)
+            // Прогон unit-тестов `app` назван явно: `:app:build` собирает вариант, а эта
+            // строка делает требование видимым и не зависящим от состава агрегата `check`.
+            dependsOn(":app:testFreeDebugUnitTest")
+            dependsOn(moduleGraph, moduleGraphRule, rulesFire, compositionRule)
             dependsOn(gradle.includedBuild("detekt-rules").task(":test"))
             // Проверка словаря шагов приёмки — часть единого прогона, а не отдельная
             // команда, которую никто не запускает (SKL-23, НФТ-49).
@@ -156,10 +154,6 @@ class ProjectChecksConventionPlugin : Plugin<Project> {
             ":feature-onboarding",
             ":feature-history",
             ":feature-settings",
-            // Витрина «Про» и платный контур (SKL-122): их инструментальные наборы
-            // и походы обязаны хотя бы компилироваться этим же прогоном.
-            ":feature-pro",
-            ":billing-appgallery",
             // Виджеты домашнего экрана (SKL-118): провайдеры и экран настройки виджета
             // проверяются устройством, и их инструментальный набор обязан компилироваться.
             ":feature-widgets",
@@ -172,7 +166,6 @@ class ProjectChecksConventionPlugin : Plugin<Project> {
          */
         val ANDROID_TEST_ASSEMBLE_TASKS = listOf(
             ":app:assembleFreeDebugAndroidTest",
-            ":app:assembleProDebugAndroidTest",
         ) + (ANDROID_MODULES - ":app").map { "$it:assembleDebugAndroidTest" }
         val PROJECT_RULES = listOf(
             "HardcodedDesignToken",

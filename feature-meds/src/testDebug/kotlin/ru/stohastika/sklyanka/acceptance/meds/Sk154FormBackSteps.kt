@@ -34,9 +34,6 @@ import ru.stohastika.sklyanka.acceptance.world.AcceptanceWorld
 import ru.stohastika.sklyanka.acceptance.world.ScenarioTransactor
 import ru.stohastika.sklyanka.domain.medication.SaveMedicationUseCase
 import ru.stohastika.sklyanka.domain.medication.ValidateMedicationDraft
-import ru.stohastika.sklyanka.domain.pro.ObserveProStatusUseCase
-import ru.stohastika.sklyanka.domain.pro.ProSubscription
-import ru.stohastika.sklyanka.feature.meds.FakeProCache
 import ru.stohastika.sklyanka.feature.meds.form.MedicationFormRoute
 import ru.stohastika.sklyanka.feature.meds.form.MedicationFormViewModel
 import ru.stohastika.sklyanka.feature.meds.form.TAG_MEDICATION_FORM
@@ -46,7 +43,6 @@ import ru.stohastika.sklyanka.ui.component.TAG_CONFIRM_DIALOG
 import ru.stohastika.sklyanka.ui.component.TAG_CONFIRM_DISMISS
 import ru.stohastika.sklyanka.ui.component.TAG_CONFIRM_TITLE
 import ru.stohastika.sklyanka.ui.theme.SklyankaTheme
-import java.time.LocalDate
 import ru.stohastika.sklyanka.feature.meds.R as MedsR
 
 /**
@@ -246,11 +242,6 @@ class Sk154FormBackSteps(private val world: AcceptanceWorld) {
             newId = { "medication-sk154-${++savedForms}" },
         ),
         time = world.clock.time,
-        // Продукт бесплатен (Р-86): доступ «Про» не гейтит состав формы в этих сценариях.
-        proStatus = ObserveProStatusUseCase(
-            FakeProCache(ProSubscription.Active(productId = null, until = LocalDate.MAX)),
-            world.clock.time,
-        ),
     )
 
     /** Прогнать очередь главного looper'а и кадры композиции: модель открывается корутиной. */
